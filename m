@@ -1,199 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaEMSC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:02:58 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47974 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbaEMSCt (ORCPT
+	id S1753455AbaEMSKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:10:02 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50859 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaEMSJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 14:02:49 -0400
-Message-ID: <1400004106.2925.34.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 1/1] ima: introduce ima_kernel_read()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: viro@zeniv.linux.org.uk, ebiederm@xmission.com,
-        linux-security-module@vger.kernel.org, eparis@redhat.com,
-        dmitry.kasatkin@gmail.com, linux-kernel@vger.kernel.org
-Date: Tue, 13 May 2014 14:01:46 -0400
-In-Reply-To: <8cbf961769ba41e942bfc2442db0cca3d57be7c4.1399554584.git.d.kasatkin@samsung.com>
-References: <cover.1399554584.git.d.kasatkin@samsung.com>
-	 <8cbf961769ba41e942bfc2442db0cca3d57be7c4.1399554584.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Tue, 13 May 2014 14:09:54 -0400
+Message-ID: <53725FED.7050303@wwwdotorg.org>
+Date: Tue, 13 May 2014 12:09:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] clk: tegra: Implement Tegra124 shared/cbus clks
+References: <1399990023-30318-1-git-send-email-pdeschrijver@nvidia.com> <1399990023-30318-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1399990023-30318-4-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051318-0928-0000-0000-000001E8E491
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-08 at 16:16 +0300, Dmitry Kasatkin wrote: 
-> Commit 8aac62706 "move exit_task_namespaces() outside of exit_notify"
-> introduced the kernel opps since the kernel v3.10, which happens when
-> Apparmor and IMA-appraisal are enabled at the same time.
-> 
-> ----------------------------------------------------------------------
-> [  106.750167] BUG: unable to handle kernel NULL pointer dereference at
-> 0000000000000018
-> [  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-> [  106.750241] PGD 0
-> [  106.750254] Oops: 0000 [#1] SMP
-> [  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
-> bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-> fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
-> kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
-> ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
-> ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
-> snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
-> snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
-> snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
-> parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
-> pps_core
-> [  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
-> [  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
-> 09/19/2012
-> [  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
-> ffff880400fca000
-> [  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
-> our_mnt+0x1a/0x30
-> [  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
-> [  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
-> ffff8800d51523e7
-> [  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
-> ffff880402d20020
-> [  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
-> 0000000000000001
-> [  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
-> ffff8800d5152300
-> [  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
-> ffff8800d51523e7
-> [  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
-> knlGS:0000000000000000
-> [  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
-> 00000000001407e0
-> [  106.750962] Stack:
-> [  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
-> 0000000000000000
-> [  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
-> 0000000000000100
-> [  106.751093]  0000010000000000 0000000000000002 000000000000000e
-> ffff8803eb8df500
-> [  106.751149] Call Trace:
-> [  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
-> [  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
-> [  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
-> [  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
-> [  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
-> [  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
-> [  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
-> [  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
-> [  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
-> [  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
-> [  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
-> [  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
-> [  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
-> [  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
-> [  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
-> [  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
-> [  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
-> [  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
-> [  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
-> [  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
-> [  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
-> [  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
-> [  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
-> [  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-> [  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
-> [  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
-> [  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
-> 0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
-> e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
-> [  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-> [  106.752214]  RSP <ffff880400fcba60>
-> [  106.752236] CR2: 0000000000000018
-> [  106.752258] ---[ end trace 3c520748b4732721 ]---
-> ----------------------------------------------------------------------
-> 
-> The reason for the oops is that IMA-appraisal uses "kernel_read()" when
-> file is closed. kernel_read() honors LSM security hook which calls
-> Apparmor handler, which uses current->nsproxy->mnt_ns. The 'guilty'
-> commit changed the order of cleanup code so that nsproxy->mnt_ns was
-> not already available for Apparmor.
-> 
-> Discussion about the issue with Al Viro and Eric W. Biederman suggested
-> that kernel_read() is too high-level for IMA. Another issue, except
-> security checking, that was identified is mandatory locking. kernel_read
-> honors it as well and it might prevent IMA from calculating necessary hash.
-> It was suggested to use simplified version of the function without security
-> and locking checks.
-> 
-> This patch introduces special version ima_kernel_read(), which skips security,
-> mandatory locking checking and fsnotify. It prevents the kernel oops to happen.
-> 
-> Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+On 05/13/2014 08:06 AM, Peter De Schrijver wrote:
+> Add shared and cbus clocks to the Tegra124 clock implementation.
 
-As there has been no comment on this patch, I'll assume everyone is ok
-with introducing an IMA specific version of kernel_read().
+> diff --git a/include/dt-bindings/clock/tegra124-car.h b/include/dt-bindings/clock/tegra124-car.h
 
-Mimi
+> +#define TEGRA124_CLK_C2BUS 401
+> +#define TEGRA124_CLK_C3BUS 402
+> +#define TEGRA124_CLK_GR3D_CBUS 403
+> +#define TEGRA124_CLK_GR2D_CBUS 404
+...
 
-> ---
->  security/integrity/ima/ima_crypto.c | 32 +++++++++++++++++++++++++++++++-
->  1 file changed, 31 insertions(+), 1 deletion(-)
-> 
-> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-> index 1612a02..951523e 100644
-> --- a/security/integrity/ima/ima_crypto.c
-> +++ b/security/integrity/ima/ima_crypto.c
-> @@ -27,6 +27,36 @@
-> 
->  static struct crypto_shash *ima_shash_tfm;
-> 
-> +/**
-> + * ima_kernel_read - read file content
-> + *
-> + * This is a function for reading file content instead of kernel_read().
-> + * It does not perform locking checks to ensure it cannot be blocked.
-> + * It does not perform security checks because it is irrelevant for IMA.
-> + *
-> + */
-> +static int ima_kernel_read(struct file *file, loff_t offset,
-> +			   char *addr, unsigned long count)
-> +{
-> +	mm_segment_t old_fs;
-> +	char __user *buf = addr;
-> +	ssize_t ret;
-> +
-> +	if (!(file->f_mode & FMODE_READ))
-> +		return -EBADF;
-> +	if (!file->f_op->read && !file->f_op->aio_read)
-> +		return -EINVAL;
-> +
-> +	old_fs = get_fs();
-> +	set_fs(get_ds());
-> +	if (file->f_op->read)
-> +		ret = file->f_op->read(file, buf, count, &offset);
-> +	else
-> +		ret = do_sync_read(file, buf, count, &offset);
-> +	set_fs(old_fs);
-> +	return ret;
-> +}
-> +
->  int ima_init_crypto(void)
->  {
->  	long rc;
-> @@ -104,7 +134,7 @@ static int ima_calc_file_hash_tfm(struct file *file,
->  	while (offset < i_size) {
->  		int rbuf_len;
-> 
-> -		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
-> +		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
->  		if (rbuf_len < 0) {
->  			rc = rbuf_len;
->  			break;
+I worry about this a bit. IIUC, these clocks don't actually exist in HW,
+but are more a way of SW applying policy to the clock that do exist in
+HW. As such, I'm not convinced it's a good idea to expose these clock
+IDS to DT, since DT is supposed to represent the HW, and not be
+influenced by internal SW implementation details.
 
-
+Do any DTs actually need to used these new clock IDs? I don't think we
+could actually use these value in e.g. tegra124.dtsi's clocks
+properties, since these clocks don't exist in HW. Was it your intent to
+do that? If not, can't we just define these SW-internal clock IDs in the
+header inside the Tegra clock driver, so the values are invisible to DT?
