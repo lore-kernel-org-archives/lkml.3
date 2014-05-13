@@ -1,140 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaEMTtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:49:50 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:60643 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864AbaEMTt3 convert rfc822-to-8bit (ORCPT
+	id S1754959AbaEMTuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:50:09 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52666 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaEMTuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:49:29 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 13 May 2014 15:50:02 -0400
+Date: Tue, 13 May 2014 15:49:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH cgroup/for-3.16] cgroup: clean up MAINTAINERS entries
+Message-ID: <20140513194958.GD28815@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1399839881-29895-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Cc: "Grant Likely" <grant.likely@linaro.org>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
-        "Antoine Tenart" <antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1399839881-29895-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Message-ID: <20140513194922.5943.40228@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 1/8] clk: add helper for unique DT clock names
-Date: Tue, 13 May 2014 12:49:22 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2014-05-11 13:24:34)
-> Currently, most DT clock drivers pick a unique node name to allow unique
-> clock names. As ePAPR recommends node names to be generic, we therefore
-> provide a helper to generate a unique clock name from the DT node name
-> plus reg property or a magic number instead. This is basically the same
-> we already do for proper devices and may vanish as soon as there is some
-> (early) device support for clocks available.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/clk/clk.c            | 29 +++++++++++++++++++++++++++++
->  include/linux/clk-provider.h |  5 +++++
->  2 files changed, 34 insertions(+)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index dff0373f53c1..b449a635dbfa 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -17,6 +17,7 @@
->  #include <linux/list.h>
->  #include <linux/slab.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->  #include <linux/device.h>
->  #include <linux/init.h>
->  #include <linux/sched.h>
-> @@ -2543,6 +2544,34 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
->  }
->  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
->  
-> +/**
-> + * of_clk_create_name() - Allocate and create a unique clock name
-> + * @np: Device node pointer of the clock node
-> + *
-> + * This will allocate and create a unique clock name based on the
-> + * reg property value. As a last resort, it will use the node name
-> + * followed by a unique number. The caller has to deallocate the
-> + * buffer.
-> + */
-> +char *of_clk_create_name(struct device_node *np)
-> +{
-> +       static atomic_t clk_no_reg_magic;
-> +       const __be32 *reg;
-> +       u64 addr;
-> +       int magic;
-> +
-> +       reg = of_get_property(np, "reg", NULL);
-> +       if (reg) {
-> +               addr = of_translate_address(np, reg);
-> +               return kasprintf(GFP_KERNEL, "%llx.%s",
-> +                                (unsigned long long)addr, np->name);
-> +       }
-> +
-> +       magic = atomic_add_return(1, &clk_no_reg_magic);
-> +       return kasprintf(GFP_KERNEL, "%s.%d", np->name, magic);
+There are currently three cgroup related entries in MAINTAINERS.  Make
+the following updates.
 
-For the case where we the reg property is present we use reg.name, but
-for the case were the reg property is missing we use name.magic. Is it
-intentional to switch the string and integer pairs?
+* Make the names - both cgroup and cpuset - singular.  We're mixing
+  singular and plural all over the place for no good reason.
 
-Doing so avoids the case where magic might collide with a simple bus
-clock (e.g. 'clk@1'), but I wanted to double check that it was
-intentional.
+* Drop containers@lists.linux-foundation.org from CGROUP.  That list
+  doesn't have much to do with cgroup per-se.
 
-Regards,
-Mike
+* Add Documentation field to CGROUP.
 
-> +}
-> +EXPORT_SYMBOL_GPL(of_clk_create_name);
-> +
->  struct clock_provider {
->         of_clk_init_cb_t clk_init_cb;
->         struct device_node *np;
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index 511917416fb0..c6f3ca1cd81c 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -514,6 +514,7 @@ struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
->  struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
->  int of_clk_get_parent_count(struct device_node *np);
->  const char *of_clk_get_parent_name(struct device_node *np, int index);
-> +char *of_clk_create_name(struct device_node *np);
->  
->  void of_clk_init(const struct of_device_id *matches);
->  
-> @@ -543,6 +544,10 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
->  {
->         return NULL;
->  }
-> +static inline char *of_clk_create_name(struct device_node *np)
-> +{
-> +       return NULL;
-> +}
->  #define of_clk_init(matches) \
->         { while (0); }
->  #endif /* CONFIG_OF */
-> -- 
-> 1.9.1
-> 
+* Drop mm/*cgroup* from CGROUP.  memcg has separate maintainers.
+
+* Prefix the controller-specific ones with "CONTROL CGROUP -" and
+  collect cgroup related entries under the core one.
+
+* Add (MEMCG) abbreviation to MEMCG entry.
+
+* Drop Balbir Singh and KAMEZAWA Hiroyuki from memcg maintainers.  It
+  has been quite a while since both actually worked on memcg.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Hello,
+
+Summer house cleaning.  If there's any objection, please let me know.
+
+Thanks.
+
+ MAINTAINERS |   47 ++++++++++++++++++++++-------------------------
+ 1 file changed, 22 insertions(+), 25 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e67ea24..7202bec 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2382,16 +2382,35 @@ L:	netdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/connector/
+ 
+-CONTROL GROUPS (CGROUPS)
++CONTROL GROUP (CGROUP)
+ M:	Tejun Heo <tj@kernel.org>
+ M:	Li Zefan <lizefan@huawei.com>
+-L:	containers@lists.linux-foundation.org
+ L:	cgroups@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+ S:	Maintained
++F:	Documentation/cgroups/
+ F:	include/linux/cgroup*
+ F:	kernel/cgroup*
+-F:	mm/*cgroup*
++
++CONTROL GROUP - CPUSET
++M:	Li Zefan <lizefan@huawei.com>
++L:	cgroups@vger.kernel.org
++W:	http://www.bullopensource.org/cpuset/
++W:	http://oss.sgi.com/projects/cpusets/
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
++S:	Maintained
++F:	Documentation/cgroups/cpusets.txt
++F:	include/linux/cpuset.h
++F:	kernel/cpuset.c
++
++CONTROL GROUP - MEMORY RESOURCE CONTROLLER (MEMCG)
++M:	Johannes Weiner <hannes@cmpxchg.org>
++M:	Michal Hocko <mhocko@suse.cz>
++L:	cgroups@vger.kernel.org
++L:	linux-mm@kvack.org
++S:	Maintained
++F:	mm/memcontrol.c
++F:	mm/page_cgroup.c
+ 
+ CORETEMP HARDWARE MONITORING DRIVER
+ M:	Fenghua Yu <fenghua.yu@intel.com>
+@@ -2464,17 +2483,6 @@ M:	Thomas Renninger <trenn@suse.de>
+ S:	Maintained
+ F:	tools/power/cpupower/
+ 
+-CPUSETS
+-M:	Li Zefan <lizefan@huawei.com>
+-L:	cgroups@vger.kernel.org
+-W:	http://www.bullopensource.org/cpuset/
+-W:	http://oss.sgi.com/projects/cpusets/
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
+-S:	Maintained
+-F:	Documentation/cgroups/cpusets.txt
+-F:	include/linux/cpuset.h
+-F:	kernel/cpuset.c
+-
+ CRAMFS FILESYSTEM
+ W:	http://sourceforge.net/projects/cramfs/
+ S:	Orphan / Obsolete
+@@ -5731,17 +5739,6 @@ F:	include/linux/memory_hotplug.h
+ F:	include/linux/vmalloc.h
+ F:	mm/
+ 
+-MEMORY RESOURCE CONTROLLER
+-M:	Johannes Weiner <hannes@cmpxchg.org>
+-M:	Michal Hocko <mhocko@suse.cz>
+-M:	Balbir Singh <bsingharora@gmail.com>
+-M:	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+-L:	cgroups@vger.kernel.org
+-L:	linux-mm@kvack.org
+-S:	Maintained
+-F:	mm/memcontrol.c
+-F:	mm/page_cgroup.c
+-
+ MEMORY TECHNOLOGY DEVICES (MTD)
+ M:	David Woodhouse <dwmw2@infradead.org>
+ M:	Brian Norris <computersforpeace@gmail.com>
