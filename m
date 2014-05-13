@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585AbaEMJIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:08:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60193 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281AbaEMJIg (ORCPT
+	id S1759745AbaEMJJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:09:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:53146 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759533AbaEMJJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:08:36 -0400
-Date: Tue, 13 May 2014 11:08:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
-In-Reply-To: <20140513035404.GA68181@dvhart-mac01.local>
-Message-ID: <alpine.DEB.2.02.1405131100510.6261@ionos.tec.linutronix.de>
-References: <20140512190438.314125476@linutronix.de> <20140513035404.GA68181@dvhart-mac01.local>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 13 May 2014 05:09:05 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-c2-5371e12fbbc1
+Message-id: <5371E12C.8000409@samsung.com>
+Date: Tue, 13 May 2014 11:09:00 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: devicetree@vger.kernel.org, Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH 0/2] drm/panel: add simple-panel description using DT
+References: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140513075148.GF6754@ulmo>
+In-reply-to: <20140513075148.GF6754@ulmo>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xK7r6DwuDDX5N0rQ48GIhi8X8I+dY
+	La58fc9mMXXXSUaLhW1LWCwu75rDZvHtcjO7xds701ksfu6ax+LA6bHg11YWjyebLjJ67Jx1
+	l91j8wotj/vdx5k8lh438/i8SS6APYrLJiU1J7MstUjfLoErY8ayGYwFHzkrFsz9zNbA+JO9
+	i5GTQ0LARKJxy1JWCFtM4sK99WxdjFwcQgJLGSUuTLjHDuF8YpQ4vGYSM0gVr4CWxLzZB9hA
+	bBYBVYlnV5+AxdkENCX+br4JFOfgEBWIkHh8QQiiXFDix+R7LCC2iECqxN+mRywgM5kF/jJK
+	rN73hREkISzgK7Fj9lQwW0igWGLZ+Utg8zmBZh6/dRHsUmYBHYn9rdPYIGx5ic1r3jJPYBSY
+	hWTHLCRls5CULWBkXsUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREgtfdzAuPWZ1iFGAg1GJ
+	h9eDuSBYiDWxrLgy9xCjBAezkgjvoauFwUK8KYmVValF+fFFpTmpxYcYmTg4pRoYGwM37Zvw
+	nNPh51rdCPXqhqCld+bfEtskWXa8Wm8J/ym+/gtHKp7n/Gro+Psr4oFvn3DDnWPi/PcLThuu
+	Pm9QYtJhnhfx2vXHhFMzvHLPN+lOqoj898nw31vRpdlCGsV6h2K2l91ItJrUxjvvo+eUYO9O
+	iRPuGs6/sxTuJAaHz50lMzWw6PcBJZbijERDLeai4kQA+CAcRWMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014, Darren Hart wrote:
-> On Mon, May 12, 2014 at 08:45:32PM -0000, Thomas Gleixner wrote:
-> >    strace tells me:
-> > 
-> >    futex(0x600e00, FUTEX_LOCK_PI_PRIVATE, 1) = -1 EINVAL (Invalid argument)
-> > 
-> >    but the return value of pthread_mutex_lock() is 0
+On 05/13/2014 09:51 AM, Thierry Reding wrote:
+> On Fri, May 09, 2014 at 04:16:40PM +0200, Boris BREZILLON wrote:
+>> Hello Thierry,
+>>
+>> I noticed you're describing each new panel with a new entry in the
+>> of_platform_match table and a new compatible string.
+>> I guess you have a good reason to do it this way, because retrieving
+>> panel description from DT would be pretty easy (see this series ;-)).
+>>
+>> Could tell me why you chose this approach ?
 > 
-> So something is clearly wrong there - however, were you looking at the comments
-> (sorry, I mean the C code), or the implementation (all the ASM)? The only way
-> I've been able to be sure in the past is to delete the ASM files and recompile
-> using the C files. Hopefully we'll be able to drop all the ASM in the pthread
-> calls soonish (measured in years in glibc development time scales).... sigh.
+> The reason is that devicetree mandates that a device be identified using
+> a compatible value and that compatible value should be as specific as
+> possible. That compatible value should give the device driver enough
+> information to know everything it needs (resolution, timings, physical
+> dimension).
+> 
+> Having all of that data in the device tree is redundant.
+> 
 
-The C implementation does:
+Many panels I have encountered have no single timings, they accepts
+ranges of timings. With 'compatible' approach there is no place to
+configure timings specific for particular hw configuration, unless you
+abuse somehow compatible string.
 
-	    if (INTERNAL_SYSCALL_ERROR_P (e, __err)
-		&& (INTERNAL_SYSCALL_ERRNO (e, __err) == ESRCH
-		    || INTERNAL_SYSCALL_ERRNO (e, __err) == EDEADLK))
-	      {
-		assert (INTERNAL_SYSCALL_ERRNO (e, __err) != EDEADLK
-			|| (kind != PTHREAD_MUTEX_ERRORCHECK_NP
-			    && kind != PTHREAD_MUTEX_RECURSIVE_NP));
-		/* ESRCH can happen only for non-robust PI mutexes where
-		   the owner of the lock died.  */
-		assert (INTERNAL_SYSCALL_ERRNO (e, __err) != ESRCH || !robust);
+However it seems there are not so many cases the same panel must be used
+with different timings on different boards, anyway it is a potential issue.
 
-		/* Delay the thread indefinitely.  */
-		while (1)
-		  pause_not_cancel ();
-	      }
-
-So anything else than ESRCH and EDEADLK is ignored and then the thing
-happily returns 0 at the end. Unlock is the same:
-
-	{
-	  int robust = mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP;
-	  int private = (robust
-			 ? PTHREAD_ROBUST_MUTEX_PSHARED (mutex)
-			 : PTHREAD_MUTEX_PSHARED (mutex));
-	  INTERNAL_SYSCALL_DECL (__err);
-	  INTERNAL_SYSCALL (futex, __err, 2, &mutex->__data.__lock,
-			    __lll_private_flag (FUTEX_UNLOCK_PI, private));
-	}
-
-Quality stuff that.
-
-Thanks,
-
-	tglx
-
- 
+Regards
+Andrzej
