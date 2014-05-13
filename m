@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885AbaEMOu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:50:28 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57012 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754299AbaEMOu0 (ORCPT
+	id S1760651AbaEMOxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:53:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42603 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752916AbaEMOxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:50:26 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Move runtime PM barrier invocation to device_prepare()
-Date: Tue, 13 May 2014 17:07:12 +0200
-Message-ID: <2132869.H2tFu0p7Mg@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFrOwWzL5uFHQoYXWkATAUW6=u8Dxwm6y3Q3CWfD4Ru=Qw@mail.gmail.com>
-References: <4649019.is79p6EySp@vostro.rjw.lan> <2578127.8G0jVZIWmC@vostro.rjw.lan> <CAPDyKFrOwWzL5uFHQoYXWkATAUW6=u8Dxwm6y3Q3CWfD4Ru=Qw@mail.gmail.com>
+	Tue, 13 May 2014 10:53:36 -0400
+Date: Tue, 13 May 2014 10:53:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
+        <hdegoede@redhat.com>, Boris Brezillon <boris@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
+        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
+        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH v4 0/8] Add Allwinner A31 USB support
+In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
+Message-ID: <Pine.LNX.4.44L0.1405131053050.1098-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 13, 2014 12:59:43 PM Ulf Hansson wrote:
-> On 13 May 2014 12:35, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, May 13, 2014 11:16:34 AM Ulf Hansson wrote:
-> >> On 13 May 2014 03:03, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >
-> >> > Move the invocation of the runtime PM barrier during system suspend
-> >> > (or hibernation) from __device_suspend() to device_prepare() to make
-> >> > all runtime PM transitions in progress complete before executing
-> >> > ->prepare() callbacks for devices.
-> >> >
-> >> > That will allow those callbacks to check if devices are runtime
-> >> > suspended in a non-racy way.
-> >> >
-> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > ---
-> >> >  drivers/base/power/main.c |   31 +++++++++++++------------------
-> >> >  1 file changed, 13 insertions(+), 18 deletions(-)
-> >> >
-> >> > Index: linux-pm/drivers/base/power/main.c
-> >> > ===================================================================
-> >> > --- linux-pm.orig/drivers/base/power/main.c
-> >> > +++ linux-pm/drivers/base/power/main.c
-> >> > @@ -1312,24 +1312,7 @@ static int __device_suspend(struct devic
-> >> >
-> >> >         dpm_wait_for_children(dev, async);
-> >> >
-> >> > -       if (async_error)
-> >> > -               goto Complete;
-> >> > -
-> >> > -       /*
-> >> > -        * If a device configured to wake up the system from sleep states
-> >> > -        * has been suspended at run time and there's a resume request pending
-> >> > -        * for it, this is equivalent to the device signaling wakeup, so the
-> >> > -        * system suspend operation should be aborted.
-> >> > -        */
-> >> > -       if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> >> > -               pm_wakeup_event(dev, 0);
-> >> > -
-> >> > -       if (pm_wakeup_pending()) {
-> >> > -               async_error = -EBUSY;
-> >> > -               goto Complete;
-> >> > -       }
-> >>
-> >> I suppose you went a bit too far here!?
-> >>
-> >> We can still have wakeup pending at this point, and thus we should
-> >> bail out, right?
-> >
-> > That pm_wakeup_pending() is part of the barrier handling, so ->
-> >
-> >> > -
-> >> > -       if (dev->power.syscore)
-> >> > +       if (async_error || dev->power.syscore)
-> >> >                 goto Complete;
-> >> >
-> >> >         dpm_watchdog_set(&wd, dev);
-> >> > @@ -1500,6 +1483,18 @@ static int device_prepare(struct device
-> >> >          */
-> >> >         pm_runtime_get_noresume(dev);
-> >> >
-> >> > +       /*
-> >> > +        * If a device configured to wake up the system from sleep states
-> >> > +        * has been suspended at run time and there's a resume request pending
-> >> > +        * for it, this is equivalent to the device signaling wakeup, so the
-> >> > +        * system suspend operation should be aborted.
-> >> > +        */
-> >> > +       if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> >> > +               pm_wakeup_event(dev, 0);
-> >> > +
-> >> > +       if (pm_wakeup_pending())
-> >> > +               return -EBUSY;
-> >> > +
-> >
-> > -> it is done here now.
-> >
-> > I don't see why it would be still necessary in __device_suspend().
+On Tue, 13 May 2014, Maxime Ripard wrote:
+
+> Hi everyone,
 > 
-> Can't we have wakeup configured for !CONFIG_PM_RUNTIME case?
-> pm_runtime_barrier() won't handle those scenarios, right?
+> This patchset adds support for the USB controllers found in the
+> Allwinner A31.
+> 
+> While the design is similar to the earlier Allwinner SoCs that are
+> already supported, a few details here and there change, like the fact
+> that the PHYs now have one clock per phy, while it used to be only one
+> for all the PHYs.
+> 
+> Thanks,
+> Maxime
+> 
+> Changes from v3:
+>   - Asserted back the ECHI/OHCI in reset if probe fails
+>   - Drop of the redundant NULL assignent for the PMU in the PHY rework
+> 
+> Changes from v2:
+>   - Fixed indentation and used the reset framework in all case and not
+>     just in DT case
+>   - Added a default value to the dedicated_clocks variable. Setting it
+>     actually started triggering a gcc warning for no reason. Ended up
+>     reworking a bit the code to avoid it.
+> 
+> Changes from v1:
+>   - Moved the reset assertion/deassertion to probe/remove
+>   - Moved the dedicated_clocks to the probe function instead of the
+>     private structure since it was the only user
+> 
+> Boris BREZILLON (2):
+>   usb: ehci-platform: add optional reset controller retrieval
+>   ARM: sunxi: dt: add APP4-EVB1 board support
+> 
+> Maxime Ripard (6):
+>   clk: sunxi: Implement A31 USB clock
+>   ARM: sun6i: Add the USB clocks to the DTSI
+>   phy: sunxi: Rework phy initialization
+>   phy: usb: sunxi: Introduce Allwinner A31 USB PHY support
+>   usb: ohci-platform: Enable optional use of reset controller
+>   ARM: sun6i: dt: Add support for the USB controllers
 
-The pm_wakeup_pending() is in effect for CONFIG_PM_RUNTIME unset too.
+For the changes to ehci-platform and ohci-platform:
 
-> Similar check for pm_wakeup_pending() is done at
-> __device_suspend_noirq, __device_suspend_late - I assumed it was
-> because of the same reasons.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Hmm, OK.  I'll leave it in __device_suspend() too, then.
-
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
