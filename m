@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaEMIeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:34:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50626 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759471AbaEMIeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:34:05 -0400
-Message-ID: <5371D8D8.8000003@ti.com>
-Date: Tue, 13 May 2014 14:03:28 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932340AbaEMIeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:34:31 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:37038 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150AbaEMIe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 04:34:27 -0400
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH 0/4] ARM/DT: edma: Get IP configuration from hardware
-References: <1399967028-24757-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1399967028-24757-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398759674-13421-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1398759674-13421-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Tue, 13 May 2014 10:34:27 +0200
+Message-ID: <CACRpkdY_NzRaz5fiWJDF=rZY6WizmwbDZG6c_+FR+L9Aix8peQ@mail.gmail.com>
+Subject: Re: [PATCH v1 11/11] mmc: mmci: Add Qcom specific pio_read function.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 May 2014 01:13 PM, Peter Ujfalusi wrote:
-> Hi,
-> 
-> We are requesting redundant information via DT for the driver since the very same
-> data is available in the HW: by reading and decoding the content of CCCFG
-> register we can get:
-> Number of channels: NUM_DMACH
-> Number of regions: NUM_REGN
-> Number of slots (PaRAM sets): NUM_PAENTRY
-> Number of TC/EQ: NUM_EVQUE
-> 
-> So these does not need to be provided by the DT binding.
-> 
-> The driver will no longer look for these properties from DT and they can be
-> removed from the binding documentation and from the dtsi files as well.
-> The change will not introduce regression when new kernel is booted using older
-> DTB (since we just ignore the mentioned properties).
+On Tue, Apr 29, 2014 at 10:21 AM,  <srinivas.kandagatla@linaro.org> wrote:
 
-Peter, to which baseline do these patches apply? I tried applying them
-to v3.15-rc5 but 1/4 doesn't apply cleanly.
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> MCIFIFOCNT register behaviour on Qcom chips is very different than the other
+> pl180 integrations. MCIFIFOCNT register contains the number of
+> words that are still waiting to be transferred through the FIFO. It keeps
+> decrementing once the host CPU reads the MCIFIFO. With the existing logic and
+> the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
+> register will always return transfer size before reading the FIFO.
+>
+> Also the data sheet states that "This register is only useful for debug
+> purposes and should not be used for normal operation since it does not reflect
+> data which may or may not be in the pipeline".
+>
+> This patch implements qcom_pio_read function so as existing mmci_pio_read is
+> not suitable for Qcom SOCs.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+(...)
 
-Thanks,
-Sekhar
+> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
+> +                        unsigned int remain)
+> +{
+> +       uint32_t        *ptr = (uint32_t *) buffer;
+
+Just use u32 for this.
+
+> +       int             count = 0;
+> +       struct variant_data *variant = host->variant;
+> +       int             fifo_size = variant->fifosize;
+> +
+> +       if (remain % 4)
+> +               remain = ((remain >> 2) + 1) << 2;
+
+Explain in a comment exactly what is happening here or noone will
+understand the code.
+
+> +       while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
+> +               *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
+> +               ptr++;
+> +               count += sizeof(uint32_t);
+> +               remain -=  sizeof(uint32_t);
+
+
+sizeof(u32) or just 4 works for these...
+
+count += 4;
+remain -= 4;
+
+Is easier to parse and understand I think.
+
+> +               if (remain == 0)
+> +                       break;
+
+if (!remain)
+  break;
+
+> +       }
+> +       return count;
+> +}
+
+> -               if (status & MCI_RXACTIVE)
+> -                       len = mmci_pio_read(host, buffer, remain);
+> +               if (status & MCI_RXACTIVE) {
+> +                       if (host->hw_designer == AMBA_VENDOR_QCOM)
+> +                               len = mmci_qcom_pio_read(host, buffer, remain);
+> +                       else
+> +                               len = mmci_pio_read(host, buffer, remain);
+> +               }
+
+Use something like bool qcom_fifo; in vendor data instead.
+
+Yours,
+Linus Walleij
