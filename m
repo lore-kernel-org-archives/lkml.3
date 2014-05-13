@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760954AbaEMKiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:38:01 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760494AbaEMKKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760518AbaEMKKt (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 May 2014 06:10:49 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Junxiao Bi <junxiao.bi@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/182] ocfs2: dlm: fix recovery hung
-Date: Tue, 13 May 2014 11:27:43 +0200
-Message-Id: <e2b81e8cbfabb32fcc4738c1eacac25d42d33cfb.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+Received: from cantor2.suse.de ([195.135.220.15]:50665 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933232AbaEMKJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:09:34 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] console: Remove superfluous readonly check
+Date: Tue, 13 May 2014 12:09:29 +0200
+Message-Id: <1399975769-30526-4-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1399975769-30526-1-git-send-email-tiwai@suse.de>
+References: <1399975769-30526-1-git-send-email-tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+uni_pagedir.readonly is never set.  Let's get rid of superfluous check
+codes.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
-
-There is a race window in dlm_do_recovery() between dlm_remaster_locks()
-and dlm_reset_recovery() when the recovery master nearly finish the
-recovery process for a dead node.  After the master sends FINALIZE_RECO
-message in dlm_remaster_locks(), another node may become the recovery
-master for another dead node, and then send the BEGIN_RECO message to
-all the nodes included the old master, in the handler of this message
-dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
-dlm->reco.new_master will be set to the second dead node and the new
-master, then in dlm_reset_recovery(), these two variables will be reset
-to default value.  This will cause new recovery master can not finish
-the recovery process and hung, at last the whole cluster will hung for
-recovery.
-
-old recovery master:                                 new recovery master:
-dlm_remaster_locks()
-                                                  become recovery master for
-                                                  another dead node.
-                                                  dlm_send_begin_reco_message()
-dlm_begin_reco_handler()
-{
- if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
-  return -EAGAIN;
- }
- dlm_set_reco_master(dlm, br->node_idx);
- dlm_set_reco_dead_node(dlm, br->dead_node);
-}
-dlm_reset_recovery()
-{
- dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
- dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
-}
-                                                  will hang in dlm_remaster_locks() for
-                                                  request dlm locks info
-
-Before send FINALIZE_RECO message, recovery master should set
-DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
-this can break the race windows as the BEGIN_RECO messages will not be
-handled before DLM_RECO_STATE_FINALIZE flag is cleared.
-
-A similar race may happen between new recovery master and normal node
-which is in dlm_finalize_reco_handler(), also fix it.
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 ---
- fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/tty/vt/consolemap.c | 16 +++-------------
+ 1 file changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-index 723063bf0842..7b4a3fa63fab 100644
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -537,7 +537,10 @@ master_here:
- 		/* success!  see if any other nodes need recovery */
- 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
- 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
--		dlm_reset_recovery(dlm);
-+		spin_lock(&dlm->spinlock);
-+		__dlm_reset_recovery(dlm);
-+		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+		spin_unlock(&dlm->spinlock);
- 	}
- 	dlm_end_recovery(dlm);
+diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+index 3fdc786b6b2f..610b720d3b91 100644
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -179,7 +179,6 @@ struct uni_pagedir {
+ 	unsigned long	sum;
+ 	unsigned char	*inverse_translations[4];
+ 	u16		*inverse_trans_unicode;
+-	int		readonly;
+ };
  
-@@ -695,6 +698,14 @@ static int dlm_remaster_locks(struct dlm_ctxt *dlm, u8 dead_node)
- 		if (all_nodes_done) {
- 			int ret;
+ static struct uni_pagedir *dflt;
+@@ -501,9 +500,6 @@ static int con_do_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
+ 	struct uni_pagedir *p, *q;
  
-+			/* Set this flag on recovery master to avoid
-+			 * a new recovery for another dead node start
-+			 * before the recovery is not done. That may
-+			 * cause recovery hung.*/
-+			spin_lock(&dlm->spinlock);
-+			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
-+			spin_unlock(&dlm->spinlock);
+ 	p = *vc->vc_uni_pagedir_loc;
+-	if (p && p->readonly)
+-		return -EIO;
+-
+ 	if (!p || --p->refcount) {
+ 		q = kzalloc(sizeof(*p), GFP_KERNEL);
+ 		if (!q) {
+@@ -536,19 +532,13 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 	int err = 0, err1, i;
+ 	struct uni_pagedir *p, *q;
+ 
++	if (!ct)
++		return 0;
 +
- 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
- 	 		 * just send a finalize message to everyone and
- 	 		 * clean up */
-@@ -2877,8 +2888,8 @@ int dlm_finalize_reco_handler(struct o2net_msg *msg, u32 len, void *data,
- 				BUG();
- 			}
- 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+			__dlm_reset_recovery(dlm);
- 			spin_unlock(&dlm->spinlock);
--			dlm_reset_recovery(dlm);
- 			dlm_kick_recovery_thread(dlm);
- 			break;
- 		default:
+ 	console_lock();
+ 
+ 	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = *vc->vc_uni_pagedir_loc;
+-	if (p->readonly) {
+-		console_unlock();
+-		return -EIO;
+-	}
+-	
+-	if (!ct) {
+-		console_unlock();
+-		return 0;
+-	}
+ 	
+ 	if (p->refcount > 1) {
+ 		int j, k;
 -- 
-1.9.3
+1.9.2
 
