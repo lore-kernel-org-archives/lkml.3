@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248AbaEMIcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:32:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43389 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaEMIcq convert rfc822-to-8bit (ORCPT
+	id S1759350AbaEMIdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:33:37 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:52011 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759294AbaEMIde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:32:46 -0400
-Message-ID: <5371D8B5.3070701@arm.com>
-Date: Tue, 13 May 2014 09:32:53 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 04:33:34 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140513082609.GA2485@laptop.programming.kicks-ass.net>
+References: <1399929376-4597-1-git-send-email-vincent.guittot@linaro.org> <20140513082609.GA2485@laptop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 13 May 2014 10:33:14 +0200
+Message-ID: <CAKfTPtDwzFay6oaEYYng59MUfO33hD4WH84Cpz91n=6wRD3y3Q@mail.gmail.com>
+Subject: Re: sched: fix: initialization of sched_domain_topology for NUMA
 To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in
- build_sched_groups
-References: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-In-Reply-To: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 13 May 2014 08:32:52.0952 (UTC) FILETIME=[EE959580:01CF6E85]
-X-MC-Unique: 114051309324409101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Cc: Ingo Molnar <mingo@kernel.org>, jet.chen@intel.com,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        linux-ia64@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13 May 2014 10:26, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, May 12, 2014 at 11:16:16PM +0200, Vincent Guittot wrote:
+>> sched_domain_topology table is a null terminated array.
+>> Add 1 row in the allocation size that will be used as the last row of the
+>> table.
+>>
+>> Reported-by: Jet Chen <jet.chen@intel.com>
+>> Tested-by: Jet Chen <jet.chen@intel.com>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> link: https://lkml.org/lkml/2014/5/12/130
+>>
+>> ---
+>>
+>> Hi Ingo and Peter,
+>>
+>> This patch fixes the problem that has been reported by Jet Chen
+>>
+>
+> I have no mail from Jet Chen on any recent issues.
+
 Hi Peter,
 
-On 30/04/14 14:39, Dietmar Eggemann wrote:
-> From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-> 
-> There is no need to zero struct sched_group member cpumask and struct
-> sched_group_power member power since both structures are already allocated
-> as zeroed memory in __sdt_alloc().
-> 
-> This patch has been tested with
-> BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
-> in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
-> CPU hotplug scenarios.
-> 
-> Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> ---
->  kernel/sched/core.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9cae286824bb..6bc51aebbf1b 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
->  			continue;
->  
->  		group = get_group(i, sdd, &sg);
-> -		cpumask_clear(sched_group_cpus(sg));
-> -		sg->sgp->power = 0;
->  		cpumask_setall(sched_group_mask(sg));
->  
->  		for_each_cpu(j, span) {
-> 
+I have just noticed that you were not in the list of the original message
 
-I think this one slipped through the cracks. Could you have a look?
+>
+> Also, please describe both the problem and the fix in the Changelog
+> without need to refer to secondary sources.
 
-Thanks,
+Ok, i'm going to update the commit message with more information
 
--- Dietmar
-
+>
+> As it stands I've no clue wth this is about.
