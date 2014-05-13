@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933154AbaEMKBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:01:46 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:44058 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979AbaEMKAg (ORCPT
+	id S1760116AbaEMJ74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:59:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60831 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760077AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:00:36 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kishon@ti.com
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, kgene.kim@samsung.com, robh+dt@kernel.org,
-        mark.rutland@arm.com, balbi@ti.com, sylvester.nawrocki@gmail.com,
-        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v9 1/3] Documentation: Document Exynos5 USB 3.0 DRD PHY
-Date: Tue, 13 May 2014 15:30:15 +0530
-Message-Id: <1399975217-3231-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399975217-3231-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399975217-3231-1-git-send-email-gautam.vivek@samsung.com>
+	Tue, 13 May 2014 05:28:56 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Roger Quadros <rogerq@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Keshava Munegowda <keshava_mgowda@ti.com>,
+        Partha Basak <parthab@india.ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 013/182] ARM: OMAP3: hwmod data: Correct clock domains for USB modules
+Date: Tue, 13 May 2014 11:26:05 +0200
+Message-Id: <cf6d0e70b481592f0f0398478a70e944a261e00e.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add necessary binding documentation for USB 3.0 DRD PHY present on
-Exynos5 SoC series.
+From: Roger Quadros <rogerq@ti.com>
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit c6c56697ae4bf1226263c19e8353343d7083f40e upstream.
+
+OMAP3 doesn't contain "l3_init_clkdm" clock domain. Use the
+proper clock domains for USB Host and USB TLL modules.
+
+Gets rid of the following warnings during boot
+ omap_hwmod: usb_host_hs: could not associate to clkdm l3_init_clkdm
+ omap_hwmod: usb_tll_hs: could not associate to clkdm l3_init_clkdm
+
+Reported-by: Nishanth Menon <nm@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Fixes: de231388cb80a8ef3e779bbfa0564ba0157b7377 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Partha Basak <parthab@india.ti.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- .../devicetree/bindings/phy/samsung-phy.txt        |   47 ++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-index b422e38..2049261 100644
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@ -114,3 +114,50 @@ Example:
- 		compatible = "samsung,exynos-sataphy-i2c";
- 		reg = <0x38>;
- 	};
-+
-+Samsung Exynos5 SoC series USB DRD PHY controller
-+--------------------------------------------------
-+
-+Required properties:
-+- compatible : Should be set to one of the following supported values:
-+	- "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
-+	- "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
-+- reg : Register offset and length of USB DRD PHY register set;
-+- clocks: Clock IDs array as required by the controller
-+- clock-names: names of clocks correseponding to IDs in the clock property;
-+	       Required clocks:
-+	- phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
-+	       used for register access.
-+	- ref: PHY's reference clock (usually crystal clock), used for
-+	       PHY operations, associated by phy name. It is used to
-+	       determine bit values for clock settings register.
-+	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-+- samsung,pmu-syscon: phandle for PMU system controller interface, used to
-+		      control pmu registers for power isolation.
-+- #phy-cells : from the generic PHY bindings, must be 1;
-+
-+For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
-+compatible PHYs, the second cell in the PHY specifier identifies the
-+PHY id, which is interpreted as follows:
-+  0 - UTMI+ type phy,
-+  1 - PIPE3 type phy,
-+
-+Example:
-+	usbdrd_phy: usbphy@12100000 {
-+		compatible = "samsung,exynos5250-usbdrd-phy";
-+		reg = <0x12100000 0x100>;
-+		clocks = <&clock 286>, <&clock 1>;
-+		clock-names = "phy", "ref";
-+		samsung,pmu-syscon = <&pmu_system_controller>;
-+		#phy-cells = <1>;
-+	};
-+
-+- aliases: For SoCs like Exynos5420 having multiple USB 3.0 DRD PHY controllers,
-+	   'usbdrd_phy' nodes should have numbered alias in the aliases node,
-+	   in the form of usbdrdphyN, N = 0, 1... (depending on number of
-+	   controllers).
-+Example:
-+	aliases {
-+		usbdrdphy0 = &usb3_phy0;
-+		usbdrdphy1 = &usb3_phy1;
-+	};
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 60f23440082e..857e76c38a15 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -1968,7 +1968,7 @@ static struct omap_hwmod_irq_info omap3xxx_usb_host_hs_irqs[] = {
+ static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
+ 	.name		= "usb_host_hs",
+ 	.class		= &omap3xxx_usb_host_hs_hwmod_class,
+-	.clkdm_name	= "l3_init_clkdm",
++	.clkdm_name	= "usbhost_clkdm",
+ 	.mpu_irqs	= omap3xxx_usb_host_hs_irqs,
+ 	.main_clk	= "usbhost_48m_fck",
+ 	.prcm = {
+@@ -2053,7 +2053,7 @@ static struct omap_hwmod_irq_info omap3xxx_usb_tll_hs_irqs[] = {
+ static struct omap_hwmod omap3xxx_usb_tll_hs_hwmod = {
+ 	.name		= "usb_tll_hs",
+ 	.class		= &omap3xxx_usb_tll_hs_hwmod_class,
+-	.clkdm_name	= "l3_init_clkdm",
++	.clkdm_name	= "core_l4_clkdm",
+ 	.mpu_irqs	= omap3xxx_usb_tll_hs_irqs,
+ 	.main_clk	= "usbtll_fck",
+ 	.prcm = {
 -- 
-1.7.10.4
+1.9.3
 
