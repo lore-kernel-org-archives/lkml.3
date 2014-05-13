@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941AbaEMJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:53:09 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43459 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932920AbaEMJxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:53:05 -0400
-Message-ID: <5371EB7B.1050608@atmel.com>
-Date: Tue, 13 May 2014 11:52:59 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Boris Brezillon" <boris.brezillon@free-electrons.com>
-Subject: Re: [PATCH] ARM: at91/dt: sam9260: correct external trigger value
-References: <1399912375-6247-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1399912375-6247-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	id S932973AbaEMJxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:53:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49893 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759937AbaEMJp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:45:56 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 02/19] mm: page_alloc: Do not treat a zone that cannot be used for dirty pages as "full"
+Date: Tue, 13 May 2014 10:45:33 +0100
+Message-Id: <1399974350-11089-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 18:32, Alexandre Belloni :
-> The external trigger value is 0b1101 which is 13 but 0xd.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+If a zone cannot be used for a dirty page then it gets marked "full"
+which is cached in the zlc and later potentially skipped by allocation
+requests that have nothing to do with dirty zones.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and pushed on our at91-3.15-fixes branch. I will try to push it for 3.15...
-
-Thanks, bye,
-
-> ---
->  arch/arm/boot/dts/at91sam9260.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-> index 366fc2cbcd64..c0e0eae16a27 100644
-> --- a/arch/arm/boot/dts/at91sam9260.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9260.dtsi
-> @@ -641,7 +641,7 @@
->  				trigger@3 {
->  					reg = <3>;
->  					trigger-name = "external";
-> -					trigger-value = <0x13>;
-> +					trigger-value = <0xd>;
->  					trigger-external;
->  				};
->  			};
-> 
-
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f8b80c3..5c559e3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1976,7 +1976,7 @@ zonelist_scan:
+ 		 */
+ 		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+ 		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
+-			goto this_zone_full;
++			continue;
+ 
+ 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+ 		if (!zone_watermark_ok(zone, order, mark,
 -- 
-Nicolas Ferre
+1.8.4.5
+
