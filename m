@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaEMQlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:41:25 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:58534 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaEMQlR (ORCPT
+	id S1752027AbaEMQm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:42:28 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62566 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaEMQmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:41:17 -0400
-Message-ID: <53724B0E.1010307@elopez.com.ar>
-Date: Tue, 13 May 2014 13:40:46 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH RESEND v4 1/8] clk: sunxi: Implement A31 USB clock
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com> <1399995862-17788-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399995862-17788-2-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 13 May 2014 12:42:21 -0400
+From: abdoulaye berthe <berthe.ab@gmail.com>
+To: berthe.ab@gmail.com, linus.walleij@linaro.org, gnurou@gmail.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: janzttl: use devm function
+Date: Tue, 13 May 2014 18:42:12 +0200
+Message-Id: <1399999332-23279-1-git-send-email-berthe.ab@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+This uses dem function for mem allocation
 
-El 13/05/14 12:44, Maxime Ripard escribió:
-> The A31 USB clock slightly differ from its older counterparts, mostly because
-> it has a different gate for each PHY, while the older one had a single gate for
-> all the phy.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-> Acked-by: Mike Turquette <mturquette@linaro.org>
-
-I have queued this commit in sunxi-clk-for-mike for my 3.16 pull. I have 
-also queued the trivial patch below to keep the new compatible documented.
-
-Cheers,
-
-Emilio
-
---->8---
-
-clk: sunxi: document new A31 USB clock compatible
-
-Support for the USB gates and resets on A31 has been recently added
-using a new compatible, so let's document it here.
-
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
+Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 ---
-  Documentation/devicetree/bindings/clock/sunxi.txt | 1 +
-  1 file changed, 1 insertion(+)
+ drivers/gpio/gpio-janz-ttl.c | 34 +++++++---------------------------
+ 1 file changed, 7 insertions(+), 27 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt 
-b/Documentation/devicetree/bindings/clock/sunxi.txt
-index a5160d8..1f6d3f4 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -41,6 +41,7 @@ Required properties:
-  	"allwinner,sun7i-a20-gmac-clk" - for the GMAC clock module on A20/A31
-  	"allwinner,sun4i-a10-usb-clk" - for usb gates + resets on A10 / A20
-  	"allwinner,sun5i-a13-usb-clk" - for usb gates + resets on A13
-+	"allwinner,sun6i-a31-usb-clk" - for usb gates + resets on A31
-
-  Required properties for all clocks:
-  - reg : shall be the control register address for the clock.
+diff --git a/drivers/gpio/gpio-janz-ttl.c b/drivers/gpio/gpio-janz-ttl.c
+index 2ecd3a0..daa79e1 100644
+--- a/drivers/gpio/gpio-janz-ttl.c
++++ b/drivers/gpio/gpio-janz-ttl.c
+@@ -152,15 +152,13 @@ static int ttl_probe(struct platform_device *pdev)
+ 	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata) {
+ 		dev_err(dev, "no platform data\n");
+-		ret = -ENXIO;
+-		goto out_return;
++		return -ENXIO;
+ 	}
+ 
+-	mod = kzalloc(sizeof(*mod), GFP_KERNEL);
++	mod = devm_kzalloc(dev, sizeof(struct ttl_module), GFP_KERNEL);
+ 	if (!mod) {
+ 		dev_err(dev, "unable to allocate private data\n");
+-		ret = -ENOMEM;
+-		goto out_return;
++		return -ENOMEM;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, mod);
+@@ -168,18 +166,9 @@ static int ttl_probe(struct platform_device *pdev)
+ 
+ 	/* get access to the MODULbus registers for this module */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "MODULbus registers not found\n");
+-		ret = -ENODEV;
+-		goto out_free_mod;
+-	}
+-
+-	mod->regs = ioremap(res->start, resource_size(res));
+-	if (!mod->regs) {
+-		dev_err(dev, "MODULbus registers not ioremap\n");
+-		ret = -ENOMEM;
+-		goto out_free_mod;
+-	}
++	mod->regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR(mod->regs))
++		return PTR_ERR(mod->regs);
+ 
+ 	ttl_setup_device(mod);
+ 
+@@ -198,17 +187,10 @@ static int ttl_probe(struct platform_device *pdev)
+ 	ret = gpiochip_add(gpio);
+ 	if (ret) {
+ 		dev_err(dev, "unable to add GPIO chip\n");
+-		goto out_iounmap_regs;
++		return ret;
+ 	}
+ 
+ 	return 0;
+-
+-out_iounmap_regs:
+-	iounmap(mod->regs);
+-out_free_mod:
+-	kfree(mod);
+-out_return:
+-	return ret;
+ }
+ 
+ static int ttl_remove(struct platform_device *pdev)
+@@ -223,8 +205,6 @@ static int ttl_remove(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	iounmap(mod->regs);
+-	kfree(mod);
+ 	return 0;
+ }
+ 
 -- 
-1.9.2
+1.8.3.2
+
