@@ -1,158 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaEMS6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 14:58:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27951 "EHLO mx1.redhat.com"
+	id S1754034AbaEMS6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:58:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41632 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409AbaEMS6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752274AbaEMS6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 14:58:37 -0400
-Message-ID: <53725FF6.6060004@redhat.com>
-Date: Tue, 13 May 2014 19:09:58 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+Date: Tue, 13 May 2014 20:57:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+	waitqueue lookups in unlock_page fastpath
+Message-ID: <20140513185742.GD12123@redhat.com>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140513152719.GF18164@linux.vnet.ibm.com> <20140513154435.GG2485@laptop.programming.kicks-ass.net> <20140513161418.GH18164@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
-Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
- documentation
-References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com> <53625681.8010905@redhat.com> <53670F35.6010502@linux.vnet.ibm.com>
-In-Reply-To: <53670F35.6010502@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513161418.GH18164@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/14 05:10, Anshuman Khandual wrote:
-> On 05/01/2014 07:43 PM, Pedro Alves wrote:
->> On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
->>> The current documentation is bit misleading and does not explicitly
->>> specify that iov.len need to be initialized failing which kernel
->>> may just ignore the ptrace request and never read from/write into
->>> the user specified buffer. This patch fixes the documentation.
->>
->> Well, it kind of does, here:
->>
->> *      struct iovec iov = { buf, len};
-> 
-> :) Thats not explicit enough.
-> 
->>
->>> @@ -43,8 +43,12 @@
->>>   *
->>>   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->>>   *
->>> - * On the successful completion, iov.len will be updated by the kernel,
->>> - * specifying how much the kernel has written/read to/from the user's iov.buf.
->>> + * A non-zero value upto the max size of data expected to be written/read by the
->>> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
->>> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
->>> + * read from or write into the user buffer specified. On successful completion,
->>> + * iov.len will be updated by the kernel, specifying how much the kernel has
->>> + * written/read to/from the user's iov.buf.
->>
->> I really appreciate that you're trying to make this clearer, but I
->> find the new sentence very hard to read/reason.  :-/
->>
->> I suggest:
->>
->>  * This interface usage is as follows:
->> - *      struct iovec iov = { buf, len};
->> + *      struct iovec iov = { buf, len };
->>  *
->>  *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->>  *
->> - * On the successful completion, iov.len will be updated by the kernel,
->> - * specifying how much the kernel has written/read to/from the user's iov.buf.
->> + * On entry, iov describes the buffer's address and length.  The buffer's
->> + * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
->> + * On successful completion, iov.len is updated by the kernel, specifying how
->> + * much the kernel has written/read to/from the user's iov.buf.
->>
-> 
-> Yeah, sounds better. I may add "If the length is zero, the kernel will neither read
-> from or write into the buffer"
+On 05/13, Paul E. McKenney wrote:
+>
+> On Tue, May 13, 2014 at 05:44:35PM +0200, Peter Zijlstra wrote:
+> >
+> > Ah, yes, so I'll defer to Oleg and Linus to explain that one. As per the
+> > name: smp_mb__before_spinlock() should of course imply a full barrier.
+>
+> How about if I queue a name change to smp_wmb__before_spinlock()?
 
-Well, I think that much should be obvious.  What's not obvious is
-whether that is considered success or error (what is the return code?)
-I suspect and expect success return if the regset type is known, and
-error otherwise.  So that could be used as a way to probe for support
-for a given regset without using stack or heap space, if it ever matters.
-The kernel never reads/writes beyond iov.len, so better say that, and
-then it automatically gets the 0 case handled too, right?
+I agree, this is more accurate, simply because it describes what it
+actually does.
 
->> I'm not sure I understood what you're saying correctly, though.  Specifically,
->> I don't know whether the buffer's length must really be shorter than the
->> size of the NT_XXX_TYPE regset.
-> 
-> No, it does not have to. From the code snippet below (ptrace_regset function)
-> the buffer length has to be multiple of regset->size for the given NT_XXX_TYPE
-> upto the max regset size for the user to see any valid data.
+But just in case, as for try_to_wake_up() it does not actually need
+wmb() between "CONDITION = T" and "task->state = RUNNING". It would
+be fine if these 2 STORE's are re-ordered, we can rely on rq->lock.
 
-Ah, I guess one could call it a bug.  If the passed in
-len is bigger than the whole register set size, then there seems
-to be no point in validating whether the length is multiple of
-a single register's size.  That unnecessarily prevents coming up
-with a register set in the future that has registers of
-different sizes...
+What it actually needs is a barrier between "CONDITION = T" and
+"task->state & state" check. But since we do not have a store-load
+barrier, wmb() was added to ensure that "CONDITION = T" can't leak
+into the critical section.
 
-But given that that's how things are today, I suppose we should
-document it...
+But it seems that set_tlb_flush_pending() already assumes that it
+acts as wmb(), so probably smp_wmb__before_spinlock() is fine.
 
- The problem what I
-> faced was when you use any iovec structure with the length parameter uninitialized,
-> the kernel simply ignores and does not return anything.
-
-Ah.  Well, saying "does not return anything" is quite confusing.  It does
-return something -- -EINVAL.
-
-> 
->         if (!regset || (kiov->iov_len % regset->size) != 0)
->                 return -EINVAL;
-
->  
->>
->>> The current documentation is bit misleading and does not explicitly
->>> specify that iov.len need to be initialized failing which kernel
->>> may just ignore the ptrace request and never read from/write into
->>> the user specified buffer.
->>
->> You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
->> then the kernel returns _success_, but actually doesn't fill the
->> buffer?  That sounds like a bug to me.
-> 
-> No, I am not saying that. The kernel takes care of that situation by capping
-> the length to regset size of the NT_XXX_TYPE.
-> 
->  kiov->iov_len = min(kiov->iov_len,
->                             (__kernel_size_t) (regset->n * regset->size));
-> 
-> 
-
-OK, then this is what I suggest instead:
-
-   * This interface usage is as follows:
- - *      struct iovec iov = { buf, len};
- + *      struct iovec iov = { buf, len };
-   *
-   *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
-   *
-   * On the successful completion, iov.len will be updated by the kernel,
- - * specifying how much the kernel has written/read to/from the user's iov.buf.
- + * On entry, iov describes the buffer's address and length.  The buffer's
- + * length must be a multiple of the size of a single register in the register set.
- + * The kernel never reads or writes more than iov.len, and caps the buffer
- + * length to the register set's size.  In other words, the kernel reads or
- + * writes min(iov.len, regset size).
- + * On successful completion, iov.len is updated by the kernel, specifying how
- + * much the kernel has read from / written to the user's iov.buf.
-
-> Shall I resend the patch with the your proposed changes and your "Signed-off-by" and
-> moving myself as "Reported-by" ?
-
-No idea of the actual policy to follow.  Feel free to do that if that's the
-standard procedure.
-
--- 
-Pedro Alves
+Oleg.
 
