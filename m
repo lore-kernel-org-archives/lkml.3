@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaEMTAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 15:00:44 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37646 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193AbaEMTAa (ORCPT
+	id S1754529AbaEMTBB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 15:01:01 -0400
+Received: from BERING.ISR.CS.CMU.EDU ([128.2.209.223]:41646 "EHLO
+	bering.isr.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485AbaEMTAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 15:00:30 -0400
-Date: Tue, 13 May 2014 12:00:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 08/45] torture: Rename RCU_KMAKE_ARG to
- TORTURE_KMAKE_ARG
-Message-ID: <20140513190022.GN18164@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-8-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507212320.GD27924@cloud>
+	Tue, 13 May 2014 15:00:51 -0400
+X-Greylist: delayed 2657 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 15:00:51 EDT
+Date: Tue, 13 May 2014 14:16:30 -0400
+From: Jan Harkes <jaharkes@cs.cmu.edu>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] FS/CODA: replace printk by pr_foo()
+Message-ID: <20140513181629.GA24191@cs.cmu.edu>
+Mail-Followup-To: Fabian Frederick <fabf@skynet.be>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	akpm <akpm@linux-foundation.org>
+References: <20140513184909.e5ccec32a70c2722c43c1d1e@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140507212320.GD27924@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051319-6688-0000-0000-000001C954AF
+In-Reply-To: <20140513184909.e5ccec32a70c2722c43c1d1e@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 02:23:20PM -0700, josh@joshtriplett.org wrote:
-> On Mon, Apr 28, 2014 at 05:24:56PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit makes the torture scripts a bit more RCU-independent.
+On Tue, May 13, 2014 at 06:49:09PM +0200, Fabian Frederick wrote:
+> No level printk converted to pr_warn or pr_info
 > 
-> You've also dropped unnecessary "export" calls; please document that in
-> the commit message.  With that change:
+> Cc: Jan Harkes <jaharkes@cs.cmu.edu>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
 
-Good catch, done!
+Ack, those are nice cleanups for those ugly printk's. Looks like it will
+shave off a few KB of memory too by making the strings shorter.
 
-							Thanx, Paul
+Jan
 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> > ---
-> >  tools/testing/selftests/rcutorture/bin/kvm-build.sh | 2 +-
-> >  tools/testing/selftests/rcutorture/bin/kvm.sh       | 6 +++---
-> >  2 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm-build.sh b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> > index d8e68a5e4411..e838c775f709 100755
-> > --- a/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> > +++ b/tools/testing/selftests/rcutorture/bin/kvm-build.sh
-> > @@ -60,7 +60,7 @@ then
-> >  	exit 2
-> >  fi
-> >  ncpus=`cpus2use.sh`
-> > -make O=$builddir -j$ncpus $RCU_KMAKE_ARG > $builddir/Make.out 2>&1
-> > +make O=$builddir -j$ncpus $TORTURE_KMAKE_ARG > $builddir/Make.out 2>&1
-> >  retval=$?
-> >  if test $retval -ne 0 || grep "rcu[^/]*": < $builddir/Make.out | egrep -q "Stop|Error|error:|warning:" || egrep -q "Stop|Error|error:" < $builddir/Make.out
-> >  then
-> > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > index 59945b7793d9..04ad1f980dfe 100644
-> > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-> > @@ -40,7 +40,7 @@ KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
-> >  PATH=${KVM}/bin:$PATH; export PATH
-> >  TORTURE_DEFCONFIG=defconfig
-> >  TORTURE_INITRD="$KVM/initrd"; export TORTURE_INITRD
-> > -RCU_KMAKE_ARG=""; export RCU_KMAKE_ARG
-> > +TORTURE_KMAKE_ARG=""
-> >  TORTURE_SUITE=rcu
-> >  resdir=""
-> >  configs=""
-> > @@ -118,7 +118,7 @@ do
-> >  		;;
-> >  	--kmake-arg)
-> >  		checkarg --kmake-arg "(kernel make arguments)" $# "$2" '.*' '^error$'
-> > -		RCU_KMAKE_ARG="$2"; export RCU_KMAKE_ARG
-> > +		TORTURE_KMAKE_ARG="$2"
-> >  		shift
-> >  		;;
-> >  	--kversion)
-> > @@ -376,7 +376,7 @@ then
-> >  	echo PATH="$PATH; export PATH"
-> >  	echo RCU_BUILDONLY="$RCU_BUILDONLY; export RCU_BUILDONLY"
-> >  	echo TORTURE_INITRD="$TORTURE_INITRD; export TORTURE_INITRD"
-> > -	echo RCU_KMAKE_ARG="$RCU_KMAKE_ARG; export RCU_KMAKE_ARG"
-> > +	echo TORTURE_KMAKE_ARG="$TORTURE_KMAKE_ARG; export TORTURE_KMAKE_ARG"
-> >  	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
-> >  	echo RCU_QEMU_INTERACTIVE="$RCU_QEMU_INTERACTIVE; export RCU_QEMU_INTERACTIVE"
-> >  	echo RCU_QEMU_MAC="$RCU_QEMU_MAC; export RCU_QEMU_MAC"
-> > -- 
-> > 1.8.1.5
-> > 
-> 
-
+>  fs/coda/cnode.c      |  4 ++--
+>  fs/coda/coda_linux.h |  2 +-
+>  fs/coda/dir.c        | 12 ++++++------
+>  fs/coda/inode.c      | 29 +++++++++++++++--------------
+>  fs/coda/psdev.c      | 34 +++++++++++++++++-----------------
+>  fs/coda/upcall.c     | 14 +++++++-------
+>  6 files changed, 48 insertions(+), 47 deletions(-)
