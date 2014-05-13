@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760475AbaEMK0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:26:03 -0400
+	id S933442AbaEMKLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:11:20 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933406AbaEMKLV (ORCPT
+	by vger.kernel.org with ESMTP id S933406AbaEMKLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:21 -0400
+	Tue, 13 May 2014 06:11:14 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 147/182] Revert "net: mvneta: fix usage as a module on RGMII configurations"
-Date: Tue, 13 May 2014 11:28:19 +0200
-Message-Id: <03dc13b2cb550a79c91c052e245007a9fccf6373.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "J. Bruce Fields" <bfields@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 159/182] locks: allow __break_lease to sleep even when break_time is 0
+Date: Tue, 13 May 2014 11:28:31 +0200
+Message-Id: <3052c8d992802acd99c91e90ec5287753775d2b9.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,122 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Jeff Layton <jlayton@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit cc6ca3023f2c2bbcd062e9d4cf6afc2ba2821ada upstream.
+commit 4991a628a789dc5954e98e79476d9808812292ec upstream.
 
-This reverts commit e3a8786c10e75903f1269474e21fe8cb49c3a670. While
-this commit allows to use the mvneta driver as a module on some
-configurations, it breaks other configurations even if mvneta is used
-built-in.
+A fl->fl_break_time of 0 has a special meaning to the lease break code
+that basically means "never break the lease". knfsd uses this to ensure
+that leases don't disappear out from under it.
 
-This breakage is due to the fact that on some RGMII platforms, the PCS
-bit has to be set, and on some other platforms, it has to be
-cleared. At the moment, we lack informations to know exactly the
-significance of this bit (the datasheet only says "enables PCS"), and
-so we can't produce a patch that will work on all platforms at this
-point. And since this change is breaking the network completely for
-many users, it's much better to revert it for now. We'll come back
-later with a proper fix that takes into account all platforms.
+Unfortunately, the code in __break_lease can end up passing this value
+to wait_event_interruptible as a timeout, which prevents it from going
+to sleep at all. This causes __break_lease to spin in a tight loop and
+causes soft lockups.
 
-Basically:
+Fix this by ensuring that we pass a minimum value of 1 as a timeout
+instead.
 
- * Armada XP GP is configured as RGMII-ID, and needs the PCS bit to be
-   set.
- * Armada 370 Mirabox is configured as RGMII-ID, and needs the PCS bit
-   to be cleared.
-
-And at the moment, we don't know how to make the distinction between
-those two cases. One hint is that the Armada XP GP appears in fact to
-be using a QSGMII connection with the PHY (Quad-SGMII), but
-configuring it as SGMII doesn't work, while RGMII-ID works. This needs
-more investigation, but in the mean time, let's unbreak the network
-for all those users.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Reported-by: Arnaud Ebalard <arno@natisbad.org>
-Reported-by: Alexander Reuter <Alexander.Reuter@gmx.net>
-Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=73401
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 41 ++++++++++++++++++++++++++++-------
- 1 file changed, 33 insertions(+), 8 deletions(-)
+ fs/locks.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index 71d9cad02704..5cdd2b2f18c5 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -88,9 +88,8 @@
- #define      MVNETA_TX_IN_PRGRS                  BIT(1)
- #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
- #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
--#define MVNETA_SERDES_CFG			 0x24A0
-+#define MVNETA_SGMII_SERDES_CFG			 0x24A0
- #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
--#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
- #define MVNETA_TYPE_PRIO                         0x24bc
- #define      MVNETA_FORCE_UNI                    BIT(21)
- #define MVNETA_TXQ_CMD_1                         0x24e4
-@@ -666,6 +665,35 @@ static void mvneta_rxq_bm_disable(struct mvneta_port *pp,
- 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
- }
+diff --git a/fs/locks.c b/fs/locks.c
+index b27a3005d78d..ad95fbd20f8a 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1359,11 +1359,10 @@ int __break_lease(struct inode *inode, unsigned int mode)
  
-+
-+
-+/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
-+static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
-+{
-+	u32  val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+
-+	if (enable)
-+		val |= MVNETA_GMAC2_PORT_RGMII;
-+	else
-+		val &= ~MVNETA_GMAC2_PORT_RGMII;
-+
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
-+}
-+
-+/* Config SGMII port */
-+static void mvneta_port_sgmii_config(struct mvneta_port *pp)
-+{
-+	u32 val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
-+
-+	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
-+}
-+
- /* Start the Ethernet port RX and TX activity */
- static void mvneta_port_up(struct mvneta_port *pp)
- {
-@@ -2695,15 +2723,12 @@ static void mvneta_port_power_up(struct mvneta_port *pp, int phy_mode)
- 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
- 
- 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
--	else
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
-+		mvneta_port_sgmii_config(pp);
- 
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--
--	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
-+	mvneta_gmac_rgmii_set(pp, 1);
- 
- 	/* Cancel Port Reset */
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
- 	val &= ~MVNETA_GMAC2_PORT_RESET;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
- 
+ restart:
+ 	break_time = flock->fl_break_time;
+-	if (break_time != 0) {
++	if (break_time != 0)
+ 		break_time -= jiffies;
+-		if (break_time == 0)
+-			break_time++;
+-	}
++	if (break_time == 0)
++		break_time++;
+ 	locks_insert_block(flock, new_fl);
+ 	spin_unlock(&inode->i_lock);
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
 -- 
 1.9.3
 
