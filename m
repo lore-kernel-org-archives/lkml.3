@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808AbaEMKQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:16:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933624AbaEMKLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:11:44 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 137/182] s390/chsc: fix SEI usage on old FW levels
-Date: Tue, 13 May 2014 11:28:09 +0200
-Message-Id: <dde7970471c5187ecc3f7dcadfe33020413e636d.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	id S933824AbaEMKRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:17:00 -0400
+Received: from smtp.ispras.ru ([83.149.199.79]:55559 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932616AbaEMKQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:16:58 -0400
+Message-ID: <5371F135.7040409@ispras.ru>
+Date: Tue, 13 May 2014 14:17:25 +0400
+From: Andrey Tsyvarev <tsyvarev@ispras.ru>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>
+Subject: Re: [PATCH] ext4: Do not destroy ext4_groupinfo_caches if ext4_mb_init()
+ fails
+References: <1399883039-2978-1-git-send-email-tsyvarev@ispras.ru> <alpine.LFD.2.00.1405121707120.8008@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1405121707120.8008@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+12.05.2014 19:08, Lukáš Czerner пишет:
+> On Mon, 12 May 2014, Andrey Tsyvarev wrote:
+>
+>> Date: Mon, 12 May 2014 12:23:59 +0400
+>> From: Andrey Tsyvarev<tsyvarev@ispras.ru>
+>> To: Theodore Ts'o<tytso@mit.edu>
+>> Cc: Andrey Tsyvarev<tsyvarev@ispras.ru>,
+>>      Andreas Dilger<adilger.kernel@dilger.ca>,linux-ext4@vger.kernel.org,
+>>      linux-kernel@vger.kernel.org, Alexey Khoroshilov<khoroshilov@ispras.ru>
+>> Subject: [PATCH] ext4: Do not destroy ext4_groupinfo_caches if ext4_mb_init()
+>>      fails
+>>
+>> Caches from 'ext4_groupinfo_caches' may be in use by other mounts, which have already existed.
+>> So, it is incorrect to destroy them when newly requested mount fails.
+>>
+>> Found by Linux File System Verification project (linuxtesting.org).
+> Makes sense, thanks! Can you please share the test case which
+> triggered this ? It might be worth including in xfstests.
 
-===============
+Actually it was triggered by xfstests themselves but run with fault simulation.
+The method of fault simulation is under development/evaluation now, we expect to publish a paper describing it in the near future.
 
-commit 06cd7a874ec6e09d151aeb1fa8600e14f1ff89f6 upstream.
+BUG_ON() in get_groupinfo_cache() was firstly triggered by test generic/003, but actually it could be any other test, which uses a scratch device: xftests itself requires test device(TEST_DEV) mounted, so a fault simulated while mount scratch device causes the problem described.
 
-Using a notification type mask for the store event information chsc
-is unsupported on some firmware levels. Retry SEI with that mask set
-to zero (which is the old way of requesting only channel subsystem
-related events).
 
-Reported-and-tested-by: Stefan Haberland <stefan.haberland@de.ibm.com>
-Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/s390/cio/chsc.c | 22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+> Reviewed-by: Lukas Czerner<lczerner@redhat.com>
+>
+>> Signed-off-by: Andrey Tsyvarev<tsyvarev@ispras.ru>
+>> ---
+>>   fs/ext4/mballoc.c | 4 +---
+>>   1 file changed, 1 insertion(+), 3 deletions(-)
+>>
+>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+>> index 04a5c75..becea1d 100644
+>> --- a/fs/ext4/mballoc.c
+>> +++ b/fs/ext4/mballoc.c
+>> @@ -2607,7 +2607,7 @@ int ext4_mb_init(struct super_block *sb)
+>>   	sbi->s_locality_groups = alloc_percpu(struct ext4_locality_group);
+>>   	if (sbi->s_locality_groups == NULL) {
+>>   		ret = -ENOMEM;
+>> -		goto out_free_groupinfo_slab;
+>> +		goto out;
+>>   	}
+>>   	for_each_possible_cpu(i) {
+>>   		struct ext4_locality_group *lg;
+>> @@ -2632,8 +2632,6 @@ int ext4_mb_init(struct super_block *sb)
+>>   out_free_locality_groups:
+>>   	free_percpu(sbi->s_locality_groups);
+>>   	sbi->s_locality_groups = NULL;
+>> -out_free_groupinfo_slab:
+>> -	ext4_groupinfo_destroy_slabs();
+>>   out:
+>>   	kfree(sbi->s_mb_offsets);
+>>   	sbi->s_mb_offsets = NULL;
+>>
 
-diff --git a/drivers/s390/cio/chsc.c b/drivers/s390/cio/chsc.c
-index 13299f902676..ec0951a788fc 100644
---- a/drivers/s390/cio/chsc.c
-+++ b/drivers/s390/cio/chsc.c
-@@ -560,18 +560,27 @@ static void chsc_process_sei_nt0(struct chsc_sei_nt0_area *sei_area)
- 
- static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
- {
--	do {
-+	static int ntsm_unsupported;
-+
-+	while (true) {
- 		memset(sei, 0, sizeof(*sei));
- 		sei->request.length = 0x0010;
- 		sei->request.code = 0x000e;
--		sei->ntsm = ntsm;
-+		if (!ntsm_unsupported)
-+			sei->ntsm = ntsm;
- 
- 		if (chsc(sei))
- 			break;
- 
- 		if (sei->response.code != 0x0001) {
--			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
--				      sei->response.code);
-+			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x, ntsm=%llx)\n",
-+				      sei->response.code, sei->ntsm);
-+
-+			if (sei->response.code == 3 && sei->ntsm) {
-+				/* Fallback for old firmware. */
-+				ntsm_unsupported = 1;
-+				continue;
-+			}
- 			break;
- 		}
- 
-@@ -587,7 +596,10 @@ static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
- 			CIO_CRW_EVENT(2, "chsc: unhandled nt: %d\n", sei->nt);
- 			break;
- 		}
--	} while (sei->u.nt0_area.flags & 0x80);
-+
-+		if (!(sei->u.nt0_area.flags & 0x80))
-+			break;
-+	}
- }
- 
- /*
--- 
-1.9.3
+--
+Andrey Tsyvarev
+Linux Verification Center, ISPRAS
 
