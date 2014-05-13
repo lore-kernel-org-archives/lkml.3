@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaEMQ4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:56:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059AbaEMQ4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:56:44 -0400
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Jones <drjones@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH] xen/x86: set panic notifier priority to minimum
-Date: Tue, 13 May 2014 18:56:25 +0200
-Message-Id: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
+	id S1752350AbaEMQ6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:58:12 -0400
+Received: from yotta.elopez.com.ar ([31.220.24.173]:58577 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaEMQ57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 12:57:59 -0400
+Message-ID: <53724F10.8030607@elopez.com.ar>
+Date: Tue, 13 May 2014 13:57:52 -0300
+From: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robh@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 3/7] clk: sunxi: avoid double DT matching
+References: <1399940993-1773-1-git-send-email-robherring2@gmail.com>	<1399940993-1773-4-git-send-email-robherring2@gmail.com> <CAL_JsqL0wWi0Pz6NirzEVWeHKqrRiGB6Q+9JYp6ew5KTeeY0dQ@mail.gmail.com>
+In-Reply-To: <CAL_JsqL0wWi0Pz6NirzEVWeHKqrRiGB6Q+9JYp6ew5KTeeY0dQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Execution is not going to continue after telling Xen about the crash.
-Let other panic notifiers run by postponing the final hypercall as much
-as possible.
+Hi Rob,
 
-Signed-off-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
----
- arch/x86/xen/enlighten.c | 1 +
- 1 file changed, 1 insertion(+)
+For 3/7 (with the mentioned fix) and 4/7 my Cubietruck still boots, so
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c34bfc4..f17b292 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1339,6 +1339,7 @@ xen_panic_event(struct notifier_block *this, unsigned long event, void *ptr)
- 
- static struct notifier_block xen_panic_block = {
- 	.notifier_call= xen_panic_event,
-+	.priority = INT_MIN
- };
- 
- int xen_panic_handler_init(void)
--- 
-1.9.0
+Acked-by: Emilio López <emilio@elopez.com.ar>
+Tested-by: Emilio López <emilio@elopez.com.ar>
 
+El 13/05/14 12:12, Rob Herring escribió:
+> On Mon, May 12, 2014 at 7:29 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> Use for_each_matching_node_and_match instead of for_each_matching_node plus
+>> of_match_node to avoid searching the DT twice for each node.
+>>
+>> The sunxi DT scanning code should really be re-worked rather than have
+>> its own private matching infrastructure. It is working around needing a
+>> function pointer and a data pointer for each compatible match.
+>>
+>> Signed-off-by: Rob Herring <robh@kernel.org>
+>> Cc: "Emilio López" <emilio@elopez.com.ar>
+>> Cc: Mike Turquette <mturquette@linaro.org>
+>> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Cheers,
+
+Emilio
