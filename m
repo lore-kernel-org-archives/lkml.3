@@ -1,129 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760583AbaEMLKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:10:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39702 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759972AbaEMLKB (ORCPT
+	id S1760840AbaEMLKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:10:21 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:64235 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760593AbaEMLKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:10:01 -0400
-Date: Tue, 13 May 2014 13:09:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
- operations when discarding buffers
-Message-ID: <20140513110951.GB30445@twins.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-18-git-send-email-mgorman@suse.de>
+	Tue, 13 May 2014 07:10:19 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1043,1389715200"; 
+   d="scan'208";a="30455860"
+Message-ID: <5371EF7A.7060908@cn.fujitsu.com>
+Date: Tue, 13 May 2014 19:10:02 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cKagJxsNNshY2zoa"
-Content-Disposition: inline
-In-Reply-To: <1399974350-11089-18-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf,tools: Remove usage of trace_sched_wakeup(.success)
+References: <20140512181946.GG13467@laptop.programming.kicks-ass.net> <20140513072208.GB7980@gmail.com> <5371BCF8.7030708@cn.fujitsu.com> <20140513100333.GW30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140513100333.GW30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/13/2014 07:03 PM, Peter Zijlstra wrote:
+> On Tue, May 13, 2014 at 03:34:32PM +0900, Dongsheng Yang wrote:
+>> On 05/13/2014 04:22 PM, Ingo Molnar wrote:
+>>> * Peter Zijlstra <peterz@infradead.org> wrote:
+>>>
+>>>> trace_sched_wakeup(.success) is a dead argument and has been for ages,
+>>> Always 0, or random value?
+>> Hi Ingo,
+>>
+>> It is always 1 currently.
+>>
+>> Peter believe that .success is not useful and I pointed that perf sched
+>> latency
+>> is using it now. Then he post this patch to remove the usage here.
+>>
+>> Please go to the following link for more about this issue.
+> It is _not_ usable. You're proposing to abuse the existing parameter. A
+> wakeup doing an enqueue or not has nothing _WHAT_SO_EVER_ to do with
+> success.
+>
+> Now what I think you wanted to do is make it easier to match
+> trace_sched_switch() statements with trace_sched_wakeup() statements.
+> And since you only get the trace_sched_switch() on dequeue, you want to
+> know which trace_sched_wakeup() calls did an enqueue.
 
---cKagJxsNNshY2zoa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ha, yes, indeed. In perf sched latency, we need to know the timestamp
+when a task enqueue and then we can calculate the delay time.
+So I want to take the use of success parameter in trace_sched_wakeup()
+to indicate that *this* wakeup did an enqueue.
 
-On Tue, May 13, 2014 at 10:45:48AM +0100, Mel Gorman wrote:
-> Discarding buffers uses a bunch of atomic operations when discarding buff=
-ers
-> because ...... I can't think of a reason. Use a cmpxchg loop to clear all=
- the
-> necessary flags. In most (all?) cases this will be a single atomic operat=
-ions.
->=20
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  fs/buffer.c                 | 14 +++++++++-----
->  include/linux/buffer_head.h |  5 +++++
->  2 files changed, 14 insertions(+), 5 deletions(-)
->=20
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 9ddb9fc..e80012d 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1485,14 +1485,18 @@ EXPORT_SYMBOL(set_bh_page);
->   */
->  static void discard_buffer(struct buffer_head * bh)
->  {
-> +	unsigned long b_state, b_state_old;
-> +
->  	lock_buffer(bh);
->  	clear_buffer_dirty(bh);
->  	bh->b_bdev =3D NULL;
-> -	clear_buffer_mapped(bh);
-> -	clear_buffer_req(bh);
-> -	clear_buffer_new(bh);
-> -	clear_buffer_delay(bh);
-> -	clear_buffer_unwritten(bh);
-> +	b_state =3D bh->b_state;
-> +	for (;;) {
-> +		b_state_old =3D cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAG=
-S_DISCARD));
-> +		if (b_state_old =3D=3D b_state)
-> +			break;
-> +		b_state =3D b_state_old;
-> +	}
->  	unlock_buffer(bh);
->  }
+But now I think it is okey if you really mind adding more tracepoints in
+scheduler. And I posted a patch after your patch in this thread to make
+perf sched latency work well.
+>
+> But that's completely and utterly unrelated to success.
 
-So.. I'm soon going to introduce atomic_{or,and}() and
-atomic64_{or,and}() across the board, but of course this isn't an
-atomic_long_t but a regular unsigned long.
-
-Its a bit unfortunate we have this discrepancy with types vs atomic ops,
-there's:
-
-  cmpxchg, xchg -- mostly available for all 1,2,3,4 (and 8 where
-  appropriate) byte values.
-
-  bitops -- operate on unsigned long *
-
-  atomic* -- operate on atomic_*t
-
-
-So while ideally we'd be able to use the unconditional atomic and
-operation which is available on a lot of architectures, we'll be stuck
-with a cmpxchg loop instead :/
-
-*sigh*
-
-Anyway, nothing wrong with this patch, however, you could, if you really
-wanted to push things, also include BH_Lock in that clear :-)
-
---cKagJxsNNshY2zoa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTcf1/AAoJEHZH4aRLwOS6e6MQAJeE8ZLuMHpPAJXrw8YA3XXT
-bFlz7fKAz4jiL8bmYX5/i291Uj2y1QBN573RtI8hl5ttdVo7UK3ugWVjEFeGxphA
-OGq6REJMxEZMDFcXGuXhelOvD5Sds92/WkcvLaGTTk6ua/0aS+fpzYZ7nyRrMp1w
-+qZtZvcFhQxj0WxZPbyhbtjdampbycXbdeNW8p5or5pXNosvRzeRS3LP9GTABDVF
-fqQYhDk1RmMN59qywPIiFR3Q9yRr7XkyQ92Xr+K2rnXgioXi0won3GYS/dLso7Oe
-WAc8SkoLec0tVyIl71JGhvpKkS+/osWyOpJtZ3A6dpe9Vy0uzp/XT9ck1ZG2QtmY
-kk4ylu9uBAdhJG+KDAVBQqqzbyI2IzFrVq4jzL27vwAsCd5Jw26o3LB0ZI9befG/
-elmuD+x7qPHlKYFocYHvn+YbjsTzBC4mp34gFHNczsVPAWsy5vDOlItfIwF91saK
-OieEQPZo/ME5xtxycuOxAXUGzc2EIwswDaFMCTMC1B2IXfMfaxDm4oe4986zYc1b
-6SEeBMweaKdc0d0oOaB4eIxdzQDNKz/TAgBcVlxfKIHy9fOCT+1dGWmpsyJM0nzL
-jugiYOfMUg/kPy6tIvpGScRMNxvR+sDOtmBiM0c1Eolzz42TBiN1+PcArilAgRuB
-TheCrnXlIAKag8kWvfdp
-=Tnak
------END PGP SIGNATURE-----
-
---cKagJxsNNshY2zoa--
