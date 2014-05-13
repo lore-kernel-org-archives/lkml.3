@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161034AbaEMWNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:13:51 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:34803 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144AbaEMWFO (ORCPT
+	id S1161042AbaEMWOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:14:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58752 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153AbaEMWNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:05:14 -0400
-From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@ghostprotocols.net, dsahern@gmail.com,
-        mingo@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/34] kbuild: Introduce KBUILD_AUTOCONF variable for auto.conf include
-Date: Wed, 14 May 2014 00:02:56 +0200
-Message-Id: <1400018609-20486-2-git-send-email-alexis.berlemont@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
-References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
+	Tue, 13 May 2014 18:13:15 -0400
+Date: Tue, 13 May 2014 15:13:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v1 01/11] ARM: amba: Add Qualcomm vendor ID.
+Message-ID: <20140513221313.GI20486@codeaurora.org>
+References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <1398759542-13017-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <CACRpkdZyEAkJUGC5x6CY65-g97jfyg-TMDoe8JxDMexVx5usSA@mail.gmail.com>
+ <5371E8B7.8000103@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5371E8B7.8000103@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On 05/13, Srinivas Kandagatla wrote:
+> Thanks Linus W,
+> 
+> On 13/05/14 08:16, Linus Walleij wrote:
+> >On Tue, Apr 29, 2014 at 10:19 AM,  <srinivas.kandagatla@linaro.org> wrote:
+> >
+> >>From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> >>
+> >>This patch adds Qualcomm amba vendor Id to the list. This ID is used in mmci
+> >>driver.
+> >>
+> >>Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> >(...)
+> >>+       AMBA_VENDOR_QCOM = 0x51,
+> >
+> >Yeah it's a "Q", like 0x41 is "A" for ARM. You could as well mention
+> >this in the commit message.
+> >
+> Sounds good, I will fix it in next version and send it to Russell's
+> patch tracker.
+> 
 
-Introducing KBUILD_AUTOCONF variable for auto.conf include
-allowing to specify custom auto.conf file.
+Please add a note that this id is fake in the commit text or in
+the code as well.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
----
- scripts/Makefile.build | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 003bc26..7602c01 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -31,7 +31,8 @@ subdir-asflags-y :=
- subdir-ccflags-y :=
- 
- # Read auto.conf if it exists, otherwise ignore
---include include/config/auto.conf
-+kbuild-autoconf := $(if $(KBUILD_AUTOCONF),$(KBUILD_AUTOCONF),include/config/auto.conf)
-+-include $(kbuild-autoconf)
- 
- include scripts/Kbuild.include
- 
 -- 
-1.9.2
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
