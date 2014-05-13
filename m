@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250AbaEMJa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:30:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33225 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760159AbaEMJ3E (ORCPT
+	id S1760429AbaEMJc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:32:56 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:40468 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759394AbaEMJcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:29:04 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 180/182] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
-Date: Tue, 13 May 2014 11:28:52 +0200
-Message-Id: <56cc256c13ce02caf24d80b9f472dc3a51532676.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 05:32:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	<1399971749-4004-1-git-send-email-lftan@altera.com>
+	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
+Date: Tue, 13 May 2014 17:32:52 +0800
+X-Google-Sender-Auth: ANISpoCU41T_p36pzbYiY99_XRM
+Message-ID: <CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>
+Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
+From: Ley Foon Tan <lftan@altera.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+On Tue, May 13, 2014 at 5:15 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> Hi,
+>
+> On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
+>> Use 64 bit time_t and clock_t as default. 32 bit users can provide
+>> an override to define these as "long" if needed.
+>>
+>> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+>> ---
+>>  include/uapi/asm-generic/posix_types.h | 14 ++++++++++++--
+>>  1 file changed, 12 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/uapi/asm-generic/posix_types.h b/include/uapi/asm-generic/posix_types.h
+>> index fe74fcc..3f0e613 100644
+>> --- a/include/uapi/asm-generic/posix_types.h
+>> +++ b/include/uapi/asm-generic/posix_types.h
+>> @@ -81,12 +81,22 @@ typedef struct {
+>>  #endif
+>>
+>>  /*
+>> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
+>> + * define these as "long" if needed.
+>> + */
+>> +#ifndef __kernel_time_t
+>> +typedef long long      __kernel_time_t;
+>> +#endif
+>> +
+>> +#ifndef __kernel_clock_t
+>> +typedef long long      __kernel_clock_t;
+>> +#endif
+>
+> I think having this as the first patch in the series will break
+> bisection for existing 32-bit arches. This needs to be done in such a
+> way that at no intermediate commit are __kernel_time_t or
+> __kernel_clock_t the wrong size for existing arches, e.g. by having a
+> first patch which makes the typedefs conditional but leaves them as
+> __kernel_long_t, and a final patch that changes the default after all
+> the arches have got their overrides in place.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Your suggestion is something as below?
 
-===============
+First patch:
+#ifndef __kernel_time_t
+typedef __kernel_long_t      __kernel_time_t;
+#endif
 
-commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
+Last patch:
+#ifndef __kernel_time_t
+typedef long long      __kernel_time_t;
+#endif
 
-We expect that all the Haswell series will need such quirks, sigh.
-
-The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
-with the same min/max issue.
-
-The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
-
-The X1 and T431s share a PnPID with the T540p, but the reported ranges are
-closer to those of the T440s.
-
-HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
-S1 Yoga and X1 are written by Benjamin Tissoires.
-
-Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
-X240, X1 uses the same touchpad as the T440.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/input/mouse/synaptics.c | 42 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
-
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index d8d49d10f9bb..5048210e798c 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		.driver_data = (int []){1232, 5710, 1156, 4696},
- 	},
- 	{
-+		/* Lenovo ThinkPad T431s */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		.driver_data = (int []){1024, 5112, 2024, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad L440 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
- 		/* Lenovo ThinkPad T540p */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		},
- 		.driver_data = (int []){1024, 5056, 2058, 4832},
- 	},
-+	{
-+		/* Lenovo ThinkPad L540 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
-+		/* Lenovo Yoga S1 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
-+					"ThinkPad S1 Yoga"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
-+		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION,
-+					"ThinkPad X1 Carbon 2nd"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
- #endif
- 	{ }
- };
--- 
-1.9.3
-
+Ley Foon
