@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779AbaEMJ77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:59:59 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60826 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760074AbaEMJ24 (ORCPT
+	id S932862AbaEMKAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:00:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38483 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758818AbaEMKAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:56 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/182] NFSv4: Fix a use-after-free problem in open()
-Date: Tue, 13 May 2014 11:26:48 +0200
-Message-Id: <c637626054eb5df8f5efa0abad438ab9ce64c933.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 06:00:20 -0400
+Date: Tue, 13 May 2014 12:00:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf,tools: Remove usage of trace_sched_wakeup(.success)
+Message-ID: <20140513100011.GV30445@twins.programming.kicks-ass.net>
+References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
+ <20140513072208.GB7980@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i7ycZtlzmcz6MFrW"
+Content-Disposition: inline
+In-Reply-To: <20140513072208.GB7980@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--i7ycZtlzmcz6MFrW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============
+On Tue, May 13, 2014 at 09:22:08AM +0200, Ingo Molnar wrote:
+>=20
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>=20
+> > trace_sched_wakeup(.success) is a dead argument and has been for ages,
+>=20
+> Always 0, or random value?
 
-commit e911b8158ee1def8153849b1641b736026b036e0 upstream.
+always true, we couldn't remove it because it would break userspace :-(
 
-If we interrupt the nfs4_wait_for_completion_rpc_task() call in
-nfs4_run_open_task(), then we don't prevent the RPC call from
-completing. So freeing up the opendata->f_attr.mdsthreshold
-in the error path in _nfs4_do_open() leads to a use-after-free
-when the XDR decoder tries to decode the mdsthreshold information
-from the server.
+--i7ycZtlzmcz6MFrW
+Content-Type: application/pgp-signature
 
-Fixes: 82be417aa37c0 (NFSv4.1 cache mdsthreshold values on OPEN)
-Tested-by: Steve Dickson <SteveD@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/nfs/nfs4proc.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index bcd42fbc04e7..40062e42c955 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1064,6 +1064,7 @@ static void nfs4_opendata_free(struct kref *kref)
- 	dput(p->dentry);
- 	nfs_sb_deactive(sb);
- 	nfs_fattr_free_names(&p->f_attr);
-+	kfree(p->f_attr.mdsthreshold);
- 	kfree(p);
- }
- 
-@@ -2236,10 +2237,12 @@ static int _nfs4_do_open(struct inode *dir,
- 		}
- 	}
- 
--	if (ctx_th && server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
--		opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
--		if (!opendata->f_attr.mdsthreshold)
--			goto err_free_label;
-+	if (server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
-+		if (!opendata->f_attr.mdsthreshold) {
-+			opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
-+			if (!opendata->f_attr.mdsthreshold)
-+				goto err_free_label;
-+		}
- 		opendata->o_arg.open_bitmap = &nfs4_pnfs_open_bitmap[0];
- 	}
- 	if (dentry->d_inode != NULL)
-@@ -2267,11 +2270,10 @@ static int _nfs4_do_open(struct inode *dir,
- 	if (opendata->file_created)
- 		*opened |= FILE_CREATED;
- 
--	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server))
-+	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server)) {
- 		*ctx_th = opendata->f_attr.mdsthreshold;
--	else
--		kfree(opendata->f_attr.mdsthreshold);
--	opendata->f_attr.mdsthreshold = NULL;
-+		opendata->f_attr.mdsthreshold = NULL;
-+	}
- 
- 	nfs4_label_free(olabel);
- 
-@@ -2281,7 +2283,6 @@ static int _nfs4_do_open(struct inode *dir,
- err_free_label:
- 	nfs4_label_free(olabel);
- err_opendata_put:
--	kfree(opendata->f_attr.mdsthreshold);
- 	nfs4_opendata_put(opendata);
- err_put_state_owner:
- 	nfs4_put_state_owner(sp);
--- 
-1.9.3
+iQIcBAEBAgAGBQJTce0rAAoJEHZH4aRLwOS6SiIQAJEVJwTljLaSqkSWwMXmqj7k
+WnFkrEwlkFr7ULaVqn/z+JYPVdVT++W7vd4enTfZJJfubqSXngSZH6vJ4mCXlgI8
+z/V8Zd0K9FlFbQqIa/2niDzmQIE+cUynG2VJWWDeoGpAs3B3IqtQPCzLhZmqaYre
+ui4rFTOtceGEZYWUjK7drVJQFrDSKVhjra5zEnGbXh3xuzPqF2TFHoRYAI6PAlCl
+T3Sv0CTbtJtl10Yw2nKgOfCSTVn7CiMtdowFyQ4zDhoXtl5oyCvSqmpKL6JmHuUe
+nGKuvEA/oV+ROJDZCUO4SXPtHJUvuyfA9mUeXv6s6JP1bT+vx8fpHoJKaiGx6r09
+JBFfxszRrooSzrsYMXhWHR1vLt0OJH91FSy2RzsLU+DFr5MT58U/gZidEn7dG8Zs
+7isUcyhFaBx2dmBPlnKlCSZf3nZYHkW0KYPy8RgLTozlEqKCQiEETKFITbrpFkiV
+zFTcLm43EMYNfJvAFnEJJrpdo3yQy6rFrID1+n5M1FtiHNMolnVyP2UtcRhljt5t
+41uc5oFuMoWsp1O6oUZY74bhWrVKkC6/YmWDYXgmKiscgPfXBB+822AnTkBZKkPE
+jzb+dXldK6Ja6BqvO1uHDAEZYN0P1g2Mc6qh6gNaqzxojQvHa89NG4a+1R/mjBtd
+f/L/CqO3YQYiNuNfPqk1
+=Ok2/
+-----END PGP SIGNATURE-----
 
+--i7ycZtlzmcz6MFrW--
