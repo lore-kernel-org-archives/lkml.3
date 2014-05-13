@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaEMRRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:17:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:27309 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751152AbaEMRRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:17:35 -0400
-Date: Tue, 13 May 2014 13:17:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.39-rt40
-Message-ID: <20140513131733.2916f75b@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753814AbaEMRSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:18:16 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:40608 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753670AbaEMRSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 13:18:03 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1044,1389744000"; 
+   d="scan'208";a="130746660"
+Message-ID: <537253C8.7000401@citrix.com>
+Date: Tue, 13 May 2014 18:18:00 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+CC: Andrew Jones <drjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen/x86: set panic notifier priority to minimum
+References: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13/05/14 17:56, Radim Krčmář wrote:
+> Execution is not going to continue after telling Xen about the crash.
+> Let other panic notifiers run by postponing the final hypercall as much
+> as possible.
 
-Dear RT Folks,
+I can't tell how important this fix is.
 
-I'm pleased to announce the 3.10.39-rt40 stable release.
+What notifiers does this allow to be run?  How important are they?
 
-
-This release is just an update to the new stable 3.10.39 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.10-rt
-  Head SHA1: 74e050830fb1d79bb8bfb4c752614b32d7f983f6
-
-
-Or to build 3.10.39-rt40 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.39.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.39-rt40.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
+David
 
