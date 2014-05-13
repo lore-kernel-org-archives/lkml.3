@@ -1,211 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964800AbaEMKcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:32:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55654 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933899AbaEMKbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:31:14 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <nsekhar@ti.com>, <joelf@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: [PATCH v2 2/5] ARM: edma: Get IP information from HW when booting with DT
-Date: Tue, 13 May 2014 13:30:29 +0300
-Message-ID: <1399977032-26469-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com>
+	id S933972AbaEMKct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:32:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40597 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932693AbaEMKcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:32:48 -0400
+Date: Tue, 13 May 2014 12:32:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in
+ build_sched_groups
+Message-ID: <20140513103244.GY30445@twins.programming.kicks-ass.net>
+References: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
+ <5371D8B5.3070701@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="P7peSLPSdcfcL2or"
+Content-Disposition: inline
+In-Reply-To: <5371D8B5.3070701@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From CCCFG register of eDMA3 we can get all the needed information for the
-driver about the IP:
-Number of channels: NUM_DMACH
-Number of regions: NUM_REGN
-Number of slots (PaRAM sets): NUM_PAENTRY
-Number of TC/EQ: NUM_EVQUE
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/common/edma.c | 128 ++++++++++++++++++++++++++++++-------------------
- 1 file changed, 79 insertions(+), 49 deletions(-)
+--P7peSLPSdcfcL2or
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index fade9ada81f8..1a98f3cd4cd9 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -102,7 +102,16 @@
- #define PARM_OFFSET(param_no)	(EDMA_PARM + ((param_no) << 5))
- 
- #define EDMA_DCHMAP	0x0100  /* 64 registers */
--#define CHMAP_EXIST	BIT(24)
-+
-+/* CCCFG register */
-+#define GET_NUM_DMACH(x)	(x & 0x7) /* bits 0-2 */
-+#define GET_NUM_QDMACH(x)	((x & 0x70) >> 4) /* bits 4-6 */
-+#define GET_NUM_INTCH(x)	((x & 0x700) >> 8) /* bits 8-10 */
-+#define GET_NUM_PAENTRY(x)	((x & 0x7000) >> 12) /* bits 12-14 */
-+#define GET_NUM_EVQUE(x)	((x & 0x70000) >> 16) /* bits 16-18 */
-+#define GET_NUM_REGN(x)		((x & 0x300000) >> 20) /* bits 20-21 */
-+#define CHMAP_EXIST		BIT(24)
-+#define MP_EXIST		BIT(25)
- 
- #define EDMA_MAX_DMACH           64
- #define EDMA_MAX_PARAMENTRY     512
-@@ -1415,6 +1424,68 @@ void edma_clear_event(unsigned channel)
- }
- EXPORT_SYMBOL(edma_clear_event);
- 
-+static int edma_setup_info_from_hw(struct device *dev,
-+				   struct edma_soc_info *pdata)
-+{
-+	int i;
-+	u32 value, cccfg, n_tc;
-+	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
-+
-+	/* Decode the eDMA3 configuration from CCCFG register */
-+	cccfg = edma_read(0, EDMA_CCCFG);
-+
-+	value = GET_NUM_DMACH(cccfg);
-+	pdata->n_channel = BIT(value + 1);
-+
-+	value = GET_NUM_REGN(cccfg);
-+	pdata->n_region = BIT(value);
-+
-+	value = GET_NUM_PAENTRY(cccfg);
-+	pdata->n_slot = BIT(value + 4);
-+
-+	value = GET_NUM_EVQUE(cccfg);
-+	n_tc = value + 1;
-+
-+	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
-+	dev_dbg(dev, "n_channel: %u\n", pdata->n_channel);
-+	dev_dbg(dev, "n_region: %u\n", pdata->n_region);
-+	dev_dbg(dev, "n_slot: %u\n", pdata->n_slot);
-+	dev_dbg(dev, "n_tc: %u\n", n_tc);
-+
-+	pdata->n_cc = 1;
-+
-+	queue_tc_map = devm_kzalloc(dev, (n_tc + 1) * sizeof(s8), GFP_KERNEL);
-+	if (!queue_tc_map)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < n_tc; i++) {
-+		queue_tc_map[i][0] = i;
-+		queue_tc_map[i][1] = i;
-+	}
-+	queue_tc_map[i][0] = -1;
-+	queue_tc_map[i][1] = -1;
-+
-+	pdata->queue_tc_mapping = queue_tc_map;
-+
-+	queue_priority_map = devm_kzalloc(dev, (n_tc + 1) * sizeof(s8),
-+					  GFP_KERNEL);
-+	if (!queue_priority_map)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < n_tc; i++) {
-+		queue_priority_map[i][0] = i;
-+		queue_priority_map[i][1] = i;
-+	}
-+	queue_priority_map[i][0] = -1;
-+	queue_priority_map[i][1] = -1;
-+
-+	pdata->queue_priority_mapping = queue_priority_map;
-+
-+	pdata->default_queue = 0;
-+
-+	return 0;
-+}
-+
- #if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
- 
- static int edma_of_read_u32_to_s16_array(const struct device_node *np,
-@@ -1483,63 +1554,16 @@ static int edma_of_parse_dt(struct device *dev,
- 			    struct device_node *node,
- 			    struct edma_soc_info *pdata)
- {
--	int ret = 0, i;
--	u32 value;
-+	int ret = 0;
- 	struct property *prop;
- 	size_t sz;
- 	struct edma_rsv_info *rsv_info;
--	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
--
--	ret = of_property_read_u32(node, "dma-channels", &value);
--	if (ret < 0)
--		return ret;
--	pdata->n_channel = value;
--
--	ret = of_property_read_u32(node, "ti,edma-regions", &value);
--	if (ret < 0)
--		return ret;
--	pdata->n_region = value;
--
--	ret = of_property_read_u32(node, "ti,edma-slots", &value);
--	if (ret < 0)
--		return ret;
--	pdata->n_slot = value;
--
--	pdata->n_cc = 1;
- 
- 	rsv_info = devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
- 	if (!rsv_info)
- 		return -ENOMEM;
- 	pdata->rsv = rsv_info;
- 
--	queue_tc_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
--	if (!queue_tc_map)
--		return -ENOMEM;
--
--	for (i = 0; i < 3; i++) {
--		queue_tc_map[i][0] = i;
--		queue_tc_map[i][1] = i;
--	}
--	queue_tc_map[i][0] = -1;
--	queue_tc_map[i][1] = -1;
--
--	pdata->queue_tc_mapping = queue_tc_map;
--
--	queue_priority_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
--	if (!queue_priority_map)
--		return -ENOMEM;
--
--	for (i = 0; i < 3; i++) {
--		queue_priority_map[i][0] = i;
--		queue_priority_map[i][1] = i;
--	}
--	queue_priority_map[i][0] = -1;
--	queue_priority_map[i][1] = -1;
--
--	pdata->queue_priority_mapping = queue_priority_map;
--
--	pdata->default_queue = 0;
--
- 	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
- 	if (prop)
- 		ret = edma_xbar_event_map(dev, node, pdata, sz);
-@@ -1655,6 +1679,12 @@ static int edma_probe(struct platform_device *pdev)
- 		if (IS_ERR(edmacc_regs_base[j]))
- 			return PTR_ERR(edmacc_regs_base[j]);
- 
-+		if (node) {
-+			/* Get eDMA3 configuration from IP */
-+			ret = edma_setup_info_from_hw(dev, info[j]);
-+			if (ret)
-+				return ret;
-+		}
- 		edma_cc[j] = devm_kzalloc(&pdev->dev, sizeof(struct edma),
- 					  GFP_KERNEL);
- 		if (!edma_cc[j])
--- 
-1.9.3
+On Tue, May 13, 2014 at 09:32:53AM +0100, Dietmar Eggemann wrote:
+> Hi Peter,
+>=20
+> On 30/04/14 14:39, Dietmar Eggemann wrote:
+> > From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+> >=20
+> > There is no need to zero struct sched_group member cpumask and struct
+> > sched_group_power member power since both structures are already alloca=
+ted
+> > as zeroed memory in __sdt_alloc().
+> >=20
+> > This patch has been tested with
+> > BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power=
+);
+> > in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
+> > CPU hotplug scenarios.
+> >=20
+> > Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> > ---
+> >  kernel/sched/core.c |    2 --
+> >  1 file changed, 2 deletions(-)
+> >=20
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 9cae286824bb..6bc51aebbf1b 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int c=
+pu)
+> >  			continue;
+> > =20
+> >  		group =3D get_group(i, sdd, &sg);
+> > -		cpumask_clear(sched_group_cpus(sg));
+> > -		sg->sgp->power =3D 0;
+> >  		cpumask_setall(sched_group_mask(sg));
+> > =20
+> >  		for_each_cpu(j, span) {
+> >=20
+>=20
+> I think this one slipped through the cracks. Could you have a look?
 
+Yeah, got stuck in the backlog :/
+
+Seems simple enough, queued it, we'll see if anything explodes ;-)
+
+--P7peSLPSdcfcL2or
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTcfTMAAoJEHZH4aRLwOS6iDYP/2+/Gsb5aq/98aIlW+UdEeoX
+9flnBY+PElSnxens7xkCa5Nj38Vu+SqnYUyoQ1Ja/GtOaHYFwjw7Z/CJIvIRjjh8
+THXU9KQXz4MMcoE1U9DKXNZTyH02947qvUnFxqvFS31MwjQqkTRVndTcFIAGa9W7
+d0+JTIBufmzY3jZYwQMkSi8HRmt2m2EUJy4/ktQBAbT54JxfjuikeT+DMXdmOvOP
+O7kYLusH8/MNWS8PecD6GUMtBeaQhLsvz1/sBZ2svn/RGX5LfNK0THKNxXjIqFxV
+z6TMQ8UzUK9mKvg+FzOiJ8Bl3upXMVKK5wJgfkgAejgyij1LGMzx2rHcY4prtE74
+XYJ7EhrTpYxvICAuFnJM6nX+THAmZhyyTfenT48UqdjLlD0Cb59lze9RY9cWKTcx
+AK0HvFzTT0bQXKHKbJrMNSVAAlS2vXWXR8065IA91W1f+U03BlXQriFnaLcCGLd2
+rvj0zsRPYjB8lUKFAdeNAVwxS6XP5DOls6XQUpwEfnH+qmRviEsNeKTJFy9qSFXW
+TBY1XT68xlQoWWsm/hvvhPk/kVEhkbKQvclfEi6Ahc7YKW6/llRtKrmuBBvscW2d
+uQSiegTXFuvvdh3pNaj6IQB+Bs8gOM1pH3F7bJBVp0tkVA8Br0s1lLh8C7Na3OBx
+UGaGZ0rwlvm8HfqSjKQA
+=nljD
+-----END PGP SIGNATURE-----
+
+--P7peSLPSdcfcL2or--
