@@ -1,74 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaEMAl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 20:41:58 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:59115 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaEMAl5 (ORCPT
+	id S1752353AbaEMAmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 20:42:17 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:41045 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021AbaEMAmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 20:41:57 -0400
-From: Derek Basehore <dbasehore@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Petr Mladek <pmladek@suse.cz>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Derek Basehore <dbasehore@chromium.org>
-Subject: [PATCH] Fix lockup on panic with lockdep
-Date: Mon, 12 May 2014 17:41:54 -0700
-Message-Id: <1399941714-20145-1-git-send-email-dbasehore@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	Mon, 12 May 2014 20:42:16 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 13 May 2014 09:44:10 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm, compaction: properly signal and act upon lock and
+ need_sched() contention
+Message-ID: <20140513004410.GA23803@js1304-P5Q-DELUXE>
+References: <20140508051747.GA9161@js1304-P5Q-DELUXE>
+ <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't call mutex_acquire at the beginning of console_unblank, we can run
-into a lockup on the logbuf_lock between console_unlock and printk during panic.
-What happens in console_unlock is:
+On Mon, May 12, 2014 at 04:15:11PM +0200, Vlastimil Babka wrote:
+> Compaction uses compact_checklock_irqsave() function to periodically check for
+> lock contention and need_resched() to either abort async compaction, or to
+> free the lock, schedule and retake the lock. When aborting, cc->contended is
+> set to signal the contended state to the caller. Two problems have been
+> identified in this mechanism.
+> 
+> First, compaction also calls directly cond_resched() in both scanners when no
+> lock is yet taken. This call either does not abort async compaction, or set
+> cc->contended appropriately. This patch introduces a new
+> compact_check_resched() function to achieve both.
+> 
+> Second, isolate_freepages() does not check if isolate_freepages_block()
+> aborted due to contention, and advances to the next pageblock. This violates
+> the principle of aborting on contention, and might result in pageblocks not
+> being scanned completely, since the scanning cursor is advanced. This patch
+> makes isolate_freepages_block() check the cc->contended flag and abort.
+> 
+> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+>  mm/compaction.c | 40 +++++++++++++++++++++++++++++++++-------
+>  1 file changed, 33 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 83ca6f9..b34ab7c 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -222,6 +222,27 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>  	return true;
+>  }
+>  
+> +/*
+> + * Similar to compact_checklock_irqsave() (see its comment) for places where
+> + * a zone lock is not concerned.
+> + *
+> + * Returns false when compaction should abort.
+> + */
+> +static inline bool compact_check_resched(struct compact_control *cc)
+> +{
+> +	/* async compaction aborts if contended */
+> +	if (need_resched()) {
+> +		if (cc->mode == MIGRATE_ASYNC) {
+> +			cc->contended = true;
+> +			return false;
+> +		}
+> +
+> +		cond_resched();
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  /* Returns true if the page is within a block suitable for migration to */
+>  static bool suitable_migration_target(struct page *page)
+>  {
+> @@ -491,11 +512,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			return 0;
+>  	}
+>  
+> -	if (cond_resched()) {
+> -		/* Async terminates prematurely on need_resched() */
+> -		if (cc->mode == MIGRATE_ASYNC)
+> -			return 0;
+> -	}
+> +	if (!compact_check_resched(cc))
+> +		return 0;
+>  
+>  	/* Time to isolate some pages for migration */
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+> @@ -718,9 +736,10 @@ static void isolate_freepages(struct zone *zone,
+>  		/*
+>  		 * This can iterate a massively long zone without finding any
+>  		 * suitable migration targets, so periodically check if we need
+> -		 * to schedule.
+> +		 * to schedule, or even abort async compaction.
+>  		 */
+> -		cond_resched();
+> +		if (!compact_check_resched(cc))
+> +			break;
+>  
+>  		if (!pfn_valid(block_start_pfn))
+>  			continue;
+> @@ -758,6 +777,13 @@ static void isolate_freepages(struct zone *zone,
+>  		 */
+>  		if (isolated)
+>  			cc->finished_update_free = true;
+> +
+> +		/*
+> +		 * isolate_freepages_block() might have aborted due to async
+> +		 * compaction being contended
+> +		 */
+> +		if (cc->contended)
+> +			break;
+>  	}
 
--locks logbuf_lock
--calls mutex_release
- -which calls printk
-  -which locks logbuf_lock
+Hello,
 
-This fixes the problem by calling console_trylock (which calls mutex_acquire)
-instead of directly accessing the semaphore in console_unblank and moves the
-mutex_release to after we unlock logbuf_lock in console_unlock (interrupts are
-still disabled).
+I think that we can do further.
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
----
- kernel/printk/printk.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The problem is that this cc->contended is checked only in
+isolate_migratepages() to break out the compaction. So if there are
+free pages we are already taken, compaction wouldn't stopped
+immediately and isolate_freepages() could be invoked again on next
+compaction_alloc(). If there is no contention at this time, we would try
+to get free pages from one pageblock because cc->contended checking is
+on bottom of the loop in isolate_migratepages() and will continue to
+run compaction. AFAIK, we want to stop the compaction in this case. 
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7228258..c599ab5 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2084,7 +2084,6 @@ skip:
- 		local_irq_restore(flags);
- 	}
- 	console_locked = 0;
--	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
- 
- 	/* Release the exclusive_console once it is used */
- 	if (unlikely(exclusive_console))
-@@ -2092,6 +2091,7 @@ skip:
- 
- 	raw_spin_unlock(&logbuf_lock);
- 
-+	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
- 	up(&console_sem);
- 
- 	/*
-@@ -2137,7 +2137,7 @@ void console_unblank(void)
- 	 * oops_in_progress is set to 1..
- 	 */
- 	if (oops_in_progress) {
--		if (down_trylock(&console_sem) != 0)
-+		if (!console_trylock())
- 			return;
- 	} else
- 		console_lock();
--- 
-1.9.1.423.g4596e3a
+Moreover, if this isolate_freepages() don't stop the compaction,
+next isolate_migratepages() will be invoked and it would be stopped
+by checking cc->contended after isolating some pages for migration.
+This is useless overhead so should be removed.
 
+Thanks.
