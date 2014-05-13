@@ -1,653 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbaEMRic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:38:32 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:49496 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaEMRhx (ORCPT
+	id S1753259AbaEMRlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:41:18 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:45969 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaEMRlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:37:53 -0400
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 13:37:52 EDT
-From: stefan@agner.ch
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com
-Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com, stefan@agner.ch
-Subject: [PATCH 2/2] ARM: tegra: initial add of Colibri T30
-Date: Tue, 13 May 2014 19:27:39 +0200
-Message-Id: <d45ec5351ce8ef03256061bdc4b0ba673bd40c66.1400001937.git.stefan@agner.ch>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <cover.1400001937.git.stefan@agner.ch>
-References: <cover.1400001937.git.stefan@agner.ch>
+	Tue, 13 May 2014 13:41:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140513.131408.1239450870035635955.davem@davemloft.net>
+References: <20140509231825.22D005A4123@corp2gmr1-2.hot.corp.google.com>
+	<536E5EB9.5060101@infradead.org>
+	<20140513.131408.1239450870035635955.davem@davemloft.net>
+Date: Tue, 13 May 2014 10:41:10 -0700
+Message-ID: <CAADnVQL7LFZ0YzzfEEN=WEF_fys=9QhHgjvaYtzdQ_jGX+74Nw@mail.gmail.com>
+Subject: Re: mmotm 2014-05-09-16-17 uploaded (ptrace-ab.hi vs. net/core/filter.c)
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        richard@nod.at
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Agner <stefan@agner.ch>
+On Tue, May 13, 2014 at 10:14 AM, David Miller <davem@davemloft.net> wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> Date: Sat, 10 May 2014 10:15:37 -0700
+>
+>> On 05/09/2014 04:18 PM, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2014-05-09-16-17 has been uploaded to
+>>>
+>>>    http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>
+>>
+>> uml defconfig on x86_64: (also happens in linux-next)
+>>
+>> net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
+>> arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
+>>
+>> Same warnings for R9 and R10.
+>
+> I'm going to commit the following to net-next to fix this,
+> thanks Randy.
+>
+> ====================
+> [PATCH] net: filter: Fix redefinition warnings on x86-64.
+>
+> Do not collide with the x86-64 PTRACE user API namespace.
+>
+> net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
+> arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
+>
+> Fix by adding a BPF_ prefix to the register macros.
+>
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
 
-This patch adds the device tree to support Toradex Colibri T30, a
-computer on module which can be used on different carrier boards.
+thank you for taking care of it.
+Next time will remember to do arch=um build...
 
-The module consists of a Tegra 30 SoC, two PMIC, DDR3L RAM, eMMC,
-a LM95245 temperature sensor and an AX88772B USB Ethernet
-Controller. Furthermore, there is a STMPE811 and SGTL5000 audio
-codec which are not yet supported. Anything that is not self
-contained on the module is disabled by default.
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 
-The device tree for the Evaluation Board includes the modules
-device tree and enables the supported pheripherials of the carrier
-board (the Evaluation Board supports almost all of them).
-
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/boot/dts/Makefile                    |   1 +
- arch/arm/boot/dts/tegra30-colibri-eval-v3.dts | 202 ++++++++++++++
- arch/arm/boot/dts/tegra30-colibri.dtsi        | 375 ++++++++++++++++++++++++++
- 3 files changed, 578 insertions(+)
- create mode 100644 arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
- create mode 100644 arch/arm/boot/dts/tegra30-colibri.dtsi
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 35c146f..9e9669c 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -367,6 +367,7 @@ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
- 	tegra30-beaver.dtb \
- 	tegra30-cardhu-a02.dtb \
- 	tegra30-cardhu-a04.dtb \
-+	tegra30-colibri-eval-v3.dtb \
- 	tegra114-dalmore.dtb \
- 	tegra124-venice2.dtb
- dtb-$(CONFIG_ARCH_VERSATILE) += versatile-ab.dtb \
-diff --git a/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts b/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
-new file mode 100644
-index 0000000..f1fb0de
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
-@@ -0,0 +1,202 @@
-+/dts-v1/;
-+
-+#include "tegra30-colibri.dtsi"
-+
-+/ {
-+	model = "Toradex Colibri T30 on Colibri Evaluation Board";
-+	compatible = "toradex,colibri_t30-eval-v3", "nvidia,tegra30";
-+
-+	aliases {
-+		rtc0 = "/i2c@7000c000/rtc@68";
-+		rtc1 = "/i2c@7000d000/tps65911@2d";
-+		rtc2 = "/rtc@7000e000";
-+	};
-+
-+	host1x@50000000 {
-+		dc@54200000 {
-+			rgb {
-+				status = "okay";
-+				nvidia,panel = <&panel>;
-+			};
-+		};
-+		hdmi@54280000 {
-+			status = "okay";
-+		};
-+	};
-+
-+	serial@70006000 {
-+		status = "okay";
-+	};
-+
-+	serial@70006040 {
-+		compatible = "nvidia,tegra30-hsuart";
-+		status = "okay";
-+	};
-+
-+	serial@70006300 {
-+		compatible = "nvidia,tegra30-hsuart";
-+		status = "okay";
-+	};
-+
-+	pwm@7000a000 {
-+		status = "okay";
-+	};
-+
-+	/*
-+	 * GEN1_I2C: I2C_SDA/SCL on SODIMM pin 194/196 (e.g. RTC on carrier
-+	 * board)
-+	 */
-+	i2c@7000c000 {
-+		status = "okay";
-+		clock-frequency = <100000>;
-+
-+		/* M41T0M6 real time clock on carrier board */
-+		rtc@68 {
-+			compatible = "stm,m41t00";
-+			reg = <0x68>;
-+		};
-+	};
-+
-+	/* DDC_CLOCK/DATA on X3 pin 15/16 (e.g. display EDID) */
-+	hdmiddc: i2c@7000c700 {
-+		status = "okay";
-+	};
-+
-+	/* SPI1: Colibri SSP */
-+	spi@7000d400 {
-+		status = "okay";
-+		spi-max-frequency = <25000000>;
-+		can0: can@0 {
-+			compatible = "microchip,mcp2515";
-+			reg = <0>;
-+			clocks = <&clk16m>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <TEGRA_GPIO(S, 0) GPIO_ACTIVE_LOW>;
-+			spi-max-frequency = <10000000>;
-+		};
-+		spidev0: spi@1 {
-+			compatible = "spidev";
-+			reg = <1>;
-+			spi-max-frequency = <25000000>;
-+		};
-+	};
-+
-+	sdhci@78000200 {
-+		status = "okay";
-+		bus-width = <4>;
-+		cd-gpios = <&gpio TEGRA_GPIO(C, 7) GPIO_ACTIVE_LOW>;
-+		no-1-8-v;
-+	};
-+
-+	/* EHCI instance 0: USB1_DP/N -> USBC_P/N */
-+	usb@7d000000 {
-+		status = "okay";
-+		dr_mode = "otg";
-+	};
-+
-+	usb-phy@7d000000 {
-+		status = "okay";
-+		dr_mode = "otg";
-+		vbus-supply = <&usbc_vbus_reg>;
-+	};
-+
-+	/* EHCI instance 2: USB3_DP/N -> USBH_P/N */
-+	usb@7d008000 {
-+		status = "okay";
-+	};
-+
-+	usb-phy@7d008000 {
-+		status = "okay";
-+		vbus-supply = <&usbh_vbus_reg>;
-+	};
-+
-+	backlight: backlight {
-+		compatible = "pwm-backlight";
-+
-+		/* PWM<A> */
-+		pwms = <&pwm 0 5000000>;
-+		brightness-levels = <255 128 64 32 16 8 4 0>;
-+		default-brightness-level = <6>;
-+		/* BL_ON */
-+		enable-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
-+	};
-+
-+	clocks {
-+		clk16m: clk@1 {
-+			compatible = "fixed-clock";
-+			reg=<1>;
-+			#clock-cells = <0>;
-+			clock-frequency = <16000000>;
-+			clock-output-names = "clk16m";
-+		};
-+	};
-+
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		power {
-+			label = "Power";
-+			gpios = <&gpio TEGRA_GPIO(V, 1) GPIO_ACTIVE_HIGH>;
-+			linux,code = <KEY_POWER>;
-+			debounce-interval = <10>;
-+			gpio-key,wakeup;
-+		};
-+	};
-+
-+	panel: panel {
-+		compatible = "edt,et057090dhu", "simple-panel";
-+
-+		backlight = <&backlight>;
-+	};
-+
-+	pwmleds {
-+		compatible = "pwm-leds";
-+
-+		pwmb {
-+			label = "PWM<B>";
-+			pwms = <&pwm 1 19600>;
-+			max-brightness = <255>;
-+		};
-+		pwmc {
-+			label = "PWM<C>";
-+			pwms = <&pwm 2 19600>;
-+			max-brightness = <255>;
-+		};
-+		pwmd {
-+			label = "PWM<D>";
-+			pwms = <&pwm 3 19600>;
-+			max-brightness = <255>;
-+		};
-+	};
-+
-+	regulators {
-+		sys_5v0_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "5v0";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
-+
-+		usbc_vbus_reg: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "usbc_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			vin-supply = <&sys_5v0_reg>;
-+		};
-+
-+		/* USBH_PEN */
-+		usbh_vbus_reg: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "usbh_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&gpio TEGRA_GPIO(W, 2) GPIO_ACTIVE_LOW>;
-+			vin-supply = <&sys_5v0_reg>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/tegra30-colibri.dtsi b/arch/arm/boot/dts/tegra30-colibri.dtsi
-new file mode 100644
-index 0000000..a496335
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra30-colibri.dtsi
-@@ -0,0 +1,375 @@
-+#include <dt-bindings/input/input.h>
-+#include "tegra30.dtsi"
-+
-+/*
-+ * Toradex Colibri T30 Device Tree
-+ * Compatible for Revisions 1.1B/1.1C/1.1D
-+ */
-+/ {
-+	model = "Toradex Colibri T30";
-+	compatible = "toradex,colibri_t30-v11b",
-+		     "toradex,colibri_t30-v11c",
-+		     "toradex,colibri_t30-v11d",
-+		     "toradex,colibri_t30", "nvidia,tegra30";
-+
-+	aliases {
-+		serial0 = &uarta;
-+		serial1 = &uartd;
-+		serial2 = &uartb;
-+	};
-+
-+	memory {
-+		reg = <0x80000000 0x40000000>;
-+	};
-+
-+	host1x@50000000 {
-+		hdmi@54280000 {
-+			vdd-supply = <&sys_3v3_reg>;
-+			pll-supply = <&vio_reg>;
-+
-+			nvidia,hpd-gpio =
-+				<&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
-+			nvidia,ddc-i2c-bus = <&hdmiddc>;
-+		};
-+	};
-+
-+	pinmux@70000868 {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&state_default>;
-+
-+		state_default: pinmux {
-+			/* Colibri BL_ON */
-+			pv2 {
-+				nvidia,pins = "pv2";
-+				nvidia,function = "rsvd4";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* Colibri Backlight PWM<A> */
-+			sdmmc3_dat3_pb4 {
-+				nvidia,pins =	"sdmmc3_dat3_pb4";
-+				nvidia,function = "pwm0";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* Colibri CAN_INT */
-+			kb_row8_ps0 {
-+				nvidia,pins = "kb_row8_ps0";
-+				nvidia,function = "kbc";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
-+			};
-+
-+			/* Thermal alert, need to be tristated */
-+			lcd_dc1_pd2 {
-+				nvidia,pins = "lcd_dc1_pd2";
-+				nvidia,function = "rsvd3";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
-+			};
-+
-+			/* Colibri MMC */
-+			kb_row10_ps2 {
-+				nvidia,pins = "kb_row10_ps2";
-+				nvidia,function = "sdmmc2";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+			kb_row11_ps3 {
-+				nvidia,pins =	"kb_row11_ps3",
-+						"kb_row12_ps4",
-+						"kb_row13_ps5",
-+						"kb_row14_ps6",
-+						"kb_row15_ps7";
-+				nvidia,function = "sdmmc2";
-+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* Colibri SSP */
-+			ulpi_clk_py0 {
-+				nvidia,pins =   "ulpi_clk_py0",
-+						"ulpi_dir_py1",
-+						"ulpi_nxt_py2",
-+						"ulpi_stp_py3";
-+				nvidia,function = "spi1";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+			sdmmc3_dat6_pd3 {
-+				nvidia,pins =	"sdmmc3_dat6_pd3",
-+						"sdmmc3_dat7_pd4";
-+				nvidia,function = "spdif";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_ENABLE>;
-+			};
-+
-+			/* Colibri UART_A */
-+			ulpi_data0 {
-+				nvidia,pins =   "ulpi_data0_po1",
-+						"ulpi_data1_po2",
-+						"ulpi_data2_po3",
-+						"ulpi_data3_po4",
-+						"ulpi_data4_po5",
-+						"ulpi_data5_po6",
-+						"ulpi_data6_po7",
-+						"ulpi_data7_po0";
-+				nvidia,function = "uarta";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* Colibri UART_B */
-+			gmi_a16_pj7 {
-+				nvidia,pins =   "gmi_a16_pj7",
-+						"gmi_a17_pb0",
-+						"gmi_a18_pb1",
-+						"gmi_a19_pk7";
-+				nvidia,function = "uartd";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* Colibri UART_C */
-+			uart2_rxd {
-+				nvidia,pins =   "uart2_rxd_pc3",
-+						"uart2_txd_pc2";
-+				nvidia,function = "uartb";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+
-+			/* eMMC */
-+			sdmmc4_clk_pcc4 {
-+				nvidia,pins =	"sdmmc4_clk_pcc4",
-+						"sdmmc4_rst_n_pcc3";
-+				nvidia,function = "sdmmc4";
-+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+			sdmmc4_dat0_paa0 {
-+				nvidia,pins =	"sdmmc4_dat0_paa0",
-+						"sdmmc4_dat1_paa1",
-+						"sdmmc4_dat2_paa2",
-+						"sdmmc4_dat3_paa3",
-+						"sdmmc4_dat4_paa4",
-+						"sdmmc4_dat5_paa5",
-+						"sdmmc4_dat6_paa6",
-+						"sdmmc4_dat7_paa7";
-+				nvidia,function = "sdmmc4";
-+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
-+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-+			};
-+		};
-+	};
-+
-+	hdmiddc: i2c@7000c700 {
-+		clock-frequency = <100000>;
-+	};
-+
-+	/*
-+	 * PWR_I2C: power I2C to audio codec, PMIC, temperature sensor and
-+	 * touch screen controller
-+	 */
-+	i2c@7000d000 {
-+		status = "okay";
-+		clock-frequency = <100000>;
-+
-+		pmic: tps65911@2d {
-+			compatible = "ti,tps65911";
-+			reg = <0x2d>;
-+
-+			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
-+			#interrupt-cells = <2>;
-+			interrupt-controller;
-+
-+			ti,system-power-controller;
-+
-+			#gpio-cells = <2>;
-+			gpio-controller;
-+
-+			vcc1-supply = <&sys_3v3_reg>;
-+			vcc2-supply = <&sys_3v3_reg>;
-+			vcc3-supply = <&vio_reg>;
-+			vcc4-supply = <&sys_3v3_reg>;
-+			vcc5-supply = <&sys_3v3_reg>;
-+			vcc6-supply = <&vio_reg>;
-+			vcc7-supply = <&sys_5v0_reg>;
-+			vccio-supply = <&sys_3v3_reg>;
-+
-+			regulators {
-+				/* SW1: +V1.35_VDDIO_DDR */
-+				vdd1_reg: vdd1 {
-+					regulator-name = "vddio_ddr_1v35";
-+					regulator-min-microvolt = <1350000>;
-+					regulator-max-microvolt = <1350000>;
-+					regulator-always-on;
-+				};
-+
-+				/* SW2: unused */
-+
-+				/* SW CTRL: +V1.2_VDD_CPU */
-+				vddctrl_reg: vddctrl {
-+					regulator-name = "vdd_cpu,vdd_sys";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				/* SWIO: +V1.8 */
-+				vio_reg: vio {
-+					regulator-name = "vdd_1v8_gen";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+				};
-+
-+				/* LDO1: unused */
-+
-+				/*
-+				 * EN_+V3.3 switching via FET:
-+				 * +V3.3_AUDIO_AVDD_S, +V3.3 and +V1.8_VDD_LAN
-+				 * see also v3_3 fixed supply
-+				 */
-+				ldo2_reg: ldo2 {
-+					regulator-name = "en_3v3";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+				};
-+
-+				/* LDO3: unused */
-+
-+				/* +V1.2_VDD_RTC */
-+				ldo4_reg: ldo4 {
-+					regulator-name = "vdd_rtc";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				/*
-+				 * +V2.8_AVDD_VDAC:
-+				 * only required for analog RGB
-+				 */
-+				ldo5_reg: ldo5 {
-+					regulator-name = "avdd_vdac";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+					regulator-always-on;
-+				};
-+
-+				/*
-+				 * +V1.05_AVDD_PLLE: avdd_plle should be 1.05V
-+				 * but LDO6 can't set voltage in 50mV
-+				 * granularity
-+				 */
-+				ldo6_reg: ldo6 {
-+					regulator-name = "avdd_plle";
-+					regulator-min-microvolt = <1100000>;
-+					regulator-max-microvolt = <1100000>;
-+				};
-+
-+				/* +V1.2_AVDD_PLL */
-+				ldo7_reg: ldo7 {
-+					regulator-name = "avdd_pll";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				/* +V1.0_VDD_DDR_HS */
-+				ldo8_reg: ldo8 {
-+					regulator-name = "vdd_ddr_hs";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+			};
-+		};
-+
-+		/*
-+		 * LM95245 temperature sensor
-+		 * Note: OVERT_N directly connected to PMIC PWRDN
-+		 */
-+		temp-sensor@4c {
-+			compatible = "national,lm95245";
-+			reg = <0x4c>;
-+		};
-+
-+		/* SW: +V1.2_VDD_CORE */
-+		tps62362@60 {
-+			compatible = "ti,tps62362";
-+			reg = <0x60>;
-+
-+			regulator-name = "tps62362-vout";
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <1400000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			ti,vsel0-state-low;
-+			/* VSEL1: EN_CORE_DVFS_N low for DVFS */
-+			ti,vsel1-state-low;
-+		};
-+	};
-+
-+	pmc@7000e400 {
-+		status = "okay";
-+		nvidia,invert-interrupt;
-+		nvidia,suspend-mode = <1>;
-+		nvidia,cpu-pwr-good-time = <5000>;
-+		nvidia,cpu-pwr-off-time = <5000>;
-+		nvidia,core-pwr-good-time = <3845 3845>;
-+		nvidia,core-pwr-off-time = <0>;
-+		nvidia,core-power-req-active-high;
-+		nvidia,sys-clock-req-active-high;
-+	};
-+
-+	emmc: sdhci@78000600 {
-+		status = "okay";
-+		bus-width = <8>;
-+		non-removable;
-+	};
-+
-+	/* EHCI instance 1: USB2_DP/N -> AX88772B */
-+	usb@7d004000 {
-+		status = "okay";
-+	};
-+
-+	usb-phy@7d004000 {
-+		status = "okay";
-+		nvidia,is-wired = <1>;
-+	};
-+
-+	clocks {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		clk32k_in: clk@0 {
-+			compatible = "fixed-clock";
-+			reg=<0>;
-+			#clock-cells = <0>;
-+			clock-frequency = <32768>;
-+		};
-+	};
-+
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		sys_3v3_reg: regulator@100 {
-+			compatible = "regulator-fixed";
-+			reg = <100>;
-+			regulator-name = "3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+	};
-+};
--- 
-1.9.2
-
+> ---
+>  net/core/filter.c | 71 +++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 37 insertions(+), 34 deletions(-)
+>
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index 9aaa05a..c442a0d 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -46,17 +46,17 @@
+>  #include <linux/if_vlan.h>
+>
+>  /* Registers */
+> -#define R0     regs[BPF_REG_0]
+> -#define R1     regs[BPF_REG_1]
+> -#define R2     regs[BPF_REG_2]
+> -#define R3     regs[BPF_REG_3]
+> -#define R4     regs[BPF_REG_4]
+> -#define R5     regs[BPF_REG_5]
+> -#define R6     regs[BPF_REG_6]
+> -#define R7     regs[BPF_REG_7]
+> -#define R8     regs[BPF_REG_8]
+> -#define R9     regs[BPF_REG_9]
+> -#define R10    regs[BPF_REG_10]
+> +#define BPF_R0 regs[BPF_REG_0]
+> +#define BPF_R1 regs[BPF_REG_1]
+> +#define BPF_R2 regs[BPF_REG_2]
+> +#define BPF_R3 regs[BPF_REG_3]
+> +#define BPF_R4 regs[BPF_REG_4]
+> +#define BPF_R5 regs[BPF_REG_5]
+> +#define BPF_R6 regs[BPF_REG_6]
+> +#define BPF_R7 regs[BPF_REG_7]
+> +#define BPF_R8 regs[BPF_REG_8]
+> +#define BPF_R9 regs[BPF_REG_9]
+> +#define BPF_R10        regs[BPF_REG_10]
+>
+>  /* Named registers */
+>  #define A      regs[insn->a_reg]
+> @@ -383,10 +383,12 @@ select_insn:
+>
+>         /* CALL */
+>         JMP_CALL_0:
+> -               /* Function call scratches R1-R5 registers, preserves R6-R9,
+> -                * and stores return value into R0.
+> +               /* Function call scratches BPF_R1-BPF_R5 registers,
+> +                * preserves BPF_R6-BPF_R9, and stores return value
+> +                * into BPF_R0.
+>                  */
+> -               R0 = (__bpf_call_base + insn->imm)(R1, R2, R3, R4, R5);
+> +               BPF_R0 = (__bpf_call_base + insn->imm)(BPF_R1, BPF_R2, BPF_R3,
+> +                                                      BPF_R4, BPF_R5);
+>                 CONT;
+>
+>         /* JMP */
+> @@ -478,7 +480,7 @@ select_insn:
+>                 }
+>                 CONT;
+>         JMP_EXIT_0:
+> -               return R0;
+> +               return BPF_R0;
+>
+>         /* STX and ST and LDX*/
+>  #define LDST(SIZEOP, SIZE)                                     \
+> @@ -505,18 +507,19 @@ select_insn:
+>                 atomic64_add((u64) X, (atomic64_t *)(unsigned long)
+>                              (A + insn->off));
+>                 CONT;
+> -       LD_ABS_W: /* R0 = ntohl(*(u32 *) (skb->data + K)) */
+> +       LD_ABS_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + K)) */
+>                 off = K;
+>  load_word:
+> -               /* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are only
+> -                * appearing in the programs where ctx == skb. All programs
+> -                * keep 'ctx' in regs[BPF_REG_CTX] == R6, sk_convert_filter()
+> -                * saves it in R6, internal BPF verifier will check that
+> -                * R6 == ctx.
+> +               /* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are
+> +                * only appearing in the programs where ctx ==
+> +                * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
+> +                * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
+> +                * internal BPF verifier will check that BPF_R6 ==
+> +                * ctx.
+>                  *
+> -                * BPF_ABS and BPF_IND are wrappers of function calls, so
+> -                * they scratch R1-R5 registers, preserve R6-R9, and store
+> -                * return value into R0.
+> +                * BPF_ABS and BPF_IND are wrappers of function calls,
+> +                * so they scratch BPF_R1-BPF_R5 registers, preserve
+> +                * BPF_R6-BPF_R9, and store return value into BPF_R0.
+>                  *
+>                  * Implicit input:
+>                  *   ctx
+> @@ -526,39 +529,39 @@ load_word:
+>                  *   K == 32-bit immediate
+>                  *
+>                  * Output:
+> -                *   R0 - 8/16/32-bit skb data converted to cpu endianness
+> +                *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
+>                  */
+>                 ptr = load_pointer((struct sk_buff *) ctx, off, 4, &tmp);
+>                 if (likely(ptr != NULL)) {
+> -                       R0 = get_unaligned_be32(ptr);
+> +                       BPF_R0 = get_unaligned_be32(ptr);
+>                         CONT;
+>                 }
+>                 return 0;
+> -       LD_ABS_H: /* R0 = ntohs(*(u16 *) (skb->data + K)) */
+> +       LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + K)) */
+>                 off = K;
+>  load_half:
+>                 ptr = load_pointer((struct sk_buff *) ctx, off, 2, &tmp);
+>                 if (likely(ptr != NULL)) {
+> -                       R0 = get_unaligned_be16(ptr);
+> +                       BPF_R0 = get_unaligned_be16(ptr);
+>                         CONT;
+>                 }
+>                 return 0;
+> -       LD_ABS_B: /* R0 = *(u8 *) (ctx + K) */
+> +       LD_ABS_B: /* BPF_R0 = *(u8 *) (ctx + K) */
+>                 off = K;
+>  load_byte:
+>                 ptr = load_pointer((struct sk_buff *) ctx, off, 1, &tmp);
+>                 if (likely(ptr != NULL)) {
+> -                       R0 = *(u8 *)ptr;
+> +                       BPF_R0 = *(u8 *)ptr;
+>                         CONT;
+>                 }
+>                 return 0;
+> -       LD_IND_W: /* R0 = ntohl(*(u32 *) (skb->data + X + K)) */
+> +       LD_IND_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + X + K)) */
+>                 off = K + X;
+>                 goto load_word;
+> -       LD_IND_H: /* R0 = ntohs(*(u16 *) (skb->data + X + K)) */
+> +       LD_IND_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + X + K)) */
+>                 off = K + X;
+>                 goto load_half;
+> -       LD_IND_B: /* R0 = *(u8 *) (skb->data + X + K) */
+> +       LD_IND_B: /* BPF_R0 = *(u8 *) (skb->data + X + K) */
+>                 off = K + X;
+>                 goto load_byte;
+>
+> @@ -1001,7 +1004,7 @@ do_pass:
+>                         *insn = BPF_ALU64_REG(BPF_MOV, BPF_REG_TMP, BPF_REG_A);
+>                         insn++;
+>
+> -                       /* A = R0 = *(u8 *) (skb->data + K) */
+> +                       /* A = BPF_R0 = *(u8 *) (skb->data + K) */
+>                         *insn = BPF_LD_ABS(BPF_B, fp->k);
+>                         insn++;
+>
+> --
+> 1.9.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
