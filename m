@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760625AbaEMNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:39:27 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59174 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbaEMNjZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:39:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
-Date: Tue, 13 May 2014 15:38:51 +0200
-Message-ID: <6047893.vbvIgNOHCV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdV2NPwacZwP=QRP+d+eFT85jDq9V0F+Q+Hdch3xukpbkw@mail.gmail.com>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <alpine.DEB.2.02.1405131405590.6261@ionos.tec.linutronix.de> <CAMuHMdV2NPwacZwP=QRP+d+eFT85jDq9V0F+Q+Hdch3xukpbkw@mail.gmail.com>
+	id S933413AbaEMNja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:39:30 -0400
+Received: from mail.efficios.com ([78.47.125.74]:40268 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282AbaEMNj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:39:26 -0400
+Date: Tue, 13 May 2014 13:39:24 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: George Spelvin <linux@horizon.com>
+Cc: john stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Message-ID: <822806193.15621.1399988364196.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140513132918.29216.qmail@ns.horizon.com>
+References: <20140513132918.29216.qmail@ns.horizon.com>
+Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding
+ timekeeping seqlock
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:BV/NILKSXT/TaGH7jZl3V4TRy6F3UJtzZ+uDaDkA698
- 5DzEzrAzCUmTyTMo5zyzmRRiMehL+VJrWnQVulDFC6ZjIMo9h2
- 75NDoXVLnuJ3w3fJMMJoOM45ao6koJXh8PTvduGFyU+oPRzuca
- X6mjYiFruh5jOQMJxEYpjFoONL1bpXJXDZNneUk9oawT9f1MBL
- ZDcHu0YpM38HQL/o9ZmBoPqh8Urt10g7ezXXqF4z9t+BF3ZN0+
- h3yWX4Cx7Euw0c4VwIKlE1OKT8ywcVcoZv13Vdgx4F6AK1aBe+
- awYlqHaWOIeBDRr36fk2Wy7Ue8VJjCUGmTbIl2RAGfAsz2jv/Q
- 484sDFaqHeIDKOS9KI8Y=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Linux)/8.0.5_GA_5839)
+Thread-Topic: timekeeping: Use printk_deferred when holding timekeeping seqlock
+Thread-Index: FbmnX1XcBdJ5t30nAwLPawzLQyNRdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 May 2014 15:11:33 Geert Uytterhoeven wrote:
-> On Tue, May 13, 2014 at 2:07 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Tue, 13 May 2014, Arnd Bergmann wrote:
-> >> On Tuesday 13 May 2014 18:17:40 Ley Foon Tan wrote:
-> >> > When we export this posix_types.h file for user software, they need to
-> >> > define this config, eg: CONFIG_32BIT_TIME to use 32 bit time. Is this
-> >> > what we want to do?
-> >>
-> >> No, this doesn't really work: You can't use CONFIG_* symbols in
-> >> user-visible header files.
-> >
-> > Then make the config symbol generate the header from a template.
+----- Original Message -----
+> From: "George Spelvin" <linux@horizon.com>
+> To: linux@horizon.com, "mathieu desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "john stultz" <john.stultz@linaro.org>, linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+> Sent: Tuesday, May 13, 2014 9:29:18 AM
+> Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
 > 
-> Indeed. I think it's worthwhile to add CONFIG_* expansion for such "hard"
-> CONFIG symbols to make headers_install, cfr. the existing unifdef support.
+> > We could expose a new clock type (besides monotonic and realtime) that is
+> > documented as non-strictly monotonic. It may return a time very slightly in
+> > the past if readers race with clock source frequency change. The caller
+> > could
+> > handle this situation (e.g. in user-space) by keeping its own per-cpu or
+> > per-thread "last clock value" data structure (something we cannot do in a
+> > vDSO) if it really cares about per-cpu/thread clock monotonicity.
 > 
-> We do such a hard work to improve asm-generic, so new architectures can
-> just use that, only to see early adaptors now having to migrate away from it
-> (e.g. OpenRISC suddenly gaining uapi/asm/posix_types.h).
+> That the first of two options I proposed.  The problem, with respect to
+> the immediate problem of debugging during a write deadlocking, is
+> that it makes a more complex API which callers must understand the
+> subtleties of.
+> 
+> Perhaps necessary, but definitely a minus.
+> 
+> > This could be implemented with the scheme I proposed as a prototype here:
+> > 
+> >    https://lkml.org/lkml/2013/9/14/136
+> 
+> I'm working my way though it.  I definitely like the first patch!
 
-This was always the idea: New architectures should use the default ABI
-as it is defined at the time when they get added. When we later change
-the ABI, everything that is already there is no longer using the default,
-so they now have to change.
- 
-> Or is there another solution?
+Thanks! :)
 
-We could in theory have a versioned ABI, and define for instance that
-openrisc uses the 3.1 version while nios2 uses the 3.16 version.
+> 
+> > Thoughts ?
+> 
+> I was trying to tackle the "hard problem" of making *all* time reads
+> non-blocking, with monotonicity guarantees.  There has to be *some* bound
+> on blocking times (in particular, time between reading hardware tiemrs
+> and translating them to real time), but they can be reasonably long.
 
-Doing that would introduce other problems I guess, but it would
-avoid the use of changing lots of architectures when the default
-ABI changes.
+What I gathered from my past discussion with John on this topic is that
+virtualization blows away pretty much any assumption we can make on
+"update should be reasonably short". A virtualized CPU can be preempted
+for a rather long time (AFAIU not possible to bound).
 
-	Arnd
+> I think I have an idea that could work, but given the hairiness of
+> the timeeeping code, implementing it would be a major project.
+
+Indeed, timekeeping is not for the faint of heart. ;-)
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
