@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302AbaEMGHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:07:09 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:35942 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaEMGHG (ORCPT
+	id S1758382AbaEMGHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:07:47 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57416 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbaEMGHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:07:06 -0400
+	Tue, 13 May 2014 02:07:45 -0400
+Message-ID: <5371B6AA.7060508@hitachi.com>
+Date: Tue, 13 May 2014 15:07:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <5370C689.2090402@ti.com>
-References: <1399643877-14528-1-git-send-email-gautam.vivek@samsung.com>
-	<5370C689.2090402@ti.com>
-Date: Tue, 13 May 2014 11:37:04 +0530
-X-Google-Sender-Auth: UOy5Wxcg2gy-tDKxwAyFTxurwOo
-Message-ID: <CAFp+6iH-bLd9WUYyK8d8i=UNUm4DHpEYz=Am_qzPyX6gDovyKA@mail.gmail.com>
-Subject: Re: [PATCH v8 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, "robh+dt" <robh+dt@kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: can't we kill DIE_GPF ? (Was: x86/traps: cleanup DO_ERROR*()
+ to prepare for uprobes fixes)
+References: <20140508191140.GA16892@redhat.com> <20140509140723.GA22532@redhat.com>
+In-Reply-To: <20140509140723.GA22532@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-
-On Mon, May 12, 2014 at 6:33 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi Gautam,
->
-> On Friday 09 May 2014 07:27 PM, Vivek Gautam wrote:
->> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
->> The new driver uses the generic PHY framework and will interact
->> with DWC3 controller present on Exynos5 series of SoCs.
+(2014/05/09 23:07), Oleg Nesterov wrote:
+> On 05/08, Oleg Nesterov wrote:
 >>
->> Also, created a new header file in linux/mfd/syscon/ for
->> Exynos5 SoCs and put the required PMU offset definitions
->> for the basic available PHYs.
->>
->
->
-> I get the following checkpatch warnings
->
-> WARNING: please write a paragraph that describes the config symbol fully
-> #163: FILE: drivers/phy/Kconfig:163:
-> +config PHY_EXYNOS5_USBDRD
->
-> WARNING: DT compatible string "samsung,exynos5250-usbdrd-phy" appears
-> un-documented -- check ./Documentation/devicetree/bindings/
-> #708: FILE: drivers/phy/phy-exynos5-usbdrd.c:516:
-> +               .compatible = "samsung,exynos5250-usbdrd-phy",
->
-> WARNING: DT compatible string "samsung,exynos5420-usbdrd-phy" appears
-> un-documented -- check ./Documentation/devicetree/bindings/
-> #711: FILE: drivers/phy/phy-exynos5-usbdrd.c:519:
-> +               .compatible = "samsung,exynos5420-usbdrd-phy",.
->
->
-> I think you just need to separate the Documentation into a separate patch
-> before applying the driver patch.
->
+>> For example, after this series
+>> we can convert math_error() into the "normal" DO_ERROR() user, and most probably
+>> we can do the same with do_general_protection().
+> 
+> As for do_general_protection(), the problem is DIE_GPF.
+> 
+> Masami, could you explain why it is needed ? kprobe_exceptions_notify()
+> is the only user, can't it use DIE_TRAP and check trapnr = X86_TRAP_GP ?
 
-I somehow don't see the Documentation warning. Below is the checkpatch
-output which i ran on this v8 patch version.
-  linux-phy$ ./scripts/checkpatch.pl phy.patch
-  WARNING: please write a paragraph that describes the config symbol fully
-  #127: FILE: drivers/phy/Kconfig:163:
-  +config PHY_EXYNOS5_USBDRD
+Actually, this may be only for something which will happen on
+single-stepping out-of-line. And yes, I can move it onto the DIE_TRAP :)
 
-  total: 0 errors, 1 warnings, 760 lines checked
+> 
+> And if it can, probably we can do notify_die() at the start like other
+> DO_ERROR() functions do ?
 
-  phy.patch has style problems, please review.
+Agreed, it seems OK to me. (and seems better, since we can handle GPF
+before changing task->thread struct)
 
-  If any of these errors are false positives, please report
-  them to the maintainer, see CHECKPATCH in MAINTAINERS.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-am i missing something ?
+Thanks a lot!
 
-[snip]
-
+> 
+> IOW, any reason why the patch below is wrong?
+> 
+> Oleg.
+> 
+> --- x/arch/x86/include/asm/kdebug.h
+> +++ x/arch/x86/include/asm/kdebug.h
+> @@ -15,7 +15,6 @@ enum die_val {
+>  	DIE_DIE,
+>  	DIE_KERNELDEBUG,
+>  	DIE_TRAP,
+> -	DIE_GPF,
+>  	DIE_CALL,
+>  	DIE_PAGE_FAULT,
+>  	DIE_NMIUNKNOWN,
+> --- x/arch/x86/kernel/traps.c
+> +++ x/arch/x86/kernel/traps.c
+> @@ -283,6 +283,9 @@ do_general_protection(struct pt_regs *re
+>  	enum ctx_state prev_state;
+>  
+>  	prev_state = exception_enter();
+> +	if (notify_die(DIE_TRAP, "general protection fault", regs, error_code,
+> +			X86_TRAP_GP, SIGSEGV) == NOTIFY_STOP)
+> +		goto exit;
+>  	conditional_sti(regs);
+>  
+>  #ifdef CONFIG_X86_32
+> @@ -300,10 +303,7 @@ do_general_protection(struct pt_regs *re
+>  
+>  		tsk->thread.error_code = error_code;
+>  		tsk->thread.trap_nr = X86_TRAP_GP;
+> -		if (notify_die(DIE_GPF, "general protection fault", regs, error_code,
+> -			       X86_TRAP_GP, SIGSEGV) != NOTIFY_STOP)
+> -			die("general protection fault", regs, error_code);
+> -		goto exit;
+> +		die("general protection fault", regs, error_code);
+>  	}
+>  
+>  	tsk->thread.error_code = error_code;
+> --- x/arch/x86/kernel/kprobes/core.c
+> +++ x/arch/x86/kernel/kprobes/core.c
+> @@ -979,13 +979,14 @@ kprobe_exceptions_notify(struct notifier
+>  			ret = NOTIFY_STOP;
+>  		}
+>  		break;
+> -	case DIE_GPF:
+> +	case DIE_TRAP:
+>  		/*
+>  		 * To be potentially processing a kprobe fault and to
+>  		 * trust the result from kprobe_running(), we have
+>  		 * be non-preemptible.
+>  		 */
+> -		if (!preemptible() && kprobe_running() &&
+> +		if (args->trapnr == X86_TRAP_GP &&
+> +		    !preemptible() && kprobe_running() &&
+>  		    kprobe_fault_handler(args->regs, args->trapnr))
+>  			ret = NOTIFY_STOP;
+>  		break;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
