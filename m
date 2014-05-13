@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaEMPml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:42:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38795 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaEMPmg (ORCPT
+	id S1753398AbaEMPoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:44:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44488 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943AbaEMPop convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:42:36 -0400
-Message-ID: <53723D68.6010808@wwwdotorg.org>
-Date: Tue, 13 May 2014 09:42:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 11:44:45 -0400
+Date: Tue, 13 May 2014 17:44:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookups in unlock_page fastpath
+Message-ID: <20140513154435.GG2485@laptop.programming.kicks-ass.net>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-20-git-send-email-mgorman@suse.de>
+ <20140513125313.GR23991@suse.de>
+ <20140513141748.GD2485@laptop.programming.kicks-ass.net>
+ <20140513152719.GF18164@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: FanWu <fwu@marvell.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [Pinctrl] A suggestion to avoid duplicated enabling operation
- on a pin's setting
-References: <534B558A.3040504@marvell.com> <534F8B35.7090103@marvell.com> <5366F387.4060402@marvell.com> <5367CD62.7030205@wwwdotorg.org> <5369E891.2020309@marvell.com> <53712D10.40003@wwwdotorg.org> <5371B36E.5030309@marvell.com>
-In-Reply-To: <5371B36E.5030309@marvell.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140513152719.GF18164@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 11:53 PM, FanWu wrote:
-...
-> About the glitch I mentioned before, I want to make myself clear.
-> If there is a case like the following one:
-> pinctrl-0 = <&a_grp_settingA>;
-> pinctrl-1 = <&a_grp_settingB>;
-> "a_grp_settingA" and "a_grp_settingB" are used to described the same
-> Pin's different mux and function configuration
-> In my understanding,
-> When there is a need to switch Pin group state, the current code will
-> disable "a_grp_settingA" first ahead of enabling "a_grp_settingB", right ?
+On Tue, May 13, 2014 at 08:27:19AM -0700, Paul E. McKenney wrote:
+> > Subject: doc: Update wakeup barrier documentation
+> > 
+> > As per commit e0acd0a68ec7 ("sched: fix the theoretical signal_wake_up()
+> > vs schedule() race") both wakeup and schedule now imply a full barrier.
+> > 
+> > Furthermore, the barrier is unconditional when calling try_to_wake_up()
+> > and has been for a fair while.
+> > 
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: David Howells <dhowells@redhat.com>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> Some questions below.
+> 
+> 							Thanx, Paul
+> 
+> > ---
+> >  Documentation/memory-barriers.txt | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> > index 46412bded104..dae5158c2382 100644
+> > --- a/Documentation/memory-barriers.txt
+> > +++ b/Documentation/memory-barriers.txt
+> > @@ -1881,9 +1881,9 @@ The whole sequence above is available in various canned forms, all of which
+> >  	event_indicated = 1;
+> >  	wake_up_process(event_daemon);
+> > 
+> > -A write memory barrier is implied by wake_up() and co. if and only if they wake
+> > -something up.  The barrier occurs before the task state is cleared, and so sits
+> > -between the STORE to indicate the event and the STORE to set TASK_RUNNING:
+> > +A full memory barrier is implied by wake_up() and co. The barrier occurs
+> 
+> Last I checked, the memory barrier was guaranteed only if a wakeup
+> actually occurred.  If there is a sleep-wakeup race, for example,
+> between wait_event_interruptible() and wake_up(), then it looks to me
+> that the following can happen:
+> 
+> o	Task A invokes wait_event_interruptible(), waiting for
+> 	X==1.
+> 
+> o	Before Task A gets anywhere, Task B sets Y=1, does
+> 	smp_mb(), then sets X=1.
+> 
+> o	Task B invokes wake_up(), which invokes __wake_up(), which
+> 	acquires the wait_queue_head_t's lock and invokes
+> 	__wake_up_common(), which sees nothing to wake up.
+> 
+> o	Task A tests the condition, finds X==1, and returns without
+> 	locks, memory barriers, atomic instructions, or anything else
+> 	that would guarantee ordering.
+> 
+> o	Task A then loads from Y.  Because there have been no memory
+> 	barriers, it might well see Y==0.
+> 
+> So what am I missing here?
 
-Yes.
+Ah, that's what was meant :-) The way I read it was that
+wake_up_process() would only imply the barrier if the task actually got
+a wakeup (ie. the return value is 1).
 
-> Do you mean the case I mentioned will not be a glitch ?
+But yes, this makes a lot more sense. Sorry for the confusion.
 
-I guess you're talking about that:
+> On the wake_up() side, wake_up() calls __wake_up(), which as mentioned
+> earlier calls __wake_up_common() under a lock.  This invokes the
+> wake-up function stored by the sleeping task, for example,
+> autoremove_wake_function(), which calls default_wake_function(),
+> which invokes try_to_wake_up(), which does smp_mb__before_spinlock()
+> before acquiring the to-be-waked task's PI lock.
+> 
+> The definition of smp_mb__before_spinlock() is smp_wmb().  There is
+> also an smp_rmb() in try_to_wake_up(), which still does not get us
+> to a full memory barrier.  It also calls select_task_rq(), which
+> does not seem to guarantee any particular memory ordering (but
+> I could easily have missed something).  It also calls ttwu_queue(),
+> which invokes ttwu_do_activate() under the RQ lock.  I don't see a
+> full memory barrier in ttwu_do_activate(), but again could easily
+> have missed one.  Ditto for ttwu_stat().
 
->> In the original code, the Pin setting will be changed to the
->> disabled/safe state when Pin state is switched if the old setting is not
->> existed in new state rather than directly switched to the new Pin
->> setting. Also a possible glitch?
-
-Yes, in this case, there is no glitch. However, there is certainly a
-change in HW configuration. A glitch is a temporary short-term
-accidental change in output value or configuration. In the case quoted
-immediately above, the change is permanent - at least until some other
-state is activated later. Hence, there is no glitch. However, there
-certainly is a change in HW configuration, and that could be just as
-problematic, depending on the HW and exact pin configuration.
+Ah, yes, so I'll defer to Oleg and Linus to explain that one. As per the
+name: smp_mb__before_spinlock() should of course imply a full barrier.
