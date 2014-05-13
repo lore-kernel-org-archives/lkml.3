@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaEMPZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:25:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42653 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753263AbaEMPZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:25:08 -0400
-Date: Tue, 13 May 2014 11:25:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 0/3] PM / sleep: Avoid resuming runtime-suspended
- devices during system suspend
-In-Reply-To: <1881168.eI1v8ceYmq@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1405131115050.1098-100000@iolanthe.rowland.org>
+	id S1753447AbaEMP1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:27:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47482 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752613AbaEMP1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:27:04 -0400
+Date: Tue, 13 May 2014 10:26:31 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/8] usb: phy: fix isp1301-omap dependency on tps65010
+Message-ID: <20140513152631.GI1151@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1399557141-1346645-1-git-send-email-arnd@arndb.de>
+ <1399557141-1346645-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ev7mvGV+3JQuI2Eo"
+Content-Disposition: inline
+In-Reply-To: <1399557141-1346645-5-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crossing emails again...
+--ev7mvGV+3JQuI2Eo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+On Thu, May 08, 2014 at 03:52:17PM +0200, Arnd Bergmann wrote:
+> The isp1301-omap driver cannot be built-in if the tps65010 driver
+> is a module, otherwise we get a link error from the reference to
+> the tps65010_set_vbus_draw function.
+>=20
+> There is already a hack in the driver to work around the problem
+> of tps65010 being not available at all. This patch extends that
+> hack to ensure that the real tps65010_set_vbus_draw() function
+> is only called when it's avaiable.
+>=20
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-omap@vger.kernel.org
+> ---
+>  drivers/usb/phy/phy-isp1301-omap.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy-isp=
+1301-omap.c
+> index 6e146d7..35a0dd2 100644
+> --- a/drivers/usb/phy/phy-isp1301-omap.c
+> +++ b/drivers/usb/phy/phy-isp1301-omap.c
+> @@ -94,7 +94,7 @@ struct isp1301 {
+> =20
+>  #if defined(CONFIG_MACH_OMAP_H2) || defined(CONFIG_MACH_OMAP_H3)
+> =20
+> -#if	defined(CONFIG_TPS65010) || defined(CONFIG_TPS65010_MODULE)
+> +#if	defined(CONFIG_TPS65010) || (defined(CONFIG_TPS65010_MODULE) && defi=
+ned(MODULE))
 
-> > There's nothing to prevent a runtime-suspended device from being 
-> > resumed in between the ->prepare() and ->suspend() callbacks.
-> 
-> I'm moving the barrier from __device_suspend() to device_prepare(), so there
-> shouldn't be surprise resumes in that time frame.
+nack, I would rather see a real fix, possibly also fixing the original
+hack.
 
-A wakeup request from the hardware can cause a runtime resume, even 
-if most threads are in the freezer:
+--=20
+balbi
 
-	Not all kernel threads get frozen.  One of the unfrozen threads 
-	could respond to the wakeup request by calling 
-	pm_runtime_resume().
+--ev7mvGV+3JQuI2Eo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Some runtime PM callbacks are marked as IRQ-safe and can run
-	directly within an interrupt handler.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> > Therefore it makes little sense to check the device's runtime status in 
-> > device_prepare().  The check should be done in __device_suspend().
-> 
-> If we do the barrier in device_prepare(), then I'm not sure what mechanism
-> would cause the device to resume.
+iQIcBAEBAgAGBQJTcjmnAAoJEIaOsuA1yqREsHIP/i6A23/UcJeYz4s+Ed8y60/I
+2zX8hlGWQf/6B6gnIWCZenNk7duVuHlsmImcA+Ja7weGzK1l+rxuUZWNUXjp/4iT
+logymzThsMFamxnddMIgVBZNCQDuA5wBngfvfwzde04vwhz1Tdt5RGkr4JksgJ8A
+3prhzr8MYA5+Fj5nnoH8wuMyXtzvDsNfaCU4RtbOoqGvQtrRiVyTVxcL9k82LYlS
+fWUFJaozJ6CIGz+M6d2YTs3ccpNAdPeVywJb/CDzLcEwcTnoda9Y1wDcryCR6xwe
+cxItuqYvOUzrJnhS90uEKCom3zAOM/hFL1yzkr3Eh0hUzU6SP9Ree02J3d/+Ev6V
+C/86u0GBjUxtoFNIZOFb9/alFw4oGVbzBRg3sNsbyZRyssrnobd4gQBvnGhMWdf2
+qnuJ6zm+jQVSFOV+IWeaOtI9aoeQJJZ+QN+ZHjqerEEiEMsbWF0uxBNd9aatBky8
+c1W5EX0MNEqdw2B0n12PB1G388lNthc7/qxTxUqmrUjwXzg357POrAmKnMX5fD3o
+OipDyL3zTM/ax0DTGhs6u+5vb+4R8dWHBeyMAovLUEcV9fu06FxKRdZG7h0ZP493
+j0CmhBDQQTW2XNWNMSFCJBA+4Z7tOe93/usidxLZHokrJjXxBHMD+rTnShViZ3RK
+FT0NB9V5TdFPiLYxDCZe
+=9REK
+-----END PGP SIGNATURE-----
 
-See above.  A wakeup request can arrive after the barrier has finished.
-
-> If there is one, the whole approach is in danger, because ->prepare() has to
-> check if devices are runtime-suspended and has to be sure that their status
-> won't change after it has returned 1.
-
-->prepare() cannot guarantee in all cases that a device will remain in 
-runtime suspend.  Fortunately, it doesn't need to.  In fact (as I 
-mentioned sometime before), it doesn't even need to check whether the 
-device currently is runtime suspended -- it suffices to know that _if_ 
-the device is runtime suspended _then_ it has the proper settings for 
-system suspend.
-
-Regardless, status changes cannot cause a problem.  If the device does
-get runtime-resumed after ->prepare(), it will remain that way when
-__device_suspend() runs.  The device can't be runtime-suspended again,
-because device_prepare() does pm_get_noresume().
-
-Therefore, if the device is still runtime-suspended when
-__device_suspend() runs, we can be sure that its status and state are
-still the same as when ->prepare() ran.
-
-Alan Stern
-
+--ev7mvGV+3JQuI2Eo--
