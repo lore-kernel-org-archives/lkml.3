@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaEMGiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:38:50 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:23784 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751171AbaEMGit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:38:49 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1040,1389715200"; 
-   d="scan'208";a="30439121"
-Message-ID: <5371BEFA.9060902@cn.fujitsu.com>
-Date: Tue, 13 May 2014 14:43:06 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756085AbaEMGjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:39:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24220 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043AbaEMGjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 02:39:49 -0400
+Message-ID: <5371BE07.30409@redhat.com>
+Date: Tue, 13 May 2014 08:39:03 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/10 V2] workqueue: convert worker_idr to worker_ida
-References: <20140505150514.GI11231@htj.dyndns.org> <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com> <1399877792-13046-7-git-send-email-laijs@cn.fujitsu.com> <20140512214030.GG18959@mtj.dyndns.org>
-In-Reply-To: <20140512214030.GG18959@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com
+CC: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v3 3/8] phy: sunxi: Rework phy initialization
+References: <1399923274-6017-1-git-send-email-maxime.ripard@free-electrons.com> <1399923274-6017-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1399923274-6017-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 05:40 AM, Tejun Heo wrote:
-> On Mon, May 12, 2014 at 02:56:18PM +0800, Lai Jiangshan wrote:
->> @@ -1681,7 +1682,6 @@ static void worker_detach_from_pool(struct worker *worker,
->>  	struct completion *detach_completion = NULL;
->>  
->>  	mutex_lock(&pool->manager_mutex);
->> -	idr_remove(&pool->worker_idr, worker->id);
->>  	list_del(&worker->node);
->>  	if (list_empty(&pool->workers))
->>  		detach_completion = pool->detach_completion;
-> 
-> Why are we moving ida removal to the caller here?  Does
+Hi,
 
-ida							is for worker ID
-pool->workers list and worker_detach_from_pool()	are for attaching/detaching
+On 05/12/2014 09:34 PM, Maxime Ripard wrote:
+> Move the phy initialization and variables declaration to the loop itself, since
+> it is where it really belongs. Also remove all the temporary variables, we can
+> use the structure members directly.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/phy/phy-sun4i-usb.c | 44 ++++++++++++++++++++------------------------
+>  1 file changed, 20 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+> index e6e6c4ba7145..81896409c4bd 100644
+> --- a/drivers/phy/phy-sun4i-usb.c
+> +++ b/drivers/phy/phy-sun4i-usb.c
+> @@ -224,13 +224,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>  	struct sun4i_usb_phy_data *data;
+>  	struct device *dev = &pdev->dev;
+>  	struct device_node *np = dev->of_node;
+> -	void __iomem *pmu = NULL;
+>  	struct phy_provider *phy_provider;
+> -	struct reset_control *reset;
+> -	struct regulator *vbus;
+>  	struct resource *res;
+> -	struct phy *phy;
+> -	char name[16];
+>  	int i;
+>  
+>  	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+> @@ -262,42 +257,43 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>  
+>  	/* Skip 0, 0 is the phy for otg which is not yet supported. */
+>  	for (i = 1; i < data->num_phys; i++) {
+> +		struct sun4i_usb_phy *phy = data->phys + i;
+> +		char name[16];
+> +
+>  		snprintf(name, sizeof(name), "usb%d_vbus", i);
+> -		vbus = devm_regulator_get_optional(dev, name);
+> -		if (IS_ERR(vbus)) {
+> -			if (PTR_ERR(vbus) == -EPROBE_DEFER)
+> +		phy->vbus = devm_regulator_get_optional(dev, name);
+> +		if (IS_ERR(phy->vbus)) {
+> +			if (PTR_ERR(phy->vbus) == -EPROBE_DEFER)
+>  				return -EPROBE_DEFER;
+> -			vbus = NULL;
+> +			phy->vbus = NULL;
+>  		}
+>  
+>  		snprintf(name, sizeof(name), "usb%d_reset", i);
+> -		reset = devm_reset_control_get(dev, name);
+> -		if (IS_ERR(reset)) {
+> +		phy->reset = devm_reset_control_get(dev, name);
+> +		if (IS_ERR(phy->reset)) {
+>  			dev_err(dev, "failed to get reset %s\n", name);
+> -			return PTR_ERR(reset);
+> +			return PTR_ERR(phy->reset);
+>  		}
+>  
+>  		if (i) { /* No pmu for usbc0 */
+>  			snprintf(name, sizeof(name), "pmu%d", i);
+>  			res = platform_get_resource_byname(pdev,
+>  							IORESOURCE_MEM, name);
+> -			pmu = devm_ioremap_resource(dev, res);
+> -			if (IS_ERR(pmu))
+> -				return PTR_ERR(pmu);
+> +			phy->pmu = devm_ioremap_resource(dev, res);
+> +			if (IS_ERR(phy->pmu))
+> +				return PTR_ERR(phy->pmu);
+> +		} else {
+> +			phy->pmu = NULL;
+>  		}
+>  
 
-moving ida removal to the caller removes the unneeded coupling.
+data is kzalloced, so there is no need for this else branch. Other then that
+this patch is:
 
-> worker_detach_from_pool() get used for something else later?  Up until
-> this point, the distinction seems pretty arbitrary.
-> 
->> @@ -1757,8 +1754,6 @@ static struct worker *create_worker(struct worker_pool *pool)
->>  	if (pool->flags & POOL_DISASSOCIATED)
->>  		worker->flags |= WORKER_UNBOUND;
->>  
->> -	/* successful, commit the pointer to idr */
->> -	idr_replace(&pool->worker_idr, worker, worker->id);
-> 
-> Ah, the comment is removed altogether.  Please disregard my previous
-> review on the comment.
-> 
-> Thanks.
-> 
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
+Regards,
+
+Hans
+
+> -		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
+> -		if (IS_ERR(phy)) {
+> +		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
+> +		if (IS_ERR(phy->phy)) {
+>  			dev_err(dev, "failed to create PHY %d\n", i);
+> -			return PTR_ERR(phy);
+> +			return PTR_ERR(phy->phy);
+>  		}
+>  
+> -		data->phys[i].phy = phy;
+> -		data->phys[i].pmu = pmu;
+> -		data->phys[i].vbus = vbus;
+> -		data->phys[i].reset = reset;
+> -		data->phys[i].index = i;
+> -		phy_set_drvdata(phy, &data->phys[i]);
+> +		phy->index = i;
+> +		phy_set_drvdata(phy->phy, &data->phys[i]);
+>  	}
+>  
+>  	dev_set_drvdata(dev, data);
+> 
