@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759350AbaEMIdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:33:37 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:52011 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759294AbaEMIde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:33:34 -0400
+	id S1759399AbaEMIdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:33:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56887 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758830AbaEMIdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 04:33:49 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <zonque@gmail.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH v3 0/5] Add support for SW babble Control
+Date: Tue, 13 May 2014 14:01:40 +0530
+Message-ID: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-In-Reply-To: <20140513082609.GA2485@laptop.programming.kicks-ass.net>
-References: <1399929376-4597-1-git-send-email-vincent.guittot@linaro.org> <20140513082609.GA2485@laptop.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 13 May 2014 10:33:14 +0200
-Message-ID: <CAKfTPtDwzFay6oaEYYng59MUfO33hD4WH84Cpz91n=6wRD3y3Q@mail.gmail.com>
-Subject: Re: sched: fix: initialization of sched_domain_topology for NUMA
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, jet.chen@intel.com,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        linux-ia64@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2014 10:26, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, May 12, 2014 at 11:16:16PM +0200, Vincent Guittot wrote:
->> sched_domain_topology table is a null terminated array.
->> Add 1 row in the allocation size that will be used as the last row of the
->> table.
->>
->> Reported-by: Jet Chen <jet.chen@intel.com>
->> Tested-by: Jet Chen <jet.chen@intel.com>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> link: https://lkml.org/lkml/2014/5/12/130
->>
->> ---
->>
->> Hi Ingo and Peter,
->>
->> This patch fixes the problem that has been reported by Jet Chen
->>
->
-> I have no mail from Jet Chen on any recent issues.
+Series add support for SW babble control logic found in 
+new silicon versions of AM335x. Runtime differentiation of
+silicon version is done by checking the BABBLE_CTL register.
+For newer silicon the register default value read is 0x4 and
+for older versions its 0x0.
 
-Hi Peter,
+Patch 1 -> Convert recover work to delayed work.
+Patch 2 -> usb_phy_vbus_(off/_on) are NOPs for am335x PHY
+	   so use usb_phy(_shutdown/_init) in musb_platform_reset()
+Patch 3 -> Add return value for musb_platform_reset() in prepration
+	   to support SW babble_ctrl
+Patch 4 -> Add the sw_babble_control()
+Patch 5 -> Enable sw babble control for newer silicon
+	
+v2 -> v3 : Modify musb_platform_reset() to return zero on success.
 
-I have just noticed that you were not in the list of the original message
+v1 -> v2 : Fixed the issue with Patch 5. In v1 it was not calling 
+	   sw_babble_control().
 
->
-> Also, please describe both the problem and the fix in the Changelog
-> without need to refer to secondary sources.
+George Cherian (5):
+  usb: musb: core: Convert babble recover work to delayed work
+  usb: musb: dsps: Call usb_phy(_shutdown/_init) during
+    musb_platform_reset()
+  usb: musb: core: Convert the musb_platform_reset to have a return
+    value.
+  usb: musb: dsps: Add the sw_babble_control()
+  usb: musb: dsps: Enable sw babble control for newer silicon
 
-Ok, i'm going to update the commit message with more information
+ drivers/usb/musb/musb_core.c | 49 ++++++++++++++------------
+ drivers/usb/musb/musb_core.h | 12 ++++---
+ drivers/usb/musb/musb_dsps.c | 83 ++++++++++++++++++++++++++++++++++++++++++--
+ drivers/usb/musb/musb_regs.h |  7 ++++
+ 4 files changed, 121 insertions(+), 30 deletions(-)
 
->
-> As it stands I've no clue wth this is about.
+-- 
+1.8.3.1
+
