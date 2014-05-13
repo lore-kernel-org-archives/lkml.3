@@ -1,81 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaEMGf1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 02:35:27 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17255 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaEMGfY (ORCPT
+	id S1754673AbaEMGhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 02:37:36 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:52597 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaEMGhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 02:35:24 -0400
-Message-ID: <5371BD26.8080607@huawei.com>
-Date: Tue, 13 May 2014 14:35:18 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 13 May 2014 02:37:34 -0400
+Date: Tue, 13 May 2014 08:37:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
+Message-ID: <20140513063729.GA7905@gmail.com>
+References: <20140512190438.314125476@linutronix.de>
+ <20140512173705.0bbdb675@gandalf.local.home>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy
- fixes and updates
-References: <1399663975-315-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1399663975-315-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140512173705.0bbdb675@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/10 3:32, Tejun Heo wrote:
-> Hello,
-> 
-> Changes from the last take[L] are,
-> 
-> * 0002, 0003 and 0007 added.
-> 
-> * Other patches are refreshed without content change.
-> 
-> This patchset contains the following seven patches.
-> 
->  0001-cgroup-fix-offlining-child-waiting-in-cgroup_subtree.patch
->  0002-cgroup-cgroup_idr_lock-should-be-bh.patch
->  0003-cgroup-css_release-shouldn-t-clear-cgroup-subsys.patch
->  0004-cgroup-update-and-fix-parsing-of-cgroup.subtree_cont.patch
->  0005-cgroup-use-restart_syscall-for-retries-after-offline.patch
->  0006-cgroup-use-release_agent_path_lock-in-cgroup_release.patch
->  0007-cgroup-rename-css_tryget-to-css_tryget_online.patch
-> 
-> 0001 fixes two bugs in cgroup_subtree_control_write().
-> 
-> 0004 fixes and makes subtree_control parsing stricter.
-> 
-> 0005 simplifies cgroup_substree_control_write() retry path by using
-> restart_syscall().
-> 
-> 0006 makes cgroup_release_agent_show() use release_path_lock.  The
-> original conversion missed this one.
-> 
-> 0007 renames css_tryget() to css_tryget_online().  This patch was
-> posted separately before - [1] - and acked by Michal and Johannes.
-> 
-> This patchset is on top of cgroup/for-3.16 6e1a046e9458 ("Merge branch
-> 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu
-> into for-3.16") and available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-post-unified-updates-v2
-> 
-> diffstat follows.
-> 
->  block/blk-cgroup.c     |    2 -
->  fs/bio.c               |    2 -
->  include/linux/cgroup.h |   14 +++----
->  kernel/cgroup.c        |   88 +++++++++++++++++++++++++------------------------
->  kernel/cpuset.c        |    6 +--
->  kernel/events/core.c   |    3 +
->  mm/hugetlb_cgroup.c    |    2 -
->  mm/memcontrol.c        |   46 +++++++++++++------------
->  8 files changed, 84 insertions(+), 79 deletions(-)
-> 
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> >    This is beyond sloppy and outright stupid.
+> 
+> Thomas, listen to yourself. You are calling something that got in
+> without updating the documentation and test case "beyond sloppy and
+> outright stupid". Sure, I'll agree it was a little sloppy, and today I'm
+> more on the ball to get things like this right (as we push much harder
+> today on documentation coming in along with code changes). But the
+> change log had:
+> 
+>     need updated after this patch is accepted
+>     1) Document/*
+>     2) the testcase scripts/rt-tester/t4-l2-pi-deboost.tst
+> 
+> I agree this should be fixed, but you temper tantrum over this seems 
+> a bit over the top.
+
+Well, the thing is, it's not just about the breakage, but the 
+changelog and the patch in itself already violates a very basic and 
+fundamental kernel workflow pattern we try to follow all the time for 
+core kernel changes: when speedups are introduced then fixes are never 
+'promised' to be done in an uncertain future, but are done preferably 
+before (or together) with the speedup.
+
+Especially when there's an ABI involved.
+
+The "break and fix later" kind of pattern might not be as problematic 
+for debug features which are not critical to users, but for ABI facing 
+changes it's deadly and inacceptable.
+
+Also, the problems with the broken commit already begin with the 
+readability of the changelog:
+
+1)
+
+The very first sentence:
+
+  > In current rtmutex,
+
+Should be:
+
+  > In the current rtmutex code,
+
+2)
+
+Also, the 'Example' that comes next is just a flow of sentences 
+without any vertical alignment (tabs, spaces, etc.), making it harder 
+to review.
+
+3)
+
+Plus, here:
+
+  "time3
+   A or other high prio task sleeps, but we have passed some time
+   The B and C's prio are changed in the period (time2 ~ time3)"
+
+where does the first sentence end?
+
+4)
+
+  "when requiring lock,"
+
+I suspect that wanted to say 'reacquiring' the lock.
+
+5)
+
+  "Other advantage of this patch:"
+
+s/advantage/advantages/
+
+6)
+
+  "The states of a rtmutex are reduced a half, easier to read the code."
+
+s/reduced a half/reduced by half
+
+7)
+
+ it is unrelated/unneed boosting 
+
+s/unneed/unneeded
+
+?
+
+8)
+
+The diffstat is 'frickin hug:
+
+ kernel/futex.c          |  22 +++++-----
+ kernel/rtmutex-debug.c  |   1 -
+ kernel/rtmutex.c        | 318 +++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------------------------------------------
+ kernel/rtmutex_common.h |  16 +------
+ 4 files changed, 127 insertions(+), 230 deletions(-)
+
+When a changelog is harder to read due to basic grammar and 
+typographical errors, and when the patch is large, it's harder to 
+notice more fundamental problems as well.
+
+(I've attached the full changelog below for reference.)
+
+I should have noticed these warning signs when pulling your tree, I 
+generally read over changelogs and patches I pull, but missed this - 
+not sure what fell into me.
+
+My bad, will be more careful next time around.
+
+Thanks,
+
+	Ingo
+
+=====================================>
+>From 8161239a8bcce9ad6b537c04a1fa3b5c68bae693 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Fri, 14 Jan 2011 17:09:41 +0800
+Subject: [PATCH] rtmutex: Simplify PI algorithm and make highest prio task get
+ lock
+
+In current rtmutex, the pending owner may be boosted by the tasks
+in the rtmutex's waitlist when the pending owner is deboosted
+or a task in the waitlist is boosted. This boosting is unrelated,
+because the pending owner does not really take the rtmutex.
+It is not reasonable.
+
+Example.
+
+time1:
+A(high prio) onwers the rtmutex.
+B(mid prio) and C (low prio) in the waitlist.
+
+time2
+A release the lock, B becomes the pending owner
+A(or other high prio task) continues to run. B's prio is lower
+than A, so B is just queued at the runqueue.
+
+time3
+A or other high prio task sleeps, but we have passed some time
+The B and C's prio are changed in the period (time2 ~ time3)
+due to boosting or deboosting. Now C has the priority higher
+than B. ***Is it reasonable that C has to boost B and help B to
+get the rtmutex?
+
+NO!! I think, it is unrelated/unneed boosting before B really
+owns the rtmutex. We should give C a chance to beat B and
+win the rtmutex.
+
+This is the motivation of this patch. This patch *ensures*
+only the top waiter or higher priority task can take the lock.
+
+How?
+1) we don't dequeue the top waiter when unlock, if the top waiter
+   is changed, the old top waiter will fail and go to sleep again.
+2) when requiring lock, it will get the lock when the lock is not taken and:
+   there is no waiter OR higher priority than waiters OR it is top waiter.
+3) In any time, the top waiter is changed, the top waiter will be woken up.
+
+The algorithm is much simpler than before, no pending owner, no
+boosting for pending owner.
+
+Other advantage of this patch:
+1) The states of a rtmutex are reduced a half, easier to read the code.
+2) the codes become shorter.
+3) top waiter is not dequeued until it really take the lock:
+   they will retain FIFO when it is stolen.
+
+Not advantage nor disadvantage
+1) Even we may wakeup multiple waiters(any time when top waiter changed),
+   we hardly cause "thundering herd",
+   the number of wokenup task is likely 1 or very little.
+2) two APIs are changed.
+   rt_mutex_owner() will not return pending owner, it will return NULL when
+                    the top waiter is going to take the lock.
+   rt_mutex_next_owner() always return the top waiter.
+	                 will not return NULL if we have waiters
+                         because the top waiter is not dequeued.
+
+   I have fixed the code that use these APIs.
+
+need updated after this patch is accepted
+1) Document/*
+2) the testcase scripts/rt-tester/t4-l2-pi-deboost.tst
+
+Signed-off-by:  Lai Jiangshan <laijs@cn.fujitsu.com>
+LKML-Reference: <4D3012D5.4060709@cn.fujitsu.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/futex.c          |  22 ++--
+ kernel/rtmutex-debug.c  |   1 -
+ kernel/rtmutex.c        | 318 +++++++++++++++++-------------------------------
+ kernel/rtmutex_common.h |  16 +--
+ 4 files changed, 127 insertions(+), 230 deletions(-)
 
