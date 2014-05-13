@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaEMRJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:09:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42937 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaEMRJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:09:46 -0400
-Date: Tue, 13 May 2014 19:09:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] irq_work: Let arch tell us if it can raise irq work
-Message-ID: <20140513170942.GC5226@laptop.programming.kicks-ass.net>
-References: <1399991921-17618-1-git-send-email-fweisbec@gmail.com>
- <1399991921-17618-2-git-send-email-fweisbec@gmail.com>
+	id S1752731AbaEMRM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:12:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152AbaEMRMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 13:12:23 -0400
+Date: Tue, 13 May 2014 19:11:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: can't we kill DIE_GPF ? (Was: x86/traps: cleanup DO_ERROR*()
+	to prepare for uprobes fixes)
+Message-ID: <20140513171148.GA12123@redhat.com>
+References: <20140508191140.GA16892@redhat.com> <20140509140723.GA22532@redhat.com> <5371B6AA.7060508@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399991921-17618-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5371B6AA.7060508@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 04:38:37PM +0200, Frederic Weisbecker wrote:
-> We prepare for executing the full nohz kick through an irq work. But
-> if we do this as is, we'll run into conflicting tick locking: the tick
-> holds the hrtimer lock and the nohz kick may do so too.
+On 05/13, Masami Hiramatsu wrote:
+>
+> (2014/05/09 23:07), Oleg Nesterov wrote:
+> > On 05/08, Oleg Nesterov wrote:
+> >>
+> >> For example, after this series
+> >> we can convert math_error() into the "normal" DO_ERROR() user, and most probably
+> >> we can do the same with do_general_protection().
+> >
+> > As for do_general_protection(), the problem is DIE_GPF.
+> >
+> > Masami, could you explain why it is needed ? kprobe_exceptions_notify()
+> > is the only user, can't it use DIE_TRAP and check trapnr = X86_TRAP_GP ?
+>
+> Actually, this may be only for something which will happen on
+> single-stepping out-of-line. And yes, I can move it onto the DIE_TRAP :)
+>
+> >
+> > And if it can, probably we can do notify_die() at the start like other
+> > DO_ERROR() functions do ?
+>
+> Agreed, it seems OK to me. (and seems better, since we can handle GPF
+> before changing task->thread struct)
+>
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-It does? How does the tick end up holding that lock?
+Great, thanks!
 
-Normal hrtimer callbacks run without holding the hrtimer lock -- I made
-it so.
+I'll resend this patch with the changelog and other changes.
 
-This means tick_sched_timer() is called without hrtimer lock, and I
-don't see it taking it anywhere in tick_sched_do_timer() or
-tick_sched_handle().
+Oleg.
+
