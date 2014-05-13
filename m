@@ -1,149 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025AbaEMK3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:29:54 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:41139 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760275AbaEMK3v convert rfc822-to-8bit (ORCPT
+	id S933349AbaEMKaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:30:17 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:62512 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933268AbaEMKaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:29:51 -0400
+	Tue, 13 May 2014 06:30:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140512190300.GF25056@phenom.ffwll.local>
-References: <CADDKRnCwxmJ8RonvZaizTT9R1jPU++tPPSQAH5OKD5=h9bQhMA@mail.gmail.com>
-	<CAKMK7uG20sF403PJcmWTD=kPF9seV4sXZpp9_hEq3LvV3kK5Hg@mail.gmail.com>
-	<CADDKRnB1DCzgjX-q-cgFFW48uT5r5MUcuc5D6chekEET5dFxxA@mail.gmail.com>
-	<20140509161438.GH31479@strange.amr.corp.intel.com>
-	<20140509170335.GZ18465@intel.com>
-	<CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
-	<CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
-	<CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
-	<20140512190300.GF25056@phenom.ffwll.local>
-Date: Tue, 13 May 2014 12:29:50 +0200
-Message-ID: <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
-Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>,
-        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
+In-Reply-To: <CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<CAKohpo=6qXer+RRS-F6x=O1VLzbWq+_a-b29MaUzZBvt7XzDwQ@mail.gmail.com>
+Date: Tue, 13 May 2014 11:30:13 +0100
+X-Google-Sender-Auth: wt-t3o5uKIqoVOeUe99RJtpyNNg
+Message-ID: <CAPKp9uZbz3M1Xyu7SnSFEexzUPxPqFTSmd7zmU8jU5-Dwu4gvA@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Sudeep Holla <sudeep.holla@arm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-12 21:03 GMT+02:00 Daniel Vetter <daniel@ffwll.ch>:
-> On Mon, May 12, 2014 at 01:25:24PM +0200, Jörg Otte wrote:
->> 2014-05-11 18:49 GMT+02:00 Daniel Vetter <daniel.vetter@ffwll.ch>:
->> > On Sat, May 10, 2014 at 10:52 AM, Jörg Otte <jrg.otte@gmail.com> wrote:
->> >>> On Fri, May 09, 2014 at 05:14:38PM +0100, Damien Lespiau wrote:
->> >>>> On Fri, May 09, 2014 at 06:11:37PM +0200, Jörg Otte wrote:
->> >>>> > > Jörg, can you please boot with drm.debug=0xe, reproduce the issue and
->> >>>> > > then attach the complete dmesg? Please make sure that the dmesg
->> >>>> > > contains the boot-up stuff too.
->> >>>> > >
->> >>>> > > Thanks, Daniel
->> >>>> > Here it is. I should mention it only happens at boot-up.
->> >>>>
->> >>>> [    0.374095] [drm] Wrong MCH_SSKPD value: 0x20100406
->> >>>> [    0.374096] [drm] This can cause pipe underruns and display issues.
->> >>>> [    0.374097] [drm] Please upgrade your BIOS to fix this.
->> >>>
->> >>> That can be a factor, but I think we may have some more general issue
->> >>> in the modeset sequence which causes these to get reported. I'm getting
->> >>> some on my machine as well where SSKPD looks more sane. Maybe we turn on
->> >>> the error reporting too early or something.
->> >>>
->> >>> But I'm not going to spend time worrying about these before my previous
->> >>> watermark stuff gets merged. Also the underrun reporting code itself
->> >>> would need some kind of rewrite to be really useful.
->> >>>
->> >>> If the display doesn't blank out during use everything is more or less
->> >>> fine and you can ignore these errors. It's quite likely that the
->> >>> errors were always present and you didn't know it. We just made them
->> >>> more prominent recently.
->> >>>
->> >>> --
->> >>> Ville Syrjälä
->> >>> Intel OTC
->> >>
->> >> It comes out on the boot-up screen which is normally clean. So it becomes
->> >> highly visible for anyone.
->> >
->> > To make sure that you're only seeing this at boot up and not elseplace
->> > please check that it doesn't show up when you do anything of the
->> > below:
->> > a) suspend/resume
->> > b) changing the output mode (e.g. with xrandr --mode)
->> > c) changing the output pipe (e.g. with xrandr --crtc)
->> > d) all of the above but with heavy system load, e.g. compile kernels
->> > with make -j <num-cores*2>
->> >
->> > Also please test the latest drm-intel-nightly branch from
->> > http://cgit.freedesktop.org/drm-intel to make sure we haven't yet
->> > fixed this in our -next branch.
->> >
+On Tue, May 13, 2014 at 9:22 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 13 May 2014 13:11, [Chander Kashyap <chander.kashyap@linaro.org> wrote:
+>
+> What happened to your name ? "["
+>
+>> From: Chander Kashyap <k.chander@samsung.com>
 >>
->> Ok, that was a lot of homework ;)
+>> It may be possible to unregister and re-register the cpufreq driver.
+>> One such example is arm big-little IKS cpufreq driver. While
+>> re-registering the driver, same OPPs may get added again.
 >>
->> I checked a,b,d):  All worked without FIFO underruns.
+>> This patch detects the duplicacy and discards them.
 >>
->> For c): I must admit I don't know what --crtc is good for and
->> the man page isn't very useful. I can't enter a meaningful command.
+>> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+>> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+>> ---
+>>  drivers/base/power/opp.c |   28 +++++++++++++++++++---------
+>>  1 file changed, 19 insertions(+), 9 deletions(-)
 >
-> $ xrandr --output <output> --auto --crtc 0
+> I wouldn't say that this approach is particularly bad or wrong, but what
+> about this instead?
 >
-> and
->
-> $ xrandr --output <output> --auto --crtc 1
->
-> should do the trick, presuming you only have one output in total. Then
-> switch a bit between them.
 
-Works without underruns, with standard and nightly kernel.
+Yes I prefer this and this exactly what I had[1] in my OPP DT series which
+we could not conclude on the bindings. You also need patch[2] for DT version.
 
->> Branch drm-intel-nightly as of
->> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
->> looks badly:
->>    - KDE splash screen on boot-up is not visible
->>    - x-windows don't have title and menu bars
->>    - KDE system menu is not visible
->>    - moving windows around destroys its content
->
-> Ugh, that's ugly. Nothing else change like e.g. the version of
-> xfree-video-intel?
+Regards,
+Sudeep
 
- (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
- (II) Module intel: vendor="X.Org Foundation"
- compiled for 1.11.3, module version = 2.17.0
- Module class: X.Org Video Driver
- ABI class: X.Org Video Driver, version 11.0
-
->> apart from that: Via control key I can open a terminal and I checked
->> a,b), both worked without FIFO underruns.
->
-> And what about at boot? If -nightly regresses even on that that's pretty
-> awful.
-Sorry I forgot to mention this. It behaves like the standard kernel.
-The FIFO underrun comes at boot-up. And than never again.
-
->
-> Also please test
->
-> http://patchwork.freedesktop.org/patch/25568/
-
-For me it doesn't make any difference.
-
->it might help for your case. If it doesn't we need to look into what
->exactly goes wrong on driver load
-
-Don't know if this matters: I always use kernels without loadable modules.
-Everything is built-in.
-
-
-Thanks, Jörg
+[1] http://www.spinics.net/lists/cpufreq/msg07914.html
+[2] http://www.spinics.net/lists/cpufreq/msg07916.html
