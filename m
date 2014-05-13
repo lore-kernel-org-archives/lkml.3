@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760124AbaEMJi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:38:29 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60892 "EHLO
+	id S1760033AbaEMJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:38:27 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60877 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760114AbaEMJ25 (ORCPT
+	by vger.kernel.org with ESMTP id S1760104AbaEMJ25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:57 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 096/182] media: media: gspca: sn9c20x: add ID for Genius Look 1320 V2
-Date: Tue, 13 May 2014 11:27:28 +0200
-Message-Id: <9d0905087a113dbb40bfed0324aa00f60175542b.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 066/182] IB/ipath: Fix potential buffer overrun in sending diag packet routine
+Date: Tue, 13 May 2014 11:26:58 +0200
+Message-Id: <5bbdbb9693763bdaddb142020309c72083715edc.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -25,47 +24,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Dennis Dalessandro <dennis.dalessandro@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
+commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Guard against a potential buffer overrun.  The size to read from the
+user is passed in, and due to the padding that needs to be taken into
+account, as well as the place holder for the ICRC it is possible to
+overflow the 32bit value which would cause more data to be copied from
+user space than is allocated in the buffer.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- Documentation/video4linux/gspca.txt | 1 +
- drivers/media/usb/gspca/sn9c20x.c   | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
+ 1 file changed, 25 insertions(+), 41 deletions(-)
 
-diff --git a/Documentation/video4linux/gspca.txt b/Documentation/video4linux/gspca.txt
-index 1e6b6531bbcc..d2ba80bb7af5 100644
---- a/Documentation/video4linux/gspca.txt
-+++ b/Documentation/video4linux/gspca.txt
-@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
- sonixj		0458:7025	Genius Eye 311Q
- sn9c20x		0458:7029	Genius Look 320s
- sonixj		0458:702e	Genius Slim 310 NB
-+sn9c20x		0458:7045	Genius Look 1320 V2
- sn9c20x		0458:704a	Genius Slim 1320
- sn9c20x		0458:704c	Genius i-Look 1321
- sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
-diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-index f4453d52801b..ceb5404045b4 100644
---- a/drivers/media/usb/gspca/sn9c20x.c
-+++ b/drivers/media/usb/gspca/sn9c20x.c
-@@ -2359,6 +2359,7 @@ static const struct usb_device_id device_table[] = {
- 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
- 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
- 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
-+	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
- 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
+diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
+index 714293b78518..e2f9a51f4a38 100644
+--- a/drivers/infiniband/hw/ipath/ipath_diag.c
++++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 				   size_t count, loff_t *off)
+ {
+ 	u32 __iomem *piobuf;
+-	u32 plen, clen, pbufn;
++	u32 plen, pbufn, maxlen_reserve;
+ 	struct ipath_diag_pkt odp;
+ 	struct ipath_diag_xpkt dp;
+ 	u32 *tmpbuf = NULL;
+@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	u64 val;
+ 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
+ 
+-	if (count < sizeof(odp)) {
+-		ret = -EINVAL;
+-		goto bail;
+-	}
+ 
+ 	if (count == sizeof(dp)) {
+ 		if (copy_from_user(&dp, data, sizeof(dp))) {
+ 			ret = -EFAULT;
+ 			goto bail;
+ 		}
+-	} else if (copy_from_user(&odp, data, sizeof(odp))) {
+-		ret = -EFAULT;
++	} else if (count == sizeof(odp)) {
++		if (copy_from_user(&odp, data, sizeof(odp))) {
++			ret = -EFAULT;
++			goto bail;
++		}
++	} else {
++		ret = -EINVAL;
+ 		goto bail;
+ 	}
+ 
+-	/*
+-	 * Due to padding/alignment issues (lessened with new struct)
+-	 * the old and new structs are the same length. We need to
+-	 * disambiguate them, which we can do because odp.len has never
+-	 * been less than the total of LRH+BTH+DETH so far, while
+-	 * dp.unit (same offset) unit is unlikely to get that high.
+-	 * Similarly, dp.data, the pointer to user at the same offset
+-	 * as odp.unit, is almost certainly at least one (512byte)page
+-	 * "above" NULL. The if-block below can be omitted if compatibility
+-	 * between a new driver and older diagnostic code is unimportant.
+-	 * compatibility the other direction (new diags, old driver) is
+-	 * handled in the diagnostic code, with a warning.
+-	 */
+-	if (dp.unit >= 20 && dp.data < 512) {
+-		/* very probable version mismatch. Fix it up */
+-		memcpy(&odp, &dp, sizeof(odp));
+-		/* We got a legacy dp, copy elements to dp */
+-		dp.unit = odp.unit;
+-		dp.data = odp.data;
+-		dp.len = odp.len;
+-		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
+-	}
+-
+ 	/* send count must be an exact number of dwords */
+ 	if (dp.len & 3) {
+ 		ret = -EINVAL;
+ 		goto bail;
+ 	}
+ 
+-	clen = dp.len >> 2;
++	plen = dp.len >> 2;
+ 
+ 	dd = ipath_lookup(dp.unit);
+ 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
+@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 		goto bail;
+ 	}
+ 
+-	/* need total length before first word written */
+-	/* +1 word is for the qword padding */
+-	plen = sizeof(u32) + dp.len;
+-
+-	if ((plen + 4) > dd->ipath_ibmaxlen) {
++	/*
++	 * need total length before first word written, plus 2 Dwords. One Dword
++	 * is for padding so we get the full user data when not aligned on
++	 * a word boundary. The other Dword is to make sure we have room for the
++	 * ICRC which gets tacked on later.
++	 */
++	maxlen_reserve = 2 * sizeof(u32);
++	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
+ 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
+-			  plen - 4, dd->ipath_ibmaxlen);
++			  dp.len, dd->ipath_ibmaxlen);
+ 		ret = -EINVAL;
+-		goto bail;	/* before writing pbc */
++		goto bail;
+ 	}
++
++	plen = sizeof(u32) + dp.len;
++
+ 	tmpbuf = vmalloc(plen);
+ 	if (!tmpbuf) {
+ 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
+@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	 */
+ 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
+ 		ipath_flush_wc();
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
+ 		ipath_flush_wc();
+-		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
++		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
+ 	} else
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
+ 
+ 	ipath_flush_wc();
+ 
 -- 
 1.9.3
 
