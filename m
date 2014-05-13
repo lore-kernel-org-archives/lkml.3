@@ -1,140 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaEMUUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:20:07 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:58768 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaEMUUE (ORCPT
+	id S1754846AbaEMUUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:20:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:26765 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752884AbaEMUUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:20:04 -0400
-Message-ID: <53727E6E.6050503@gmail.com>
-Date: Tue, 13 May 2014 22:19:58 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] clk: add helper for unique DT clock names
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com> <1399839881-29895-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140513194922.5943.40228@quantum>
-In-Reply-To: <20140513194922.5943.40228@quantum>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 16:20:44 -0400
+Date: Tue, 13 May 2014 16:20:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
+Message-ID: <20140513162041.3405b668@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
+References: <20140512190438.314125476@linutronix.de>
+	<20140512201700.999660035@linutronix.de>
+	<5371B2D9.8060405@cn.fujitsu.com>
+	<20140513084815.GB2485@laptop.programming.kicks-ass.net>
+	<alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 09:49 PM, Mike Turquette wrote:
-> Quoting Sebastian Hesselbarth (2014-05-11 13:24:34)
->> Currently, most DT clock drivers pick a unique node name to allow unique
->> clock names. As ePAPR recommends node names to be generic, we therefore
->> provide a helper to generate a unique clock name from the DT node name
->> plus reg property or a magic number instead. This is basically the same
->> we already do for proper devices and may vanish as soon as there is some
->> (early) device support for clocks available.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-[...]
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index dff0373f53c1..b449a635dbfa 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/list.h>
->>  #include <linux/slab.h>
->>  #include <linux/of.h>
->> +#include <linux/of_address.h>
->>  #include <linux/device.h>
->>  #include <linux/init.h>
->>  #include <linux/sched.h>
->> @@ -2543,6 +2544,34 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
->>  }
->>  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
->>  
->> +/**
->> + * of_clk_create_name() - Allocate and create a unique clock name
->> + * @np: Device node pointer of the clock node
->> + *
->> + * This will allocate and create a unique clock name based on the
->> + * reg property value. As a last resort, it will use the node name
->> + * followed by a unique number. The caller has to deallocate the
->> + * buffer.
->> + */
->> +char *of_clk_create_name(struct device_node *np)
->> +{
->> +       static atomic_t clk_no_reg_magic;
->> +       const __be32 *reg;
->> +       u64 addr;
->> +       int magic;
->> +
->> +       reg = of_get_property(np, "reg", NULL);
->> +       if (reg) {
->> +               addr = of_translate_address(np, reg);
->> +               return kasprintf(GFP_KERNEL, "%llx.%s",
->> +                                (unsigned long long)addr, np->name);
->> +       }
->> +
->> +       magic = atomic_add_return(1, &clk_no_reg_magic);
->> +       return kasprintf(GFP_KERNEL, "%s.%d", np->name, magic);
+On Tue, 13 May 2014 21:42:54 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> On Tue, 13 May 2014, Peter Zijlstra wrote:
+> > 
+> > Now, if you and Steve get this sorted, nothing really happened except
+> > that Thomas got grumpy, which is entirely normal, what else would he be?
+> > :-)
 > 
-> For the case where we the reg property is present we use reg.name, but
-> for the case were the reg property is missing we use name.magic. Is it
-> intentional to switch the string and integer pairs?
+> Who is that grumpy Thomas dude, should I know him?
 > 
-> Doing so avoids the case where magic might collide with a simple bus
-> clock (e.g. 'clk@1'), but I wanted to double check that it was
-> intentional.
+> Lai, Steven,
+> 
+> before you waste lots of time on the tester, I want to look at it
+> whether we can simplify it or even rewrite it from scratch. I glanced
+> at it today and I really can't remember what kind of substances were
+> involved when I wrote this almost a decade ago.
 
-Mike,
+Thank God. /me removes the ton of trace_printk()s in the code as well
+as all the trace_marker.write("%s" %(line)) from the test to figure out
+what was going on.
 
-yes it is intentional and copies what is done for platform_device names.
+> 
+> The whole schedule_rt_mutex mechanism was mostly done to create
+> controlled lock stealing scenarios and deal with the BKL
+> oddities.
+> 
+> With Lai's simplification and the demise of BKL I'm quite sure we do
+> not need it anymore.
+> 
+> So we can just get rid of the complexity in schedule_rt_mutex() and
+> replace it with a simple:
+> 
+>     while (!td->continue)
+>     	  schedule();
+> 
+> That would also make the teardown and reset of the whole thing
+> manageable. Right now it's easy to create a situation where unrolling
+> stuff gets almost impossible except by pushing the reset button.
+> 
+> The state readouts can be done directly via the rtmutexes and the task
+> structs.
+> 
+> Thoughts?
+> 
 
-Unfortunately, as much as I prefer this patch someday, it doesn't work
-with the rest of the helpers as expected. While this can generate unique
-and generic clock names, especially of_clk_get_parent_name() picks
-either an clock-output-names named clock _or_ the node name ignoring the
-above auto-generated name of course.
+What about having a module that creates a bunch of threads and forces
+all the scenarios that we want to test? Wouldn't it be easier to do
+than to have a userspace interface to dictate commands to the kernel?
 
-If you agree with the general approach here, we should still postpone
-this for the next cycle when I have more time to look at the details.
-I prefer to rename the nodes and use clock-output-names where required
-for the Berlin clock nodes now.
-
-Sebastian
-
->> +}
->> +EXPORT_SYMBOL_GPL(of_clk_create_name);
->> +
->>  struct clock_provider {
->>         of_clk_init_cb_t clk_init_cb;
->>         struct device_node *np;
->> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
->> index 511917416fb0..c6f3ca1cd81c 100644
->> --- a/include/linux/clk-provider.h
->> +++ b/include/linux/clk-provider.h
->> @@ -514,6 +514,7 @@ struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
->>  struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
->>  int of_clk_get_parent_count(struct device_node *np);
->>  const char *of_clk_get_parent_name(struct device_node *np, int index);
->> +char *of_clk_create_name(struct device_node *np);
->>  
->>  void of_clk_init(const struct of_device_id *matches);
->>  
->> @@ -543,6 +544,10 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
->>  {
->>         return NULL;
->>  }
->> +static inline char *of_clk_create_name(struct device_node *np)
->> +{
->> +       return NULL;
->> +}
->>  #define of_clk_init(matches) \
->>         { while (0); }
->>  #endif /* CONFIG_OF */
->> -- 
->> 1.9.1
->>
-
+-- Steve
