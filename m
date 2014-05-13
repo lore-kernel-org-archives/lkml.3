@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758977AbaEMHfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:35:10 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:34262 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763AbaEMHfG (ORCPT
+	id S1759033AbaEMHfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:35:54 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:15625 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759001AbaEMHfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:35:06 -0400
+	Tue, 13 May 2014 03:35:52 -0400
+Message-ID: <5371CB4A.3030905@huawei.com>
+Date: Tue, 13 May 2014 15:35:38 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5371BEFD.6000407@ti.com>
-References: <1399643877-14528-1-git-send-email-gautam.vivek@samsung.com>
-	<5370C689.2090402@ti.com>
-	<CAFp+6iH-bLd9WUYyK8d8i=UNUm4DHpEYz=Am_qzPyX6gDovyKA@mail.gmail.com>
-	<5371BEFD.6000407@ti.com>
-Date: Tue, 13 May 2014 13:05:04 +0530
-X-Google-Sender-Auth: SwShX1iT7eyRXi6oTkQleTcGrVE
-Message-ID: <CAFp+6iGHQBCSdCPSdVVFcKp_MbUTU-2u_PusWsKzRVPyhGd2NA@mail.gmail.com>
-Subject: Re: [PATCH v8 1/2] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, "robh+dt" <robh+dt@kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: remove cgroup_tree_mutex
+References: <1399407574-21472-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1399407574-21472-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:13 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
-> On Tuesday 13 May 2014 11:37 AM, Vivek Gautam wrote:
->> Hi Kishon,
->>
->>
->> On Mon, May 12, 2014 at 6:33 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>> Hi Gautam,
->>>
->>> On Friday 09 May 2014 07:27 PM, Vivek Gautam wrote:
->>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
->>>> The new driver uses the generic PHY framework and will interact
->>>> with DWC3 controller present on Exynos5 series of SoCs.
->>>>
->>>> Also, created a new header file in linux/mfd/syscon/ for
->>>> Exynos5 SoCs and put the required PMU offset definitions
->>>> for the basic available PHYs.
->>>>
->>>
->>>
->>> I get the following checkpatch warnings
->>>
->>> WARNING: please write a paragraph that describes the config symbol fully
->>> #163: FILE: drivers/phy/Kconfig:163:
->>> +config PHY_EXYNOS5_USBDRD
->>>
->>> WARNING: DT compatible string "samsung,exynos5250-usbdrd-phy" appears
->>> un-documented -- check ./Documentation/devicetree/bindings/
->>> #708: FILE: drivers/phy/phy-exynos5-usbdrd.c:516:
->>> +               .compatible = "samsung,exynos5250-usbdrd-phy",
->>>
->>> WARNING: DT compatible string "samsung,exynos5420-usbdrd-phy" appears
->>> un-documented -- check ./Documentation/devicetree/bindings/
->>> #711: FILE: drivers/phy/phy-exynos5-usbdrd.c:519:
->>> +               .compatible = "samsung,exynos5420-usbdrd-phy",.
->>>
->>>
->>> I think you just need to separate the Documentation into a separate patch
->>> before applying the driver patch.
->>>
->>
->> I somehow don't see the Documentation warning. Below is the checkpatch
->> output which i ran on this v8 patch version.
->>   linux-phy$ ./scripts/checkpatch.pl phy.patch
->>   WARNING: please write a paragraph that describes the config symbol fully
->>   #127: FILE: drivers/phy/Kconfig:163:
->>   +config PHY_EXYNOS5_USBDRD
->>
->>   total: 0 errors, 1 warnings, 760 lines checked
->>
->>   phy.patch has style problems, please review.
->>
->>   If any of these errors are false positives, please report
->>   them to the maintainer, see CHECKPATCH in MAINTAINERS.
->>
->> am i missing something ?
->
-> Yeah.. the checkpatch.pl has got updated recently. If you use the latest kernel
-> you should see it.
->
+On 2014/5/7 4:19, Tejun Heo wrote:
+> Hello,
+> 
+> cgroup_tree_mutex was introduced during kernfs conversion to work
+> around the cyclic locking dependency between kernfs active protection
+> and cgroup_mutex.  Some file and directory operations need to acquire
+> cgroup_mutex which puts the mutex under the kernfs active protection;
+> however, cgroup also needs to access the hierarchy and the registered
+> cftypes to detemine which files to remove, which obviously can't be
+> done while holding cgroup_mutex anymore.
+> 
+> cgroup_tree_mutex nests above both cgroup_mutex and kernfs active
+> protection and protects hierarchy and cftypes so that those file
+> operations can be performed while holding it without cgroup_mutex.
+> This works but is kinda cumbersome as most places end up taking both
+> cgroup_tree_mutex and cgroup_mutex and there's on-going friction on
+> what needs to be protected by which combination.
+> 
+> Furthermore, due to new requirements from subtree_control
+> implementations, kernfs ended up growing full-blown mechanism to
+> bypass active protection instead of just supporting self-removal and
+> cgroup ended up using both mechanisms - two layered mutexes and active
+> protection bypss - on different areas, which is totally unncessary.
+> 
+> This patchset converts everything over to kernfs active protection
+> bypass and drops cgroup_tree_mutex making cgroup locking noticeably
+> simpler.  It contains the following eight patches.
+> 
+>  0001-cgroup-reorganize-cgroup_create.patch
+>  0002-cgroup-collapse-cgroup_create-into-croup_mkdir.patch
+>  0003-cgroup-grab-cgroup_mutex-earlier-in-cgroup_subtree_c.patch
+>  0004-cgroup-move-cgroup-kn-priv-clearing-to-cgroup_rmdir.patch
+>  0005-cgroup-factor-out-cgroup_kn_lock_live-and-cgroup_kn_.patch
+>  0006-cgroup-use-cgroup_kn_lock_live-in-other-cgroup-kernf.patch
+>  0007-cgroup-nest-kernfs-active-protection-under-cgroup_mu.patch
+>  0008-cgroup-remove-cgroup_tree_mutex.patch
+> 
+> 0001-0004 reorganize various kernfs handling paths so that they are
+> more uniform in terms of active protection handling.
+> 
+> 0005 factors out two locking helpers - cgroup_kn_lock_live() and
+> cgroup_kn_unlock() - which handle both kernfs active protection bypass
+> and locking.
+> 
+> 0006 applies it to other kernfs method implementations which were
+> grabbing cgroup_mutex under active protection.
+> 
+> 0007 reverses the locking dependency between cgroup_mutex and kernfs
+> active protection so that the latter nests under the former, making
+> cgroup_mutex equivalent to cgroup_tree_mutex.
+> 
+> 0008 removes cgroup_tree_mutex.
+> 
+> This patchset is on top of
+> 
+>   cgroup/for-3.16 12d3089c192c ("kernel/cpuset.c: convert printk to pr_foo()")
+> + [1] [PATCHSET cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+> + [2] [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+> 
+> and is available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex
+> 
+> diffstat follows.  Thanks.
+> 
+>  kernel/cgroup.c |  385 +++++++++++++++++++++++---------------------------------
+>  1 file changed, 163 insertions(+), 222 deletions(-)
+> 
 
-right, i can see it now with Torvald's tree. Thanks for pointing out :-)
-I will move out the Documentation in a separate patch and resubmit.
-
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Acked-by: Li Zefan <lizefan@huawei.com>
