@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697AbaEMH0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:26:44 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36161 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074AbaEMH0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:26:42 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <nsekhar@ti.com>, <joelf@ti.com>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH] ARM: edma: Clean up and simplify the code around irq request
-Date: Tue, 13 May 2014 10:26:01 +0300
-Message-ID: <1399965961-23739-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.3
+	id S1758802AbaEMH3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:29:08 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42672 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758174AbaEMH3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 03:29:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1398759614-13217-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1398759614-13217-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Tue, 13 May 2014 09:29:04 +0200
+Message-ID: <CACRpkdab4OT_Yzoijgdc7RFBapN8rrN56LYGLeO1vMjb=bu4Mg@mail.gmail.com>
+Subject: Re: [PATCH v1 06/11] mmc: mmci: Qcomm: Add 3 clock cycle delay after
+ register write
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        agross@quicinc.com,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get the two interrupt line number at the same time by merging the two
-instance of if(node){}else{} places.
-replace the &pdev->dev with the already existing dev which makes it possible
-to collapse lines with devm_request_irq()
+On Tue, Apr 29, 2014 at 10:20 AM,  <srinivas.kandagatla@linaro.org> wrote:
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/common/edma.c | 26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> Most of the Qcomm SD card controller registers must be updated to the MCLK
+> domain so subsequent writes to registers will be ignored until 3 clock cycles
+> have passed.
+>
+> This patch adds a 3 clock cycle delay required after writing to controller
+> registers on Qualcomm SOCs. Without this delay all the register writes are not
+> successfull, resulting in not detecting cards.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index db2d9dc62d33..fade9ada81f8 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -1596,7 +1596,6 @@ static int edma_probe(struct platform_device *pdev)
- 	struct resource		*r[EDMA_MAX_CC] = {NULL};
- 	struct resource		res[EDMA_MAX_CC];
- 	char			res_name[10];
--	char			irq_name[10];
- 	struct device_node	*node = pdev->dev.of_node;
- 	struct device		*dev = &pdev->dev;
- 	int			ret;
-@@ -1718,14 +1717,21 @@ static int edma_probe(struct platform_device *pdev)
- 
- 		if (node) {
- 			irq[j] = irq_of_parse_and_map(node, 0);
-+			err_irq[j] = irq_of_parse_and_map(node, 2);
- 		} else {
-+			char irq_name[10];
-+
- 			sprintf(irq_name, "edma%d", j);
- 			irq[j] = platform_get_irq_byname(pdev, irq_name);
-+
-+			sprintf(irq_name, "edma%d_err", j);
-+			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
- 		}
- 		edma_cc[j]->irq_res_start = irq[j];
--		status = devm_request_irq(&pdev->dev, irq[j],
--					  dma_irq_handler, 0, "edma",
--					  &pdev->dev);
-+		edma_cc[j]->irq_res_end = err_irq[j];
-+
-+		status = devm_request_irq(dev, irq[j], dma_irq_handler, 0,
-+					  "edma", dev);
- 		if (status < 0) {
- 			dev_dbg(&pdev->dev,
- 				"devm_request_irq %d failed --> %d\n",
-@@ -1733,16 +1739,8 @@ static int edma_probe(struct platform_device *pdev)
- 			return status;
- 		}
- 
--		if (node) {
--			err_irq[j] = irq_of_parse_and_map(node, 2);
--		} else {
--			sprintf(irq_name, "edma%d_err", j);
--			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
--		}
--		edma_cc[j]->irq_res_end = err_irq[j];
--		status = devm_request_irq(&pdev->dev, err_irq[j],
--					  dma_ccerr_handler, 0,
--					  "edma_error", &pdev->dev);
-+		status = devm_request_irq(dev, err_irq[j], dma_ccerr_handler, 0,
-+					  "edma_error", dev);
- 		if (status < 0) {
- 			dev_dbg(&pdev->dev,
- 				"devm_request_irq %d failed --> %d\n",
--- 
-1.9.3
+Sounds like someone decided to clock the internal state machine
+in the MMCI using MCLK instead of PCLK :-(
 
+A bit nasty if this ends up in the fastpath (irq) though. Which it
+invariably does, right?
+
+> +       /*
+> +        * On QCom SD card controller, registers must be updated to the
+> +        * MCLK domain so subsequent writes to this register will be ignored
+> +        * for 3 clk cycles.
+> +        */
+> +       if (host->hw_designer == AMBA_VENDOR_QCOM)
+> +               udelay(1 + ((3 * USEC_PER_SEC)/host->mclk));
+
+Add a new field in vendor data instead, and use DIV_ROUND_UP():
+
+static struct variant_data variant_qcom = {
+         .mclk_delayed_writes  = true,
+(...)
+
+if (host->vendor->mclk_delayed_writes)
+    udelay(DIV_ROUND_UP((3 * USEC_PER_SEC), host->mclk));
+
+You get the idea.
+
+Yours,
+Linus Walleij
