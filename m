@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509AbaEMIfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:35:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45348 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759448AbaEMIeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:34:01 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <zonque@gmail.com>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH v3 5/5] usb: musb: dsps: Enable sw babble control for newer silicon
-Date: Tue, 13 May 2014 14:01:45 +0530
-Message-ID: <1399969905-3509-6-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932439AbaEMIgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:36:48 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:50530 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759522AbaEMIgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 04:36:09 -0400
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: borntraeger@de.ibm.com, cornelia.huck@de.ibm.com, mimu@linux.vnet.ibm.com,
+        ddongch@cn.ibm.com
+Subject: [PATCH v1] vhost: avoid large order allocations
+Date: Tue, 13 May 2014 10:35:33 +0200
+Message-Id: <1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051308-5024-0000-0000-000009CD3CDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Find whether we are running on newer silicon. The babble control
-register reads 0x4 by default in newer silicon as opposed to 0
-in old versions of AM335x. Based on this enable the sw babble
-control logic.
+From: Dong Dong Chen <ddongch@cn.ibm.com>
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
+Under memory pressure we observe load issues with module vhost_net, as the
+vhost setup code will try to do an order 4 allocation for the device.
+The likeliness of this issue to occur can be reduced when the statically
+allocated variable "iov" in "struct vhost_virtqueue" is dynamically allocated
+with exactly the required size, reducing this to an order 2 allocation.
+
+Signed-off-by: Dong Dong Chen <ddongch@cn.ibm.com>
+Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: Michael Mueller <mimu@linux.vnet.ibm.com>
 ---
- drivers/usb/musb/musb_dsps.c | 34 ++++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
+ drivers/vhost/net.c   | 4 ++--
+ drivers/vhost/scsi.c  | 4 ++--
+ drivers/vhost/test.c  | 2 +-
+ drivers/vhost/vhost.c | 6 +++++-
+ drivers/vhost/vhost.h | 2 +-
+ 5 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index eb1985a..1ae6681 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -136,6 +136,7 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer;	/* otg_workaround timer */
- 	unsigned long last_timer;    /* last timer data for each instance */
-+	bool sw_babble_enabled;
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index be414d2..e3a9a68 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -374,7 +374,7 @@ static void handle_tx(struct vhost_net *net)
+ 			break;
  
- 	struct dsps_context context;
- 	struct debugfs_regset32 regset;
-@@ -469,6 +470,16 @@ static int dsps_musb_init(struct musb *musb)
- 	val &= ~(1 << wrp->otg_disable);
- 	dsps_writel(musb->ctrl_base, wrp->phy_utmi, val);
+ 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+-					 ARRAY_SIZE(vq->iov),
++					 UIO_MAXIOV,
+ 					 &out, &in,
+ 					 NULL, NULL);
+ 		/* On error, stop handling until the next kick. */
+@@ -506,7 +506,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+ 			goto err;
+ 		}
+ 		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
+-				      ARRAY_SIZE(vq->iov) - seg, &out,
++				      UIO_MAXIOV - seg, &out,
+ 				      &in, log, log_num);
+ 		if (unlikely(r < 0))
+ 			goto err;
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index cf50ce9..a70f1d9 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -607,7 +607,7 @@ tcm_vhost_do_evt_work(struct vhost_scsi *vs, struct tcm_vhost_evt *evt)
+ again:
+ 	vhost_disable_notify(&vs->dev, vq);
+ 	head = vhost_get_vq_desc(&vs->dev, vq, vq->iov,
+-			ARRAY_SIZE(vq->iov), &out, &in,
++			UIO_MAXIOV, &out, &in,
+ 			NULL, NULL);
+ 	if (head < 0) {
+ 		vs->vs_events_missed = true;
+@@ -946,7 +946,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
  
-+	/*
-+	 *  Check whether the dsps version has babble control enabled.
-+	 * In latest silicon revision the babble control logic is enabled.
-+	 * If MUSB_BABBLE_CTL returns 0x4 then we have the babble control
-+	 * logic enabled.
-+	 */
-+	val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
-+	if (val == MUSB_BABBLE_RCV_DISABLE)
-+		glue->sw_babble_enabled = true;
-+
- 	ret = dsps_musb_dbg_init(musb, glue);
- 	if (ret)
- 		return ret;
-@@ -591,14 +602,25 @@ static int dsps_musb_reset(struct musb *musb)
- 	struct device *dev = musb->controller;
- 	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
- 	const struct dsps_musb_wrapper *wrp = glue->wrp;
-+	int session_restart = 0;
+ 	for (;;) {
+ 		head = vhost_get_vq_desc(&vs->dev, vq, vq->iov,
+-					ARRAY_SIZE(vq->iov), &out, &in,
++					UIO_MAXIOV, &out, &in,
+ 					NULL, NULL);
+ 		pr_debug("vhost_get_vq_desc: head: %d, out: %u in: %u\n",
+ 					head, out, in);
+diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+index c2a54fb..2e01920 100644
+--- a/drivers/vhost/test.c
++++ b/drivers/vhost/test.c
+@@ -54,7 +54,7 @@ static void handle_vq(struct vhost_test *n)
  
--	dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
--	usleep_range(100, 200);
--	usb_phy_shutdown(musb->xceiv);
--	usleep_range(100, 200);
--	usb_phy_init(musb->xceiv);
-+	if (glue->sw_babble_enabled)
-+		session_restart = sw_babble_control(musb);
-+	/*
-+	 * In case of new silicon version babble condition can be recovered
-+	 * without resetting the MUSB. But for older silicon versions, MUSB
-+	 * reset is needed
-+	 */
-+	if (session_restart || !glue->sw_babble_enabled) {
-+		dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
-+		usleep_range(100, 200);
-+		usb_phy_shutdown(musb->xceiv);
-+		usleep_range(100, 200);
-+		usb_phy_init(musb->xceiv);
-+		session_restart = 1;
-+	}
+ 	for (;;) {
+ 		head = vhost_get_vq_desc(&n->dev, vq, vq->iov,
+-					 ARRAY_SIZE(vq->iov),
++					 UIO_MAXIOV,
+ 					 &out, &in,
+ 					 NULL, NULL);
+ 		/* On error, stop handling until the next kick. */
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 78987e4..9017a55 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -251,6 +251,8 @@ static int vhost_worker(void *data)
  
--	return 0;
-+	return !session_restart;
- }
+ static void vhost_vq_free_iovecs(struct vhost_virtqueue *vq)
+ {
++	kfree(vq->iov);
++	vq->iov = NULL;
+ 	kfree(vq->indirect);
+ 	vq->indirect = NULL;
+ 	kfree(vq->log);
+@@ -267,11 +269,12 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
  
- static struct musb_platform_ops dsps_ops = {
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		vq = dev->vqs[i];
++		vq->iov = kmalloc(sizeof(*vq->iov) * UIO_MAXIOV, GFP_KERNEL);
+ 		vq->indirect = kmalloc(sizeof *vq->indirect * UIO_MAXIOV,
+ 				       GFP_KERNEL);
+ 		vq->log = kmalloc(sizeof *vq->log * UIO_MAXIOV, GFP_KERNEL);
+ 		vq->heads = kmalloc(sizeof *vq->heads * UIO_MAXIOV, GFP_KERNEL);
+-		if (!vq->indirect || !vq->log || !vq->heads)
++		if (!vq->iov || !vq->indirect || !vq->log || !vq->heads)
+ 			goto err_nomem;
+ 	}
+ 	return 0;
+@@ -310,6 +313,7 @@ void vhost_dev_init(struct vhost_dev *dev,
+ 	for (i = 0; i < dev->nvqs; ++i) {
+ 		vq = dev->vqs[i];
+ 		vq->log = NULL;
++		vq->iov = NULL;
+ 		vq->indirect = NULL;
+ 		vq->heads = NULL;
+ 		vq->dev = dev;
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 35eeb2a..541f757 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -100,7 +100,7 @@ struct vhost_virtqueue {
+ 	bool log_used;
+ 	u64 log_addr;
+ 
+-	struct iovec iov[UIO_MAXIOV];
++	struct iovec *iov;
+ 	struct iovec *indirect;
+ 	struct vring_used_elem *heads;
+ 	/* Protected by virtqueue mutex. */
 -- 
 1.8.3.1
 
