@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760466AbaEMNWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 09:22:08 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:34759 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170AbaEMNWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 09:22:06 -0400
-Date: Tue, 13 May 2014 15:22:00 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
-Message-ID: <20140513132200.GC3908@phenom.ffwll.local>
-Mail-Followup-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Damien Lespiau <damien.lespiau@intel.com>,
-	David Airlie <airlied@linux.ie>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Airlie <airlied@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAKMK7uG20sF403PJcmWTD=kPF9seV4sXZpp9_hEq3LvV3kK5Hg@mail.gmail.com>
- <CADDKRnB1DCzgjX-q-cgFFW48uT5r5MUcuc5D6chekEET5dFxxA@mail.gmail.com>
- <20140509161438.GH31479@strange.amr.corp.intel.com>
- <20140509170335.GZ18465@intel.com>
- <CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
- <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
- <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
- <20140512190300.GF25056@phenom.ffwll.local>
- <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
- <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
+	id S932979AbaEMNWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 09:22:45 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60883 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753360AbaEMNWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 09:22:43 -0400
+Date: Tue, 13 May 2014 09:16:56 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-ID: <20140513131655.GC18849@cmpxchg.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <1399671091-23867-3-git-send-email-tj@kernel.org>
+ <20140512145324.GE9564@dhcp22.suse.cz>
+ <20140512145803.GF9564@dhcp22.suse.cz>
+ <20140512150014.GB1421@htj.dyndns.org>
+ <20140512152015.GH9564@dhcp22.suse.cz>
+ <20140512152507.GD1421@htj.dyndns.org>
+ <20140512153458.GJ9564@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140512153458.GJ9564@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:38:41PM +0200, Daniel Vetter wrote:
-> On Tue, May 13, 2014 at 12:29 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
-> >>> Branch drm-intel-nightly as of
-> >>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
-> >>> looks badly:
-> >>>    - KDE splash screen on boot-up is not visible
-> >>>    - x-windows don't have title and menu bars
-> >>>    - KDE system menu is not visible
-> >>>    - moving windows around destroys its content
-> >>
-> >> Ugh, that's ugly. Nothing else change like e.g. the version of
-> >> xfree-video-intel?
-> >
-> >  (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
-> >  (II) Module intel: vendor="X.Org Foundation"
-> >  compiled for 1.11.3, module version = 2.17.0
-> >  Module class: X.Org Video Driver
-> >  ABI class: X.Org Video Driver, version 11.0
+On Mon, May 12, 2014 at 05:34:58PM +0200, Michal Hocko wrote:
+> On Mon 12-05-14 11:25:07, Tejun Heo wrote:
+> > On Mon, May 12, 2014 at 05:20:15PM +0200, Michal Hocko wrote:
+> > > On Mon 12-05-14 11:00:14, Tejun Heo wrote:
+> > > > On Mon, May 12, 2014 at 04:58:03PM +0200, Michal Hocko wrote:
+> > > > > @@ -4793,6 +4793,10 @@ static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
+> > > > >  
+> > > > >  	if (mem_cgroup_is_root(memcg))
+> > > > >  		return -EINVAL;
+> > > > > +	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
+> > > > > +			current->comm, task_pid_nr(current));
+> > > > > +	pr_cont(" Let us know if you know if it needed in your usecase at");
+> > > > > +	pr_cont(" linux-mm@kvack.org\n");
+> > > > >  	return mem_cgroup_force_empty(memcg);
+> > > > 
+> > > > It probably would be way easier to just mark the knob with
+> > > > CFTYPE_INSANE.
+> > > 
+> > > That would prevent from creating the file, right? I do not mind that but
+> > > I would like to see people complaining before.
+> > 
+> > Oh sure, if you wanna see people complaining before the roll out of
+> > unified hierarchy, but let's make sure it's also marked with
+> > CFTYPE_INSANE.  It's easy to remove the flag afterwards.  The other
+> > way isn't, so...
+> ---
+> >From 6f2a33df7750f0794b03f7a85aba02a4e631f2a0 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 12 May 2014 16:20:46 +0200
+> Subject: [PATCH] memcg: deprecate memory.force_empty knob
 > 
-> Chris, any ideas? It's an ivybridge apparently.
+> force_empty has been introduced primarily to drop memory before it gets
+> reparented on the group removal. This alone doesn't sound fully
+> justified because reparented pages which are not in use can be reclaimed
+> also later when there is a memory pressure on the parent level.
 > 
-> For the fifo underruns I think we've fully confirmed that they only
-> happen on boot-up. I'll try to come up with some ideas what could have
-> gone wrong there.
+> Mark the knob CFTYPE_INSANE which tells the cgroup core that it
+> shouldn't create the knob with the experimental sane_behavior. Other
+> users will get informed about the deprecation and asked to tell us more.
+> But I expect that most users will be simply cgroup remove handlers
+> which do that since ever without having any good reason for it.
+> 
+> If somebody really cares and the reparented pages, which would be dropped
+> otherwise, push out more important ones then we should fix the
+> reparenting code and put pages to the tail.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Please test the below patch.
--Daniel
+I'm skeptical the printk will do anything useful, but you marked the
+knob insane and that's the most important change.
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index b10fbde1d5ee..63ced2dee027 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -427,9 +427,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
- 
- 	ret = !intel_crtc->cpu_fifo_underrun_disabled;
- 
--	if (enable == ret)
--		goto done;
--
- 	intel_crtc->cpu_fifo_underrun_disabled = !enable;
- 
- 	if (enable && (INTEL_INFO(dev)->gen < 5 || IS_VALLEYVIEW(dev)))
-@@ -441,7 +438,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
- 	else if (IS_GEN8(dev))
- 		broadwell_set_fifo_underrun_reporting(dev, pipe, enable);
- 
--done:
- 	return ret;
- }
- 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
