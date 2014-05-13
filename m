@@ -1,79 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722AbaEMJuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:50:44 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:25590 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760626AbaEMJuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:50:39 -0400
-Message-ID: <5371EAEB.5030100@imgtec.com>
-Date: Tue, 13 May 2014 10:50:35 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>	<1399971749-4004-1-git-send-email-lftan@altera.com>	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com> <CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>
-In-Reply-To: <CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+	id S1760642AbaEMJum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:50:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49948 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932895AbaEMJqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:46:06 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 09/19] mm: page_alloc: Use word-based accesses for get/set pageblock bitmaps
+Date: Tue, 13 May 2014 10:45:40 +0100
+Message-Id: <1399974350-11089-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The test_bit operations in get/set pageblock flags are expensive. This patch
+reads the bitmap on a word basis and use shifts and masks to isolate the bits
+of interest. Similarly masks are used to set a local copy of the bitmap and then
+use cmpxchg to update the bitmap if there have been no other changes made in
+parallel.
 
-On 13/05/14 10:32, Ley Foon Tan wrote:
-> On Tue, May 13, 2014 at 5:15 PM, James Hogan <james.hogan@imgtec.com> wrote:
->> On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
->>>  /*
->>> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
->>> + * define these as "long" if needed.
->>> + */
->>> +#ifndef __kernel_time_t
->>> +typedef long long      __kernel_time_t;
->>> +#endif
->>> +
->>> +#ifndef __kernel_clock_t
->>> +typedef long long      __kernel_clock_t;
->>> +#endif
->>
->> I think having this as the first patch in the series will break
->> bisection for existing 32-bit arches. This needs to be done in such a
->> way that at no intermediate commit are __kernel_time_t or
->> __kernel_clock_t the wrong size for existing arches, e.g. by having a
->> first patch which makes the typedefs conditional but leaves them as
->> __kernel_long_t, and a final patch that changes the default after all
->> the arches have got their overrides in place.
-> 
-> Your suggestion is something as below?
+In a test running dd onto tmpfs the overhead of the pageblock-related
+functions went from 1.27% in profiles to 0.5%.
 
-Yeh, although I like Thomas' idea better, then each existing 32-bit arch
-can just select the Kconfig symbol to get the smaller type.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+---
+ include/linux/mmzone.h          |  6 ++++-
+ include/linux/pageblock-flags.h | 37 ++++++++++++++++++++++++-----
+ mm/page_alloc.c                 | 52 +++++++++++++++++++++++++----------------
+ 3 files changed, 68 insertions(+), 27 deletions(-)
 
-IIRC Kconfig won't even complain if you select a symbol which doesn't
-exist yet.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index fac5509..835aa3d 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -75,9 +75,13 @@ enum {
+ 
+ extern int page_group_by_mobility_disabled;
+ 
++#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
++#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
++
+ static inline int get_pageblock_migratetype(struct page *page)
+ {
+-	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
++	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
++	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
+ }
+ 
+ struct free_area {
+diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
+index 2ee8cd2..c08730c 100644
+--- a/include/linux/pageblock-flags.h
++++ b/include/linux/pageblock-flags.h
+@@ -30,9 +30,12 @@ enum pageblock_bits {
+ 	PB_migrate,
+ 	PB_migrate_end = PB_migrate + 3 - 1,
+ 			/* 3 bits required for migrate types */
+-#ifdef CONFIG_COMPACTION
+ 	PB_migrate_skip,/* If set the block is skipped by compaction */
+-#endif /* CONFIG_COMPACTION */
++
++	/*
++	 * Assume the bits will always align on a word. If this assumption
++	 * changes then get/set pageblock needs updating.
++	 */
+ 	NR_PAGEBLOCK_BITS
+ };
+ 
+@@ -62,11 +65,33 @@ extern int pageblock_order;
+ /* Forward declaration */
+ struct page;
+ 
++unsigned long get_pageblock_flags_mask(struct page *page,
++				unsigned long end_bitidx,
++				unsigned long mask);
++void set_pageblock_flags_mask(struct page *page,
++				unsigned long flags,
++				unsigned long end_bitidx,
++				unsigned long mask);
++
+ /* Declarations for getting and setting flags. See mm/page_alloc.c */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx);
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx);
++static inline unsigned long get_pageblock_flags_group(struct page *page,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	return get_pageblock_flags_mask(page, end_bitidx, mask);
++}
++
++static inline void set_pageblock_flags_group(struct page *page,
++					unsigned long flags,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
++}
+ 
+ #ifdef CONFIG_COMPACTION
+ #define get_pageblock_skip(page) \
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index dc123ff..b438eb7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6032,53 +6032,65 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
+  * @end_bitidx: The last bit of interest
+  * returns pageblock_bits flags
+  */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx)
++unsigned long get_pageblock_flags_mask(struct page *page,
++					unsigned long end_bitidx,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long flags = 0;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long word;
+ 
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (test_bit(bitidx + start_bitidx, bitmap))
+-			flags |= value;
+-
+-	return flags;
++	word = bitmap[word_bitidx];
++	bitidx += end_bitidx;
++	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
+ }
+ 
+ /**
+- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
++ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
+  * @page: The page within the block of interest
+  * @start_bitidx: The first bit of interest
+  * @end_bitidx: The last bit of interest
+  * @flags: The flags to set
+  */
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx)
++void set_pageblock_flags_mask(struct page *page, unsigned long flags,
++					unsigned long end_bitidx,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long old_word, word;
++
++	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
++
+ 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (flags & value)
+-			__set_bit(bitidx + start_bitidx, bitmap);
+-		else
+-			__clear_bit(bitidx + start_bitidx, bitmap);
++	bitidx += end_bitidx;
++	mask <<= (BITS_PER_LONG - bitidx - 1);
++	flags <<= (BITS_PER_LONG - bitidx - 1);
++
++	word = ACCESS_ONCE(bitmap[word_bitidx]);
++	for (;;) {
++		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
++		if (word == old_word)
++			break;
++		word = old_word;
++	}
+ }
+ 
+ /*
+-- 
+1.8.4.5
 
-Cheers
-James
-
-> 
-> First patch:
-> #ifndef __kernel_time_t
-> typedef __kernel_long_t      __kernel_time_t;
-> #endif
-> 
-> Last patch:
-> #ifndef __kernel_time_t
-> typedef long long      __kernel_time_t;
-> #endif
-> 
-> Ley Foon
-> 
