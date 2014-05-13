@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaEMXxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:53:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39272 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755375AbaEMXxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755378AbaEMXxp (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 May 2014 19:53:45 -0400
-X-Sasl-enc: 9jI8QFsFDzzbZCvbZGRoHjqNLYmvvWB9rhJnc2QDW21E 1400025224
-Date: Tue, 13 May 2014 16:56:59 -0700
-From: Greg KH <greg@kroah.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Michele Ballabio <barra_cuda@katamail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH -stable] x86,preempt: Fix preemption for i386
-Message-ID: <20140513235659.GC29623@kroah.com>
-References: <20140407150705.GB13658@twins.programming.kicks-ass.net>
- <5342EB78.3060002@gmx.de>
- <20140407185658.GK11096@twins.programming.kicks-ass.net>
- <20140408122128.GC13658@twins.programming.kicks-ass.net>
- <53450F7E.7040904@canonical.com>
- <20140409094515.GR11096@twins.programming.kicks-ass.net>
- <20140409142447.GD13658@twins.programming.kicks-ass.net>
- <CA+55aFzBw0i2nmOGOKzjS_b_7M1Gha2OFEe9rXOO4c+s-2HTkg@mail.gmail.com>
- <20140409191931.GB10748@kroah.com>
- <20140409193845.GB26782@laptop.programming.kicks-ass.net>
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28133 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753573AbaEMXxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 19:53:40 -0400
+Date: Tue, 13 May 2014 19:53:36 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
+Message-ID: <20140513195336.232bad54@gandalf.local.home>
+In-Reply-To: <20140513232710.GA18164@linux.vnet.ibm.com>
+References: <20140512190438.314125476@linutronix.de>
+	<20140512201700.999660035@linutronix.de>
+	<5371B2D9.8060405@cn.fujitsu.com>
+	<20140513084815.GB2485@laptop.programming.kicks-ass.net>
+	<alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
+	<20140513162041.3405b668@gandalf.local.home>
+	<20140513203619.GV18164@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1405132301530.6261@ionos.tec.linutronix.de>
+	<20140513220009.GW18164@linux.vnet.ibm.com>
+	<20140513184430.5f2e12f8@gandalf.local.home>
+	<20140513232710.GA18164@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409193845.GB26782@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 09:38:45PM +0200, Peter Zijlstra wrote:
-> On Wed, Apr 09, 2014 at 12:19:31PM -0700, Greg KH wrote:
-> > On Wed, Apr 09, 2014 at 07:36:23AM -0700, Linus Torvalds wrote:
-> > > On Wed, Apr 9, 2014 at 7:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > >
-> > > > I'm not entirely clear on how acceptable it is to propose a different
-> > > > patch for -stable than what we have upstream.
-> > > 
-> > > It's not all that common, but it certainly happens.
-> > > 
-> > > It's fine, as long as it mentions the commits that fix it upstream.
-> > > And as long as it's well tested, of course.
+On Tue, 13 May 2014 16:27:11 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Tue, May 13, 2014 at 06:44:30PM -0400, Steven Rostedt wrote:
+> > On Tue, 13 May 2014 15:00:09 -0700
+> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 > > 
-> > I agree, I can take this as long as you say it's correct and tested...
+> > 
+> > > Good points -- I was indeed thinking about stress testing instead of
+> > > algorithmic testing.
+> > 
+> > But doesn't lockdep use algorithmic tests too?
 > 
-> As far as I understand the issue the patch is indeed correct and I have
-> 3 independent people who confirm their previously reported issues are
-> now cured (as testified by the Tested-by tags).
+> I suppose you could argue that there is no such thing as non-algorithmic
+> testing, given that all test code uses an algorithm of some sort.  Perhaps
+> with the exception of letting your pet walk across the keyboard.  ;-)
 > 
-> There has also been confirmation that upstream does no longer suffer the
-> problem.
+> Perhaps I should have instead said that I was thinking about random
+> testing instead of formal testing?
 
-Now applied, thanks.
+Actually it still applies, but I was mistaken, it's not lockdep itself,
+it's the LOCKING_API_SELFTESTS. They are a form of formal testing as
+suppose to random testing.
 
-greg k-h
+See lib/locking-selftest.c.
+
+That looks more like something we can do for the rtmutex code, or even
+add to it.
+
+-- Steve
