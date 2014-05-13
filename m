@@ -1,434 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965225AbaEMPKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:10:30 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:58285 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694AbaEMPK1 (ORCPT
+	id S934093AbaEMPMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:12:07 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:53959 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694AbaEMPMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:10:27 -0400
-Message-ID: <537235A2.3010902@elopez.com.ar>
-Date: Tue, 13 May 2014 12:09:22 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+	Tue, 13 May 2014 11:12:02 -0400
+Message-ID: <5372363B.4080608@gmail.com>
+Date: Tue, 13 May 2014 17:11:55 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chen-Yu Tsai <wens@csie.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 5/7] clk: sunxi: add PRCM (Power/Reset/Clock Management)
- clks support
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com> <1399633911-7094-6-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399633911-7094-6-git-send-email-boris.brezillon@free-electrons.com>
+To: Mark Rutland <mark.rutland@arm.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH 1/2] clk: of: helper for determining flags properties
+References: <1399982253-21079-1-git-send-email-gabriel.fernandez@linaro.org> <1399982253-21079-2-git-send-email-gabriel.fernandez@linaro.org> <20140513122054.GA2419@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140513122054.GA2419@e106331-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
-
-First of all, thanks for working on this :)
-
-While reading the code below I noticed a complete lack of comments. I 
-think it would be good to have at least some to aid readability, 
-considering these clocks are poorly documented on AW's material.
-
-El 09/05/14 08:11, Boris BREZILLON escribió:
-> The PRCM (Power/Reset/Clock Management) unit provides several clock
-> devices:
-> - AR100 clk: used to clock the Power Management co-processor
-> - AHB0 clk: used to clock the AHB0 bus
-> - APB0 clk and gates: used to clk peripherals connected to the APB0 bus
+On 05/13/2014 02:20 PM, Mark Rutland wrote:
+> On Tue, May 13, 2014 at 12:57:32PM +0100, Gabriel FERNANDEZ wrote:
+>> The patch provides a helper to get flags properties of
+>> a clock node.
+>>
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>> ---
+>>   drivers/clk/clk.c            | 11 +++++++++++
+>>   include/linux/clk-provider.h |  6 ++++++
+>>   2 files changed, 17 insertions(+)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 4d56220..cae8985 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -2528,6 +2528,17 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
+>>   }
+>>   EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+>>
+>> +unsigned long of_clk_get_flags(struct device_node *np)
+>> +{
+>> +	unsigned long flags = 0;
+>> +
+>> +	if (of_property_read_bool(np, "set-rate-parent"))
+>> +		flags |= CLK_SET_RATE_PARENT;
 >
-> Add support for these clks in a separate driver so that they can be probed
-> as platform devices instead of registered during early init.
-> This is needed to be able to probe PRCM MFD subdevices.
+> NAK.
 >
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->   drivers/clk/sunxi/Makefile         |   2 +
->   drivers/clk/sunxi/clk-sun6i-prcm.c | 343 +++++++++++++++++++++++++++++++++++++
->   2 files changed, 345 insertions(+)
->   create mode 100644 drivers/clk/sunxi/clk-sun6i-prcm.c
+> This is _not_ a hardware property. This flag describes internals of the
+> Linux clock framework, and is thus not suitable for DT.
+
+Mark,
+
+while I agree above property is not a hardware property, it is at least
+some kind of use-case property. If not by DT, we will have to allow some
+way to describe master-slave relationships between clocks in a driver
+independent way.
+
+> You've also failed to document the property.
 >
-> diff --git a/drivers/clk/sunxi/Makefile b/drivers/clk/sunxi/Makefile
-> index b5bac91..ef8cdc9 100644
-> --- a/drivers/clk/sunxi/Makefile
-> +++ b/drivers/clk/sunxi/Makefile
-> @@ -3,3 +3,5 @@
->   #
+> What are you trying to achieve here, and why do you think this is the
+> best way of achieving that?
+
+I cannot tell from the commit msgs, but consider clk-si5351 which is a
+driver for an external programmable clock with N PLLs and M outputs. Now
+connect a video clock consumer and an audio clock consumer to two
+different outputs and those to one PLL (as you want audio clock derived
+from video clock, typical HDMI scenario).
+
+Now, there should be a way to tell the generic driver which outputs are
+allowed to change the PLLs rate and which don't. Otherwise, the clock
+chip would be pretty useless as e.g. your audio clock consumer will
+overwrite the rate the video clock consumer has chosen.
+
+BTW, clk-si5351 has vendor-specific properties to specify which output
+clocks are pll-masters for some kernel cycles already.
+
+Sebastian
+
+>> +
+>> +	return flags;
+>> +}
+>> +EXPORT_SYMBOL_GPL(of_clk_get_flags);
+>> +
+>>   struct clock_provider {
+>>   	of_clk_init_cb_t clk_init_cb;
+>>   	struct device_node *np;
+>> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+>> index 59e2eb5..650bc10 100644
+>> --- a/include/linux/clk-provider.h
+>> +++ b/include/linux/clk-provider.h
+>> @@ -519,6 +519,7 @@ int of_clk_get_parent_count(struct device_node *np);
+>>   const char *of_clk_get_parent_name(struct device_node *np, int index);
+>>
+>>   void of_clk_init(const struct of_device_id *matches);
+>> +unsigned long of_clk_get_flags(struct device_node *np);
+>>
+>>   #else /* !CONFIG_OF */
+>>
+>> @@ -546,6 +547,11 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
+>>   {
+>>   	return NULL;
+>>   }
+>> +static inline unsigned long of_clk_get_flags(struct device_node *np)
+>> +{
+>> +	return NULL;
+>> +}
+>> +
+>>   #define of_clk_init(matches) \
+>>   	{ while (0); }
+>>   #endif /* CONFIG_OF */
+>> --
+>> 1.9.1
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
->   obj-y += clk-sunxi.o clk-factors.o
-> +
-> +obj-$(CONFIG_MFD_SUN6I_PRCM) += clk-sun6i-prcm.o
-> diff --git a/drivers/clk/sunxi/clk-sun6i-prcm.c b/drivers/clk/sunxi/clk-sun6i-prcm.c
-> new file mode 100644
-> index 0000000..3efaf8f
-> --- /dev/null
-> +++ b/drivers/clk/sunxi/clk-sun6i-prcm.c
-> @@ -0,0 +1,343 @@
-> +/*
-> + * Copyright (C) 2014 Free Electrons
-> + *
-> + * License Terms: GNU General Public License v2
-> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> + *
-> + * Allwinner PRCM (Power/Reset/Clock Management) driver
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define SUN6I_APB0_GATES_MAX_SIZE	32
-> +#define SUN6I_AR100_MAX_PARENTS		4
-> +#define SUN6I_AR100_SHIFT_MASK		0x3
-> +#define SUN6I_AR100_SHIFT_MAX		SUN6I_AR100_SHIFT_MASK
-> +#define SUN6I_AR100_SHIFT_SHIFT		4
-> +#define SUN6I_AR100_DIV_MASK		0x1f
-> +#define SUN6I_AR100_DIV_MAX		(SUN6I_AR100_DIV_MASK + 1)
-> +#define SUN6I_AR100_DIV_SHIFT		8
-> +#define SUN6I_AR100_MUX_MASK		0x3
-> +#define SUN6I_AR100_MUX_SHIFT		16
-> +
-> +struct ar100_clk {
-> +	struct clk_hw hw;
-> +	void __iomem *reg;
-> +};
-> +
-> +static inline struct ar100_clk *to_ar100_clk(struct clk_hw *hw)
-> +{
-> +	return container_of(hw, struct ar100_clk, hw);
-> +}
-> +
-> +static unsigned long ar100_recalc_rate(struct clk_hw *hw,
-> +				       unsigned long parent_rate)
-> +{
-> +	struct ar100_clk *clk = to_ar100_clk(hw);
-> +	u32 val = readl(clk->reg);
-> +	int shift = (val >> SUN6I_AR100_SHIFT_SHIFT) & SUN6I_AR100_SHIFT_MASK;
-> +	int div = (val >> SUN6I_AR100_DIV_SHIFT) & SUN6I_AR100_DIV_MASK;
-> +
-> +	return (parent_rate >> shift) / (div + 1);
-> +}
-> +
-> +static long ar100_determine_rate(struct clk_hw *hw, unsigned long rate,
-> +				 unsigned long *best_parent_rate,
-> +				 struct clk **best_parent_clk)
-> +{
-> +	int nparents = __clk_get_num_parents(hw->clk);
-> +	long best_rate = -EINVAL;
-> +	int i;
-> +
-> +	*best_parent_clk = NULL;
-> +
-> +	for (i = 0; i < nparents; i++) {
-> +		unsigned long parent_rate;
-> +		unsigned long tmp_rate;
-> +		struct clk *parent;
-> +		unsigned long div;
-> +		int shift;
-> +
-> +		parent = clk_get_parent_by_index(hw->clk, i);
-> +		parent_rate = __clk_get_rate(parent);
-> +		div = DIV_ROUND_UP(parent_rate, rate);
-> +
-> +		shift = ffs(div) - 1;
-> +		if (shift > SUN6I_AR100_SHIFT_MAX)
-> +			shift = SUN6I_AR100_SHIFT_MAX;
-> +
-> +		div >>= shift;
-> +
-> +		while (div > SUN6I_AR100_DIV_MAX) {
-> +			shift++;
-> +			div >>= 1;
-> +			if (shift > SUN6I_AR100_SHIFT_MAX)
-> +				break;
-> +		}
-> +
-> +		if (shift > SUN6I_AR100_SHIFT_MAX)
-> +			continue;
-> +
-> +		tmp_rate = (parent_rate >> shift) / div;
-> +		if (!*best_parent_clk || tmp_rate > best_rate) {
-> +			*best_parent_clk = parent;
-> +			*best_parent_rate = parent_rate;
-> +			best_rate = tmp_rate;
-> +		}
-> +	}
-> +
-> +	return best_rate;
-> +}
-> +
-> +static int ar100_set_parent(struct clk_hw *hw, u8 index)
-> +{
-> +	struct ar100_clk *clk = to_ar100_clk(hw);
-> +	u32 val = readl(clk->reg);
-> +
-> +	if (index >= SUN6I_AR100_MAX_PARENTS)
-> +		return -EINVAL;
-> +
-> +	val &= ~(SUN6I_AR100_MUX_MASK << SUN6I_AR100_MUX_SHIFT);
-> +	val |= (index << SUN6I_AR100_MUX_SHIFT);
-> +	writel(val, clk->reg);
-> +
-> +	return 0;
-> +}
-> +
-> +static u8 ar100_get_parent(struct clk_hw *hw)
-> +{
-> +	struct ar100_clk *clk = to_ar100_clk(hw);
-> +	return (readl(clk->reg) >> SUN6I_AR100_MUX_SHIFT) &
-> +	       SUN6I_AR100_MUX_MASK;
-> +}
-> +
-> +static int ar100_set_rate(struct clk_hw *hw, unsigned long rate,
-> +			  unsigned long parent_rate)
-> +{
-> +	unsigned long div = parent_rate / rate;
-> +	struct ar100_clk *clk = to_ar100_clk(hw);
-> +	u32 val = readl(clk->reg);
-> +	int shift;
-> +
-> +	if (parent_rate % rate)
-> +		return -EINVAL;
-> +
-> +	shift = ffs(div) - 1;
-> +	if (shift > SUN6I_AR100_SHIFT_MAX)
-> +		shift = SUN6I_AR100_SHIFT_MAX;
-> +
-> +	div >>= shift;
-> +
-> +	if (div > SUN6I_AR100_DIV_MAX)
-> +		return -EINVAL;
-> +
-> +	val &= ~((SUN6I_AR100_SHIFT_MASK << SUN6I_AR100_SHIFT_SHIFT) |
-> +		 (SUN6I_AR100_DIV_MASK << SUN6I_AR100_DIV_SHIFT));
-> +	val |= (shift << SUN6I_AR100_SHIFT_SHIFT) |
-> +	       (div << SUN6I_AR100_DIV_SHIFT);
-> +	writel(val, clk->reg);
-> +
-> +	return 0;
-> +}
-> +
-> +struct clk_ops ar100_ops = {
-> +	.recalc_rate = ar100_recalc_rate,
-> +	.determine_rate = ar100_determine_rate,
-> +	.set_parent = ar100_set_parent,
-> +	.get_parent = ar100_get_parent,
-> +	.set_rate = ar100_set_rate,
-> +};
-> +
-> +static int sun6i_a31_ar100_clk_register(struct platform_device *pdev)
-> +{
-> +	const char *parents[SUN6I_AR100_MAX_PARENTS];
-> +	struct device_node *np = pdev->dev.of_node;
-> +	const char *clk_name = np->name;
-> +	struct clk_init_data init;
-> +	struct ar100_clk *ar100;
-> +	struct resource *r;
-> +	struct clk *clk;
-> +	int nparents;
-> +	int i;
-> +
-> +	ar100 = devm_kzalloc(&pdev->dev, sizeof(*ar100), GFP_KERNEL);
-> +	if (!ar100)
-> +		return -ENOMEM;
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	ar100->reg = devm_ioremap_resource(&pdev->dev, r);
-> +	if (IS_ERR(ar100->reg))
-> +		return PTR_ERR(ar100->reg);
-> +
-> +	nparents = of_clk_get_parent_count(np);
-> +	if (nparents > SUN6I_AR100_MAX_PARENTS)
-> +		nparents = SUN6I_AR100_MAX_PARENTS;
-> +
-> +	for (i = 0; i < nparents; i++)
-> +		parents[i] = of_clk_get_parent_name(np, i);
-> +
-> +	of_property_read_string(np, "clock-output-names", &clk_name);
-> +
-> +	init.name = clk_name;
-> +	init.ops = &ar100_ops;
-> +	init.parent_names = parents;
-> +	init.num_parents = nparents;
-> +	init.flags = 0;
-> +
-> +	ar100->hw.init = &init;
-> +
-> +	clk = clk_register(&pdev->dev, &ar100->hw);
-> +	if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
-> +
-> +	return of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> +
-> +static const struct clk_div_table sun6i_a31_apb0_divs[] = {
-> +	{ .val = 0, .div = 2, },
-> +	{ .val = 1, .div = 2, },
-> +	{ .val = 2, .div = 4, },
-> +	{ .val = 3, .div = 8, },
-> +	{ /* sentinel */ },
-> +};
-> +
-> +static int sun6i_a31_apb0_clk_register(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	const char *clk_name = np->name;
-> +	const char *clk_parent;
-> +	struct resource *r;
-> +	void __iomem *reg;
-> +	struct clk *clk;
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	reg = devm_ioremap_resource(&pdev->dev, r);
-> +	if (IS_ERR(reg))
-> +		return PTR_ERR(reg);
-> +
-> +		clk_parent = of_clk_get_parent_name(np, 0);
-> +	if (!clk_parent)
-> +		return -EINVAL;
 
-Indentation seems to be off here.
-
-> +
-> +	of_property_read_string(np, "clock-output-names", &clk_name);
-> +
-> +	clk = clk_register_divider_table(&pdev->dev, clk_name, clk_parent,
-> +					 0, reg, 0, 2, 0, sun6i_a31_apb0_divs,
-> +					 NULL);
-> +	if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
-> +
-> +	return of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> +
-> +static int sun6i_a31_apb0_gates_clk_register(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct clk_onecell_data *clk_data;
-> +	const char *clk_parent;
-> +	const char *clk_name;
-> +	struct resource *r;
-> +	void __iomem *reg;
-> +	int gate_id;
-> +	int ngates;
-> +	int i;
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	reg = devm_ioremap_resource(&pdev->dev, r);
-> +	if (!reg)
-> +		return PTR_ERR(reg);
-> +
-> +	clk_parent = of_clk_get_parent_name(np, 0);
-> +	if (!clk_parent)
-> +		return -EINVAL;
-> +
-> +	ngates = of_property_count_strings(np, "clock-output-names");
-> +	if (ngates < 0)
-> +		return ngates;
-> +
-> +	if (!ngates || ngates > SUN6I_APB0_GATES_MAX_SIZE)
-> +		return -EINVAL;
-> +
-> +	clk_data = devm_kzalloc(&pdev->dev, sizeof(struct clk_onecell_data),
-> +				GFP_KERNEL);
-> +	if (!clk_data)
-> +		return -ENOMEM;
-> +
-> +	clk_data->clks = devm_kzalloc(&pdev->dev,
-> +				      SUN6I_APB0_GATES_MAX_SIZE *
-> +				      sizeof(struct clk *),
-> +				      GFP_KERNEL);
-> +	if (!clk_data->clks)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < ngates; i++) {
-> +		of_property_read_string_index(np, "clock-output-names",
-> +					      i, &clk_name);
-> +
-> +		gate_id = i;
-> +		of_property_read_u32_index(np, "clock-indices", i, &gate_id);
-> +
-> +		WARN_ON(gate_id >= SUN6I_APB0_GATES_MAX_SIZE);
-> +		if (gate_id >= SUN6I_APB0_GATES_MAX_SIZE)
-> +			continue;
-> +
-> +		clk_data->clks[gate_id] = clk_register_gate(&pdev->dev,
-> +							    clk_name,
-> +							    clk_parent, 0,
-> +							    reg, gate_id,
-> +							    0, NULL);
-> +		WARN_ON(IS_ERR(clk_data->clks[gate_id]));
-> +	}
-> +
-> +	clk_data->clk_num = ngates;
-> +
-> +	return of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
-> +}
-> +
-> +const struct of_device_id sun6i_a31_prcm_clk_dt_ids[] = {
-> +	{
-> +		.compatible = "allwinner,sun6i-a31-ar100-clk",
-> +		.data = sun6i_a31_ar100_clk_register,
-> +	},
-> +	{
-> +		.compatible = "allwinner,sun6i-a31-apb0-clk",
-> +		.data = sun6i_a31_apb0_clk_register,
-> +	},
-> +	{
-> +		.compatible = "allwinner,sun6i-a31-apb0-gates-clk",
-> +		.data = sun6i_a31_apb0_gates_clk_register,
-> +	},
-> +	{ /* sentinel */ }
-> +};
-> +
-> +static int sun6i_a31_prcm_clk_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	int (*register_func)(struct platform_device *pdev);
-> +	const struct of_device_id *match;
-> +
-> +	match = of_match_node(sun6i_a31_prcm_clk_dt_ids, np);
-> +	if (!match)
-> +		return -EINVAL;
-> +
-> +	register_func = match->data;
-> +	return register_func(pdev);
-> +}
-> +
-> +static struct platform_driver sun6i_a31_prcm_clk_driver = {
-> +	.driver = {
-> +		.name = "sun6i-a31-prcm-clk",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = sun6i_a31_prcm_clk_dt_ids,
-> +	},
-> +	.probe = sun6i_a31_prcm_clk_probe,
-> +};
-> +module_platform_driver(sun6i_a31_prcm_clk_driver);
-> +
-> +MODULE_AUTHOR("Boris BREZILLON <boris.brezillon@free-electrons.com>");
-> +MODULE_DESCRIPTION("Allwinner PRCM clock Driver");
-> +MODULE_LICENSE("GPL v2");
-
-Other than that, the code looks good to me. As we're nearing the merge 
-window and you need this for other drivers, let me know if you want me 
-to apply this and fixup the extra tab locally, or if you wish to respin 
-this patch with some more comments.
-
-@Mike, any comments on this?
-
-Cheers,
-
-Emilio
