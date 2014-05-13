@@ -1,33 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaEMQ6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:58:32 -0400
-Received: from mail-oa0-f65.google.com ([209.85.219.65]:45891 "EHLO
-	mail-oa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaEMQ6Z (ORCPT
+	id S1752757AbaEMQ7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:59:12 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:46991 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbaEMQ7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:58:25 -0400
+	Tue, 13 May 2014 12:59:03 -0400
+Date: Tue, 13 May 2014 12:59:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
+ directly
+Message-ID: <20140513165901.GF1866@htj.dyndns.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Reply-To: akioha101@gmail.com
-Date: Tue, 13 May 2014 09:29:17 -0700
-Message-ID: <CAK40WXPhhg7DgVJq=UaQ+zOsVC6ftF0M=+=SPUCiXuaen700dw@mail.gmail.com>
-Subject: SOONEST YOU RESPONSE TODAY.
-From: Mr Aki Oha <davidzongo101@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Dear Friend.
-I know that this message will come to you as a surprise. i am Mr Aki
-Oha. The assistant director foreign remittance department (B.O.A
-BANK). I need your urgent assistance in transferring the sum of
-($15million) to your account; I will give you full details on how the
-business will be executed. if you agree to handle this business with
-me. I need your urgent reply so that I will give you more information.
+On Fri, May 09, 2014 at 05:31:17PM -0400, Tejun Heo wrote:
+> and available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-direct-css-iteration
 
-Trusting to hear from you immediately.
-Thanks & best regards,
-Mr Aki Oha. +226 7589 8331
+Refreshed on top of cgroup/for-3.16 with the updated patches.
+
+Thanks.
+
+-- 
+tejun
