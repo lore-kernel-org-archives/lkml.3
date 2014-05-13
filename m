@@ -1,125 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaEMVft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 17:35:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55709 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111AbaEMVfD (ORCPT
+	id S1755063AbaEMVkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 17:40:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55138 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046AbaEMVjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 17:35:03 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH 4/4] spi: qup: Add support for v1.1.1
-Date: Tue, 13 May 2014 16:34:44 -0500
-Message-Id: <1400016884-9568-5-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400016884-9568-1-git-send-email-agross@codeaurora.org>
-References: <1400016884-9568-1-git-send-email-agross@codeaurora.org>
+	Tue, 13 May 2014 17:39:55 -0400
+Date: Tue, 13 May 2014 14:39:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-Id: <20140513143953.0b91925ee1e81580a4025a2e@linux-foundation.org>
+In-Reply-To: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for v1.1.1 of the SPI QUP controller.
+On Tue, 13 May 2014 17:29:16 +0200 Michal Hocko <mhocko@suse.cz> wrote:
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
+> force_empty has been introduced primarily to drop memory before it gets
+> reparented on the group removal. This alone doesn't sound fully
+> justified because reparented pages which are not in use can be reclaimed
+> also later when there is a memory pressure on the parent level.
+> 
+> Mark the knob CFTYPE_INSANE which tells the cgroup core that it
+> shouldn't create the knob with the experimental sane_behavior. Other
+> users will get informed about the deprecation and asked to tell us more
+> because I do not expect most users will use sane_behavior cgroups mode
+> very soon.
+> Anyway I expect that most users will be simply cgroup remove handlers
+> which do that since ever without having any good reason for it.
+> 
+> If somebody really cares because reparented pages, which would be
+> dropped otherwise, push out more important ones then we should fix the
+> reparenting code and put pages to the tail.
+> 
+> ...
+>
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4793,6 +4793,10 @@ static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
+>  
+>  	if (mem_cgroup_is_root(memcg))
+>  		return -EINVAL;
+> +	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
+> +			current->comm, task_pid_nr(current));
+> +	pr_cont(" Let us know if you know if it needed in your usecase at");
+> +	pr_cont(" linux-mm@kvack.org\n");
+>  	return mem_cgroup_force_empty(memcg);
+>  }
+>  
+
+Do we really want to spam the poor user each and every time they use
+this?  Using pr_info_once() is kinder and gentler?
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: memcg-deprecate-memoryforce_empty-knob-fix
+
+- s/pr_info/pr_info_once/
+- fix garbled printk text
+
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/spi/spi-qup.c |   32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/spi/spi-qup.c b/drivers/spi/spi-qup.c
-index b518b51..abad630 100644
---- a/drivers/spi/spi-qup.c
-+++ b/drivers/spi/spi-qup.c
-@@ -144,6 +144,7 @@ struct spi_qup {
- 	int			w_size;	/* bytes per SPI word */
- 	int			tx_bytes;
- 	int			rx_bytes;
-+	int			qup_v1;
- };
+ Documentation/cgroups/memory.txt |    2 +-
+ mm/memcontrol.c                  |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff -puN Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix Documentation/cgroups/memory.txt
+--- a/Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix
++++ a/Documentation/cgroups/memory.txt
+@@ -482,7 +482,7 @@ About use_hierarchy, see Section 6.
+   memory.kmem.usage_in_bytes == memory.usage_in_bytes.
  
+   Please note that this knob is considered deprecated and will be removed
+-  in future.
++  in the future.
  
-@@ -422,7 +423,9 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
- 	config |= QUP_CONFIG_SPI_MODE;
- 	writel_relaxed(config, controller->base + QUP_CONFIG);
+   About use_hierarchy, see Section 6.
  
--	writel_relaxed(0, controller->base + QUP_OPERATIONAL_MASK);
-+	/* only write to OPERATIONAL_MASK when register is present */
-+	if (!controller->qup_v1)
-+		writel_relaxed(0, controller->base + QUP_OPERATIONAL_MASK);
- 	return 0;
+diff -puN mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix mm/memcontrol.c
+--- a/mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix
++++ a/mm/memcontrol.c
+@@ -4799,10 +4799,10 @@ static int mem_cgroup_force_empty_write(
+ 
+ 	if (mem_cgroup_is_root(memcg))
+ 		return -EINVAL;
+-	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
+-			current->comm, task_pid_nr(current));
+-	pr_cont(" Let us know if you know if it needed in your usecase at");
+-	pr_cont(" linux-mm@kvack.org\n");
++	pr_info_once("%s (%d): memory.force_empty is deprecated and will be "
++		     "removed.  Let us know if it is needed in your usecase at "
++		     "linux-mm@kvack.org\n",
++		     current->comm, task_pid_nr(current));
+ 	return mem_cgroup_force_empty(memcg);
  }
  
-@@ -488,7 +491,7 @@ static int spi_qup_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct device *dev;
- 	void __iomem *base;
--	u32 data, max_freq, iomode;
-+	u32 data = 0, max_freq, iomode;
- 	int ret, irq, size;
- 
- 	dev = &pdev->dev;
-@@ -531,15 +534,6 @@ static int spi_qup_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	data = readl_relaxed(base + QUP_HW_VERSION);
--
--	if (data < QUP_HW_VERSION_2_1_1) {
--		clk_disable_unprepare(cclk);
--		clk_disable_unprepare(iclk);
--		dev_err(dev, "v.%08x is not supported\n", data);
--		return -ENXIO;
--	}
--
- 	master = spi_alloc_master(dev, sizeof(struct spi_qup));
- 	if (!master) {
- 		clk_disable_unprepare(cclk);
-@@ -567,6 +561,10 @@ static int spi_qup_probe(struct platform_device *pdev)
- 	controller->cclk = cclk;
- 	controller->irq = irq;
- 
-+	/* set v1 flag if device is version 1 */
-+	if (of_device_is_compatible(dev->of_node, "qcom,spi-qup-v1.1.1"))
-+		controller->qup_v1 = 1;
-+
- 	spin_lock_init(&controller->lock);
- 	init_completion(&controller->done);
- 
-@@ -604,10 +602,19 @@ static int spi_qup_probe(struct platform_device *pdev)
- 
- 	writel_relaxed(0, base + QUP_OPERATIONAL);
- 	writel_relaxed(0, base + QUP_IO_M_MODES);
--	writel_relaxed(0, base + QUP_OPERATIONAL_MASK);
-+
-+	if (!controller->qup_v1)
-+		writel_relaxed(0, base + QUP_OPERATIONAL_MASK);
-+
- 	writel_relaxed(SPI_ERROR_CLK_UNDER_RUN | SPI_ERROR_CLK_OVER_RUN,
- 		       base + SPI_ERROR_FLAGS_EN);
- 
-+	/* if earlier version of the QUP, disable INPUT_OVERRUN */
-+	if (controller->qup_v1)
-+		writel_relaxed(QUP_ERROR_OUTPUT_OVER_RUN |
-+			QUP_ERROR_INPUT_UNDER_RUN | QUP_ERROR_OUTPUT_UNDER_RUN,
-+			base + QUP_ERROR_FLAGS_EN);
-+
- 	writel_relaxed(0, base + SPI_CONFIG);
- 	writel_relaxed(SPI_IO_C_NO_TRI_STATE, base + SPI_IO_CONTROL);
- 
-@@ -729,6 +736,7 @@ static int spi_qup_remove(struct platform_device *pdev)
- }
- 
- static struct of_device_id spi_qup_dt_match[] = {
-+	{ .compatible = "qcom,spi-qup-v1.1.1", },
- 	{ .compatible = "qcom,spi-qup-v2.1.1", },
- 	{ .compatible = "qcom,spi-qup-v2.2.1", },
- 	{ }
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+_
 
