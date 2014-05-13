@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290AbaEMJnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:43:01 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:57294 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759744AbaEMJm6 (ORCPT
+	id S1760322AbaEMJnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:43:25 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60882 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760107AbaEMJ25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:42:58 -0400
-Message-ID: <5371E91F.7000807@linaro.org>
-Date: Tue, 13 May 2014 10:42:55 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v1 11/11] mmc: mmci: Add Qcom specific pio_read function.
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>	<1398759674-13421-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdY_NzRaz5fiWJDF=rZY6WizmwbDZG6c_+FR+L9Aix8peQ@mail.gmail.com>
-In-Reply-To: <CACRpkdY_NzRaz5fiWJDF=rZY6WizmwbDZG6c_+FR+L9Aix8peQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 13 May 2014 05:28:57 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 092/182] media: m88rs2000: add caps FE_CAN_INVERSION_AUTO
+Date: Tue, 13 May 2014 11:27:24 +0200
+Message-Id: <73b6c8b3381671cdd2d64b6255eba8bbdb9042d7.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On 13/05/14 09:34, Linus Walleij wrote:
-> On Tue, Apr 29, 2014 at 10:21 AM,  <srinivas.kandagatla@linaro.org> wrote:
->
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> MCIFIFOCNT register behaviour on Qcom chips is very different than the other
->> pl180 integrations. MCIFIFOCNT register contains the number of
->> words that are still waiting to be transferred through the FIFO. It keeps
->> decrementing once the host CPU reads the MCIFIFO. With the existing logic and
->> the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
->> register will always return transfer size before reading the FIFO.
->>
->> Also the data sheet states that "This register is only useful for debug
->> purposes and should not be used for normal operation since it does not reflect
->> data which may or may not be in the pipeline".
->>
->> This patch implements qcom_pio_read function so as existing mmci_pio_read is
->> not suitable for Qcom SOCs.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> (...)
->
->> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
->> +                        unsigned int remain)
->> +{
->> +       uint32_t        *ptr = (uint32_t *) buffer;
->
-> Just use u32 for this.
->
->> +       int             count = 0;
->> +       struct variant_data *variant = host->variant;
->> +       int             fifo_size = variant->fifosize;
->> +
->> +       if (remain % 4)
->> +               remain = ((remain >> 2) + 1) << 2;
->
-> Explain in a comment exactly what is happening here or noone will
-> understand the code.
+===============
 
-Ok, I will add more comments here.
->
->> +       while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
->> +               *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
->> +               ptr++;
->> +               count += sizeof(uint32_t);
->> +               remain -=  sizeof(uint32_t);
->
->
-> sizeof(u32) or just 4 works for these...
->
-Yes, Will fix it in next version.
-> count += 4;
-> remain -= 4;
->
-> Is easier to parse and understand I think.
->
->> +               if (remain == 0)
->> +                       break;
->
-> if (!remain)
->    break;
->
-yep.
+commit 3c8023a782964c72574ad8268ba0ea4e2d9772fc upstream.
 
->> +       }
->> +       return count;
->> +}
->
->> -               if (status & MCI_RXACTIVE)
->> -                       len = mmci_pio_read(host, buffer, remain);
->> +               if (status & MCI_RXACTIVE) {
->> +                       if (host->hw_designer == AMBA_VENDOR_QCOM)
->> +                               len = mmci_qcom_pio_read(host, buffer, remain);
->> +                       else
->> +                               len = mmci_pio_read(host, buffer, remain);
->> +               }
->
-> Use something like bool qcom_fifo; in vendor data instead.
->
-Ok, make sense, I will fix this in next version.
+The m88rs2000 frontend is always auto inversion.
 
---srini
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/media/dvb-frontends/m88rs2000.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Yours,
-> Linus Walleij
->
+diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
+index acd4ff58f902..c7a1c8eba475 100644
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -759,7 +759,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
+ 		.symbol_rate_tolerance	= 500,	/* ppm */
+ 		.caps = FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
+ 		      FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 |
+-		      FE_CAN_QPSK |
++		      FE_CAN_QPSK | FE_CAN_INVERSION_AUTO |
+ 		      FE_CAN_FEC_AUTO
+ 	},
+ 
+-- 
+1.9.3
+
