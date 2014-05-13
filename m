@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760651AbaEMOxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:53:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42603 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752916AbaEMOxg (ORCPT
+	id S933479AbaEMOzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:55:14 -0400
+Received: from mail-ob0-f194.google.com ([209.85.214.194]:53191 "EHLO
+	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932685AbaEMOzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:53:36 -0400
-Date: Tue, 13 May 2014 10:53:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <kishon@ti.com>,
-        <hdegoede@redhat.com>, Boris Brezillon <boris@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <kevin.z.m.zh@gmail.com>,
-        <sunny@allwinnertech.com>, <shuge@allwinnertech.com>,
-        <zhuzhenhua@allwinnertech.com>, <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH v4 0/8] Add Allwinner A31 USB support
-In-Reply-To: <1399969145-11642-1-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <Pine.LNX.4.44L0.1405131053050.1098-100000@iolanthe.rowland.org>
+	Tue, 13 May 2014 10:55:12 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: villaran82@yahoo.com
+Date: Tue, 13 May 2014 14:27:56 +0000
+Message-ID: <CAB9-hxXMDi-A5i-QKy=gYz6R2DOOzwCWLkhj3sb3Zuer1ha-2Q@mail.gmail.com>
+Subject: nenita
+From: nenita villaran <villarann1477@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Maxime Ripard wrote:
+Good day
+how are you am villaran nenita a filipino am suffering from cancerous
+ailment after the death of my husband.now am in
 
-> Hi everyone,
-> 
-> This patchset adds support for the USB controllers found in the
-> Allwinner A31.
-> 
-> While the design is similar to the earlier Allwinner SoCs that are
-> already supported, a few details here and there change, like the fact
-> that the PHYs now have one clock per phy, while it used to be only one
-> for all the PHYs.
-> 
-> Thanks,
-> Maxime
-> 
-> Changes from v3:
->   - Asserted back the ECHI/OHCI in reset if probe fails
->   - Drop of the redundant NULL assignent for the PMU in the PHY rework
-> 
-> Changes from v2:
->   - Fixed indentation and used the reset framework in all case and not
->     just in DT case
->   - Added a default value to the dedicated_clocks variable. Setting it
->     actually started triggering a gcc warning for no reason. Ended up
->     reworking a bit the code to avoid it.
-> 
-> Changes from v1:
->   - Moved the reset assertion/deassertion to probe/remove
->   - Moved the dedicated_clocks to the probe function instead of the
->     private structure since it was the only user
-> 
-> Boris BREZILLON (2):
->   usb: ehci-platform: add optional reset controller retrieval
->   ARM: sunxi: dt: add APP4-EVB1 board support
-> 
-> Maxime Ripard (6):
->   clk: sunxi: Implement A31 USB clock
->   ARM: sun6i: Add the USB clocks to the DTSI
->   phy: sunxi: Rework phy initialization
->   phy: usb: sunxi: Introduce Allwinner A31 USB PHY support
->   usb: ohci-platform: Enable optional use of reset controller
->   ARM: sun6i: dt: Add support for the USB controllers
+hospital the doctor said i will not be alive till 6 mounths so i have
+decided to donate this money to you as i have no
 
-For the changes to ehci-platform and ohci-platform:
+child and nobody to be by my side.the money was deposited with a
+security and finance firm abroad now i have decided
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+to make the donation to you.the amount is $1.5million.i will need you
+to send me your details such as your direct
 
+phone and address and your identity.
+
+church and orphange home
+Remain bless
+Lady nenita
