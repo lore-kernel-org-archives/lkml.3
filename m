@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbaEMPkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:40:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35867 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772AbaEMPkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:40:03 -0400
-Date: Tue, 13 May 2014 17:40:02 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14.3-rt5
-Message-ID: <20140513154002.GD15049@linutronix.de>
-References: <20140509181214.GK29014@linutronix.de>
- <1399695303.5146.21.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1399695303.5146.21.camel@marge.simpson.net>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754096AbaEMPkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:40:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753687AbaEMPkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 11:40:00 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Subject: [PATCH 1/2] x86, irq: get correct available vectors for cpu disable
+Date: Tue, 13 May 2014 11:39:34 -0400
+Message-Id: <1399995575-3129-2-git-send-email-prarit@redhat.com>
+In-Reply-To: <1399995575-3129-1-git-send-email-prarit@redhat.com>
+References: <1399995575-3129-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith | 2014-05-10 06:15:03 [+0200]:
+From: Yinghai Lu <yinghai@kernel.org>
 
->On Fri, 2014-05-09 at 20:12 +0200, Sebastian Andrzej Siewior wrote:
->
->> Known issues:
->> 
->>       - bcache is disabled.
->> 
->>       - lazy preempt on x86_64 leads to a crash with some load.
->
->That is only with NO_HZ_FUL enabled here.  Box blows the stack during
->task exit, eyeballing hasn't spotted the why.
+check_irq_vectors_for_cpu_disable() may overestimate the number of
+available vectors assigned to a cpu.  This can cause cpu remove to
+erroneously fail.
 
-Even if I disable NO_HZ_FULL it explodes as soon as hackbench starts.
+commit da6139e49c7cb0f4251265cb5243b8d220adb48d,  x86: Add check for
+number of available vectors before CPU down, introduces a check to see if
+there are enough empty vectors in the system to replace a downed cpu's
+vectors.  Code inspection shows that the range used in the check
+(currently from FIRST_EXTERNAL_VECTOR to NR_VECTORS) is incorrect and
+should be FIRST_EXTERNAL_VECTOR to first_system_vector.  The value of
+first_system_vector is decremented when system vectors are assigned in
+alloc_system_vector().
 
->> - CPU hotplug works in general. Steven's test script however
->>         deadlocks usually on the second invocation.
->
->My 64 core box runs for up to 14 hours, and never deadlocks.. it
->explodes in what looks like it should be an impossible manner instead.
+The check_irq_vectors_for_cpu_disable() check also does not take into
+account the first 32 system vectors which are not managed in the per_cpu
+vector_irq arrays, including IA32_SYSCALL_VECTOR (0x80) and the
+IRQ_MOVE_CLEANUP_VECTOR (0x20).
 
-It deadlocks here and I haven't figured the exact root cause. From what
-it looks like is that the irq thread blocks on something during startup
-(migrate_disable() or so). One of the blocked irq thrad is disk driver.
-The userland tasks then block on ext4 in order to complete the requests.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/kernel/irq.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-I also noticed that the frequent cpu up/down fails at some point and my
-kvm guest has just 7 out 8 CPUs. That one CPU remains dead and can't get
-back online. Once that happens, the deadlock is comming in a few minutes
-:)
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 283a76a..d03ff8f 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -17,6 +17,7 @@
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
++#include <asm/desc.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <asm/trace/irq_vectors.h>
+@@ -334,10 +335,24 @@ int check_irq_vectors_for_cpu_disable(void)
+ 	for_each_online_cpu(cpu) {
+ 		if (cpu == this_cpu)
+ 			continue;
+-		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+-		     vector++) {
+-			if (per_cpu(vector_irq, cpu)[vector] < 0)
++
++		/*
++		 * assign_irq_vector() only scan per_cpu vectors from
++		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
++		 * It aslo skip vectors that are set in used_vectors bitmask.
++		 * used_vectors could have bits set for
++		 *	IA32_SYSCALL_VECTOR (0x80)
++		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
++		 * Don't count those as available vectors.
++		 */
++		for (vector = FIRST_EXTERNAL_VECTOR;
++		     vector < first_system_vector; vector++) {
++			if (test_bit(vector, used_vectors))
++				continue;
++
++			if (per_cpu(vector_irq, cpu)[vector] < 0) {
+ 				count++;
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.3
 
->-Mike
-
-Sebastian
