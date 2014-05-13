@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131AbaEMKAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:00:53 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:62778 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932626AbaEMKAt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:00:49 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kishon@ti.com
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, kgene.kim@samsung.com, robh+dt@kernel.org,
-        mark.rutland@arm.com, balbi@ti.com, sylvester.nawrocki@gmail.com,
-        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v9 3/3] phy: exynos5-usbdrd: Add facility for VBUS supply
-Date: Tue, 13 May 2014 15:30:17 +0530
-Message-Id: <1399975217-3231-4-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399975217-3231-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399975217-3231-1-git-send-email-gautam.vivek@samsung.com>
+	id S933014AbaEMKAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:00:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50417 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932952AbaEMKAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 06:00:33 -0400
+Message-ID: <5371ED3F.6070505@suse.cz>
+Date: Tue, 13 May 2014 12:00:31 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch -mm] mm, thp: avoid excessive compaction latency during
+ fault fix
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061922010.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405072229390.19108@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1405072229390.19108@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to enable/disable VBUS controlled by a
-regulator, to enable vbus supply on the port.
+On 05/08/2014 07:30 AM, David Rientjes wrote:
+> mm-thp-avoid-excessive-compaction-latency-during-fault.patch excludes sync
+> compaction for all high order allocations other than thp.  What we really
+> want to do is suppress sync compaction for thp, but only during the page
+> fault path.
+>
+> Orders greater than PAGE_ALLOC_COSTLY_ORDER aren't necessarily going to
+> loop again so this is the only way to exhaust our capabilities before
+> declaring that we can't allocate.
+>
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>   mm/page_alloc.c | 17 +++++++----------
+>   1 file changed, 7 insertions(+), 10 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2585,16 +2585,13 @@ rebalance:
+>   	if (page)
+>   		goto got_pg;
+>
+> -	if (gfp_mask & __GFP_NO_KSWAPD) {
+> -		/*
+> -		 * Khugepaged is allowed to try MIGRATE_SYNC_LIGHT, the latency
+> -		 * of this allocation isn't critical.  Everything else, however,
+> -		 * should only be allowed to do MIGRATE_ASYNC to avoid excessive
+> -		 * stalls during fault.
+> -		 */
+> -		if ((current->flags & (PF_KTHREAD | PF_KSWAPD)) == PF_KTHREAD)
+> -			migration_mode = MIGRATE_SYNC_LIGHT;
+> -	}
+> +	/*
+> +	 * It can become very expensive to allocate transparent hugepages at
+> +	 * fault, so use asynchronous memory compaction for THP unless it is
+> +	 * khugepaged trying to collapse.
+> +	 */
+> +	if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
+> +		migration_mode = MIGRATE_SYNC_LIGHT;
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/phy/phy-exynos5-usbdrd.c |   32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+I wonder what about a process doing e.g. mmap() with MAP_POPULATE. It 
+seems to me that it would get only MIGRATE_ASYNC here, right? Since 
+gfp_mask would include __GFP_NO_KSWAPD and it won't have PF_KTHREAD.
+I think that goes against the idea that with MAP_POPULATE you say you 
+are willing to wait to have everything in place before you actually use 
+the memory. So I guess you are also willing to wait for hugepages in 
+that situation?
 
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index 8fcdd94..76d862b 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -24,6 +24,7 @@
- #include <linux/mfd/syscon.h>
- #include <linux/mfd/syscon/exynos5-pmu.h>
- #include <linux/regmap.h>
-+#include <linux/regulator/consumer.h>
- 
- /* Exynos USB PHY registers */
- #define EXYNOS5_FSEL_9MHZ6		0x0
-@@ -170,6 +171,7 @@ struct exynos5_usbdrd_phy {
- 	} phys[EXYNOS5_DRDPHYS_NUM];
- 	u32 extrefclk;
- 	struct clk *ref_clk;
-+	struct regulator *vbus;
- };
- 
- static inline
-@@ -438,6 +440,7 @@ static int exynos5_usbdrd_phy_exit(struct phy *phy)
- 
- static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- {
-+	int ret;
- 	struct phy_usb_instance *inst = phy_get_drvdata(phy);
- 	struct exynos5_usbdrd_phy *phy_drd = to_usbdrd_phy(inst);
- 
-@@ -445,10 +448,24 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- 	clk_prepare_enable(phy_drd->ref_clk);
- 
-+	/* Enable VBUS supply */
-+	if (phy_drd->vbus) {
-+		ret = regulator_enable(phy_drd->vbus);
-+		if (ret) {
-+			dev_err(phy_drd->dev, "Failed to enable VBUS supply\n");
-+			goto fail_vbus;
-+		}
-+	}
-+
- 	/* Power-on PHY*/
- 	inst->phy_cfg->phy_isol(inst, 0);
- 
- 	return 0;
-+
-+fail_vbus:
-+	clk_disable_unprepare(phy_drd->ref_clk);
-+
-+	return ret;
- }
- 
- static int exynos5_usbdrd_phy_power_off(struct phy *phy)
-@@ -461,6 +478,10 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
- 	/* Power-off the PHY */
- 	inst->phy_cfg->phy_isol(inst, 1);
- 
-+	/* Disable VBUS supply */
-+	if (phy_drd->vbus)
-+		regulator_disable(phy_drd->vbus);
-+
- 	clk_disable_unprepare(phy_drd->ref_clk);
- 
- 	return 0;
-@@ -600,6 +621,17 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		break;
- 	}
- 
-+	/* Get Vbus regulator */
-+	phy_drd->vbus = devm_regulator_get(dev, "vbus");
-+	if (IS_ERR(phy_drd->vbus)) {
-+		ret = PTR_ERR(phy_drd->vbus);
-+		if (ret == -EPROBE_DEFER)
-+			return ret;
-+
-+		dev_warn(dev, "Failed to get VBUS supply regulator\n");
-+		phy_drd->vbus = NULL;
-+	}
-+
- 	dev_vdbg(dev, "Creating usbdrd_phy phy\n");
- 
- 	for (i = 0; i < EXYNOS5_DRDPHYS_NUM; i++) {
--- 
-1.7.10.4
+>
+>   	/*
+>   	 * If compaction is deferred for high-order allocations, it is because
+>
 
