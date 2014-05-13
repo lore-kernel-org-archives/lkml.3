@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaEMXPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:15:12 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:51457 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaEMXPJ (ORCPT
+	id S1755001AbaEMXRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:17:22 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57472 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100AbaEMXRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:15:09 -0400
-Date: Tue, 13 May 2014 19:15:05 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-cc: Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
- systems#
-In-Reply-To: <5372998F.6020502@wwwdotorg.org>
-Message-ID: <alpine.LFD.2.11.1405131908260.980@knanqh.ubzr>
-References: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
- <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr> <20140508205223.GI3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr> <20140509091824.GL3693@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1405091245070.980@knanqh.ubzr> <20140509182245.GM3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405091640090.980@knanqh.ubzr> <CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com> <CAD=FV=XM2URyJjV9gaE=mrp7LAEGtvi9wQGhGJi3_HYp_XzYWg@mail.gmail.com>
- <5372998F.6020502@wwwdotorg.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 13 May 2014 19:17:21 -0400
+Date: Tue, 13 May 2014 16:17:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 39/45] rcutorture: Note diffs from git
+ commits
+Message-ID: <20140513231716.GZ18164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-39-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507221742.GQ27924@cloud>
+ <20140510005124.GI8754@linux.vnet.ibm.com>
+ <20140510051938.GC8451@thin>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140510051938.GC8451@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051323-0928-0000-0000-000001DD655C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Stephen Warren wrote:
-
-> On 05/13/2014 03:50 PM, Doug Anderson wrote:
-> ...
-> > ...but then I found the true problem shows up when we transition
-> > between very low frequencies on exynos, like between 200MHz and
-> > 300MHz.  While transitioning between frequencies the system
-> > temporarily bumps over to the "switcher" PLL running at 800MHz while
-> > waiting for the main PLL to stabilize.  No CPUFREQ notification is
-> > sent for that.  That means there's a period of time when we're running
-> > at 800MHz but loops_per_jiffy is calibrated at between 200MHz and
-> > 300MHz.
+On Fri, May 09, 2014 at 10:19:39PM -0700, Josh Triplett wrote:
+> On Fri, May 09, 2014 at 05:51:24PM -0700, Paul E. McKenney wrote:
+> > On Wed, May 07, 2014 at 03:17:42PM -0700, josh@joshtriplett.org wrote:
+> > > On Mon, Apr 28, 2014 at 05:25:27PM -0700, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > The current scripting only keeps track of the git SHA-1 of the current
+> > > > HEAD.  This can cause confusion in cases where testing ran in a git
+> > > > tree where changes had not yet been checked in.  This commit therefore
+> > > > also records the output of "git diff HEAD" to provide the information
+> > > > needed to reconstruct the source tree that was tested.
+> > > > 
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > Nit below.
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > 
+> > > > ---
+> > > >  tools/testing/selftests/rcutorture/bin/kvm.sh | 5 +++++
+> > > >  1 file changed, 5 insertions(+)
+> > > > 
+> > > > diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > > index 4eed2a4f42c7..91661845fdec 100644
+> > > > --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > > +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+> > > > @@ -277,6 +277,11 @@ if test -d .git
+> > > >  then
+> > > >  	git status >> $resdir/$ds/testid.txt
+> > > >  	git rev-parse HEAD >> $resdir/$ds/testid.txt
+> > > > +	git diff HEAD > $T/git-diff 2>&1
+> > > > +	if test -s $T/git-diff
+> > > 
+> > > You don't need test here; you can use the return value of git diff.
 > > 
-> > 
-> > I'm welcome to any suggestions for how to address this.  It sorta
-> > feels like it would be a common thing to have a temporary PLL during
-> > the transition, ...
+> > Oddly enough, the "git diff" man page does not say anything about the
+> > exit value.  At least not that I could find...
 > 
-> We definitely do that on Tegra for some cpufreq transitions.
+> Look for the --exit-code option of git diff.
 
-Ouch...  If this is a common strategy to use a third frequency during a 
-transition phase, especially if that frequency is way off (800MHz vs 
-200-300MHz) then it is something the cpufreq layer must capture and 
-advertise.
+I guess I should have searched for "exit" rather than scrolling to the
+bottom of the man page.  Thank you for the tip!  ;-)
 
+So:
 
-Nicolas
+	if ! git diff HEAD > $T/git-diff 2>&1
+	then
+		cp $T/git-diff $resdir/$ds
+	fi
+
+The reason for dropping into /tmp and then copying if there were
+diffs is that I don't want there to be an empty file if no diffs.
+
+							Thanx, Paul
+
