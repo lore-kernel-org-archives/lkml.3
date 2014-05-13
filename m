@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaEMQ3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 12:29:42 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:45257 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaEMQ33 (ORCPT
+	id S1751970AbaEMQbC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 12:31:02 -0400
+Received: from smtprelay0091.hostedemail.com ([216.40.44.91]:34137 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751515AbaEMQa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 12:29:29 -0400
-Date: Tue, 13 May 2014 12:29:24 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [GIT PULL RESEND] libata fixes for v3.15-rc5
-Message-ID: <20140513162924.GC1866@htj.dyndns.org>
-References: <20140512183526.GK1421@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140512183526.GK1421@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 May 2014 12:30:56 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3871:3876:4321:5007:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12050:12438:12517:12519:12555:12740:13069:13071:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hose01_5f40657618362
+X-Filterd-Recvd-Size: 1555
+Message-ID: <1399998653.24350.4.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] fs/cifs/netmisc.c: convert printk to pr_foo()
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Steve French <sfrench@samba.org>, akpm <akpm@linux-foundation.org>
+Date: Tue, 13 May 2014 09:30:53 -0700
+In-Reply-To: <20140513181039.9766ed456a097164a195d2fe@skynet.be>
+References: <20140513181039.9766ed456a097164a195d2fe@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Oops, forgot Linus on the To list, resending)
+On Tue, 2014-05-13 at 18:10 +0200, Fabian Frederick wrote:
+> Also fixes array checkpatch warning.
+[]
+> diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
+[]
+> @@ -941,8 +941,8 @@ cifs_UnixTimeToNT(struct timespec t)
+>  	return (u64) t.tv_sec * 10000000 + t.tv_nsec/100 + NTFS_TIME_OFFSET;
+>  }
+>  
+> -static int total_days_of_prev_months[] =
+> -{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+> +static int total_days_of_prev_months[] = {
+> +	0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
-Hey,
+Hi Fabian.
 
-And the libata fixes.  Mostly device-specific fixes.  The only thing
-which isn't is the fix for zpodd oops-on-detach bug.
+A preferred form for initialized array declarations is
 
-The following changes since commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd:
+type array[] = {
+	val1, val2, ..., valn
+};
 
-  libata/ahci: accommodate tag ordered controllers (2014-04-18 15:56:03 -0400)
+Also this instance should probably be static const.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.15-fixes
-
-for you to fetch changes up to 2af89a3cde1beb88a2c65e0558d828c1a9e4677f:
-
-  ata: pata_at91 only works on sam9 (2014-05-08 11:00:00 -0400)
-
-Thanks.
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      ata: pata_at91 only works on sam9
-
-Jacob Pan (1):
-      ahci: disable DEVSLP for Intel Valleyview
-
-Levente Kurusa (1):
-      libata: clean up ZPODD when a port is detached
-
-Shawn Guo (2):
-      ahci: imx: add namespace for register enums
-      ahci: imx: software workaround for phy reset issue in resume
-
- drivers/ata/Kconfig       |   2 +-
- drivers/ata/ahci.c        |  15 ++++
- drivers/ata/ahci.h        |   1 +
- drivers/ata/ahci_imx.c    | 177 ++++++++++++++++++++++++++++++++++++++++++++--
- drivers/ata/libahci.c     |   7 ++
- drivers/ata/libata-core.c |   9 +++
- 6 files changed, 203 insertions(+), 8 deletions(-)
-
--- 
-tejun
