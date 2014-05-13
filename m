@@ -1,71 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802AbaEMH3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:29:08 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:42672 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758174AbaEMH3E (ORCPT
+	id S1758842AbaEMHaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:30:11 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:11926 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563AbaEMHaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:29:04 -0400
+	Tue, 13 May 2014 03:30:09 -0400
+Message-ID: <5371C8E6.6080700@huawei.com>
+Date: Tue, 13 May 2014 15:25:26 +0800
+From: Liu hua <sdu.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1398759614-13217-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1398759614-13217-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Tue, 13 May 2014 09:29:04 +0200
-Message-ID: <CACRpkdab4OT_Yzoijgdc7RFBapN8rrN56LYGLeO1vMjb=bu4Mg@mail.gmail.com>
-Subject: Re: [PATCH v1 06/11] mmc: mmci: Qcomm: Add 3 clock cycle delay after
- register write
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "will.deacon@arm.com" <will.deacon@arm.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        "liusdu@126.com" <liusdu@126.com>
+Subject: Re: [RFC PATCH 2/2] makedumpfile: get additional information from
+ vmcore
+References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com> <1399469234-54925-3-git-send-email-sdu.liu@huawei.com> <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
+In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.58.238]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 10:20 AM,  <srinivas.kandagatla@linaro.org> wrote:
+On 2014/5/13 14:21, Atsushi Kumagai wrote:
+> Hello Liu,
+> 
+>> Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
+>> macros. So if we deal with vmcores with different values
+>> of these two macros. We have to recompile makedumpfile.
+> 
+> There are other macros which have architecture-specific values
+> (e.g. __PAGE_OFFSET), and some functions are specific to each
+> architecture (e.g. vaddr_to_paddr()), so we need recompilation
+> eventually.
+> 
+> OTOH, we already don't need recompilation for the same architecture
+> since the values of such macros are defined for each kernel version
+> like below:
+> 
+> #ifdef __x86_64__
+> ...
+> #define _MAX_PHYSMEM_BITS_ORIG          (40)
+> #define _MAX_PHYSMEM_BITS_2_6_26        (44)
+> #define _MAX_PHYSMEM_BITS_2_6_31        (46)
+> 
+> So I don't think this patch is valuable.
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> Most of the Qcomm SD card controller registers must be updated to the MCLK
-> domain so subsequent writes to registers will be ignored until 3 clock cycles
-> have passed.
->
-> This patch adds a 3 clock cycle delay required after writing to controller
-> registers on Qualcomm SOCs. Without this delay all the register writes are not
-> successfull, resulting in not detecting cards.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Hi Atsushi,
 
-Sounds like someone decided to clock the internal state machine
-in the MMCI using MCLK instead of PCLK :-(
+For x86, it is not necessory. But for arm, different venders
+may define different SECTION_SIZE_BITS. for example:
 
-A bit nasty if this ends up in the fastpath (irq) though. Which it
-invariably does, right?
+   1 arch/arm/mach-clps711x/include/mach/memory.h
+     #define SECTION_SIZE_BITS 24
+   2 arch/arm/mach-exynos/include/mach/memory.h
+     #define SECTION_SIZE_BITS 28
+   4 arch/arm/mach-hisi/include/mach/memory.h
+     #define SECTION_SIZE_BITS 26
+   8 arch/arm/mach-sa1100/include/mach/memory.h
+     #define SECTION_SIZE_BITS 27
 
-> +       /*
-> +        * On QCom SD card controller, registers must be updated to the
-> +        * MCLK domain so subsequent writes to this register will be ignored
-> +        * for 3 clk cycles.
-> +        */
-> +       if (host->hw_designer == AMBA_VENDOR_QCOM)
-> +               udelay(1 + ((3 * USEC_PER_SEC)/host->mclk));
+Perhaps we should find another way to let the userspace tools
+to get the architecture-specific values.
 
-Add a new field in vendor data instead, and use DIV_ROUND_UP():
+Liu Hua
 
-static struct variant_data variant_qcom = {
-         .mclk_delayed_writes  = true,
-(...)
+> 
+> 
+> Thanks
+> Atsushi Kumagai
+> 
+>> This patch makes makedumpfile get these two values from
+>> vmcore info, if existing. It makes the makedumpfile more
+>> compatible to vmcores with different section size.
+>>
+>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+>> ---
+>> makedumpfile.c | 17 +++++++++++++++++
+>> makedumpfile.h |  2 ++
+>> 2 files changed, 19 insertions(+)
+>>
+>> diff --git a/makedumpfile.c b/makedumpfile.c
+>> index 6cf6e24..3cdf323 100644
+>> --- a/makedumpfile.c
+>> +++ b/makedumpfile.c
+>> @@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
+>> 	READ_NUMBER("PG_slab", PG_slab);
+>> 	READ_NUMBER("PG_buddy", PG_buddy);
+>> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
+>> +	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
+>> +	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
+>>
+>> 	READ_SRCFILE("pud_t", pud_t);
+>>
+>> @@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
+>> }
+>>
+>> int
+>> +calibrate_machdep_info(void)
+>> +{
+>> +	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
+>> +		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
+>> +
+>> +	if (NUMBER(SECTION_SIZE_BITS) > 0)
+>> +		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
+>> +
+>> +	return TRUE;
+>> +}
+>> +
+>> +int
+>> initial(void)
+>> {
+>> 	off_t offset;
+>> @@ -3214,6 +3228,9 @@ out:
+>> 	if (debug_info && !get_machdep_info())
+>> 		return FALSE;
+>>
+>> +	if (debug_info && !calibrate_machdep_info())
+>> +		return FALSE;
+>> +
+>> 	if (is_xen_memory() && !get_dom0_mapnr())
+>> 		return FALSE;
+>>
+>> diff --git a/makedumpfile.h b/makedumpfile.h
+>> index eb03688..7acb23a 100644
+>> --- a/makedumpfile.h
+>> +++ b/makedumpfile.h
+>> @@ -1434,6 +1434,8 @@ struct number_table {
+>> 	long    PG_hwpoison;
+>>
+>> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
+>> +	long	SECTION_SIZE_BITS;
+>> +	long	MAX_PHYSMEM_BITS;
+>> };
+>>
+>> struct srcfile_table {
+>> --
+>> 1.9.0
+> 
+> .
+> 
 
-if (host->vendor->mclk_delayed_writes)
-    udelay(DIV_ROUND_UP((3 * USEC_PER_SEC), host->mclk));
 
-You get the idea.
-
-Yours,
-Linus Walleij
