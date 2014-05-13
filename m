@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333AbaEMVwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 17:52:22 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:65014 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977AbaEMVwQ (ORCPT
+	id S1753971AbaEMWAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:00:18 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49373 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbaEMWAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 17:52:16 -0400
+	Tue, 13 May 2014 18:00:15 -0400
+Date: Tue, 13 May 2014 15:00:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
+Message-ID: <20140513220009.GW18164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140512190438.314125476@linutronix.de>
+ <20140512201700.999660035@linutronix.de>
+ <5371B2D9.8060405@cn.fujitsu.com>
+ <20140513084815.GB2485@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
+ <20140513162041.3405b668@gandalf.local.home>
+ <20140513203619.GV18164@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1405132301530.6261@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <53725FED.7050303@wwwdotorg.org>
-References: <1399990023-30318-1-git-send-email-pdeschrijver@nvidia.com>
-	<1399990023-30318-4-git-send-email-pdeschrijver@nvidia.com>
-	<53725FED.7050303@wwwdotorg.org>
-Date: Tue, 13 May 2014 14:52:15 -0700
-X-Google-Sender-Auth: e47kpFrXOAi7G7zbOGphrTEZOx4
-Message-ID: <CAL1qeaHMcUsqsY75584P6vbzex0FiHc1YtsDKbDj923Hxw5Mkw@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] clk: tegra: Implement Tegra124 shared/cbus clks
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1405132301530.6261@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051322-9332-0000-0000-000000C76DB0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 11:09 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/13/2014 08:06 AM, Peter De Schrijver wrote:
->> Add shared and cbus clocks to the Tegra124 clock implementation.
->
->> diff --git a/include/dt-bindings/clock/tegra124-car.h b/include/dt-bindings/clock/tegra124-car.h
->
->> +#define TEGRA124_CLK_C2BUS 401
->> +#define TEGRA124_CLK_C3BUS 402
->> +#define TEGRA124_CLK_GR3D_CBUS 403
->> +#define TEGRA124_CLK_GR2D_CBUS 404
-> ...
->
-> I worry about this a bit. IIUC, these clocks don't actually exist in HW,
-> but are more a way of SW applying policy to the clock that do exist in
-> HW. As such, I'm not convinced it's a good idea to expose these clock
-> IDS to DT, since DT is supposed to represent the HW, and not be
-> influenced by internal SW implementation details.
+On Tue, May 13, 2014 at 11:27:16PM +0200, Thomas Gleixner wrote:
+> On Tue, 13 May 2014, Paul E. McKenney wrote:
+> > On Tue, May 13, 2014 at 04:20:41PM -0400, Steven Rostedt wrote:
+> > > What about having a module that creates a bunch of threads and forces
+> > > all the scenarios that we want to test? Wouldn't it be easier to do
+> > > than to have a userspace interface to dictate commands to the kernel?
+> > 
+> > I second this approach!  The kernel environment makes it -much- easier
+> > to force races and other conditions, which turns into much simpler and
+> > more effective tests.
+> 
+> The point of the rtmutex tester was NOT to force races and stuff, it
+> was intended to be a formal test for certain static scenarios:
+> 
+>    - verify boosting / debosting
+>    - verify set_scheduler interaction
+>    - verify deadlock detection 
+> 
+> The latter was incomplete and therefor missed the futex wreckage :(
+> 
+> Having a formal checker makes a lot of sense.
+> 
+> Plastering the code with a gazillion of trace_printks, waiting several
+> hours for each iteration and staring into several GB of traces just to
+> figure out, that it is an algorithmic issue, is utter waste of time
+> and nerves. And that stuff is definitely complex enough to justify a
+> static checker.
+> 
+> Back then when I wrote it, it unearthed quite some logic bugs. And I
+> needed the schedule_rt_mutex() hack to verify the BKL interaction and
+> the lock steal machinery, which made it impossible to be a module. It
+> could have been done, but that'd have been even more ugly hackery.
+> 
+> So I made it a user space interface to add/modify test cases without
+> recompiling the kernel.  But now with BKL and the lock steal muck
+> gone, we simply might kill it.
+> 
+> Now that allows a module, but then I'm still not sure whether formal
+> verification rules are fun to code in C. There are certainly better
+> ways than the *.tst rules I defined back then. But yes, we could add a
+> similar cryptic thing with static arrays of OP/Data pairs in C.
 
-The purpose of these IDs, I believe, is to be used in bindings for consumer
-devices so that the driver can get() the shared clock.
+Good points -- I was indeed thinking about stress testing instead of
+algorithmic testing.
 
-> Do any DTs actually need to used these new clock IDs?
+							Thanx, Paul
 
-AFAIK no driver currently supports the use of these shared clocks, but
-they could.
-In the chromium kernel, for example, we have devices which require an
-"emc" clock
-in their bindings that the driver uses to vote on SDRAM frequency.  I
-guess we could
-avoid specifying these clocks in the DT by creating aliases for them,
-but I'm not sure
-that's any better.
-
-> I don't think we could actually use these value in e.g. tegra124.dtsi's clocks
-> properties, since these clocks don't exist in HW.
-
-The DT IDs are simply used to look up the struct clk corresponding to the ID
-in the per-SoC clks array.  They aren't used for indexing into a hardware
-register or anything like that, though they happen to currently be assigned so
-that they match the corresponding clock's hardware ID.
