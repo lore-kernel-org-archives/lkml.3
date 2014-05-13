@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179AbaEMKCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:02:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60821 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760071AbaEMJ24 (ORCPT
+	id S1760621AbaEMKDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:03:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759837AbaEMKDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:56 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 063/182] nfsd4: fix setclientid encode size
-Date: Tue, 13 May 2014 11:26:55 +0200
-Message-Id: <479557c30997330ab347a638b2635a5cb562fa5e.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 06:03:39 -0400
+Date: Tue, 13 May 2014 12:03:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf,tools: Remove usage of trace_sched_wakeup(.success)
+Message-ID: <20140513100333.GW30445@twins.programming.kicks-ass.net>
+References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
+ <20140513072208.GB7980@gmail.com>
+ <5371BCF8.7030708@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cs2w6Z3FJD+b2LjO"
+Content-Disposition: inline
+In-Reply-To: <5371BCF8.7030708@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--cs2w6Z3FJD+b2LjO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============
+On Tue, May 13, 2014 at 03:34:32PM +0900, Dongsheng Yang wrote:
+> On 05/13/2014 04:22 PM, Ingo Molnar wrote:
+> >* Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> >>trace_sched_wakeup(.success) is a dead argument and has been for ages,
+> >Always 0, or random value?
+>=20
+> Hi Ingo,
+>=20
+> It is always 1 currently.
+>=20
+> Peter believe that .success is not useful and I pointed that perf sched
+> latency
+> is using it now. Then he post this patch to remove the usage here.
+>=20
+> Please go to the following link for more about this issue.
 
-commit 480efaee085235bb848f1063f959bf144103c342 upstream.
+It is _not_ usable. You're proposing to abuse the existing parameter. A
+wakeup doing an enqueue or not has nothing _WHAT_SO_EVER_ to do with
+success.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/nfsd/nfs4proc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Now what I think you wanted to do is make it easier to match
+trace_sched_switch() statements with trace_sched_wakeup() statements.
+And since you only get the trace_sched_switch() on dequeue, you want to
+know which trace_sched_wakeup() calls did an enqueue.
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 622ede143585..b9e784486729 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1519,7 +1519,8 @@ static inline u32 nfsd4_setattr_rsize(struct svc_rqst *rqstp, struct nfsd4_op *o
- 
- static inline u32 nfsd4_setclientid_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
- {
--	return (op_encode_hdr_size + 2 + 1024) * sizeof(__be32);
-+	return (op_encode_hdr_size + 2 + XDR_QUADLEN(NFS4_VERIFIER_SIZE)) *
-+								sizeof(__be32);
- }
- 
- static inline u32 nfsd4_write_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
--- 
-1.9.3
+But that's completely and utterly unrelated to success.
 
+--cs2w6Z3FJD+b2LjO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTce31AAoJEHZH4aRLwOS6cngP/iHaM7Y0NhcYARQKUAbJ3HwI
+JVEXitZIa8By++QIkdVgD8PXYH/uSi4ChNyBbSX4c4QX8a6CBw8YdZGx2nH9Egy6
+cmJ3bAH3ZOlOqS3pxFteyGVbPH1odFfLqct3MVurkdBkfy4XBHaLGgFH4R9Gku6t
+YlnRb8VW4Tr4X5ACLBcCZsQoUYA48ZDufva4y/0BtvVnZ+EdzncESKxtE9bgnvot
+ulDKQ8VzG+jnfbwUoAIOzMXHv3bYl5oJcA5AiAxxYCymjTkQcLY/o/yqMiOyazK7
+aJEeNLLp/BtvyYiOk4BTLzXDMroQNAh5teKw+Z3PwZcYh6kJH32805S+aAp8Bfzn
+b9YI95JugrPCPm5I23wa550RZOhWWynVJgIZ7Xgr60cCgP1mBS+th7WPwE0KZwT/
+crwnWOJoA3qpWoKYSLGr4C6d4ATV+jFj9mUst9JsLP8aletg8h/Dve4Q2SbYSGgc
+/gIKYysRvO80S8RwXMUrmSG3pU9gVEx2cXs7gvephiYMWa+zNWtLG1gMpY1pBfN1
+FGdn1O/4l2uVe7be1rAy5w61PIjpOZwHItIF/6cHMJMLuN7wWNB55W5wNNVo4/BL
+Xsw/+FX1ZNNU70slpuktAIm5de0qLQeuDA08RbNj0G0OsP5yEJL6sp3doxVnIWyj
+dBN4LcFRI60PWvzhcElJ
+=9Jgy
+-----END PGP SIGNATURE-----
+
+--cs2w6Z3FJD+b2LjO--
