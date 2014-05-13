@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894AbaEML7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:59:33 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42471 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932671AbaEML7b (ORCPT
+	id S933030AbaEMMCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:02:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45905 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760089AbaEMMCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:59:31 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
-Subject: [PATCH 2/2] drivers: clk: st: authorize propagate rate change for clockgenD0
-Date: Tue, 13 May 2014 13:57:33 +0200
-Message-Id: <1399982253-21079-3-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399982253-21079-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1399982253-21079-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-13_03:2014-05-13,2014-05-13,1970-01-01 signatures=0
+	Tue, 13 May 2014 08:02:02 -0400
+Date: Tue, 13 May 2014 14:02:01 +0200
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Artem Fetishev <wwctrsrx@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: line6: Add blank lines after
+ declarations
+Message-ID: <20140513120201.GA32045@kroah.com>
+References: <1400025402-6265-1-git-send-email-wwctrsrx@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400025402-6265-1-git-send-email-wwctrsrx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows the spread of change rate only for clockgenD0
-clocks.
+On Wed, May 14, 2014 at 02:56:42AM +0300, Artem Fetishev wrote:
+> Use the more common kernel coding style.
+> 
+> Signed-off-by: Artem Fetishev <wwctrsrx@gmail.com>
+> ---
+>  drivers/staging/line6/capture.c  |    4 ++++
+>  drivers/staging/line6/midi.c     |    2 ++
+>  drivers/staging/line6/playback.c |    5 +++++
+>  drivers/staging/line6/pod.c      |    5 +++++
+>  drivers/staging/line6/toneport.c |    2 ++
+>  drivers/staging/line6/variax.c   |    2 ++
+>  6 files changed, 20 insertions(+)
+> 
+> diff --git a/drivers/staging/line6/capture.c b/drivers/staging/line6/capture.c
+> index 0eda51d..14ed0d7 100644
+> --- a/drivers/staging/line6/capture.c
+> +++ b/drivers/staging/line6/capture.c
+> @@ -97,6 +97,7 @@ void line6_unlink_audio_in_urbs(struct snd_line6_pcm *line6pcm)
+>  		if (test_bit(i, &line6pcm->active_urb_in)) {
+>  			if (!test_and_set_bit(i, &line6pcm->unlink_urb_in)) {
+>  				struct urb *u = line6pcm->urb_audio_in[i];
+> +
+>  				usb_unlink_urb(u);
+>  			}
+>  		}
+> @@ -122,6 +123,7 @@ void line6_wait_clear_audio_in_urbs(struct snd_line6_pcm *line6pcm)
+>  		if (!alive)
+>  			break;
+>  		set_current_state(TASK_UNINTERRUPTIBLE);
+> +
+>  		schedule_timeout(1);
+>  	} while (--timeout > 0);
+>  	if (alive)
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
----
- arch/arm/boot/dts/stih407-clock.dtsi | 1 +
- drivers/clk/st/clk-flexgen.c         | 2 ++
- 2 files changed, 3 insertions(+)
-
-diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
-index 5f1c83c..7fad261 100644
---- a/arch/arm/boot/dts/stih407-clock.dtsi
-+++ b/arch/arm/boot/dts/stih407-clock.dtsi
-@@ -204,6 +204,7 @@
- 					"CLK_PCM_1",
- 					"CLK_PCM_2",
- 					"CLK_SPDIFF";
-+				set-rate-parent;
- 			};
- 		};
- 
-diff --git a/drivers/clk/st/clk-flexgen.c b/drivers/clk/st/clk-flexgen.c
-index f3ed700..5629988 100644
---- a/drivers/clk/st/clk-flexgen.c
-+++ b/drivers/clk/st/clk-flexgen.c
-@@ -306,6 +306,8 @@ void __init st_of_flexgen_setup(struct device_node *np)
- 		if (*clk_name == '\0')
- 			continue;
- 
-+		flex_flags = of_clk_get_flags(np);
-+
- 		clk = clk_register_flexgen(clk_name, parents, num_parents,
- 					   reg, rlock, i, flex_flags);
- 
--- 
-1.9.1
+That line doesn't look like it needs to be added, why do so?
 
