@@ -1,144 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaEMPpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:45:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40106 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753751AbaEMPpK (ORCPT
+	id S1754773AbaEMPqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:46:37 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46523 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736AbaEMPqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:45:10 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND v4 6/8] usb: ohci-platform: Enable optional use of reset controller
-Date: Tue, 13 May 2014 17:44:20 +0200
-Message-Id: <1399995862-17788-7-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 13 May 2014 11:46:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1399995050-28435-2-git-send-email-thierry.reding@gmail.com>
+References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
+	<1399995050-28435-2-git-send-email-thierry.reding@gmail.com>
+Date: Tue, 13 May 2014 17:46:30 +0200
+Message-ID: <CANq1E4QQgy2=XG7-Q1adg__Xgv_E6cw3WFhW5jMn5prROeALkg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/7] drm: Introduce drm_set_unique()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <robdclark@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OHCI controllers used in the Allwinner A31 are asserted in reset using a
-global reset controller.
+Hi
 
-Add optional support for such a controller in the OHCI platform driver.
+Some minor nitpicks below:
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- Documentation/devicetree/bindings/usb/usb-ohci.txt |  1 +
- drivers/usb/host/ohci-platform.c                   | 27 +++++++++++++++++++---
- 2 files changed, 25 insertions(+), 3 deletions(-)
+On Tue, May 13, 2014 at 5:30 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>
+> Add a helper function that allows drivers to statically set the unique
+> name of the device. This will allow platform and USB drivers to get rid
+> of their DRM bus implementations and directly use drm_dev_alloc() and
+> drm_dev_register().
+>
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> Changes in v2:
+> - move drm_set_unique() to drivers/gpu/drm/drm_stub.c
+> - add kernel-doc
+>
+>  drivers/gpu/drm/drm_ioctl.c | 23 +++++++++++++++++------
+>  drivers/gpu/drm/drm_stub.c  | 24 ++++++++++++++++++++++++
+>  include/drm/drmP.h          |  3 +++
+>  3 files changed, 44 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
+> index 38269d5aa333..a59f6c2d7586 100644
+> --- a/drivers/gpu/drm/drm_ioctl.c
+> +++ b/drivers/gpu/drm/drm_ioctl.c
+> @@ -131,13 +131,24 @@ static int drm_set_busid(struct drm_device *dev, struct drm_file *file_priv)
+>         if (master->unique != NULL)
+>                 drm_unset_busid(dev, master);
+>
+> -       ret = dev->driver->bus->set_busid(dev, master);
+> -       if (ret)
+> -               goto err;
+> +       if (dev->driver->bus && dev->driver->bus->set_busid) {
+> +               ret = dev->driver->bus->set_busid(dev, master);
+> +               if (ret) {
+> +                       drm_unset_busid(dev, master);
+> +                       return ret;
+> +               }
+> +       } else {
+> +               WARN(dev->unique == NULL,
+> +                    "No drm_bus.set_busid() implementation provided by %ps. "
+> +                    "Set the unique name explicitly using drm_set_unique().",
+> +                    dev->driver);
 
-diff --git a/Documentation/devicetree/bindings/usb/usb-ohci.txt b/Documentation/devicetree/bindings/usb/usb-ohci.txt
-index 45f67d91e888..b968a1aea995 100644
---- a/Documentation/devicetree/bindings/usb/usb-ohci.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-ohci.txt
-@@ -12,6 +12,7 @@ Optional properties:
- - clocks : a list of phandle + clock specifier pairs
- - phys : phandle + phy specifier pair
- - phy-names : "usb"
-+- resets : phandle + reset specifier pair
- 
- Example:
- 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index b6002c951c5c..4369299064c7 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -24,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/phy/phy.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <linux/usb/ohci_pdriver.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
-@@ -36,6 +37,7 @@
- 
- struct ohci_platform_priv {
- 	struct clk *clks[OHCI_MAX_CLKS];
-+	struct reset_control *rst;
- 	struct phy *phy;
- };
- 
-@@ -191,6 +193,19 @@ static int ohci_platform_probe(struct platform_device *dev)
- 				break;
- 			}
- 		}
-+
-+	}
-+
-+	priv->rst = devm_reset_control_get_optional(&dev->dev, NULL);
-+	if (IS_ERR(priv->rst)) {
-+		err = PTR_ERR(priv->rst);
-+		if (err == -EPROBE_DEFER)
-+			goto err_put_clks;
-+		priv->rst = NULL;
-+	} else {
-+		err = reset_control_deassert(priv->rst);
-+		if (err)
-+			goto err_put_clks;
- 	}
- 
- 	if (pdata->big_endian_desc)
-@@ -203,7 +218,7 @@ static int ohci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_OHCI_BIG_ENDIAN_MMIO not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- #ifndef CONFIG_USB_OHCI_BIG_ENDIAN_DESC
-@@ -211,14 +226,14 @@ static int ohci_platform_probe(struct platform_device *dev)
- 		dev_err(&dev->dev,
- 			"Error: CONFIG_USB_OHCI_BIG_ENDIAN_DESC not set\n");
- 		err = -EINVAL;
--		goto err_put_clks;
-+		goto err_reset;
- 	}
- #endif
- 
- 	if (pdata->power_on) {
- 		err = pdata->power_on(dev);
- 		if (err < 0)
--			goto err_put_clks;
-+			goto err_reset;
- 	}
- 
- 	hcd->rsrc_start = res_mem->start;
-@@ -242,6 +257,9 @@ static int ohci_platform_probe(struct platform_device *dev)
- err_power:
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
-+err_reset:
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
- err_put_clks:
- 	while (--clk >= 0)
- 		clk_put(priv->clks[clk]);
-@@ -266,6 +284,9 @@ static int ohci_platform_remove(struct platform_device *dev)
- 	if (pdata->power_off)
- 		pdata->power_off(dev);
- 
-+	if (priv->rst)
-+		reset_control_assert(priv->rst);
-+
- 	for (clk = 0; clk < OHCI_MAX_CLKS && priv->clks[clk]; clk++)
- 		clk_put(priv->clks[clk]);
- 
--- 
-1.9.3
+return -EINVAL?
 
+If you don't bail out here, the kstrdup() below will cause a
+kernel-oops. There's no reason to WARN() if you purposely cause an
+oops below.
+
+> +
+> +               master->unique = kstrdup(dev->unique, GFP_KERNEL);
+> +               if (master->unique)
+> +                       master->unique_len = strlen(dev->unique);
+> +       }
+> +
+>         return 0;
+> -err:
+> -       drm_unset_busid(dev, master);
+> -       return ret;
+>  }
+>
+>  /**
+> diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+> index 1447b0ee3676..64cf97dc4ce4 100644
+> --- a/drivers/gpu/drm/drm_stub.c
+> +++ b/drivers/gpu/drm/drm_stub.c
+> @@ -535,6 +535,29 @@ static void drm_fs_inode_free(struct inode *inode)
+>  }
+>
+>  /**
+> + * drm_set_unique - Set the unique name of a DRM device
+> + * @dev: device of which to set the unique name
+> + * @fmt: format string for unique name
+> + *
+> + * Sets the unique name of a DRM device using the specified format string and
+> + * a variable list of arguments. Drivers can use this at driver probe time if
+> + * the unique name of the devices they drive is static.
+> + */
+> +int drm_set_unique(struct drm_device *dev, const char *fmt, ...)
+
+I tried renaming all the device-management APIs to "drm_dev_*", so how
+about moving this below drm_dev_unregister() and renaming it to
+drm_dev_set_unique()? I prefer prefixes which describe the object the
+function works on. set_unique() works on drm_device, so lets use the
+known drm_dev_* prefix.
+
+Just my opinion, others might disagree..
+
+> +{
+> +       va_list ap;
+> +
+> +       kfree(dev->unique);
+> +
+> +       va_start(ap, fmt);
+> +       dev->unique = kvasprintf(GFP_KERNEL, fmt, ap);
+> +       va_end(ap);
+> +
+> +       return dev->unique ? 0 : -ENOMEM;
+> +}
+> +EXPORT_SYMBOL(drm_set_unique);
+> +
+> +/**
+>   * drm_dev_alloc - Allocate new drm device
+>   * @driver: DRM driver to allocate device for
+>   * @parent: Parent device object
+> @@ -649,6 +672,7 @@ static void drm_dev_release(struct kref *ref)
+>         drm_minor_free(dev, DRM_MINOR_CONTROL);
+>
+>         mutex_destroy(&dev->master_mutex);
+> +       kfree(dev->unique);
+>         kfree(dev);
+>  }
+>
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index 6b4ed9e84e6f..dcec96b1154c 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -1235,6 +1235,8 @@ struct drm_device {
+>         struct drm_vma_offset_manager *vma_offset_manager;
+>         /*@} */
+>         int switch_power_state;
+> +
+> +       char *unique;
+
+Can you add this to the group at the top of the object? This somehow belongs to
+ /** \name Lifetime Management */
+as it is part of device initialization and API.
+
+>  };
+>
+>  #define DRM_SWITCH_POWER_ON 0
+> @@ -1680,6 +1682,7 @@ static __inline__ void drm_core_dropmap(struct drm_local_map *map)
+>
+>  #include <drm/drm_mem_util.h>
+>
+> +int drm_set_unique(struct drm_device *dev, const char *fmt, ...);
+
+Again just a minor style-nitpick: Move that below the drm_dev_*()
+declarations, not above. Usual kernel-style is to have
+allocators/lifetime-management first, followed by runtime management.
+
+Otherwise looks good:
+
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks
+David
+
+>  struct drm_device *drm_dev_alloc(struct drm_driver *driver,
+>                                  struct device *parent);
+>  void drm_dev_ref(struct drm_device *dev);
+> --
+> 1.9.2
+>
