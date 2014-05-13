@@ -1,74 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506AbaEMBcQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 May 2014 21:32:16 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39656 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaEMBcP convert rfc822-to-8bit (ORCPT
+	id S1752555AbaEMBfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 May 2014 21:35:19 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:55354 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaEMBfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 May 2014 21:32:15 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Emilio Lopez" <emilio@elopez.com.ar>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1399923274-6017-2-git-send-email-maxime.ripard@free-electrons.com>
-Cc: "Boris Brezillon" <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>
-References: <1399923274-6017-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399923274-6017-2-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <20140513013208.5943.89944@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v3 1/8] clk: sunxi: Implement A31 USB clock
-Date: Mon, 12 May 2014 18:32:08 -0700
+	Mon, 12 May 2014 21:35:17 -0400
+Message-ID: <1399944913.2648.56.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] ipc,shm: document new limits in the uapi header
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mtk.manpages@gmail.com
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Mon, 12 May 2014 18:35:13 -0700
+In-Reply-To: <CAKgNAkhKubCUiTK36vT98vPbrfLd=xBBxeyPfUfzsqS-uHWAbA@mail.gmail.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <CAKgNAkjuU68hgyMOVGBVoBTOhhGdBytQh6H0ExiLoXfujKyP_w@mail.gmail.com>
+	 <1399406800.13799.20.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkjOKP7P9veOpnokNkVXSszVZt5asFsNp7rm7AXJdjcLLA@mail.gmail.com>
+	 <1399414081.30629.2.camel@buesod1.americas.hpqcorp.net>
+	 <5369C43D.1000206@gmail.com>
+	 <1399486965.4567.9.camel@buesod1.americas.hpqcorp.net>
+	 <1399490251.4567.24.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkgZ+7=EB4jkCdvq5EK1ce03rq9j+rEss9N1XnUQytBcGg@mail.gmail.com>
+	 <1399841186.8629.6.camel@buesod1.americas.hpqcorp.net>
+	 <CAKgNAkhKubCUiTK36vT98vPbrfLd=xBBxeyPfUfzsqS-uHWAbA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Maxime Ripard (2014-05-12 12:34:27)
-> The A31 USB clock slightly differ from its older counterparts, mostly because
-> it has a different gate for each PHY, while the older one had a single gate for
-> all the phy.
+On Mon, 2014-05-12 at 09:44 +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Davidlohr,
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+> On Sun, May 11, 2014 at 10:46 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > On Fri, 2014-05-09 at 10:44 +0200, Michael Kerrisk (man-pages) wrote:
+> >> On Wed, May 7, 2014 at 9:17 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >> > This is useful in the future and allows users to
+> >> > better understand the reasoning behind the changes.
+> >> >
+> >> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> >> > ---
+> >> >  include/uapi/linux/shm.h | 15 +++++++++------
+> >> >  1 file changed, 9 insertions(+), 6 deletions(-)
+> >> >
+> >> > diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> >> > index 74e786d..3400b6e 100644
+> >> > --- a/include/uapi/linux/shm.h
+> >> > +++ b/include/uapi/linux/shm.h
+> >> > @@ -8,17 +8,20 @@
+> >> >  #endif
+> >> >
+> >> >  /*
+> >> > - * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> >> > - * be modified by sysctl.
+> >> > + * SHMMNI, SHMMAX and SHMALL are the default upper limits which can be
+> >> > + * modified by sysctl. Both SHMMAX and SHMALL have their default values
+> >> > + * to the maximum limit which is as large as it can be without helping
+> >> > + * userspace overflow the values. There is really nothing the kernel
+> >> > + * can do to avoid this any further. It is therefore not advised to
+> >> > + * make them any larger. These limits are suitable for both 32 and
+> >> > + * 64-bit systems.
+> >>
+> >> I somehow find that text still rather impenetrable. What about this:
+> >>
+> >> SHMMNI, SHMMAX and SHMALL are default upper limits which can be
+> >> modified by sysctl. The SHMMAX and SHMALL values have been chosen to
+> >> be as large possible without facilitating scenarios where userspace
+> >> causes overflows when adjusting the limits via operations of the form
+> >> "retrieve current limit; add X; update limit". It is therefore not
+> >> advised to make SHMMAX and SHMALL any larger. These limits are
+> >> suitable for both 32 and 64-bit systems.
+> >
+> > I don't really have much preference, imho both read pretty much the
+> > same, specially considering this is still code after all. If you guys
+> > really prefer updating it, let me know and I'll send a v3. But perhaps
+> > your text is a bit more suitable in the svipc manpage?
+> 
+> The problem is that part of your text is still broken grammatically In
+> particular, the piece "Both SHMMAX and SHMALL have their default
+> values to the maximum limit" at the very least lacks a word. That's
+> what prompted me to propose the alternative, rather than just say
+> "this is wrong"--and I thought that I might as well make a more
+> thoroughgoing attempt at helping improve the text.
+> 
+> I agree that text something like this should land in the man page at
+> some point, but as long as we're going to the trouble to improve the
+> comments in the code, let's make them as good and helpful as we can.
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+Fair enough, and I trust your grammar corrections over mine ;) Thanks
+for taking a closer look. I've added your text below.
 
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index bd7dc733c1ca..d9bab75f128b 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -972,6 +972,11 @@ static const struct gates_data sun5i_a13_usb_gates_data __initconst = {
->         .reset_mask = 0x03,
->  };
->  
-> +static const struct gates_data sun6i_a31_usb_gates_data __initconst = {
-> +       .mask = { BIT(18) | BIT(17) | BIT(16) | BIT(10) | BIT(9) | BIT(8) },
-> +       .reset_mask = BIT(2) | BIT(1) | BIT(0),
-> +};
-> +
->  static void __init sunxi_gates_clk_setup(struct device_node *node,
->                                          struct gates_data *data)
->  {
-> @@ -1267,6 +1272,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
->         {.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
->         {.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
->         {.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
-> +       {.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
->         {}
->  };
->  
-> -- 
-> 1.9.3
-> 
+8<------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH v3] ipc,shm: document new limits in the uapi header
+
+This is useful in the future and allows users to
+better understand the reasoning behind the changes.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ include/uapi/linux/shm.h | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index 74e786d..1fbf24e 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -8,17 +8,20 @@
+ #endif
+ 
+ /*
+- * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+- * be modified by sysctl.
++ * SHMMNI, SHMMAX and SHMALL are default upper limits which can be
++ * modified by sysctl. The SHMMAX and SHMALL values have been chosen to
++ * be as large possible without facilitating scenarios where userspace
++ * causes overflows when adjusting the limits via operations of the form
++ * "retrieve current limit; add X; update limit". It is therefore not
++ * advised to make SHMMAX and SHMALL any larger. These limits are
++ * suitable for both 32 and 64-bit systems.
+  */
+-
+ #define SHMMIN 1			 /* min shared seg size (bytes) */
+ #define SHMMNI 4096			 /* max num of segs system wide */
+-#define SHMMAX (ULONG_MAX - (1L<<24))	 /* max shared seg size (bytes) */
+-#define SHMALL (ULONG_MAX - (1L<<24))	 /* max shm system wide (pages) */
++#define SHMMAX (ULONG_MAX - (1UL << 24)) /* max shared seg size (bytes) */
++#define SHMALL (ULONG_MAX - (1UL << 24)) /* max shm system wide (pages) */
+ #define SHMSEG SHMMNI			 /* max shared segs per process */
+ 
+-
+ /* Obsolete, used only for backwards compatibility and libc5 compiles */
+ struct shmid_ds {
+ 	struct ipc_perm		shm_perm;	/* operation perms */
+-- 
+1.8.1.4
+
+
+
+
