@@ -1,366 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664AbaEMR7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:59:52 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:56608 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaEMR7q (ORCPT
+	id S1753858AbaEMSC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 14:02:58 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47974 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaEMSCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:59:46 -0400
-Date: Tue, 13 May 2014 19:59:41 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        dri-devel@lists.freedesktop.org, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] drm: Add device registration documentation
-Message-ID: <20140513175941.GT3908@phenom.ffwll.local>
-Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Russell King <rmk+kernel@arm.linux.org.uk>,
-	dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-	David Herrmann <dh.herrmann@gmail.com>,
-	Philipp Zabel <p.zabel@pengutronix.de>,
-	Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
- <1399995050-28435-7-git-send-email-thierry.reding@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399995050-28435-7-git-send-email-thierry.reding@gmail.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 May 2014 14:02:49 -0400
+Message-ID: <1400004106.2925.34.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 1/1] ima: introduce ima_kernel_read()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: viro@zeniv.linux.org.uk, ebiederm@xmission.com,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        dmitry.kasatkin@gmail.com, linux-kernel@vger.kernel.org
+Date: Tue, 13 May 2014 14:01:46 -0400
+In-Reply-To: <8cbf961769ba41e942bfc2442db0cca3d57be7c4.1399554584.git.d.kasatkin@samsung.com>
+References: <cover.1399554584.git.d.kasatkin@samsung.com>
+	 <8cbf961769ba41e942bfc2442db0cca3d57be7c4.1399554584.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051318-0928-0000-0000-000001E8E491
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 05:30:49PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
+On Thu, 2014-05-08 at 16:16 +0300, Dmitry Kasatkin wrote: 
+> Commit 8aac62706 "move exit_task_namespaces() outside of exit_notify"
+> introduced the kernel opps since the kernel v3.10, which happens when
+> Apparmor and IMA-appraisal are enabled at the same time.
 > 
-> Describe how devices are registered using the drm_*_init() functions.
-> Adding this to docbook requires a largish set of changes to the comments
-> in drm_{pci,usb,platform}.c since they are doxygen-style rather than
-> proper kernel-doc and therefore mess with the docbook generation.
+> ----------------------------------------------------------------------
+> [  106.750167] BUG: unable to handle kernel NULL pointer dereference at
+> 0000000000000018
+> [  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
+> [  106.750241] PGD 0
+> [  106.750254] Oops: 0000 [#1] SMP
+> [  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
+> bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
+> fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
+> kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
+> ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
+> ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
+> snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
+> snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
+> snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
+> parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
+> pps_core
+> [  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
+> [  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
+> 09/19/2012
+> [  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
+> ffff880400fca000
+> [  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
+> our_mnt+0x1a/0x30
+> [  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
+> [  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
+> ffff8800d51523e7
+> [  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
+> ffff880402d20020
+> [  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
+> 0000000000000001
+> [  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
+> ffff8800d5152300
+> [  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
+> ffff8800d51523e7
+> [  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
+> knlGS:0000000000000000
+> [  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
+> 00000000001407e0
+> [  106.750962] Stack:
+> [  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
+> 0000000000000000
+> [  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
+> 0000000000000100
+> [  106.751093]  0000010000000000 0000000000000002 000000000000000e
+> ffff8803eb8df500
+> [  106.751149] Call Trace:
+> [  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
+> [  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
+> [  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
+> [  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
+> [  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
+> [  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
+> [  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
+> [  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
+> [  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
+> [  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
+> [  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
+> [  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
+> [  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
+> [  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
+> [  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
+> [  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
+> [  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
+> [  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
+> [  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
+> [  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
+> [  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
+> [  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
+> [  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
+> [  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
+> [  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
+> [  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
+> [  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
+> 0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
+> e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
+> [  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
+> [  106.752214]  RSP <ffff880400fcba60>
+> [  106.752236] CR2: 0000000000000018
+> [  106.752258] ---[ end trace 3c520748b4732721 ]---
+> ----------------------------------------------------------------------
 > 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> The reason for the oops is that IMA-appraisal uses "kernel_read()" when
+> file is closed. kernel_read() honors LSM security hook which calls
+> Apparmor handler, which uses current->nsproxy->mnt_ns. The 'guilty'
+> commit changed the order of cleanup code so that nsproxy->mnt_ns was
+> not already available for Apparmor.
+> 
+> Discussion about the issue with Al Viro and Eric W. Biederman suggested
+> that kernel_read() is too high-level for IMA. Another issue, except
+> security checking, that was identified is mandatory locking. kernel_read
+> honors it as well and it might prevent IMA from calculating necessary hash.
+> It was suggested to use simplified version of the function without security
+> and locking checks.
+> 
+> This patch introduces special version ima_kernel_read(), which skips security,
+> mandatory locking checking and fsnotify. It prevents the kernel oops to happen.
+> 
+> Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+
+As there has been no comment on this patch, I'll assume everyone is ok
+with introducing an IMA specific version of kernel_read().
+
+Mimi
+
 > ---
->  Documentation/DocBook/drm.tmpl |  9 +++++
->  drivers/gpu/drm/drm_pci.c      | 80 ++++++++++++++++++++----------------------
->  drivers/gpu/drm/drm_platform.c | 15 ++++----
->  drivers/gpu/drm/drm_stub.c     | 19 +++++-----
->  drivers/gpu/drm/drm_usb.c      | 20 ++++++++++-
->  5 files changed, 81 insertions(+), 62 deletions(-)
+>  security/integrity/ima/ima_crypto.c | 32 +++++++++++++++++++++++++++++++-
+>  1 file changed, 31 insertions(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
-> index f4028c3a28a2..f26a8e4fbe47 100644
-> --- a/Documentation/DocBook/drm.tmpl
-> +++ b/Documentation/DocBook/drm.tmpl
-> @@ -282,6 +282,15 @@ char *date;</synopsis>
->        </sect3>
->      </sect2>
->      <sect2>
-> +      <title>Device Registration</title>
-> +      <para>
-> +        A number of functions are provided to help with device registration.
-> +        The functions deal with PCI, USB and platform devices, respectively.
-> +      </para>
-> +!Fdrivers/gpu/drm/drm_pci.c drm_pci_init drm_pci_exit
-> +!Fdrivers/gpu/drm/drm_usb.c drm_usb_init drm_usb_exit
-> +!Fdrivers/gpu/drm/drm_platform.c drm_platform_init
-
-Generally I prefer to use !E to pull in all exported functions - those are
-the ones driver authors care about. And using this has the upside that if
-anyone renames them or adds/removes some it will be kept in sync
-automatically. Same for the next patch.
--Daniel
-
-> +    <sect2>
->        <title>Driver Load</title>
->        <para>
->          The <methodname>load</methodname> method is the driver and device
-> diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-> index d237de36a07a..020cfd934854 100644
-> --- a/drivers/gpu/drm/drm_pci.c
-> +++ b/drivers/gpu/drm/drm_pci.c
-> @@ -1,17 +1,3 @@
-> -/* drm_pci.h -- PCI DMA memory management wrappers for DRM -*- linux-c -*- */
-> -/**
-> - * \file drm_pci.c
-> - * \brief Functions and ioctls to manage PCI memory
-> - *
-> - * \warning These interfaces aren't stable yet.
-> - *
-> - * \todo Implement the remaining ioctl's for the PCI pools.
-> - * \todo The wrappers here are so thin that they would be better off inlined..
-> - *
-> - * \author José Fonseca <jrfonseca@tungstengraphics.com>
-> - * \author Leif Delgass <ldelgass@retinalburn.net>
-> - */
-> -
->  /*
->   * Copyright 2003 José Fonseca.
->   * Copyright 2003 Leif Delgass.
-> @@ -42,12 +28,14 @@
->  #include <linux/export.h>
->  #include <drm/drmP.h>
->  
-> -/**********************************************************************/
-> -/** \name PCI memory */
-> -/*@{*/
-> -
->  /**
-> - * \brief Allocate a PCI consistent memory block, for DMA.
-> + * drm_pci_alloc - Allocate a PCI consistent memory block, for DMA.
-> + * @dev: DRM device
-> + * @size: size of block to allocate
-> + * @align: alignment of block
-> + *
-> + * Return: A handle to the allocated memory block on success or NULL on
-> + * failure.
->   */
->  drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t align)
->  {
-> @@ -88,8 +76,8 @@ drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t ali
->  
->  EXPORT_SYMBOL(drm_pci_alloc);
->  
-> -/**
-> - * \brief Free a PCI consistent memory block without freeing its descriptor.
-> +/*
-> + * Free a PCI consistent memory block without freeing its descriptor.
->   *
->   * This function is for internal use in the Linux-specific DRM core code.
->   */
-> @@ -111,7 +99,9 @@ void __drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
->  }
->  
->  /**
-> - * \brief Free a PCI consistent memory block
-> + * drm_pci_free - Free a PCI consistent memory block
-> + * @dev: DRM device
-> + * @dmah: handle to memory block
->   */
->  void drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
->  {
-> @@ -226,17 +216,16 @@ static int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
->  }
->  
->  /**
-> - * Get interrupt from bus id.
-> - *
-> - * \param inode device inode.
-> - * \param file_priv DRM file private.
-> - * \param cmd command.
-> - * \param arg user argument, pointing to a drm_irq_busid structure.
-> - * \return zero on success or a negative number on failure.
-> + * drm_irq_by_busid - Get interrupt from bus ID
-> + * @dev: DRM device
-> + * @data: IOCTL parameter pointing to a drm_irq_busid structure
-> + * @file_priv: DRM file private.
->   *
->   * Finds the PCI device with the specified bus id and gets its IRQ number.
->   * This IOCTL is deprecated, and will now return EINVAL for any busid not equal
->   * to that of the device that this DRM instance attached to.
-> + *
-> + * Return: 0 on success or a negative error code on failure.
->   */
->  int drm_irq_by_busid(struct drm_device *dev, void *data,
->  		     struct drm_file *file_priv)
-> @@ -285,15 +274,16 @@ static struct drm_bus drm_pci_bus = {
->  };
->  
->  /**
-> - * Register.
-> - *
-> - * \param pdev - PCI device structure
-> - * \param ent entry from the PCI ID table with device type flags
-> - * \return zero on success or a negative number on failure.
-> + * drm_get_pci_dev - Register a PCI device with the DRM subsystem
-> + * @pdev: PCI device
-> + * @ent: entry from the PCI ID table that matches @pdev
-> + * @driver: DRM device driver
->   *
->   * Attempt to gets inter module "drm" information. If we are first
->   * then register the character device and inter module information.
->   * Try and register, if we fail to register, backout previous work.
-> + *
-> + * Return: 0 on success or a negative error code on failure.
->   */
->  int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
->  		    struct drm_driver *driver)
-> @@ -346,15 +336,14 @@ err_free:
->  EXPORT_SYMBOL(drm_get_pci_dev);
->  
->  /**
-> - * PCI device initialization. Called direct from modules at load time.
-> + * drm_pci_init - Register matching PCI devices with the DRM subsystem
-> + * @driver: DRM device driver
-> + * @pdriver: PCI device driver
->   *
-> - * \return zero on success or a negative number on failure.
-> + * Initializes a drm_device structures, registering the stubs and initializing
-> + * the AGP device.
->   *
-> - * Initializes a drm_device structures,registering the
-> - * stubs and initializing the AGP device.
-> - *
-> - * Expands the \c DRIVER_PREINIT and \c DRIVER_POST_INIT macros before and
-> - * after the initialization for driver customization.
-> + * Return: 0 on success or a negative error code on failure.
->   */
->  int drm_pci_init(struct drm_driver *driver, struct pci_driver *pdriver)
->  {
-> @@ -458,7 +447,14 @@ int drm_pci_set_unique(struct drm_device *dev,
->  
->  EXPORT_SYMBOL(drm_pci_init);
->  
-> -/*@}*/
+> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+> index 1612a02..951523e 100644
+> --- a/security/integrity/ima/ima_crypto.c
+> +++ b/security/integrity/ima/ima_crypto.c
+> @@ -27,6 +27,36 @@
+> 
+>  static struct crypto_shash *ima_shash_tfm;
+> 
 > +/**
-> + * drm_pci_exit - Unregister matching PCI devices from the DRM subsystem
-> + * @driver: DRM device driver
-> + * @pdriver: PCI device driver
+> + * ima_kernel_read - read file content
 > + *
-> + * Unregisters one or more devices matched by a PCI driver from the DRM
-> + * subsystem.
+> + * This is a function for reading file content instead of kernel_read().
+> + * It does not perform locking checks to ensure it cannot be blocked.
+> + * It does not perform security checks because it is irrelevant for IMA.
+> + *
 > + */
->  void drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver)
->  {
->  	struct drm_device *dev, *tmp;
-> diff --git a/drivers/gpu/drm/drm_platform.c b/drivers/gpu/drm/drm_platform.c
-> index 234e0bc1ae51..d5b76f148c12 100644
-> --- a/drivers/gpu/drm/drm_platform.c
-> +++ b/drivers/gpu/drm/drm_platform.c
-> @@ -106,17 +106,16 @@ static struct drm_bus drm_platform_bus = {
->  };
->  
->  /**
-> - * Platform device initialization. Called direct from modules.
-> + * drm_platform_init - Register a platform device with the DRM subsystem
-> + * @driver: DRM device driver
-> + * @platform_device: platform device to register
->   *
-> - * \return zero on success or a negative number on failure.
-> - *
-> - * Initializes a drm_device structures,registering the
-> - * stubs
-> + * Registers the specified DRM device driver and platform device with the DRM
-> + * subsystem, initializing a drm_device structure and calling the driver's
-> + * .load() function.
->   *
-> - * Expands the \c DRIVER_PREINIT and \c DRIVER_POST_INIT macros before and
-> - * after the initialization for driver customization.
-> + * Return: 0 on success or a negative error code on failure.
->   */
-> -
->  int drm_platform_init(struct drm_driver *driver, struct platform_device *platform_device)
->  {
->  	DRM_DEBUG("\n");
-> diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
-> index 64cf97dc4ce4..88bada850b71 100644
-> --- a/drivers/gpu/drm/drm_stub.c
-> +++ b/drivers/gpu/drm/drm_stub.c
-> @@ -1,16 +1,11 @@
-> -/**
-> - * \file drm_stub.h
-> - * Stub support
-> - *
-> - * \author Rickard E. (Rik) Faith <faith@valinux.com>
-> - */
-> -
->  /*
->   * Created: Fri Jan 19 10:48:35 2001 by faith@acm.org
->   *
->   * Copyright 2001 VA Linux Systems, Inc., Sunnyvale, California.
->   * All Rights Reserved.
->   *
-> + * Author Rickard E. (Rik) Faith <faith@valinux.com>
-> + *
->   * Permission is hereby granted, free of charge, to any person obtaining a
->   * copy of this software and associated documentation files (the "Software"),
->   * to deal in the Software without restriction, including without limitation
-> @@ -424,11 +419,12 @@ void drm_minor_release(struct drm_minor *minor)
->  }
->  
->  /**
-> - * Called via drm_exit() at module unload time or when pci device is
-> - * unplugged.
-> + * drm_put_dev - Unregister and release a DRM device
-> + * @dev: DRM device
->   *
-> - * Cleans up all DRM device, calling drm_lastclose().
-> + * Called at module unload time or when a PCI device is unplugged.
->   *
-> + * Cleans up all DRM device, calling drm_lastclose().
->   */
->  void drm_put_dev(struct drm_device *dev)
->  {
-> @@ -558,7 +554,7 @@ int drm_set_unique(struct drm_device *dev, const char *fmt, ...)
->  EXPORT_SYMBOL(drm_set_unique);
->  
->  /**
-> - * drm_dev_alloc - Allocate new drm device
-> + * drm_dev_alloc - Allocate new DRM device
->   * @driver: DRM driver to allocate device for
->   * @parent: Parent device object
->   *
-> @@ -712,6 +708,7 @@ EXPORT_SYMBOL(drm_dev_unref);
->  /**
->   * drm_dev_register - Register DRM device
->   * @dev: Device to register
-> + * @flags: Flags passed to the driver's .load() function
->   *
->   * Register the DRM device @dev with the system, advertise device to user-space
->   * and start normal device operation. @dev must be allocated via drm_dev_alloc()
-> diff --git a/drivers/gpu/drm/drm_usb.c b/drivers/gpu/drm/drm_usb.c
-> index c6c7c29ad46f..f2fe94aab901 100644
-> --- a/drivers/gpu/drm/drm_usb.c
-> +++ b/drivers/gpu/drm/drm_usb.c
-> @@ -45,7 +45,17 @@ static int drm_usb_set_busid(struct drm_device *dev,
->  static struct drm_bus drm_usb_bus = {
->  	.set_busid = drm_usb_set_busid,
->  };
-> -    
+> +static int ima_kernel_read(struct file *file, loff_t offset,
+> +			   char *addr, unsigned long count)
+> +{
+> +	mm_segment_t old_fs;
+> +	char __user *buf = addr;
+> +	ssize_t ret;
 > +
-> +/**
-> + * drm_usb_init - Register matching USB devices with the DRM subsystem
-> + * @driver: DRM device driver
-> + * @udriver: USB device driver
-> + *
-> + * Registers one or more devices matched by a USB driver with the DRM
-> + * subsystem.
-> + *
-> + * Return: 0 on success or a negative error code on failure.
-> + */
->  int drm_usb_init(struct drm_driver *driver, struct usb_driver *udriver)
+> +	if (!(file->f_mode & FMODE_READ))
+> +		return -EBADF;
+> +	if (!file->f_op->read && !file->f_op->aio_read)
+> +		return -EINVAL;
+> +
+> +	old_fs = get_fs();
+> +	set_fs(get_ds());
+> +	if (file->f_op->read)
+> +		ret = file->f_op->read(file, buf, count, &offset);
+> +	else
+> +		ret = do_sync_read(file, buf, count, &offset);
+> +	set_fs(old_fs);
+> +	return ret;
+> +}
+> +
+>  int ima_init_crypto(void)
 >  {
->  	int res;
-> @@ -58,6 +68,14 @@ int drm_usb_init(struct drm_driver *driver, struct usb_driver *udriver)
->  }
->  EXPORT_SYMBOL(drm_usb_init);
->  
-> +/**
-> + * drm_usb_exit - Unregister matching USB devices from the DRM subsystem
-> + * @driver: DRM device driver
-> + * @udriver: USB device driver
-> + *
-> + * Unregisters one or more devices matched by a USB driver from the DRM
-> + * subsystem.
-> + */
->  void drm_usb_exit(struct drm_driver *driver,
->  		  struct usb_driver *udriver)
->  {
-> -- 
-> 1.9.2
+>  	long rc;
+> @@ -104,7 +134,7 @@ static int ima_calc_file_hash_tfm(struct file *file,
+>  	while (offset < i_size) {
+>  		int rbuf_len;
 > 
+> -		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
+> +		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
+>  		if (rbuf_len < 0) {
+>  			rc = rbuf_len;
+>  			break;
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
