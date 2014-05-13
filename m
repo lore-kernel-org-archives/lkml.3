@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760725AbaEMJ4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:56:25 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60847 "EHLO
+	id S1760401AbaEMJ4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:56:23 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60848 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760085AbaEMJ24 (ORCPT
+	by vger.kernel.org with ESMTP id S1760086AbaEMJ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 May 2014 05:28:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,9 +12,9 @@ To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
         James Bottomley <JBottomley@Parallels.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 074/182] SCSI: arcmsr: upper 32 of dma address lost
-Date: Tue, 13 May 2014 11:27:06 +0200
-Message-Id: <dfc6d2acb33aa5f26e836e8b02ca1ba5a0024aed.1399973152.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 073/182] SCSI: qla2xxx: fix error handling of qla2x00_mem_alloc()
+Date: Tue, 13 May 2014 11:27:05 +0200
+Message-Id: <2e81ba2967ee85177d6ae3c729eb5efe3e94e9fe.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -30,43 +30,51 @@ From: Dan Carpenter <dan.carpenter@oracle.com>
 
 ===============
 
-commit e2c70425f05219b142b3a8a9489a622c736db39d upstream.
+commit b2a72ec32d0f499aaadf41264232517a12326df0 upstream.
 
-The original code always set the upper 32 bits to zero because it was
-doing a shift of the wrong variable.
+qla2x00_mem_alloc() returns 1 on success and -ENOMEM on failure.  On the
+one hand the caller assumes non-zero is success but on the other hand
+the caller also assumes that it returns an error code.
 
-Fixes: 1a4f550a09f8 ('[SCSI] arcmsr: 1.20.00.15: add SATA RAID plus other fixes')
+I've fixed it to return zero on success and a negative error code on
+failure.  This matches the documentation as well.
+
+[jejb: checkpatch fix]
+Fixes: e315cd28b9ef ('[SCSI] qla2xxx: Code changes for qla data structure refactoring')
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/arcmsr/arcmsr_hba.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-index 278c9fa62067..1822cb9ec623 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2501,16 +2501,15 @@ static int arcmsr_polling_ccbdone(struct AdapterControlBlock *acb,
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
- {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
--	dma_addr_t dma_coherent_handle;
-+
- 	/*
- 	********************************************************************
- 	** here we need to tell iop 331 our freeccb.HighPart
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	dma_coherent_handle = acb->dma_coherent_handle;
--	cdb_phyaddr = (uint32_t)(dma_coherent_handle);
--	cdb_phyaddr_hi32 = (uint32_t)((cdb_phyaddr >> 16) >> 16);
-+	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index 9f01bbbf3a26..36d62fd53511 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -2616,7 +2616,7 @@ qla2x00_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	    ha->flags.enable_64bit_addressing ? "enable" :
+ 	    "disable");
+ 	ret = qla2x00_mem_alloc(ha, req_length, rsp_length, &req, &rsp);
+-	if (!ret) {
++	if (ret) {
+ 		ql_log_pci(ql_log_fatal, pdev, 0x0031,
+ 		    "Failed to allocate memory for adapter, aborting.\n");
+ 
+@@ -3541,10 +3541,10 @@ qla2x00_mem_alloc(struct qla_hw_data *ha, uint16_t req_len, uint16_t rsp_len,
+ 	else {
+ 		qla2x00_set_reserved_loop_ids(ha);
+ 		ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0123,
+-		    "loop_id_map=%p. \n", ha->loop_id_map);
++		    "loop_id_map=%p.\n", ha->loop_id_map);
+ 	}
+ 
+-	return 1;
++	return 0;
+ 
+ fail_async_pd:
+ 	dma_pool_free(ha->s_dma_pool, ha->ex_init_cb, ha->ex_init_cb_dma);
 -- 
 1.9.3
 
