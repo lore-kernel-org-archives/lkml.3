@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760928AbaEMOn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 10:43:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759892AbaEMOnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 10:43:55 -0400
-Date: Tue, 13 May 2014 14:00:46 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: xiakaixu <xiakaixu@huawei.com>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        paulus@samba.org, Ingo Molnar <mingo@kernel.org>,
-        a.p.zijlstra@chello.nl, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Huxinwei <huxinwei@huawei.com>, peifeiyue@huawei.com,
-        fweisbec@gmail.com
-Subject: Re: Does perf support different length of user-space hw_breakpoint?
-Message-ID: <20140513120046.GB1138@krava.brq.redhat.com>
-References: <53707DD6.2000108@huawei.com>
+	id S1760997AbaEMOoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 10:44:05 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:64003 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760945AbaEMOn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 10:43:59 -0400
+Date: Tue, 13 May 2014 16:43:54 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Stephen Rothwell <sfr@au1.ibm.com>
+Subject: Re: [PATCH] vfs: add noreplace_rename2()
+Message-ID: <20140513144354.GG17233@tucsk.piliscsaba.szeredi.hu>
+References: <20140513135622.GB17233@tucsk.piliscsaba.szeredi.hu>
+ <20140513140557.GA30660@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53707DD6.2000108@huawei.com>
+In-Reply-To: <20140513140557.GA30660@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 03:52:54PM +0800, xiakaixu wrote:
-> Hi guys,
+On Tue, May 13, 2014 at 07:05:57AM -0700, Christoph Hellwig wrote:
+> On Tue, May 13, 2014 at 03:56:22PM +0200, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > RENAME_NOREPLACE is trivial to implement for most filesystems.  This adds a
+> > helper that can be assigned to ->rename2() and calls ->rename().
+> > 
+> > Only suitable for local filesystems, i.e. those that cannot have files
+> > "spontaneously" appear (like NFS and friends).
 > 
-> Does perf support different length of user-space hw_breakpoint,
-> such as  HW_BREAKPOINT_LEN_1/HW_BREAKPOINT_LEN_2/HW_BREAKPOINT_LEN_4/
-> HW_BREAKPOINT_LEN_8?
-> 
-> Seems perf only support HW_BREAKPOINT_LEN_4/sizeof(long)
-> by default from the source code and simple test.
+> I don't like this approach at all.  Please bite the bullet and rename
+> ->rename2 to ->rename and all the proper rejecting of non-supported
+> flags intstead of further locking down the duplication.
 
-right..
+There was pushback from Stephen Rothwell as well as Al, which is why it ended up
+being a separate op.
 
-        /*
-         * We should find a nice way to override the access length
-         * Provide some defaults for now
-         */
-        if (attr.bp_type == HW_BREAKPOINT_X)
-                attr.bp_len = sizeof(long);
-        else
-                attr.bp_len = HW_BREAKPOINT_LEN_4;
+I was always hoping to merge the two, but until there's clear indication that
+it's going to get accepted, there's no point in me preparing and maintaining
+such a patch.
 
-> 
-> May I have your opinions if I want to trace different bytes of
-> hw_breakpoint addr?
-
-I guess that depends on what you want to do ;-)
-
-jirka
+Thanks,
+Miklos
