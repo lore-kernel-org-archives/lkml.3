@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbaEMJeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:34:14 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60944 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760124AbaEMJ25 (ORCPT
+	id S932729AbaEMJfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:35:32 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56613 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547AbaEMJeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:57 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 114/182] clk: s2mps11: Fix possible NULL pointer dereference
-Date: Tue, 13 May 2014 11:27:46 +0200
-Message-Id: <f9a0f2cef82e9ca8efce9e9db08710719616ea8e.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 05:34:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+5PVA42QVXW_=C3z=i7mvv4RBeuaX64RxuWW8-iZYi0um9big@mail.gmail.com>
+References: <536A339D.9030606@hurleysoftware.com>
+	<20140507140558.GA26294@ks3318809.kimsufi.com>
+	<536A4454.5020404@hurleysoftware.com>
+	<CACRpkdZ_Wz2QLbdbXEL9CWy+=tcVwjVjVqQgYw7_dy-5FwxB9Q@mail.gmail.com>
+	<20140509072050.GG5767@lee--X1>
+	<536CBC5E.5070202@hurleysoftware.com>
+	<CA+5PVA42QVXW_=C3z=i7mvv4RBeuaX64RxuWW8-iZYi0um9big@mail.gmail.com>
+Date: Tue, 13 May 2014 11:34:12 +0200
+Message-ID: <CACRpkdbd54YLF6PMO+7fiRqe_iQ8uL3L-jH_+TG9Fpv24-PXyQ@mail.gmail.com>
+Subject: Re: [3.15-rc3] BUG: null ptr dereference in ichx_gpio_request_regions()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Lee Jones <lee.jones@linaro.org>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+On Fri, May 9, 2014 at 2:29 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+>> Hmmm. Search for '[PATCH] gpio: ich: set regs and reglen for i3100 and ich6
+>> chipset'
+>> (which is the bug fix for the buggy commit) turns up nothing in mainline.
+>
+> It's not in mainline (as you've found).
 
-===============
+Has this been fixed now then? *I* can see it in mainline.
 
-commit 238e14055da87d0d012257788e39fe0df3a82226 upstream.
-
-If parent device does not have of_node set the s2mps11_clk_parse_dt()
-returned NULL. This NULL was later passed to of_clk_add_provider() which
-dereferenced it in pr_debug() call.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/clk/clk-s2mps11.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-index 7be41e676a64..aa21299ec7d2 100644
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -130,7 +130,7 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
- 	int i;
- 
- 	if (!iodev->dev->of_node)
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 
- 	clk_np = of_find_node_by_name(iodev->dev->of_node, "clocks");
- 	if (!clk_np) {
--- 
-1.9.3
-
+Yours,
+Linus Walleij
