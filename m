@@ -1,149 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895AbaEMPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:47:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40092 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753602AbaEMPpH (ORCPT
+	id S1756148AbaEMPrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:47:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42681 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754895AbaEMPq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:45:07 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND v4 4/8] phy: usb: sunxi: Introduce Allwinner A31 USB PHY support
-Date: Tue, 13 May 2014 17:44:18 +0200
-Message-Id: <1399995862-17788-5-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 13 May 2014 11:46:57 -0400
+Date: Tue, 13 May 2014 11:46:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
+ runtime-suspended devices unnecessarily
+In-Reply-To: <1652919.R3bbdKUH5p@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405131139510.1098-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB phy controller in the A31 differs mostly from the older controllers
-because it has a clock dedicated for each phy, while the older ones were having
-a single clock for all the phys.
+On Tue, 13 May 2014, Rafael J. Wysocki wrote:
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/phy/phy-sun4i-usb.c | 33 ++++++++++++++++++++++-----------
- 1 file changed, 22 insertions(+), 11 deletions(-)
+> > A wakeup request from the hardware could cause a runtime resume to 
+> > occur at this time.  The barrier wouldn't prevent that.
+> > 
+> > It's unlikely, I agree, but not impossible.
+> 
+> Yeah, I didn't think about that.
 
-diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-index 66a87d50512b..115d8d5190d5 100644
---- a/drivers/phy/phy-sun4i-usb.c
-+++ b/drivers/phy/phy-sun4i-usb.c
-@@ -61,7 +61,6 @@
- #define MAX_PHYS			3
- 
- struct sun4i_usb_phy_data {
--	struct clk *clk;
- 	void __iomem *base;
- 	struct mutex mutex;
- 	int num_phys;
-@@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
- 		void __iomem *pmu;
- 		struct regulator *vbus;
- 		struct reset_control *reset;
-+		struct clk *clk;
- 		int index;
- 	} phys[MAX_PHYS];
- };
-@@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
- 	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
- 	int ret;
- 
--	ret = clk_prepare_enable(data->clk);
-+	ret = clk_prepare_enable(phy->clk);
- 	if (ret)
- 		return ret;
- 
- 	ret = reset_control_deassert(phy->reset);
- 	if (ret) {
--		clk_disable_unprepare(data->clk);
-+		clk_disable_unprepare(phy->clk);
- 		return ret;
- 	}
- 
-@@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
- static int sun4i_usb_phy_exit(struct phy *_phy)
- {
- 	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
--	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
- 
- 	sun4i_usb_phy_passby(phy, 0);
- 	reset_control_assert(phy->reset);
--	clk_disable_unprepare(data->clk);
-+	clk_disable_unprepare(phy->clk);
- 
- 	return 0;
- }
-@@ -225,6 +224,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct device_node *np = dev->of_node;
- 	struct phy_provider *phy_provider;
-+	bool dedicated_clocks;
- 	struct resource *res;
- 	int i;
- 
-@@ -244,17 +244,16 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 	else
- 		data->disc_thresh = 2;
- 
-+	if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
-+		dedicated_clocks = true;
-+	else
-+		dedicated_clocks = false;
-+
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_ctrl");
- 	data->base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(data->base))
- 		return PTR_ERR(data->base);
- 
--	data->clk = devm_clk_get(dev, "usb_phy");
--	if (IS_ERR(data->clk)) {
--		dev_err(dev, "could not get usb_phy clock\n");
--		return PTR_ERR(data->clk);
--	}
--
- 	/* Skip 0, 0 is the phy for otg which is not yet supported. */
- 	for (i = 1; i < data->num_phys; i++) {
- 		struct sun4i_usb_phy *phy = data->phys + i;
-@@ -268,6 +267,17 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 			phy->vbus = NULL;
- 		}
- 
-+		if (dedicated_clocks)
-+			snprintf(name, sizeof(name), "usb%d_phy", i);
-+		else
-+			strlcpy(name, "usb_phy", sizeof(name));
-+
-+		phy->clk = devm_clk_get(dev, name);
-+		if (IS_ERR(phy->clk)) {
-+			dev_err(dev, "failed to get clock %s\n", name);
-+			return PTR_ERR(phy->clk);
-+		}
-+
- 		snprintf(name, sizeof(name), "usb%d_reset", i);
- 		phy->reset = devm_reset_control_get(dev, name);
- 		if (IS_ERR(phy->reset)) {
-@@ -305,6 +315,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- static const struct of_device_id sun4i_usb_phy_of_match[] = {
- 	{ .compatible = "allwinner,sun4i-a10-usb-phy" },
- 	{ .compatible = "allwinner,sun5i-a13-usb-phy" },
-+	{ .compatible = "allwinner,sun6i-a31-usb-phy" },
- 	{ .compatible = "allwinner,sun7i-a20-usb-phy" },
- 	{ },
- };
--- 
-1.9.3
+Come to think of it, if the hardware sends a wakeup request then it
+must have been enabled for remote wakeup.  And if the hardware settings
+are appropriate for system suspend then it must be enabled for system
+wakeup.  Consequently a wakeup from the hardware ought to abort the
+system suspend in any case.  So maybe we don't care about this 
+scenario.
+
+On the other hand, there may be other mechanisms that could cause a 
+runtime resume at this inconvenient time.  A timer routine, for 
+instance.
+
+> But that also can occur in __device_suspend(), after we've checked the flag
+> and decided not to invoke the ->suspend() callback, right?  So moving the
+> check in there doesn't help much I'd say.  It closes the race window, but
+> that's it.
+> 
+> That means that the whole approach based on ->prepare() is problematic
+> unless we somehow mix it with disabling runtime PM.
+
+Maybe the call to __pm_runtime_disable() should be moved from
+__device_suspend_late() to __device_suspend(), after the callback has
+been invoked (or skipped, as the case may be).  Then after runtime PM
+has been disabled, you can check the device's status has changed and go
+back to invoke the callback if necessary.
+
+Alan Stern
 
