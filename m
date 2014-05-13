@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965211AbaEMPMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:12:32 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42630 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965097AbaEMPM3 (ORCPT
+	id S934208AbaEMPNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:13:08 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:64440 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964999AbaEMPNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:12:29 -0400
-Date: Tue, 13 May 2014 11:12:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
- runtime-suspended devices unnecessarily
-In-Reply-To: <3343255.BLfH04PmOm@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1405131110480.1098-100000@iolanthe.rowland.org>
+	Tue, 13 May 2014 11:13:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] bus/omap_l3: avoid sync initcall for modules
+Date: Tue, 13 May 2014 17:12:31 +0200
+Message-ID: <177753046.dmVvfiu3Rn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140512222006.GI5668@atomide.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-6-git-send-email-arnd@arndb.de> <20140512222006.GI5668@atomide.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:TLC206ZjIesaTANFAAu9Je0C3G16OJaYsOzynFgBbYU
+ 9w4NFZdhwjR/9AXefcDOKJJ7MhDAG8xiTanTbR2bXkz1M6Xrr4
+ VWkOrTncdikv5RI/sARons5v15hSxZYAjugVJBM0xhCXM/tgX1
+ FZKRe6r+iy3hggUFfEgkaBq4eIJyx7pp7DjTVgw0KJuyKPAkE8
+ a8Zf845nw4YNlz071zfDjEpGOWSXJJ73xQq/IaH0dQJNWXsTmx
+ ITKyWCcsM7h961myTsTY+g0sQFl36n6EMqSd0pWyhonDTAmOZT
+ WxePlMOyaLVi7nW0fdOFeZaufCkam/5Lc2BPf67GljQwHIZCFw
+ wVgenkwCzcWuxaHJ5GYc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Rafael J. Wysocki wrote:
-
-> > > +	dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND
-> > > +					&& pm_runtime_suspended(dev);
-> > 
-> > Shouldn't the flag be set under the spinlock?
+On Monday 12 May 2014 15:20:07 Tony Lindgren wrote:
 > 
-> I guess you're worried about runtime PM flags being modified in parallel to
-> this?  But we've just done the barrier a while ago, so is that still a concern
-> here?
+> How about instead let's add this into include/linux/module.h
+> like we have for other initcalls:
+> 
+> #define postcore_initcall(fn)           module_init(fn)
+> 
+> There may be others missing too from there. BTW, this driver
+> might be few of the drivers that actually might need to be
+> initialized early for debugging to catch bad access from
+> other drivers.
 
-A wakeup request from the hardware could cause a runtime resume to 
-occur at this time.  The barrier wouldn't prevent that.
+There is a comment above those defines saying:
 
-It's unlikely, I agree, but not impossible.
+/* Don't use these in loadable modules, but some people do... */
 
-Alan Stern
+so I'm not sure if adding more would be appreciated.
 
+	Arnd
