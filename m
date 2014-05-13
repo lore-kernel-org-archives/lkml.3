@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaEMW3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 18:29:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56096 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaEMW3C (ORCPT
+	id S1754784AbaEMWae (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 18:30:34 -0400
+Received: from smtprelay0175.hostedemail.com ([216.40.44.175]:42160 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751409AbaEMWa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 18:29:02 -0400
-Date: Tue, 13 May 2014 15:29:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
- operations when discarding buffers
-Message-Id: <20140513152900.ea0a58cf4a650fb0b4110e3e@linux-foundation.org>
-In-Reply-To: <1399974350-11089-18-git-send-email-mgorman@suse.de>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
-	<1399974350-11089-18-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 13 May 2014 18:30:26 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3872:3874:4250:4321:5007:6119:7652:7875:7903:10004:10400:10450:10455:10848:10967:11232:11658:11914:12296:12517:12519:12663:12740:13069:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stop34_20a76e1fa4143
+X-Filterd-Recvd-Size: 1973
+Message-ID: <1400020223.24350.73.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] FS/CONFIGFS: Use pr_fmt
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Valdis.Kletnieks@vt.edu, Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>
+Date: Tue, 13 May 2014 15:30:23 -0700
+In-Reply-To: <20140513151541.a4e5649a657569e8847b3d84@linux-foundation.org>
+References: <20140513202428.77c59d530a2c2154a9902cb3@skynet.be>
+	 <20140513135049.2d160a63d662b3aab6ba3c03@linux-foundation.org>
+	 <75410.1400018810@turing-police.cc.vt.edu>
+	 <20140513151541.a4e5649a657569e8847b3d84@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 10:45:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
-
-> Discarding buffers uses a bunch of atomic operations when discarding buffers
-> because ...... I can't think of a reason. Use a cmpxchg loop to clear all the
-> necessary flags. In most (all?) cases this will be a single atomic operations.
+On Tue, 2014-05-13 at 15:15 -0700, Andrew Morton wrote:
+> On Tue, 13 May 2014 18:06:50 -0400 Valdis.Kletnieks@vt.edu wrote:
+> > On Tue, 13 May 2014 13:50:49 -0700, Andrew Morton said:
+> > > On Tue, 13 May 2014 20:24:28 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+> > 
+> > > > +#ifdef pr_fmt
+> > > > +#undef pr_fmt
+> > > > +#endif
+> > >
+> > > Why this?
+> > >
+> > > > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > 
+> > Won't GCC whinge by default about the #define if it doesn't exactly match the
+> > previous definition?
 > 
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1485,14 +1485,18 @@ EXPORT_SYMBOL(set_bh_page);
->   */
->  static void discard_buffer(struct buffer_head * bh)
->  {
-> +	unsigned long b_state, b_state_old;
-> +
->  	lock_buffer(bh);
->  	clear_buffer_dirty(bh);
->  	bh->b_bdev = NULL;
-> -	clear_buffer_mapped(bh);
-> -	clear_buffer_req(bh);
-> -	clear_buffer_new(bh);
-> -	clear_buffer_delay(bh);
-> -	clear_buffer_unwritten(bh);
-> +	b_state = bh->b_state;
-> +	for (;;) {
-> +		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
-> +		if (b_state_old == b_state)
-> +			break;
-> +		b_state = b_state_old;
-> +	}
->  	unlock_buffer(bh);
->  }
->  
-> --- a/include/linux/buffer_head.h
-> +++ b/include/linux/buffer_head.h
-> @@ -77,6 +77,11 @@ struct buffer_head {
->  	atomic_t b_count;		/* users using this buffer_head */
->  };
->  
-> +/* Bits that are cleared during an invalidate */
-> +#define BUFFER_FLAGS_DISCARD \
-> +	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
-> +	 1 << BH_Delay | 1 << BH_Unwritten)
-> +
+> Yes, if there's already a pf_fmt defined.  That's what I'm asking about
+> - what pr_fmt are we overriding here?  Seems wrong.
 
-There isn't much point in having this in the header file is there?
+If this is not the first #include or if this
+#includes kernel.h/printk.h, then the default
+#define pr_fmt(fmt) fmt
+from printk.h will be used.
 
---- a/fs/buffer.c~fs-buffer-do-not-use-unnecessary-atomic-operations-when-discarding-buffers-fix
-+++ a/fs/buffer.c
-@@ -1483,6 +1483,12 @@ EXPORT_SYMBOL(set_bh_page);
- /*
-  * Called when truncating a buffer on a page completely.
-  */
-+
-+/* Bits that are cleared during an invalidate */
-+#define BUFFER_FLAGS_DISCARD \
-+	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
-+	 1 << BH_Delay | 1 << BH_Unwritten)
-+
- static void discard_buffer(struct buffer_head * bh)
- {
- 	unsigned long b_state, b_state_old;
-@@ -1492,7 +1498,8 @@ static void discard_buffer(struct buffer
- 	bh->b_bdev = NULL;
- 	b_state = bh->b_state;
- 	for (;;) {
--		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
-+		b_state_old = cmpxchg(&bh->b_state, b_state,
-+				      (b_state & ~BUFFER_FLAGS_DISCARD));
- 		if (b_state_old == b_state)
- 			break;
- 		b_state = b_state_old;
---- a/include/linux/buffer_head.h~fs-buffer-do-not-use-unnecessary-atomic-operations-when-discarding-buffers-fix
-+++ a/include/linux/buffer_head.h
-@@ -77,11 +77,6 @@ struct buffer_head {
- 	atomic_t b_count;		/* users using this buffer_head */
- };
- 
--/* Bits that are cleared during an invalidate */
--#define BUFFER_FLAGS_DISCARD \
--	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
--	 1 << BH_Delay | 1 << BH_Unwritten)
--
- /*
-  * macro tricks to expand the set_buffer_foo(), clear_buffer_foo()
-  * and buffer_foo() functions.
-_
+One year soon, I'd like to change the default
+from blank to KBUILD_MODNAME ": " fmt
+
 
