@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696AbaEMIsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 04:48:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57916 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759555AbaEMIsi (ORCPT
+	id S1759713AbaEMIsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 04:48:46 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:37903 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759278AbaEMIsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 04:48:38 -0400
-Date: Tue, 13 May 2014 10:48:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
-Message-ID: <20140513084815.GB2485@laptop.programming.kicks-ass.net>
-References: <20140512190438.314125476@linutronix.de>
- <20140512201700.999660035@linutronix.de>
- <5371B2D9.8060405@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5371B2D9.8060405@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 13 May 2014 04:48:42 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kaber@trash.net, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, davem@davemloft.net,
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH] net: tunnels - enable module autoloading
+Date: Tue, 13 May 2014 10:48:28 +0200
+Message-Id: <1399970908-9973-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 01:51:21PM +0800, Lai Jiangshan wrote:
-> I considered you blamed to me.
-> I would feel better if you directly blamed to me.
+Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
 
-Well, the way I see it all you're to blame for is 'forgetting' to update
-the rt mutex test for 3 years, and while that is unfortunate, the much
-bigger fail is merging the patch without it to begin with.
+This is in line with how most other netdev kinds work, and will allow userspace
+to create tunnels without having CAP_SYS_MODULE.
 
-So in that respect Steven is primarily responsible for merging
-incomplete work.
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Tested-by: Susant Sahani <susant@redhat.com>
+---
+ net/ipv4/ipip.c       | 1 +
+ net/ipv6/ip6_tunnel.c | 1 +
+ net/ipv6/sit.c        | 1 +
+ 3 files changed, 3 insertions(+)
 
-Now Thomas was entirely grumpy from staring at bugs for a long while,
-which is entirely understandable. That said I don't think he went
-overboard calling Steven out on this.
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 812b183..d8155cf 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -486,4 +486,5 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ipip")
+ MODULE_ALIAS_NETDEV("tunl0");
+diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
+index b05b609..fe61545 100644
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -61,6 +61,7 @@
+ MODULE_AUTHOR("Ville Nuorvala");
+ MODULE_DESCRIPTION("IPv6 tunneling device");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ip6tnl");
+ MODULE_ALIAS_NETDEV("ip6tnl0");
+ 
+ #ifdef IP6_TNL_DEBUG
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index e5a453c..f438004 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1828,4 +1828,5 @@ xfrm_tunnel_failed:
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("sit");
+ MODULE_ALIAS_NETDEV("sit0");
+-- 
+1.9.0
 
-Now, if you and Steve get this sorted, nothing really happened except
-that Thomas got grumpy, which is entirely normal, what else would he be?
-:-)
