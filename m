@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612AbaEMKWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:22:39 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:33157 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759324AbaEMKWh (ORCPT
+	id S932459AbaEMKXC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:23:02 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33415 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933501AbaEMKL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:22:37 -0400
-Message-ID: <5371F25E.6020805@imgtec.com>
-Date: Tue, 13 May 2014 11:22:22 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>	<1399971749-4004-1-git-send-email-lftan@altera.com>	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>	<CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>	<5371EAEB.5030100@imgtec.com> <CAFiDJ58w31gm_z3Y1Q6ZREQPW4F6uVB+vy3X1r_3kLgaEE3O1w@mail.gmail.com>
-In-Reply-To: <CAFiDJ58w31gm_z3Y1Q6ZREQPW4F6uVB+vy3X1r_3kLgaEE3O1w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+	Tue, 13 May 2014 06:11:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Vineet Gupta <vgupta@synopsys.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 140/182] ARC: Remove ARC_HAS_COH_RTSC
+Date: Tue, 13 May 2014 11:28:12 +0200
+Message-Id: <5123768e27f13df3394e498895c44f444421718f.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/05/14 11:17, Ley Foon Tan wrote:
-> On Tue, May 13, 2014 at 5:50 PM, James Hogan <james.hogan@imgtec.com> wrote:
->> Hi,
->>
->> On 13/05/14 10:32, Ley Foon Tan wrote:
->>> On Tue, May 13, 2014 at 5:15 PM, James Hogan <james.hogan@imgtec.com> wrote:
->>>> On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
->>>>>  /*
->>>>> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
->>>>> + * define these as "long" if needed.
->>>>> + */
->>>>> +#ifndef __kernel_time_t
->>>>> +typedef long long      __kernel_time_t;
->>>>> +#endif
->>>>> +
->>>>> +#ifndef __kernel_clock_t
->>>>> +typedef long long      __kernel_clock_t;
->>>>> +#endif
->>>>
->>>> I think having this as the first patch in the series will break
->>>> bisection for existing 32-bit arches. This needs to be done in such a
->>>> way that at no intermediate commit are __kernel_time_t or
->>>> __kernel_clock_t the wrong size for existing arches, e.g. by having a
->>>> first patch which makes the typedefs conditional but leaves them as
->>>> __kernel_long_t, and a final patch that changes the default after all
->>>> the arches have got their overrides in place.
->>>
->>> Your suggestion is something as below?
->>
->> Yeh, although I like Thomas' idea better, then each existing 32-bit arch
->> can just select the Kconfig symbol to get the smaller type.
->>
->> IIRC Kconfig won't even complain if you select a symbol which doesn't
->> exist yet.
-> When we export this posix_types.h file for user software, they need to
-> define this config, eg: CONFIG_32BIT_TIME to use 32 bit time. Is this
-> what we want to do?
+From: Richard Weinberger <richard@nod.at>
 
-Yeh, good point, that won't work.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Cheers
-James
+===============
+
+commit d345ea2892ae7a2b70f84cf881c20731e43e4993 upstream.
+
+The symbol is an orphan, get rid of it.
+
+Fixes: 7d0857a54aed ("ARC: [SMP] Disallow RTSC")
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/arc/plat-arcfpga/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 295cefeb25d3..33058aa40e77 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -33,7 +33,6 @@ config ISS_SMP_EXTN
+ 	bool "ARC SMP Extensions (ISS Models only)"
+ 	default n
+ 	depends on SMP
+-	select ARC_HAS_COH_RTSC
+ 	help
+ 	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
+ 	  ARC ISS (Instruction Set Simulator).
+-- 
+1.9.3
+
