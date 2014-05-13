@@ -1,117 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaEMFN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 01:13:27 -0400
-Received: from ns.horizon.com ([71.41.210.147]:36753 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751912AbaEMFN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 01:13:26 -0400
-Date: 13 May 2014 01:13:24 -0400
-Message-ID: <20140513051324.7993.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: john.stultz@linaro.org, linux@horizon.com
-Subject: Re: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
-Cc: linux-kernel@vger.kernel.org, mathieu.desnoyers@efficios.com
-In-Reply-To: <537193DB.3010802@linaro.org>
+	id S1757950AbaEMFOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 01:14:31 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:60221 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaEMFO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 01:14:29 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k7JuK6Up/k=
+X-RZG-CLASS-ID: mo00
+Message-ID: <5371AA32.6070407@hartkopp.net>
+Date: Tue, 13 May 2014 07:14:26 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Jet Chen <jet.chen@intel.com>, Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Fengguang Wu <fengguang.wu@intel.com>, linux-crypto@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        linux-can@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org
+Subject: Re: [net] BUG: unable to handle kernel NULL pointer dereference at
+ 000000000000022f
+References: <537188D4.6050201@intel.com>
+In-Reply-To: <537188D4.6050201@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 2) Using wait-free coding techniques where readers help the writer if
->>    they notice a stall.  This is much hairier internal code, but makes
->>    life easier on the callers.  The basic procedure is:
->>
->>    - A conventionally locked writer decides that the frequency is to be
->>      adjusted, effective at the current time (or perhaps slightly in the
->>      future).
->>    - It publishes its idea of the effective time, and that an update is
->>      in progress.
->>    - A reader comes in, reads the hardware clock, and checks:
->>      - Is a rate update in progress, and is the effective time *before*
->>        the time I just read?
->>      - If so, I'm going to force a postponement to the time I just read,
->>        using compare-and-swap trickery.
->>      - Then it proceeds to use the old timekeeper rate information.
->>    - When the writer finishes figuring out the new timekeeper state,
->>      as part of the atomic installation of a new state, it checks to
->>      see if a reader has forced a postponement.  If so, it goes back and
->>      recomputes the state with the later effective time and tries again.
+Hello Jet,
+
+this is likely not CAN related, as
+
+# CONFIG_CAN is not set
+
+and all the CAN changes introduced by Marc's merge are not even compiled in
+your setup.
+
+So I assume the issue somewhere in the netlink or ipv6 stuff (see commit at
+the end.
+
+Best regards,
+Oliver
+
+
+On 13.05.2014 04:52, Jet Chen wrote:
+
+> [    1.301982]  [<ffffffff8163ee35>] netlink_bind+0x1e5/0x220
+> [    1.301982]  [<ffffffff815f57e8>] SYSC_bind+0xb8/0xf0
+> [    1.301982]  [<ffffffff815fbcd8>] ? sock_setsockopt+0x1a8/0x9c0
+> [    1.301982]  [<ffffffff815f6926>] ? SyS_setsockopt+0xb6/0xd0
+> [    1.301982]  [<ffffffff815f671e>] SyS_bind+0xe/0x10
+> [    1.301982]  [<ffffffff81752be9>] system_call_fastpath+0x16/0x1b
+> [    1.301982] Code: 50 48 85 c0 74 06 ff d0 5d c3 66 90 41 ff 51 40 5d c3 66
+> 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 e5 41 54 41 89 d4 53 <48>
+> 8b 87 30 02 00 00 48 89 f3 48 8b 78 18 e8 ae 94 a7 ff 31 d2 [    1.301982]
+> RIP  [<ffffffff815f7b3f>] sk_ns_capable+0xf/0x40
+> [    1.301982]  RSP <ffff88000becfe58>
+> [    1.301982] CR2: 000000000000022f
+> [    1.337456] ---[ end trace e34617f32717aa50 ]---
+> [    1.338240] Kernel panic - not syncing: Fatal exception
 > 
-> Hrm.. So basically during the update you lock readers to the counter
-> value read at the beginning of the update. So readers don't block, but
-> time doesn't progress while the update is being made. Sounds promising!
-
-Er... no.  I guess my explanation didn't work.  I thought of that (it's
-quite simple, after all), but I was worried that the stuttering would
-mess up fine accounting for e.g. interrupt handlers.
-
-Also, it's not implementable.  The writer must pick a rate-change moment,
-then announce it.  If it stalls between those two operations (and there's
-no way to make them atomic), then it might announce a moment already in
-the past, causing a later reader to return the stalled time, while an
-earlier reader that didn't see the announcement has already returned
-a later time.
-
-Inseate, the writer announces a *proposed* rate-change time, but a number
-of conditions can cause that time to be postponed.  (Basically, the writer
-loops back to the beginning and applies the rate change later.)
-
-One condition is enforced by the writer itself: it reads the time again
-after making the announcement, and if the announced time has already
-passed, loops.
-
-But this is also checked by all readers.  If an update is in progress,
-with a proposed time earlier than the reader is in the process of reading,
-the writer is told to try again later.
+> Attached dmesg for the parent commit, too, to help confirm whether it is a
+> noise error.
+> 
 
 
-One trick that can minimize the number of retries is to add a very small
-time delta (equal to the typical write update cycle) to the writer's
-effective time.  If the writer completes before that time happens (the
-common case), readers happily use the old time values during the update.
-Only if the writer is delayed more than expected will a reader notice
-a problem.  "Hey, I read the hardware at tick x, but the writer is trying
-to update tick-to-seconds translations for times later than tick y < x.
-Hey, writer, recompute with a higher y!"
+> # first bad commit: [0a240764becbec91589bd579b591c2fcf2df2bcf] Merge tag
+> 'linux-can-fixes-for-3.15-20140424' into HEAD
+> git bisect good 163cd4e817a4444e348ca577cb74c71d245f0c72  # 01:08     60+     
+> 2  ipv6: remove parameter rt from fib6_prune_clones()
+> git bisect good 367525c8c20a34560afe1d0c7cca52a44ccd62e9  # 01:11     60+     
 
-
-There is also the issue of a reader coming along after the change-over
-and wanting to translate a time x < y.  There are several ways to
-handle this.  Either the old parameters have to be kept around until
-time y has passed, or the readers must wait until time y.
-
-(They may not return early reporting time y or there may be race conditions.)
-
-> Oh.. so its actually more like the update is canceled if a reader can
-> complete a read and set a flag while the update is in flight? Hrm.. I
-> worry with the number and frequency of time reads on many systems, you'd
-> end up with update starvation (something which use to be a problem back
-> when timekeeping was managed with just spinlocks, and SMP wasn't that
-> common - so I suspect it can only be worse now).
-
-The solution, mentioned above, is to have the effective time of the
-update set to the predicted write completion time.  Then the readers will
-never see an effective time less than their time and need to postpone
-the writer.
-
-Only if the writer is delayed unexpectedly does that happen.
-
-> Further, the write in the read path would cause problems for VDSO time,
-> where everything is computed on read-only data in userspace.
-
-Ah!  Now *that* poses a potential problem.  I didn't think of that.
-Arrgh, that's going to take some work.
-
-Two possibilities:
-1) The VDSO code could just spin.  It's not holding any kernel locks,
-   so there's not much problem.
-2) Possibly after some optimistic spinning, the VDSO code could
-   trap to the kernel as a fallback.
-
-> Yea. It definitely gets complex. But timekeeping is always a very
-> hotpath, so complexity for performance is a normal trade. So there may
-> be a way to make it work. But finding a way to make it easier to
-> comprehend (even just having a clear metaphor for what's being done)
-> would be excellent.
-
-I'll try.
