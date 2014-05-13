@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281AbaEMKV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 06:21:57 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:54469 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760152AbaEMKVw (ORCPT
+	id S1760612AbaEMKWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 06:22:39 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:33157 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759324AbaEMKWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 06:21:52 -0400
-Message-ID: <5371F23B.1070800@linaro.org>
-Date: Tue, 13 May 2014 11:21:47 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+	Tue, 13 May 2014 06:22:37 -0400
+Message-ID: <5371F25E.6020805@imgtec.com>
+Date: Tue, 13 May 2014 11:22:22 +0100
+From: James Hogan <james.hogan@imgtec.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1 00/11] Add Qualcomm SD Card Controller support.
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>	<1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFodzdETbz3cj3mMT7a-ZJ9=Ants3WBstdEFLYiTOa-TnQ@mail.gmail.com>
-In-Reply-To: <CAPDyKFodzdETbz3cj3mMT7a-ZJ9=Ants3WBstdEFLYiTOa-TnQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Ley Foon Tan <lftan@altera.com>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>	<1399971749-4004-1-git-send-email-lftan@altera.com>	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>	<CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>	<5371EAEB.5030100@imgtec.com> <CAFiDJ58w31gm_z3Y1Q6ZREQPW4F6uVB+vy3X1r_3kLgaEE3O1w@mail.gmail.com>
+In-Reply-To: <CAFiDJ58w31gm_z3Y1Q6ZREQPW4F6uVB+vy3X1r_3kLgaEE3O1w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13/05/14 11:17, Ley Foon Tan wrote:
+> On Tue, May 13, 2014 at 5:50 PM, James Hogan <james.hogan@imgtec.com> wrote:
+>> Hi,
+>>
+>> On 13/05/14 10:32, Ley Foon Tan wrote:
+>>> On Tue, May 13, 2014 at 5:15 PM, James Hogan <james.hogan@imgtec.com> wrote:
+>>>> On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
+>>>>>  /*
+>>>>> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
+>>>>> + * define these as "long" if needed.
+>>>>> + */
+>>>>> +#ifndef __kernel_time_t
+>>>>> +typedef long long      __kernel_time_t;
+>>>>> +#endif
+>>>>> +
+>>>>> +#ifndef __kernel_clock_t
+>>>>> +typedef long long      __kernel_clock_t;
+>>>>> +#endif
+>>>>
+>>>> I think having this as the first patch in the series will break
+>>>> bisection for existing 32-bit arches. This needs to be done in such a
+>>>> way that at no intermediate commit are __kernel_time_t or
+>>>> __kernel_clock_t the wrong size for existing arches, e.g. by having a
+>>>> first patch which makes the typedefs conditional but leaves them as
+>>>> __kernel_long_t, and a final patch that changes the default after all
+>>>> the arches have got their overrides in place.
+>>>
+>>> Your suggestion is something as below?
+>>
+>> Yeh, although I like Thomas' idea better, then each existing 32-bit arch
+>> can just select the Kconfig symbol to get the smaller type.
+>>
+>> IIRC Kconfig won't even complain if you select a symbol which doesn't
+>> exist yet.
+> When we export this posix_types.h file for user software, they need to
+> define this config, eg: CONFIG_32BIT_TIME to use 32 bit time. Is this
+> what we want to do?
 
+Yeh, good point, that won't work.
 
-On 13/05/14 11:04, Ulf Hansson wrote:
-> On 29 April 2014 10:18,  <srinivas.kandagatla@linaro.org> wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> Hi Russell,
->>
->> This patch series adds Qualcomm SD Card Controller support in pl180 mmci
->> driver. QCom SDCC is basically a pl180, but bit more customized, some of the
->> register layouts and offsets are different to the ones mentioned in pl180
->> datasheet. The plan is to totally remove the standalone SDCC driver
->> drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
->> Qualcomm parts, as we get chance to test on other Qcom boards.
->>
->> To start using the existing mmci driver, a fake amba id for Qualcomm is added
->> in patches:
->>   ARM: amba: Add Qualcomm vendor ID.
->>   mmc: mmci: Add Qualcomm Id to amba id table.
->>
->> Second change is, adding a 3 clock cycle delay for register writes on QCOM
->> SDCC
->> registers, which is done in patches:
->>    mmc: mmci: Add register read/write wrappers.
->>    mmc: mmci: Qcomm: Add 3 clock cycle delay after each register write
->>
->> Third change was to accommodate DATCTRL and MMCICLK register layout changes in
->> Qcom SDCC. Which is done in patches:
->>    mmc: mmci: Add Qcom datactrl register variant
->>    mmc: mmci: Add Qcom variations to MCICommand register.
->>    mmc: mmci: Qcom fix MCICLK register settings.
->>    mmc: mmci: Add clock support for Qualcomm.
->>
->> Fourth major change was to add qcom specfic pio read function, the need for
->> this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
->>   different to the one in pl180. This change is done in patch:
->>    mmc: mmci: Add Qcom specific pio_read function.
->>
->> Last some Qcom unrelated changes to support Qcom are done in patches:
->>    mmc: mmci: use NSEC_PER_SEC macro
->>    mmc: mmci: move ST specific register extensions access under condition.
->>
->> This patches are tested  v3.15-rc3 in PIO mode on IFC6410 board with both eMMC
->> and external SD card. I would appreciate any feedback on the patches.
->> I would like to get this for v3.16.
->>
->> Thanks,
->> srini
->>
->
-> Hi Srinivas,
->
-Hi Ulf,
-> Thanks for working on this patchset, much appreciated! I intend to
-> review them as soon as I can.
-
-Thats Great.
->
-> For your information, currently there are one patch queued via Chris'
-> mmc tree for mmci and recently I have added my quite extensive
-> patchset, via mine mmc tree, all to be tested in Linux next.
->
-> I suppose the best approach to not hit conflicts would be if you base
-> your patches upon my tree. Potentially we could merge them this way,
-> unless of course Russell have other opinions.
->
-> git://git.linaro.org/people/ulf.hansson/mmc.git next
->
-Makes sense, I will rebase my next version of patches on top of your mmc 
-git tree, if Russell has no issues with this approach.
-
-Thanks,
-srini
-> Kind regards
-> Ulf Hansson
->
+Cheers
+James
