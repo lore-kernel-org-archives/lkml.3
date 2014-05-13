@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaEMXD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:03:59 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57005 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaEMXDv (ORCPT
+	id S1755104AbaEMXEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:04:36 -0400
+Received: from ozlabs.org ([103.22.144.67]:54109 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752150AbaEMXE2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:03:51 -0400
-Date: Tue, 13 May 2014 16:03:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 21/45] torture: Report diagnostics from qemu
-Message-ID: <20140513230345.GY18164@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1398731133-18925-21-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140507215911.GM27924@cloud>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507215911.GM27924@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051323-0928-0000-0000-000001EA992F
+	Tue, 13 May 2014 19:04:28 -0400
+Message-ID: <1400022263.2665.2.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH] powerpc/pseries: relocate "config DTL" so KConfig nests
+ properly
+From: Michael Neuling <mikey@neuling.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Paul Bolle <pebolle@tiscali.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 May 2014 09:04:23 +1000
+In-Reply-To: <5371C5E5.6070701@linux.vnet.ibm.com>
+References: <1399950599-24826-1-git-send-email-cody@linux.vnet.ibm.com>
+	 <1399962216.7554.63.camel@ale.ozlabs.ibm.com>
+	 <5371C5E5.6070701@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 02:59:11PM -0700, josh@joshtriplett.org wrote:
-> On Mon, Apr 28, 2014 at 05:25:09PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > The current script does record qemu diagnostics, but the user has to
-> > know where to look for them.  This commit therefore puts them into the
-> > Warnings file so that kvm-recheck.sh will display them.  This change is
-> > especially useful if you are in the habit of killing the qemu process
-> > when you realize that you messed something up, but then later on wonder
-> > why the process terminated early.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Tue, 2014-05-13 at 00:12 -0700, Cody P Schafer wrote:
+> On 05/12/2014 11:23 PM, Michael Neuling wrote:
+> >> powerpc/pseries: relocate "config DTL" so KConfig nests properly
+> >
+> > I don't know what that means.  Can you describe it in more detail?
+> >
 > 
-> A couple of issues below.
+> So the "config DTL" refers to the configuration entry.
 > 
-> > @@ -172,6 +172,14 @@ do
-> >  		if test $kruntime -lt $seconds
-> >  		then
-> >  			echo Completed in $kruntime vs. $seconds >> $resdir/Warnings 2>&1
-> > +			grep "^(qemu) qemu:" $resdir/kvm-test-1-run.sh.out >> $resdir/Warnings 2>&1
-> > +			killpid="`grep "^(qemu) qemu: terminating on signal [0-9]* from pid" $resdir/kvm-test-1-run.sh.out`"
+> The "nests properly" refers to the indent that 'make menuconfig' shows 
+> when a config-option that depends on the config-option proceeding it.
 > 
-> You already searched for lines like this and put them in Warnings in the
-> previous line, so you don't need to search the entire output.  Also, you
-> use grep here and sed below; you could just use sed here to directly
-> obtain the PID:
+> In this case, moving config DTL up so it is below config PPC_SPLPAR 
+> means that menuconfig will show config DTL nicely indented right below 
+> config PPC_SPLPAR when PPC_SPLPAR is enabled.
 > 
-> killpid="$(sed -n "s/^(qemu) qemu: terminating on signal [0-9]* from pid \([0-9]*\).*$/\1/p" $resdir/Warnings)"
+> To contrast that, right now if I enable PPC_SPLPAR in menuconfig, all I 
+> can immediately tell is that "something showed up further down the list 
+> where I wasn't looking", and I end up having to toggle the option a few 
+> times to figure out what showed up, or look at the KConfig to find out 
+> that config DTL depends on config PPC_SPLPAR.
 > 
-> > +			if test -n "$killpid"
-> > +			then
-> > +				pscmd="`echo $killpid | sed -e 's/^.*from pid/ps -ef | grep/'`"
-> > +				echo $pscmd >> $resdir/Warnings
-> > +				echo $pscmd | sh >> $resdir/Warnings 2>&1
-> > +			fi
-> 
-> Grepping for a PID is a bad idea; it'll turn up anything that contains
-> that PID anywhere on the line, including as a substring.  Given the
-> above change to obtain a numeric $killpid, you can instead pass the PID
-> to ps directly:
-> 			if test -n "$killpid"
-> 			then
-> 				ps -fp $killpid >> $resdir/Warnings 2>&1
-> 			fi
+> Essentially, this enables menuconfig to provide a visual hint about the 
+> dependencies between options.
 
-All good points!  What can I say?  30-year-old habits die hard.  ;-)
+Sounds like a good idea.  Can you repost the patch with that same info
+in the commit log.
 
-Giving it a spin...  Very nice, applied!
+Mikey
 
-							Thanx, Paul
+
+> > Mikey
+> >
+> >
+> > On Mon, 2014-05-12 at 20:09 -0700, Cody P Schafer wrote:
+> >> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> >> ---
+> >>   arch/powerpc/platforms/pseries/Kconfig | 20 ++++++++++----------
+> >>   1 file changed, 10 insertions(+), 10 deletions(-)
+> >>
+> >> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
+> >> index 2cb8b77..e00dd4d 100644
+> >> --- a/arch/powerpc/platforms/pseries/Kconfig
+> >> +++ b/arch/powerpc/platforms/pseries/Kconfig
+> >> @@ -33,6 +33,16 @@ config PPC_SPLPAR
+> >>   	  processors, that is, which share physical processors between
+> >>   	  two or more partitions.
+> >>
+> >> +config DTL
+> >> +	bool "Dispatch Trace Log"
+> >> +	depends on PPC_SPLPAR && DEBUG_FS
+> >> +	help
+> >> +	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+> >> +	  kernel buffer. Saying Y here will enable logging these events,
+> >> +	  which are accessible through a debugfs file.
+> >> +
+> >> +	  Say N if you are unsure.
+> >> +
+> >>   config PSERIES_MSI
+> >>          bool
+> >>          depends on PCI_MSI && PPC_PSERIES && EEH
+> >> @@ -122,13 +132,3 @@ config HV_PERF_CTRS
+> >>   	  systems. 24x7 is available on Power 8 systems.
+> >>
+> >>             If unsure, select Y.
+> >> -
+> >> -config DTL
+> >> -	bool "Dispatch Trace Log"
+> >> -	depends on PPC_SPLPAR && DEBUG_FS
+> >> -	help
+> >> -	  SPLPAR machines can log hypervisor preempt & dispatch events to a
+> >> -	  kernel buffer. Saying Y here will enable logging these events,
+> >> -	  which are accessible through a debugfs file.
+> >> -
+> >> -	  Say N if you are unsure.
+> >
+> 
 
