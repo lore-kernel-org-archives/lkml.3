@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaEMUdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 16:33:05 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:54007 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784AbaEMUc4 (ORCPT
+	id S932074AbaEMUdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 16:33:23 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47605 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaEMUdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 16:32:56 -0400
-Message-ID: <53728173.7050508@gmail.com>
-Date: Tue, 13 May 2014 13:32:51 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 13 May 2014 16:33:17 -0400
+Date: Tue, 13 May 2014 13:33:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 32/45] torture: Better summary diagnostics
+ for build failures
+Message-ID: <20140513203309.GU18164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1398731133-18925-32-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140507221139.GP27924@cloud>
+ <20140510004838.GH8754@linux.vnet.ibm.com>
+ <20140510193411.GB12079@thin>
+ <20140513192554.GQ18164@linux.vnet.ibm.com>
+ <20140513202136.GC2911@cloud>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH 2/4] of/platform: return error on of_platform_device_create_pdata
- failure
-References: <1399499298-8830-1-git-send-email-robherring2@gmail.com> <1399499298-8830-3-git-send-email-robherring2@gmail.com> <20140513175603.GA27173@quad.lixom.net>
-In-Reply-To: <20140513175603.GA27173@quad.lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513202136.GC2911@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051320-1542-0000-0000-000001C71A8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/13/2014 10:56 AM, Olof Johansson wrote:
-> On Wed, May 07, 2014 at 04:48:16PM -0500, Rob Herring wrote:
->> From: Rob Herring <robh@kernel.org>
->>
->> of_platform_populate does not return an error if creating the platform
->> device fails. This means almost any error from driver core cannot be
->> detected by the caller. Fix this.
->>
->> Signed-off-by: Rob Herring <robh@kernel.org>
->> ---
->>  drivers/of/platform.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->> index 404d1da..622aeb3 100644
->> --- a/drivers/of/platform.c
->> +++ b/drivers/of/platform.c
->> @@ -391,7 +391,9 @@ static int of_platform_bus_create(struct device_node *bus,
->>  	}
->>  
->>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
->> -	if (!dev || !of_match_node(matches, bus))
->> +	if (!dev)
->> +		return -ENODEV;
->> +	if (!of_match_node(matches, bus))
->>  		return 0;
->>  
->>  	for_each_child_of_node(bus, child) {
+On Tue, May 13, 2014 at 01:21:36PM -0700, josh@joshtriplett.org wrote:
+> On Tue, May 13, 2014 at 12:25:54PM -0700, Paul E. McKenney wrote:
+> > On Sat, May 10, 2014 at 12:34:12PM -0700, Josh Triplett wrote:
+> > > On Fri, May 09, 2014 at 05:48:38PM -0700, Paul E. McKenney wrote:
+> > > > On Wed, May 07, 2014 at 03:11:39PM -0700, josh@joshtriplett.org wrote:
+> > > > > On Mon, Apr 28, 2014 at 05:25:20PM -0700, Paul E. McKenney wrote:
+> > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > > 
+> > > > > > The reaction of kvm-recheck.sh is obscure at best, and easy to miss
+> > > > > > completely.  This commit therefore prints "BUG: Build failed" in the
+> > > > > > summary at the end of a run.
+> > > > > 
+> > > > > This commit also changes a dozen other things about the output that this
+> > > > > commit message does not document. :)
+> > > > 
+> > > > Well, I don't know about a dozen, but I did upgrade the commit message to
+> > > > read as follows:
+> > > > 
+> > > > 	The reaction of kvm-recheck.sh is obscure at best, and easy to
+> > > > 	miss completely.  This commit therefore prints "BUG: Build failed"
+> > > > 	in the summary at the end of a run.  This commit also adds the
+> > > > 	line of dashes in cases where performance info is not available,
+> > > > 	and also avoids printing nonsense diagnostics in cases where
+> > > > 	some of the normal test output is not available.
+> > > 
+> > > What about the change to kvm-test-1-run.sh?
+> > 
+> > Right you are!
+> > 
+> > 	The reaction of kvm-recheck.sh is obscure at best, and easy to
+> > 	miss completely.  This commit therefore prints "BUG: Build failed"
+> > 	in the summary at the end of a run.  This commit also adds the
+> > 	line of dashes in cases where performance info is not available,
+> > 	and also avoids printing nonsense diagnostics in cases where
+> > 	some of the normal test output is not available.  In addition,
+> > 	this commit saves off the .config file even when the build fails.
 > 
-> This patch caused every single MMC driver to break on OF platforms, as far
-> as I can tell.  Reverting it on last night's -next seems to resolve it.
-> 
-> The problem seems to be that of_platform_populate() will bail on the
-> first device that fails this.
-> 
-> How did you test this code, Frank? On what platform? Practically all my
-> targets here failed to mount rootfs from eMMC or SD card...
+> Looks good, ship it.
 
-I tested on a dragonboard, but without a working sdhci driver.  Thus I would not
-have hit the error.
+Woo-hoo!!!  ;-)
 
-> 
-> Note that the below patch mostly undoes the original intent of letting an error
-> percolate up, since only the last rc value is actually returned. So I doubt
-> it's the right patch to pick up, but either this or a revert is needed right
-> now.
-> 
-> 
-> -Olof
-> 
-> 
->>From f4cdc90a500a339e5b96ca06d108e1be7a808d76 Mon Sep 17 00:00:00 2001
-> From: Olof Johansson <olof@lixom.net>
-> Date: Tue, 13 May 2014 10:51:30 -0700
-> Subject: [PATCH] of/platform: Don't abort of_platform_populate() early
-> 
-> 52c75b64a374 ('of/platform: return error on
-> of_platform_device_create_pdata failure') starts returning ENODEV on
-> some calls now, and that will make of_platform_populate terminate the
-> loop. Be tolerant of that particlar error return value instead.
-> 
-> Fixes: 52c75b64a374 ('of/platform: return error on of_platform_device_create_pdata failure')
-> Cc: Frank Rowand <frank.rowand@sonymobile.com>
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->  drivers/of/platform.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 8a6de3c..310de38 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -524,7 +524,7 @@ int of_platform_populate(struct device_node *root,
->  
->  	for_each_child_of_node(root, child) {
->  		rc = of_platform_bus_create(child, matches, lookup, parent, true);
-> -		if (rc)
-> +		if (rc && rc != -ENODEV)
->  			break;
->  	}
->  
-> 
+							Thanx, Paul
 
