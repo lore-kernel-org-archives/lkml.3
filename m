@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759111AbaEMHol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:44:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45292 "EHLO comal.ext.ti.com"
+	id S1759152AbaEMHoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:44:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40050 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759003AbaEMHog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:44:36 -0400
+	id S1759003AbaEMHom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 03:44:42 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <nsekhar@ti.com>, <joelf@ti.com>
 CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
@@ -13,9 +13,9 @@ CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <tony@atomide.com>,
         <bcousson@baylibre.com>
-Subject: [PATCH 4/4] ARM: dts: am4372: Remove obsolete properties from edma node
-Date: Tue, 13 May 2014 10:43:48 +0300
-Message-ID: <1399967028-24757-5-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 3/4] ARM: dts: am33xx: Remove obsolete properties from edma node
+Date: Tue, 13 May 2014 10:43:47 +0300
+Message-ID: <1399967028-24757-4-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1399967028-24757-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1399967028-24757-1-git-send-email-peter.ujfalusi@ti.com>
@@ -30,23 +30,23 @@ the the same information is available in the IP's CCCFG register.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/boot/dts/am4372.dtsi | 3 ---
+ arch/arm/boot/dts/am33xx.dtsi | 3 ---
  1 file changed, 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-index 03a225505126..b9f83b705f4b 100644
---- a/arch/arm/boot/dts/am4372.dtsi
-+++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -108,9 +108,6 @@
- 					<GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
- 					<GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index baf56cc92040..5e8f647ee4ec 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -147,9 +147,6 @@
+ 				<0x44e10f90 0x10>;
+ 			interrupts = <12 13 14>;
  			#dma-cells = <1>;
 -			dma-channels = <64>;
 -			ti,edma-regions = <4>;
 -			ti,edma-slots = <256>;
  		};
  
- 		uart0: serial@44e09000 {
+ 		gpio0: gpio@44e07000 {
 -- 
 1.9.3
 
