@@ -1,98 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760367AbaEMJa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:30:56 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:35900 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760358AbaEMJax (ORCPT
+	id S1760330AbaEMJai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:30:38 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:33208 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759896AbaEMJ3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:30:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1752814.FckPkBGaUc@vostro.rjw.lan>
-References: <4649019.is79p6EySp@vostro.rjw.lan>
-	<1752814.FckPkBGaUc@vostro.rjw.lan>
-Date: Tue, 13 May 2014 11:30:52 +0200
-Message-ID: <CAPDyKFowGvzeD807ViaHy=01OE-E0nVy=YJbVmau4ZNRe-qJ9g@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
- runtime-suspended devices unnecessarily
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 May 2014 05:29:04 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 171/182] dm cache: prevent corruption caused by discard_block_size > cache_block_size
+Date: Tue, 13 May 2014 11:28:43 +0200
+Message-Id: <efcf9f6e091aac7aa6e5ad0226e4ea251d617715.1399973152.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
+References: <cover.1399973152.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2014 03:10, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> resume all runtime-suspended devices during system suspend, mostly
-> because those devices may need to be reprogrammed due to different
-> wakeup settings for system sleep and for runtime PM.
->
-> For some devices, though, it's OK to remain in runtime suspend
-> throughout a complete system suspend/resume cycle (if the device was in
-> runtime suspend at the start of the cycle).  We would like to do this
-> whenever possible, to avoid the overhead of extra power-up and power-down
-> events.
->
-> However, problems may arise because the device's descendants may require
-> it to be at full power at various points during the cycle.  Therefore the
-> most straightforward way to do this safely is if the device and all its
-> descendants can remain runtime suspended until the complete stage of
-> system resume.
->
-> To this end, introduce a new device PM flag, power.direct_complete
-> and modify the PM core to use that flag as follows.
->
-> If the ->prepare() callback of a device returns a positive number,
-> the PM core will regard that as an indication that it may leave the
-> device runtime-suspended.  It will then check if the system power
-> transition in progress is a suspend (and not hibernation in particular)
-> and if the device is, indeed, runtime-suspended.  In that case, the PM
-> core will set the device's power.direct_complete flag.  Otherwise it
-> will clear power.direct_complete for the device and it also will later
-> clear it for the device's parent (if there's one).
->
-> Next, the PM core will not invoke the ->suspend() ->suspend_late(),
-> ->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
-> callbacks for all devices having power.direct_complete set.  It
-> will invoke their ->complete() callbacks, however, and those
-> callbacks are then responsible for resuming the devices as
-> appropriate, if necessary.
->
-> Changelog partly based on an Alan Stern's description of the idea
-> (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-I like this idea! And we don't need to add new functions to the runtime PM API.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-[snip]
+===============
 
-> -
-> -       return error;
-> +               return ret;
-> +       }
-> +       dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND
-> +                                       && pm_runtime_suspended(dev);
+commit d132cc6d9e92424bb9d4fd35f5bd0e55d583f4be upstream.
 
-This might deserve a comment!?
+If the discard block size is larger than the cache block size we will
+not properly quiesce IO to a region that is about to be discarded.  This
+results in a race between a cache migration where no copy is needed, and
+a write to an adjacent cache block that's within the same large discard
+block.
 
-> +       return 0;
->  }
->
->  /**
->
+Workaround this by limiting the discard_block_size to cache_block_size.
+Also limit the max_discard_sectors to cache_block_size.
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+A more comprehensive fix that introduces range locking support in the
+bio_prison and proper quiescing of a discard range that spans multiple
+cache blocks is already in development.
 
-Kind regards
-Ulf Hansson
+Reported-by: Morgan Mears <Morgan.Mears@netapp.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Acked-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/md/dm-cache-target.c | 37 +++----------------------------------
+ 1 file changed, 3 insertions(+), 34 deletions(-)
+
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 6ab68e058a0a..d64bf7d6c8fe 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -162,7 +162,7 @@ struct cache {
+ 	 */
+ 	dm_dblock_t discard_nr_blocks;
+ 	unsigned long *discard_bitset;
+-	uint32_t discard_block_size; /* a power of 2 times sectors per block */
++	uint32_t discard_block_size;
+ 
+ 	/*
+ 	 * Rather than reconstructing the table line for the status we just
+@@ -1908,35 +1908,6 @@ static int create_cache_policy(struct cache *cache, struct cache_args *ca,
+ 	return 0;
+ }
+ 
+-/*
+- * We want the discard block size to be a power of two, at least the size
+- * of the cache block size, and have no more than 2^14 discard blocks
+- * across the origin.
+- */
+-#define MAX_DISCARD_BLOCKS (1 << 14)
+-
+-static bool too_many_discard_blocks(sector_t discard_block_size,
+-				    sector_t origin_size)
+-{
+-	(void) sector_div(origin_size, discard_block_size);
+-
+-	return origin_size > MAX_DISCARD_BLOCKS;
+-}
+-
+-static sector_t calculate_discard_block_size(sector_t cache_block_size,
+-					     sector_t origin_size)
+-{
+-	sector_t discard_block_size;
+-
+-	discard_block_size = roundup_pow_of_two(cache_block_size);
+-
+-	if (origin_size)
+-		while (too_many_discard_blocks(discard_block_size, origin_size))
+-			discard_block_size *= 2;
+-
+-	return discard_block_size;
+-}
+-
+ #define DEFAULT_MIGRATION_THRESHOLD 2048
+ 
+ static int cache_create(struct cache_args *ca, struct cache **result)
+@@ -2041,9 +2012,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
+ 	}
+ 	clear_bitset(cache->dirty_bitset, from_cblock(cache->cache_size));
+ 
+-	cache->discard_block_size =
+-		calculate_discard_block_size(cache->sectors_per_block,
+-					     cache->origin_sectors);
++	cache->discard_block_size = cache->sectors_per_block;
+ 	cache->discard_nr_blocks = oblock_to_dblock(cache, cache->origin_blocks);
+ 	cache->discard_bitset = alloc_bitset(from_dblock(cache->discard_nr_blocks));
+ 	if (!cache->discard_bitset) {
+@@ -2630,7 +2599,7 @@ static void set_discard_limits(struct cache *cache, struct queue_limits *limits)
+ 	/*
+ 	 * FIXME: these limits may be incompatible with the cache device
+ 	 */
+-	limits->max_discard_sectors = cache->discard_block_size * 1024;
++	limits->max_discard_sectors = cache->discard_block_size;
+ 	limits->discard_granularity = cache->discard_block_size << SECTOR_SHIFT;
+ }
+ 
+-- 
+1.9.3
+
