@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224AbaEMMOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 08:14:14 -0400
+	id S933188AbaEMMOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 08:14:10 -0400
 Received: from mga09.intel.com ([134.134.136.24]:55475 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933186AbaEMMOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 08:14:10 -0400
+	id S933101AbaEMMOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 08:14:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1044,1389772800"; 
-   d="scan'208";a="539559862"
+   d="scan'208";a="539559835"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Mike Turquette <mturquette@linaro.org>,
@@ -17,9 +17,9 @@ Cc: Mike Turquette <mturquette@linaro.org>,
         Li Aubrey <aubrey.li@linux.intel.com>,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] ACPI / LPSS: support for fractional divider clock
-Date: Tue, 13 May 2014 15:13:53 +0300
-Message-Id: <1399983233-18037-5-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3/4] clk: new basic clk type for fractional divider
+Date: Tue, 13 May 2014 15:13:52 +0300
+Message-Id: <1399983233-18037-4-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1399983233-18037-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -27,173 +27,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LPSS platforms offer the M/N divider clock for most devices.
-This creates fractional divider type clock for the ones that
-have it. It is needed with UART as the clock rate must
-accommodate to the requested baud rate.
+Fractional divider clocks are fairly common. This adds basic
+type for them.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/acpi/acpi_lpss.c | 63 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 42 insertions(+), 21 deletions(-)
+ drivers/clk/Makefile                 |   1 +
+ drivers/clk/clk-fractional-divider.c | 132 +++++++++++++++++++++++++++++++++++
+ include/linux/clk-provider.h         |  31 ++++++++
+ 3 files changed, 164 insertions(+)
+ create mode 100644 drivers/clk/clk-fractional-divider.c
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 24e49a5..3c7b97d 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -29,6 +29,7 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_LTR_SIZE	0x18
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index f651b2a..33bc79e 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-fractional-divider.o
  
- /* Offsets relative to LPSS_PRIVATE_OFFSET */
-+#define LPSS_CLK_DIVIDER_DEF_MASK	(BIT(1) | BIT(16))
- #define LPSS_GENERAL			0x08
- #define LPSS_GENERAL_LTR_MODE_SW	BIT(2)
- #define LPSS_GENERAL_UART_RTS_OVRD	BIT(3)
-@@ -60,6 +61,7 @@ struct lpss_device_desc {
- 	bool ltr_required;
- 	unsigned int prv_offset;
- 	size_t prv_size_override;
-+	bool clk_divider;
- 	bool clk_gate;
- 	bool save_ctx;
- 	struct lpss_shared_clock *shared_clock;
-@@ -97,6 +99,14 @@ static struct lpss_device_desc lpt_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
-+	.clk_divider = true,
-+	.clk_gate = true,
-+};
+ # hardware specific clock types
+ # please keep this section sorted lexicographically by file/directory path name
+diff --git a/drivers/clk/clk-fractional-divider.c b/drivers/clk/clk-fractional-divider.c
+new file mode 100644
+index 0000000..26f0f57
+--- /dev/null
++++ b/drivers/clk/clk-fractional-divider.c
+@@ -0,0 +1,132 @@
++/*
++ * Copyright (C) 2014 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Adjustable fractional divider clock implementation.
++ * Output rate = (m / n) * parent_rate.
++ */
 +
-+static struct lpss_device_desc lpt_i2c_dev_desc = {
-+	.clk_required = true,
-+	.prv_offset = 0x800,
-+	.ltr_required = true,
- 	.clk_gate = true,
- };
- 
-@@ -104,6 +114,7 @@ static struct lpss_device_desc lpt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.setup = lpss_uart_setup,
- };
-@@ -125,31 +136,21 @@ static struct lpss_device_desc byt_pwm_dev_desc = {
- 	.shared_clock = &pwm_clock,
- };
- 
--static struct lpss_shared_clock uart_clock = {
--	.name = "uart_clk",
--	.rate = 44236800,
--};
--
- static struct lpss_device_desc byt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.save_ctx = true,
--	.shared_clock = &uart_clock,
- 	.setup = lpss_uart_setup,
- };
- 
--static struct lpss_shared_clock spi_clock = {
--	.name = "spi_clk",
--	.rate = 50000000,
--};
--
- static struct lpss_device_desc byt_spi_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x400,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.save_ctx = true,
--	.shared_clock = &spi_clock,
- };
- 
- static struct lpss_device_desc byt_sdio_dev_desc = {
-@@ -175,8 +176,8 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	/* Lynxpoint LPSS devices */
- 	{ "INT33C0", (unsigned long)&lpt_dev_desc },
- 	{ "INT33C1", (unsigned long)&lpt_dev_desc },
--	{ "INT33C2", (unsigned long)&lpt_dev_desc },
--	{ "INT33C3", (unsigned long)&lpt_dev_desc },
-+	{ "INT33C2", (unsigned long)&lpt_i2c_dev_desc },
-+	{ "INT33C3", (unsigned long)&lpt_i2c_dev_desc },
- 	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
-@@ -221,9 +222,11 @@ static int register_device_clock(struct acpi_device *adev,
- {
- 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
- 	struct lpss_shared_clock *shared_clock = dev_desc->shared_clock;
-+	const char *devname = dev_name(&adev->dev);
- 	struct clk *clk = ERR_PTR(-ENODEV);
- 	struct lpss_clk_data *clk_data;
--	const char *parent;
-+	const char *parent, *clk_name;
-+	void __iomem *prv_base;
- 
- 	if (!lpss_clk_dev)
- 		lpt_register_clock_device();
-@@ -234,7 +237,7 @@ static int register_device_clock(struct acpi_device *adev,
- 
- 	if (dev_desc->clkdev_name) {
- 		clk_register_clkdev(clk_data->clk, dev_desc->clkdev_name,
--				    dev_name(&adev->dev));
-+				    devname);
- 		return 0;
- 	}
- 
-@@ -243,6 +246,7 @@ static int register_device_clock(struct acpi_device *adev,
- 		return -ENODATA;
- 
- 	parent = clk_data->name;
-+	prv_base = pdata->mmio_base + dev_desc->prv_offset;
- 
- 	if (shared_clock) {
- 		clk = shared_clock->clk;
-@@ -256,16 +260,33 @@ static int register_device_clock(struct acpi_device *adev,
- 	}
- 
- 	if (dev_desc->clk_gate) {
--		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
--					pdata->mmio_base + dev_desc->prv_offset,
--					0, 0, NULL);
--		pdata->clk = clk;
-+		clk = clk_register_gate(NULL, devname, parent, 0,
-+					prv_base, 0, 0, NULL);
-+		parent = devname;
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/gcd.h>
++
++#define to_clk_fd(_hw) container_of(_hw, struct clk_fractional_divider, hw)
++
++static unsigned long clk_fd_recalc_rate(struct clk_hw *hw,
++					unsigned long parent_rate)
++{
++	struct clk_fractional_divider *fd = to_clk_fd(hw);
++	unsigned long flags = 0;
++	u64 n, m;
++	u32 val;
++
++	if (fd->lock)
++		spin_lock_irqsave(fd->lock, flags);
++
++	val = clk_readl(fd->reg);
++
++	if (fd->lock)
++		spin_unlock_irqrestore(fd->lock, flags);
++
++	m = (val & fd->mmask) >> fd->mshift;
++	n = (val & fd->nmask) >> fd->nshift;
++
++	return parent_rate * m / n;
++}
++
++static long clk_fd_round_rate(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *prate)
++{
++	struct clk_fractional_divider *fd = to_clk_fd(hw);
++	unsigned maxn = (fd->nmask >> fd->nshift) + 1;
++	unsigned div;
++
++	if (!rate || rate > *prate)
++		return *prate;
++
++	div = gcd(*prate, rate);
++
++	while ((*prate / div) > maxn) {
++		div <<= 1;
++		rate <<= 1;
 +	}
 +
-+	if (dev_desc->clk_divider) {
-+		/* Prevent division by zero */
-+		if (!readl(prv_base))
-+			writel(LPSS_CLK_DIVIDER_DEF_MASK, prv_base);
++	return rate;
++}
 +
-+		clk_name = kasprintf(GFP_KERNEL, "%s-div", devname);
-+		clk = clk_register_fractional_divider(NULL, clk_name, parent,
-+						      0, prv_base,
-+						      1, 15, 16, 15, 0, NULL);
-+		parent = clk_name;
++static int clk_fd_set_rate(struct clk_hw *hw, unsigned long rate,
++			   unsigned long parent_rate)
++{
++	struct clk_fractional_divider *fd = to_clk_fd(hw);
++	unsigned long flags = 0;
++	unsigned long div;
++	unsigned n, m;
++	u32 val;
 +
-+		clk_name = kasprintf(GFP_KERNEL, "%s-update", devname);
-+		clk = clk_register_gate(NULL, clk_name, parent,
-+					CLK_SET_RATE_PARENT | CLK_SET_RATE_GATE,
-+					prv_base, 31, 0, NULL);
- 	}
++	div = gcd(parent_rate, rate);
++	m = rate / div;
++	n = parent_rate / div;
++
++	if (fd->lock)
++		spin_lock_irqsave(fd->lock, flags);
++
++	val = clk_readl(fd->reg);
++	val &= ~(fd->mmask | fd->nmask);
++	val |= (m << fd->mshift) | (n << fd->nshift);
++	clk_writel(val, fd->reg);
++
++	if (fd->lock)
++		spin_unlock_irqrestore(fd->lock, flags);
++
++	return 0;
++}
++
++const struct clk_ops clk_fractional_divider_ops = {
++	.recalc_rate = clk_fd_recalc_rate,
++	.round_rate = clk_fd_round_rate,
++	.set_rate = clk_fd_set_rate,
++};
++EXPORT_SYMBOL_GPL(clk_fractional_divider_ops);
++
++struct clk *clk_register_fractional_divider(struct device *dev,
++		const char *name, const char *parent_name, unsigned long flags,
++		void __iomem *reg, u8 mshift, u8 mwidth, u8 nshift, u8 nwidth,
++		u8 clk_divider_flags, spinlock_t *lock)
++{
++	struct clk_fractional_divider *fd;
++	struct clk_init_data init;
++	struct clk *clk;
++
++	fd = kzalloc(sizeof(*fd), GFP_KERNEL);
++	if (!fd) {
++		pr_err("%s: could not allocate fractional divider clk\n",
++		       __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	init.name = name;
++	init.ops = &clk_fractional_divider_ops;
++	init.flags = flags | CLK_IS_BASIC;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++
++	fd->reg = reg;
++	fd->mshift = mshift;
++	fd->mmask = (BIT(mwidth) - 1) << mshift;
++	fd->nshift = nshift;
++	fd->nmask = (BIT(nwidth) - 1) << nshift;
++	fd->flags = clk_divider_flags;
++	fd->lock = lock;
++	fd->hw.init = &init;
++
++	clk = clk_register(dev, &fd->hw);
++	if (IS_ERR(clk))
++		kfree(fd);
++
++	return clk;
++}
++EXPORT_SYMBOL_GPL(clk_register_fractional_divider);
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 47e353d..30d1e02 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -416,6 +416,37 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		unsigned int mult, unsigned int div);
  
- 	if (IS_ERR(clk))
- 		return PTR_ERR(clk);
- 
--	clk_register_clkdev(clk, NULL, dev_name(&adev->dev));
-+	pdata->clk = clk;
-+	clk_register_clkdev(clk, NULL, devname);
- 	return 0;
- }
- 
++/**
++ * struct clk_fractional_divider - adjustable fractional divider clock
++ *
++ * @hw:		handle between common and hardware-specific interfaces
++ * @reg:	register containing the divider
++ * @mshift:	shift to the numerator bit field
++ * @mwidth:	width of the numerator bit field
++ * @nshift:	shift to the denominator bit field
++ * @nwidth:	width of the denominator bit field
++ * @lock:	register lock
++ *
++ * Clock with adjustable fractional divider affecting its output frequency.
++ */
++
++struct clk_fractional_divider {
++	struct clk_hw	hw;
++	void __iomem	*reg;
++	u8		mshift;
++	u32		mmask;
++	u8		nshift;
++	u32		nmask;
++	u8		flags;
++	spinlock_t	*lock;
++};
++
++extern const struct clk_ops clk_fractional_divider_ops;
++struct clk *clk_register_fractional_divider(struct device *dev,
++		const char *name, const char *parent_name, unsigned long flags,
++		void __iomem *reg, u8 mshift, u8 mwidth, u8 nshift, u8 nwidth,
++		u8 clk_divider_flags, spinlock_t *lock);
++
+ /***
+  * struct clk_composite - aggregate clock of mux, divider and gate clocks
+  *
 -- 
 2.0.0.rc2
 
