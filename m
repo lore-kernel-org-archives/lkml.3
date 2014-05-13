@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760161AbaEMJ3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:29:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60878 "EHLO
+	id S1760195AbaEMJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:29:46 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60920 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760101AbaEMJ25 (ORCPT
+	by vger.kernel.org with ESMTP id S1760164AbaEMJ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:57 -0400
+	Tue, 13 May 2014 05:29:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 070/182] IB/qib: Fix debugfs ordering issue with multiple HCAs
-Date: Tue, 13 May 2014 11:27:02 +0200
-Message-Id: <229eb3f3918472ff1871e7e7db36f300175ca9ed.1399973152.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 106/182] mm: page_alloc: spill to remote nodes before waking kswapd
+Date: Tue, 13 May 2014 11:27:38 +0200
+Message-Id: <3f0cff794147fba94a73823e9c3705b475e7d7e6.1399973152.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
 References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
@@ -24,84 +25,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f8b6c47a44c063062317646683a73371c24c69ee upstream.
+commit 3a025760fc158b3726eac89ee95d7f29599e9dfa upstream.
 
-The debugfs init code was incorrectly called before the idr mechanism
-is used to get the unit number, so the dd->unit hasn't been
-initialized.  This caused the unit relative directory creation to fail
-after the first.
+On NUMA systems, a node may start thrashing cache or even swap anonymous
+pages while there are still free pages on remote nodes.
 
-This patch moves the init for the debugfs stuff until after all of the
-failures and after the unit number has been determined.
+This is a result of commits 81c0a2bb515f ("mm: page_alloc: fair zone
+allocator policy") and fff4068cba48 ("mm: page_alloc: revert NUMA aspect
+of fair allocation policy").
 
-A bug in unwind code in qib_alloc_devdata() is also fixed.
+Before those changes, the allocator would first try all allowed zones,
+including those on remote nodes, before waking any kswapds.  But now,
+the allocator fastpath doubles as the fairness pass, which in turn can
+only consider the local node to prevent remote spilling based on
+exhausted fairness batches alone.  Remote nodes are only considered in
+the slowpath, after the kswapds are woken up.  But if remote nodes still
+have free memory, kswapd should not be woken to rebalance the local node
+or it may thrash cash or swap prematurely.
 
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Fix this by adding one more unfair pass over the zonelist that is
+allowed to spill to remote nodes after the local fairness pass fails but
+before entering the slowpath and waking the kswapds.
+
+This also gets rid of the GFP_THISNODE exemption from the fairness
+protocol because the unfair pass is no longer tied to kswapd, which
+GFP_THISNODE is not allowed to wake up.
+
+However, because remote spills can be more frequent now - we prefer them
+over local kswapd reclaim - the allocation batches on remote nodes could
+underflow more heavily.  When resetting the batches, use
+atomic_long_read() directly instead of zone_page_state() to calculate the
+delta as the latter filters negative counter values.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/hw/qib/qib_init.c | 25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+ mm/internal.h   |  1 +
+ mm/page_alloc.c | 89 +++++++++++++++++++++++++++++----------------------------
+ 2 files changed, 46 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/infiniband/hw/qib/qib_init.c b/drivers/infiniband/hw/qib/qib_init.c
-index 24e802f4ea2f..76c3e177164d 100644
---- a/drivers/infiniband/hw/qib/qib_init.c
-+++ b/drivers/infiniband/hw/qib/qib_init.c
-@@ -1097,14 +1097,10 @@ struct qib_devdata *qib_alloc_devdata(struct pci_dev *pdev, size_t extra)
- 	int ret;
+diff --git a/mm/internal.h b/mm/internal.h
+index 8b6cfd63b5a5..fdddbc83ac5f 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -369,5 +369,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+ #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
++#define ALLOC_FAIR		0x100 /* fair zone allocation */
  
- 	dd = (struct qib_devdata *) ib_alloc_device(sizeof(*dd) + extra);
--	if (!dd) {
--		dd = ERR_PTR(-ENOMEM);
--		goto bail;
--	}
-+	if (!dd)
-+		return ERR_PTR(-ENOMEM);
- 
--#ifdef CONFIG_DEBUG_FS
--	qib_dbg_ibdev_init(&dd->verbs_dev);
--#endif
-+	INIT_LIST_HEAD(&dd->list);
- 
- 	idr_preload(GFP_KERNEL);
- 	spin_lock_irqsave(&qib_devs_lock, flags);
-@@ -1121,11 +1117,6 @@ struct qib_devdata *qib_alloc_devdata(struct pci_dev *pdev, size_t extra)
- 	if (ret < 0) {
- 		qib_early_err(&pdev->dev,
- 			      "Could not allocate unit ID: error %d\n", -ret);
--#ifdef CONFIG_DEBUG_FS
--		qib_dbg_ibdev_exit(&dd->verbs_dev);
--#endif
--		ib_dealloc_device(&dd->verbs_dev.ibdev);
--		dd = ERR_PTR(ret);
- 		goto bail;
+ #endif	/* __MM_INTERNAL_H */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6fca39097766..09459deb0b51 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1219,15 +1219,6 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
  	}
- 
-@@ -1139,9 +1130,15 @@ struct qib_devdata *qib_alloc_devdata(struct pci_dev *pdev, size_t extra)
- 			qib_early_err(&pdev->dev,
- 				"Could not alloc cpulist info, cpu affinity might be wrong\n");
- 	}
--
--bail:
-+#ifdef CONFIG_DEBUG_FS
-+	qib_dbg_ibdev_init(&dd->verbs_dev);
-+#endif
- 	return dd;
-+bail:
-+	if (!list_empty(&dd->list))
-+		list_del_init(&dd->list);
-+	ib_dealloc_device(&dd->verbs_dev.ibdev);
-+	return ERR_PTR(ret);;
+ 	local_irq_restore(flags);
  }
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
+-}
+-#else
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return false;
+-}
+ #endif
  
  /*
+@@ -1564,12 +1555,7 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
+ 
+-	/*
+-	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
+-	 * aging protocol, so they can't be fair.
+-	 */
+-	if (!gfp_thisnode_allocation(gfp_flags))
+-		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1935,23 +1921,12 @@ zonelist_scan:
+ 		 * zone size to ensure fair page aging.  The zone a
+ 		 * page was allocated in should have no effect on the
+ 		 * time the page has in memory before being reclaimed.
+-		 *
+-		 * Try to stay in local zones in the fastpath.  If
+-		 * that fails, the slowpath is entered, which will do
+-		 * another pass starting with the local zones, but
+-		 * ultimately fall back to remote zones that do not
+-		 * partake in the fairness round-robin cycle of this
+-		 * zonelist.
+-		 *
+-		 * NOTE: GFP_THISNODE allocations do not partake in
+-		 * the kswapd aging protocol, so they can't be fair.
+ 		 */
+-		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+-		    !gfp_thisnode_allocation(gfp_mask)) {
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
++		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				continue;
++			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++				continue;
+ 		}
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+@@ -2399,32 +2374,40 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	return page;
+ }
+ 
+-static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+-			     struct zonelist *zonelist,
+-			     enum zone_type high_zoneidx,
+-			     struct zone *preferred_zone)
++static void reset_alloc_batches(struct zonelist *zonelist,
++				enum zone_type high_zoneidx,
++				struct zone *preferred_zone)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		if (!(gfp_mask & __GFP_NO_KSWAPD))
+-			wakeup_kswapd(zone, order, zone_idx(preferred_zone));
+ 		/*
+ 		 * Only reset the batches of zones that were actually
+-		 * considered in the fast path, we don't want to
+-		 * thrash fairness information for zones that are not
++		 * considered in the fairness pass, we don't want to
++		 * trash fairness information for zones that are not
+ 		 * actually part of this zonelist's round-robin cycle.
+ 		 */
+ 		if (!zone_local(preferred_zone, zone))
+ 			continue;
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-				    high_wmark_pages(zone) -
+-				    low_wmark_pages(zone) -
+-				    zone_page_state(zone, NR_ALLOC_BATCH));
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+ 	}
+ }
+ 
++static void wake_all_kswapds(unsigned int order,
++			     struct zonelist *zonelist,
++			     enum zone_type high_zoneidx,
++			     struct zone *preferred_zone)
++{
++	struct zoneref *z;
++	struct zone *zone;
++
++	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
++		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
++}
++
+ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+@@ -2513,12 +2496,13 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	 * allowed per node queues are empty and that nodes are
+ 	 * over allocated.
+ 	 */
+-	if (gfp_thisnode_allocation(gfp_mask))
++	if (IS_ENABLED(CONFIG_NUMA) &&
++	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
+ 
+ restart:
+-	prepare_slowpath(gfp_mask, order, zonelist,
+-			 high_zoneidx, preferred_zone);
++	if (!(gfp_mask & __GFP_NO_KSWAPD))
++		wake_all_kswapds(order, zonelist, high_zoneidx, preferred_zone);
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2695,7 +2679,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	struct page *page = NULL;
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+-	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
++	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
+ 
+ 	gfp_mask &= gfp_allowed_mask;
+@@ -2736,12 +2720,29 @@ retry_cpuset:
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
++retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
++		 * The first pass makes sure allocations are spread
++		 * fairly within the local node.  However, the local
++		 * node might have free pages left after the fairness
++		 * batches are exhausted, and remote zones haven't
++		 * even been considered yet.  Try once more without
++		 * fairness, and include remote zones now, before
++		 * entering the slowpath and waking kswapd: prefer
++		 * spilling to a remote zone over swapping locally.
++		 */
++		if (alloc_flags & ALLOC_FAIR) {
++			reset_alloc_batches(zonelist, high_zoneidx,
++					    preferred_zone);
++			alloc_flags &= ~ALLOC_FAIR;
++			goto retry;
++		}
++		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
 -- 
 1.9.3
 
