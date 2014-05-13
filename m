@@ -1,154 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842AbaEMHaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 03:30:11 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:11926 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563AbaEMHaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 03:30:09 -0400
-Message-ID: <5371C8E6.6080700@huawei.com>
-Date: Tue, 13 May 2014 15:25:26 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "will.deacon@arm.com" <will.deacon@arm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        "liusdu@126.com" <liusdu@126.com>
-Subject: Re: [RFC PATCH 2/2] makedumpfile: get additional information from
- vmcore
-References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com> <1399469234-54925-3-git-send-email-sdu.liu@huawei.com> <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
-In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
+	id S1758870AbaEMHar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 03:30:47 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:37522 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904AbaEMHap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 03:30:45 -0400
+Message-ID: <1399966237.4137.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 1/1] net/wireless/ibss.c: replace memcpy by
+ ether_addr_copy
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Joe Perches <joe@perches.com>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        akpm <akpm@linux-foundation.org>
+Date: Tue, 13 May 2014 09:30:37 +0200
+In-Reply-To: <1399922277.9240.50.camel@joe-AO725>
+References: <20140512193050.1ba6a301b20af3f4e7e43870@skynet.be>
+	 <1399917025.9240.16.camel@joe-AO725>
+	 <20140512200033.87712053add71ca2cf35fe79@skynet.be>
+	 <1399918029.9240.19.camel@joe-AO725>
+	 <1399920710.4337.26.camel@jlt4.sipsolutions.net>
+	 <1399922277.9240.50.camel@joe-AO725>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/13 14:21, Atsushi Kumagai wrote:
-> Hello Liu,
-> 
->> Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
->> macros. So if we deal with vmcores with different values
->> of these two macros. We have to recompile makedumpfile.
-> 
-> There are other macros which have architecture-specific values
-> (e.g. __PAGE_OFFSET), and some functions are specific to each
-> architecture (e.g. vaddr_to_paddr()), so we need recompilation
-> eventually.
-> 
-> OTOH, we already don't need recompilation for the same architecture
-> since the values of such macros are defined for each kernel version
-> like below:
-> 
-> #ifdef __x86_64__
-> ...
-> #define _MAX_PHYSMEM_BITS_ORIG          (40)
-> #define _MAX_PHYSMEM_BITS_2_6_26        (44)
-> #define _MAX_PHYSMEM_BITS_2_6_31        (46)
-> 
-> So I don't think this patch is valuable.
+On Mon, 2014-05-12 at 12:17 -0700, Joe Perches wrote:
 
-Hi Atsushi,
-
-For x86, it is not necessory. But for arm, different venders
-may define different SECTION_SIZE_BITS. for example:
-
-   1 arch/arm/mach-clps711x/include/mach/memory.h
-     #define SECTION_SIZE_BITS 24
-   2 arch/arm/mach-exynos/include/mach/memory.h
-     #define SECTION_SIZE_BITS 28
-   4 arch/arm/mach-hisi/include/mach/memory.h
-     #define SECTION_SIZE_BITS 26
-   8 arch/arm/mach-sa1100/include/mach/memory.h
-     #define SECTION_SIZE_BITS 27
-
-Perhaps we should find another way to let the userspace tools
-to get the architecture-specific values.
-
-Liu Hua
-
+> > I certainly don't see the benefit in changing all those other files,
+> > particularly since it's not just that we have to verify alignment *now*,
+> > we also have to add alignment attributes so that we don't break
+> > alignment in the future.
 > 
-> 
-> Thanks
-> Atsushi Kumagai
-> 
->> This patch makes makedumpfile get these two values from
->> vmcore info, if existing. It makes the makedumpfile more
->> compatible to vmcores with different section size.
->>
->> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->> ---
->> makedumpfile.c | 17 +++++++++++++++++
->> makedumpfile.h |  2 ++
->> 2 files changed, 19 insertions(+)
->>
->> diff --git a/makedumpfile.c b/makedumpfile.c
->> index 6cf6e24..3cdf323 100644
->> --- a/makedumpfile.c
->> +++ b/makedumpfile.c
->> @@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
->> 	READ_NUMBER("PG_slab", PG_slab);
->> 	READ_NUMBER("PG_buddy", PG_buddy);
->> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
->> +	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
->> +	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
->>
->> 	READ_SRCFILE("pud_t", pud_t);
->>
->> @@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
->> }
->>
->> int
->> +calibrate_machdep_info(void)
->> +{
->> +	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
->> +		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
->> +
->> +	if (NUMBER(SECTION_SIZE_BITS) > 0)
->> +		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
->> +
->> +	return TRUE;
->> +}
->> +
->> +int
->> initial(void)
->> {
->> 	off_t offset;
->> @@ -3214,6 +3228,9 @@ out:
->> 	if (debug_info && !get_machdep_info())
->> 		return FALSE;
->>
->> +	if (debug_info && !calibrate_machdep_info())
->> +		return FALSE;
->> +
->> 	if (is_xen_memory() && !get_dom0_mapnr())
->> 		return FALSE;
->>
->> diff --git a/makedumpfile.h b/makedumpfile.h
->> index eb03688..7acb23a 100644
->> --- a/makedumpfile.h
->> +++ b/makedumpfile.h
->> @@ -1434,6 +1434,8 @@ struct number_table {
->> 	long    PG_hwpoison;
->>
->> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
->> +	long	SECTION_SIZE_BITS;
->> +	long	MAX_PHYSMEM_BITS;
->> };
->>
->> struct srcfile_table {
->> --
->> 1.9.0
-> 
-> .
-> 
+> The same alignment requirements exist in quite a
+> lot of the code so I don't see that as much of a
+> continuing problem.
 
+I disagree. This may be true for some of the cases we're discussing,
+e.g. the change in net/wireless/util.c which has the assumption based on
+frame alignment assumptions etc.
+
+However, for things like the mac80211/mlme.c change we're operating
+entirely on internal structures that are purely in software and don't
+belong to any network frames or similar structs that already have
+alignment guarantees.
+
+As a consequence, something like this simple patch:
+
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 5c7169b0ac57..fccbba2f4fe1 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -1529,7 +1529,7 @@ struct cfg80211_bss {
+ 
+ 	u16 beacon_interval;
+ 	u16 capability;
+-
++	u8 my_new_field;
+ 	u8 bssid[ETH_ALEN];
+ 
+ 	u8 priv[0] __aligned(sizeof(void *));
+
+would already break at least one of the patches. The change looks
+innocent enough, and is modifying a purely internal struct that doesn't
+get used anywhere but the wireless stack (neither wire frame nor
+userspace) so this is a perfectly valid change.
+
+Therefore, the patch should mark the bssid with __aligned(2) or such, to
+avoid having simple patches like that introduce problems.
+
+
+
+> > Additionally doesn't even really save much typing:
+> > 
+> > memcpy(x, y, ETH_ALEN);
+> > ether_addr_copy(x, y);
+> 
+> To me the general benefit isn't in the reduced
+> source code size, but small improvements for
+> ARM both in code size and execution speed.
+
+Well, yes, but if it's in a configuration path, which you invoke maybe a
+few times an hour, it doesn't seem worth it at all.
+
+If it's in a frame/data hotpath, like the util.c change that already has
+other alignment guarantees, it does seem somewhat worthwhile, but beyond
+that I'm not so sure.
+
+johannes
 
