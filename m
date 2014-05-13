@@ -1,47 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaEMRN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 13:13:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165AbaEMRNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 13:13:48 -0400
-Message-ID: <537252C0.6090005@redhat.com>
-Date: Tue, 13 May 2014 18:13:36 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-CC: michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
-        oleg@redhat.com
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com>
-In-Reply-To: <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753263AbaEMROP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 13:14:15 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43617 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaEMROK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 13:14:10 -0400
+Date: Tue, 13 May 2014 13:14:08 -0400 (EDT)
+Message-Id: <20140513.131408.1239450870035635955.davem@davemloft.net>
+To: rdunlap@infradead.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        richard@nod.at
+Subject: Re: mmotm 2014-05-09-16-17 uploaded (ptrace-ab.hi vs.
+ net/core/filter.c)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <536E5EB9.5060101@infradead.org>
+References: <20140509231825.22D005A4123@corp2gmr1-2.hot.corp.google.com>
+	<536E5EB9.5060101@infradead.org>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 13 May 2014 10:14:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/14 08:54, Anshuman Khandual wrote:
-> This patch enables get and set of transactional memory related register
-> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
-> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
-> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
-> ELF core note types added previously in this regard.
+From: Randy Dunlap <rdunlap@infradead.org>
+Date: Sat, 10 May 2014 10:15:37 -0700
+
+> On 05/09/2014 04:18 PM, akpm@linux-foundation.org wrote:
+>> The mm-of-the-moment snapshot 2014-05-09-16-17 has been uploaded to
+>> 
+>>    http://www.ozlabs.org/~akpm/mmotm/
+>> 
 > 
-> 	(1) NT_PPC_TM_SPR
-> 	(2) NT_PPC_TM_CGPR
-> 	(3) NT_PPC_TM_CFPR
-> 	(4) NT_PPC_TM_CVMX
+> 
+> uml defconfig on x86_64: (also happens in linux-next)
+> 
+> net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
+> arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
+> 
+> Same warnings for R9 and R10.
 
-Sorry that I couldn't tell this from the code, but, what does the
-kernel return when the ptracer requests these registers and the
-program is not in a transaction?  Specifically I'm wondering whether
-this follows the same semantics as the s390 port.
+I'm going to commit the following to net-next to fix this,
+thanks Randy.
 
+====================
+[PATCH] net: filter: Fix redefinition warnings on x86-64.
+
+Do not collide with the x86-64 PTRACE user API namespace.
+
+net/core/filter.c:57:0: warning: "R8" redefined [enabled by default]
+arch/x86/include/uapi/asm/ptrace-abi.h:38:0: note: this is the location of the previous definition
+
+Fix by adding a BPF_ prefix to the register macros.
+
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/core/filter.c | 71 +++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 37 insertions(+), 34 deletions(-)
+
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 9aaa05a..c442a0d 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -46,17 +46,17 @@
+ #include <linux/if_vlan.h>
+ 
+ /* Registers */
+-#define R0	regs[BPF_REG_0]
+-#define R1	regs[BPF_REG_1]
+-#define R2	regs[BPF_REG_2]
+-#define R3	regs[BPF_REG_3]
+-#define R4	regs[BPF_REG_4]
+-#define R5	regs[BPF_REG_5]
+-#define R6	regs[BPF_REG_6]
+-#define R7	regs[BPF_REG_7]
+-#define R8	regs[BPF_REG_8]
+-#define R9	regs[BPF_REG_9]
+-#define R10	regs[BPF_REG_10]
++#define BPF_R0	regs[BPF_REG_0]
++#define BPF_R1	regs[BPF_REG_1]
++#define BPF_R2	regs[BPF_REG_2]
++#define BPF_R3	regs[BPF_REG_3]
++#define BPF_R4	regs[BPF_REG_4]
++#define BPF_R5	regs[BPF_REG_5]
++#define BPF_R6	regs[BPF_REG_6]
++#define BPF_R7	regs[BPF_REG_7]
++#define BPF_R8	regs[BPF_REG_8]
++#define BPF_R9	regs[BPF_REG_9]
++#define BPF_R10	regs[BPF_REG_10]
+ 
+ /* Named registers */
+ #define A	regs[insn->a_reg]
+@@ -383,10 +383,12 @@ select_insn:
+ 
+ 	/* CALL */
+ 	JMP_CALL_0:
+-		/* Function call scratches R1-R5 registers, preserves R6-R9,
+-		 * and stores return value into R0.
++		/* Function call scratches BPF_R1-BPF_R5 registers,
++		 * preserves BPF_R6-BPF_R9, and stores return value
++		 * into BPF_R0.
+ 		 */
+-		R0 = (__bpf_call_base + insn->imm)(R1, R2, R3, R4, R5);
++		BPF_R0 = (__bpf_call_base + insn->imm)(BPF_R1, BPF_R2, BPF_R3,
++						       BPF_R4, BPF_R5);
+ 		CONT;
+ 
+ 	/* JMP */
+@@ -478,7 +480,7 @@ select_insn:
+ 		}
+ 		CONT;
+ 	JMP_EXIT_0:
+-		return R0;
++		return BPF_R0;
+ 
+ 	/* STX and ST and LDX*/
+ #define LDST(SIZEOP, SIZE)					\
+@@ -505,18 +507,19 @@ select_insn:
+ 		atomic64_add((u64) X, (atomic64_t *)(unsigned long)
+ 			     (A + insn->off));
+ 		CONT;
+-	LD_ABS_W: /* R0 = ntohl(*(u32 *) (skb->data + K)) */
++	LD_ABS_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + K)) */
+ 		off = K;
+ load_word:
+-		/* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are only
+-		 * appearing in the programs where ctx == skb. All programs
+-		 * keep 'ctx' in regs[BPF_REG_CTX] == R6, sk_convert_filter()
+-		 * saves it in R6, internal BPF verifier will check that
+-		 * R6 == ctx.
++		/* BPF_LD + BPD_ABS and BPF_LD + BPF_IND insns are
++		 * only appearing in the programs where ctx ==
++		 * skb. All programs keep 'ctx' in regs[BPF_REG_CTX]
++		 * == BPF_R6, sk_convert_filter() saves it in BPF_R6,
++		 * internal BPF verifier will check that BPF_R6 ==
++		 * ctx.
+ 		 *
+-		 * BPF_ABS and BPF_IND are wrappers of function calls, so
+-		 * they scratch R1-R5 registers, preserve R6-R9, and store
+-		 * return value into R0.
++		 * BPF_ABS and BPF_IND are wrappers of function calls,
++		 * so they scratch BPF_R1-BPF_R5 registers, preserve
++		 * BPF_R6-BPF_R9, and store return value into BPF_R0.
+ 		 *
+ 		 * Implicit input:
+ 		 *   ctx
+@@ -526,39 +529,39 @@ load_word:
+ 		 *   K == 32-bit immediate
+ 		 *
+ 		 * Output:
+-		 *   R0 - 8/16/32-bit skb data converted to cpu endianness
++		 *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
+ 		 */
+ 		ptr = load_pointer((struct sk_buff *) ctx, off, 4, &tmp);
+ 		if (likely(ptr != NULL)) {
+-			R0 = get_unaligned_be32(ptr);
++			BPF_R0 = get_unaligned_be32(ptr);
+ 			CONT;
+ 		}
+ 		return 0;
+-	LD_ABS_H: /* R0 = ntohs(*(u16 *) (skb->data + K)) */
++	LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + K)) */
+ 		off = K;
+ load_half:
+ 		ptr = load_pointer((struct sk_buff *) ctx, off, 2, &tmp);
+ 		if (likely(ptr != NULL)) {
+-			R0 = get_unaligned_be16(ptr);
++			BPF_R0 = get_unaligned_be16(ptr);
+ 			CONT;
+ 		}
+ 		return 0;
+-	LD_ABS_B: /* R0 = *(u8 *) (ctx + K) */
++	LD_ABS_B: /* BPF_R0 = *(u8 *) (ctx + K) */
+ 		off = K;
+ load_byte:
+ 		ptr = load_pointer((struct sk_buff *) ctx, off, 1, &tmp);
+ 		if (likely(ptr != NULL)) {
+-			R0 = *(u8 *)ptr;
++			BPF_R0 = *(u8 *)ptr;
+ 			CONT;
+ 		}
+ 		return 0;
+-	LD_IND_W: /* R0 = ntohl(*(u32 *) (skb->data + X + K)) */
++	LD_IND_W: /* BPF_R0 = ntohl(*(u32 *) (skb->data + X + K)) */
+ 		off = K + X;
+ 		goto load_word;
+-	LD_IND_H: /* R0 = ntohs(*(u16 *) (skb->data + X + K)) */
++	LD_IND_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + X + K)) */
+ 		off = K + X;
+ 		goto load_half;
+-	LD_IND_B: /* R0 = *(u8 *) (skb->data + X + K) */
++	LD_IND_B: /* BPF_R0 = *(u8 *) (skb->data + X + K) */
+ 		off = K + X;
+ 		goto load_byte;
+ 
+@@ -1001,7 +1004,7 @@ do_pass:
+ 			*insn = BPF_ALU64_REG(BPF_MOV, BPF_REG_TMP, BPF_REG_A);
+ 			insn++;
+ 
+-			/* A = R0 = *(u8 *) (skb->data + K) */
++			/* A = BPF_R0 = *(u8 *) (skb->data + K) */
+ 			*insn = BPF_LD_ABS(BPF_B, fp->k);
+ 			insn++;
+ 
 -- 
-Pedro Alves
+1.9.0
 
