@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927AbaEMX37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 19:29:59 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:51731 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaEMX3z (ORCPT
+	id S1754116AbaEMXao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 19:30:44 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:64281 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585AbaEMXam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 19:29:55 -0400
-Date: Tue, 13 May 2014 19:29:52 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-cc: Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <will.deacon@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Riley <davidriley@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP
- systems#
-In-Reply-To: <alpine.LFD.2.11.1405131908260.980@knanqh.ubzr>
-Message-ID: <alpine.LFD.2.11.1405131922580.980@knanqh.ubzr>
-References: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com> <alpine.LFD.2.11.1405081149190.980@knanqh.ubzr> <CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com> <alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
- <20140508192209.GH3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405081600260.980@knanqh.ubzr> <20140508205223.GI3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405082058130.980@knanqh.ubzr> <20140509091824.GL3693@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1405091245070.980@knanqh.ubzr> <20140509182245.GM3693@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1405091640090.980@knanqh.ubzr> <CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com> <CAD=FV=XM2URyJjV9gaE=mrp7LAEGtvi9wQGhGJi3_HYp_XzYWg@mail.gmail.com>
- <5372998F.6020502@wwwdotorg.org> <alpine.LFD.2.11.1405131908260.980@knanqh.ubzr>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 13 May 2014 19:30:42 -0400
+Date: Wed, 14 May 2014 01:30:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
+ idle task?
+Message-ID: <20140513233036.GH13828@localhost.localdomain>
+References: <20140411151825.GX11096@twins.programming.kicks-ass.net>
+ <CAKohpomgv-LbUcPxazfJkf0Jq0sSULxT0WjrbFovn0k0O-ORwg@mail.gmail.com>
+ <20140414110245.GG11096@twins.programming.kicks-ass.net>
+ <CAKohpo==1=K0=gZz_Z_Y0zO2PtyvA-Q67_+VKTJN7kbQgbiHTg@mail.gmail.com>
+ <20140414114744.GI11096@twins.programming.kicks-ass.net>
+ <CAKohpon=_ZR+QbfacGT+G_atgcc21KMYG3YxPf0nkSDLBH8Q2A@mail.gmail.com>
+ <20140414120600.GJ11096@twins.programming.kicks-ass.net>
+ <20140415093002.GL1877@localhost.localdomain>
+ <CAKohpomKLyK0XZbB2j1Gjxe123b6JkcdSTpvdFFD23Hb_EmmpA@mail.gmail.com>
+ <CAKohpomik2L906GLST=XSG_zhDcCWMNBw4X7qJd8ejcOF0Fusw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpomik2L906GLST=XSG_zhDcCWMNBw4X7qJd8ejcOF0Fusw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Nicolas Pitre wrote:
-
-> On Tue, 13 May 2014, Stephen Warren wrote:
+On Fri, May 09, 2014 at 02:14:10PM +0530, Viresh Kumar wrote:
+> On 23 April 2014 16:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > On 15 April 2014 15:00, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> Ok, I'm a bit buzy with a conference right now but I'm going to summarize that
+> >> soonish.
 > 
-> > On 05/13/2014 03:50 PM, Doug Anderson wrote:
-> > ...
-> > > ...but then I found the true problem shows up when we transition
-> > > between very low frequencies on exynos, like between 200MHz and
-> > > 300MHz.  While transitioning between frequencies the system
-> > > temporarily bumps over to the "switcher" PLL running at 800MHz while
-> > > waiting for the main PLL to stabilize.  No CPUFREQ notification is
-> > > sent for that.  That means there's a period of time when we're running
-> > > at 800MHz but loops_per_jiffy is calibrated at between 200MHz and
-> > > 300MHz.
-> > > 
-> > > 
-> > > I'm welcome to any suggestions for how to address this.  It sorta
-> > > feels like it would be a common thing to have a temporary PLL during
-> > > the transition, ...
-> > 
-> > We definitely do that on Tegra for some cpufreq transitions.
+> Hi Frederic,
 > 
-> Ouch...  If this is a common strategy to use a third frequency during a 
-> transition phase, especially if that frequency is way off (800MHz vs 
-> 200-300MHz) then it is something the cpufreq layer must capture and 
-> advertise.
+> Please see if you can find some time to close this, that would be very
+> helpful :)
+> 
+> Thanks
 
-Of course if only the loops_per_jiffy scaling does care about frequency 
-changes these days, and if in those cases udelay() can instead be moved 
-to a timer source on those hick-up prone platforms, then all this is 
-fairly theoretical and may not be worth pursuing.
+I'm generally worried about the accounting in update_curr() that periodically
+updates stats. I have no idea which of these stats could be read by other CPUs:
+vruntime, load bandwitdth, etc...
 
+Also without tick:
 
-Nicolas
+* we don't poll anymore on trigger_load_balance()
+
+* __update_cpu_load() requires fixed rate periodic polling. Alex Shi had
+patches for that but I'm not sure if that's going to be merged
+
+* rq->rt_avg accounting?
