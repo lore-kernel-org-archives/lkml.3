@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaEMPzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:55:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40307 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753742AbaEMPzD (ORCPT
+	id S1754268AbaEMP4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:56:02 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55022 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaEMPzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:55:03 -0400
-Date: Tue, 13 May 2014 17:54:01 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: p.zabel@pengutronix.de, marex@denx.de, wsa@the-dreams.de,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] reset: stub out devm_reset_control_get()
-Message-ID: <20140513155401.GD29258@lukather>
-References: <1399995245-15095-1-git-send-email-balbi@ti.com>
+	Tue, 13 May 2014 11:55:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZJcv+A0YCCLh2VIg"
-Content-Disposition: inline
-In-Reply-To: <1399995245-15095-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399995050-28435-8-git-send-email-thierry.reding@gmail.com>
+References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
+	<1399995050-28435-8-git-send-email-thierry.reding@gmail.com>
+Date: Tue, 13 May 2014 17:55:54 +0200
+Message-ID: <CANq1E4TnVLORZyqsrtgXk04rR_s+9xFwdzdDS3cMk6hVf07-0Q@mail.gmail.com>
+Subject: Re: [PATCH v2 7/7] drm: Document how to register devices without
+ struct drm_bus
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <robdclark@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---ZJcv+A0YCCLh2VIg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, May 13, 2014 at 10:34:05AM -0500, Felipe Balbi wrote:
-> without that stub, drivers will fail to build
-> when CONFIG_RESET_CONTROLLER=3Dn.
->=20
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+On Tue, May 13, 2014 at 5:30 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>
+> With the recent addition of the drm_set_unique() function, devices can
+> now be registered without requiring a drm_bus. Add a brief description
+> to the DRM docbook to show how that can be achieved.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 > ---
->  include/linux/reset.h | 6 ++++++
->  1 file changed, 6 insertions(+)
->=20
-> diff --git a/include/linux/reset.h b/include/linux/reset.h
-> index c0eda50..aa94420 100644
-> --- a/include/linux/reset.h
-> +++ b/include/linux/reset.h
-> @@ -75,6 +75,12 @@ static inline struct reset_control *devm_reset_control=
-_get_optional(
->  	return ERR_PTR(-ENOSYS);
->  }
-> =20
-> +static inline struct reset_control *devm_reset_control_get(
-> +					struct device *dev, const char *id)
-> +{
-> +	return ERR_PTR(-ENOSYS);
-> +}
-> +
+>  Documentation/DocBook/drm.tmpl | 29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>
+> diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
+> index f26a8e4fbe47..f48227caf41a 100644
+> --- a/Documentation/DocBook/drm.tmpl
+> +++ b/Documentation/DocBook/drm.tmpl
+> @@ -142,6 +142,12 @@
+>        to register it with the DRM subsystem.
+>      </para>
+>      <para>
+> +      Newer drivers that no longer require a <structname>drm_bus</structname>
+> +      structure can alternatively use the low-level device initialization and
+> +      registration functions such as <function>drm_dev_alloc()</function> and
+> +      <function>drm_dev_register()</function> directly.
+> +    </para>
+> +    <para>
+>        The <structname>drm_driver</structname> structure contains static
+>        information that describes the driver and features it supports, and
+>        pointers to methods that the DRM core will call to implement the DRM API.
+> @@ -290,6 +296,29 @@ char *date;</synopsis>
+>  !Fdrivers/gpu/drm/drm_pci.c drm_pci_init drm_pci_exit
+>  !Fdrivers/gpu/drm/drm_usb.c drm_usb_init drm_usb_exit
+>  !Fdrivers/gpu/drm/drm_platform.c drm_platform_init
+> +      <para>
+> +        New drivers that no longer rely on the services provided by the
+> +        <structname>drm_bus</structname> structure can call the low-level
+> +        device registration functions directly. The
+> +        <function>drm_dev_alloc()</function> function can be used to allocate
+> +        and initialize a new <structname>drm_device</structname> structure.
+> +        Drivers will typically want to perform some additional setup on this
+> +        structure, such as allocating driver-specific data and storing a
+> +        pointer to it in the DRM device's <structfield>dev_private</structfield>
+> +        field. Drivers should also set the device's unique name using the
+> +        <function>drm_set_unique()</function> function. After it has been set up
+> +        a device can be registered with the DRM subsystem by calling
+> +        <function>drm_dev_register()</function>. This will cause the device to
+> +        be exposed to userspace and will call the driver's
+> +        <structfield>.load()</structfield> implementation. When a device is
+> +        removed, the DRM device can safely be unregistered and freed using a
 
-reset_control_get should only be used in cases where the reset
-controller is mandatory for the driver to work, and hence, this driver
-should select or depend on CONFIG_RESET_CONTROLLER
+That's not true. drm_put_dev() is anything but safe.. but that's an
+implementation bug and I'm working on it. Not that easy, though.
+Furthermore, please use drm_dev_unregister() and drm_dev_unref()
+directly. No reason to use drm_put_dev() in new drivers. Once I fixed
+the runtime issues, a call to drm_dev_unregister() will _immediately_
+remove a device and detach all active user-space connections.
 
-If the reset controller is optional, reset_control_get_optional should
-be preferred, that is stubed out.
+> +        call to <function>drm_put_dev()</function>.
+> +      </para>
+> +!Fdrivers/gpu/drm/drm_stub.c drm_dev_alloc
 
-Maxime
+Please change this to:
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_alloc
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_ref
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_unref
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_register
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_unregister
++!Fdrivers/gpu/drm/drm_stub.c drm_dev_set_unique
 
---ZJcv+A0YCCLh2VIg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+All these helpers are needed and exported to drivers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Otherwise, looks all good! Thanks!
+David
 
-iQIcBAEBAgAGBQJTckAZAAoJEBx+YmzsjxAgzroP/17864W/yZno4i55nVn+wx4j
-o7uoQI4rIhGSXlYLV1bt+7bPa+xgXCG+Ks8q5b46CeKDsdTEkR+aN8h8/rlx+Jei
-PhnMUquy+qv0r/MVaeqLZrSS9S1Rdfer0MmA3Hfo9siCfNraLYk2Al1d61YUwbjY
-z5VJnPfUrnUNsmFF/uAwlbK7T+8A0ylOVJBGwlF3AZ0I3AtDEbrcGD6ob0ZLy6v8
-S/IOvlOB32BJmpMZziBbzueegv+iMH6lgfFDrf/UiTzRdtg5Vgddg6cDIiSMpW8H
-IiObfglY1EQhKX7qDMFTkLam1iCSEDJ6wZpj/QtbkH+Obg9FWEoW5pLIJC5SMKML
-H+HfpjzXimBDuhe7VCEDapbrKH+kecvviCXdEyZb76A6Pseyr/UAp0sGLIuzbSdT
-GqKAm4GBYqlN4B+7531sRIXxQhwbxKHs1k0Onaljam/y+4eaqxm8Azw/ir0Hm6tQ
-gRS3+O7pFv3W8OSbNZvLBFAiV8FQVrlP8MdtyohcF4zY3KBHF8G9hiMCyPjurqrA
-G17z1tbpjc11AFspY85p8FAo2Oa9xo7aAeknGOE2rPxRLCMOclkPhOPMLwrLr6Ve
-edPnmXIbFCdW1DGTQTGiKV1XlpZocAxCvdoF8G1WMhYAOVyunRbJ15Loiy0aX7OP
-sDNMnrv1LppqDUFCSvDa
-=c9ve
------END PGP SIGNATURE-----
-
---ZJcv+A0YCCLh2VIg--
+> +    </sect2>
+>      <sect2>
+>        <title>Driver Load</title>
+>        <para>
+> --
+> 1.9.2
+>
