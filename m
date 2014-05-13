@@ -1,99 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953AbaEMLIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 07:08:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53824 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760181AbaEMLIR (ORCPT
+	id S1760583AbaEMLKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 07:10:03 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39702 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759972AbaEMLKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 07:08:17 -0400
-Date: Tue, 13 May 2014 12:08:12 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Ben Myers <bpm@sgi.com>
-Subject: Re: [ 137/143] xfs: underflow bug in xfs_attrlist_by_handle()
-Message-ID: <20140513110812.GA4006@hercules>
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
- <20140512003206.396224510@1wt.eu>
+	Tue, 13 May 2014 07:10:01 -0400
+Date: Tue, 13 May 2014 13:09:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
+ operations when discarding buffers
+Message-ID: <20140513110951.GB30445@twins.programming.kicks-ass.net>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-18-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cKagJxsNNshY2zoa"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140512003206.396224510@1wt.eu>
+In-Reply-To: <1399974350-11089-18-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 02:34:17AM +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> If we allocate less than sizeof(struct attrlist) then we end up
-> corrupting memory or doing a ZERO_PTR_SIZE dereference.
-> 
-> This can only be triggered with CAP_SYS_ADMIN.
-> 
-> Reported-by: Nico Golde <nico@ngolde.de>
-> Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Reviewed-by: Dave Chinner <dchinner@redhat.com>
-> Signed-off-by: Ben Myers <bpm@sgi.com>
-> 
-> (cherry picked from commit 071c529eb672648ee8ca3f90944bcbcc730b4c06)
-> [dannf: backported to Debian's 2.6.32]
-> Signed-off-by: Willy Tarreau <w@1wt.eu>
+
+--cKagJxsNNshY2zoa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, May 13, 2014 at 10:45:48AM +0100, Mel Gorman wrote:
+> Discarding buffers uses a bunch of atomic operations when discarding buff=
+ers
+> because ...... I can't think of a reason. Use a cmpxchg loop to clear all=
+ the
+> necessary flags. In most (all?) cases this will be a single atomic operat=
+ions.
+>=20
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 > ---
->  fs/xfs/linux-2.6/xfs_ioctl.c   | 3 ++-
->  fs/xfs/linux-2.6/xfs_ioctl32.c | 4 ++--
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
-> index 942362f..5663351 100644
-> --- a/fs/xfs/linux-2.6/xfs_ioctl.c
-> +++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-> @@ -410,7 +410,8 @@ xfs_attrlist_by_handle(
->  		return -XFS_ERROR(EPERM);
->  	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
->  		return -XFS_ERROR(EFAULT);
-> -	if (al_hreq.buflen > XATTR_LIST_MAX)
-> +	if (al_hreq.buflen < sizeof(struct attrlist) ||
-> +	    al_hreq.buflen > XATTR_LIST_MAX)
->  		return -XFS_ERROR(EINVAL);
->  
->  	/*
-> diff --git a/fs/xfs/linux-2.6/xfs_ioctl32.c b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> index bad485a..782d03d 100644
-> --- a/fs/xfs/linux-2.6/xfs_ioctl32.c
-> +++ b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> @@ -361,8 +361,8 @@ xfs_compat_attrlist_by_handle(
->  	if (copy_from_user(&al_hreq, arg,
->  			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
->  		return -XFS_ERROR(EFAULT);
-> -	if (al_hreq.buflen > XATTR_LIST_MAX)
-> -		return -XFS_ERROR(EINVAL);
+>  fs/buffer.c                 | 14 +++++++++-----
+>  include/linux/buffer_head.h |  5 +++++
+>  2 files changed, 14 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 9ddb9fc..e80012d 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1485,14 +1485,18 @@ EXPORT_SYMBOL(set_bh_page);
+>   */
+>  static void discard_buffer(struct buffer_head * bh)
+>  {
+> +	unsigned long b_state, b_state_old;
+> +
+>  	lock_buffer(bh);
+>  	clear_buffer_dirty(bh);
+>  	bh->b_bdev =3D NULL;
+> -	clear_buffer_mapped(bh);
+> -	clear_buffer_req(bh);
+> -	clear_buffer_new(bh);
+> -	clear_buffer_delay(bh);
+> -	clear_buffer_unwritten(bh);
+> +	b_state =3D bh->b_state;
+> +	for (;;) {
+> +		b_state_old =3D cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAG=
+S_DISCARD));
+> +		if (b_state_old =3D=3D b_state)
+> +			break;
+> +		b_state =3D b_state_old;
+> +	}
+>  	unlock_buffer(bh);
+>  }
 
-Am I missing something or was the above return statement deleted by
-mistake?
+So.. I'm soon going to introduce atomic_{or,and}() and
+atomic64_{or,and}() across the board, but of course this isn't an
+atomic_long_t but a regular unsigned long.
 
-Cheers,
---
-Luís
+Its a bit unfortunate we have this discrepancy with types vs atomic ops,
+there's:
 
-> +	if (al_hreq.buflen < sizeof(struct attrlist) ||
-> +	    al_hreq.buflen > XATTR_LIST_MAX)
->  
->  	/*
->  	 * Reject flags, only allow namespaces.
-> -- 
-> 1.7.12.2.21.g234cd45.dirty
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  cmpxchg, xchg -- mostly available for all 1,2,3,4 (and 8 where
+  appropriate) byte values.
+
+  bitops -- operate on unsigned long *
+
+  atomic* -- operate on atomic_*t
+
+
+So while ideally we'd be able to use the unconditional atomic and
+operation which is available on a lot of architectures, we'll be stuck
+with a cmpxchg loop instead :/
+
+*sigh*
+
+Anyway, nothing wrong with this patch, however, you could, if you really
+wanted to push things, also include BH_Lock in that clear :-)
+
+--cKagJxsNNshY2zoa
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTcf1/AAoJEHZH4aRLwOS6e6MQAJeE8ZLuMHpPAJXrw8YA3XXT
+bFlz7fKAz4jiL8bmYX5/i291Uj2y1QBN573RtI8hl5ttdVo7UK3ugWVjEFeGxphA
+OGq6REJMxEZMDFcXGuXhelOvD5Sds92/WkcvLaGTTk6ua/0aS+fpzYZ7nyRrMp1w
++qZtZvcFhQxj0WxZPbyhbtjdampbycXbdeNW8p5or5pXNosvRzeRS3LP9GTABDVF
+fqQYhDk1RmMN59qywPIiFR3Q9yRr7XkyQ92Xr+K2rnXgioXi0won3GYS/dLso7Oe
+WAc8SkoLec0tVyIl71JGhvpKkS+/osWyOpJtZ3A6dpe9Vy0uzp/XT9ck1ZG2QtmY
+kk4ylu9uBAdhJG+KDAVBQqqzbyI2IzFrVq4jzL27vwAsCd5Jw26o3LB0ZI9befG/
+elmuD+x7qPHlKYFocYHvn+YbjsTzBC4mp34gFHNczsVPAWsy5vDOlItfIwF91saK
+OieEQPZo/ME5xtxycuOxAXUGzc2EIwswDaFMCTMC1B2IXfMfaxDm4oe4986zYc1b
+6SEeBMweaKdc0d0oOaB4eIxdzQDNKz/TAgBcVlxfKIHy9fOCT+1dGWmpsyJM0nzL
+jugiYOfMUg/kPy6tIvpGScRMNxvR+sDOtmBiM0c1Eolzz42TBiN1+PcArilAgRuB
+TheCrnXlIAKag8kWvfdp
+=Tnak
+-----END PGP SIGNATURE-----
+
+--cKagJxsNNshY2zoa--
