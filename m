@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622AbaEMEH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 00:07:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34690 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaEMEHz (ORCPT
+	id S1751984AbaEMEQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 00:16:28 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:41979 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750743AbaEMEQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 00:07:55 -0400
-Date: Tue, 13 May 2014 00:07:53 -0400 (EDT)
-Message-Id: <20140513.000753.538591395030698596.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, steffen.klassert@secunet.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xiyou.wangcong@gmail.com
-Subject: Re: linux-next: manual merge of the net-next tree with the ipsec
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140513135322.3dfadb7c@canb.auug.org.au>
-References: <20140513135322.3dfadb7c@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 May 2014 21:07:54 -0700 (PDT)
+	Tue, 13 May 2014 00:16:26 -0400
+Message-ID: <53719C98.1010103@semaphore.gr>
+Date: Tue, 13 May 2014 07:16:24 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Yuyang Du <yuyang.du@intel.com>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Doug Smythies <dsmythies@telus.net>
+Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
+ next pstate
+References: <5368255D.3090207@semaphore.gr> <536BEE89.3040602@gmail.com> <536CECB4.1090109@semaphore.gr> <53712F4B.7000101@semaphore.gr> <20140512193453.GB9351@intel.com> <537198AE.3050100@semaphore.gr> <20140512200140.GA10676@intel.com>
+In-Reply-To: <20140512200140.GA10676@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 13 May 2014 13:53:22 +1000
-
-> Today's linux-next merge of the net-next tree got a conflict in
-> net/ipv6/xfrm6_output.c between commit 5596732fa8c1 ("xfrm: Fix crash
-> with ipv6 IPsec tunnel and NAT") from the ipsec tree and commit
-> 60ff746739bf ("net: rename local_df to ignore_df") from the net-next
-> tree.
+On 12/05/2014 11:01 μμ, Yuyang Du wrote:
+> On Tue, May 13, 2014 at 06:59:42AM +0300, Stratos Karafotis wrote:
+>> Hi,
+>>
+>> On 12/05/2014 10:34 μμ, Yuyang Du wrote:
+>>> On Mon, May 12, 2014 at 11:30:03PM +0300, Stratos Karafotis wrote:
+>>>> On 09/05/2014 05:56 μμ, Stratos Karafotis wrote:
+>>>>
+>>>> Next performance state = min_perf + (max_perf - min_perf) * load / 100
+>>>>
+>>> Hi,
+>>>
+>>> This formula is fundamentally broken. You need to associate the load with its
+>>> frequency.
+>>
+>> Could you please explain why is it broken? I think the load should be
+>> independent from the current frequency.
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> Why independent? The load not (somewhat) determined by that?
+> 
+> 
 
-Looks good to me, thanks Stephen.
+Maybe, in some cases yes. But not always.
+For example, please consider a CPU running a tight "for" loop in 100MHz
+for a couple of seconds. This produces a load of 100%.
+It will produce the same load (100%) in any other frequency.
+
+
+Stratos
