@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaEMPYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 11:24:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49732 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaEMPYa (ORCPT
+	id S1753570AbaEMPZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 11:25:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42653 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753263AbaEMPZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 11:24:30 -0400
-Date: Tue, 13 May 2014 08:24:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lftan.linux@gmail.com, cltang@codesourcery.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-Message-ID: <20140513152429.GA15679@infradead.org>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	Tue, 13 May 2014 11:25:08 -0400
+Date: Tue, 13 May 2014 11:25:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 0/3] PM / sleep: Avoid resuming runtime-suspended
+ devices during system suspend
+In-Reply-To: <1881168.eI1v8ceYmq@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405131115050.1098-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399971456-3941-1-git-send-email-lftan@altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 04:57:36PM +0800, Ley Foon Tan wrote:
-> This patchset change default time_t and clock_t to 64 bit in
-> include/uapi/asm-generic/posix_types.h. The existing 32 bit architectures override
-> these define to 32 bit in arch posix_types.h.
+Crossing emails again...
+
+On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+
+> > There's nothing to prevent a runtime-suspended device from being 
+> > resumed in between the ->prepare() and ->suspend() callbacks.
 > 
-> There is request to support 64 bit time_t for new architecture [1]. According to the
+> I'm moving the barrier from __device_suspend() to device_prepare(), so there
+> shouldn't be surprise resumes in that time frame.
 
-I think this is an utterly wrong, and very dangerous approach.  A 64-bit
-time_t is something that will need non-trivial porting effort in
-userland, and introducing it only for new fringe architectures is a
-guaranteed way to create silent breakage.
+A wakeup request from the hardware can cause a runtime resume, even 
+if most threads are in the freezer:
 
-If you do care about it make sure the architectures that are heavily
-used support it and userland can properly deal with it first, and only
-then default new architectures to it.
+	Not all kernel threads get frozen.  One of the unfrozen threads 
+	could respond to the wakeup request by calling 
+	pm_runtime_resume().
+
+	Some runtime PM callbacks are marked as IRQ-safe and can run
+	directly within an interrupt handler.
+
+> > Therefore it makes little sense to check the device's runtime status in 
+> > device_prepare().  The check should be done in __device_suspend().
+> 
+> If we do the barrier in device_prepare(), then I'm not sure what mechanism
+> would cause the device to resume.
+
+See above.  A wakeup request can arrive after the barrier has finished.
+
+> If there is one, the whole approach is in danger, because ->prepare() has to
+> check if devices are runtime-suspended and has to be sure that their status
+> won't change after it has returned 1.
+
+->prepare() cannot guarantee in all cases that a device will remain in 
+runtime suspend.  Fortunately, it doesn't need to.  In fact (as I 
+mentioned sometime before), it doesn't even need to check whether the 
+device currently is runtime suspended -- it suffices to know that _if_ 
+the device is runtime suspended _then_ it has the proper settings for 
+system suspend.
+
+Regardless, status changes cannot cause a problem.  If the device does
+get runtime-resumed after ->prepare(), it will remain that way when
+__device_suspend() runs.  The device can't be runtime-suspended again,
+because device_prepare() does pm_get_noresume().
+
+Therefore, if the device is still runtime-suspended when
+__device_suspend() runs, we can be sure that its status and state are
+still the same as when ->prepare() ran.
+
+Alan Stern
 
