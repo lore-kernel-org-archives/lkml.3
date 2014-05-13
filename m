@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759938AbaEMJO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:14:58 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:23792
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759667AbaEMJDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:03:04 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>, Steven Miao <realmz6@gmail.com>,
-        <adi-buildroot-devel@lists.sourceforge.net>
-Subject: [PATCH 05/25] blackfin: Add 32 bit time_t and clock_t
-Date: Tue, 13 May 2014 17:02:55 +0800
-Message-ID: <1399971775-4153-1-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1399971456-3941-1-git-send-email-lftan@altera.com>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	id S1759971AbaEMJPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:15:51 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:46014 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759955AbaEMJPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 May 2014 05:15:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(199002)(189002)(16796002)(47776003)(92566001)(81542001)(87286001)(85852003)(83072002)(36756003)(89996001)(86362001)(74502001)(74662001)(92726001)(50466002)(79102001)(31966008)(102836001)(62966002)(77156001)(48376002)(20776003)(81342001)(44976005)(33646001)(80022001)(6806004)(19580395003)(19580405001)(50226001)(46102001)(83322001)(87936001)(2009001)(77982001)(84676001)(50986999)(4396001)(76176999)(76482001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB007;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0210479ED8
-Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
- smtp.mailfrom=lftan@altera.com; 
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <1399971749-4004-1-git-send-email-lftan@altera.com>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	<1399971749-4004-1-git-send-email-lftan@altera.com>
+Date: Tue, 13 May 2014 10:15:47 +0100
+X-Google-Sender-Auth: MQqCVXar_3YrA-NvENIWneyPbEE
+Message-ID: <CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
+Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
+From: James Hogan <james.hogan@imgtec.com>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        lftan.linux@gmail.com, cltang@codesourcery.com,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Override time_t and clock_t in include/uapi/asm-generic.
+Hi,
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/blackfin/include/uapi/asm/posix_types.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+On 13 May 2014 10:02, Ley Foon Tan <lftan@altera.com> wrote:
+> Use 64 bit time_t and clock_t as default. 32 bit users can provide
+> an override to define these as "long" if needed.
+>
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  include/uapi/asm-generic/posix_types.h | 14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/uapi/asm-generic/posix_types.h b/include/uapi/asm-generic/posix_types.h
+> index fe74fcc..3f0e613 100644
+> --- a/include/uapi/asm-generic/posix_types.h
+> +++ b/include/uapi/asm-generic/posix_types.h
+> @@ -81,12 +81,22 @@ typedef struct {
+>  #endif
+>
+>  /*
+> + * Use 64 bit time_t and clock_t as default. 32 bit users can provide an override to
+> + * define these as "long" if needed.
+> + */
+> +#ifndef __kernel_time_t
+> +typedef long long      __kernel_time_t;
+> +#endif
+> +
+> +#ifndef __kernel_clock_t
+> +typedef long long      __kernel_clock_t;
+> +#endif
 
-diff --git a/arch/blackfin/include/uapi/asm/posix_types.h b/arch/blackfin/include/uapi/asm/posix_types.h
-index 9608ef6..e005638 100644
---- a/arch/blackfin/include/uapi/asm/posix_types.h
-+++ b/arch/blackfin/include/uapi/asm/posix_types.h
-@@ -25,6 +25,12 @@ typedef unsigned short __kernel_old_gid_t;
- typedef unsigned short __kernel_old_dev_t;
- #define __kernel_old_dev_t __kernel_old_dev_t
- 
-+typedef long __kernel_time_t;
-+#define __kernel_time_t __kernel_time_t
-+
-+typedef long __kernel_clock_t;
-+#define __kernel_clock_t __kernel_clock_t
-+
- #include <asm-generic/posix_types.h>
- 
- #endif /* _UAPI__ARCH_BFIN_POSIX_TYPES_H */
--- 
-1.8.2.1
+I think having this as the first patch in the series will break
+bisection for existing 32-bit arches. This needs to be done in such a
+way that at no intermediate commit are __kernel_time_t or
+__kernel_clock_t the wrong size for existing arches, e.g. by having a
+first patch which makes the typedefs conditional but leaves them as
+__kernel_long_t, and a final patch that changes the default after all
+the arches have got their overrides in place.
 
+Cheers
+James
+
+> +
+> +/*
+>   * anything below here should be completely generic
+>   */
+>  typedef __kernel_long_t        __kernel_off_t;
+>  typedef long long      __kernel_loff_t;
+> -typedef __kernel_long_t        __kernel_time_t;
+> -typedef __kernel_long_t        __kernel_clock_t;
+>  typedef int            __kernel_timer_t;
+>  typedef int            __kernel_clockid_t;
+>  typedef char *         __kernel_caddr_t;
+> --
+> 1.8.2.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
