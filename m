@@ -1,85 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaENHLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:11:16 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46434 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaENHLO (ORCPT
+	id S1752377AbaENHMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:12:13 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54400 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbaENHMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:11:14 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
-        aneesh.kumar@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com,
-        mhocko@suse.cz, aarcange@redhat.com, steve.capper@linaro.org,
-        davidlohr@hp.com, kirill.shutemov@linux.intel.com,
-        dave.hansen@linux.intel.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: [PATCH] mm, hugetlb: move the error handle logic out of normal code path
-Date: Wed, 14 May 2014 15:10:59 +0800
-Message-Id: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc3
+	Wed, 14 May 2014 03:12:08 -0400
+Message-ID: <537316DB.4060701@linux.vnet.ibm.com>
+Date: Wed, 14 May 2014 12:40:19 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Pedro Alves <palves@redhat.com>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
+Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
+ documentation
+References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com> <53625681.8010905@redhat.com> <53670F35.6010502@linux.vnet.ibm.com> <53725FF6.6060004@redhat.com>
+In-Reply-To: <53725FF6.6060004@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051407-5816-0000-0000-00000E004BC3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_huge_page() now mixes normal code path with error handle logic.
-This patches move out the error handle logic, to make normal code
-path more clean and redue code duplicate.
+On 05/13/2014 11:39 PM, Pedro Alves wrote:
+> On 05/05/14 05:10, Anshuman Khandual wrote:
+>> On 05/01/2014 07:43 PM, Pedro Alves wrote:
+>>> On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
+>>>> The current documentation is bit misleading and does not explicitly
+>>>> specify that iov.len need to be initialized failing which kernel
+>>>> may just ignore the ptrace request and never read from/write into
+>>>> the user specified buffer. This patch fixes the documentation.
+>>>
+>>> Well, it kind of does, here:
+>>>
+>>> *      struct iovec iov = { buf, len};
+>>
+>> :) Thats not explicit enough.
+>>
+>>>
+>>>> @@ -43,8 +43,12 @@
+>>>>   *
+>>>>   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>>>>   *
+>>>> - * On the successful completion, iov.len will be updated by the kernel,
+>>>> - * specifying how much the kernel has written/read to/from the user's iov.buf.
+>>>> + * A non-zero value upto the max size of data expected to be written/read by the
+>>>> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
+>>>> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
+>>>> + * read from or write into the user buffer specified. On successful completion,
+>>>> + * iov.len will be updated by the kernel, specifying how much the kernel has
+>>>> + * written/read to/from the user's iov.buf.
+>>>
+>>> I really appreciate that you're trying to make this clearer, but I
+>>> find the new sentence very hard to read/reason.  :-/
+>>>
+>>> I suggest:
+>>>
+>>>  * This interface usage is as follows:
+>>> - *      struct iovec iov = { buf, len};
+>>> + *      struct iovec iov = { buf, len };
+>>>  *
+>>>  *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>>>  *
+>>> - * On the successful completion, iov.len will be updated by the kernel,
+>>> - * specifying how much the kernel has written/read to/from the user's iov.buf.
+>>> + * On entry, iov describes the buffer's address and length.  The buffer's
+>>> + * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
+>>> + * On successful completion, iov.len is updated by the kernel, specifying how
+>>> + * much the kernel has written/read to/from the user's iov.buf.
+>>>
+>>
+>> Yeah, sounds better. I may add "If the length is zero, the kernel will neither read
+>> from or write into the buffer"
+> 
+> Well, I think that much should be obvious.  What's not obvious is
+> whether that is considered success or error (what is the return code?)
+> I suspect and expect success return if the regset type is known, and
+> error otherwise.  So that could be used as a way to probe for support
+> for a given regset without using stack or heap space, if it ever matters.
+> The kernel never reads/writes beyond iov.len, so better say that, and
+> then it automatically gets the 0 case handled too, right?
+> 
+>>> I'm not sure I understood what you're saying correctly, though.  Specifically,
+>>> I don't know whether the buffer's length must really be shorter than the
+>>> size of the NT_XXX_TYPE regset.
+>>
+>> No, it does not have to. From the code snippet below (ptrace_regset function)
+>> the buffer length has to be multiple of regset->size for the given NT_XXX_TYPE
+>> upto the max regset size for the user to see any valid data.
+> 
+> Ah, I guess one could call it a bug.  If the passed in
+> len is bigger than the whole register set size, then there seems
+> to be no point in validating whether the length is multiple of
+> a single register's size.  That unnecessarily prevents coming up
+> with a register set in the future that has registers of
+> different sizes...
+> 
+> But given that that's how things are today, I suppose we should
+> document it...
+> 
+>  The problem what I
+>> faced was when you use any iovec structure with the length parameter uninitialized,
+>> the kernel simply ignores and does not return anything.
+> 
+> Ah.  Well, saying "does not return anything" is quite confusing.  It does
+> return something -- -EINVAL.
+> 
+>>
+>>         if (!regset || (kiov->iov_len % regset->size) != 0)
+>>                 return -EINVAL;
+> 
+>>  
+>>>
+>>>> The current documentation is bit misleading and does not explicitly
+>>>> specify that iov.len need to be initialized failing which kernel
+>>>> may just ignore the ptrace request and never read from/write into
+>>>> the user specified buffer.
+>>>
+>>> You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
+>>> then the kernel returns _success_, but actually doesn't fill the
+>>> buffer?  That sounds like a bug to me.
+>>
+>> No, I am not saying that. The kernel takes care of that situation by capping
+>> the length to regset size of the NT_XXX_TYPE.
+>>
+>>  kiov->iov_len = min(kiov->iov_len,
+>>                             (__kernel_size_t) (regset->n * regset->size));
+>>
+>>
+> 
+> OK, then this is what I suggest instead:
+> 
+>    * This interface usage is as follows:
+>  - *      struct iovec iov = { buf, len};
+>  + *      struct iovec iov = { buf, len };
+>    *
+>    *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>    *
+>    * On the successful completion, iov.len will be updated by the kernel,
+>  - * specifying how much the kernel has written/read to/from the user's iov.buf.
+>  + * On entry, iov describes the buffer's address and length.  The buffer's
+>  + * length must be a multiple of the size of a single register in the register set.
+>  + * The kernel never reads or writes more than iov.len, and caps the buffer
+>  + * length to the register set's size.  In other words, the kernel reads or
+>  + * writes min(iov.len, regset size).
+>  + * On successful completion, iov.len is updated by the kernel, specifying how
+>  + * much the kernel has read from / written to the user's iov.buf.
+> 
+>> Shall I resend the patch with the your proposed changes and your "Signed-off-by" and
+>> moving myself as "Reported-by" ?
+> 
+> No idea of the actual policy to follow.  Feel free to do that if that's the
+> standard procedure.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- mm/hugetlb.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 26b1464..e81c69e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1246,24 +1246,17 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 			return ERR_PTR(-ENOSPC);
- 
- 	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
--	if (ret) {
--		if (chg || avoid_reserve)
--			hugepage_subpool_put_pages(spool, 1);
--		return ERR_PTR(-ENOSPC);
--	}
-+	if (ret)
-+		goto out_subpool_put;
-+
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
- 	if (!page) {
- 		spin_unlock(&hugetlb_lock);
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
--		if (!page) {
--			hugetlb_cgroup_uncharge_cgroup(idx,
--						       pages_per_huge_page(h),
--						       h_cg);
--			if (chg || avoid_reserve)
--				hugepage_subpool_put_pages(spool, 1);
--			return ERR_PTR(-ENOSPC);
--		}
-+		if (!page)
-+			goto out_uncharge_cgroup;
-+
- 		spin_lock(&hugetlb_lock);
- 		list_move(&page->lru, &h->hugepage_activelist);
- 		/* Fall through */
-@@ -1275,6 +1268,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 
- 	vma_commit_reservation(h, vma, addr);
- 	return page;
-+
-+out_uncharge_cgroup:
-+	hugetlb_cgroup_uncharge_cgroup(idx, pages_per_huge_page(h), h_cg);
-+out_subpool_put:
-+	if (chg || avoid_reserve)
-+		hugepage_subpool_put_pages(spool, 1);
-+	return ERR_PTR(-ENOSPC);
- }
- 
- /*
--- 
-2.0.0-rc3
+Even I am not sure about this, so to preserve the correct authorship, would you
+mind sending this patch ?
 
