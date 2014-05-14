@@ -1,154 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaENV2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:28:37 -0400
-Received: from mout.gmx.net ([212.227.17.22]:53737 "EHLO mout.gmx.net"
+	id S1753462AbaENV30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:29:26 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:60268 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238AbaENV2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:28:36 -0400
-Message-ID: <5373DFFB.9090505@gmx.de>
-Date: Wed, 14 May 2014 23:28:27 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	id S1753130AbaENV3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 17:29:25 -0400
+Date: Thu, 15 May 2014 00:29:15 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: mm: hangs in collapse_huge_page
+Message-ID: <20140514212915.GB15970@node.dhcp.inet.fi>
+References: <534DE5C0.2000408@oracle.com>
+ <20140430154230.GA23371@node.dhcp.inet.fi>
+ <536EC5A0.3000204@oracle.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1 v2] fanotify: check file flags passed in fanotify_init
-References: <1399921336-6433-1-git-send-email-xypron.glpk@gmx.de> <20140514211753.GA19774@quack.suse.cz>
-In-Reply-To: <20140514211753.GA19774@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:WrizyENvpeIZMe92DIAG15tae7fcJWneUS5RkkY7LkdAeIKuUaO
- n+JllcNErpnw8B8yxsPVvEqMOzuXnDSW+zhRtwecRZiFPDYWZSEj5tPCeoAFnFmM+JRT7gv
- xLlREa4c9Rz07oY7vOU5IN2jexbnt9DF9qXwZVVqJpkwC84tw6W1v05qkw30uegLky8uELG
- fKd7xlJqMMgPQBnMhwa0A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536EC5A0.3000204@oracle.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Sat, May 10, 2014 at 08:34:40PM -0400, Sasha Levin wrote:
+> On 04/30/2014 11:42 AM, Kirill A. Shutemov wrote:
+> > Sasha, please try patch below.
+> 
+> That patch really solved the problem for me, I didn't see a single hang
+> up until today. So I suspect that while that patch is good there is another
+> (smaller) case which may case a hang.
 
-the patch below has been reviewed by Jan Kara.
+Looks like my patch didn't fix the problem but hide it. Most like due some
+shift in timings because of additional lock/unlock.
 
-It integrates feedback given by Michael Kerrisk concerning which flags 
-should be allowable.
+I'll try to look more for a real issue.
 
-Please, consider it for inclusion into the mm tree.
+> 
+> [ 6006.253399] INFO: task khugepaged:3814 blocked for more than 1200 seconds.
+> [ 6006.254711]       Tainted: G        W     3.15.0-rc4-next-20140508-sasha-00020-gec9304b-dirty #452
+> [ 6006.257591] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 6006.260710] khugepaged      D ffff8805bb7a64b8  4968  3814      2 0x00000000
+> [ 6006.263261]  ffff880291e61b48 0000000000000002 ffffffff955890d0 ffff8802927f0000
+> [ 6006.264986]  ffff880291e61fd8 00000000001d7840 00000000001d7840 00000000001d7840
+> [ 6006.265923]  ffff8805b040b000 ffff8802927f0000 ffff880291e61b38 ffff8802927f0000
+> [ 6006.267193] Call Trace:
+> [ 6006.267629] ? _raw_spin_unlock_irq (arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
+> [ 6006.268673] schedule (kernel/sched/core.c:2765)
+> [ 6006.269674] rwsem_down_write_failed (kernel/locking/rwsem-xadd.c:289)
+> [ 6006.270998] ? get_parent_ip (kernel/sched/core.c:2485)
+> [ 6006.271984] call_rwsem_down_write_failed (arch/x86/lib/rwsem.S:106)
+> [ 6006.273240] ? khugepaged_scan_mm_slot (mm/huge_memory.c:1991 mm/huge_memory.c:2598)
+> [ 6006.274327] ? lock_contended (kernel/locking/lockdep.c:3734 kernel/locking/lockdep.c:3812)
+> [ 6006.275299] ? down_write (kernel/locking/rwsem.c:50 (discriminator 2))
+> [ 6006.276126] ? collapse_huge_page.isra.31 (mm/huge_memory.c:1991 mm/huge_memory.c:2385)
+> [ 6006.277281] collapse_huge_page.isra.31 (mm/huge_memory.c:1991 mm/huge_memory.c:2385)
+> [ 6006.278328] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+> [ 6006.279534] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 6006.281314] ? khugepaged_scan_mm_slot (include/linux/spinlock.h:343 mm/huge_memory.c:2540 mm/huge_memory.c:2636)
+> [ 6006.282140] ? get_parent_ip (kernel/sched/core.c:2485)
+> [ 6006.283039] khugepaged_scan_mm_slot (mm/huge_memory.c:2640)
+> [ 6006.284074] khugepaged (include/linux/spinlock.h:343 mm/huge_memory.c:2720 mm/huge_memory.c:2753)
+> [ 6006.284986] ? bit_waitqueue (kernel/sched/wait.c:291)
+> [ 6006.285864] ? khugepaged_scan_mm_slot (mm/huge_memory.c:2746)
+> [ 6006.286897] kthread (kernel/kthread.c:210)
+> [ 6006.287705] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 6006.288796] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [ 6006.289668] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 6006.291708] 1 lock held by khugepaged/3814:
+> [ 6006.292368] #0: (&mm->mmap_sem){++++++}, at: collapse_huge_page.isra.31 (mm/huge_memory.c:1991 mm/huge_memory.c:2385)
+> 
+> 
+> Thanks,
+> Sasha
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Best regards
-
-Heinrich Schuchardt
-
-On 14.05.2014 23:17, Jan Kara wrote:
-> On Mon 12-05-14 21:02:16, Heinrich Schuchardt wrote:
->> Without this patch fanotify_init does not validate the value passed in
->> event_f_flags.
->>
->> When a fanotify event is read from the fanotify file descriptor a new file
->> descriptor is created where file.f_flags = event_f_flags.
->>
->> Internal and external open flags are stored together in field f_flags of
->> struct file. Hence, an application might create file descriptors with
->> internal flags like FMODE_EXEC, FMODE_NOCMTIME set.
->>
->> Jan Kara and Eric Paris both aggreed that this is a bug and the value of
->> event_f_flags should be checked:
->> https://lkml.org/lkml/2014/4/29/522
->> https://lkml.org/lkml/2014/4/29/539
->>
->> This updated patch version considers the comments by Michael Kerrisk in
->> https://lkml.org/lkml/2014/5/4/10
->>
->> With the patch the value of event_f_flags is checked.
->> When specifying an invalid value error EINVAL is returned.
->>
->> Internal flags are disallowed.
->>
->> File creation flags are disallowed:
->> O_CREAT, O_DIRECTORY, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_TRUNC, and O_TTY_INIT.
->>
->> Flags which do not make sense with fanotify are disallowed:
->> __O_TMPFILE, O_PATH, FASYNC, and O_DIRECT.
->>
->> This leaves us with the following allowed values:
->>
->> O_RDONLY, O_WRONLY, O_RDWR are basic functionality. The are stored in the
->> bits given by O_ACCMODE.
->>
->> O_APPEND is working as expected. The value might be useful in a logging
->> application which appends the current status each time the log is opened.
->>
->> O_LARGEFILE is needed for files exceeding 4GB on 32bit systems.
->>
->> O_NONBLOCK may be useful when monitoring slow devices like tapes.
->>
->> O_NDELAY is equal to O_NONBLOCK except for platform parisc.
->> To avoid code breaking on parisc either both flags should be
->> allowed or none. The patch allows both.
->>
->> __O_SYNC and O_DSYNC may be used to avoid data loss on power disruption.
->>
->> O_NOATIME may be useful to reduce disk activity.
->>
->> O_CLOEXEC may be useful, if separate processes shall be used to scan files.
->>
->> Once this patch is accepted, the fanotify_init.2 manpage has to be updated.
->>
->> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
->    The patch looks good to me. You can add:
-> Reviewed-by: Jan Kara <jack@suse.cz>
->
-> 								Honza
->
->> ---
->>   fs/notify/fanotify/fanotify_user.c | 25 +++++++++++++++++++++++++
->>   1 file changed, 25 insertions(+)
->>
->> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
->> index d42220f..31b0de2 100644
->> --- a/fs/notify/fanotify/fanotify_user.c
->> +++ b/fs/notify/fanotify/fanotify_user.c
->> @@ -25,6 +25,19 @@
->>   #define FANOTIFY_DEFAULT_MAX_MARKS	8192
->>   #define FANOTIFY_DEFAULT_MAX_LISTENERS	128
->>
->> +/*
->> + * All flags that may be specified in parameter event_f_flags of fanotify_init.
->> + *
->> + * Internal and external open flags are stored together in field f_flags of
->> + * struct file. Only external open flags shall be allowed in event_f_flags.
->> + * Internal flags like FMODE_NONOTIFY, FMODE_EXEC, FMODE_NOCMTIME shall be
->> + * excluded.
->> + */
->> +#define	FANOTIFY_INIT_ALL_EVENT_F_BITS				( \
->> +		O_ACCMODE	| O_APPEND	| O_NONBLOCK	| \
->> +		__O_SYNC	| O_DSYNC	| O_CLOEXEC     | \
->> +		O_LARGEFILE	| O_NOATIME	)
->> +
->>   extern const struct fsnotify_ops fanotify_fsnotify_ops;
->>
->>   static struct kmem_cache *fanotify_mark_cache __read_mostly;
->> @@ -669,6 +682,18 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
->>   	if (flags & ~FAN_ALL_INIT_FLAGS)
->>   		return -EINVAL;
->>
->> +	if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
->> +		return -EINVAL;
->> +
->> +	switch (event_f_flags & O_ACCMODE) {
->> +	case O_RDONLY:
->> +	case O_RDWR:
->> +	case O_WRONLY:
->> +		break;
->> +	default:
->> +		return -EINVAL;
->> +	}
->> +
->>   	user = get_current_user();
->>   	if (atomic_read(&user->fanotify_listeners) > FANOTIFY_DEFAULT_MAX_LISTENERS) {
->>   		free_uid(user);
->> --
->> 2.0.0.rc0
->>
-
+-- 
+ Kirill A. Shutemov
