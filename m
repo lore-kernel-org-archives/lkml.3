@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaENTTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:19:34 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50076 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaENTTc convert rfc822-to-8bit (ORCPT
+	id S1753354AbaENTTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:19:45 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:45057 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaENTTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:19:32 -0400
+	Wed, 14 May 2014 15:19:40 -0400
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <20140514204738.60a2f49c@neptune.home>
-References: <20140512031029.GA18875@psychosnugglebunnies.net>
-	<20140514204738.60a2f49c@neptune.home>
-Date: Wed, 14 May 2014 21:19:32 +0200
-X-Google-Sender-Auth: mnidkIx2VASYBGy36AbV3gMHMsw
-Message-ID: <CAKMK7uFDJym3fKewmivps_894_P_ifQ0TYeBXg5oevP6wrz1zw@mail.gmail.com>
-Subject: Re: [Intel-gfx] 3.14.3 i915 dead display under X11
-From: Daniel Vetter <daniel@ffwll.ch>
-To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: Carbonated Beverage <ramune@psychosnugglebunnies.net>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1400093999-18703-14-git-send-email-richard@nod.at>
+References: <1400093999-18703-1-git-send-email-richard@nod.at>
+	<1400093999-18703-14-git-send-email-richard@nod.at>
+Date: Wed, 14 May 2014 21:19:39 +0200
+X-Google-Sender-Auth: Q1V1Cq4MZDaA-fccJDXqEx4mQCA
+Message-ID: <CAMuHMdUddNc3Suq25JU7UC+YdWQHmk0nCRzCEbqmKg1+a+=FXw@mail.gmail.com>
+Subject: Re: [PATCH 13/27] m68k: Use common bits from generic tlb.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 08:47:38PM +0200, Bruno Prémont wrote:
-> CCing intel-gfx as otherwise it will probably not get seen by developers.
+On Wed, May 14, 2014 at 8:59 PM, Richard Weinberger <richard@nod.at> wrote:
+> --- a/arch/m68k/include/asm/tlb.h
+> +++ b/arch/m68k/include/asm/tlb.h
+> @@ -1,19 +1,11 @@
+>  #ifndef _M68K_TLB_H
+>  #define _M68K_TLB_H
 >
-> On Sun, 11 May 2014 Carbonated Beverage <ramune@psychosnugglebunnies.net> wrote:
-> > Bisecting from 3.13.6 (good) to 3.14.3 (bad) ended up with...
-> >
-> > commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
-> > Author: Jani Nikula <jani.nikula@intel.com>
-> > Date:   Thu Nov 14 12:13:41 2013 +0200
-> >
-> >     drm/i915: do full backlight setup at enable time
-> >
-> >     We should now have all the information we need to do a full
-> >     initialization of the backlight registers.
-> >
-> >     v2: Keep QUIRK_NO_PCH_PWM_ENABLE for now (Imre).
-> >
-> >     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-> >     Reviewed-by: Imre Deak <imre.deak@intel.com>
-> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >
-> > Which is in 3.12.0????
-> >
-> > I'm not sure how that came to be.  Does that look right?  What other
-> > information would be required to track this down?
+> -/*
+> - * m68k doesn't need any special per-pte or
+> - * per-vma handling..
+> - */
+> -#define tlb_start_vma(tlb, vma)        do { } while (0)
+> -#define tlb_end_vma(tlb, vma)  do { } while (0)
+> -#define __tlb_remove_tlb_entry(tlb, ptep, address)     do { } while (0)
+> -
+> -/*
+> - * .. because we flush the whole mm when it
+> - * fills up.
+> - */
+> -#define tlb_flush(tlb)         flush_tlb_mm((tlb)->mm)
+> +#ifdef CONFIG_MMU && !defined(CONFIG_COLDFIRE) && !defined(CONFIG_SUN3)
 
-We've killed this again in 3.14 since we've hoped the backlight rework in
-there fixed it. For 3.15 we finally have the right fix - vbt has a bit
-telling us not to look at the integrated PWM for the panel.
+Syntax error:
 
-For 3.14 we will (again) resurrect the quirk because the vbt thing is a
-bit too risky an imo needs a full -rc cycle for testing. But that revert
-is currently stalled because Greg KH is travelling too much ;-)
+#if defined(CONFIG_MMU) && ...
 
-Cc'ing him to make sure that patch doesn't miss the next 3.14.x release.
+But why this sudden #ifdef checks?
 
-My apologies for breaking this machine so often :(
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> +/* These defines are needed to override the defaults from asm-generic/tlb.h */
+> +#define __pte_free_tlb __pte_free_tlb
+> +#define __pmd_free_tlb __pmd_free_tlb
+> +#endif
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
