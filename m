@@ -1,153 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751232AbaENSM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:12:57 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56507 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaENSMz convert rfc822-to-8bit (ORCPT
+	id S1751393AbaENSN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:13:56 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:17801 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750910AbaENSNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:12:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Antoine =?ISO-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
-        tj@kernel.org
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-Date: Wed, 14 May 2014 20:12:17 +0200
-Message-ID: <5764751.ffUj9rhnMd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5373AE9A.3050008@gmail.com>
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <20140514165722.GA18495@kwain> <5373AE9A.3050008@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V02:K0:0DVxBlkYnzx8FGYmR732m1GUE3QUnLTmFRGgm72aLzh
- gE+3hDtCHW7beC/S/UbSwt+4R1Egc94ORoCVYERr+GPH+6PY/a
- 7bY/1Ilty0rLh4z/3AEVDotB27x+F2Z2sWV903cEXvlapjUcmy
- iAHrfWFrhk738MoMwutpkhY8yXZzOWlPacoO74kMsn9j7OQq9H
- IpQX6/WLJn+P7RLslnD/gkjkTriCSZ0Lqy0N/FvIaYi9GB4z1B
- z8x6ZF5uac5JuqtxnPQRNSMISen5LhSmYdTR7K5EtNPq1/DKBt
- vMLhuZsKvfZc5mzC7yDL3AhaRipsXvZI1JrVa2vjkvGV9Yre2s
- lLXiDGvr+/vh6B10SYLM=
+	Wed, 14 May 2014 14:13:55 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugNANGwc1NXQ68k/2dsb2JhbABZgwZPrBoEAQEBAQEBBQGaHYElF3SCUxMcIxiBAiQTiEUB0VOFVIZagiCERwEDjyqKJgGBPYlQiAeDODsw
+Date: Wed, 14 May 2014 20:13:52 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe <joe@perches.com>
+Subject: [PATCH V2 2/3] FS/EFS: add pr_fmt / use __func__
+Message-Id: <20140514201352.b13f869a120da7d320340ec1@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 19:57:46 Sebastian Hesselbarth wrote:
-> On 05/14/2014 06:57 PM, Antoine Ténart wrote:
-> > On Wed, May 14, 2014 at 06:11:24PM +0200, Arnd Bergmann wrote:
-> >> On Wednesday 14 May 2014 17:49:29 Antoine Ténart wrote:
-> >>> On Wed, May 14, 2014 at 05:31:24PM +0200, Arnd Bergmann wrote:
-> 
-> From what I understand from the conversation, we have a single PHY
-> register set dealing with both SATA ports available on the SoC.
-> Also, from the name of the PHY bits we assume the PHY may be able
-> to work in different modes than just SATA. And we currently have
-> an AHCI-compatible SATA IP that supports up to two ports, with one
-> actually connected to a SATA plug on the DMP board.
-> 
-> Now, thinking about the PHY binding and the (possible) multi-protocol
-> support, it can be possible that on BG2Q there is a generic 2-lane
-> LVDS PHY that can be configured to support SATA or PCIe. Both are
-> electrically and bit-level compatible, so they could be internally
-> wired-up with AHCI and PCIe controller.
-
-Sounds like a reasonable guess. We have other PHY drivers doing the
-same thing already.
-
-> From a DT point-of-view, we need a way to (a) link each SATA or PCIe
-> port to the PHY, (b) specify the PHY lane to be used, and (c) specify
-> the protocol to be used on that lane. If I got it right, Arnd already
-> mentioned to use the phy-specifier to deal with it:
-> 
-> e.g. phy = <&genphy 0 MODE_SATA> or phy = <&genphy 1 MODE_PCIE>
-
-Right.
-
-> Let's assume we have one dual-port SATA controller and one PCIe
-> controller with either x1 or x2 support. The only sane DT binding,
-> I can think of then would be:
-> 
-> berlin2q.dtsi:
-> 
-> genphy: lvds@ea00ff {
-> 	compatible = "marvell,berlin-lvds-phy";
-> 	reg = <0xea00ff 0x100>;
-> 	#phy-cells = <2>;
-> };
-> 
-> sata: sata@ab00ff {
-> 	compatible = "ahci-platform";
-> 	reg = <0xab00ff 0x100>;
-> 	
-> 	sata0: sata-port@0 {
-> 		reg = <0>;
-> 		phy = <&genphy 0 MODE_SATA>;
-> 		status = "disabled";
-> 	};
-> 
-> 	sata1: sata-port@1 {
-> 		reg = <1>;
-> 		phy = <&genphy 1 MODE_SATA>;
-> 		status = "disabled";
-> 	};
-> };
-> 
-> pcie: pcie@ab01ff {
-> 	compatible = "marvell,berlin-pcie";
-> 	reg = <0xab01ff 0x100>;
-> 
-> 	pcie0: pcie-port@0 {
-> 		reg = <0>;
-> 		/* set phy on a per-board basis */
-> 		/* PCIe x1 on Lane 0 : phy = <&genphy 0 MODE_PCIE>; */
-> 		/* PCIe x2 on Lane 0 and 1 : phy = <&genphy 0 MODE_PCIE>, <&genphy 1
-> MODE_PCIE>; */
-> 		status = "disabled";
-> 	};
-> };
-> 
-> berlin2q-dmp.dts:
-> 
-> &sata1 {
-> 	status = "okay";
-> };
-> 
-> &pcie0 {
-> 	phy = <&genphy 1 MODE_PCIE>;
-> };
-> 
-> berlin2q-foo.dts:
-> 
-> &pcie0 {
-> 	phy = <&genphy 0 MODE_PCIE>, <&genphy 1 MODE_PCIE>;
-> };
-
-Exactly. I would also be fine with keeping the sub-nodes of the
-phy device as in v3 and using #phy-cells=<1> instead of #phy-cells.
-The result would be pretty much the same, it just depends on how
-closely connected the two logical phys are.
-
-IIRC for the ST microelectronics PHY we recently reviewed, the
-same PHY could be driving multiple SATA ports, or a single
-multi-lane PCIe. In that case, it makes more sense to have
-#phy-cells=<2>, like your example.
+Also uniformize function arguments
  
-> For the driver, Antoine then would have to squeeze all PHY register
-> mangling in phy-berlin2.c and see how to make ahci-platform aware of
-> individual port nodes (I haven't looked up if it already exists, sorry)
-> and announce only enabled port child nodes, right?
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/efs/dir.c   | 11 +++++++----
+ fs/efs/efs.h   |  6 ++++++
+ fs/efs/file.c  | 12 +++++-------
+ fs/efs/inode.c | 24 ++++++++++++++----------
+ fs/efs/namei.c |  8 +++++---
+ fs/efs/super.c | 23 ++++++++++++-----------
+ 6 files changed, 49 insertions(+), 35 deletions(-)
 
-I've been thinking some more about this aspect. I don't actually have
-a strong opinion on whether it's better to use the generic ahci-platform
-driver, or to keep the multi-phy support as a special variant for
-berlin. If we do the latter, it would however be good to define the
-binding in a way that lets us later merge things into the generic phy
-driver in case we get more of the same.
-
-	Arnd
+diff --git a/fs/efs/dir.c b/fs/efs/dir.c
+index 46a9a60..7f97031 100644
+--- a/fs/efs/dir.c
++++ b/fs/efs/dir.c
+@@ -26,7 +26,8 @@ static int efs_readdir(struct file *file, struct dir_context *ctx)
+ 	int			slot;
+ 
+ 	if (inode->i_size & (EFS_DIRBSIZE-1))
+-		pr_warn("EFS: WARNING: readdir(): directory size not a multiple of EFS_DIRBSIZE\n");
++		pr_warn("%s(): directory size not a multiple of EFS_DIRBSIZE\n",
++			__func__);
+ 
+ 	/* work out where this entry can be found */
+ 	block = ctx->pos >> EFS_DIRBSIZE_BITS;
+@@ -43,14 +44,15 @@ static int efs_readdir(struct file *file, struct dir_context *ctx)
+ 		bh = sb_bread(inode->i_sb, efs_bmap(inode, block));
+ 
+ 		if (!bh) {
+-			pr_err("EFS: readdir(): failed to read dir block %d\n", block);
++			pr_err("%s(): failed to read dir block %d\n",
++			       __func__, block);
+ 			break;
+ 		}
+ 
+ 		dirblock = (struct efs_dir *) bh->b_data; 
+ 
+ 		if (be16_to_cpu(dirblock->magic) != EFS_DIRBLK_MAGIC) {
+-			pr_err("EFS: readdir(): invalid directory block\n");
++			pr_err("%s(): invalid directory block\n", __func__);
+ 			brelse(bh);
+ 			break;
+ 		}
+@@ -80,7 +82,8 @@ static int efs_readdir(struct file *file, struct dir_context *ctx)
+ 
+ 			/* sanity check */
+ 			if (nameptr - (char *) dirblock + namelen > EFS_DIRBSIZE) {
+-				pr_warn("EFS: directory entry %d exceeds directory block\n", slot);
++				pr_warn("directory entry %d exceeds directory block\n",
++					slot);
+ 				continue;
+ 			}
+ 
+diff --git a/fs/efs/efs.h b/fs/efs/efs.h
+index 5528926..5bbf961 100644
+--- a/fs/efs/efs.h
++++ b/fs/efs/efs.h
+@@ -7,6 +7,12 @@
+ #ifndef _EFS_EFS_H_
+ #define _EFS_EFS_H_
+ 
++#ifdef pr_fmt
++#undef pr_fmt
++#endif
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/fs.h>
+ #include <asm/uaccess.h>
+ 
+diff --git a/fs/efs/file.c b/fs/efs/file.c
+index a75c710..a37dcee 100644
+--- a/fs/efs/file.c
++++ b/fs/efs/file.c
+@@ -22,10 +22,8 @@ int efs_get_block(struct inode *inode, sector_t iblock,
+ 		/*
+ 		 * i have no idea why this happens as often as it does
+ 		 */
+-		pr_warn("EFS: bmap(): block %d >= %ld (filesize %ld)\n",
+-			block,
+-			inode->i_blocks,
+-			inode->i_size);
++		pr_warn("%s(): block %d >= %ld (filesize %ld)\n",
++			__func__, block, inode->i_blocks, inode->i_size);
+ #endif
+ 		return 0;
+ 	}
+@@ -38,7 +36,7 @@ int efs_get_block(struct inode *inode, sector_t iblock,
+ int efs_bmap(struct inode *inode, efs_block_t block) {
+ 
+ 	if (block < 0) {
+-		pr_warn("EFS: bmap(): block < 0\n");
++		pr_warn("%s(): block < 0\n", __func__);
+ 		return 0;
+ 	}
+ 
+@@ -48,8 +46,8 @@ int efs_bmap(struct inode *inode, efs_block_t block) {
+ 		/*
+ 		 * i have no idea why this happens as often as it does
+ 		 */
+-		pr_warn("EFS: bmap(): block %d >= %ld (filesize %ld)\n",
+-			block, inode->i_blocks, inode->i_size);
++		pr_warn("%s(): block %d >= %ld (filesize %ld)\n",
++			__func__, block, inode->i_blocks, inode->i_size);
+ #endif
+ 		return 0;
+ 	}
+diff --git a/fs/efs/inode.c b/fs/efs/inode.c
+index 54f1cbb..6c9684a 100644
+--- a/fs/efs/inode.c
++++ b/fs/efs/inode.c
+@@ -89,7 +89,7 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
+ 
+ 	bh = sb_bread(inode->i_sb, block);
+ 	if (!bh) {
+-		pr_warn("EFS: bread() failed at block %d\n", block);
++		pr_warn("%s() failed at block %d\n", __func__, block);
+ 		goto read_inode_error;
+ 	}
+ 
+@@ -130,7 +130,8 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
+ 	for(i = 0; i < EFS_DIRECTEXTENTS; i++) {
+ 		extent_copy(&(efs_inode->di_u.di_extents[i]), &(in->extents[i]));
+ 		if (i < in->numextents && in->extents[i].cooked.ex_magic != 0) {
+-			pr_warn("EFS: extent %d has bad magic number in inode %lu\n", i, inode->i_ino);
++			pr_warn("extent %d has bad magic number in inode %lu\n",
++				i, inode->i_ino);
+ 			brelse(bh);
+ 			goto read_inode_error;
+ 		}
+@@ -162,7 +163,7 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
+ 			init_special_inode(inode, inode->i_mode, device);
+ 			break;
+ 		default:
+-			pr_warn("EFS: unsupported inode mode %o\n", inode->i_mode);
++			pr_warn("unsupported inode mode %o\n", inode->i_mode);
+ 			goto read_inode_error;
+ 			break;
+ 	}
+@@ -171,7 +172,7 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
+ 	return inode;
+         
+ read_inode_error:
+-	pr_warn("EFS: failed to read inode %lu\n", inode->i_ino);
++	pr_warn("failed to read inode %lu\n", inode->i_ino);
+ 	iget_failed(inode);
+ 	return ERR_PTR(-EIO);
+ }
+@@ -216,7 +217,7 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+     
+ 		/* if we only have one extent then nothing can be found */
+ 		if (in->numextents == 1) {
+-			pr_err("EFS: map_block() failed to map (1 extent)\n");
++			pr_err("%s() failed to map (1 extent)\n", __func__);
+ 			return 0;
+ 		}
+ 
+@@ -234,7 +235,7 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 			}
+ 		}
+ 
+-		pr_err("EFS: map_block() failed to map block %u (dir)\n", block);
++		pr_err("%s() failed to map block %u (dir)\n", __func__, block);
+ 		return 0;
+ 	}
+ 
+@@ -262,7 +263,8 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 
+ 		if (dirext == direxts) {
+ 			/* should never happen */
+-			pr_err("EFS: couldn't find direct extent for indirect extent %d (block %u)\n", cur, block);
++			pr_err("couldn't find direct extent for indirect extent %d (block %u)\n",
++			       cur, block);
+ 			if (bh) brelse(bh);
+ 			return 0;
+ 		}
+@@ -279,7 +281,8 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 
+ 			bh = sb_bread(inode->i_sb, iblock);
+ 			if (!bh) {
+-				pr_err("EFS: bread() failed at block %d\n", iblock);
++				pr_err("%s() failed at block %d\n",
++				       __func__, iblock);
+ 				return 0;
+ 			}
+ #ifdef DEBUG
+@@ -294,7 +297,8 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 		extent_copy(&(exts[ioffset]), &ext);
+ 
+ 		if (ext.cooked.ex_magic != 0) {
+-			pr_err("EFS: extent %d has bad magic number in block %d\n", cur, iblock);
++			pr_err("extent %d has bad magic number in block %d\n",
++			       cur, iblock);
+ 			if (bh) brelse(bh);
+ 			return 0;
+ 		}
+@@ -306,7 +310,7 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 		}
+ 	}
+ 	if (bh) brelse(bh);
+-	pr_err("EFS: map_block() failed to map block %u (indir)\n", block);
++	pr_err("%s() failed to map block %u (indir)\n", __func__, block);
+ 	return 0;
+ }  
+ 
+diff --git a/fs/efs/namei.c b/fs/efs/namei.c
+index 527d0b9..356c044 100644
+--- a/fs/efs/namei.c
++++ b/fs/efs/namei.c
+@@ -23,20 +23,22 @@ static efs_ino_t efs_find_entry(struct inode *inode, const char *name, int len)
+ 	efs_block_t		block;
+  
+ 	if (inode->i_size & (EFS_DIRBSIZE-1))
+-		pr_warn("EFS: WARNING: find_entry(): directory size not a multiple of EFS_DIRBSIZE\n");
++		pr_warn("%s(): directory size not a multiple of EFS_DIRBSIZE\n",
++			__func__);
+ 
+ 	for(block = 0; block < inode->i_blocks; block++) {
+ 
+ 		bh = sb_bread(inode->i_sb, efs_bmap(inode, block));
+ 		if (!bh) {
+-			pr_err("EFS: find_entry(): failed to read dir block %d\n", block);
++			pr_err("%s(): failed to read dir block %d\n",
++			       __func__, block);
+ 			return 0;
+ 		}
+     
+ 		dirblock = (struct efs_dir *) bh->b_data;
+ 
+ 		if (be16_to_cpu(dirblock->magic) != EFS_DIRBLK_MAGIC) {
+-			pr_err("EFS: find_entry(): invalid directory block\n");
++			pr_err("%s(): invalid directory block\n", __func__);
+ 			brelse(bh);
+ 			return(0);
+ 		}
+diff --git a/fs/efs/super.c b/fs/efs/super.c
+index 0590232..cd1399e 100644
+--- a/fs/efs/super.c
++++ b/fs/efs/super.c
+@@ -134,7 +134,7 @@ static const struct export_operations efs_export_ops = {
+ 
+ static int __init init_efs_fs(void) {
+ 	int err;
+-	pr_info("EFS: "EFS_VERSION" - http://aeschi.ch.eu.org/efs/\n");
++	pr_info(EFS_VERSION" - http://aeschi.ch.eu.org/efs/\n");
+ 	err = init_inodecache();
+ 	if (err)
+ 		goto out1;
+@@ -179,7 +179,7 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
+ 		csum += be32_to_cpu(cs);
+ 	}
+ 	if (csum) {
+-		pr_warn("EFS: SGI disklabel: checksum bad, label corrupted\n");
++		pr_warn("SGI disklabel: checksum bad, label corrupted\n");
+ 		return 0;
+ 	}
+ 
+@@ -226,10 +226,10 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
+ 	}
+ 
+ 	if (slice == -1) {
+-		pr_notice("EFS: partition table contained no EFS partitions\n");
++		pr_notice("partition table contained no EFS partitions\n");
+ #ifdef DEBUG
+ 	} else {
+-		pr_info("EFS: using slice %d (type %s, offset 0x%x)\n", slice,
++		pr_info("using slice %d (type %s, offset 0x%x)\n", slice,
+ 			(pt_entry->pt_name) ? pt_entry->pt_name : "unknown",
+ 			sblock);
+ #endif
+@@ -267,7 +267,7 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
+  
+ 	s->s_magic		= EFS_SUPER_MAGIC;
+ 	if (!sb_set_blocksize(s, EFS_BLOCKSIZE)) {
+-		pr_err("EFS: device does not support %d byte blocks\n",
++		pr_err("device does not support %d byte blocks\n",
+ 			EFS_BLOCKSIZE);
+ 		return -EINVAL;
+ 	}
+@@ -276,7 +276,7 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
+ 	bh = sb_bread(s, 0);
+ 
+ 	if (!bh) {
+-		pr_err("EFS: cannot read volume header\n");
++		pr_err("cannot read volume header\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -294,13 +294,14 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
+ 
+ 	bh = sb_bread(s, sb->fs_start + EFS_SUPER);
+ 	if (!bh) {
+-		pr_err("EFS: cannot read superblock\n");
++		pr_err("cannot read superblock\n");
+ 		return -EINVAL;
+ 	}
+ 		
+ 	if (efs_validate_super(sb, (struct efs_super *) bh->b_data)) {
+ #ifdef DEBUG
+-		pr_warn("EFS: invalid superblock at block %u\n", sb->fs_start + EFS_SUPER);
++		pr_warn("invalid superblock at block %u\n",
++			sb->fs_start + EFS_SUPER);
+ #endif
+ 		brelse(bh);
+ 		return -EINVAL;
+@@ -309,7 +310,7 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
+ 
+ 	if (!(s->s_flags & MS_RDONLY)) {
+ #ifdef DEBUG
+-		pr_info("EFS: forcing read-only mode\n");
++		pr_info("forcing read-only mode\n");
+ #endif
+ 		s->s_flags |= MS_RDONLY;
+ 	}
+@@ -317,13 +318,13 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
+ 	s->s_export_op = &efs_export_ops;
+ 	root = efs_iget(s, EFS_ROOTINODE);
+ 	if (IS_ERR(root)) {
+-		pr_err("EFS: get root inode failed\n");
++		pr_err("get root inode failed\n");
+ 		return PTR_ERR(root);
+ 	}
+ 
+ 	s->s_root = d_make_root(root);
+ 	if (!(s->s_root)) {
+-		pr_err("EFS: get root dentry failed\n");
++		pr_err("get root dentry failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-- 
+1.9.1
