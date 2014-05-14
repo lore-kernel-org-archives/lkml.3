@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaENTTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:19:44 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57179 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaENTTl (ORCPT
+	id S1751975AbaENTVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:21:14 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:53470 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaENTVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:19:41 -0400
-Message-ID: <5373C06E.2050502@ahsoftware.de>
-Date: Wed, 14 May 2014 21:13:50 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 15:21:13 -0400
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
- order based on the DT)
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<20140514141914.446F7C4153D@trevor.secretlab.ca>	<53738580.7000902@ahsoftware.de>	<CACxGe6s4px_9CNk3bkc1OF1KGZGYdyh4gE_VufCKU5dLFBG48g@mail.gmail.com>	<53739871.9070407@ahsoftware.de> <CAL_JsqJB4CAO60m1HTGQGHQRYVWcARxm_roOhn-PJh+ZR7OONg@mail.gmail.com> <5373ABD2.9010508@ahsoftware.de> <5373ADB6.1070702@ahsoftware.de> <5373B315.3020909@ahsoftware.de>
-In-Reply-To: <5373B315.3020909@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140514191122.GA7659@phenom.dumpdata.com>
+References: <20140514191122.GA7659@phenom.dumpdata.com>
+Date: Wed, 14 May 2014 15:21:12 -0400
+X-Google-Sender-Auth: dzYaV-hMyd9Cp8AwYyXuUJAR_7U
+Message-ID: <CA+5PVA5LHMir9W3ksw7LjssUAp_gK3MtvEy8NiDOoPeB9f3ZmA@mail.gmail.com>
+Subject: Re: Backport request to stable of two performance related fixes for
+ xen-blkfront (3.13 fixes to earlier trees)
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, felipe.franciosi@citrix.com,
+        roger.pau@citrix.com, jerry.snitselaar@oracle.com,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 20:16, schrieb Alexander Holler:
-> Am 14.05.2014 19:53, schrieb Alexander Holler:
->> Am 14.05.2014 19:45, schrieb Alexander Holler:
->>
->>> One of the biggest problem of the deferred probe stuff is the problem
->>> how to identify real problems if everything ends up with a deferred
->>> probe when an error occurs? That means if you display an error whenever
->>> something is deferred, the log becomes almost unreadable. If you don't
->>> display an error, you never will see an error. And how do you display
->>> the real error when deferred probes finally do fail? The deferred probe
->>> stuff doesn't has any information about the underlying error, so it
->>> can't display it.
->>
->> And that is a real problem. I've recently tried to identify why a driver
->> failed and it was a nightmare because nothing offered any message (debug
->> or not) when a probe was deferred. So I had to insert tons of printks to
->> walk upwards to find the finally place where the probe failed.
->> Everything afterwards just has forwarded the -EPROBE_DEFER without
->> printing any message.
->
-> To add some numbers, I had to insert around 20-30 printks in around 10
-> or more files to find the underlying problem. Having to do such whenever
-> an error happens because everything assumes the error will disappear in
-> a later try, which doesn't happen for real errors, is just a nightmare.
+On Wed, May 14, 2014 at 3:11 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> The following distros are affected:
 
-And to give other people an idea how such a nightmare which has become 
-reality does look like:
+> (x) Fedora 17 (3.8 and 3.9 in updates)
+> (x) Fedora 18 (3.8, 3.9, 3.10, 3.11 in updates)
+> (v) Fedora 19 (3.9; 3.10, 3.11, 3.12 in updates; fixed with latest update to 3.13), supported until TBA
+> (v) Fedora 20 (3.11; 3.12 in updates; fixed with latest update to 3.13), supported until TBA
 
-You see a driver fails (through the deferred stuff). You look at that 
-the driver and see around 5-10 places which return or forward an 
--EPROBE_DEFER. You add printks (to all or just some of them, hopefully 
-the right ones, but Murphy ...). Then you go to the underlying 
-functions. You see again several places which do the same, you add again 
-printks. You go to the underlying functions ...
+The net effect of all of the above is that all currently supported
+Fedora versions already have the fixes.  Highlights one of the major
+reasons we rebase the kernel in Fedora, even at the cost of fighting
+the regressions that inevitably come with that.  Just an FYI for those
+keeping track at home.
 
-Finally you've created a tree full with nodes of printks, searching for 
-the one leaf which is the origin of the -EPROBE_DEFER for your problem.
-
-Regards,
-
-Alexander Holler
-
+josh
