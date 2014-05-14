@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaENO7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:59:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48776 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbaENO7L (ORCPT
+	id S932290AbaENO6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:58:53 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42721 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132AbaENO6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:59:11 -0400
-Message-ID: <537384B9.5090907@suse.cz>
-Date: Wed, 14 May 2014 16:59:05 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 10:58:47 -0400
+Subject: [RFC PATCH v1 14/16] drm/radeon: use rcu waits in some ioctls
+To: airlied@linux.ie
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Wed, 14 May 2014 16:58:45 +0200
+Message-ID: <20140514145845.21163.15680.stgit@patser>
+In-Reply-To: <20140514145134.21163.32350.stgit@patser>
+References: <20140514145134.21163.32350.stgit@patser>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz> <1398868249-26169-10-git-send-email-jslaby@suse.cz> <20140501142414.GA31611@htj.dyndns.org> <alpine.LNX.2.00.1405012206430.29834@pobox.suse.cz> <20140501210242.GA28948@mtj.dyndns.org> <20140501210943.GB28948@mtj.dyndns.org>
-In-Reply-To: <20140501210943.GB28948@mtj.dyndns.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+ drivers/gpu/drm/radeon/radeon_gem.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-On 05/01/2014 11:09 PM, Tejun Heo wrote:
-> On Thu, May 01, 2014 at 05:02:42PM -0400, Tejun Heo wrote:
->> Hello, Jiri.
->>
->> On Thu, May 01, 2014 at 10:17:44PM +0200, Jiri Kosina wrote:
->>> I agree that this expectation might really somewhat implicit and is not 
->>> probably properly documented anywhere. The basic observation is "whenever 
->>> kthread_should_stop() is being called, all data structures are in a 
->>> consistent state and don't need any further updates in order to achieve 
->>> consistency, because we can exit the loop immediately here", as 
->>> kthread_should_stop() is the very last thing every freezable kernel thread 
->>
->> But kthread_should_stop() doesn't necessarily imply that "we can exit
->> the loop *immediately*" at all.  It just indicates that it should
->> terminate in finite amount of time.  I don't think it'd be too
-> 
-> Just a bit of addition.  Please note that kthread_should_stop(), along
-> with the freezer test, is actually trickier than it seems.  It's very
-> easy to write code which works most of the time but misses wake up
-> from kill when the timing is just right (or wrong).  It should be
-> interlocked with set_current_state() and other related queueing data
-> structure accesses.  This was several years ago but when I audited
-> most kthread users in kernel, especially in combination with the
-> freezer test which also has similar requirement, surprising percentage
-> of users (at least several tens of pct) were getting it slightly
-> wrong, so kthread_should_stop() really isn't used as "we can exit
-> *immediately*".  It just isn't that simple.
+diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
+index d09650c1d720..7ba883843668 100644
+--- a/drivers/gpu/drm/radeon/radeon_gem.c
++++ b/drivers/gpu/drm/radeon/radeon_gem.c
+@@ -107,9 +107,12 @@ static int radeon_gem_set_domain(struct drm_gem_object *gobj,
+ 	}
+ 	if (domain == RADEON_GEM_DOMAIN_CPU) {
+ 		/* Asking for cpu access wait for object idle */
+-		r = radeon_bo_wait(robj, NULL, false);
+-		if (r) {
+-			printk(KERN_ERR "Failed to wait for object !\n");
++		r = reservation_object_wait_timeout_rcu(robj->tbo.resv, true, true, 30 * HZ);
++		if (!r)
++			r = -EBUSY;
++
++		if (r < 0 && r != -EINTR) {
++			printk(KERN_ERR "Failed to wait for object: %i\n", r);
+ 			return r;
+ 		}
+ 	}
+@@ -357,14 +360,20 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
+ 	struct drm_radeon_gem_wait_idle *args = data;
+ 	struct drm_gem_object *gobj;
+ 	struct radeon_bo *robj;
+-	int r;
++	int r = 0;
++	long ret;
+ 
+ 	gobj = drm_gem_object_lookup(dev, filp, args->handle);
+ 	if (gobj == NULL) {
+ 		return -ENOENT;
+ 	}
+ 	robj = gem_to_radeon_bo(gobj);
+-	r = radeon_bo_wait(robj, NULL, false);
++	ret = reservation_object_wait_timeout_rcu(robj->tbo.resv, true, true, 30 * HZ);
++	if (ret == 0)
++		r = -EBUSY;
++	else if (ret < 0)
++		r = ret;
++
+ 	/* callback hw specific functions if any */
+ 	if (rdev->asic->ioctl_wait_idle)
+ 		robj->rdev->asic->ioctl_wait_idle(rdev, robj);
 
-I see the worst case scenario. (For curious readers, it is for example
-this kthread body:
-while (1) {
-  some_paired_call(); /* invokes pre-patched code */
-  if (kthread_should_stop()) { /* kgraft switches to the new code */
-    its_paired_function(); /* invokes patched code (wrong) */
-    break;
-  }
-  its_paired_function(); /* the same (wrong) */
-})
-
-What to do with that now? We have come up with a couple possibilities.
-Would you consider try_to_freeze() a good state-defining function? As it
-is called when a kthread expects weird things can happen, it should be
-safe to switch to the patched version in our opinion.
-
-The other possibility is to patch every kthread loop (~300) and insert
-kgr_task_safe() semi-manually at some proper place.
-
-Or if you have any other suggestions we would appreciate that?
-
-thanks,
--- 
-js
-suse labs
