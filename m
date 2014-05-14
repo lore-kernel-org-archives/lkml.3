@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaENO6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:58:05 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42653 "EHLO
+	id S1756103AbaENO6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:58:15 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42664 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaENO6B (ORCPT
+	with ESMTP id S1752733AbaENO6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:58:01 -0400
-Subject: [RFC PATCH v1 06/16] drm/ttm: kill fence_lock
+	Wed, 14 May 2014 10:58:12 -0400
+Subject: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation for
+ fences
 To: airlied@linux.ie
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org
-Date: Wed, 14 May 2014 16:57:58 +0200
-Message-ID: <20140514145758.21163.83109.stgit@patser>
+Date: Wed, 14 May 2014 16:58:09 +0200
+Message-ID: <20140514145809.21163.64947.stgit@patser>
 In-Reply-To: <20140514145134.21163.32350.stgit@patser>
 References: <20140514145134.21163.32350.stgit@patser>
 User-Agent: StGit/0.15
@@ -24,640 +25,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No users are left, kill it off! :D
-Conversion to the reservation api is next on the list, after
-that the functionality can be restored with rcu.
-
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_bo.c      |   25 +++-------
- drivers/gpu/drm/nouveau/nouveau_display.c |    6 --
- drivers/gpu/drm/nouveau/nouveau_gem.c     |   16 +-----
- drivers/gpu/drm/qxl/qxl_cmd.c             |    2 -
- drivers/gpu/drm/qxl/qxl_fence.c           |    4 --
- drivers/gpu/drm/qxl/qxl_object.h          |    2 -
- drivers/gpu/drm/qxl/qxl_release.c         |    2 -
- drivers/gpu/drm/radeon/radeon_display.c   |    2 -
- drivers/gpu/drm/radeon/radeon_object.c    |    2 -
- drivers/gpu/drm/ttm/ttm_bo.c              |   75 +++++++----------------------
- drivers/gpu/drm/ttm/ttm_bo_util.c         |    5 --
- drivers/gpu/drm/ttm/ttm_bo_vm.c           |    3 -
- drivers/gpu/drm/ttm/ttm_execbuf_util.c    |    2 -
- drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c    |    4 --
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c  |   17 ++-----
- include/drm/ttm/ttm_bo_api.h              |    5 --
- include/drm/ttm/ttm_bo_driver.h           |    3 -
- 17 files changed, 36 insertions(+), 139 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        |   15 +--
+ drivers/gpu/drm/radeon/radeon_device.c |    1 
+ drivers/gpu/drm/radeon/radeon_fence.c  |  189 +++++++++++++++++++++++++-------
+ 3 files changed, 153 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-index 33eb7164525a..e98af2e9a1cb 100644
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -1196,9 +1196,7 @@ nouveau_bo_move(struct ttm_buffer_object *bo, bool evict, bool intr,
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 68528619834a..a7d839a158ae 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -64,6 +64,7 @@
+ #include <linux/wait.h>
+ #include <linux/list.h>
+ #include <linux/kref.h>
++#include <linux/fence.h>
+ 
+ #include <ttm/ttm_bo_api.h>
+ #include <ttm/ttm_bo_driver.h>
+@@ -113,9 +114,6 @@ extern int radeon_hard_reset;
+ #define RADEONFB_CONN_LIMIT			4
+ #define RADEON_BIOS_NUM_SCRATCH			8
+ 
+-/* fence seq are set to this number when signaled */
+-#define RADEON_FENCE_SIGNALED_SEQ		0LL
+-
+ /* internal ring indices */
+ /* r1xx+ has gfx CP ring */
+ #define RADEON_RING_TYPE_GFX_INDEX		0
+@@ -347,12 +345,15 @@ struct radeon_fence_driver {
+ };
+ 
+ struct radeon_fence {
++	struct fence base;
++
+ 	struct radeon_device		*rdev;
+-	struct kref			kref;
+ 	/* protected by radeon_fence.lock */
+ 	uint64_t			seq;
+ 	/* RB, DMA, etc. */
+ 	unsigned			ring;
++
++	wait_queue_t fence_wake;
+ };
+ 
+ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring);
+@@ -2256,6 +2257,7 @@ struct radeon_device {
+ 	struct radeon_mman		mman;
+ 	struct radeon_fence_driver	fence_drv[RADEON_NUM_RINGS];
+ 	wait_queue_head_t		fence_queue;
++	unsigned			fence_context;
+ 	struct mutex			ring_lock;
+ 	struct radeon_ring		ring[RADEON_NUM_RINGS];
+ 	bool				ib_pool_ready;
+@@ -2346,11 +2348,6 @@ u32 cik_mm_rdoorbell(struct radeon_device *rdev, u32 index);
+ void cik_mm_wdoorbell(struct radeon_device *rdev, u32 index, u32 v);
+ 
+ /*
+- * Cast helper
+- */
+-#define to_radeon_fence(p) ((struct radeon_fence *)(p))
+-
+-/*
+  * Registers read & write functions.
+  */
+ #define RREG8(reg) readb((rdev->rmmio) + (reg))
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 0e770bbf7e29..501d0cf9eb8b 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1175,6 +1175,7 @@ int radeon_device_init(struct radeon_device *rdev,
+ 	for (i = 0; i < RADEON_NUM_RINGS; i++) {
+ 		rdev->ring[i].idx = i;
  	}
++	rdev->fence_context = fence_context_alloc(RADEON_NUM_RINGS);
  
- 	/* Fallback to software copy. */
--	spin_lock(&bo->bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, true, intr, no_wait_gpu);
--	spin_unlock(&bo->bdev->fence_lock);
- 	if (ret == 0)
- 		ret = ttm_bo_move_memcpy(bo, evict, no_wait_gpu, new_mem);
+ 	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
+ 		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
+diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
+index a77b1c13ea43..bc844f300d3f 100644
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -39,6 +39,15 @@
+ #include "radeon.h"
+ #include "radeon_trace.h"
  
-@@ -1425,26 +1423,19 @@ nouveau_ttm_tt_unpopulate(struct ttm_tt *ttm)
- 	ttm_pool_unpopulate(ttm);
++static const struct fence_ops radeon_fence_ops;
++
++#define to_radeon_fence(p) \
++	({								\
++		struct radeon_fence *__f;				\
++		__f = container_of((p), struct radeon_fence, base);	\
++		__f->base.ops == &radeon_fence_ops ? __f : NULL;	\
++	})
++
+ /*
+  * Fences
+  * Fences mark an event in the GPUs pipeline and are used
+@@ -111,30 +120,55 @@ int radeon_fence_emit(struct radeon_device *rdev,
+ 		      struct radeon_fence **fence,
+ 		      int ring)
+ {
++	u64 seq = ++rdev->fence_drv[ring].sync_seq[ring];
++
+ 	/* we are protected by the ring emission mutex */
+ 	*fence = kmalloc(sizeof(struct radeon_fence), GFP_KERNEL);
+ 	if ((*fence) == NULL) {
+ 		return -ENOMEM;
+ 	}
+-	kref_init(&((*fence)->kref));
+-	(*fence)->rdev = rdev;
+-	(*fence)->seq = ++rdev->fence_drv[ring].sync_seq[ring];
+ 	(*fence)->ring = ring;
++	__fence_init(&(*fence)->base, &radeon_fence_ops,
++		     &rdev->fence_queue.lock, rdev->fence_context + ring, seq);
++	(*fence)->rdev = rdev;
++	(*fence)->seq = seq;
+ 	radeon_fence_ring_emit(rdev, ring, *fence);
+ 	trace_radeon_fence_emit(rdev->ddev, ring, (*fence)->seq);
+ 	return 0;
  }
  
-+static void
-+nouveau_bo_fence_unref(void **sync_obj)
+ /**
+- * radeon_fence_process - process a fence
++ * radeon_fence_check_signaled - callback from fence_queue
+  *
+- * @rdev: radeon_device pointer
+- * @ring: ring index the fence is associated with
+- *
+- * Checks the current fence value and wakes the fence queue
+- * if the sequence number has increased (all asics).
++ * this function is called with fence_queue lock held, which is also used
++ * for the fence locking itself, so unlocked variants are used for
++ * fence_signal, and remove_wait_queue.
+  */
+-void radeon_fence_process(struct radeon_device *rdev, int ring)
++static int radeon_fence_check_signaled(wait_queue_t *wait, unsigned mode, int flags, void *key)
 +{
-+	nouveau_fence_unref((struct nouveau_fence **)sync_obj);
++	struct radeon_fence *fence;
++	u64 seq;
++
++	fence = container_of(wait, struct radeon_fence, fence_wake);
++
++	seq = atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq);
++	if (seq >= fence->seq) {
++		int ret = __fence_signal(&fence->base);
++
++		if (!ret)
++			FENCE_TRACE(&fence->base, "signaled from irq context\n");
++		else
++			FENCE_TRACE(&fence->base, "was already signaled\n");
++
++		radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
++		__remove_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
++		fence_put(&fence->base);
++	} else
++		FENCE_TRACE(&fence->base, "pending\n");
++	return 0;
 +}
 +
- void
- nouveau_bo_fence(struct nouveau_bo *nvbo, struct nouveau_fence *fence)
++static bool __radeon_fence_process(struct radeon_device *rdev, int ring)
  {
--	struct nouveau_fence *new_fence = nouveau_fence_ref(fence);
--	struct nouveau_fence *old_fence = NULL;
--
- 	lockdep_assert_held(&nvbo->bo.resv->lock.base);
- 
--	spin_lock(&nvbo->bo.bdev->fence_lock);
--	old_fence = nvbo->bo.sync_obj;
--	nvbo->bo.sync_obj = new_fence;
--	spin_unlock(&nvbo->bo.bdev->fence_lock);
--
--	nouveau_fence_unref(&old_fence);
--}
--
--static void
--nouveau_bo_fence_unref(void **sync_obj)
--{
--	nouveau_fence_unref((struct nouveau_fence **)sync_obj);
-+	nouveau_bo_fence_unref(&nvbo->bo.sync_obj);
-+	nvbo->bo.sync_obj = nouveau_fence_ref(fence);
- }
- 
- static void *
-diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
-index 61b8c3375135..6a0ca004bd19 100644
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -721,11 +721,7 @@ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
- 		goto fail_unpin;
- 
- 	/* synchronise rendering channel with the kernel's channel */
--	spin_lock(&new_bo->bo.bdev->fence_lock);
--	fence = nouveau_fence_ref(new_bo->bo.sync_obj);
--	spin_unlock(&new_bo->bo.bdev->fence_lock);
--	ret = nouveau_fence_sync(fence, chan);
--	nouveau_fence_unref(&fence);
-+	ret = nouveau_fence_sync(new_bo->bo.sync_obj, chan);
- 	if (ret) {
- 		ttm_bo_unreserve(&new_bo->bo);
- 		goto fail_unpin;
-diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
-index 6e1c58a880fe..6cd5298cbb53 100644
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -105,9 +105,7 @@ nouveau_gem_object_unmap(struct nouveau_bo *nvbo, struct nouveau_vma *vma)
- 	list_del(&vma->head);
- 
- 	if (mapped) {
--		spin_lock(&nvbo->bo.bdev->fence_lock);
- 		fence = nouveau_fence_ref(nvbo->bo.sync_obj);
--		spin_unlock(&nvbo->bo.bdev->fence_lock);
- 	}
- 
- 	if (fence) {
-@@ -432,17 +430,11 @@ retry:
- static int
- validate_sync(struct nouveau_channel *chan, struct nouveau_bo *nvbo)
- {
--	struct nouveau_fence *fence = NULL;
-+	struct nouveau_fence *fence = nvbo->bo.sync_obj;
- 	int ret = 0;
- 
--	spin_lock(&nvbo->bo.bdev->fence_lock);
--	fence = nouveau_fence_ref(nvbo->bo.sync_obj);
--	spin_unlock(&nvbo->bo.bdev->fence_lock);
--
--	if (fence) {
-+	if (fence)
- 		ret = nouveau_fence_sync(fence, chan);
--		nouveau_fence_unref(&fence);
--	}
- 
- 	return ret;
- }
-@@ -661,9 +653,7 @@ nouveau_gem_pushbuf_reloc_apply(struct nouveau_cli *cli,
- 				data |= r->vor;
+ 	uint64_t seq, last_seq, last_emitted;
+ 	unsigned count_loop = 0;
+@@ -190,23 +224,22 @@ void radeon_fence_process(struct radeon_device *rdev, int ring)
  		}
+ 	} while (atomic64_xchg(&rdev->fence_drv[ring].last_seq, seq) > seq);
  
--		spin_lock(&nvbo->bo.bdev->fence_lock);
- 		ret = ttm_bo_wait(&nvbo->bo, false, false, false);
--		spin_unlock(&nvbo->bo.bdev->fence_lock);
- 		if (ret) {
- 			NV_ERROR(cli, "reloc wait_idle failed: %d\n", ret);
- 			break;
-@@ -896,11 +886,9 @@ nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
+-	if (wake)
+-		wake_up_all(&rdev->fence_queue);
++	return wake;
+ }
  
- 	ret = ttm_bo_reserve(&nvbo->bo, true, false, false, 0);
- 	if (!ret) {
--		spin_lock(&nvbo->bo.bdev->fence_lock);
- 		ret = ttm_bo_wait(&nvbo->bo, true, true, true);
- 		if (!no_wait && ret)
- 			fence = nouveau_fence_ref(nvbo->bo.sync_obj);
--		spin_unlock(&nvbo->bo.bdev->fence_lock);
- 
- 		ttm_bo_unreserve(&nvbo->bo);
- 	}
-diff --git a/drivers/gpu/drm/qxl/qxl_cmd.c b/drivers/gpu/drm/qxl/qxl_cmd.c
-index eb89653a7a17..45fad7b45486 100644
---- a/drivers/gpu/drm/qxl/qxl_cmd.c
-+++ b/drivers/gpu/drm/qxl/qxl_cmd.c
-@@ -628,9 +628,7 @@ static int qxl_reap_surf(struct qxl_device *qdev, struct qxl_bo *surf, bool stal
- 	if (stall)
- 		mutex_unlock(&qdev->surf_evict_mutex);
- 
--	spin_lock(&surf->tbo.bdev->fence_lock);
- 	ret = ttm_bo_wait(&surf->tbo, true, true, !stall);
--	spin_unlock(&surf->tbo.bdev->fence_lock);
- 
- 	if (stall)
- 		mutex_lock(&qdev->surf_evict_mutex);
-diff --git a/drivers/gpu/drm/qxl/qxl_fence.c b/drivers/gpu/drm/qxl/qxl_fence.c
-index ae59e91cfb9a..c7248418117d 100644
---- a/drivers/gpu/drm/qxl/qxl_fence.c
-+++ b/drivers/gpu/drm/qxl/qxl_fence.c
-@@ -60,9 +60,6 @@ int qxl_fence_remove_release(struct qxl_fence *qfence, uint32_t rel_id)
+ /**
+- * radeon_fence_destroy - destroy a fence
++ * radeon_fence_process - process a fence
+  *
+- * @kref: fence kref
++ * @rdev: radeon_device pointer
++ * @ring: ring index the fence is associated with
+  *
+- * Frees the fence object (all asics).
++ * Checks the current fence value and wakes the fence queue
++ * if the sequence number has increased (all asics).
+  */
+-static void radeon_fence_destroy(struct kref *kref)
++void radeon_fence_process(struct radeon_device *rdev, int ring)
  {
- 	void *ret;
- 	int retval = 0;
--	struct qxl_bo *bo = container_of(qfence, struct qxl_bo, fence);
+-	struct radeon_fence *fence;
 -
--	spin_lock(&bo->tbo.bdev->fence_lock);
+-	fence = container_of(kref, struct radeon_fence, kref);
+-	kfree(fence);
++	if (__radeon_fence_process(rdev, ring))
++		wake_up_all(&rdev->fence_queue);
+ }
  
- 	ret = radix_tree_delete(&qfence->tree, rel_id);
- 	if (ret == qfence)
-@@ -71,7 +68,6 @@ int qxl_fence_remove_release(struct qxl_fence *qfence, uint32_t rel_id)
- 		DRM_DEBUG("didn't find fence in radix tree for %d\n", rel_id);
- 		retval = -ENOENT;
+ /**
+@@ -237,6 +270,49 @@ static bool radeon_fence_seq_signaled(struct radeon_device *rdev,
+ 	return false;
+ }
+ 
++static bool __radeon_fence_signaled(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++
++	return radeon_fence_seq_signaled(fence->rdev, fence->seq, fence->ring);
++}
++
++/**
++ * radeon_fence_enable_signaling - enable signalling on fence
++ * @fence: fence
++ *
++ * This function is called with fence_queue lock held, and adds a callback
++ * to fence_queue that checks if this fence is signaled, and if so it
++ * signals the fence and removes itself.
++ */
++static bool radeon_fence_enable_signaling(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++
++	if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq ||
++	    !fence->rdev->ddev->irq_enabled)
++		return false;
++
++	radeon_irq_kms_sw_irq_get(fence->rdev, fence->ring);
++
++	if (__radeon_fence_process(fence->rdev, fence->ring))
++		wake_up_all_locked(&fence->rdev->fence_queue);
++
++	/* did fence get signaled after we enabled the sw irq? */
++	if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
++		radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
++		return false;
++	}
++
++	fence->fence_wake.flags = 0;
++	fence->fence_wake.private = NULL;
++	fence->fence_wake.func = radeon_fence_check_signaled;
++	__add_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
++	fence_get(f);
++
++	return true;
++}
++
+ /**
+  * radeon_fence_signaled - check if a fence has signaled
+  *
+@@ -250,11 +326,13 @@ bool radeon_fence_signaled(struct radeon_fence *fence)
+ 	if (!fence) {
+ 		return true;
  	}
--	spin_unlock(&bo->tbo.bdev->fence_lock);
- 	return retval;
- }
- 
-diff --git a/drivers/gpu/drm/qxl/qxl_object.h b/drivers/gpu/drm/qxl/qxl_object.h
-index d458a140c024..98395b223ad0 100644
---- a/drivers/gpu/drm/qxl/qxl_object.h
-+++ b/drivers/gpu/drm/qxl/qxl_object.h
-@@ -76,12 +76,10 @@ static inline int qxl_bo_wait(struct qxl_bo *bo, u32 *mem_type,
- 		}
- 		return r;
- 	}
--	spin_lock(&bo->tbo.bdev->fence_lock);
- 	if (mem_type)
- 		*mem_type = bo->tbo.mem.mem_type;
- 	if (bo->tbo.sync_obj)
- 		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
--	spin_unlock(&bo->tbo.bdev->fence_lock);
- 	ttm_bo_unreserve(&bo->tbo);
- 	return r;
- }
-diff --git a/drivers/gpu/drm/qxl/qxl_release.c b/drivers/gpu/drm/qxl/qxl_release.c
-index e85c4d274dc0..4045ba873ab8 100644
---- a/drivers/gpu/drm/qxl/qxl_release.c
-+++ b/drivers/gpu/drm/qxl/qxl_release.c
-@@ -337,7 +337,6 @@ void qxl_release_fence_buffer_objects(struct qxl_release *release)
- 	glob = bo->glob;
- 
- 	spin_lock(&glob->lru_lock);
--	spin_lock(&bdev->fence_lock);
- 
- 	list_for_each_entry(entry, &release->bos, head) {
- 		bo = entry->bo;
-@@ -351,7 +350,6 @@ void qxl_release_fence_buffer_objects(struct qxl_release *release)
- 		ttm_bo_add_to_lru(bo);
- 		__ttm_bo_unreserve(bo);
- 	}
--	spin_unlock(&bdev->fence_lock);
- 	spin_unlock(&glob->lru_lock);
- 	ww_acquire_fini(&release->ticket);
- }
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 408b6ac53f0b..6a7340289ddd 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -386,10 +386,8 @@ static int radeon_crtc_page_flip(struct drm_crtc *crtc,
- 	obj = new_radeon_fb->obj;
- 	rbo = gem_to_radeon_bo(obj);
- 
--	spin_lock(&rbo->tbo.bdev->fence_lock);
- 	if (rbo->tbo.sync_obj)
- 		work->fence = radeon_fence_ref(rbo->tbo.sync_obj);
--	spin_unlock(&rbo->tbo.bdev->fence_lock);
- 
- 	INIT_WORK(&work->work, radeon_unpin_work_func);
- 
-diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
-index 51bf80cdce5c..3b27cac9240b 100644
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -725,12 +725,10 @@ int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type, bool no_wait)
- 	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
- 	if (unlikely(r != 0))
- 		return r;
--	spin_lock(&bo->tbo.bdev->fence_lock);
- 	if (mem_type)
- 		*mem_type = bo->tbo.mem.mem_type;
- 	if (bo->tbo.sync_obj)
- 		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
--	spin_unlock(&bo->tbo.bdev->fence_lock);
- 	ttm_bo_unreserve(&bo->tbo);
- 	return r;
- }
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index d7d34336f108..ce0434377223 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -414,24 +414,20 @@ static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
- 	spin_lock(&glob->lru_lock);
- 	ret = __ttm_bo_reserve(bo, false, true, false, 0);
- 
--	spin_lock(&bdev->fence_lock);
--	(void) ttm_bo_wait(bo, false, false, true);
--	if (!ret && !bo->sync_obj) {
--		spin_unlock(&bdev->fence_lock);
--		put_count = ttm_bo_del_from_lru(bo);
-+	if (!ret) {
-+		(void) ttm_bo_wait(bo, false, false, true);
- 
--		spin_unlock(&glob->lru_lock);
--		ttm_bo_cleanup_memtype_use(bo);
-+		if (!bo->sync_obj) {
-+			put_count = ttm_bo_del_from_lru(bo);
- 
--		ttm_bo_list_ref_sub(bo, put_count, true);
-+			spin_unlock(&glob->lru_lock);
-+			ttm_bo_cleanup_memtype_use(bo);
- 
--		return;
+-	if (fence->seq == RADEON_FENCE_SIGNALED_SEQ) {
+-		return true;
 -	}
--	if (bo->sync_obj)
--		sync_obj = driver->sync_obj_ref(bo->sync_obj);
--	spin_unlock(&bdev->fence_lock);
-+			ttm_bo_list_ref_sub(bo, put_count, true);
- 
--	if (!ret) {
-+			return;
-+		}
-+		sync_obj = driver->sync_obj_ref(bo->sync_obj);
- 
- 		/*
- 		 * Make NO_EVICT bos immediately available to
-@@ -480,7 +476,6 @@ static int ttm_bo_cleanup_refs_and_unlock(struct ttm_buffer_object *bo,
- 	int put_count;
- 	int ret;
- 
--	spin_lock(&bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, false, false, true);
- 
- 	if (ret && !no_wait_gpu) {
-@@ -492,7 +487,6 @@ static int ttm_bo_cleanup_refs_and_unlock(struct ttm_buffer_object *bo,
- 		 * no new sync objects can be attached.
- 		 */
- 		sync_obj = driver->sync_obj_ref(bo->sync_obj);
--		spin_unlock(&bdev->fence_lock);
- 
- 		__ttm_bo_unreserve(bo);
- 		spin_unlock(&glob->lru_lock);
-@@ -522,11 +516,9 @@ static int ttm_bo_cleanup_refs_and_unlock(struct ttm_buffer_object *bo,
- 		 * remove sync_obj with ttm_bo_wait, the wait should be
- 		 * finished, and no new wait object should have been added.
- 		 */
--		spin_lock(&bdev->fence_lock);
- 		ret = ttm_bo_wait(bo, false, false, true);
- 		WARN_ON(ret);
++
+ 	if (radeon_fence_seq_signaled(fence->rdev, fence->seq, fence->ring)) {
+-		fence->seq = RADEON_FENCE_SIGNALED_SEQ;
++		int ret;
++
++		ret = fence_signal(&fence->base);
++		if (!ret)
++			FENCE_TRACE(&fence->base, "signaled from radeon_fence_signaled\n");
+ 		return true;
  	}
--	spin_unlock(&bdev->fence_lock);
+ 	return false;
+@@ -386,7 +464,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
+  * radeon_fence_wait - wait for a fence to signal
+  *
+  * @fence: radeon fence object
+- * @intr: use interruptable sleep
++ * @intr: use interruptible sleep
+  *
+  * Wait for the requested fence to signal (all asics).
+  * @intr selects whether to use interruptable (true) or non-interruptable
+@@ -398,20 +476,17 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
+ 	uint64_t seq[RADEON_NUM_RINGS] = {};
+ 	int r;
  
- 	if (ret || unlikely(list_empty(&bo->ddestroy))) {
- 		__ttm_bo_unreserve(bo);
-@@ -664,9 +656,7 @@ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
- 	struct ttm_placement placement;
- 	int ret = 0;
- 
--	spin_lock(&bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, false, interruptible, no_wait_gpu);
--	spin_unlock(&bdev->fence_lock);
- 
- 	if (unlikely(ret != 0)) {
- 		if (ret != -ERESTARTSYS) {
-@@ -963,7 +953,6 @@ static int ttm_bo_move_buffer(struct ttm_buffer_object *bo,
- {
- 	int ret = 0;
- 	struct ttm_mem_reg mem;
--	struct ttm_bo_device *bdev = bo->bdev;
- 
- 	lockdep_assert_held(&bo->resv->lock.base);
- 
-@@ -972,9 +961,7 @@ static int ttm_bo_move_buffer(struct ttm_buffer_object *bo,
- 	 * Have the driver move function wait for idle when necessary,
- 	 * instead of doing it here.
- 	 */
--	spin_lock(&bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, false, interruptible, no_wait_gpu);
--	spin_unlock(&bdev->fence_lock);
- 	if (ret)
- 		return ret;
- 	mem.num_pages = bo->num_pages;
-@@ -1474,7 +1461,6 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
- 	bdev->glob = glob;
- 	bdev->need_dma32 = need_dma32;
- 	bdev->val_seq = 0;
--	spin_lock_init(&bdev->fence_lock);
- 	mutex_lock(&glob->device_list_mutex);
- 	list_add_tail(&bdev->device_list, &glob->device_list);
- 	mutex_unlock(&glob->device_list_mutex);
-@@ -1532,7 +1518,6 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
- 		bool lazy, bool interruptible, bool no_wait)
- {
- 	struct ttm_bo_driver *driver = bo->bdev->driver;
--	struct ttm_bo_device *bdev = bo->bdev;
- 	void *sync_obj;
- 	int ret = 0;
- 
-@@ -1541,53 +1526,33 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
- 	if (likely(bo->sync_obj == NULL))
+-	if (fence == NULL) {
+-		WARN(1, "Querying an invalid fence : %p !\n", fence);
+-		return -EINVAL;
+-	}
+-
+-	seq[fence->ring] = fence->seq;
+-	if (seq[fence->ring] == RADEON_FENCE_SIGNALED_SEQ)
++	if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))
  		return 0;
  
--	while (bo->sync_obj) {
++	seq[fence->ring] = fence->seq;
+ 	r = radeon_fence_wait_seq(fence->rdev, seq, intr);
+-	if (r)
++	if (r) {
+ 		return r;
 -
-+	if (bo->sync_obj) {
- 		if (driver->sync_obj_signaled(bo->sync_obj)) {
--			void *tmp_obj = bo->sync_obj;
--			bo->sync_obj = NULL;
-+			driver->sync_obj_unref(&bo->sync_obj);
- 			clear_bit(TTM_BO_PRIV_FLAG_MOVING, &bo->priv_flags);
--			spin_unlock(&bdev->fence_lock);
--			driver->sync_obj_unref(&tmp_obj);
--			spin_lock(&bdev->fence_lock);
--			continue;
+-	fence->seq = RADEON_FENCE_SIGNALED_SEQ;
++	}
++	r = fence_signal(&fence->base);
++	if (!r)
++		FENCE_TRACE(&fence->base, "signaled from fence_wait\n");
+ 	return 0;
+ }
+ 
+@@ -443,12 +518,13 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
+ 			continue;
+ 		}
+ 
++		if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fences[i]->base.flags)) {
++			/* already signaled */
 +			return 0;
- 		}
- 
- 		if (no_wait)
- 			return -EBUSY;
- 
- 		sync_obj = driver->sync_obj_ref(bo->sync_obj);
--		spin_unlock(&bdev->fence_lock);
- 		ret = driver->sync_obj_wait(sync_obj,
- 					    lazy, interruptible);
--		if (unlikely(ret != 0)) {
--			driver->sync_obj_unref(&sync_obj);
--			spin_lock(&bdev->fence_lock);
--			return ret;
--		}
--		spin_lock(&bdev->fence_lock);
--		if (likely(bo->sync_obj == sync_obj)) {
--			void *tmp_obj = bo->sync_obj;
--			bo->sync_obj = NULL;
-+
-+		if (likely(ret == 0)) {
- 			clear_bit(TTM_BO_PRIV_FLAG_MOVING,
- 				  &bo->priv_flags);
--			spin_unlock(&bdev->fence_lock);
--			driver->sync_obj_unref(&sync_obj);
--			driver->sync_obj_unref(&tmp_obj);
--			spin_lock(&bdev->fence_lock);
--		} else {
--			spin_unlock(&bdev->fence_lock);
--			driver->sync_obj_unref(&sync_obj);
--			spin_lock(&bdev->fence_lock);
-+			driver->sync_obj_unref(&bo->sync_obj);
- 		}
-+		driver->sync_obj_unref(&sync_obj);
- 	}
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(ttm_bo_wait);
- 
- int ttm_bo_synccpu_write_grab(struct ttm_buffer_object *bo, bool no_wait)
- {
--	struct ttm_bo_device *bdev = bo->bdev;
- 	int ret = 0;
- 
- 	/*
-@@ -1597,9 +1562,7 @@ int ttm_bo_synccpu_write_grab(struct ttm_buffer_object *bo, bool no_wait)
- 	ret = ttm_bo_reserve(bo, true, no_wait, false, 0);
- 	if (unlikely(ret != 0))
- 		return ret;
--	spin_lock(&bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, false, true, no_wait);
--	spin_unlock(&bdev->fence_lock);
- 	if (likely(ret == 0))
- 		atomic_inc(&bo->cpu_writers);
- 	ttm_bo_unreserve(bo);
-@@ -1656,9 +1619,7 @@ static int ttm_bo_swapout(struct ttm_mem_shrink *shrink)
- 	 * Wait for GPU, then move to system cached.
- 	 */
- 
--	spin_lock(&bo->bdev->fence_lock);
- 	ret = ttm_bo_wait(bo, false, false, false);
--	spin_unlock(&bo->bdev->fence_lock);
- 
- 	if (unlikely(ret != 0))
- 		goto out;
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index 1df856f78568..23db594e55c0 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -466,12 +466,10 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
- 	drm_vma_node_reset(&fbo->vma_node);
- 	atomic_set(&fbo->cpu_writers, 0);
- 
--	spin_lock(&bdev->fence_lock);
- 	if (bo->sync_obj)
- 		fbo->sync_obj = driver->sync_obj_ref(bo->sync_obj);
- 	else
- 		fbo->sync_obj = NULL;
--	spin_unlock(&bdev->fence_lock);
- 	kref_init(&fbo->list_kref);
- 	kref_init(&fbo->kref);
- 	fbo->destroy = &ttm_transfered_destroy;
-@@ -657,7 +655,6 @@ int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
- 	struct ttm_buffer_object *ghost_obj;
- 	void *tmp_obj = NULL;
- 
--	spin_lock(&bdev->fence_lock);
- 	if (bo->sync_obj) {
- 		tmp_obj = bo->sync_obj;
- 		bo->sync_obj = NULL;
-@@ -665,7 +662,6 @@ int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
- 	bo->sync_obj = driver->sync_obj_ref(sync_obj);
- 	if (evict) {
- 		ret = ttm_bo_wait(bo, false, false, false);
--		spin_unlock(&bdev->fence_lock);
- 		if (tmp_obj)
- 			driver->sync_obj_unref(&tmp_obj);
- 		if (ret)
-@@ -688,7 +684,6 @@ int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
- 		 */
- 
- 		set_bit(TTM_BO_PRIV_FLAG_MOVING, &bo->priv_flags);
--		spin_unlock(&bdev->fence_lock);
- 		if (tmp_obj)
- 			driver->sync_obj_unref(&tmp_obj);
- 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_vm.c b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-index 0ce48e5a9cb4..d05437f219e9 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-@@ -45,10 +45,8 @@ static int ttm_bo_vm_fault_idle(struct ttm_buffer_object *bo,
- 				struct vm_area_struct *vma,
- 				struct vm_fault *vmf)
- {
--	struct ttm_bo_device *bdev = bo->bdev;
- 	int ret = 0;
- 
--	spin_lock(&bdev->fence_lock);
- 	if (likely(!test_bit(TTM_BO_PRIV_FLAG_MOVING, &bo->priv_flags)))
- 		goto out_unlock;
- 
-@@ -82,7 +80,6 @@ static int ttm_bo_vm_fault_idle(struct ttm_buffer_object *bo,
- 			VM_FAULT_NOPAGE;
- 
- out_unlock:
--	spin_unlock(&bdev->fence_lock);
- 	return ret;
- }
- 
-diff --git a/drivers/gpu/drm/ttm/ttm_execbuf_util.c b/drivers/gpu/drm/ttm/ttm_execbuf_util.c
-index 6db47a72667e..108730e9147b 100644
---- a/drivers/gpu/drm/ttm/ttm_execbuf_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_execbuf_util.c
-@@ -180,7 +180,6 @@ void ttm_eu_fence_buffer_objects(struct ww_acquire_ctx *ticket,
- 	glob = bo->glob;
- 
- 	spin_lock(&glob->lru_lock);
--	spin_lock(&bdev->fence_lock);
- 
- 	list_for_each_entry(entry, list, head) {
- 		bo = entry->bo;
-@@ -189,7 +188,6 @@ void ttm_eu_fence_buffer_objects(struct ww_acquire_ctx *ticket,
- 		ttm_bo_add_to_lru(bo);
- 		__ttm_bo_unreserve(bo);
- 	}
--	spin_unlock(&bdev->fence_lock);
- 	spin_unlock(&glob->lru_lock);
- 	if (ticket)
- 		ww_acquire_fini(ticket);
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-index 6327cfc36805..4a36bb1dc525 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
-@@ -829,11 +829,7 @@ static void vmw_move_notify(struct ttm_buffer_object *bo,
-  */
- static void vmw_swap_notify(struct ttm_buffer_object *bo)
- {
--	struct ttm_bo_device *bdev = bo->bdev;
--
--	spin_lock(&bdev->fence_lock);
- 	ttm_bo_wait(bo, false, false, false);
--	spin_unlock(&bdev->fence_lock);
- }
- 
- 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-index 873613a16f72..48e47a100dea 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -567,12 +567,12 @@ static int vmw_user_dmabuf_synccpu_grab(struct vmw_user_dma_buffer *user_bo,
- 	int ret;
- 
- 	if (flags & drm_vmw_synccpu_allow_cs) {
--		struct ttm_bo_device *bdev = bo->bdev;
--
--		spin_lock(&bdev->fence_lock);
--		ret = ttm_bo_wait(bo, false, true,
--				  !!(flags & drm_vmw_synccpu_dontblock));
--		spin_unlock(&bdev->fence_lock);
-+		ret = ttm_bo_reserve(bo, true, !!(flags & drm_vmw_synccpu_dontblock), false, 0);
-+		if (!ret) {
-+			ret = ttm_bo_wait(bo, false, true,
-+					  !!(flags & drm_vmw_synccpu_dontblock));
-+			ttm_bo_unreserve(bo);
 +		}
- 		return ret;
++
+ 		seq[i] = fences[i]->seq;
+ 		++num_rings;
+-
+-		/* test if something was allready signaled */
+-		if (seq[i] == RADEON_FENCE_SIGNALED_SEQ)
+-			return 0;
  	}
  
-@@ -1429,12 +1429,10 @@ void vmw_fence_single_bo(struct ttm_buffer_object *bo,
- 	else
- 		driver->sync_obj_ref(fence);
- 
--	spin_lock(&bdev->fence_lock);
- 
- 	old_fence_obj = bo->sync_obj;
- 	bo->sync_obj = fence;
- 
--	spin_unlock(&bdev->fence_lock);
- 
- 	if (old_fence_obj)
- 		vmw_fence_obj_unreference(&old_fence_obj);
-@@ -1475,7 +1473,6 @@ void vmw_resource_move_notify(struct ttm_buffer_object *bo,
- 
- 	if (mem->mem_type != VMW_PL_MOB) {
- 		struct vmw_resource *res, *n;
--		struct ttm_bo_device *bdev = bo->bdev;
- 		struct ttm_validate_buffer val_buf;
- 
- 		val_buf.bo = bo;
-@@ -1491,9 +1488,7 @@ void vmw_resource_move_notify(struct ttm_buffer_object *bo,
- 			list_del_init(&res->mob_head);
- 		}
- 
--		spin_lock(&bdev->fence_lock);
- 		(void) ttm_bo_wait(bo, false, false, false);
--		spin_unlock(&bdev->fence_lock);
- 	}
+ 	/* nothing to wait for ? */
+@@ -525,7 +601,7 @@ int radeon_fence_wait_empty(struct radeon_device *rdev, int ring)
+  */
+ struct radeon_fence *radeon_fence_ref(struct radeon_fence *fence)
+ {
+-	kref_get(&fence->kref);
++	fence_get(&fence->base);
+ 	return fence;
  }
  
-diff --git a/include/drm/ttm/ttm_bo_api.h b/include/drm/ttm/ttm_bo_api.h
-index ee127ec33c60..f34d59b67218 100644
---- a/include/drm/ttm/ttm_bo_api.h
-+++ b/include/drm/ttm/ttm_bo_api.h
-@@ -227,10 +227,7 @@ struct ttm_buffer_object {
- 	struct list_head io_reserve_lru;
+@@ -541,9 +617,8 @@ void radeon_fence_unref(struct radeon_fence **fence)
+ 	struct radeon_fence *tmp = *fence;
  
- 	/**
--	 * Members protected by struct buffer_object_device::fence_lock
--	 * In addition, setting sync_obj to anything else
--	 * than NULL requires bo::reserved to be held. This allows for
--	 * checking NULL while reserved but not holding the mentioned lock.
-+	 * Members protected by a bo reservation.
- 	 */
+ 	*fence = NULL;
+-	if (tmp) {
+-		kref_put(&tmp->kref, radeon_fence_destroy);
+-	}
++	if (tmp)
++		fence_put(&tmp->base);
+ }
  
- 	void *sync_obj;
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index a5183da3ef92..0aa6caa59415 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -518,8 +518,6 @@ struct ttm_bo_global {
-  *
-  * @driver: Pointer to a struct ttm_bo_driver struct setup by the driver.
-  * @man: An array of mem_type_managers.
-- * @fence_lock: Protects the synchronizing members on *all* bos belonging
-- * to this device.
-  * @vma_manager: Address space manager
-  * lru_lock: Spinlock that protects the buffer+device lru lists and
-  * ddestroy lists.
-@@ -539,7 +537,6 @@ struct ttm_bo_device {
- 	struct ttm_bo_global *glob;
- 	struct ttm_bo_driver *driver;
- 	struct ttm_mem_type_manager man[TTM_NUM_MEM_TYPES];
--	spinlock_t fence_lock;
- 
- 	/*
- 	 * Protected by internal locks.
+ /**
+@@ -832,3 +907,31 @@ int radeon_debugfs_fence_init(struct radeon_device *rdev)
+ 	return 0;
+ #endif
+ }
++
++static const char *radeon_fence_get_driver_name(struct fence *fence)
++{
++	return "radeon";
++}
++
++static const char *radeon_fence_get_timeline_name(struct fence *f)
++{
++	struct radeon_fence *fence = to_radeon_fence(f);
++	switch (fence->ring) {
++	case RADEON_RING_TYPE_GFX_INDEX: return "radeon.gfx";
++	case CAYMAN_RING_TYPE_CP1_INDEX: return "radeon.cp1";
++	case CAYMAN_RING_TYPE_CP2_INDEX: return "radeon.cp2";
++	case R600_RING_TYPE_DMA_INDEX: return "radeon.dma";
++	case CAYMAN_RING_TYPE_DMA1_INDEX: return "radeon.dma1";
++	case R600_RING_TYPE_UVD_INDEX: return "radeon.uvd";
++	default: WARN_ON_ONCE(1); return "radeon.unk";
++	}
++}
++
++static const struct fence_ops radeon_fence_ops = {
++	.get_driver_name = radeon_fence_get_driver_name,
++	.get_timeline_name = radeon_fence_get_timeline_name,
++	.enable_signaling = radeon_fence_enable_signaling,
++	.signaled = __radeon_fence_signaled,
++	.wait = fence_default_wait,
++	.release = NULL,
++};
 
