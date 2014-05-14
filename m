@@ -1,579 +1,921 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaENPBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:01:19 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:60280 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaENPBR (ORCPT
+	id S1756087AbaENO6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:58:11 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42659 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaENO6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:01:17 -0400
-Message-ID: <1400079670.9356.16.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v5] rwsem: Support optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 08:01:10 -0700
-In-Reply-To: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 14 May 2014 10:58:07 -0400
+Subject: [RFC PATCH v1 07/16] drm/nouveau: rework to new fence interface
+To: airlied@linux.ie
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Wed, 14 May 2014 16:58:03 +0200
+Message-ID: <20140514145803.21163.7250.stgit@patser>
+In-Reply-To: <20140514145134.21163.32350.stgit@patser>
+References: <20140514145134.21163.32350.stgit@patser>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have reached the point where our mutexes are quite fine tuned
-for a number of situations. This includes the use of heuristics
-and optimistic spinning, based on MCS locking techniques.
+From: Maarten Lankhorst <maarten.lankhorst@ubuntu.com>
 
-Exclusive ownership of read-write semaphores are, conceptually,
-just about the same as mutexes, making them close cousins. To
-this end we need to make them both perform similarly, and
-right now, rwsems are simply not up to it. This was discovered
-by both reverting commit 4fc3f1d6 (mm/rmap, migration: Make
-rmap_walk_anon() and try_to_unmap_anon() more scalable) and
-similarly, converting some other mutexes (ie: i_mmap_mutex) to
-rwsems. This creates a situation where users have to choose
-between a rwsem and mutex taking into account this important
-performance difference. Specifically, biggest difference between
-both locks is when we fail to acquire a mutex in the fastpath,
-optimistic spinning comes in to play and we can avoid a large
-amount of unnecessary sleeping and overhead of moving tasks in
-and out of wait queue. Rwsems do not have such logic.
-
-This patch, based on the work from Tim Chen and I, adds support
-for write-side optimistic spinning when the lock is contended.
-It also includes support for the recently added cancelable MCS
-locking for adaptive spinning. Note that is is only applicable
-to the xadd method, and the spinlock rwsem variant remains intact.
-
-Allowing optimistic spinning before putting the writer on the wait
-queue reduces wait queue contention and provided greater chance
-for the rwsem to get acquired. With these changes, rwsem is on par
-with mutex. The performance benefits can be seen on a number of
-workloads. For instance, on a 8 socket, 80 core 64bit Westmere box,
-aim7 shows the following improvements in throughput:
-
-+--------------+---------------------+-----------------+
-|   Workload   | throughput-increase | number of users |
-+--------------+---------------------+-----------------+
-| alltests     | 20%                 | >1000           |
-| custom       | 27%, 60%            | 10-100, >1000   |
-| high_systime | 36%, 30%            | >100, >1000     |
-| shared       | 58%, 29%            | 10-100, >1000   |
-+--------------+---------------------+-----------------+
-
-There was also improvement on smaller systems, such as a quad-core
-x86-64 laptop running a 30Gb PostgreSQL (pgbench) workload for up
-to +60% in throughput for over 50 clients. Additionally, benefits
-were also noticed in exim (mail server) workloads. When comparing
-against regular non-blocking rw locks ([q]rwlock_t), this change
-proves that it can outperform them, for instance when studying the
-popular anon-vma lock:
-
-http://www.spinics.net/lists/linux-mm/msg72705.html
-
-Furthermore, no performance regression have been seen at all.
-
-This patch applies on top of the -tip branch.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
-Changes from v4 (https://lkml.org/lkml/2014/5/2/477):
- - Rebased against 3cf2f34e in -tip (core/locking).
- - Added more performance results to the changelog.
+ drivers/gpu/drm/nouveau/core/core/event.c |    4 
+ drivers/gpu/drm/nouveau/nouveau_bo.c      |    6 
+ drivers/gpu/drm/nouveau/nouveau_display.c |    4 
+ drivers/gpu/drm/nouveau/nouveau_fence.c   |  434 ++++++++++++++++++++---------
+ drivers/gpu/drm/nouveau/nouveau_fence.h   |   20 +
+ drivers/gpu/drm/nouveau/nouveau_gem.c     |   17 -
+ drivers/gpu/drm/nouveau/nv04_fence.c      |    4 
+ drivers/gpu/drm/nouveau/nv10_fence.c      |    4 
+ drivers/gpu/drm/nouveau/nv17_fence.c      |    2 
+ drivers/gpu/drm/nouveau/nv50_fence.c      |    2 
+ drivers/gpu/drm/nouveau/nv84_fence.c      |   11 -
+ 11 files changed, 329 insertions(+), 179 deletions(-)
 
-Changes from v3 (https://lkml.org/lkml/2014/4/30/754):
- - Fixed comments in rwsem_can_spin_on_owner and down_write_failed.
-
-Changes from v2 (https://lkml.org/lkml/2014/4/28/610):
- - Documented owner entry in struct rw_semaphore.
-
- - For rwsem_down_write_failed(): Use set_current_state() family 
-   instead of through a tsk variable. Also cleanup. The 'waiting'
-   boolean was kept as we do endup having to check the list_empty
-   later on, and since we endup adding a new element to the list,
-   it is much simpler and straightforward to keep it around calling
-   __rwsem_do_wake().
-
- - Rewrote rwsem_can_spin_on_owner(), including checking for
-   need_resched().
-   
- - Cleaned up rwsem_try_write_lock_unqueued().
-
- - Added more comments.
-
- - Did more testing, so far no regressions or issues.
-
-Changes from v1 (http://www.spinics.net/lists/kernel/msg1727764.html):
- - Explicitly mention in the changelog that this works only for xadd rwsem method.
- - Make clear/set owner functions depend on CONFIG_SMP and CONFIG_RWSEM_XCHGADD_ALGORITHM
- - Make sure we clear the owner before releasing the write lock.
-
-
- include/linux/rwsem.h       |  25 ++++-
- kernel/locking/rwsem-xadd.c | 229 +++++++++++++++++++++++++++++++++++++-------
- kernel/locking/rwsem.c      |  31 +++++-
- 3 files changed, 249 insertions(+), 36 deletions(-)
-
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 03f3b05..3e108f1 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -16,6 +16,7 @@
- 
- #include <linux/atomic.h>
- 
-+struct optimistic_spin_queue;
- struct rw_semaphore;
- 
- #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
-@@ -23,9 +24,17 @@ struct rw_semaphore;
- #else
- /* All arch specific implementations share the same struct */
- struct rw_semaphore {
--	long			count;
--	raw_spinlock_t		wait_lock;
--	struct list_head	wait_list;
-+	long count;
-+	raw_spinlock_t wait_lock;
-+	struct list_head wait_list;
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Write owner. Used as a speculative check to see
-+	 * if the owner is running on the cpu.
-+	 */
-+	struct task_struct *owner;
-+	struct optimistic_spin_queue *osq; /* spinner MCS lock */
-+#endif
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
- #endif
-@@ -55,11 +64,21 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
- # define __RWSEM_DEP_MAP_INIT(lockname)
- #endif
- 
-+#ifdef CONFIG_SMP
-+#define __RWSEM_INITIALIZER(name)			\
-+	{ RWSEM_UNLOCKED_VALUE,				\
-+	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-+	  LIST_HEAD_INIT((name).wait_list),		\
-+	  NULL, /* owner */				\
-+	  NULL /* mcs lock */                           \
-+	  __RWSEM_DEP_MAP_INIT(name) }
-+#else
- #define __RWSEM_INITIALIZER(name)			\
- 	{ RWSEM_UNLOCKED_VALUE,				\
- 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
- 	  LIST_HEAD_INIT((name).wait_list)		\
- 	  __RWSEM_DEP_MAP_INIT(name) }
-+#endif
- 
- #define DECLARE_RWSEM(name) \
- 	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index b4219ff..b562aca 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -5,12 +5,18 @@
-  *
-  * Writer lock-stealing by Alex Shi <alex.shi@intel.com>
-  * and Michel Lespinasse <walken@google.com>
-+ *
-+ * Optimistic spinning by Tim Chen <tim.c.chen@intel.com>
-+ * and Davidlohr Bueso <davidlohr@hp.com>. Based on mutexes.
-  */
- #include <linux/rwsem.h>
- #include <linux/sched.h>
- #include <linux/init.h>
-+#include <linux/sched/rt.h>
- #include <linux/export.h>
- 
-+#include "mcs_spinlock.h"
-+
- /*
-  * Guide to the rw_semaphore's count field for common values.
-  * (32-bit case illustrated, similar for 64-bit)
-@@ -60,9 +66,7 @@
-  *
-  */
- 
--/*
-- * Initialize an rwsem:
-- */
-+/* initialize a rwsem */
- void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 		  struct lock_class_key *key)
+diff --git a/drivers/gpu/drm/nouveau/core/core/event.c b/drivers/gpu/drm/nouveau/core/core/event.c
+index 3f3c76581a9e..167408b72099 100644
+--- a/drivers/gpu/drm/nouveau/core/core/event.c
++++ b/drivers/gpu/drm/nouveau/core/core/event.c
+@@ -118,14 +118,14 @@ nouveau_event_ref(struct nouveau_eventh *handler, struct nouveau_eventh **ref)
+ void
+ nouveau_event_trigger(struct nouveau_event *event, int index)
  {
-@@ -76,6 +80,10 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	sem->count = RWSEM_UNLOCKED_VALUE;
- 	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
-+#ifdef CONFIG_SMP
-+	sem->owner = NULL;
-+	sem->osq = NULL;
-+#endif
+-	struct nouveau_eventh *handler;
++	struct nouveau_eventh *handler, *next;
+ 	unsigned long flags;
+ 
+ 	if (WARN_ON(index >= event->index_nr))
+ 		return;
+ 
+ 	spin_lock_irqsave(&event->list_lock, flags);
+-	list_for_each_entry(handler, &event->index[index].list, head) {
++	list_for_each_entry_safe(handler, next, &event->index[index].list, head) {
+ 		if (test_bit(NVKM_EVENT_ENABLE, &handler->flags) &&
+ 		    handler->func(handler->priv, index) == NVKM_EVENT_DROP)
+ 			nouveau_event_put(handler);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+index e98af2e9a1cb..84aba3fa1bd0 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -959,7 +959,7 @@ nouveau_bo_move_m2mf(struct ttm_buffer_object *bo, int evict, bool intr,
+ 	}
+ 
+ 	mutex_lock_nested(&chan->cli->mutex, SINGLE_DEPTH_NESTING);
+-	ret = nouveau_fence_sync(bo->sync_obj, chan);
++	ret = nouveau_fence_sync(nouveau_bo(bo), chan);
+ 	if (ret == 0) {
+ 		ret = drm->ttm.move(chan, bo, &bo->mem, new_mem);
+ 		if (ret == 0) {
+@@ -1432,10 +1432,12 @@ nouveau_bo_fence_unref(void **sync_obj)
+ void
+ nouveau_bo_fence(struct nouveau_bo *nvbo, struct nouveau_fence *fence)
+ {
+-	lockdep_assert_held(&nvbo->bo.resv->lock.base);
++	struct reservation_object *resv = nvbo->bo.resv;
+ 
+ 	nouveau_bo_fence_unref(&nvbo->bo.sync_obj);
+ 	nvbo->bo.sync_obj = nouveau_fence_ref(fence);
++
++	reservation_object_add_excl_fence(resv, &fence->base);
  }
  
- EXPORT_SYMBOL(__init_rwsem);
-@@ -190,7 +198,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+ static void *
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
+index 6a0ca004bd19..eeb8762feaf0 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -660,7 +660,7 @@ nouveau_page_flip_emit(struct nouveau_channel *chan,
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 
+ 	/* Synchronize with the old framebuffer */
+-	ret = nouveau_fence_sync(old_bo->bo.sync_obj, chan);
++	ret = nouveau_fence_sync(old_bo, chan);
+ 	if (ret)
+ 		goto fail;
+ 
+@@ -721,7 +721,7 @@ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 		goto fail_unpin;
+ 
+ 	/* synchronise rendering channel with the kernel's channel */
+-	ret = nouveau_fence_sync(new_bo->bo.sync_obj, chan);
++	ret = nouveau_fence_sync(new_bo, chan);
+ 	if (ret) {
+ 		ttm_bo_unreserve(&new_bo->bo);
+ 		goto fail_unpin;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_fence.c b/drivers/gpu/drm/nouveau/nouveau_fence.c
+index 90074d620e31..9a9e04985826 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_fence.c
++++ b/drivers/gpu/drm/nouveau/nouveau_fence.c
+@@ -32,91 +32,139 @@
+ #include "nouveau_drm.h"
+ #include "nouveau_dma.h"
+ #include "nouveau_fence.h"
++#include <trace/events/fence.h>
+ 
+ #include <engine/fifo.h>
+ 
+-struct fence_work {
+-	struct work_struct base;
+-	struct list_head head;
+-	void (*func)(void *);
+-	void *data;
+-};
++static const struct fence_ops nouveau_fence_ops_uevent;
++static const struct fence_ops nouveau_fence_ops_legacy;
+ 
+ static void
+ nouveau_fence_signal(struct nouveau_fence *fence)
+ {
+-	struct fence_work *work, *temp;
++	__fence_signal(&fence->base);
++	list_del(&fence->head);
++
++	if (fence->base.ops == &nouveau_fence_ops_uevent &&
++	    fence->event.head.next) {
++		struct nouveau_event *event;
+ 
+-	list_for_each_entry_safe(work, temp, &fence->work, head) {
+-		schedule_work(&work->base);
+-		list_del(&work->head);
++		list_del(&fence->event.head);
++		fence->event.head.next = NULL;
++
++		event = container_of(fence->base.lock, typeof(*event), list_lock);
++		nouveau_event_put(&fence->event);
+ 	}
+ 
+-	fence->channel = NULL;
+-	list_del(&fence->head);
++	fence_put(&fence->base);
++}
++
++static struct nouveau_fence *
++nouveau_local_fence(struct fence *fence, struct nouveau_drm *drm) {
++	struct nouveau_fence_priv *priv = (void*)drm->fence;
++	struct nouveau_fence *f = container_of(fence,
++					       struct nouveau_fence,
++					       base);
++
++	if (fence->ops != &nouveau_fence_ops_legacy &&
++	    fence->ops != &nouveau_fence_ops_uevent)
++		return NULL;
++
++	if (fence->context < priv->context_base ||
++	    fence->context >= priv->context_base + priv->contexts)
++		return NULL;
++
++	return f;
  }
  
- /*
-- * wait for the read lock to be granted
-+ * Wait for the read lock to be granted
-  */
- __visible
- struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
-@@ -237,64 +245,221 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	return sem;
+ void
+ nouveau_fence_context_del(struct nouveau_fence_chan *fctx)
+ {
+ 	struct nouveau_fence *fence, *fnext;
+-	spin_lock(&fctx->lock);
+-	list_for_each_entry_safe(fence, fnext, &fctx->pending, head) {
++
++	spin_lock_irq(fctx->lock);
++	list_for_each_entry_safe(fence, fnext, &fctx->pending, head)
+ 		nouveau_fence_signal(fence);
+-	}
+-	spin_unlock(&fctx->lock);
++	spin_unlock_irq(fctx->lock);
  }
  
-+static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+ void
+-nouveau_fence_context_new(struct nouveau_fence_chan *fctx)
++nouveau_fence_context_new(struct nouveau_channel *chan, struct nouveau_fence_chan *fctx)
+ {
++	struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
++	struct nouveau_fifo_chan *fifo = (void*)chan->object;
++
++	fctx->lock = &pfifo->uevent->list_lock;
+ 	INIT_LIST_HEAD(&fctx->flip);
+ 	INIT_LIST_HEAD(&fctx->pending);
+-	spin_lock_init(&fctx->lock);
++
++	snprintf(fctx->name, sizeof(fctx->name) - 1, "nouveau channel %i", fifo->chid);
+ }
+ 
++struct nouveau_fence_work {
++	struct work_struct work;
++	struct fence_cb cb;
++	void (*func)(void *);
++	void *data;
++};
++
+ static void
+ nouveau_fence_work_handler(struct work_struct *kwork)
+ {
+-	struct fence_work *work = container_of(kwork, typeof(*work), base);
++	struct nouveau_fence_work *work = container_of(kwork, typeof(*work), work);
+ 	work->func(work->data);
+ 	kfree(work);
+ }
+ 
++static void nouveau_fence_work_cb(struct fence *fence, struct fence_cb *cb)
 +{
-+	if (!(count & RWSEM_ACTIVE_MASK)) {
-+		/* try acquiring the write lock */
-+		if (sem->count == RWSEM_WAITING_BIAS &&
-+		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-+			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-+			if (!list_is_singular(&sem->wait_list))
-+				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-+			return true;
-+		}
-+	}
-+	return false;
++	struct nouveau_fence_work *work = container_of(cb, typeof(*work), cb);
++
++	schedule_work(&work->work);
 +}
-+
-+#ifdef CONFIG_SMP
- /*
-- * wait until we successfully acquire the write lock
-+ * Try to acquire write lock before the writer has been put on wait queue.
-+ */
-+static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-+{
-+	long old, count = ACCESS_ONCE(sem->count);
-+
-+	while (true) {
-+		if (!(count == 0 || count == RWSEM_WAITING_BIAS))
-+			return false;
-+
-+		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
-+		if (old == count)
-+			return true;
-+
-+		count = old;
-+	}
-+}
-+
-+static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-+{
-+	struct task_struct *owner;
-+	bool on_cpu = true;
-+
-+	if (need_resched())
-+		return 0;
-+
-+	rcu_read_lock();
-+	owner = ACCESS_ONCE(sem->owner);
-+	if (owner)
-+		on_cpu = owner->on_cpu;
-+	rcu_read_unlock();
-+
-+	/*
-+	 * If sem->owner is not set, the rwsem owner may have
-+	 * just acquired it and not set the owner yet or the rwsem
-+	 * has been released.
-+	 */
-+	return on_cpu;
-+}
-+
-+static inline bool owner_running(struct rw_semaphore *sem,
-+				 struct task_struct *owner)
-+{
-+	if (sem->owner != owner)
-+		return false;
-+
-+	/*
-+	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-+	 * sem->owner still matches owner, if that fails, owner might
-+	 * point to free()d memory, if it still matches, the rcu_read_lock()
-+	 * ensures the memory stays valid.
-+	 */
-+	barrier();
-+
-+	return owner->on_cpu;
-+}
-+
-+static noinline
-+bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-+{
-+	rcu_read_lock();
-+	while (owner_running(sem, owner)) {
-+		if (need_resched())
-+			break;
-+
-+		arch_mutex_cpu_relax();
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * We break out the loop above on need_resched() or when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when sem->owner is NULL.
-+	 */
-+	return sem->owner == NULL;
-+}
-+
-+static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
-+{
-+	struct task_struct *owner;
-+	bool taken = false;
-+
-+	preempt_disable();
-+
-+	/* sem->wait_lock should not be held when doing optimistic spinning */
-+	if (!rwsem_can_spin_on_owner(sem))
-+		goto done;
-+
-+	if (!osq_lock(&sem->osq))
-+		goto done;
-+
-+	while (true) {
-+		owner = ACCESS_ONCE(sem->owner);
-+		if (owner && !rwsem_spin_on_owner(sem, owner))
-+			break;
-+
-+		/* wait_lock will be acquired if write_lock is obtained */
-+		if (rwsem_try_write_lock_unqueued(sem)) {
-+			taken = true;
-+			break;
-+		}
-+
-+		/*
-+		 * When there's no owner, we might have preempted between the
-+		 * owner acquiring the lock and setting the owner field. If
-+		 * we're an RT task that will live-lock because we won't let
-+		 * the owner complete.
-+		 */
-+		if (!owner && (need_resched() || rt_task(current)))
-+			break;
-+
-+		/*
-+		 * The cpu_relax() call is a compiler barrier which forces
-+		 * everything in this loop to be re-loaded. We don't need
-+		 * memory barriers as we'll eventually observe the right
-+		 * values at the cost of a few extra spins.
-+		 */
-+		arch_mutex_cpu_relax();
-+	}
-+	osq_unlock(&sem->osq);
-+done:
-+	preempt_enable();
-+	return taken;
-+}
-+
-+#else
-+static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
-+{
-+	return false;
-+}
-+#endif
 +
 +/*
-+ * Wait until we successfully acquire the write lock
-  */
- __visible
- struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
++ * In an ideal world, read would not assume the channel context is still alive.
++ * This function may be called from another device, running into free memory as a
++ * result. The drm node should still be there, so we can derive the index from
++ * the fence context.
++ */
++static bool nouveau_fence_is_signaled(struct fence *f)
++{
++	struct nouveau_fence *fence = container_of(f, struct nouveau_fence, base);
++	struct nouveau_channel *chan = fence->channel;
++	struct nouveau_fence_chan *fctx = chan->fence;
++
++	return (int)(fctx->read(chan) - fence->base.seqno) >= 0;
++}
++
+ void
+ nouveau_fence_work(struct nouveau_fence *fence,
+ 		   void (*func)(void *), void *data)
  {
--	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
-+	long count;
-+	bool waiting = true; /* any queued threads before us */
- 	struct rwsem_waiter waiter;
--	struct task_struct *tsk = current;
+-	struct nouveau_channel *chan = fence->channel;
+-	struct nouveau_fence_chan *fctx;
+-	struct fence_work *work = NULL;
++	struct nouveau_fence_work *work;
  
--	/* set up my own style of waitqueue */
--	waiter.task = tsk;
-+	/* undo write bias from down_write operation, stop active locking */
-+	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
-+
-+	/* do optimistic spinning and steal lock if possible */
-+	if (rwsem_optimistic_spin(sem))
-+		return sem;
-+
-+	/*
-+	 * Optimistic spinning failed, proceed to the slowpath
-+	 * and block until we can acquire the sem.
-+	 */
-+	waiter.task = current;
- 	waiter.type = RWSEM_WAITING_FOR_WRITE;
+-	if (nouveau_fence_done(fence)) {
+-		func(data);
+-		return;
+-	}
++	if (fence_is_signaled(&fence->base))
++		goto err;
  
- 	raw_spin_lock_irq(&sem->wait_lock);
-+
-+	/* account for this before adding a new element to the list */
- 	if (list_empty(&sem->wait_list))
--		adjustment += RWSEM_WAITING_BIAS;
-+		waiting = false;
-+
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we're now waiting on the lock, but no longer actively locking */
--	count = rwsem_atomic_update(adjustment, sem);
-+	if (waiting) {
-+		count = ACCESS_ONCE(sem->count);
- 
--	/* If there were already threads queued before us and there are no
--	 * active writers, the lock must be read owned; so we try to wake
--	 * any read locks that were queued ahead of us. */
--	if (count > RWSEM_WAITING_BIAS &&
--	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
--		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
-+		/*
-+		 * If there were already threads queued before us and there are no
-+		 * active writers, the lock must be read owned; so we try to wake
-+		 * any read locks that were queued ahead of us.
-+		 */
-+		if (count > RWSEM_WAITING_BIAS)
-+			sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
-+
-+	} else
-+		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
- 
- 	/* wait until we successfully acquire the lock */
--	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+	set_current_state(TASK_UNINTERRUPTIBLE);
- 	while (true) {
--		if (!(count & RWSEM_ACTIVE_MASK)) {
--			/* Try acquiring the write lock. */
--			count = RWSEM_ACTIVE_WRITE_BIAS;
--			if (!list_is_singular(&sem->wait_list))
--				count += RWSEM_WAITING_BIAS;
--
--			if (sem->count == RWSEM_WAITING_BIAS &&
--			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
--							RWSEM_WAITING_BIAS)
--				break;
--		}
--
-+		if (rwsem_try_write_lock(count, sem))
-+			break;
- 		raw_spin_unlock_irq(&sem->wait_lock);
- 
- 		/* Block until there are no active lockers. */
- 		do {
- 			schedule();
--			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+			set_current_state(TASK_UNINTERRUPTIBLE);
- 		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
- 
- 		raw_spin_lock_irq(&sem->wait_lock);
+-	fctx = chan->fence;
+ 	work = kmalloc(sizeof(*work), GFP_KERNEL);
+ 	if (!work) {
+ 		WARN_ON(nouveau_fence_wait(fence, false, false));
+-		func(data);
+-		return;
++		goto err;
  	}
+ 
+-	spin_lock(&fctx->lock);
+-	if (!fence->channel) {
+-		spin_unlock(&fctx->lock);
+-		kfree(work);
+-		func(data);
+-		return;
+-	}
+-
+-	INIT_WORK(&work->base, nouveau_fence_work_handler);
++	INIT_WORK(&work->work, nouveau_fence_work_handler);
+ 	work->func = func;
+ 	work->data = data;
+-	list_add(&work->head, &fence->work);
+-	spin_unlock(&fctx->lock);
++
++	if (fence_add_callback(&fence->base, &work->cb, nouveau_fence_work_cb) < 0)
++		goto err_free;
++	return;
++
++err_free:
++	kfree(work);
++err:
++	func(data);
+ }
+ 
+ static void
+@@ -125,33 +173,45 @@ nouveau_fence_update(struct nouveau_channel *chan)
+ 	struct nouveau_fence_chan *fctx = chan->fence;
+ 	struct nouveau_fence *fence, *fnext;
+ 
+-	spin_lock(&fctx->lock);
++	u32 seq = fctx->read(chan);
++
+ 	list_for_each_entry_safe(fence, fnext, &fctx->pending, head) {
+-		if (fctx->read(chan) < fence->sequence)
++		if ((int)(seq - fence->base.seqno) < 0)
+ 			break;
+ 
+ 		nouveau_fence_signal(fence);
+-		nouveau_fence_unref(&fence);
+ 	}
+-	spin_unlock(&fctx->lock);
+ }
+ 
+ int
+ nouveau_fence_emit(struct nouveau_fence *fence, struct nouveau_channel *chan)
+ {
+ 	struct nouveau_fence_chan *fctx = chan->fence;
++	struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
++	struct nouveau_fifo_chan *fifo = (void*)chan->object;
++	struct nouveau_fence_priv *priv = (void*)chan->drm->fence;
+ 	int ret;
+ 
+ 	fence->channel  = chan;
+ 	fence->timeout  = jiffies + (15 * HZ);
+-	fence->sequence = ++fctx->sequence;
+ 
++	if (priv->uevent)
++		__fence_init(&fence->base, &nouveau_fence_ops_uevent,
++			    &pfifo->uevent->list_lock,
++			    priv->context_base + fifo->chid, ++fctx->sequence);
++	else
++		__fence_init(&fence->base, &nouveau_fence_ops_legacy,
++			    &pfifo->uevent->list_lock,
++			    priv->context_base + fifo->chid, ++fctx->sequence);
++
++	trace_fence_emit(&fence->base);
+ 	ret = fctx->emit(fence);
+ 	if (!ret) {
+-		kref_get(&fence->kref);
+-		spin_lock(&fctx->lock);
++		fence_get(&fence->base);
++		spin_lock_irq(fctx->lock);
++		nouveau_fence_update(chan);
+ 		list_add_tail(&fence->head, &fctx->pending);
+-		spin_unlock(&fctx->lock);
++		spin_unlock_irq(fctx->lock);
+ 	}
+ 
+ 	return ret;
+@@ -160,104 +220,71 @@ nouveau_fence_emit(struct nouveau_fence *fence, struct nouveau_channel *chan)
+ bool
+ nouveau_fence_done(struct nouveau_fence *fence)
+ {
+-	if (fence->channel)
++	if (fence->base.ops == &nouveau_fence_ops_legacy ||
++	    fence->base.ops == &nouveau_fence_ops_uevent) {
++		struct nouveau_fence_chan *fctx;
++		unsigned long flags;
++
++		if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->base.flags))
++			return true;
++
++		fctx = fence->channel->fence;
++		spin_lock_irqsave(fctx->lock, flags);
+ 		nouveau_fence_update(fence->channel);
+-	return !fence->channel;
++		spin_unlock_irqrestore(fctx->lock, flags);
++	}
++	return fence_is_signaled(&fence->base);
+ }
+ 
+-static int
+-nouveau_fence_wait_uevent_handler(void *data, int index)
++static long
++nouveau_fence_wait_legacy(struct fence *f, bool intr, long wait)
+ {
+-	struct nouveau_fence_priv *priv = data;
+-	wake_up_all(&priv->waiting);
+-	return NVKM_EVENT_KEEP;
+-}
++	struct nouveau_fence *fence = container_of(f, typeof(*fence), base);
++	unsigned long sleep_time = NSEC_PER_MSEC / 1000;
++	unsigned long t = jiffies, timeout = t + wait;
+ 
+-static int
+-nouveau_fence_wait_uevent(struct nouveau_fence *fence, bool intr)
++	while (!nouveau_fence_done(fence)) {
++		ktime_t kt;
+ 
+-{
+-	struct nouveau_channel *chan = fence->channel;
+-	struct nouveau_fifo *pfifo = nouveau_fifo(chan->drm->device);
+-	struct nouveau_fence_priv *priv = chan->drm->fence;
+-	struct nouveau_eventh *handler;
+-	int ret = 0;
++		t = jiffies;
+ 
+-	ret = nouveau_event_new(pfifo->uevent, 0,
+-				nouveau_fence_wait_uevent_handler,
+-				priv, &handler);
+-	if (ret)
+-		return ret;
++		if (wait != MAX_SCHEDULE_TIMEOUT && time_after_eq(t, timeout)) {
++			__set_current_state(TASK_RUNNING);
++			return 0;
++		}
+ 
+-	nouveau_event_get(handler);
++		__set_current_state(intr ? TASK_INTERRUPTIBLE :
++					   TASK_UNINTERRUPTIBLE);
+ 
+-	if (fence->timeout) {
+-		unsigned long timeout = fence->timeout - jiffies;
+-
+-		if (time_before(jiffies, fence->timeout)) {
+-			if (intr) {
+-				ret = wait_event_interruptible_timeout(
+-						priv->waiting,
+-						nouveau_fence_done(fence),
+-						timeout);
+-			} else {
+-				ret = wait_event_timeout(priv->waiting,
+-						nouveau_fence_done(fence),
+-						timeout);
+-			}
+-		}
++		kt = ktime_set(0, sleep_time);
++		schedule_hrtimeout(&kt, HRTIMER_MODE_REL);
++		sleep_time *= 2;
++		if (sleep_time > NSEC_PER_MSEC)
++			sleep_time = NSEC_PER_MSEC;
+ 
+-		if (ret >= 0) {
+-			fence->timeout = jiffies + ret;
+-			if (time_after_eq(jiffies, fence->timeout))
+-				ret = -EBUSY;
+-		}
+-	} else {
+-		if (intr) {
+-			ret = wait_event_interruptible(priv->waiting,
+-					nouveau_fence_done(fence));
+-		} else {
+-			wait_event(priv->waiting, nouveau_fence_done(fence));
+-		}
++		if (intr && signal_pending(current))
++			return -ERESTARTSYS;
+ 	}
+ 
+-	nouveau_event_ref(NULL, &handler);
+-	if (unlikely(ret < 0))
+-		return ret;
 +	__set_current_state(TASK_RUNNING);
  
- 	list_del(&waiter.list);
- 	raw_spin_unlock_irq(&sem->wait_lock);
--	tsk->state = TASK_RUNNING;
- 
- 	return sem;
- }
-diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
-index cfff143..42f806d 100644
---- a/kernel/locking/rwsem.c
-+++ b/kernel/locking/rwsem.c
-@@ -12,6 +12,27 @@
- 
- #include <linux/atomic.h>
- 
-+#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = current;
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+	sem->owner = NULL;
-+}
-+
-+#else
-+static inline void rwsem_set_owner(struct rw_semaphore *sem)
-+{
-+}
-+
-+static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-+{
-+}
-+#endif
-+
- /*
-  * lock for reading
-  */
-@@ -48,6 +69,7 @@ void __sched down_write(struct rw_semaphore *sem)
- 	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
- 
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
+-	return 0;
++	return timeout - t;
  }
  
- EXPORT_SYMBOL(down_write);
-@@ -59,8 +81,11 @@ int down_write_trylock(struct rw_semaphore *sem)
+-int
+-nouveau_fence_wait(struct nouveau_fence *fence, bool lazy, bool intr)
++static int
++nouveau_fence_wait_busy(struct nouveau_fence *fence, bool intr)
  {
- 	int ret = __down_write_trylock(sem);
+-	struct nouveau_channel *chan = fence->channel;
+-	struct nouveau_fence_priv *priv = chan ? chan->drm->fence : NULL;
+-	unsigned long sleep_time = NSEC_PER_MSEC / 1000;
+-	ktime_t t;
+ 	int ret = 0;
  
--	if (ret == 1)
-+	if (ret == 1) {
- 		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
-+		rwsem_set_owner(sem);
+-	while (priv && priv->uevent && lazy && !nouveau_fence_done(fence)) {
+-		ret = nouveau_fence_wait_uevent(fence, intr);
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+ 	while (!nouveau_fence_done(fence)) {
+-		if (fence->timeout && time_after_eq(jiffies, fence->timeout)) {
++		if (time_after_eq(jiffies, fence->timeout)) {
+ 			ret = -EBUSY;
+ 			break;
+ 		}
+ 
+-		__set_current_state(intr ? TASK_INTERRUPTIBLE :
+-					   TASK_UNINTERRUPTIBLE);
+-		if (lazy) {
+-			t = ktime_set(0, sleep_time);
+-			schedule_hrtimeout(&t, HRTIMER_MODE_REL);
+-			sleep_time *= 2;
+-			if (sleep_time > NSEC_PER_MSEC)
+-				sleep_time = NSEC_PER_MSEC;
+-		}
++		__set_current_state(intr ?
++				    TASK_INTERRUPTIBLE :
++				    TASK_UNINTERRUPTIBLE);
+ 
+ 		if (intr && signal_pending(current)) {
+ 			ret = -ERESTARTSYS;
+@@ -270,36 +297,79 @@ nouveau_fence_wait(struct nouveau_fence *fence, bool lazy, bool intr)
+ }
+ 
+ int
+-nouveau_fence_sync(struct nouveau_fence *fence, struct nouveau_channel *chan)
++nouveau_fence_wait(struct nouveau_fence *fence, bool lazy, bool intr)
++{
++	long ret;
++
++	if (!lazy)
++		return nouveau_fence_wait_busy(fence, intr);
++
++	ret = fence_wait_timeout(&fence->base, intr, 15 * HZ);
++	if (ret < 0)
++		return ret;
++	else if (!ret)
++		return -EBUSY;
++	else
++		return 0;
++}
++
++int
++nouveau_fence_sync(struct nouveau_bo *nvbo, struct nouveau_channel *chan)
+ {
+ 	struct nouveau_fence_chan *fctx = chan->fence;
+-	struct nouveau_channel *prev;
+-	int ret = 0;
++	struct fence *fence = NULL;
++	struct reservation_object *resv = nvbo->bo.resv;
++	struct reservation_object_list *fobj;
++	int ret = 0, i;
++
++	fence = nvbo->bo.sync_obj;
++	if (fence && fence_is_signaled(fence)) {
++		nouveau_fence_unref((struct nouveau_fence **)
++				    &nvbo->bo.sync_obj);
++		fence = NULL;
 +	}
 +
++	if (fence) {
++		struct nouveau_fence *f = container_of(fence,
++						       struct nouveau_fence,
++						       base);
++		struct nouveau_channel *prev = f->channel;
+ 
+-	prev = fence ? fence->channel : NULL;
+-	if (prev) {
+-		if (unlikely(prev != chan && !nouveau_fence_done(fence))) {
+-			ret = fctx->sync(fence, prev, chan);
++		if (prev != chan) {
++			ret = fctx->sync(f, prev, chan);
+ 			if (unlikely(ret))
+-				ret = nouveau_fence_wait(fence, true, false);
++				ret = nouveau_fence_wait(f, true, true);
+ 		}
+ 	}
+ 
+-	return ret;
+-}
++	if (ret)
++		return ret;
+ 
+-static void
+-nouveau_fence_del(struct kref *kref)
+-{
+-	struct nouveau_fence *fence = container_of(kref, typeof(*fence), kref);
+-	kfree(fence);
++	fence = reservation_object_get_excl(resv);
++	if (fence && !nouveau_local_fence(fence, chan->drm))
++		ret = fence_wait(fence, true);
++
++	fobj = reservation_object_get_list(resv);
++	if (!fobj || ret)
++		return ret;
++
++	for (i = 0; i < fobj->shared_count && !ret; ++i) {
++		fence = rcu_dereference_protected(fobj->shared[i],
++						reservation_object_held(resv));
++
++		/* should always be true, for now */
++		if (!nouveau_local_fence(fence, chan->drm))
++			ret = fence_wait(fence, true);
++	}
++
++	return ret;
+ }
+ 
+ void
+ nouveau_fence_unref(struct nouveau_fence **pfence)
+ {
+ 	if (*pfence)
+-		kref_put(&(*pfence)->kref, nouveau_fence_del);
++		fence_put(&(*pfence)->base);
+ 	*pfence = NULL;
+ }
+ 
+@@ -307,7 +377,7 @@ struct nouveau_fence *
+ nouveau_fence_ref(struct nouveau_fence *fence)
+ {
+ 	if (fence)
+-		kref_get(&fence->kref);
++		fence_get(&fence->base);
+ 	return fence;
+ }
+ 
+@@ -325,9 +395,7 @@ nouveau_fence_new(struct nouveau_channel *chan, bool sysmem,
+ 	if (!fence)
+ 		return -ENOMEM;
+ 
+-	INIT_LIST_HEAD(&fence->work);
+ 	fence->sysmem = sysmem;
+-	kref_init(&fence->kref);
+ 
+ 	ret = nouveau_fence_emit(fence, chan);
+ 	if (ret)
+@@ -336,3 +404,85 @@ nouveau_fence_new(struct nouveau_channel *chan, bool sysmem,
+ 	*pfence = fence;
  	return ret;
  }
++
++
++static bool nouveau_fence_no_signaling(struct fence *f)
++{
++	/*
++	 * This needs uevents to work correctly, but fence_add_callback relies on
++	 * being able to enable signaling. It will still get signaled eventually,
++	 * just not right away.
++	 */
++	if (nouveau_fence_is_signaled(f))
++		return false;
++
++	return true;
++}
++
++static const char *nouveau_fence_get_get_driver_name(struct fence *fence)
++{
++	return "nouveau";
++}
++
++static const char *nouveau_fence_get_timeline_name(struct fence *f)
++{
++	struct nouveau_fence *fence =
++		container_of(f, struct nouveau_fence, base);
++	struct nouveau_fence_chan *fctx = fence->channel->fence;
++
++	return fctx ? fctx->name : "dead channel";
++}
++
++static const struct fence_ops nouveau_fence_ops_legacy = {
++	.get_driver_name = nouveau_fence_get_get_driver_name,
++	.get_timeline_name = nouveau_fence_get_timeline_name,
++	.enable_signaling = nouveau_fence_no_signaling,
++	.signaled = nouveau_fence_is_signaled,
++	.wait = nouveau_fence_wait_legacy,
++	.release = NULL
++};
++
++static int
++nouveau_fence_wait_uevent_handler(void *priv, int index)
++{
++	struct nouveau_fence *fence = priv;
++
++	if (nouveau_fence_is_signaled(&fence->base))
++		nouveau_fence_signal(fence);
++
++	/*
++	 * NVKM_EVENT_DROP is never appropriate here, nouveau_fence_signal
++	 * will unlink and free the event if needed.
++	 */
++	return NVKM_EVENT_KEEP;
++}
++
++static bool nouveau_fence_enable_signaling(struct fence *f)
++{
++	struct nouveau_fence *fence = container_of(f, struct nouveau_fence, base);
++	struct nouveau_event *event = container_of(f->lock, struct nouveau_event, list_lock);
++	struct nouveau_eventh *handler = &fence->event;
++
++	handler->event = event;
++	handler->func = nouveau_fence_wait_uevent_handler;
++	handler->priv = fence;
++
++	nouveau_event_get(handler);
++	if (nouveau_fence_is_signaled(f)) {
++		nouveau_event_put(handler);
++		return false;
++	}
++
++	list_add_tail(&handler->head, &event->index[0].list);
++
++	return true;
++}
++
++static const struct fence_ops nouveau_fence_ops_uevent = {
++	.get_driver_name = nouveau_fence_get_get_driver_name,
++	.get_timeline_name = nouveau_fence_get_timeline_name,
++	.enable_signaling = nouveau_fence_enable_signaling,
++	.signaled = nouveau_fence_is_signaled,
++	.wait = fence_default_wait,
++	.release = NULL
++};
+diff --git a/drivers/gpu/drm/nouveau/nouveau_fence.h b/drivers/gpu/drm/nouveau/nouveau_fence.h
+index c57bb61da58c..1989ec22e66e 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_fence.h
++++ b/drivers/gpu/drm/nouveau/nouveau_fence.h
+@@ -1,18 +1,21 @@
+ #ifndef __NOUVEAU_FENCE_H__
+ #define __NOUVEAU_FENCE_H__
  
-@@ -85,6 +110,7 @@ void up_write(struct rw_semaphore *sem)
++#include <linux/fence.h>
++
+ struct nouveau_drm;
++struct nouveau_bo;
+ 
+ struct nouveau_fence {
++	struct fence base;
++
+ 	struct list_head head;
+-	struct list_head work;
+-	struct kref kref;
++	struct nouveau_eventh event;
+ 
+ 	bool sysmem;
+ 
+ 	struct nouveau_channel *channel;
+ 	unsigned long timeout;
+-	u32 sequence;
+ };
+ 
+ int  nouveau_fence_new(struct nouveau_channel *, bool sysmem,
+@@ -25,7 +28,7 @@ int  nouveau_fence_emit(struct nouveau_fence *, struct nouveau_channel *);
+ bool nouveau_fence_done(struct nouveau_fence *);
+ void nouveau_fence_work(struct nouveau_fence *, void (*)(void *), void *);
+ int  nouveau_fence_wait(struct nouveau_fence *, bool lazy, bool intr);
+-int  nouveau_fence_sync(struct nouveau_fence *, struct nouveau_channel *);
++int  nouveau_fence_sync(struct nouveau_bo *, struct nouveau_channel *);
+ 
+ struct nouveau_fence_chan {
+ 	struct list_head pending;
+@@ -38,8 +41,10 @@ struct nouveau_fence_chan {
+ 	int  (*emit32)(struct nouveau_channel *, u64, u32);
+ 	int  (*sync32)(struct nouveau_channel *, u64, u32);
+ 
+-	spinlock_t lock;
++	spinlock_t *lock;
+ 	u32 sequence;
++	u32 context;
++	char name[24];
+ };
+ 
+ struct nouveau_fence_priv {
+@@ -49,13 +54,14 @@ struct nouveau_fence_priv {
+ 	int  (*context_new)(struct nouveau_channel *);
+ 	void (*context_del)(struct nouveau_channel *);
+ 
+-	wait_queue_head_t waiting;
+ 	bool uevent;
++
++	u32 contexts, context_base;
+ };
+ 
+ #define nouveau_fence(drm) ((struct nouveau_fence_priv *)(drm)->fence)
+ 
+-void nouveau_fence_context_new(struct nouveau_fence_chan *);
++void nouveau_fence_context_new(struct nouveau_channel *, struct nouveau_fence_chan *);
+ void nouveau_fence_context_del(struct nouveau_fence_chan *);
+ 
+ int nv04_fence_create(struct nouveau_drm *);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
+index 6cd5298cbb53..a61530becfb9 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_gem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+@@ -428,18 +428,6 @@ retry:
+ }
+ 
+ static int
+-validate_sync(struct nouveau_channel *chan, struct nouveau_bo *nvbo)
+-{
+-	struct nouveau_fence *fence = nvbo->bo.sync_obj;
+-	int ret = 0;
+-
+-	if (fence)
+-		ret = nouveau_fence_sync(fence, chan);
+-
+-	return ret;
+-}
+-
+-static int
+ validate_list(struct nouveau_channel *chan, struct nouveau_cli *cli,
+ 	      struct list_head *list, struct drm_nouveau_gem_pushbuf_bo *pbbo,
+ 	      uint64_t user_pbbo_ptr)
+@@ -468,9 +456,10 @@ validate_list(struct nouveau_channel *chan, struct nouveau_cli *cli,
+ 			return ret;
+ 		}
+ 
+-		ret = validate_sync(chan, nvbo);
++		ret = nouveau_fence_sync(nvbo, chan);
+ 		if (unlikely(ret)) {
+-			NV_ERROR(cli, "fail post-validate sync\n");
++			if (ret != -ERESTARTSYS)
++				NV_ERROR(cli, "fail post-validate sync\n");
+ 			return ret;
+ 		}
+ 
+diff --git a/drivers/gpu/drm/nouveau/nv04_fence.c b/drivers/gpu/drm/nouveau/nv04_fence.c
+index 94eadd1dd10a..997c54122ed9 100644
+--- a/drivers/gpu/drm/nouveau/nv04_fence.c
++++ b/drivers/gpu/drm/nouveau/nv04_fence.c
+@@ -43,7 +43,7 @@ nv04_fence_emit(struct nouveau_fence *fence)
+ 	int ret = RING_SPACE(chan, 2);
+ 	if (ret == 0) {
+ 		BEGIN_NV04(chan, NvSubSw, 0x0150, 1);
+-		OUT_RING  (chan, fence->sequence);
++		OUT_RING  (chan, fence->base.seqno);
+ 		FIRE_RING (chan);
+ 	}
+ 	return ret;
+@@ -77,7 +77,7 @@ nv04_fence_context_new(struct nouveau_channel *chan)
  {
- 	rwsem_release(&sem->dep_map, 1, _RET_IP_);
+ 	struct nv04_fence_chan *fctx = kzalloc(sizeof(*fctx), GFP_KERNEL);
+ 	if (fctx) {
+-		nouveau_fence_context_new(&fctx->base);
++		nouveau_fence_context_new(chan, &fctx->base);
+ 		fctx->base.emit = nv04_fence_emit;
+ 		fctx->base.sync = nv04_fence_sync;
+ 		fctx->base.read = nv04_fence_read;
+diff --git a/drivers/gpu/drm/nouveau/nv10_fence.c b/drivers/gpu/drm/nouveau/nv10_fence.c
+index 06f434f03fba..e8f73f7f31ef 100644
+--- a/drivers/gpu/drm/nouveau/nv10_fence.c
++++ b/drivers/gpu/drm/nouveau/nv10_fence.c
+@@ -36,7 +36,7 @@ nv10_fence_emit(struct nouveau_fence *fence)
+ 	int ret = RING_SPACE(chan, 2);
+ 	if (ret == 0) {
+ 		BEGIN_NV04(chan, 0, NV10_SUBCHAN_REF_CNT, 1);
+-		OUT_RING  (chan, fence->sequence);
++		OUT_RING  (chan, fence->base.seqno);
+ 		FIRE_RING (chan);
+ 	}
+ 	return ret;
+@@ -74,7 +74,7 @@ nv10_fence_context_new(struct nouveau_channel *chan)
+ 	if (!fctx)
+ 		return -ENOMEM;
  
-+	rwsem_clear_owner(sem);
- 	__up_write(sem);
+-	nouveau_fence_context_new(&fctx->base);
++	nouveau_fence_context_new(chan, &fctx->base);
+ 	fctx->base.emit = nv10_fence_emit;
+ 	fctx->base.read = nv10_fence_read;
+ 	fctx->base.sync = nv10_fence_sync;
+diff --git a/drivers/gpu/drm/nouveau/nv17_fence.c b/drivers/gpu/drm/nouveau/nv17_fence.c
+index 22aa9963ea6f..e404bab31e9d 100644
+--- a/drivers/gpu/drm/nouveau/nv17_fence.c
++++ b/drivers/gpu/drm/nouveau/nv17_fence.c
+@@ -83,7 +83,7 @@ nv17_fence_context_new(struct nouveau_channel *chan)
+ 	if (!fctx)
+ 		return -ENOMEM;
+ 
+-	nouveau_fence_context_new(&fctx->base);
++	nouveau_fence_context_new(chan, &fctx->base);
+ 	fctx->base.emit = nv10_fence_emit;
+ 	fctx->base.read = nv10_fence_read;
+ 	fctx->base.sync = nv17_fence_sync;
+diff --git a/drivers/gpu/drm/nouveau/nv50_fence.c b/drivers/gpu/drm/nouveau/nv50_fence.c
+index 0ee363840035..19f6fccb84a1 100644
+--- a/drivers/gpu/drm/nouveau/nv50_fence.c
++++ b/drivers/gpu/drm/nouveau/nv50_fence.c
+@@ -47,7 +47,7 @@ nv50_fence_context_new(struct nouveau_channel *chan)
+ 	if (!fctx)
+ 		return -ENOMEM;
+ 
+-	nouveau_fence_context_new(&fctx->base);
++	nouveau_fence_context_new(chan, &fctx->base);
+ 	fctx->base.emit = nv10_fence_emit;
+ 	fctx->base.read = nv10_fence_read;
+ 	fctx->base.sync = nv17_fence_sync;
+diff --git a/drivers/gpu/drm/nouveau/nv84_fence.c b/drivers/gpu/drm/nouveau/nv84_fence.c
+index 9fd475c89820..8a06727b23d1 100644
+--- a/drivers/gpu/drm/nouveau/nv84_fence.c
++++ b/drivers/gpu/drm/nouveau/nv84_fence.c
+@@ -89,7 +89,7 @@ nv84_fence_emit(struct nouveau_fence *fence)
+ 	else
+ 		addr += fctx->vma.offset;
+ 
+-	return fctx->base.emit32(chan, addr, fence->sequence);
++	return fctx->base.emit32(chan, addr, fence->base.seqno);
  }
  
-@@ -99,6 +125,7 @@ void downgrade_write(struct rw_semaphore *sem)
- 	 * lockdep: a downgraded write will live on as a write
- 	 * dependency.
- 	 */
-+	rwsem_clear_owner(sem);
- 	__downgrade_write(sem);
+ static int
+@@ -105,7 +105,7 @@ nv84_fence_sync(struct nouveau_fence *fence,
+ 	else
+ 		addr += fctx->vma.offset;
+ 
+-	return fctx->base.sync32(chan, addr, fence->sequence);
++	return fctx->base.sync32(chan, addr, fence->base.seqno);
  }
  
-@@ -122,6 +149,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
- 	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
+ static u32
+@@ -149,12 +149,14 @@ nv84_fence_context_new(struct nouveau_channel *chan)
+ 	if (!fctx)
+ 		return -ENOMEM;
  
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
+-	nouveau_fence_context_new(&fctx->base);
++	nouveau_fence_context_new(chan, &fctx->base);
+ 	fctx->base.emit = nv84_fence_emit;
+ 	fctx->base.sync = nv84_fence_sync;
+ 	fctx->base.read = nv84_fence_read;
+ 	fctx->base.emit32 = nv84_fence_emit32;
+ 	fctx->base.sync32 = nv84_fence_sync32;
++	fctx->base.sequence = nv84_fence_read(chan);
++	fctx->base.context = priv->base.context_base + fifo->chid;
  
- EXPORT_SYMBOL(_down_write_nest_lock);
-@@ -141,6 +169,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
- 	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
+ 	ret = nouveau_bo_vma_add(priv->bo, client->vm, &fctx->vma);
+ 	if (ret == 0) {
+@@ -239,7 +241,8 @@ nv84_fence_create(struct nouveau_drm *drm)
+ 	priv->base.context_new = nv84_fence_context_new;
+ 	priv->base.context_del = nv84_fence_context_del;
  
- 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-+	rwsem_set_owner(sem);
- }
+-	init_waitqueue_head(&priv->base.waiting);
++	priv->base.contexts = pfifo->max + 1;
++	priv->base.context_base = fence_context_alloc(priv->base.contexts);
+ 	priv->base.uevent = true;
  
- EXPORT_SYMBOL(down_write_nested);
--- 
-1.8.1.4
-
-
+ 	ret = nouveau_bo_new(drm->dev, 16 * (pfifo->max + 1), 0,
 
