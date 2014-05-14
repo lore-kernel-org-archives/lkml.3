@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaENTyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:54:19 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:35926 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaENTyQ (ORCPT
+	id S1751797AbaENT4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:56:04 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:60658 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaENT4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:54:16 -0400
-Message-ID: <5373C9DA.4050002@gmail.com>
-Date: Wed, 14 May 2014 21:54:02 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 15:56:01 -0400
+Date: Wed, 14 May 2014 21:55:55 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 23/27] sparc: Use common bits from generic tlb.h
+Message-ID: <20140514195555.GA2801@ravnborg.org>
+References: <1400093999-18703-1-git-send-email-richard@nod.at>
+ <1400093999-18703-24-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Chanwoo Choi <cw00.choi@samsung.com>, t.figa@samsung.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, tushar.behera@linaro.org,
-        sajjan.linux@gmail.com, linux-samsung-soc@vger.kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, sachin.kamat@linaro.org,
-        thomas.abraham@linaro.org, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, marc.zyngier@arm.com,
-        inki.dae@samsung.com, Rob Herring <robh+dt@kernel.org>,
-        ben-linux@fluff.org, Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, hyunhee.kim@samsung.com,
-        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
-        yj44.cho@samsung.com, kyungmin.park@samsung.com,
-        Kumar Gala <galak@codeaurora.org>, olof@lixom.net,
-        chanho61.park@samsung.com
-Subject: Re: [PATCHv5 4/5] dt-bindings: add documentation for Exynos3250 clock
- controller
-References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <1399986308-23744-5-git-send-email-cw00.choi@samsung.com> <5373C589.9080405@gmail.com> <5373C828.1010804@samsung.com>
-In-Reply-To: <5373C828.1010804@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400093999-18703-24-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.05.2014 21:46, Kukjin Kim wrote:
-> On 05/15/14 04:35, Tomasz Figa wrote:
->> Hi,
->>
->> On 13.05.2014 15:05, Chanwoo Choi wrote:
->>> The Exynos3250 clocks are statically listed and registered using the
->>> Samsung specific common clock helper functions. Both device tree based
->>> clock lookup and clkdev based clock lookups are supported.
->>>
->>> Signed-off-by: Chanwoo Choi<cw00.choi@samsung.com>
->>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
->>> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
->>> Cc: Mike Turquette<mturquette@linaro.org>
->>> Cc: Kukjin Kim<kgene.kim@samsung.com>
->>> Cc: Rob Herring<robh+dt@kernel.org>
->>> Cc: Pawel Moll<pawel.moll@arm.com>
->>> Cc: Mark Rutland<mark.rutland@arm.com>
->>> Cc: Ian Campbell<ijc+devicetree@hellion.org.uk>
->>> Cc: Kumar Gala<galak@codeaurora.org>
->>> Cc: Randy Dunlap<rdunlap@infradead.org>
->>> Cc: Tomasz Figa<t.figa@samsung.com>
->>> ---
->>>   .../devicetree/bindings/clock/exynos3250-clock.txt | 41
->>> ++++++++++++++++++++++
->>>   1 file changed, 41 insertions(+)
->>>   create mode 100644
->>> Documentation/devicetree/bindings/clock/exynos3250-clock.txt
->>>
->>> diff --git
->>> a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
->>> b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
->>> new file mode 100644
->>> index 0000000..aadc9c5
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
->>> @@ -0,0 +1,41 @@
->>> +* Samsung Exynos3250 Clock Controller
->>> +
->>> +The Exynos3250 clock controller generates and supplies clock to various
->>> +controllers within the Exynos3250 SoC.
->>> +
->>> +Required Properties:
->>> +
->>> +- compatible: should be one of the following.
->>> +  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250
->>> SoC.
->>> +
->>> +- reg: physical base address of the controller and length of memory
->>> mapped
->>> +  region.
->>> +
->>> +- #clock-cells: should be 1.
->>> +
->>> +Each clock is assigned an identifier and client nodes can use this
->>> identifier
->>> +to specify the clock which they consume.
->>> +
->>> +All available clocks are defined as preprocessor macros in
->>> +dt-bindings/clock/exynos3250.h header and can be used in device
->>> +tree sources.
->>> +
->>> +Example 1: An example of a clock controller node is listed below.
->>> +
->>> +    cmu: clock-controller@10030000 {
->>> +        compatible = "samsung,exynos3250-cmu";
->>> +        reg =<0x10030000 0x20000>;
->>> +        #clock-cells =<1>;
->>> +    };
->>> +
->>> +Example 2: UART controller node that consumes the clock generated by
->>> the clock
->>> +       controller. Refer to the standard clock bindings for information
->>> +       about 'clocks' and 'clock-names' property.
->>> +
->>> +    serial@13800000 {
->>> +        compatible = "samsung,exynos4210-uart";
->>> +        reg =<0x13800000 0x100>;
->>> +        interrupts =<0 109 0>;
->>> +        clocks =<&cmu CLK_UART0>,<&cmu CLK_SCLK_UART0>;
->>> +        clock-names = "uart", "clk_uart_baud0";
->>> +    };
->>>
->>
->> Oops, I've forgotten to apply this one. Since it doesn't have any
->> dependencies, Kukjin, could you apply it on top of my pull requests with
->> my Ack? Thanks in advance.
->>
->> Acked-by: Tomasz Figa<t.figa@samsung.com>
->>
-> Sure, I will do it on your 4/4 pull-request after pulling it into
-> samsung tree.
+On Wed, May 14, 2014 at 08:59:55PM +0200, Richard Weinberger wrote:
+> It is no longer needed to define them on our own.
+> 
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: sparclinux@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/sparc/include/asm/tlb_32.h | 8 --------
+>  arch/sparc/include/asm/tlb_64.h | 3 ---
+>  2 files changed, 11 deletions(-)
+> 
+> diff --git a/arch/sparc/include/asm/tlb_32.h b/arch/sparc/include/asm/tlb_32.h
+> index 6d02d1c..60641a1 100644
+> --- a/arch/sparc/include/asm/tlb_32.h
+> +++ b/arch/sparc/include/asm/tlb_32.h
+> @@ -11,14 +11,6 @@ do {								\
+>  	flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
+>  } while (0)
+>  
+> -#define __tlb_remove_tlb_entry(tlb, pte, address) \
+> -	do { } while (0)
+> -
+> -#define tlb_flush(tlb) \
+> -do {								\
+> -	flush_tlb_mm((tlb)->mm);				\
+> -} while (0)
+> -
+>  #include <asm-generic/tlb.h>
+>  
+>  #endif /* _SPARC_TLB_H */
 
-Thanks!
+This part looks OK.
 
-Best regards,
-Tomasz
+> diff --git a/arch/sparc/include/asm/tlb_64.h b/arch/sparc/include/asm/tlb_64.h
+> index 190e189..36fdcec 100644
+> --- a/arch/sparc/include/asm/tlb_64.h
+> +++ b/arch/sparc/include/asm/tlb_64.h
+> @@ -22,9 +22,6 @@ extern void smp_flush_tlb_mm(struct mm_struct *mm);
+>  extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
+>  extern void flush_tlb_pending(void);
+>  
+> -#define tlb_start_vma(tlb, vma) do { } while (0)
+> -#define tlb_end_vma(tlb, vma)	do { } while (0)
+> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+>  #define tlb_flush(tlb)	flush_tlb_pending()
+>  
+>  #include <asm-generic/tlb.h>
+
+This does not fly for sparc64.
+__pte_free_tlb is a static inline in pgalloc_64.h so no
+define exist to teach tlb.h that an arch override exist.
+
+Likewise for __pmd_free_tlb
+
+	Sam
