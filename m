@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaENDZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 23:25:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18808 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaENDZh (ORCPT
+	id S1754100AbaENDZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 23:25:46 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:57764 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaENDZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 23:25:37 -0400
-Message-ID: <5372E20A.1020707@oracle.com>
-Date: Tue, 13 May 2014 23:24:58 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: mm: shmem: NULL ptr deref in shmem_fault
-References: <5370DA09.7020801@oracle.com> <20140512141238.3a0673b3f1a2ee5d47498719@linux-foundation.org> <53713A01.3050502@oracle.com> <alpine.LSU.2.11.1405131442260.22181@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1405131442260.22181@eggly.anvils>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 13 May 2014 23:25:41 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, jassisinghbrar@gmail.com
+Subject: [PATCH] dma: pl330: Add support for DMA_PAUSE command
+Date: Wed, 14 May 2014 08:53:50 +0530
+Message-Id: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 06:20 PM, Hugh Dickins wrote:
-> I haven't delved into the perf_even_mmap d_path (fs/dcache.c:2947) one,
-> but the Sys_mremap one on file->f_op->f_unmapped_area sounds like what
-> we have here: struct file has been freed.
-> 
-> I believe Al is innocent: I point a quivering finger at... Kirill.
-> 
-> Just guessing, but we know how fond trinity is of remap_file_pages(),
-> and comparing old and new emulations shows that interesting
-> 
-> 	struct file *file = get_file(vma->vm_file);
->         addr = mmap_region(...);
-> 	fput(file);
-> 
-> in mm/fremap.c's old emulation, but no get_file() and fput() around 
-> the do_mmap_pgoff() in mm/mmap.c's new emulation.
-> 
-> Before it puts in the new, do_mmap_pgoff() might unmap the last reference
-> to vma->vm_file, so emulation needs to take its own reference.  I'm not
-> sure how that plays out nowadays with Al's deferred fput, but it does
-> look suspicious to me.
+While playing back audio, pmc_dmaengine requests the DMA channel to
+stop DMA transmission through DMA_PAUSE command.
 
-I've tested it by reverting the remap_file_pages() patch, and the problem
-seems to have disappeared.
+Currently PL330 driver doesn't support DMA pause command, leaving
+the DMA state inconsistent when the system resumes. Instead, it would
+be better to terminate the DMA transfer during suspend and restart
+again during resume.
 
-Then, I've added it back again, wrapping the do_mmap_pgoff() call with
-get_file() and fput(), and the problem is still gone.
+Tested with audio playback across a suspend-resume cycle.
 
-Seems like that was the issue all along. I'll send a patch...
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+ drivers/dma/pl330.c |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 73fa9b7..cd70f42 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2362,6 +2362,7 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
+ 	LIST_HEAD(list);
+ 
+ 	switch (cmd) {
++	case DMA_PAUSE:
+ 	case DMA_TERMINATE_ALL:
+ 		spin_lock_irqsave(&pch->lock, flags);
+ 
+-- 
+1.7.9.5
 
-Thanks,
-Sasha
