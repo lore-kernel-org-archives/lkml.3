@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaENCJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 22:09:52 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:8460 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaENCJt (ORCPT
+	id S1753218AbaENCMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 22:12:10 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:43918 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaENCMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 22:09:49 -0400
-X-AuditID: cbfec37d-b7f966d000005e7e-b3-5372d06b3039
-Message-id: <5372D069.7030906@samsung.com>
-Date: Tue, 13 May 2014 20:09:45 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.12 000/182] 3.12.20-stable review
-References: <cover.1399973152.git.jslaby@suse.cz>
-In-reply-to: <cover.1399973152.git.jslaby@suse.cz>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.217]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9hX93sC0XBBv13rCw+/97FanF51xw2
-	iycLzzBZTD01gcViwcZHjA6sHjtn3WX32Pm9gd3jzIIj7B6fN8kFsERx2aSk5mSWpRbp2yVw
-	ZTz/uZml4BhbxcqmwAbGOaxdjJwcEgImEi0TN7FA2GISF+6tZwOxhQSWMUpc+WnexcgFZPcy
-	SWx6e58RwtnGKLFx3VImkCpeAS2J9guXmEFsFgFViWNPrjGC2GwC6hKfX+9gh5gkJ9G0ZDVQ
-	DQeHqECExOMLQhCtghI/Jt8DWywiYC7x4M4BsHJmgRKJ68+/gB0hDBS/NW021EGGEl//LmUE
-	GcMpYCTx6rgkRLmZxKOWdcwQtrzE5jVvmSHKlSX+XD7FBPGXssT9yQdZJjCKzEKyeRaS9llI
-	2hcwMq9iFCstTi4oTkpPrTDRK07MLS7NS9dLzs/dxAiJktodjPe/2hxiFOBgVOLhveFcFCzE
-	mlhWXJl7iFGCg1lJhLd8C1CINyWxsiq1KD++qDQntfgQIxMHp1QDo6ktq2DS+SyPVy0rHskf
-	ik5s/Rvd6JBmciblevW8z/VNCgXrrY93VH6Jzb71pLjWgrX7zsTNQpt8tA4kTi6Ys8NL56Tl
-	9cPH3q5njpwZwndK/ID7jtLC/9dc/82Z7KM85XNExBqWJukJemklMupuf5dFHe3pzpTcofOK
-	3bGJ52+3Z+vS+9/2KrEUZyQaajEXFScCAE7Vi+JwAgAA
+	Tue, 13 May 2014 22:12:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAVeFuLqF6d+-BHhFzL+w9bFNxbxWV97dsx1Kbd2GD1PNf3UFg@mail.gmail.com>
+References: <1399175125-6430-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdYM5W2oVT0y25u+BhWHpVma5fRP8MgmEH46dAyu8L8-2g@mail.gmail.com> <CAAVeFuLqF6d+-BHhFzL+w9bFNxbxWV97dsx1Kbd2GD1PNf3UFg@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 14 May 2014 11:11:46 +0900
+Message-ID: <CAAVeFu+Rh-AtqfvcoVE6tz3PPvvwVZcxM11dxO4zuDXdMyxnrg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: make of_get_named_gpiod_flags() private
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 03:26 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.20 release.
-> There are 182 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Tue, May 13, 2014 at 10:23 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, May 13, 2014 at 10:17 PM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Sun, May 4, 2014 at 5:45 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>
+>>> of_get_named_gpiod_flags() is visible and directly usable by GPIO
+>>> consumers, but it really should not as the gpiod interface relies
+>>> on the simpler gpiod_get() to provide properly-configured GPIOs.
+>>>
+>>> of_get_named_gpiod_flags() is just used internally by gpiolib to
+>>> implement gpiod_get(), and by the old of_get_named_gpio_flags()
+>>> function, therefore it makes sense to make it gpiolib-private.
+>>>
+>>> As a side-effect, the unused (and unneeded) of_get_gpiod_flags()
+>>> inline function is also removed, and of_get_named_gpio_flags() is moved
+>>> from a static inline function to a regular one in gpiolib-of.c
+>>>
+>>> This results in all references to gpiod_* functions in of_gpio.h being
+>>> gone, which is the way it should be since this file is part of the old
+>>> integer GPIO interface.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>
+>> This patch broke a lot of drivers so I had to take it out again...
 >
-> Responses should be made by Thu May 15 09:25:52 2014
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.20-rc1.xz
-> and the diffstat can be found below.
->
-> thanks,
-> js
->
+> That's unexpected - what happens with it?
 
-Compiled and booted on my test system. No dmesg regressions.
+I double-checked the patch and tested it on some ARM boards, couldn't
+find anything wrong during compilation and runtime. Would appreciate
+some specifics about what broke so I can address the issue.
 
--- Shuah
-
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Thanks,
+Alex.
