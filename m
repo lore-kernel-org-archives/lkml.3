@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbaENIIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:08:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747AbaENIIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:08:01 -0400
-Date: Wed, 14 May 2014 16:09:26 +0800
-From: Dave Young <dyoung@redhat.com>
-To: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: kaslr to avoid setup_data regions
-Message-ID: <20140514080926.GF2039@darkstar.nay.redhat.com>
-References: <20140514074940.GA18774@dhcp-16-198.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514074940.GA18774@dhcp-16-198.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753112AbaENILd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:11:33 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:48695 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaENIL1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:11:27 -0400
+Date: Wed, 14 May 2014 10:11:15 +0200
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Romain Francoise <romain@orebokech.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com, ddongch@cn.ibm.com
+Subject: Re: [PATCH v1] vhost: avoid large order allocations
+Message-ID: <20140514101115.4b7ffd69@bee>
+In-Reply-To: <20140513151527.GA28517@redhat.com>
+References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
+	<20140513084049.GE29442@redhat.com>
+	<87tx8tg3a1.fsf@kima.orebokech.com>
+	<20140513151527.GA28517@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051408-5024-0000-0000-000009D255BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/14 at 03:49pm, Dave Young wrote:
-> X86 will pass setup_data region while necessary, these regions could be
-> overwitten by kernel due to kaslr.
-> 
-> Thus iterate and add setup regions to mem_avoid[] in this patch.
-> Set max mem avoid entries 32, hopefully it will be enough.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/boot/compressed/aslr.c |   28 +++++++++++++++++++++++++++-
->  1 file changed, 27 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/arch/x86/boot/compressed/aslr.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/boot/compressed/aslr.c
-> +++ linux-2.6/arch/x86/boot/compressed/aslr.c
-> @@ -110,8 +110,9 @@ struct mem_vector {
->  	unsigned long size;
->  };
->  
-> -#define MEM_AVOID_MAX 5
-> +#define MEM_AVOID_MAX 32
->  static struct mem_vector mem_avoid[MEM_AVOID_MAX];
-> +static int mem_avoid_nr;
->  
->  static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
->  {
-> @@ -135,6 +136,28 @@ static bool mem_overlaps(struct mem_vect
->  	return true;
->  }
->  
-> +static void mem_avoid_setup_data(void)
-> +{
-> +	struct setup_data *data;
-> +	u64 pa_data;
-> +
-> +	if (mem_avoid_nr >= MEM_AVOID_MAX) {
-> +		debug_putstr("KASLR: too many setup_data ranges.\n");
-> +		return;
-> +	}
-> +
-> +	pa_data = real_mode->hdr.setup_data;
-> +	while (pa_data) {
-> +		data = (struct setup_data *)pa_data;
-> +		if (pa_data < CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
-> +			mem_avoid[mem_avoid_nr].start = pa_data;
-> +			mem_avoid[mem_avoid_nr].size = sizeof(*data) + data->len;
-> +			mem_avoid_nr++;
-> +		}
-> +		pa_data = data->next;
-> +	}
-> +}
-> +
->  static void mem_avoid_init(unsigned long input, unsigned long input_size,
->  			   unsigned long output, unsigned long output_size)
->  {
-> @@ -177,6 +200,9 @@ static void mem_avoid_init(unsigned long
->  	/* Avoid stack memory. */
->  	mem_avoid[4].start = (unsigned long)free_mem_end_ptr;
->  	mem_avoid[4].size = BOOT_STACK_SIZE;
-> +	mem_avoid_nr = 5;
-> +
-> +	mem_avoid_setup_data();
->  }
->  
->  /* Does this memory vector overlap a known avoided area? */
+On Tue, 13 May 2014 18:15:27 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Please ignore this one, sent the right version as V2. The difference is V2
-updated to iterate mem_avoid_nr instead of MEM_AVOID_MAX.
+> On Tue, May 13, 2014 at 04:29:58PM +0200, Romain Francoise wrote:
+> > "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > 
+> > > Please dont' do this, extra indirection hurts performance.
+> > > Instead, please change vhost_net_open and scsi to allocate the whole
+> > > structure with vmalloc if kmalloc fails, along the lines of
+> > > 74d332c13b2148ae934ea94dac1745ae92efe8e5
+> > 
+> > Back in January 2013, you didn't seem to think it was a good idea:
+> > 
+> > https://lkml.org/lkml/2013/1/23/492
+> 
+> Hmm true, and Dave thought the structure's too large.
+> I'll have to do some benchmarks to see what the effect
+> of Michael's patch is, performance-wise.
+> If it's too expensive I can pick up your patch, no need to
+> repost.
+> 
 
-Thanks
-Dave
+Thanks, let us know then.
+
