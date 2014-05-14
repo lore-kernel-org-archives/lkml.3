@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaENXrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:47:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48938 "EHLO
+	id S1751587AbaENXuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:50:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48947 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaENXrq (ORCPT
+	with ESMTP id S1750926AbaENXuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:47:46 -0400
-Date: Thu, 15 May 2014 01:47:57 +0200 (CEST)
+	Wed, 14 May 2014 19:50:16 -0400
+Date: Thu, 15 May 2014 01:50:30 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Chris Metcalf <cmetcalf@tilera.com>
 cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Anvin <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [patch 03/32] genirq: Provide generic hwirq allocation
- facility
-In-Reply-To: <5373AB71.3030705@tilera.com>
-Message-ID: <alpine.DEB.2.02.1405150147180.6261@ionos.tec.linutronix.de>
-References: <20140507153622.703412101@linutronix.de> <20140507154334.208629358@linutronix.de> <5373AB71.3030705@tilera.com>
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 15/32] tile: Implement irq_alloc/free_hwirq() for
+ migration
+In-Reply-To: <5373AC00.7090507@tilera.com>
+Message-ID: <alpine.DEB.2.02.1405150148120.6261@ionos.tec.linutronix.de>
+References: <20140507153622.703412101@linutronix.de> <20140507154336.947853241@linutronix.de> <5373AC00.7090507@tilera.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,18 +29,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 14 May 2014, Chris Metcalf wrote:
-
 > On 5/7/2014 11:44 AM, Thomas Gleixner wrote:
-> > --- tip.orig/kernel/irq/Kconfig
-> > +++ tip/kernel/irq/Kconfig
-> > @@ -17,6 +17,11 @@ config GENERIC_IRQ_SHOW
-> >   config GENERIC_IRQ_SHOW_LEVEL
-> >          bool
-> >   +# Facility to allocate an hardware interrupt. This is legacy support
-> > +# and should not be used in new code. Use irq domains instead.
-> > +config GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
-> > +       bool
+> > We want to convert the drivers over to the new interface and finally
+> > tile to sparse irqs. Implement irq_alloc/free_hwirq() for step by step
+> > migration.
+> > 
+> > 
+> > +void irq_free_hwirq(unsigned int irq)
+> > +{
+> > +	destroy_irq();
+> > +}
 > 
-> "a hardware interrupt".
+> Should be destroy_irq(irq).
 
-I'll never get that right!
+Yep. I caught that already when I exposed the series step by step to
+a compiler.
+
+Thanks,
+
+	tglx
