@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049AbaENPzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:55:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32830 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaENPzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:55:54 -0400
-Message-ID: <53739201.6080604@oracle.com>
-Date: Wed, 14 May 2014 11:55:45 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756011AbaENP4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:56:09 -0400
+Received: from 8bytes.org ([85.214.48.195]:46168 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755426AbaENP4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:56:06 -0400
+Date: Wed, 14 May 2014 17:56:01 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 0/4] Clean up DMA API docs and dma_addr_t usage
+Message-ID: <20140514155601.GF23770@8bytes.org>
+References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140514102307.GD6026@8bytes.org>
+ <537390BE.3010307@infradead.org>
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm: NULL ptr deref handling mmaping of special mappings
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537390BE.3010307@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed May 14 17:56:04 2014
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5373921420861849420876
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, May 14, 2014 at 08:50:22AM -0700, Randy Dunlap wrote:
+> On 05/14/2014 03:23 AM, Joerg Roedel wrote:
+> > On Thu, May 08, 2014 at 02:48:47PM -0600, Bjorn Helgaas wrote:
+> >> Maybe the third time's a charm :)
+> >>
+> >> This cleans up some DMA-API documentation and makes a minor no-op change to
+> >> the dma_declare_coherent_memory() prototype.
+> >>
+> >> Changes from v2:
+> >>   - Added description of CPU virtual/physical and bus addresses in
+> >>     DMA-API-HOWTO
+> >>   - Added comments to sh/PCI (Dreamcast) update
+> >>   - Dropped IOMMU interface dma_addr_t changes
+> >>
+> >> I didn't add Arnd's and Greg's acks to patch 1 because of all the new
+> >> address description text I added.
+> >>
+> >> ---
+> >>
+> >> Bjorn Helgaas (4):
+> >>       DMA-API: Clarify physical/bus address distinction
+> >>       DMA-API: Change dma_declare_coherent_memory() CPU address to phys_addr_t
+> >>       sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+> >>       iommu/exynos: Remove unnecessary "&" from function pointers
+> > 
+> > Applied patches 1-3 to my core branch and patch 4 to the arm/exynos
+> > branch. Patch 3 doesn't really belong into my tree, please let me know
+> > if there are any objections against it being there and I'll drop it.
+> 
+> I was thinking that either Bjorn or I should merge patches 1 and 2.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
-
-[ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
-[ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
-[ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1634.972913] Dumping ftrace buffer:
-[ 1634.975493]    (ftrace buffer empty)
-[ 1634.977470] Modules linked in:
-[ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
-[ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
-[ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
-[ 1634.977513] RSP: 0018:ffff88033351faf8  EFLAGS: 00010202
-[ 1634.977513] RAX: 0000000000000000 RBX: ffff88033351fbb0 RCX: 0000000000000028
-[ 1634.977513] RDX: 0000000000000001 RSI: ffff88033351fb38 RDI: ffff88006d28b600
-[ 1634.977513] RBP: ffff88033351fb18 R08: ffff88033351fbb0 R09: 0000000000000000
-[ 1634.977513] R10: ffff88001bcca690 R11: 0000000000000000 R12: ffff88001bcca690
-[ 1634.977513] R13: ffff880000000748 R14: 0000000000000028 R15: ffff88006d28b600
-[ 1634.977513] FS:  00007f79da4b8700(0000) GS:ffff8801b4c00000(0000) knlGS:0000000000000000
-[ 1634.977513] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1634.977513] CR2: 0000000000000000 CR3: 00000003334fb000 CR4: 00000000000006a0
-[ 1634.977513] Stack:
-[ 1634.977513]  ffff88033351fb08 00000000000005d1 00000000000005d1 ffff88033351fbb0
-[ 1634.977513]  ffff88033351fb78 ffffffffac2b83a9 ffff88033351fc28 ffffffffac1cb679
-[ 1634.977513]  0000000000000028 00000007f79da4e9 00007f79da4e9000 0000000000000000
-[ 1634.977513] Call Trace:
-[ 1634.977513] __do_fault (mm/memory.c:2703)
-[ 1634.977513] ? __lock_acquire (kernel/locking/lockdep.c:3189)
-[ 1634.977513] do_read_fault.isra.40 (mm/memory.c:2883)
-[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
-[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
-[ 1634.977513] ? __mem_cgroup_count_vm_event (include/linux/rcupdate.h:391 include/linux/rcupdate.h:893 mm/memcontrol.c:1302)
-[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
-[ 1634.977513] __handle_mm_fault (mm/memory.c:3021 mm/memory.c:3182 mm/memory.c:3306)
-[ 1634.977513] ? __const_udelay (arch/x86/lib/delay.c:126)
-[ 1634.977513] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-[ 1634.977513] handle_mm_fault (mm/memory.c:3329)
-[ 1634.977513] __do_page_fault (arch/x86/mm/fault.c:1224)
-[ 1634.977513] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[ 1634.977513] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[ 1634.977513] ? sched_clock_local (kernel/sched/clock.c:214)
-[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
-[ 1634.977513] ? context_tracking_user_exit (kernel/context_tracking.c:182)
-[ 1634.977513] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 1634.977513] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-[ 1634.977513] do_page_fault (arch/x86/mm/fault.c:1277 include/linux/jump_label.h:105 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1278)
-[ 1634.977513] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-[ 1634.977513] async_page_fault (arch/x86/kernel/entry_64.S:1552)
-[ 1634.977513] ? copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:153)
-[ 1634.977513] ? SyS_add_key (security/keys/keyctl.c:109 security/keys/keyctl.c:62)
-[ 1634.977513] tracesys (arch/x86/kernel/entry_64.S:746)
-[ 1634.977513] Code: 1f 40 00 66 66 66 66 90 55 48 89 e5 53 48 83 ec 18 48 8b 56 08 48 8b 87 a8 00 00 00 48 2b 97 98 00 00 00 74 1e 66 0f 1f 44 00 00 <48> 83 38 00 74 62 48 83 c0 08 48 83 ea 01 75 f0 0f 1f 84 00 00
-[ 1634.977513] RIP special_mapping_fault (mm/mmap.c:2961)
-[ 1634.977513]  RSP <ffff88033351faf8>
-[ 1634.977513] CR2: 0000000000000000
+Okay, fine with me. Then I drop 1-3 entirely and only keep patch 4 in
+the exynos branch.
 
 
-Thanks,
-Sasha
+	Joerg
+
+
