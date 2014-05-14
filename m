@@ -1,74 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaENQAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:00:15 -0400
-Received: from sauhun.de ([89.238.76.85]:40912 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528AbaENQAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:00:13 -0400
-Date: Wed, 14 May 2014 17:59:56 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: s3c2410: resume race fix
-Message-ID: <20140514155956.GD12911@katana>
-References: <1397254781-23833-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
-Content-Disposition: inline
-In-Reply-To: <1397254781-23833-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755995AbaENQCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:02:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50496 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453AbaENQCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:02:36 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH RESEND 1/2] cpufreq: imx6q: Drop devm_clk/regulator_get usage
+Date: Wed, 14 May 2014 18:02:23 +0200
+Message-Id: <1400083344-20042-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.0.0.rc0
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This driver is using devres managed calls incorrectly, giving the cpu0
+device as first parameter instead of the cpufreq platform device.
+This results in resources not being freed if the cpufreq platform device
+is unbound, for example if probing has to be deferred for a missing
+regulator.
+Supporting probe deferral properly is a prerequisite to enabling the
+internal LDO bypass on i.MX6 and regulating the CPU voltage with an
+external regulator.
 
---cHMo6Wbp1wrKhbfi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Resent to linux-pm@vger.kernel.org instead of cpufreq@vger.kernel.org.
+---
+ drivers/cpufreq/imx6q-cpufreq.c | 53 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 39 insertions(+), 14 deletions(-)
 
-On Fri, Apr 11, 2014 at 03:19:41PM -0700, Doug Anderson wrote:
-> From: Olof Johansson <olof@lixom.net>
->=20
-> Don't unmark the device as suspended until after it's been re-setup.
->=20
-> The main race would be w.r.t. an i2c driver that gets resumed at the same
-> time (asyncronously), that is allowed to do a transfer since suspended
-> is set to 0 before reinit, but really should have seen the -EIO return
-> instead.
->=20
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index e27fca8..92a82ec 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -170,25 +170,25 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	arm_clk = devm_clk_get(cpu_dev, "arm");
+-	pll1_sys_clk = devm_clk_get(cpu_dev, "pll1_sys");
+-	pll1_sw_clk = devm_clk_get(cpu_dev, "pll1_sw");
+-	step_clk = devm_clk_get(cpu_dev, "step");
+-	pll2_pfd2_396m_clk = devm_clk_get(cpu_dev, "pll2_pfd2_396m");
++	arm_clk = clk_get(cpu_dev, "arm");
++	pll1_sys_clk = clk_get(cpu_dev, "pll1_sys");
++	pll1_sw_clk = clk_get(cpu_dev, "pll1_sw");
++	step_clk = clk_get(cpu_dev, "step");
++	pll2_pfd2_396m_clk = clk_get(cpu_dev, "pll2_pfd2_396m");
+ 	if (IS_ERR(arm_clk) || IS_ERR(pll1_sys_clk) || IS_ERR(pll1_sw_clk) ||
+ 	    IS_ERR(step_clk) || IS_ERR(pll2_pfd2_396m_clk)) {
+ 		dev_err(cpu_dev, "failed to get clocks\n");
+ 		ret = -ENOENT;
+-		goto put_node;
++		goto put_clk;
+ 	}
+ 
+-	arm_reg = devm_regulator_get(cpu_dev, "arm");
+-	pu_reg = devm_regulator_get(cpu_dev, "pu");
+-	soc_reg = devm_regulator_get(cpu_dev, "soc");
++	arm_reg = regulator_get(cpu_dev, "arm");
++	pu_reg = regulator_get(cpu_dev, "pu");
++	soc_reg = regulator_get(cpu_dev, "soc");
+ 	if (IS_ERR(arm_reg) || IS_ERR(pu_reg) || IS_ERR(soc_reg)) {
+ 		dev_err(cpu_dev, "failed to get regulators\n");
+ 		ret = -ENOENT;
+-		goto put_node;
++		goto put_reg;
+ 	}
+ 
+ 	/*
+@@ -201,21 +201,21 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+ 		ret = of_init_opp_table(cpu_dev);
+ 		if (ret < 0) {
+ 			dev_err(cpu_dev, "failed to init OPP table: %d\n", ret);
+-			goto put_node;
++			goto put_reg;
+ 		}
+ 
+ 		num = dev_pm_opp_get_opp_count(cpu_dev);
+ 		if (num < 0) {
+ 			ret = num;
+ 			dev_err(cpu_dev, "no OPP table is found: %d\n", ret);
+-			goto put_node;
++			goto put_reg;
+ 		}
+ 	}
+ 
+ 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+ 	if (ret) {
+ 		dev_err(cpu_dev, "failed to init cpufreq table: %d\n", ret);
+-		goto put_node;
++		goto put_reg;
+ 	}
+ 
+ 	/* Make imx6_soc_volt array's size same as arm opp number */
+@@ -301,7 +301,24 @@ soc_opp_out:
+ 
+ free_freq_table:
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+-put_node:
++put_reg:
++	if (!IS_ERR(arm_reg))
++		regulator_put(arm_reg);
++	if (!IS_ERR(pu_reg))
++		regulator_put(pu_reg);
++	if (!IS_ERR(soc_reg))
++		regulator_put(soc_reg);
++put_clk:
++	if (!IS_ERR(arm_clk))
++		clk_put(arm_clk);
++	if (!IS_ERR(pll1_sys_clk))
++		clk_put(pll1_sys_clk);
++	if (!IS_ERR(pll1_sw_clk))
++		clk_put(pll1_sw_clk);
++	if (!IS_ERR(step_clk))
++		clk_put(step_clk);
++	if (!IS_ERR(pll2_pfd2_396m_clk))
++		clk_put(pll2_pfd2_396m_clk);
+ 	of_node_put(np);
+ 	return ret;
+ }
+@@ -310,6 +327,14 @@ static int imx6q_cpufreq_remove(struct platform_device *pdev)
+ {
+ 	cpufreq_unregister_driver(&imx6q_cpufreq_driver);
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
++	regulator_put(arm_reg);
++	regulator_put(pu_reg);
++	regulator_put(soc_reg);
++	clk_put(arm_clk);
++	clk_put(pll1_sys_clk);
++	clk_put(pll1_sw_clk);
++	clk_put(step_clk);
++	clk_put(pll2_pfd2_396m_clk);
+ 
+ 	return 0;
+ }
+-- 
+2.0.0.rc0
 
-Applied to for-current, thanks!
-
-
---cHMo6Wbp1wrKhbfi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc5L8AAoJEBQN5MwUoCm2vFgP/0MjLUA5uWZlKqPPkRI5e+5z
-w3MXFVk/aRvsMro2PRwOca8Q022eL5fCl+E4PUabd4H9VNxQf5RGgcVWQgzzJfrP
-QwHHYXprGH/49cLi2UU2CXiVP0O4W9s4d2nnftx1yxmj+9NenVfI49g2WMbdqeuX
-wu/meeitdyNqTARTnygM8YwRrqF6Q98gi+br8ZAiC6I9lLBojwl+/yIUpvC8JmpM
-bRd4AzkNmpQYcP7tx4J6z11Bg9ycSdcbPYACFVOnc2RImxLoGKVAPwBEwDiirSq/
-sgQxi/c28DYpAjjlAzLig0iPlnHrzNA6I8492H+c7dLuWp/X5O6wsaXShsnz/HRX
-29P3riUf3Q0meQY1V+J06437Cf7KtU4fXmCjl9mfvYs1ahSX0IGOdNxc9NdfOrXs
-yFpOURI+zuI7UizyT3t+i+KOiDt7HbpVlG0EHT4zE2YTObP0Wa8qRmBErVPUExqd
-3iAP9EfUxKEAYIHvAeI5YnTR7hy4dV4Lg4piwUEykgwwtA/hr0dWmL4n7Id3W+ps
-2IXT/XL4/Huq8jFKWBx5iVyEiHdR1QYd1J6i/hI7QgteIK7l2fH06qx4LnXcNbpt
-dl51pfuX5B2zHeJJpSQoP/+LeLHAPs8Kbpy9dqTg4ezEHVY2Ppe0Gx8Q56kLx40a
-8L1dPbOsOZm2vpcNvLB+
-=xQeO
------END PGP SIGNATURE-----
-
---cHMo6Wbp1wrKhbfi--
