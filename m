@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaENIVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:21:39 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45175 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaENIVc (ORCPT
+	id S1753992AbaENIWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:22:32 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55973 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaENIW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:21:32 -0400
-Subject: [PATCH -tip v11 7/7] ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER
- for ftrace-kprobe
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 May 2014 17:21:23 +0900
-Message-ID: <20140514082123.5791.52424.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.17-dirty
+	Wed, 14 May 2014 04:22:28 -0400
+Message-ID: <5373275B.2010004@ahsoftware.de>
+Date: Wed, 14 May 2014 10:20:43 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: linux-kernel@vger.kernel.org
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: dt: deps: some tips about how to debug/evaluate this feature
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the kprobes itself owns a hash table to get a kprobe
-data structure corresponding to the given ip address, there
-is no need to test ftrace hash in ftrace side.
-To achive better performance on ftrace-based kprobe,
-FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
-that ftrace skips testing its own hash table.
+Hello,
 
-Without this patch, ftrace_lookup_ip() is biggest cycles
-consumer when 20,000 kprobes are enabled.
-  ----
-  Samples: 1K of event 'cycles', Event count (approx.): 340068894
-  +  20.77%  [k] ftrace_lookup_ip
-  +   8.33%  [k] kprobe_trace_func
-  +   4.83%  [k] get_kprobe_cached
-  ----
+to make it a bit more easier to evaluate or debug this new feature, here 
+are some tips:
 
-With this patch, ftrace_lookup_ip() vanished from the
-cycles consumer list (of course, there is no caller on
-hotpath anymore :))
-  ----
-  Samples: 1K of event 'cycles', Event count (approx.): 186861492
-  +   9.95%  [k] kprobe_trace_func
-  +   6.00%  [k] kprobe_ftrace_handler
-  +   5.53%  [k] get_kprobe_cached
-  ----
+- To see the initialization order you can use dtc:
 
-Changes from v10:
- - Update comment of the flag according to Steven's comment.
+	CROSS_COMPILE=arm-linux-gnu- ARCH=arm make foo.dtb
+	scripts/dtc/dtc -I dtb -t arch/arm/boot/dts/foo.dtb
 
-Changes from v7:
- - Re-evaluate the performance improvement.
+- To see that order in dmesg, I've left a commented function
+   in patch 2/9. Just enable of_init_print_order() in
+   drivers/of/of_dependencies.c
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- include/linux/ftrace.h |    3 +++
- kernel/kprobes.c       |    2 +-
- kernel/trace/ftrace.c  |    3 ++-
- 3 files changed, 6 insertions(+), 2 deletions(-)
+- To see which drivers do call of_platform_populate() theirself
+   (which is not necessary when using this new feature) uncomment the
+   WARN_ON(np->dev_created); in drivers/of/platform.c (patch 2/9).
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ae9504b..5653001 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -93,6 +93,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  * INITIALIZED - The ftrace_ops has already been initialized (first use time
-  *            register_ftrace_function() is called, it will initialized the ops)
-  * DELETED - The ops are being deleted, do not let them be registered again.
-+ * SELF_FILTER - The ftrace_ops function has its own ip filter and does not
-+ *            need to rely on the ftrace internal ip filtering.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-@@ -105,6 +107,7 @@ enum {
- 	FTRACE_OPS_FL_STUB			= 1 << 7,
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
- 	FTRACE_OPS_FL_DELETED			= 1 << 9,
-+	FTRACE_OPS_FL_SELF_FILTER		= 1 << 10,
- };
- 
- /*
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index f0ea46c..4f1a72d 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1037,7 +1037,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
- };
- static int kprobe_ftrace_enabled;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4a54a25..062ca20 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4501,7 +4501,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	 */
- 	preempt_disable_notrace();
- 	do_for_each_ftrace_op(op, ftrace_ops_list) {
--		if (ftrace_ops_test(op, ip, regs))
-+		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
-+		    ftrace_ops_test(op, ip, regs))
- 			op->func(ip, parent_ip, op, regs);
- 	} while_for_each_ftrace_op(op);
- 	preempt_enable_notrace();
+- To see which drivers are already "well done" or not, add a small
+   debug line to of_init_register_platform_driver() in
+   drivers/of/of_dependencies.c:
+
+@@ -416,39 +416,41 @@ int of_init_register_platform_driver(struct 
+platform_driver *drv)
+  {
+         BUG_ON(!is_recording);
+         order.platform_drivers[order.count_drivers++] = drv;
++       pr_info("DEPS: recording of drv %s\n", drv->driver.name);
+         return 0;
+  }
+
+   Now "well done" drivers linked to the kernel will be seen in dmesg as
+   beeing recorded. This also shows most drivers which are not "well
+   done", they will be started before the recording of drivers (except
+   late ones).
+
+- To see when "well done" drivers will be registered (in order) add
+   something like that to drivers/of/of_dependencies.c:
+@@ -445,8 +445,10 @@ void __init of_init_register_drivers(void)
+                         if (of_driver_match_device(dev, &drv->driver)) {
+                                 if (!driver_find(drv->driver.name,
+-                                   drv->driver.bus))
++                                   drv->driver.bus)) {
+                                         platform_driver_register(drv);
++                                       pr_info("DEPS: driver %s 
+registered\n", drv->name);
++                               }
+                                 if (dev->parent)
+                                         device_lock(dev->parent);
+                                 rc = device_attach(dev);
 
 
+Regards,
+
+Alexander Holler
