@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536AbaENNH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:07:28 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:64368 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317AbaENNHZ (ORCPT
+	id S932218AbaENNJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:09:51 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49806 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaENNJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:07:25 -0400
-Date: Wed, 14 May 2014 09:07:22 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
- directly
-Message-ID: <20140514130722.GE28815@htj.dyndns.org>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <5372EF45.8060701@huawei.com>
+	Wed, 14 May 2014 09:09:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        MTD Maling List <linux-mtd@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] mtd: orion-nand: fix build error with ARMv4
+Date: Wed, 14 May 2014 15:09:08 +0200
+Message-ID: <5493671.FYnaLOl21S@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdXD7HhG_jGJdz8hCR847tKcRC-tQnHp=xtTDYVKBc6yQQ@mail.gmail.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <4645786.pJABUgPlCA@wuerfel> <CAMuHMdXD7HhG_jGJdz8hCR847tKcRC-tQnHp=xtTDYVKBc6yQQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5372EF45.8060701@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:05TLbHxSh+XwepfIG62/KFGvpB4mrGhSuDq7M6BeQ0H
+ U4SFUtPWoQHj/xVevQNELFKAdF/z8uJjShPAHI4BCqoRTnmrAN
+ bL6XsjupLP5d1GBdjZTMT6Tayxgxs7KHqdwvd79fS1MBxmFaKi
+ dpmxZpOtNXppgRIwCARSjSS5kYX6IKP4vMA8zPOgmawFeJknRz
+ DyYa4moGuA+BU8MyWzh5Bd1meHpYWuw3DAWBCWFo8LHjXjd4x6
+ 5MUwg9xJ/+HfapzIOFkTNp+72GHn8gmcDpTMyrq0qqDOAiv1mw
+ cVW2HOxxIp5FpvJ9LBJbUWxWFzt4XM8zP8gG3QoXI8w+qCAlHw
+ vhk4CrwJdw40W/cLMSaQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
-
-On Wed, May 14, 2014 at 12:21:25PM +0800, Li Zefan wrote:
-> > There are now use cases where controllers need to iterate through
-> > csses regardless of their online state as long as they have positive
+On Wednesday 14 May 2014 14:35:28 Geert Uytterhoeven wrote:
+> On Wed, May 14, 2014 at 1:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> Sure, but did anyone (Arnd?) have thoughts on a better way to do this:
+> >>
+> >> +#ifdef CONFIG_64BIT
+> >> +               buf64[i++] = readq_relaxed(io_base);
+> >> +#else
+> >> +               buf64[i++] = *(const volatile u64 __force *)io_base;
+> >> +#endif
+> >>
+> >> IMHO, readq should exist on any platform that can issue a 64 bit bus
+> >> transaction, and I expect many ARM's qualify.
+> >
+> > Well, the original problem happened specifically for the case that doesn't
+> > have a 64-bit bus transaction (building for ARMv4). If we define
+> > readq_relaxed, it has to be an inline assembly, in order to work for
+> > drivers that require an atomic transaction, so that would have the
+> > same problem. We are a bit inconsistent here though: most 32-bit
+> > architectures have no readq, parisc has one that does two 32-bit accesses,
+> > sh relies on the compiler, and tile apparently has a native instruction.
+> >
+> > It seems reasonable to replace the inline assembly in this driver with
+> > a new function as a cleanup, but then how do you want to solve the case
+> > of building a combined armv4/v5 kernel?
 > 
-> What use cases are we talking about here?
+> Provide two helper functions, one for v4, one for v5, and call
+> them through a function pointer that's set up during driver probe?
 
-memcg wants to be able to iterate all csses whose refcnts haven't
-reached zero yet so that it can treat offline csses the same way as
-online ones in terms of memory reclaim.  They don't contain new tasks
-so new charges won't be created but offlining won't try to transfer
-all charges to the parent but just leave the offline child attached
-until all charges are eventually reclaimed from the pressure from the
-parent.
+No, that won't help. It's a compile-time problem only: This driver
+is never actually used on ARMv4, but if we build a kernel that supports
+both ARMv4 and later, gcc passes -march=armv4 to the assembler, which
+barfs on an invalid instruction. It would be fine to make that error
+message just go away because we know it will only be used on CPUs that
+do have this instruction.
 
-I'm not too familiar with the details but this makes sense in generic
-sense too.  Offline marks an object starting its draining phase and
-release marks the actual destruction point.  For controllers with
-persistent states like memcg, it's a lot more natural to deal offlined
-csses as "active but draining following the usual hierarchical
-operation" rather than trying to explicitly update the states from
-offline to move them to the parent especially as the effort there
-essentially is a waste as most of those moved charges aren't gonna be
-used in the parent and will be released eventually.
-
-Guaranteeing iteration of offline but not-released csses allow
-controllers to treat the draining stage between offline and release
-more or less identically to online state which in turn can make
-->css_offline() significantly simpler and lighter.
-
-Thanks.
-
--- 
-tejun
+	Arnd
