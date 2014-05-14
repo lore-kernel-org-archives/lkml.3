@@ -1,75 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaENBZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 21:25:46 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:48339 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaENBZm (ORCPT
+	id S1752619AbaENBfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 21:35:12 -0400
+Received: from mdfmta005.mxout.tbr.inty.net ([91.221.168.46]:41608 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752026AbaENBfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 21:25:42 -0400
+	Tue, 13 May 2014 21:35:09 -0400
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 May 2014 21:35:08 EDT
+Message-ID: <5372C86E.5020708@lougher.demon.co.uk>
+Date: Wed, 14 May 2014 02:35:42 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <D38E8E86660E514AB505863C19C9287C73FBD0FE@ORSMSX102.amr.corp.intel.com>
-References: <1399957629-13536-1-git-send-email-xuyongjiande@gmail.com> <D38E8E86660E514AB505863C19C9287C73FBD0FE@ORSMSX102.amr.corp.intel.com>
-From: =?UTF-8?B?5b6Q5rC45YGl?= <xuyongjiande@gmail.com>
-Date: Wed, 14 May 2014 09:25:21 +0800
-Message-ID: <CABVvea3GLVqwg7xMG9KhMfqvLxLQ8cE1NDeHXMxoA2+ZG06w4w@mail.gmail.com>
-Subject: Re: [E1000-devel] [PATCH] e1000: remove the check: skb->len<=0
-To: "Ronciak, John" <john.ronciak@intel.com>
-Cc: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-fsdevel@vger.kernel.org
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [ANN] Squashfs tools 4.3 released
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-MDF-HostID: 9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The check is not right, it should be "(int)(skb->len) <= 0", or we
-just remove this check if "skb->len will never be negative or 0".
+Hi,
 
-2014-05-13 22:57 GMT+08:00 Ronciak, John <john.ronciak@intel.com>:
->> -----Original Message-----
->> From: xuyongjiande@gmail.com [mailto:xuyongjiande@gmail.com]
->> Sent: Monday, May 12, 2014 10:07 PM
->> To: eric.dumazet@gmail.com
->> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Yongjian Xu
->> Subject: [E1000-devel] [PATCH] e1000: remove the check: skb->len<=0
->>
->> From: Yongjian Xu <xuyongjiande@gmail.com>
->>
->> There is no case skb->len would be 0 or 'negative'.
->> Remove the check.
->>
->> Signed-off-by: Yongjian Xu <xuyongjiande@gmail.com>
->> ---
->>  drivers/net/ethernet/intel/e1000/e1000_main.c | 5 -----
->>  1 file changed, 5 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c
->> b/drivers/net/ethernet/intel/e1000/e1000_main.c
->> index 27058df..660971f 100644
->> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
->> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
->> @@ -3105,11 +3105,6 @@ static netdev_tx_t e1000_xmit_frame(struct
->> sk_buff *skb,
->>        */
->>       tx_ring = adapter->tx_ring;
->>
->> -     if (unlikely(skb->len <= 0)) {
->> -             dev_kfree_skb_any(skb);
->> -             return NETDEV_TX_OK;
->> -     }
->> -
->>       /* On PCI/PCI-X HW, if packet size is less than ETH_ZLEN,
->>        * packets may get corrupted during padding by HW.
->>        * To WA this issue, pad all small packets manually.
->> --
->> 1.9.1
-> What is the exact problem that this is fixing?  Did you have a test case that showed a problem with it?
->
-> Cheers,
-> John
->
->
+I'm pleased to announce the release of Squashfs tools 4.3.
+This is the first release in over 3 years, and there are substantial
+improvements to stability, new compression options and compressors,
+speed optimisations, new options for Mksquashfs/Unsquashfs, and fixes
+for CVE-2012-4024 and CVE-2012-4025.
+
+The new release can be downloaded here:
+http://sourceforge.net/projects/squashfs/files/latest/download?source=files
+
+Changes in Squashfs-tools 4.3
+-----------------------------
+
+1. Stability improvements.  Better checking of user input for out of
+    range/invalid values.  Better handling of corrupted Squashfs filesystems
+    (Mksquashfs append mode, and Unsquashfs).  Better handling of buffer
+    overflow/underflow.
+
+2. GZIP compressor now supports compression options, allowing different
+    compression levels to be used.
+
+3. Rewritten LZO compressor with compression options, allowing different
+    LZO algorithms and different compression levels to be used.
+
+4. New LZ4 compressor (note not yet in mainline kernel)
+
+5. Better default memory usage for Mksquashfs.  Mksquashfs by default now
+    uses 25% of physical memory.
+
+6. Duplicate checking in Mksquashfs further optimised.  With certain
+    "problem filesystems" greater than 2x performance improvement.
+    Filesystems with a lot of duplicates should see at least 10-20% speed
+    improvement.
+
+7. The -stat option in Unsquashfs now displays the compression options
+    used to generate the original filesystem.  Previously -stat only displayed
+    the compression algorithm used.
+
+8. The file being compressed/uncompressed in Mksquashfs/Unsquashfs is now
+    displayed if CTRL-\ (SIGQUIT from keyboard) typed.
+
+9. The status of the internal queues/caches in Mksquashfs/Unsquashfs is
+    now displayed if CTRL-\ (SIGQUIT from keyboard) is typed twice within
+    one second.  Normally only useful for "power users", but it can be
+    used to discover if there's any bottlenecks affecting performance
+    (the bottleneck will normally be the compressors/fragment compressors).
+
+10. Miscellaneous new options for Mksquashfs/Unsquashfs to fine tune behaviour.
+
+11. Fixes for CVE-2012-4024 and CVE-2012-4025.
+
+Compatiblity
+------------
+
+Mksquashfs 4.3 generates 4.0 filesystems.  These filesystems are fully
+compatible/interchangable with filesystems generated by Mksquashfs 4.0 and are
+mountable on 2.6.29 and later kernels.
+
+Compressors
+-----------
+
+New compression options and compressors are now supported.
+
+The new options and compressors are:
+
+1. gzip
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 9)
+	  -Xwindow-size <window-size>
+		<window-size> should be 8 .. 15 (default 15)
+	  -Xstrategy strategy1,strategy2,...,strategyN
+		Compress using strategy1,strategy2,...,strategyN in turn
+		and choose the best compression.
+		Available strategies: default, filtered, huffman_only,
+		run_length_encoded and fixed
+
+2. lzo
+	  -Xalgorithm <algorithm>
+		Where <algorithm> is one of:
+			lzo1x_1
+			lzo1x_1_11
+			lzo1x_1_12
+			lzo1x_1_15
+			lzo1x_999 (default)
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 8)
+		Only applies to lzo1x_999 algorithm
+
+3. lz4
+	  -Xhc
+		Compress using LZ4 High Compression
+
+The compression specific options are, obviously, specific to the compressor
+in question, and you should read the compressor documentation and check
+their web sites to understand their behaviour.
+
+In general the defaults used by Mksquashfs for each compressor are optimised
+to give the best performance for each compressor, where what constitutes
+best depends on the compressor.  For gzip/xz best means highest compression
+(trying multiple filters/strategies can improve compression, but this is
+extremely expensive computationally, and hence, not suitable for the defaults),
+for LZO/LZ4 best means a tradeoff between compression and (de)-compression
+overhead (LZO/LZ4 by definition are intended for weaker processors).
+
+New Mksquashfs options
+----------------------
+
+1. -mem <size>
+
+   Set the amount of memory used by Mksquashfs to <size> bytes.  G/M and K
+   post-fixes are supported.
+
+   By default Mksquashfs uses 25% of the physical memory.  Increasing
+   this with the -mem option can increase performance (note it does not have
+   any effect on compression).  Reducing it can prevent thrashing if the
+   system is busy and there is not 25% of physical memory free (again, note
+   it does not have any effect on compression).
+
+2. -exit-on-error
+
+   By default Mksquashfs treats certain errors as benign, if these
+   errors occur Mksquashfs prints the error on the console but continues.
+   These errors are typically failure to read a file from the source filesystem.
+   This is deliberate, in many cases users prefer Mksquashfs to flag
+   the error but continue rather than abort what may be hours of compression.
+
+   But there are times where failure to read any file is considered critical,
+   and users (especially in the case of automated scripts where the
+   errors output to the console may be missed) prefer Mksquashfs to exit.
+
+   The new -exit-on-error option can be used in this scenario.  This option
+   makes Mksquashfs treat all benign errors as fatal.
+
+3. -progress
+
+   By default if -info is specified, the progress bar is disabled as it gets
+   in the way.  Occasionally you might want the progress bar enabled whilst
+   -info is enabled.  This option forces Mksquashfs to output the progress
+   bar when -info is specified.
+
+4. -Xhelp
+
+   Display the usage text for the currently selected compressor.
+
+New Unsquashfs options
+----------------------
+
+1. -u[ser-xattrs]
+
+   Only write user xattrs.  This forces Unsquashfs to ignore system xattrs.
+   This is useful when Unsquashing a filesystem as a non-root user, and the
+   filesystem contains system xattrs which are only writable by root.
+
+Major bugs fixed
+----------------
+
+1. If Mksquashfs ran out of space in the destination filesystem, this
+    would not cause Mksquashfs to immediately abort, and Mksquashfs would
+    continue to process the source filesystem.  Mksquashfs now immediately
+    aborts on out of space in the destination filesystem.
+
+2. Unsquashfs ignored the maximum number of open files limit, and if that
+    was lower than the default limit for Linux, it would run out of file
+    descriptors.  Unsquashfs now limits the number of open files to the
+    limit currently in force (e.g. specified by setrlimit).
+
+3. If huge numbers of dynamic pseudo files were specified, Mksquashfs
+    could exceed the maximum number of open files limit.  This was because
+    Mksquashfs created all the dynamic file processes up front before
+    commencing source filesystem reading and compression.  Mksquashfs
+    now creates the dynamic file processes on demand whilst reading
+    and compressing the source filesystem, thus limiting the number of
+    dynamic pseudo file processes in existence at any one time.
+
+4. When outputting Unsquashfs used to set the permissions of directories
+    as it recursively descended.  This in hindsight had an obvious oversight,
+    if a directory had only read permission (or was otherwise restricted), then
+    Unsquashfs would fail to write its contents when descending into it.  Fixed
+    by setting directory permissions as Unsquashfs recursively unwinds.
