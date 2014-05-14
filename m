@@ -1,207 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaENL0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:26:35 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:62042 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaENL0d (ORCPT
+	id S1755173AbaENL1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:27:24 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:33521 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955AbaENL0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:26:33 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-8d-537352e62ec2
-Message-id: <537352E5.20901@samsung.com>
-Date: Wed, 14 May 2014 13:26:29 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jiada Wang <jiada_wang@mentor.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] clk: Fix double free due to devm_clk_register()
-References: <1397863783-10728-1-git-send-email-sboyd@codeaurora.org>
- <1397863783-10728-2-git-send-email-sboyd@codeaurora.org>
-In-reply-to: <1397863783-10728-2-git-send-email-sboyd@codeaurora.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xK7rPgoqDDeY+FLbo+VNpcbbpDbvF
-	psfXWC0u75rDZvF0wkU2ix9nulkc2Dwu9/Uyedy5tofNY/OSeo/dX5sYPfq2rGL0+LxJLoAt
-	issmJTUnsyy1SN8ugSvj6dfvjAXXDSq+ff/B3MB4TL2LkZNDQsBE4tahXWwQtpjEhXvrwWwh
-	gaWMEhseWHcxcgHZnxgl2r79YQdJ8ApoSLRdWwdWxCKgKrGi+ScLiM0mYCjRe7SPsYuRg0NU
-	IELi8QUhiHJBiR+T74GViAioS3zfcZINZCazwEFGiXt/IeYIC3hInLh8iBVicb1Ew9Q+NpA5
-	nAKuEutnSYCEmQV0JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6h
-	XnFibnFpXrpecn7uJkZIeH/Zwbj4mNUhRgEORiUe3h+rioKFWBPLiitzDzFKcDArifAyWhQH
-	C/GmJFZWpRblxxeV5qQWH2Jk4uCUamDkviH53c8/z0zMdU//3Ya3a18deXl69X+H1KXMBXM3
-	TGI9sv9mK5/jmZ9Oj9LuMjA/z4i+zx237F2dtOou1qCdxyI0jq1clv3shIfYzkzeygwD9rmT
-	o5bPtqr5tjZc9ZinVJlUfnb39VLm21xbi6SS/t5dLLpN77GjTuesht05SveUWv8HWExXYinO
-	SDTUYi4qTgQAEBV5jU0CAAA=
+	Wed, 14 May 2014 07:26:34 -0400
+From: Bart Tanghe <bart.tanghe@thomasmore.be>
+To: thierry.reding@gmail.com, michal.simek@xilinx.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        grant.likely@linaro.org, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bart Tanghe <bart.tanghe@thomasmore.be>
+Subject: [rfc]pwm: add xilinx pwm driver 
+Date: Wed, 14 May 2014 13:26:13 +0200
+Message-Id: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/04/14 01:29, Stephen Boyd wrote:
-> Now that clk_unregister() frees the struct clk we're
-> unregistering we'll free memory twice: first we'll call kfree()
-> in __clk_release() with an address kmalloc doesn't know about and
-> second we'll call kfree() in the devres layer. Remove the
-> allocation of struct clk in devm_clk_register() and let
-> clk_release() handle it. This fixes slab errors like:
-> 
-> =============================================================================
-> BUG kmalloc-128 (Not tainted): Invalid object pointer 0xed08e8d0
-> -----------------------------------------------------------------------------
-> 
-> Disabling lock debugging due to kernel taint
-> INFO: Slab 0xeec503f8 objects=25 used=15 fp=0xed08ea00 flags=0x4081
-> CPU: 2 PID: 73 Comm: rmmod Tainted: G    B         3.14.0-11032-g526e9c764381 #34
-> [<c0014be0>] (unwind_backtrace) from [<c0012240>] (show_stack+0x10/0x14)
-> [<c0012240>] (show_stack) from [<c04b74dc>] (dump_stack+0x70/0xbc)
-> [<c04b74dc>] (dump_stack) from [<c00f6778>] (slab_err+0x74/0x84)
-> [<c00f6778>] (slab_err) from [<c04b6278>] (free_debug_processing+0x2cc/0x31c)
-> [<c04b6278>] (free_debug_processing) from [<c04b6300>] (__slab_free+0x38/0x41c)
-> [<c04b6300>] (__slab_free) from [<c03931bc>] (clk_unregister+0xd4/0x140)
-> [<c03931bc>] (clk_unregister) from [<c02fb774>] (release_nodes+0x164/0x1d8)
-> [<c02fb774>] (release_nodes) from [<c02f8698>] (__device_release_driver+0x60/0xb0)
-> [<c02f8698>] (__device_release_driver) from [<c02f9080>] (driver_detach+0xb4/0xb8)
-> [<c02f9080>] (driver_detach) from [<c02f8480>] (bus_remove_driver+0x5c/0xc4)
-> [<c02f8480>] (bus_remove_driver) from [<c008c9b8>] (SyS_delete_module+0x148/0x1d8)
-> [<c008c9b8>] (SyS_delete_module) from [<c000ef80>] (ret_fast_syscall+0x0/0x48)
-> FIX kmalloc-128: Object at 0xed08e8d0 not freed
-> 
-> Fixes: fcb0ee6a3d33 (clk: Implement clk_unregister)
-> Cc: Jiada Wang <jiada_wang@mentor.com>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+	add Xilinx PWM support - axi timer hardware block 
 
-Thank you for correcting this, and my apologies for introducing this bug.
-
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-
-> ---
->  drivers/clk/clk.c | 71 +++++++++++++++++++++++--------------------------------
->  1 file changed, 30 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index dff0373f53c1..f71093bf83ab 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1984,9 +1984,28 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
->  }
->  EXPORT_SYMBOL_GPL(__clk_register);
->  
-> -static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
-> +/**
-> + * clk_register - allocate a new clock, register it and return an opaque cookie
-> + * @dev: device that is registering this clock
-> + * @hw: link to hardware-specific clock data
-> + *
-> + * clk_register is the primary interface for populating the clock tree with new
-> + * clock nodes.  It returns a pointer to the newly allocated struct clk which
-> + * cannot be dereferenced by driver code but may be used in conjuction with the
-> + * rest of the clock API.  In the event of an error clk_register will return an
-> + * error code; drivers must test for an error code after calling clk_register.
-> + */
-> +struct clk *clk_register(struct device *dev, struct clk_hw *hw)
->  {
->  	int i, ret;
-> +	struct clk *clk;
-> +
-> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> +	if (!clk) {
-> +		pr_err("%s: could not allocate clk\n", __func__);
-> +		ret = -ENOMEM;
-> +		goto fail_out;
-> +	}
->  
->  	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
->  	if (!clk->name) {
-> @@ -2026,7 +2045,7 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
->  
->  	ret = __clk_init(dev, clk);
->  	if (!ret)
-> -		return 0;
-> +		return clk;
->  
->  fail_parent_names_copy:
->  	while (--i >= 0)
-> @@ -2035,36 +2054,6 @@ fail_parent_names_copy:
->  fail_parent_names:
->  	kfree(clk->name);
->  fail_name:
-> -	return ret;
-> -}
-> -
-> -/**
-> - * clk_register - allocate a new clock, register it and return an opaque cookie
-> - * @dev: device that is registering this clock
-> - * @hw: link to hardware-specific clock data
-> - *
-> - * clk_register is the primary interface for populating the clock tree with new
-> - * clock nodes.  It returns a pointer to the newly allocated struct clk which
-> - * cannot be dereferenced by driver code but may be used in conjuction with the
-> - * rest of the clock API.  In the event of an error clk_register will return an
-> - * error code; drivers must test for an error code after calling clk_register.
-> - */
-> -struct clk *clk_register(struct device *dev, struct clk_hw *hw)
-> -{
-> -	int ret;
-> -	struct clk *clk;
-> -
-> -	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> -	if (!clk) {
-> -		pr_err("%s: could not allocate clk\n", __func__);
-> -		ret = -ENOMEM;
-> -		goto fail_out;
-> -	}
-> -
-> -	ret = _clk_register(dev, hw, clk);
-> -	if (!ret)
-> -		return clk;
-> -
->  	kfree(clk);
->  fail_out:
->  	return ERR_PTR(ret);
-> @@ -2173,7 +2162,7 @@ EXPORT_SYMBOL_GPL(clk_unregister);
->  
->  static void devm_clk_release(struct device *dev, void *res)
->  {
-> -	clk_unregister(res);
-> +	clk_unregister(*(struct clk **)res);
->  }
->  
->  /**
-> @@ -2188,18 +2177,18 @@ static void devm_clk_release(struct device *dev, void *res)
->  struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)
->  {
->  	struct clk *clk;
-> -	int ret;
-> +	struct clk **clkp;
->  
-> -	clk = devres_alloc(devm_clk_release, sizeof(*clk), GFP_KERNEL);
-> -	if (!clk)
-> +	clkp = devres_alloc(devm_clk_release, sizeof(*clkp), GFP_KERNEL);
-> +	if (!clkp)
->  		return ERR_PTR(-ENOMEM);
->  
-> -	ret = _clk_register(dev, hw, clk);
-> -	if (!ret) {
-> -		devres_add(dev, clk);
-> +	clk = clk_register(dev, hw);
-> +	if (!IS_ERR(clk)) {
-> +		*clkp = clk;
-> +		devres_add(dev, clkp);
->  	} else {
-> -		devres_free(clk);
-> -		clk = ERR_PTR(ret);
-> +		devres_free(clkp);
->  	}
->  
->  	return clk;
-> 
-
-
--- 
-Sylwester Nawrocki
-Samsung R&D Institute Poland
+Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
+new file mode 100644
+index 0000000..cb48926
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
+@@ -0,0 +1,20 @@
++Xilinx PWM controller
++
++Required properties:
++- compatible: should be "xlnx,pwm-xlnx"
++- add a clock source to the description
++
++Examples:
++
++		axi_timer_0: timer@42800000 {
++			clock-frequency = <100000000>;
++			clocks = <&clkc 15>;
++			compatible = "xlnx,xlnx-pwm";
++			reg = <0x42800000 0x10000>;
++			xlnx,count-width = <0x20>;
++			xlnx,gen0-assert = <0x1>;
++			xlnx,gen1-assert = <0x1>;
++			xlnx,one-timer-only = <0x0>;
++			xlnx,trig0-assert = <0x1>;
++			xlnx,trig1-assert = <0x1>;
++		} ;
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index eece329..1d59b02 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -233,4 +233,17 @@ config PWM_VT8500
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-vt8500.
+ 
++config PWM_XLNX
++	tristate "Xilinx PWM support"
++	help
++	  Generic PWM framework driver for xilinx axi timer.
++
++	  This driver implements the pwm channel of a xilinx axi timer hardware
++	  block.
++	  The hardware block has to be configured with generate output signal
++	  of timer 1 and timer 2 active high.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-xlnx.
++
+ endif
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 8b754e4..e0c5f59 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -21,3 +21,4 @@ obj-$(CONFIG_PWM_TIPWMSS)	+= pwm-tipwmss.o
+ obj-$(CONFIG_PWM_TWL)		+= pwm-twl.o
+ obj-$(CONFIG_PWM_TWL_LED)	+= pwm-twl-led.o
+ obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
++obj-$(CONFIG_PWM_XLNX)		+= pwm-xlnx.o
+diff --git a/drivers/pwm/pwm-xlnx.c b/drivers/pwm/pwm-xlnx.c
+new file mode 100644
+index 0000000..9c1be71
+--- /dev/null
++++ b/drivers/pwm/pwm-xlnx.c
+@@ -0,0 +1,197 @@
++/*
++ * pwm-xlnx driver
++ * Tested on zedboard - axi timer v2.00a
++ *
++ * Copyright (C) 2014 Thomas more
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2.
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++
++/*mmio regiser mapping*/
++
++#define OFFSET		0x10
++#define DUTY		0x14
++#define PERIOD		0x04
++
++/* configure the counters as 32 bit counters */
++
++#define PWM_CONF	0x00000206
++#define PWM_ENABLE	0x00000080
++
++#define DRIVER_AUTHOR "Bart Tanghe <bart.tanghe@thomasmore.be>"
++#define DRIVER_DESC "A Xilinx pwm driver"
++
++struct xlnx_pwm_chip {
++	struct pwm_chip chip;
++	struct device *dev;
++	int scaler;
++	void __iomem *mmio_base;
++};
++
++static inline struct xlnx_pwm_chip *to_xlnx_pwm_chip(
++					struct pwm_chip *chip){
++
++	return container_of(chip, struct xlnx_pwm_chip, chip);
++}
++
++static int xlnx_pwm_config(struct pwm_chip *chip,
++			      struct pwm_device *pwm,
++			      int duty_ns, int period_ns){
++
++	struct xlnx_pwm_chip *pc;
++
++	pc = container_of(chip, struct xlnx_pwm_chip, chip);
++
++	iowrite32(duty_ns/pc->scaler - 2, pc->mmio_base + DUTY);
++	iowrite32(period_ns/pc->scaler - 2, pc->mmio_base + PERIOD);
++
++	return 0;
++}
++
++static int xlnx_pwm_enable(struct pwm_chip *chip,
++			      struct pwm_device *pwm){
++
++	struct xlnx_pwm_chip *pc;
++
++	pc = container_of(chip, struct xlnx_pwm_chip, chip);
++
++	iowrite32(ioread32(pc->mmio_base) | PWM_ENABLE, pc->mmio_base);
++	iowrite32(ioread32(pc->mmio_base + OFFSET) | PWM_ENABLE,
++						pc->mmio_base + OFFSET);
++	return 0;
++}
++
++static void xlnx_pwm_disable(struct pwm_chip *chip,
++				struct pwm_device *pwm)
++{
++	struct xlnx_pwm_chip *pc;
++
++	pc = to_xlnx_pwm_chip(chip);
++
++	iowrite32(ioread32(pc->mmio_base) & ~PWM_ENABLE, pc->mmio_base);
++	iowrite32(ioread32(pc->mmio_base + OFFSET) & ~PWM_ENABLE,
++						pc->mmio_base + OFFSET);
++}
++
++static int xlnx_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
++				enum pwm_polarity polarity)
++{
++	struct xlnx_pwm_chip *pc;
++
++	pc = to_xlnx_pwm_chip(chip);
++
++	/* no implementation of polarity function
++	   the axi timer hw block doesn't support this
++	*/
++
++	return 0;
++}
++
++static const struct pwm_ops xlnx_pwm_ops = {
++	.config = xlnx_pwm_config,
++	.enable = xlnx_pwm_enable,
++	.disable = xlnx_pwm_disable,
++	.set_polarity = xlnx_set_polarity,
++	.owner = THIS_MODULE,
++};
++
++static int xlnx_pwm_probe(struct platform_device *pdev)
++{
++	struct xlnx_pwm_chip *pwm;
++
++	int ret;
++	struct resource *r;
++	u32 start, end;
++	struct clk *clk;
++
++	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
++	if (!pwm) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	pwm->dev = &pdev->dev;
++
++	clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "could not find clk: %ld\n", PTR_ERR(clk));
++		devm_kfree(&pdev->dev, pwm);
++		return PTR_ERR(clk);
++	}
++
++	pwm->scaler = (int)1000000000/clk_get_rate(clk);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(pwm->mmio_base)) {
++		devm_kfree(&pdev->dev, pwm);
++		return PTR_ERR(pwm->mmio_base);
++	}
++
++	start = r->start;
++	end = r->end;
++
++	pwm->chip.dev = &pdev->dev;
++	pwm->chip.ops = &xlnx_pwm_ops;
++	pwm->chip.base = (int)&pdev->id;
++	pwm->chip.npwm = 1;
++
++	ret = pwmchip_add(&pwm->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
++		devm_kfree(&pdev->dev, pwm);
++		return -1;
++	}
++
++	/*set the pwm0 configuration*/
++	iowrite32(PWM_CONF, pwm->mmio_base);
++	iowrite32(PWM_CONF, pwm->mmio_base + OFFSET);
++
++	platform_set_drvdata(pdev, pwm);
++
++	return 0;
++}
++
++static int xlnx_pwm_remove(struct platform_device *pdev)
++{
++
++	struct xlnx_pwm_chip *pc;
++	pc  = platform_get_drvdata(pdev);
++
++	if (WARN_ON(!pc))
++		return -ENODEV;
++
++	return pwmchip_remove(&pc->chip);
++}
++
++static const struct of_device_id xlnx_pwm_of_match[] = {
++	{ .compatible = "xlnx,pwm-xlnx", },
++	{ /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, xlnx_pwm_of_match);
++
++static struct platform_driver xlnx_pwm_driver = {
++	.driver = {
++		.name = "pwm-xlnx",
++		.owner = THIS_MODULE,
++		.of_match_table = xlnx_pwm_of_match,
++	},
++	.probe = xlnx_pwm_probe,
++	.remove = xlnx_pwm_remove,
++};
++module_platform_driver(xlnx_pwm_driver);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
