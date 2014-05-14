@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaENIWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:22:32 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55973 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaENIW2 (ORCPT
+	id S1753741AbaENIYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:24:32 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50368 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253AbaENIY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:22:28 -0400
-Message-ID: <5373275B.2010004@ahsoftware.de>
-Date: Wed, 14 May 2014 10:20:43 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: dt: deps: some tips about how to debug/evaluate this feature
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Wed, 14 May 2014 04:24:27 -0400
+Message-ID: <1400055865.31197.4.camel@x220>
+Subject: [PATCH] [RESEND] ARM: remove last use of CONFIG_CPU_ARM710
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 14 May 2014 10:24:25 +0200
+In-Reply-To: <1364507176.1345.45.camel@x61.thuisdomein>
+References: <1364507176.1345.45.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 May 2014 08:24:26.0001 (UTC) FILETIME=[EAD4C010:01CF6F4D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Support for ARM710 CPUs was removed in v3.5. Now remove the last code
+depending on its Kconfig macro.
 
-to make it a bit more easier to evaluate or debug this new feature, here 
-are some tips:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+First submitted in March 2103. Still untested. Please note that
+cpu_arm7_data_abort was also removed in v3.5.
 
-- To see the initialization order you can use dtc:
+ arch/arm/include/asm/glue-df.h | 8 --------
+ 1 file changed, 8 deletions(-)
 
-	CROSS_COMPILE=arm-linux-gnu- ARCH=arm make foo.dtb
-	scripts/dtc/dtc -I dtb -t arch/arm/boot/dts/foo.dtb
+diff --git a/arch/arm/include/asm/glue-df.h b/arch/arm/include/asm/glue-df.h
+index 6b70f1b46a6e..04e18b656659 100644
+--- a/arch/arm/include/asm/glue-df.h
++++ b/arch/arm/include/asm/glue-df.h
+@@ -31,14 +31,6 @@
+ #undef CPU_DABORT_HANDLER
+ #undef MULTI_DABORT
+ 
+-#if defined(CONFIG_CPU_ARM710)
+-# ifdef CPU_DABORT_HANDLER
+-#  define MULTI_DABORT 1
+-# else
+-#  define CPU_DABORT_HANDLER cpu_arm7_data_abort
+-# endif
+-#endif
+-
+ #ifdef CONFIG_CPU_ABRT_EV4
+ # ifdef CPU_DABORT_HANDLER
+ #  define MULTI_DABORT 1
+-- 
+1.9.0
 
-- To see that order in dmesg, I've left a commented function
-   in patch 2/9. Just enable of_init_print_order() in
-   drivers/of/of_dependencies.c
-
-- To see which drivers do call of_platform_populate() theirself
-   (which is not necessary when using this new feature) uncomment the
-   WARN_ON(np->dev_created); in drivers/of/platform.c (patch 2/9).
-
-- To see which drivers are already "well done" or not, add a small
-   debug line to of_init_register_platform_driver() in
-   drivers/of/of_dependencies.c:
-
-@@ -416,39 +416,41 @@ int of_init_register_platform_driver(struct 
-platform_driver *drv)
-  {
-         BUG_ON(!is_recording);
-         order.platform_drivers[order.count_drivers++] = drv;
-+       pr_info("DEPS: recording of drv %s\n", drv->driver.name);
-         return 0;
-  }
-
-   Now "well done" drivers linked to the kernel will be seen in dmesg as
-   beeing recorded. This also shows most drivers which are not "well
-   done", they will be started before the recording of drivers (except
-   late ones).
-
-- To see when "well done" drivers will be registered (in order) add
-   something like that to drivers/of/of_dependencies.c:
-@@ -445,8 +445,10 @@ void __init of_init_register_drivers(void)
-                         if (of_driver_match_device(dev, &drv->driver)) {
-                                 if (!driver_find(drv->driver.name,
--                                   drv->driver.bus))
-+                                   drv->driver.bus)) {
-                                         platform_driver_register(drv);
-+                                       pr_info("DEPS: driver %s 
-registered\n", drv->name);
-+                               }
-                                 if (dev->parent)
-                                         device_lock(dev->parent);
-                                 rc = device_attach(dev);
-
-
-Regards,
-
-Alexander Holler
