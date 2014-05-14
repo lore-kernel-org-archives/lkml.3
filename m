@@ -1,233 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408AbaENWY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:24:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43435 "EHLO mga02.intel.com"
+	id S1753633AbaENWZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:25:20 -0400
+Received: from bues.ch ([80.190.117.144]:48010 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaENWYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:24:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1055,1389772800"; 
-   d="scan'208";a="540557025"
-Date: Wed, 14 May 2014 15:24:21 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
- runtime-suspended devices unnecessarily
-Message-ID: <20140514152421.6d21b025@ultegra>
-In-Reply-To: <1752814.FckPkBGaUc@vostro.rjw.lan>
-References: <4649019.is79p6EySp@vostro.rjw.lan>
-	<1752814.FckPkBGaUc@vostro.rjw.lan>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752043AbaENWZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 18:25:18 -0400
+X-Greylist: delayed 1916 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 May 2014 18:25:18 EDT
+Date: Wed, 14 May 2014 23:52:32 +0200
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio: gpio-bt8xx: fix compilation warning
+Message-ID: <20140514235232.57bbc9df@wiggum>
+In-Reply-To: <1400103816-26086-1-git-send-email-berthe.ab@gmail.com>
+References: <1400103816-26086-1-git-send-email-berthe.ab@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/dbxZopuKGEUS0hZT/xS+r2K"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 03:10:19 +0200
-"Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+--Sig_/dbxZopuKGEUS0hZT/xS+r2K
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> resume all runtime-suspended devices during system suspend, mostly
-> because those devices may need to be reprogrammed due to different
-> wakeup settings for system sleep and for runtime PM.
-> 
-> For some devices, though, it's OK to remain in runtime suspend 
-> throughout a complete system suspend/resume cycle (if the device was
-> in runtime suspend at the start of the cycle).  We would like to do
-> this whenever possible, to avoid the overhead of extra power-up and
-> power-down events.
-> 
-> However, problems may arise because the device's descendants may
-> require it to be at full power at various points during the cycle.
-> Therefore the most straightforward way to do this safely is if the
-> device and all its descendants can remain runtime suspended until the
-> complete stage of system resume.
-> 
-> To this end, introduce a new device PM flag, power.direct_complete
-> and modify the PM core to use that flag as follows.
-> 
-> If the ->prepare() callback of a device returns a positive number,
-> the PM core will regard that as an indication that it may leave the
-> device runtime-suspended.  It will then check if the system power
-> transition in progress is a suspend (and not hibernation in
-> particular) and if the device is, indeed, runtime-suspended.  In that
-> case, the PM core will set the device's power.direct_complete flag.
-> Otherwise it will clear power.direct_complete for the device and it
-> also will later clear it for the device's parent (if there's one).
-> 
-> Next, the PM core will not invoke the ->suspend() ->suspend_late(),
-> ->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
-> callbacks for all devices having power.direct_complete set.  It
-> will invoke their ->complete() callbacks, however, and those
-> callbacks are then responsible for resuming the devices as
-> appropriate, if necessary.
-> 
-> Changelog partly based on an Alan Stern's description of the idea
-> (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, 14 May 2014 23:43:36 +0200
+abdoulaye berthe <berthe.ab@gmail.com> wrote:
+
+> this fixes a compilation warning by checking
+> the retun value of gpiochip_remove()
+
+
+Really, I would rather change the gpiochip_remove return type to void.
+
+What is the point of printing a useless error message in case
+of a failure and then continuing as always.
+This is not fixing a compiler warning, it is a workaround. And a bad one, i=
+ndeed.
+
+How are we supposed to handle a gpiochip_remove failure correctly
+in a pcidev remove handler?
+
+
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 > ---
->  drivers/base/power/main.c |   45
-> ++++++++++++++++++++++++++++-----------------
-> include/linux/pm.h        |    1 + 2 files changed, 29 insertions(+),
-> 17 deletions(-)
-> 
-> Index: linux-pm/include/linux/pm.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/pm.h
-> +++ linux-pm/include/linux/pm.h
-> @@ -546,6 +546,7 @@ struct dev_pm_info {
->  	bool			is_late_suspended:1;
->  	bool			ignore_children:1;
->  	bool			early_init:1;	/* Owned by
-> the PM core */
-> +	bool			direct_complete:1;	/*
-> Owned by the PM core */ spinlock_t		lock;
->  #ifdef CONFIG_PM_SLEEP
->  	struct list_head	entry;
-> Index: linux-pm/drivers/base/power/main.c
-> ===================================================================
-> --- linux-pm.orig/drivers/base/power/main.c
-> +++ linux-pm/drivers/base/power/main.c
-> @@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
->  	TRACE_DEVICE(dev);
->  	TRACE_RESUME(0);
->  
-> -	if (dev->power.syscore)
-> +	if (dev->power.syscore || dev->power.direct_complete)
->  		goto Out;
->  
->  	if (!dev->power.is_noirq_suspended)
-> @@ -605,7 +605,7 @@ static int device_resume_early(struct de
->  	TRACE_DEVICE(dev);
->  	TRACE_RESUME(0);
->  
-> -	if (dev->power.syscore)
-> +	if (dev->power.syscore || dev->power.direct_complete)
->  		goto Out;
->  
->  	if (!dev->power.is_late_suspended)
-> @@ -732,7 +732,7 @@ static int device_resume(struct device *
->  	TRACE_DEVICE(dev);
->  	TRACE_RESUME(0);
->  
-> -	if (dev->power.syscore)
-> +	if (dev->power.syscore || dev->power.direct_complete)
->  		goto Complete;
->  
->  	dpm_wait(dev->parent, async);
-> @@ -1007,7 +1007,7 @@ static int __device_suspend_noirq(struct
->  		goto Complete;
->  	}
->  
-> -	if (dev->power.syscore)
-> +	if (dev->power.syscore || dev->power.direct_complete)
->  		goto Complete;
->  
->  	dpm_wait_for_children(dev, async);
-> @@ -1146,7 +1146,7 @@ static int __device_suspend_late(struct
->  		goto Complete;
->  	}
->  
-> -	if (dev->power.syscore)
-> +	if (dev->power.syscore || dev->power.direct_complete)
->  		goto Complete;
->  
->  	dpm_wait_for_children(dev, async);
-> @@ -1312,7 +1312,7 @@ static int __device_suspend(struct devic
->  
->  	dpm_wait_for_children(dev, async);
->  
-> -	if (async_error || dev->power.syscore)
-> +	if (async_error || dev->power.syscore ||
-> dev->power.direct_complete) goto Complete;
->  
->  	dpm_watchdog_set(&wd, dev);
-> @@ -1365,10 +1365,19 @@ static int __device_suspend(struct devic
->  
->   End:
->  	if (!error) {
-> +		struct device *parent = dev->parent;
-> +
->  		dev->power.is_suspended = true;
-> -		if (dev->power.wakeup_path
-> -		    && dev->parent
-> && !dev->parent->power.ignore_children)
-> -			dev->parent->power.wakeup_path = true;
-> +		if (parent) {
-> +			spin_lock_irq(&parent->power.lock);
-> +
-> +			dev->parent->power.direct_complete = false;
-should we respect ignore_children flag here? not all parent devices
-create children with proper .prepare() function. this allows parents
-override children.
-I am looking at USB, a USB device could have logical children such as
-ep_xx, they don't go through the same subsystem .prepare().
-
-> +			if (dev->power.wakeup_path
-> +			    && !dev->parent->power.ignore_children)
-> +				dev->parent->power.wakeup_path =
-> true; +
-> +			spin_unlock_irq(&parent->power.lock);
-> +		}
->  	}
->  
->  	device_unlock(dev);
-> @@ -1470,7 +1479,7 @@ static int device_prepare(struct device
+>  drivers/gpio/gpio-bt8xx.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpio/gpio-bt8xx.c b/drivers/gpio/gpio-bt8xx.c
+> index ecb3ca2d..5480229 100644
+> --- a/drivers/gpio/gpio-bt8xx.c
+> +++ b/drivers/gpio/gpio-bt8xx.c
+> @@ -240,7 +240,8 @@ static void bt8xxgpio_remove(struct pci_dev *pdev)
 >  {
->  	int (*callback)(struct device *) = NULL;
->  	char *info = NULL;
-> -	int error = 0;
-> +	int ret = 0;
->  
->  	if (dev->power.syscore)
->  		return 0;
-> @@ -1518,17 +1527,19 @@ static int device_prepare(struct device
->  		callback = dev->driver->pm->prepare;
->  	}
->  
-> -	if (callback) {
-> -		error = callback(dev);
-> -		suspend_report_result(callback, error);
-> -	}
-> +	if (callback)
-> +		ret = callback(dev);
->  
->  	device_unlock(dev);
->  
-> -	if (error)
-> +	if (ret < 0) {
-> +		suspend_report_result(callback, ret);
->  		pm_runtime_put(dev);
-> -
-> -	return error;
-> +		return ret;
-> +	}
-> +	dev->power.direct_complete = ret > 0 && state.event ==
-> PM_EVENT_SUSPEND
-> +					&& pm_runtime_suspended(dev);
-> +	return 0;
->  }
->  
->  /**
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  	struct bt8xxgpio *bg =3D pci_get_drvdata(pdev);
+> =20
+> -	gpiochip_remove(&bg->gpio);
+> +	if (gpiochip_remove(&bg->gpio))
+> +		dev_info(&pdev->dev, "gpiochip_remove() failed.\n");
+> =20
+>  	bgwrite(0, BT848_INT_MASK);
+>  	bgwrite(~0x0, BT848_INT_STAT);
 
-[Jacob Pan]
+
+
+
+--=20
+Michael.
+
+----
+Please use PGP/GPG encryption.
+Key-ID: F532BE1D908D8B0E
+--------
+
+--Sig_/dbxZopuKGEUS0hZT/xS+r2K
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTc+WgAAoJEPUyvh2QjYsO7BcP/1Idu6uoFHp6QZwNxDo9BLPR
+wcvPjcdLg3LvEO0CeeEPYUjS8WUXHi8kIZTyINOdmVXuN6Umhhk9cUGHliS0LDXF
+zrQZfNNqI4ZB10KoOevV9zoKVP0j+zRO+2tyC9bMQKrAvBQIIJ5Lh9MpsSb3T6Uu
+fjz0mKmIbaHQKKZWWoRcbyw3aoGSwjIPWPhaKKlWMhPlN1cFCcnmvHzTD44FaKj7
+QOeqD06O59XKa3Mwc4+Q3x8cv/24H7D5VPbiI5Ea95ln5KefSpGTl75fCmoS5l5d
+UQYOiQkGVvSHC13GNqo8pN8GEmdurnfmmI6EKnhYFNVaDPVlQTgs+YN6LK7qqGpQ
+wa354YLpYxv66rwfMwUKZEsfJFxmSz45dsVOjwlr7V8Bs2Vlv50mRgIDAfyt9+aZ
+p91wnRMhbPKJm6I/MtczCLIpYqe+seUgLh9Kc+3D5YRpXYUlA0bSCZQK7J+joc1K
+mpI5IOoAhssRRClBCOuZMY6B0SDO9ppaQBqkKI7QBbERH4WpIcDiBI0o0NDln/91
+13vUUfRvKhI+MaGGBqkrztAVOO6Y7GoXmW9wyZGZ4Jh5W7fMabsuC/VN0XdZityg
+DkwpTH2vlqVl/yKpAUtvYFsoiG8Xx1723qgGMSXlN97p+856egK9q3bv1NQZgali
+mRMmHCzlpAf4LZDP7VKK
+=kBTw
+-----END PGP SIGNATURE-----
+
+--Sig_/dbxZopuKGEUS0hZT/xS+r2K--
