@@ -1,103 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671AbaENTui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:50:38 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:44843 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaENTug (ORCPT
+	id S1752041AbaENTuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:50:55 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53379 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaENTux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:50:36 -0400
-Message-ID: <1400097031.3865.25.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 5/5] ipc,msg: loosen check for full queue
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: akpm@linux-foundation.org, aswin@hp.com, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 12:50:31 -0700
-In-Reply-To: <5373AF39.7030406@colorfullife.com>
-References: <1400012857-11733-1-git-send-email-davidlohr@hp.com>
-	 <1400012857-11733-6-git-send-email-davidlohr@hp.com>
-	 <5373AF39.7030406@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 15:50:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Huang Shijie <b32955@freescale.com>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/3] bus: add Broadcom GISB arbiter bus timeout/error handler
+Date: Wed, 14 May 2014 21:50:35 +0200
+Message-ID: <22473479.pvlGq0ATOy@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGVrzcag3aKiuuQsfZWrAJT+-cpO__kNF3Lc9XXkpswQxzL56A@mail.gmail.com>
+References: <1400094649-11193-1-git-send-email-f.fainelli@gmail.com> <8057197.5nM8JDA8pQ@wuerfel> <CAGVrzcag3aKiuuQsfZWrAJT+-cpO__kNF3Lc9XXkpswQxzL56A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SWCW4Vec7L2zrRkVX3pfQJ5K4oQtzNJdtOPCQ6dyDgx
+ a+yLxWNdSsoZAl5H51kmI2NBi5UIie9L3oUjOlQ80Eb9awGnv1
+ xvQN4qIykQwH9yDK6zj45te4O1GyvF0izyaYUqffm7fwSq2tkr
+ QXTpdT1qXBWosZF0Au1siWlSEO62I+YdPSstjv8f3Z6AdsDWiX
+ q6TuD4+S/OAurpKEgmaiglGzbO1EkRGLI/S2svQbLbHAzKkXjV
+ ftrWyx16rrxNyDatC6k4sXMt831XsBpKN8cnFGjBcZOQ19qjTk
+ ib2ulJdPlxaeabvXKVnG3pI2r2Z/kFI5o0sTGWLpPUVW+T+Wc7
+ RC0dAebEG5gkNT8Nip/I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manfred,
-
-On Wed, 2014-05-14 at 20:00 +0200, Manfred Spraul wrote:
-> Hi Davidlohr, Hi Andrew,
-> 
-> On 05/13/2014 10:27 PM, Davidlohr Bueso wrote:
-> > When sending a message, we must guarantee that there will be
-> > enough room in the queue to add it, otherwise wait until space
-> > becomes available -- which requires blocking the calling task.
-> > Currently, this relies meeting both of the following conditions:
+On Wednesday 14 May 2014 12:46:06 Florian Fainelli wrote:
+> 2014-05-14 12:33 GMT-07:00 Arnd Bergmann <arnd@arndb.de>:
+> > On Wednesday 14 May 2014 12:10:46 Florian Fainelli wrote:
+> >> This patch adds support for the Broadcom GISB arbiter bus timeout/error
+> >> handler. GISB is a proprietary bus used by Broadcom Set Top Box
+> >> System-on-a-chip devices (BCM7xxx) which allows multiple masters and
+> >> clients to be interfaced with each other.
+> >>
+> >> The bus arbiter offers support for generating two interrupts towards the
+> >> host CPU, thus allowing us to "catch" clock gated masters, or masters
+> >> being volontarily blocked for powersaving purposes, or do general system
+> >> troubleshooting.
+> >>
+> >> We also register a hook with the ARM fault exception handling to allow
+> >> printing a more informative message than "imprecise external abort at
+> >> 0x00000000" for instance.
+> >>
+> >> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 > >
-> > (i) The new msg size + current size is lower than the queue's max size.
-> > (ii) The current amount of messages in the queue + 1 (this msg) is lower
-> >       than the queue's max size.
+> > Looks pretty good to me.
+> 
+> Cool, thanks!, BTW, which tree should we attempt to get this merged into?
+
+We can probably take it through arm-soc along with the other platform
+specific changes for bcm7xxx, since there is no maintainer for drivers/bus yet.
+
+> >> +static int brcmstb_bus_error_handler(unsigned long addr, unsigned int fsr,
+> >> +                                  struct pt_regs *regs)
+> >> +{
+> >> +     int ret = 0;
+> >> +     struct brcmstb_gisb_arb_device *gdev;
+> >> +
+> >> +     /* iterate over each GISB arb registered handlers */
+> >> +     list_for_each_entry(gdev, &brcmstb_gisb_arb_device_list, next)
+> >> +             ret |= brcmstb_gisb_arb_decode_addr(gdev, "bus error");
+> >> +     /*
+> >> +      * If it was an imprecise abort, then we need to correct the
+> >> +      * return address to be _after_ the instruction.
+> >> +     */
+> >> +     if (fsr & (1 << 10))
+> >> +             regs->ARM_pc += 4;
+> >> +
+> >> +     return ret;
+> >> +}
 > >
-> > While (i) is obvious and well documented in the msgsnd(2) manpage, the
-> > second one is far more ambiguous and does not serve the purpose, as we do
-> > not control the amount of messages in the queue (unlike posix queues do).
-> > Thus remove (ii) and loosen how we check for space.
-> I know that (ii) is undocumented and not part of SUS, but I think it is 
-> required:
-
-Yeah, I was kind of expecting something to come up, which is why I
-suggested it as an RFC in the cover letter.
-
-> Otherwise it would be possible to use up an infinite amount of locked 
-> memory by sending 0-byte messages.
-
-Locked as in unswapable used by the kernel internally, right? I agree,
-that would be a bad thing to do.
-
-> I added it some long time ago, and at that time I didn't check what the 
-> other sysv msg implementation were doing.
+> > This will cause the normal abort handler to trigger if the GISB
+> > arbiter doesn't know what happened, right?
 > 
->  From a quick search:
-> 
-> FreeBSD:
-> - Optional: RACCT_MSGQQUEUED
-> - Always: The number of messages is limited due to a global array 
-> (limited to MSGTQL entries: array msghdrs, free list  free_msghdrs)
-> 
-> http://fxr.watson.org/fxr/source/kern/sysv_msg.c
-> 
-> Opensolaris:
-> - Also a limit of the number of messages:
-> http://fxr.watson.org/fxr/source/common/os/msg.c?v=OPENSOLARIS;im=bigexcerpts#L1166
-> 
-> - it appears that it is related to MSGTQL:
-> http://fxr.watson.org/fxr/source/common/os/msg.c?v=OPENSOLARIS;im=bigexcerpts#L652
-> 
-> I.e.: We cannot remove the check unless we add another mechanism that 
-> limits the number of messages.
+> That's right, one of the very first things that the GISB arbiter
+> checks is whether the faulting error is valid or not, if it is not, it
+> bails out and so we keep on processing the other exception handlers.
 
-Looking further, HP-UX also implements this, so it seems to be quite
-common in Unix, ie: http://nixdoc.net/man-pages/HP-UX/man5/msgtql.5.html
+Ok, good.
 
-I am very aware that sysv ipc is no longer as sexy and popular as it
-once was (before my time :-), but I'm wondering if we should actually
-implement MSGTQL. The thing is, I really hate how we're mixing things
-here, ie: number of msg in a queue vs the size of the queue. That seems
-simply wrong and misleading, and I wouldn't mind changing that. On the
-other hand, I am not aware of programs using msgq sleeping frequently
-because of this.
-
-Do you have any preferences? I can cook up a patch if you think that
-this merits Linux having MSGTQL.
-
-Worst case scenario, we should update the msgsnd(2) manpage and document
-this unique Linux behavior.
-
-It seems that Linux 3.16 will be the "lets dig around the long forgotten
-corners of sysv ipc" release :)
-
-Thanks,
-Davidlohr
-
+	Arnd
