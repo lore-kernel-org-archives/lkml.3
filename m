@@ -1,130 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaENA3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 20:29:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57919 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaENA27 (ORCPT
+	id S1751759AbaENAbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 20:31:12 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57339 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaENAbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 20:28:59 -0400
-Date: Tue, 13 May 2014 17:32:15 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/7] drivers/base: Add interface framework
-Message-ID: <20140514003215.GA21520@kroah.com>
-References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
- <1399995050-28435-5-git-send-email-thierry.reding@gmail.com>
- <20140513175713.GS3908@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513175713.GS3908@phenom.ffwll.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 May 2014 20:31:08 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in tree_plugin.h and used in tree.c
+Date: Tue, 13 May 2014 17:30:59 -0700
+Message-Id: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051400-7164-0000-0000-000001BB6987
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 07:57:13PM +0200, Daniel Vetter wrote:
-> On Tue, May 13, 2014 at 05:30:47PM +0200, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> > 
-> > Some drivers, such as graphics drivers in the DRM subsystem, do not have
-> > a real device that they can bind to. They are often composed of several
-> > devices, each having their own driver. The master/component framework
-> > can be used in these situations to collect the devices pertaining to one
-> > logical device, wait until all of them have registered and then bind
-> > them all at once.
-> > 
-> > For some situations this is only a partial solution. An implementation
-> > of a master still needs to be registered with the system somehow. Many
-> > drivers currently resort to creating a dummy device that a driver can
-> > bind to and register the master against. This is problematic since it
-> > requires (and presumes) knowledge about the system within drivers.
-> > 
-> > Furthermore there are setups where a suitable device already exists, but
-> > is already bound to a driver. For example, on Tegra the following device
-> > tree extract (simplified) represents the host1x device along with child
-> > devices:
-> > 
-> > 	host1x {
-> > 		display-controller {
-> > 			...
-> > 		};
-> > 
-> > 		display-controller {
-> > 			...
-> > 		};
-> > 
-> > 		hdmi {
-> > 			...
-> > 		};
-> > 
-> > 		dsi {
-> > 			...
-> > 		};
-> > 
-> > 		csi {
-> > 			...
-> > 		};
-> > 
-> > 		video-input {
-> > 			...
-> > 		};
-> > 	};
-> > 
-> > Each of the child devices is in turn a client of host1x, in that it can
-> > request resources (command stream DMA channels and syncpoints) from it.
-> > To implement the DMA channel and syncpoint infrastructure, host1x comes
-> > with its own driver. Children are implemented in separate drivers. In
-> > Linux this set of devices would be exposed by DRM and V4L2 drivers.
-> > 
-> > However, neither the DRM nor the V4L2 drivers have a single device that
-> > they can bind to. The DRM device is composed of the display controllers
-> > and the various output devices, whereas the V4L2 device is composed of
-> > one or more video input devices.
-> > 
-> > This patch introduces the concept of an interface and drivers that can
-> > bind to a given interface. An interface can be exposed by any device,
-> > and interface drivers can bind to these interfaces. Multiple drivers can
-> > bind against a single interface. When a device is removed, interfaces
-> > exposed by it will be removed as well, thereby removing the drivers that
-> > were bound to those interfaces.
-> > 
-> > In the example above, the host1x device would expose the "tegra-host1x"
-> > interface. DRM and V4L2 drivers can then bind to that interface and
-> > instantiate the respective subsystem objects from there.
-> > 
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
-> > Note that I'd like to merge this through the Tegra DRM tree so that the
-> > changes to the Tegra DRM driver later in this series can be merged at
-> > the same time and are not delayed for another release cycle.
-> > 
-> > In particular that means that I'm looking for an Acked-by from Greg.
-> > 
-> >  drivers/base/Makefile     |   2 +-
-> >  drivers/base/interface.c  | 186 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/interface.h |  40 ++++++++++
-> >  3 files changed, 227 insertions(+), 1 deletion(-)
-> >  create mode 100644 drivers/base/interface.c
-> >  create mode 100644 include/linux/interface.h
-> 
-> Hm, this interface stuff smells like bus drivers light. Should we instead
-> have a pile of helpers to make creating new buses with match methods more
-> trivial? There's a fairly big pile of small use-cases where this might be
-> useful. In your case here all the host1x children would sit on a host1x
-> bus. Admittedly I didn't look into the details.
+From: Uma Sharma <uma.sharma523@gmail.com>
 
-I have no problem adding such "bus-light" functions, to make it easier
-to create and implement a bus in the driver core, as I know it's really
-heavy.  That's been on my "todo" list for over a decade now...
+The variable and struct both having the name "rcu_state" confuses
+sparse in some situations, so this commit changes the variable to
+"rcu_state_p" in order to avoid this confusion.  This also makes
+things easier for human readers.
 
-thanks,
+Signed-off-by: Uma Sharma <uma.sharma523@gmail.com>
+[ paulmck: Changed the declaration and several additional uses. ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/tree.c        | 16 ++++++++--------
+ kernel/rcu/tree_plugin.h | 16 ++++++++--------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
-greg k-h
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 3bbe48939e47..3e3f13e8b429 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -101,7 +101,7 @@ DEFINE_PER_CPU(struct rcu_data, sname##_data)
+ RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
+ RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+ 
+-static struct rcu_state *rcu_state;
++static struct rcu_state *rcu_state_p;
+ LIST_HEAD(rcu_struct_flavors);
+ 
+ /* Increase (but not decrease) the CONFIG_RCU_FANOUT_LEAF at boot time. */
+@@ -275,7 +275,7 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed_bh);
+  */
+ void rcu_force_quiescent_state(void)
+ {
+-	force_quiescent_state(rcu_state);
++	force_quiescent_state(rcu_state_p);
+ }
+ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
+ 
+@@ -327,7 +327,7 @@ void rcutorture_get_gp_data(enum rcutorture_type test_type, int *flags,
+ 
+ 	switch (test_type) {
+ 	case RCU_FLAVOR:
+-		rsp = rcu_state;
++		rsp = rcu_state_p;
+ 		break;
+ 	case RCU_BH_FLAVOR:
+ 		rsp = &rcu_bh_state;
+@@ -910,7 +910,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 	 * we will beat on the first one until it gets unstuck, then move
+ 	 * to the next.  Only do this for the primary flavor of RCU.
+ 	 */
+-	if (rdp->rsp == rcu_state &&
++	if (rdp->rsp == rcu_state_p &&
+ 	    ULONG_CMP_GE(jiffies, rdp->rsp->jiffies_resched)) {
+ 		rdp->rsp->jiffies_resched += 5;
+ 		resched_cpu(rdp->cpu);
+@@ -2660,7 +2660,7 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
+ void kfree_call_rcu(struct rcu_head *head,
+ 		    void (*func)(struct rcu_head *rcu))
+ {
+-	__call_rcu(head, func, rcu_state, -1, 1);
++	__call_rcu(head, func, rcu_state_p, -1, 1);
+ }
+ EXPORT_SYMBOL_GPL(kfree_call_rcu);
+ 
+@@ -2787,7 +2787,7 @@ unsigned long get_state_synchronize_rcu(void)
+ 	 * time-consuming work between get_state_synchronize_rcu()
+ 	 * and cond_synchronize_rcu().
+ 	 */
+-	return smp_load_acquire(&rcu_state->gpnum);
++	return smp_load_acquire(&rcu_state_p->gpnum);
+ }
+ EXPORT_SYMBOL_GPL(get_state_synchronize_rcu);
+ 
+@@ -2813,7 +2813,7 @@ void cond_synchronize_rcu(unsigned long oldstate)
+ 	 * Ensure that this load happens before any RCU-destructive
+ 	 * actions the caller might carry out after we return.
+ 	 */
+-	newstate = smp_load_acquire(&rcu_state->completed);
++	newstate = smp_load_acquire(&rcu_state_p->completed);
+ 	if (ULONG_CMP_GE(oldstate, newstate))
+ 		synchronize_rcu();
+ }
+@@ -3354,7 +3354,7 @@ static int rcu_cpu_notify(struct notifier_block *self,
+ 				    unsigned long action, void *hcpu)
+ {
+ 	long cpu = (long)hcpu;
+-	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
++	struct rcu_data *rdp = per_cpu_ptr(rcu_state_p->rda, cpu);
+ 	struct rcu_node *rnp = rdp->mynode;
+ 	struct rcu_state *rsp;
+ 
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 2e579c38bd91..29977ae84e7e 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -116,7 +116,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+ RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+-static struct rcu_state *rcu_state = &rcu_preempt_state;
++static struct rcu_state *rcu_state_p = &rcu_preempt_state;
+ 
+ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+ 
+@@ -947,7 +947,7 @@ void exit_rcu(void)
+ 
+ #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+-static struct rcu_state *rcu_state = &rcu_sched_state;
++static struct rcu_state *rcu_state_p = &rcu_sched_state;
+ 
+ /*
+  * Tell them what RCU they are running.
+@@ -1468,11 +1468,11 @@ static int __init rcu_spawn_kthreads(void)
+ 	for_each_possible_cpu(cpu)
+ 		per_cpu(rcu_cpu_has_work, cpu) = 0;
+ 	BUG_ON(smpboot_register_percpu_thread(&rcu_cpu_thread_spec));
+-	rnp = rcu_get_root(rcu_state);
+-	(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
++	rnp = rcu_get_root(rcu_state_p);
++	(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+ 	if (NUM_RCU_NODES > 1) {
+-		rcu_for_each_leaf_node(rcu_state, rnp)
+-			(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
++		rcu_for_each_leaf_node(rcu_state_p, rnp)
++			(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+ 	}
+ 	return 0;
+ }
+@@ -1480,12 +1480,12 @@ early_initcall(rcu_spawn_kthreads);
+ 
+ static void rcu_prepare_kthreads(int cpu)
+ {
+-	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
++	struct rcu_data *rdp = per_cpu_ptr(rcu_state_p->rda, cpu);
+ 	struct rcu_node *rnp = rdp->mynode;
+ 
+ 	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
+ 	if (rcu_scheduler_fully_active)
+-		(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
++		(void)rcu_spawn_one_boost_kthread(rcu_state_p, rnp);
+ }
+ 
+ #else /* #ifdef CONFIG_RCU_BOOST */
+-- 
+1.8.1.5
+
