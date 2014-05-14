@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaENXex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:34:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48899 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaENXev (ORCPT
+	id S1753111AbaENXk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:40:28 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:35479 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbaENXk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:34:51 -0400
-Date: Thu, 15 May 2014 01:34:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Carlos O'Donell" <carlos@redhat.com>
-cc: mtk.manpages@gmail.com, Darren Hart <dvhart@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-In-Reply-To: <5373D0CA.2050204@redhat.com>
-Message-ID: <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 14 May 2014 19:40:26 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20140509151735.8321.22017.stgit@bling.home>
+References: <20140509151735.8321.22017.stgit@bling.home>
+Date: Thu, 15 May 2014 07:40:25 +0800
+Message-ID: <CAJtEV7YYB4W_+nZeMgiqZVDV+M4OyFJVBic09z=KbMjOpihnTQ@mail.gmail.com>
+Subject: Re: [PATCH v2 00/15] PCI/iommu: Fix DMA alias problems
+From: Andrew Cooks <acooks@gmail.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, Carlos O'Donell wrote:
+Hi Alex
 
-> On 05/14/2014 03:03 PM, Michael Kerrisk (man-pages) wrote:
-> >> However, unless I'm sorely mistaken, the larger problem is that glibc
-> >> removed the futex() call entirely, so these man pages don't describe
-> > 
-> > I don't think futex() ever was in glibc--that's by design, and
-> > completely understandable: no user-space application would want to
-> > directly use futex(). (BTW, I mispoke in my earlier mail when I said I
-> > wanted documentation suitable for "writers of library functions" -- I
-> > meant suitable for "writers of *C library*".)
-> 
-> I fully agree with Michael here.
-> 
-> The futex() syscall was never exposed to userspace specifically because
-> it was an interface we did not want to support forever with a stable ABI.
-> The futex() syscall is an implementation detail that is shared between
-> the kernel and the writers of core runtimes for Linux.
+On Fri, May 9, 2014 at 11:28 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> ....
+>
+> Original description:
+>
+> This series attempts to fix a couple issues we've had outstanding in
+> the PCI/IOMMU code for a while.  The first issue is with devices that
+> use the wrong requester ID for DMA transactions.  We already have a
+> sort of half-baked attempt to fix this for several Ricoh devices, but
+> the fix only helps them be useful through IOMMU groups, not the
+> general DMA case.  There are also several Marvell devices which use
+> use a different wrong requester ID and don't even fit into the DMA
+> source idea.  This series creates a DMA alias iterator that will
+> step through each possible alias of a device, allowing IOMMUs to
+> insert mappings for both the device and its aliases.
+>
+> Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
+> function, which is known to blowup when it finds itself suddenly at
+> a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
+> the PCIe capability).  It also likes to make the invalid assumption
+> that a PCIe device never has its requester ID masked by any usptream
+> bus.  We can fix this using the above new DMA alias iterator, since
+> that's effectively what this function was meant to do.
+>
 
-Nonsense. 
+There are two cases where the DMA requester id seems to use the wrong
+slot (as opposed to function) in the patch I attached to
+https://bugzilla.kernel.org/show_bug.cgi?id=42679
+The original bug reports are listed in the patch.
 
-If we change that interface (aside of adding functionality or some new
-error return) it would break the world and some more, simply because
-out of the blue glibc-2.xx would stop to work on linux-3.yy.
-
-Aside of that the futex syscall is used as a bare interface without
-any glibc interaction:
-
- - It's handy to implement user space wait queues
-
- - It's (ab)used in very interesting ways by data base apps
-
- - It's (ab)used by some Java monstrosities.
-
-Nothing you care about and you really don't want to see the gory
-details, but you have to accept that there is an universe which is
-happy to deal with the raw syscalls instead of going through some ill
-defined posix interfaces.
+Unfortunately, I wasn't able to get test feedback on those two cases,
+but I'm wondering...
+Did I understand correctly that a slot alias is something that could be needed?
+If so, is it a variation of the PCIe-to-PCI bridge case that's already
+covered or will it require a different approach?
 
 Thanks,
 
-	tglx
- 
+a.
