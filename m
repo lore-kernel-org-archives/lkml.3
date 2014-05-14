@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaENOxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:53:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42544 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754024AbaENOxR (ORCPT
+	id S1755383AbaENOxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:53:41 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:57435 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaENOxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:53:17 -0400
-Date: Wed, 14 May 2014 10:53:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
- runtime-suspended devices unnecessarily
-In-Reply-To: <16671603.abrivY8Odm@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 May 2014 10:53:40 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, russells@google.com, dmitriyz@google.com,
+        git@xilinx.com, monstr@monstr.eu,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: zynq: Fix uart0 early console virtual address
+Date: Wed, 14 May 2014 16:53:29 +0200
+Message-Id: <c2e5957287cc60655ac4cdd754bb34e874865d2a.1400079202.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-12505-1400079209-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> > It would be surprising if ->prepare() needed to make any difficult
-> > checks.  This would imply that the device could have multiple
-> > runtime-suspend states, some of which are appropriate for system
-> > suspend while others aren't.  Not impossible, but I wouldn't expect it
-> > to come up often.
-> 
-> That is the case for every device with ACPI power management in principle. :-)
-> 
-> Please see patch [3/3] for details.
+--=_mimegpg-monstr-desktop-12505-1400079209-0001
 
-I don't understand enough about the ACPI subsystem to follow the
-details of that patch.
+Virtual address have to have the same offset within
+a 2MB aligned section of virtual/phycial address space.
 
-> OK, I've updated the $subject patch in the meantime and the result is appended
-> Former patch [1/3] is not necessary any more now and patch [3/3] is still valid.
-> 
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-> 
-> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> resume all runtime-suspended devices during system suspend, mostly
-> because those devices may need to be reprogrammed due to different
-> wakeup settings for system sleep and for runtime PM.
+Fix uart0 virtual address to be align with physical one.
+Also remove UART_SIZE which is completely unused.
 
-...
+Reported-by: Russ Smith <russells@google.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+ arch/arm/include/debug/zynq.S | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-This is looking quite good.  I have one suggestion for a small 
-improvement...
+diff --git a/arch/arm/include/debug/zynq.S b/arch/arm/include/debug/zynq.S
+index 0b762fafa758..3edfef7b34ae 100644
+--- a/arch/arm/include/debug/zynq.S
++++ b/arch/arm/include/debug/zynq.S
+@@ -20,18 +20,18 @@
+ #define UART_SR_TXEMPTY		0x00000008	/* TX FIFO empty */
 
-> @@ -1332,6 +1338,16 @@ static int __device_suspend(struct devic
->  	if (dev->power.syscore)
->  		goto Complete;
->  
-> +	if (dev->power.direct_complete) {
-> +		pm_runtime_disable(dev);
-> +		if (dev->power.disable_depth == 1
-> +		    && pm_runtime_status_suspended(dev))
-> +			goto Complete;
-> +
-> +		dev->power.direct_complete = false;
-> +		pm_runtime_enable(dev);
-> +	}
+ #define UART0_PHYS		0xE0000000
++#define UART0_VIRT		0xF0000000
+ #define UART1_PHYS		0xE0001000
+-#define UART_SIZE		SZ_4K
+-#define UART_VIRT		0xF0001000
++#define UART1_VIRT		0xF0001000
 
-Do we want to allow ->prepare() to return > 0 if the device isn't
-runtime suspended?  If we do then non-suspended devices may be a common
-case.  We should then avoid the extra overhead of disable + enable.  
-So I would write:
+ #if IS_ENABLED(CONFIG_DEBUG_ZYNQ_UART1)
+ # define LL_UART_PADDR		UART1_PHYS
++# define LL_UART_VADDR		UART1_VIRT
+ #else
+ # define LL_UART_PADDR		UART0_PHYS
++# define LL_UART_VADDR		UART0_VIRT
+ #endif
 
-	if (dev->power.direct_complete) {
-		if (pm_runtime_status_suspended(dev)) {
-			pm_runtime_disable(dev);
-			if (dev->power.disable_depth == 1
-			    && pm_runtime_status_suspended(dev))
-				goto Complete;
-			pm_runtime_enable(dev);
-		}
-		dev->power.direct_complete = false;
-	}
+-#define LL_UART_VADDR		UART_VIRT
+-
+ 		.macro	addruart, rp, rv, tmp
+ 		ldr	\rp, =LL_UART_PADDR	@ physical
+ 		ldr	\rv, =LL_UART_VADDR	@ virtual
+--
+1.8.2.3
 
-Also, now that we have finally settled on the appropriate API, there
-needs to ba a patch updating the PM documentation.
 
-Alan Stern
+--=_mimegpg-monstr-desktop-12505-1400079209-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlNzg2kACgkQykllyylKDCE2UgCfYCQFQq+g9+17vyWW7Ka0jmDF
+nGsAn3u1QzMPBzsiyCXBNR1EfjqkLQOw
+=3w4S
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-12505-1400079209-0001--
