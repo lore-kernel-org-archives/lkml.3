@@ -1,168 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaENV0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:26:33 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:46868 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaENV0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:26:30 -0400
+	id S1753025AbaENV2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:28:37 -0400
+Received: from mout.gmx.net ([212.227.17.22]:53737 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751238AbaENV2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 17:28:36 -0400
+Message-ID: <5373DFFB.9090505@gmx.de>
+Date: Wed, 14 May 2014 23:28:27 +0200
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
-References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
- <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 May 2014 14:26:09 -0700
-Message-ID: <CALCETrXpFd7c35A5uSDD4xprokmsRL-Zjz6pVOwOKB_EUn8tpQ@mail.gmail.com>
-Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Content-Type: text/plain; charset=UTF-8
+CC: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] fanotify: check file flags passed in fanotify_init
+References: <1399921336-6433-1-git-send-email-xypron.glpk@gmx.de> <20140514211753.GA19774@quack.suse.cz>
+In-Reply-To: <20140514211753.GA19774@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:WrizyENvpeIZMe92DIAG15tae7fcJWneUS5RkkY7LkdAeIKuUaO
+ n+JllcNErpnw8B8yxsPVvEqMOzuXnDSW+zhRtwecRZiFPDYWZSEj5tPCeoAFnFmM+JRT7gv
+ xLlREa4c9Rz07oY7vOU5IN2jexbnt9DF9qXwZVVqJpkwC84tw6W1v05qkw30uegLky8uELG
+ fKd7xlJqMMgPQBnMhwa0A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 2:03 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 14 May 2014 16:41:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
->
->> On 05/14/2014 04:23 PM, Andrew Morton wrote:
->> > On Wed, 14 May 2014 11:55:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
->> >
->> >> Hi all,
->> >>
->> >> While fuzzing with trinity inside a KVM tools guest running the latest -next
->> >> kernel I've stumbled on the following spew:
->> >>
->> >> [ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> >> [ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
->> >> [ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
->> >> [ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> >> [ 1634.972913] Dumping ftrace buffer:
->> >> [ 1634.975493]    (ftrace buffer empty)
->> >> [ 1634.977470] Modules linked in:
->> >> [ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
->> >> [ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
->> >> [ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
->> >
->> > Somebody's gone and broken the x86 oops output.  It used to say
->> > "special_mapping_fault+0x30/0x120" but the offset info has now
->> > disappeared.  That was useful for guesstimating whereabouts in the
->> > function it died.
->>
->> I'm the one who "broke" the oops output, but I thought I'm helping people
->> read that output instead of making it harder...
->>
->> What happened before is that due to my rather complex .config, the offsets
->> didn't make sense to anyone who didn't build the kernel with my .config,
->> so I had to repeatedly send it out to folks who attempted to get basic
->> things like line numbers.
->>
->> > The line number isn't very useful as it's not possible (or at least,
->> > not convenient) for others to reliably reproduce your kernel.
->>
->> I don't understand that part. I'm usually stating in the beginning of my
->> mails that I run my testing on the latest -next kernel.
->
-> Your "latest next kernel" apparently differes from mine ;( It would be
-> useful if you could just quote the +/-5 lines, perhaps?
->
->
->> And indeed if
->> you look at today's -next, that line number would point to:
->>
->>         for (pages = vma->vm_private_data; pgoff && *pages; ++pages) <=== HERE
->>                 pgoff--;
->>
->> So I'm not sure how replacing the offset with line numbers is making things
->> worse? previously offsets were useless for people who tried to debug these
->> spews so that's why I switched it to line numbers in the first place.
->>
->> > <scrabbles with git for a while>
->> >
->> > : static int special_mapping_fault(struct vm_area_struct *vma,
->> > :                           struct vm_fault *vmf)
->> > : {
->> > :   pgoff_t pgoff;
->> > :   struct page **pages;
->> > :
->> > :   /*
->> > :    * special mappings have no vm_file, and in that case, the mm
->> > :    * uses vm_pgoff internally. So we have to subtract it from here.
->> > :    * We are allowed to do this because we are the mm; do not copy
->> > :    * this code into drivers!
->> > :    */
->> > :   pgoff = vmf->pgoff - vma->vm_pgoff;
->> > :
->> > :   for (pages = vma->vm_private_data; pgoff && *pages; ++pages)
->> > :           pgoff--;
->> > :
->> > :   if (*pages) {
->> > :           struct page *page = *pages;
->> > :           get_page(page);
->> > :           vmf->page = page;
->> > :           return 0;
->> > :   }
->> > :
->> > :   return VM_FAULT_SIGBUS;
->> > : }
->> >
->> > OK so it might be the "if (*pages)".  So vma->vm_private_data was NULL
->> > and pgoff was zero.  As usual, I can't imagine what race would cause
->> > that :(
->>
->> Yup, it's the *pages part in the 'for' loop above that. I did find the
->> following in the vdso code:
->>
->>         vma = _install_special_mapping(mm,
->>                                        addr + image->size,
->>                                        image->sym_end_mapping - image->size,
->>                                        VM_READ,
->>                                        NULL);
->>
->> Which installs a mapping with a NULL ptr for pages (if I understand that
->> correctly), but that code has been there for a while now.
->
-> Well that's weird.  I don't see anything which permits that.  Maybe
-> nobody faulted against that address before?
->
-> It's unclear what that code's actually doing and nobody bothered
-> commenting it of course.  Maybe it's installing a guard page?
->
-> In my linux-next all that code got deleted by Andy's "x86, vdso:
-> Reimplement vdso.so preparation in build-time C" anyway.  What kernel
-> were you looking at?
->
-> Andy, are you able to shed some light on why
-> arch_setup_additional_pages() is (or was) passing a NULL into
-> _install_special_mapping()?
->
+Hello Andrew,
 
-Ugh.  I just moved that code; I didn't delete it.  In fact, I likely
-made it worse by causing x86_64 to use it, too.
+the patch below has been reviewed by Jan Kara.
 
-Oddly, this code worked when I tested it.  Do you know what Trinity
-did to break it?  Did the PTEs get nuked due to memory pressure?
+It integrates feedback given by Michael Kerrisk concerning which flags 
+should be allowable.
 
-The intent is to use remap_pfn_range (a couple of lines below) to map
-some kernel data into userspace read-only.  I think the right fix
-would be to pass in the pages array directly but to modify
-_install_special_mapping to clear VM_MAYWRITE.  The idea is that
-ptrace and mprotect should *not* be usable to COW these pages:
-userspace will shoot itself in the foot quite thoroughly if the pages
-get COWed.  Additionally, one of those pages actually represents some
-hardware registers, which almost certainly needs to be mapped UC.
+Please, consider it for inclusion into the mm tree.
 
-IIRC on x86_32 there are two pages in there.  One is regular kernel
-memory that has a struct page associated with it.  The other is the
-HPET, which is a page of hardware registers that may not have a struct
-page.
+Best regards
 
-Can anyone who's less clueless than I am about how vmas work help?
-Does this need to use its own vmops instead of the special mapping
-stuff?
+Heinrich Schuchardt
 
---Andy
+On 14.05.2014 23:17, Jan Kara wrote:
+> On Mon 12-05-14 21:02:16, Heinrich Schuchardt wrote:
+>> Without this patch fanotify_init does not validate the value passed in
+>> event_f_flags.
+>>
+>> When a fanotify event is read from the fanotify file descriptor a new file
+>> descriptor is created where file.f_flags = event_f_flags.
+>>
+>> Internal and external open flags are stored together in field f_flags of
+>> struct file. Hence, an application might create file descriptors with
+>> internal flags like FMODE_EXEC, FMODE_NOCMTIME set.
+>>
+>> Jan Kara and Eric Paris both aggreed that this is a bug and the value of
+>> event_f_flags should be checked:
+>> https://lkml.org/lkml/2014/4/29/522
+>> https://lkml.org/lkml/2014/4/29/539
+>>
+>> This updated patch version considers the comments by Michael Kerrisk in
+>> https://lkml.org/lkml/2014/5/4/10
+>>
+>> With the patch the value of event_f_flags is checked.
+>> When specifying an invalid value error EINVAL is returned.
+>>
+>> Internal flags are disallowed.
+>>
+>> File creation flags are disallowed:
+>> O_CREAT, O_DIRECTORY, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_TRUNC, and O_TTY_INIT.
+>>
+>> Flags which do not make sense with fanotify are disallowed:
+>> __O_TMPFILE, O_PATH, FASYNC, and O_DIRECT.
+>>
+>> This leaves us with the following allowed values:
+>>
+>> O_RDONLY, O_WRONLY, O_RDWR are basic functionality. The are stored in the
+>> bits given by O_ACCMODE.
+>>
+>> O_APPEND is working as expected. The value might be useful in a logging
+>> application which appends the current status each time the log is opened.
+>>
+>> O_LARGEFILE is needed for files exceeding 4GB on 32bit systems.
+>>
+>> O_NONBLOCK may be useful when monitoring slow devices like tapes.
+>>
+>> O_NDELAY is equal to O_NONBLOCK except for platform parisc.
+>> To avoid code breaking on parisc either both flags should be
+>> allowed or none. The patch allows both.
+>>
+>> __O_SYNC and O_DSYNC may be used to avoid data loss on power disruption.
+>>
+>> O_NOATIME may be useful to reduce disk activity.
+>>
+>> O_CLOEXEC may be useful, if separate processes shall be used to scan files.
+>>
+>> Once this patch is accepted, the fanotify_init.2 manpage has to be updated.
+>>
+>> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+>    The patch looks good to me. You can add:
+> Reviewed-by: Jan Kara <jack@suse.cz>
+>
+> 								Honza
+>
+>> ---
+>>   fs/notify/fanotify/fanotify_user.c | 25 +++++++++++++++++++++++++
+>>   1 file changed, 25 insertions(+)
+>>
+>> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+>> index d42220f..31b0de2 100644
+>> --- a/fs/notify/fanotify/fanotify_user.c
+>> +++ b/fs/notify/fanotify/fanotify_user.c
+>> @@ -25,6 +25,19 @@
+>>   #define FANOTIFY_DEFAULT_MAX_MARKS	8192
+>>   #define FANOTIFY_DEFAULT_MAX_LISTENERS	128
+>>
+>> +/*
+>> + * All flags that may be specified in parameter event_f_flags of fanotify_init.
+>> + *
+>> + * Internal and external open flags are stored together in field f_flags of
+>> + * struct file. Only external open flags shall be allowed in event_f_flags.
+>> + * Internal flags like FMODE_NONOTIFY, FMODE_EXEC, FMODE_NOCMTIME shall be
+>> + * excluded.
+>> + */
+>> +#define	FANOTIFY_INIT_ALL_EVENT_F_BITS				( \
+>> +		O_ACCMODE	| O_APPEND	| O_NONBLOCK	| \
+>> +		__O_SYNC	| O_DSYNC	| O_CLOEXEC     | \
+>> +		O_LARGEFILE	| O_NOATIME	)
+>> +
+>>   extern const struct fsnotify_ops fanotify_fsnotify_ops;
+>>
+>>   static struct kmem_cache *fanotify_mark_cache __read_mostly;
+>> @@ -669,6 +682,18 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+>>   	if (flags & ~FAN_ALL_INIT_FLAGS)
+>>   		return -EINVAL;
+>>
+>> +	if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
+>> +		return -EINVAL;
+>> +
+>> +	switch (event_f_flags & O_ACCMODE) {
+>> +	case O_RDONLY:
+>> +	case O_RDWR:
+>> +	case O_WRONLY:
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>>   	user = get_current_user();
+>>   	if (atomic_read(&user->fanotify_listeners) > FANOTIFY_DEFAULT_MAX_LISTENERS) {
+>>   		free_uid(user);
+>> --
+>> 2.0.0.rc0
+>>
+
