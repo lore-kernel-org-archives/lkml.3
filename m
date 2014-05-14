@@ -1,161 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaENXqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:46:20 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49747 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaENXqQ (ORCPT
+	id S1751632AbaENXq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:46:56 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:43993 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaENXqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:46:16 -0400
-Message-ID: <1400111124.6068.85.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 17/20] ima: make IMA policy replaceable at runtime
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, jmorris@namei.org, roberto.sassu@polito.it,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 19:45:24 -0400
-In-Reply-To: <37308b997a49c67605cd1357a34c8cb6738ecd3e.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-	 <37308b997a49c67605cd1357a34c8cb6738ecd3e.1398259638.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051423-1542-0000-0000-000001CF1606
+	Wed, 14 May 2014 19:46:55 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v2 -next] x86,vdso: Fix an OOPS accessing the hpet mapping w/o an hpet
+Date: Wed, 14 May 2014 16:46:50 -0700
+Message-Id: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400111179.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 16:30 +0300, Dmitry Kasatkin wrote: 
-> This patch provides functionality to replace the IMA policy at runtime.
-> 
-> By default, the IMA policy can be successfully updated only once,
-> but with this patch when the kernel configuration option
-> CONFIG_IMA_POLICY_REPLACEABLE is enabled, the IMA policy can be replaced
-> multiple times at runtime.
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+The oops can be triggered in qemu using -no-hpet (but not nohpet) by
+reading a couple of pages past the end of the vdso text.  This
+should send SIGBUS instead of OOPSing.
 
-I have a couple of concerns with replacing the IMA policy.
+The bug was introduced by:
 
-- Currently opened files might now be in policy, that previously
-weren't.  Do these files need to be measured, appraised, or audited?
-These files could have been modified, but the 'security.ima' xattr
-hasn't been updated yet. In such cases, appraisal would fail.
+commit 7a59ed415f5b57469e22e41fc4188d5399e0b194
+Author: Stefani Seibold <stefani@seibold.net>
+Date:   Mon Mar 17 23:22:09 2014 +0100
 
-- At minimum, after replacing the policy, the iint cache entry flags
-need to be reset.
+    x86, vdso: Add 32 bit VDSO time support for 32 bit kernel
 
-Please provide the motivation for such a use case scenario.
+which is new in 3.15.
 
-Mimi
+This will be fixed separately in 3.15, but that patch will not apply
+to tip/x86/vdso.  This is the equivalent fix for tip/x86/vdso and,
+presumably, 3.16.
 
-> ---
->  security/integrity/ima/Kconfig      |  8 ++++++++
->  security/integrity/ima/ima_fs.c     |  2 ++
->  security/integrity/ima/ima_policy.c | 23 +++++++++++++++++++----
->  3 files changed, 29 insertions(+), 4 deletions(-)
-> 
-> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-> index b00044f..b60a315 100644
-> --- a/security/integrity/ima/Kconfig
-> +++ b/security/integrity/ima/Kconfig
-> @@ -160,3 +160,11 @@ config IMA_KERNEL_POLICY
->  	default n
->  	help
->  	  This option enables IMA policy loading from the kernel.
-> +
-> +config IMA_POLICY_REPLACEABLE
-> +	bool "Allows to replace policy at runtime"
-> +	depends on IMA_POLICY_LOADER
-> +	default n
-> +	help
-> +	  Enabling this option allows to replace policy at runtime.
-> +	  Only signed policy is allowed.
-> diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-> index d050a5c..b4144b4 100644
-> --- a/security/integrity/ima/ima_fs.c
-> +++ b/security/integrity/ima/ima_fs.c
-> @@ -304,11 +304,13 @@ static int ima_open_policy(struct inode *inode, struct file *filp)
->  		return -EACCES;
->  	if (test_and_set_bit(IMA_FS_BUSY, &ima_fs_flags))
->  		return -EBUSY;
-> +#ifndef CONFIG_IMA_POLICY_REPLACEABLE
->  	if (!ima_default_policy()) {
->  		/* policy was already set*/
->  		clear_bit(IMA_FS_BUSY, &ima_fs_flags);
->  		return -EACCES;
->  	}
-> +#endif
->  	return 0;
->  }
-> 
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index c6da801..981e953 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -108,11 +108,14 @@ static struct ima_rule_entry default_appraise_rules[] = {
-> 
->  static LIST_HEAD(ima_default_rules);
->  static LIST_HEAD(ima_policy_rules);
-> +static LIST_HEAD(ima_active_rules);
->  static struct list_head *ima_rules;
->  static bool path_rules;
-> 
->  static DEFINE_MUTEX(ima_rules_mutex);
-> 
-> +static void ima_do_delete_rules(struct list_head *rules);
-> +
->  static bool ima_use_tcb __initdata;
->  static int __init default_measure_policy_setup(char *str)
->  {
-> @@ -367,7 +370,14 @@ void ima_update_policy(void)
->  	int result = 0;
->  	int audit_info = 0;
-> 
-> -	ima_rules = &ima_policy_rules;
-> +	if (ima_default_policy()) {
-> +		/* set new policy head */
-> +		ima_rules = &ima_active_rules;
-> +	} else {
-> +		/* FIXME: must be protected by lock */
-> +		ima_do_delete_rules(ima_rules);
-> +	}
-> +	list_replace_init(&ima_policy_rules, ima_rules);
-> 
->  	integrity_audit_msg(AUDIT_INTEGRITY_STATUS, NULL,
->  			    NULL, op, cause, result, audit_info);
-> @@ -734,14 +744,14 @@ ssize_t ima_parse_add_rule(char *rule)
->  	return len;
->  }
-> 
-> -/* ima_delete_rules called to cleanup invalid policy */
-> -void ima_delete_rules(void)
-> +/* ima_delete_rules called to cleanup invalid or old policy */
-> +static void ima_do_delete_rules(struct list_head *rules)
->  {
->  	struct ima_rule_entry *entry, *tmp;
->  	int i;
-> 
->  	mutex_lock(&ima_rules_mutex);
-> -	list_for_each_entry_safe(entry, tmp, &ima_policy_rules, list) {
-> +	list_for_each_entry_safe(entry, tmp, rules, list) {
->  		for (i = 0; i < MAX_LSM_RULES; i++)
->  			kfree(entry->lsm[i].args_p);
-> 
-> @@ -751,6 +761,11 @@ void ima_delete_rules(void)
->  	mutex_unlock(&ima_rules_mutex);
->  }
-> 
-> +void ima_delete_rules(void)
-> +{
-> +	ima_do_delete_rules(&ima_policy_rules);
-> +}
-> +
->  #ifdef CONFIG_IMA_POLICY_LOADER
-> 
->  ssize_t ima_read_policy(char *path)
+Cc: Stefani Seibold <stefani@seibold.net>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/vdso/vma.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index e915eae..8ad0081 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -90,6 +90,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ 	struct vm_area_struct *vma;
+ 	unsigned long addr;
+ 	int ret = 0;
++	static struct page *no_pages[] = {NULL};
+ 
+ 	if (calculate_addr) {
+ 		addr = vdso_addr(current->mm->start_stack,
+@@ -125,7 +126,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ 				       addr + image->size,
+ 				       image->sym_end_mapping - image->size,
+ 				       VM_READ,
+-				       NULL);
++				       no_pages);
+ 
+ 	if (IS_ERR(vma)) {
+ 		ret = PTR_ERR(vma);
+-- 
+1.9.0
 
