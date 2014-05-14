@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaENTP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:15:28 -0400
-Received: from smtprelay0007.hostedemail.com ([216.40.44.7]:50063 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752725AbaENTPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:15:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3876:3877:4321:5007:6114:6261:6642:10004:10026:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: glue17_8614cfbcb425f
-X-Filterd-Recvd-Size: 1857
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] wlcore: Remove trailing semicolon from do {...} while (0) macro
-Date: Wed, 14 May 2014 12:15:14 -0700
-Message-Id: <a62dbcaa8438b3ee6cdf94d7681427c6f48f122a.1400094804.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1400094804.git.joe@perches.com>
-References: <cover.1400094804.git.joe@perches.com>
+	id S1751412AbaENTR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:17:59 -0400
+Received: from sauhun.de ([89.238.76.85]:42204 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906AbaENTR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 15:17:56 -0400
+Date: Wed, 14 May 2014 21:17:49 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Baruch Siach <baruch@tkos.co.il>,
+        Wan ZongShun <mcuos.com@gmail.org>, linux-kernel@vger.kernel.org,
+        Marek Vasut <marek.vasut@gmail.com>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c/nuc900: fix ancient build error
+Message-ID: <20140514191749.GA25709@katana>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-11-git-send-email-arnd@arndb.de>
+ <20140514162725.GG12911@katana>
+ <4944869.eRrWyMmW4d@wuerfel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <4944869.eRrWyMmW4d@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These should not have trailing semicolons so remove them.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/ti/wlcore/debugfs.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/net/wireless/ti/wlcore/debugfs.h b/drivers/net/wireless/ti/wlcore/debugfs.h
-index f7381dd..0f2cfb0 100644
---- a/drivers/net/wireless/ti/wlcore/debugfs.h
-+++ b/drivers/net/wireless/ti/wlcore/debugfs.h
-@@ -57,7 +57,7 @@ static const struct file_operations name## _ops = {			\
- 					    wl, &name## _ops);		\
- 		if (!entry || IS_ERR(entry))				\
- 			goto err;					\
--	} while (0);
-+	} while (0)
- 
- 
- #define DEBUGFS_ADD_PREFIX(prefix, name, parent)			\
-@@ -66,7 +66,7 @@ static const struct file_operations name## _ops = {			\
- 				    wl, &prefix## _## name## _ops);	\
- 		if (!entry || IS_ERR(entry))				\
- 			goto err;					\
--	} while (0);
-+	} while (0)
- 
- #define DEBUGFS_FWSTATS_FILE(sub, name, fmt, struct_type)		\
- static ssize_t sub## _ ##name## _read(struct file *file,		\
--- 
-1.8.1.2.459.gbcd45b4.dirty
 
+> For the moment, I'd leave this up to Wan ZongShun. He has in the past
+> at least replied to emails about the platform, even though there hasn't
+> been any new development.
+
+Agreed. Let's wait for his response. If there is none, I'll think about
+removing the driver.
+
+
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTc8FdAAoJEBQN5MwUoCm2E9QP/jxPLp8arOPDrRmvM3afFc5j
+tioCbPk11VsNTwWN/eQF+ww4FHk4HXZIhXf1VUShBaVBAox3nSlowvYRjZrvam7E
+Lo/z6bYsw4Zef2I94PgTxVKyvUvHX/csyhdKqaBPJ6AkAhBICDLUr2LSsmJCSZ2C
+KqPdHeX63mdVXx/x8r4xQ9/mEnpDkCkn1fPmBHLcXr4INpp8O5S4SFZEy54rDLFh
+03NR5cPGXRrilJ2D6sk+GLnpheNY8fj/QX/xatI2R4/jwIG3gTsmTwltCd9XUwYG
+L1b2dpGlOwLW90OdCIrqT3PhasSlHyviojAuvaEA0gxiGJSKQuWGTbd3vVH9m/ql
+qxC8s56C51WSl8ZAKwa5XOnIHlJ2NGy/4Rt+wzAj5c7/vAb6jQsS+H3L7NmrvJF7
+L3J8f1STrAJYkCQHt71dq//RBnEoa7o7BPxR04SJWsxqW5ptsHHBaCLSdbfFE6VT
+g4KwGYDoif3YdmxbQgyK7RUZY67j3mbFWLBFFFlnrEc+YUpNlYZxSsehwpmdTvJe
+x2X+ZLVlUTxWt76DGQfra8E0yB9oNzI/UvzNpb4+oAqwVut51kKd3jdYKfRYaQRb
+5ueKuFKqX6V5LL3Df9ZHSXVvJzBoylk/QNqeXolia7zrGGsSuQnqmR1hcxihrXZ9
+RF2qx5fLOe2ONiE+KbR3
+=fvlQ
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
