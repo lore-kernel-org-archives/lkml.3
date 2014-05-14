@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaENDHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 23:07:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:23735 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752507AbaENDHS (ORCPT
+	id S1753410AbaENDIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 23:08:46 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:31904 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751958AbaENDIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 23:07:18 -0400
-Date: Tue, 13 May 2014 23:07:13 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH RFC net-next] tracing: accelerate tracing filters with
- BPF
-Message-ID: <20140513230713.1cc7db94@gandalf.local.home>
-In-Reply-To: <1400036111-7803-1-git-send-email-ast@plumgrid.com>
-References: <1400036111-7803-1-git-send-email-ast@plumgrid.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 13 May 2014 23:08:46 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <catalin.marinas@arm.com>, <will.deacon@arm.com>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH v2] ARM64: kernel: add compatible cpuinfo
+Date: Wed, 14 May 2014 11:08:14 +0800
+Message-ID: <1400036894-16667-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-13_07:2014-05-13,2014-05-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405140042
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 19:55:11 -0700
-Alexei Starovoitov <ast@plumgrid.com> wrote:
+Print the necessary features in order to be backwards compatible with
+ARMv7 and earlier version.
 
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -79,6 +79,7 @@ config FTRACE_NMI_ENTER
->         default y
->  
->  config EVENT_TRACING
-> +	depends on NET
->  	select CONTEXT_SWITCH_TRACER
->  	bool
->  
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ arch/arm64/kernel/setup.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-This part makes me a little nervous. I know a lot of embedded devices
-depend on tracing, but do they all have network?
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 7ec7846..a09ecfe 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -451,6 +451,11 @@ static int c_show(struct seq_file *m, void *v)
+ 		if (elf_hwcap & (1 << i))
+ 			seq_printf(m, "%s ", hwcap_str[i]);
+ 
++#ifdef CONFIG_COMPAT
++	seq_puts(m, "half thumb fastmult edsp tls vfp vfpv3 vfpv4 neon ");
++	seq_puts(m, "idiva idivt ");
++#endif
++
+ 	seq_printf(m, "\nCPU implementer\t: 0x%02x\n", read_cpuid_id() >> 24);
+ 	seq_printf(m, "CPU architecture: AArch64\n");
+ 	seq_printf(m, "CPU variant\t: 0x%x\n", (read_cpuid_id() >> 20) & 15);
+-- 
+1.7.9.5
 
-They may, but I would like to hear from others in the embedded space.
-
--- Steve
