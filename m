@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaENMpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:45:18 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15144 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754460AbaENMpQ (ORCPT
+	id S1755429AbaENMpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:45:54 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:56979 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaENMpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:45:16 -0400
-Date: Wed, 14 May 2014 13:45:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, "bp@suse.de" <bp@suse.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH 6/7] acpi, apei, ghes: Make unmapping functionality
- independent from architecture.
-Message-ID: <20140514124505.GA19866@localhost>
-References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
- <1397056476-9183-7-git-send-email-tomasz.nowicki@linaro.org>
- <20140513201118.GF8760@pd.tnic>
- <5373625B.4050401@linaro.org>
- <20140514123542.GG10145@arm.com>
+	Wed, 14 May 2014 08:45:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Wed, 14 May 2014 14:45:36 +0200
+Message-ID: <5281007.CFRjW0Yeu2@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <537302CD.7000701@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <4528185.oZbgyuuFKX@wuerfel> <537302CD.7000701@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514123542.GG10145@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:l4o9cNPT0Lrc3mcQIabUJlYG9AVgE80Ug6KhmsffXn7
+ DZhqxAksRQ3N1+zZHw0QfXhj9CWCI4QuM8Y3gxV5qEO3y7Fpv4
+ jTWF6//SaFJ06R6bPGVOiaU9rLDpEdNC8LPzziKLN0L6Qs8Png
+ gvkwFSBnGC3jQvo2789k13UjH2Z7FUBszEA11RoJ7vZzUqAON/
+ 3sC3S5B3AnsLixIuw9IDet+AwlqLhNAYshULczAwMyLNlG3ap4
+ IIrXgcDBueAINaoC4JsuN6zGDeNxuEcqy/404OhhxS9NK4Yz6I
+ fEoq+gM+eBDzhew+FsJZaBRQksjHWdBYd18DrSrtfJ88h0Vxl6
+ zXVnspms2o+13aDXDOt8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 01:35:42PM +0100, Will Deacon wrote:
-> On Wed, May 14, 2014 at 01:32:27PM +0100, Tomasz Nowicki wrote:
-> > On 13.05.2014 22:11, Borislav Petkov wrote:
-> > > On Wed, Apr 09, 2014 at 05:14:34PM +0200, Tomasz Nowicki wrote:
-> > >> Till now __flush_tlb_one was used for unmapping virtual memory which
-> > >> is x86 specific function. Replace it with more generic
-> > >> flush_tlb_kernel_range.
-> > >>
-> > >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> > >> ---
-> > >>   drivers/acpi/apei/ghes.c |    4 ++--
-> > >>   1 file changed, 2 insertions(+), 2 deletions(-)
-> > >>
-> > >> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> > >> index aaf8db3..624878b 100644
-> > >> --- a/drivers/acpi/apei/ghes.c
-> > >> +++ b/drivers/acpi/apei/ghes.c
-> > >> @@ -185,7 +185,7 @@ static void ghes_iounmap_nmi(void __iomem *vaddr_ptr)
-> > >>
-> > >>   	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_NMI_PAGE(base));
-> > >>   	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
-> > >> -	__flush_tlb_one(vaddr);
-> > >> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
-> > >>   }
-> > >>
-> > >>   static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
-> > >> @@ -195,7 +195,7 @@ static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
-> > >>
-> > >>   	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_IRQ_PAGE(base));
-> > >>   	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
-> > >> -	__flush_tlb_one(vaddr);
-> > >> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
-> > >
-> > > flush_tlb_kernel_range() does send an IPI to every core on x86 which is
-> > > much more expensive than what __flush_tlb_one does.
-> > >
-> > > Fairer it would be if you added a __flush_tlb_one() version for arm
-> > > which does flush_tlb_kernel_range for you.
-> > >
-> > 
-> > Thanks for comment. I am not sure if maintainers will allow me to add 
-> > sth like __flush_tlb_one() for arm/arm64. Let me ask them directly. 
-> > Catalin, Russell what do you think?
+On Wednesday 14 May 2014 11:14:45 Kishon Vijay Abraham I wrote:
+> hi Arnd,
 > 
-> I don't have the background for this, but if you don't need broadcasting
-> (if this avoids IPIs on x86, I guess you don't) then why not use
-> local_flush_tlb_kernel_range instead?
+> On Tuesday 13 May 2014 07:04 PM, Arnd Bergmann wrote:
+> > On Tuesday 13 May 2014 15:27:46 Arnd Bergmann wrote:
+> >> On Tuesday 13 May 2014 18:56:23 Kishon Vijay Abraham I wrote:
+> >>>> If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+> >>>> section of the CPU address space, that could be represented as
+> >>>>
+> >>>>       ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
+> >>>>
+> >>>> or 
+> >>>>
+> >>>>       ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
+> >>>>
+> >>>> depending on whether you want the BARs to be programmed using a low
+> >>>> address 0x0-0x0fffffff or an address matching the window
+> >>>> 0xb0000000-0xbfffffff.
+> >>>
+> >>> The problem is, for configuring the window starting at 0xb0000000, the ATU
+> >>> should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
+> >>>
+> >>
+> >> Then use the first of the two?
+> >>
+> > 
+> > To clarify: using <0x82000000 0 0  0xb0000000  0 0x10000000> will give you 
+> > a mem_offset of 0xb0000000, which should work just fine for this case.
+> > 
+> > What I don't understand is why the ATU cares about whether the outbound
+> > address is 0x0000000 or 0xb0000000 if it just decodes the lower 28 bit
+> > anyway. Did you mean that we have to program the BARs using low addresses
+> > regardless of what is programmed in the ATU? That would make more sense,
+> > and it also matches what I suggested.
+> 
+> No, It's not like it decodes only the lower 28bits. The BARs is programmed with
+> 32 bit value.
+> 
+> My pcie dt node has
+>  ranges = <0x00000800 0 0x20001000 0x20001000 0 0x00002000  /* CONFIG */
+>            0x81000000 0 0          0x20003000 0 0x00010000  /* IO */
+>            0x82000000 0 0x20013000 0x20013000 0 0xffed000>; /* MEM */
+> 
+> Consider MEM address space..
+> 
+> Here both PCI address and CPU address is 0x20013000. So when there is a write
+> to cpu addr 0x20013000 [writel(virt_addr(0x20013000)], we want it to be
+> translated to PCI addr 0x20013000. So in 'ATU', we would expect *base* to be
+> programmed to *0x20013000* and target to be programmed to *0x20013000*. But
+> that's not the case for DRA7xx. For DRA7xx *base* should be programmed to
+> *0x0013000* and target should be programmed to *0x20013000*.
 
-Is this generic enough (we don't have it on arm64)?
+Ok, got it, thanks for your patience.
 
--- 
-Catalin
+I think this would best be modeled as a separate bus node that contains the
+restriction, like this:
+
+/ {
+	#address-cells = <1>; // or <2> if you support > 4GB address space
+	#size-cells = <1>;
+
+	soc {
+		#address-cells <1>;
+		#size-cells = <1>;
+		ranges;
+		dma-ranges;
+
+		... // all normal devices
+
+		axi@20000000 {
+			#size-cells = <1>;
+			#address-cells = <1>;
+			dma-ranges; // can access all 4GB outbound
+			ranges = <0 0x20000000 0x10000000>; // 28-bit bus
+
+			pci@0 {
+				reg = <0x0    0x1000>, // internal regs
+				      <0x1000 0x2000>; // config space
+				dma-ranges; // 32-bit outbound
+				ranges = <0x81000000 0 0           0x3000 0 0x00010000  /* IO */
+					  0x82000000 0 0x20013000 0x13000 0 0xffed000>; /* MEM */
+			};
+		};
+	};
+};
+
+
+	Arnd
