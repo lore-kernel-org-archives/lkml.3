@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaENVjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:39:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60900 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738AbaENVji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:39:38 -0400
-Message-ID: <5373E286.2080104@zytor.com>
-Date: Wed, 14 May 2014 14:39:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Ley Foon Tan <lftan@altera.com>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 04/25] avr32: Add 32 bit time_t and clock_t
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <1399971769-4116-1-git-send-email-lftan@altera.com> <20140513201944.GA14023@samfundet.no> <CAFiDJ5_5ret2H-OynLMhBStzyDDBLpF6Tsy4bbEUX+mKu2V4uA@mail.gmail.com> <20140514074456.GB17409@samfundet.no>
-In-Reply-To: <20140514074456.GB17409@samfundet.no>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1753451AbaENVke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:40:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48383 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaENVkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 17:40:33 -0400
+Date: Wed, 14 May 2014 14:40:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
+        mingo@kernel.org
+Subject: Re: [PATCH 2/2] mm: replace remap_file_pages() syscall with
+ emulation
+Message-Id: <20140514144031.3086562833b35c1842a74b9d@linux-foundation.org>
+In-Reply-To: <20140514211748.GA15970@node.dhcp.inet.fi>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1399552888-11024-3-git-send-email-kirill.shutemov@linux.intel.com>
+	<20140508145729.3d82d2c989cfc483c94eb324@linux-foundation.org>
+	<5370E4B4.1060802@oracle.com>
+	<20140512170514.GA28227@node.dhcp.inet.fi>
+	<5373D781.7020109@oracle.com>
+	<20140514211748.GA15970@node.dhcp.inet.fi>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 12:44 AM, Hans-Christian Egtvedt wrote:
->> In this patchset, the generic one will be 64 bit (long long). So, the
->> existing 32 bit users need to override this.
+On Thu, 15 May 2014 00:17:48 +0300 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+
+> On Wed, May 14, 2014 at 04:52:17PM -0400, Sasha Levin wrote:
+> > On 05/12/2014 01:05 PM, Kirill A. Shutemov wrote:
+> > > Taking into account your employment, is it possible to check how the RDBMS
+> > > (old but it still supported 32-bit versions) would react on -ENOSYS here?
+> > 
+> > Alrighty, I got an answer:
+> > 
+> > 1. remap_file_pages() only works when the "VLM" feature of the db is enabled,
+> > so those databases can work just fine without it, but be limited to 3-4GB of
+> > memory. This is not needed at all on 64bit machines.
 > 
-> Would it be wrong to use the architecture defined size, or does some 32-bit
-> architectures use 64-bit time types?
+> Okay. And it seems user need to enable it manually with option
+> USE_INDIRECT_DATA_BUFFERS=TRUE.
+> 
+> http://docs.oracle.com/cd/B28359_01/server.111/b32009/appi_vlm.htm
+> 
+> > 2. As of OL7 (kernel 3.8), there will not be a 32bit kernel build. I'm still
+> > waiting for an answer whether there will do a 32bit DB build for a 64bit kernel,
+> > but that never happened before and seems unlikely.
+> > 
+> > 3. They're basically saying that by the time upstream releases a kernel without
+> > remap_file_pages() no one will need it here.
+> > 
+> > To sum it up, they're fine with removing remap_file_pages().
+> 
+> Andrew, Linus, what will we do here: live with emulation or just kill the
+> syscall? Or may be kill the syscall after few releases with emulation?
 
-This is what we had done up until now, except for x32, *AND THAT IS
-EXACTLY THE PROBLEM*.  2038 is only 24 years away.
+Well we can put the printk in there initially to gather more
+information.
 
-	-hpa
-
+If it appears necessary then we can include the emulation, but retain
+the "this-is-going-away" printk then remove the emulation later on.
 
