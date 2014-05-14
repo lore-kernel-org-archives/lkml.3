@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaENOBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:01:52 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49635 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368AbaENOBt (ORCPT
+	id S932446AbaENOCD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:02:03 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40478 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932368AbaENOB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:01:49 -0400
+	Wed, 14 May 2014 10:01:59 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
         devicetree@vger.kernel.org, kgene.kim@samsung.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         robh+dt@kernel.org, gregkh@linuxfoundation.org, t.figa@samsung.com,
         balbi@ti.com, kishon@ti.com, jg1.han@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v6 6/8] ARM: dts: exynos5420-peach-pit: Add Vbus regulator for USB 3.0
-Date: Wed, 14 May 2014 19:31:08 +0530
-Message-Id: <1400076070-12456-7-git-send-email-gautam.vivek@samsung.com>
+        Vivek gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v6 8/8] ARM: dts: exynos5800-peach-pi: Add Vbus regulator for USB 3.0
+Date: Wed, 14 May 2014 19:31:10 +0530
+Message-Id: <1400076070-12456-9-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400076070-12456-1-git-send-email-gautam.vivek@samsung.com>
 References: <1400076070-12456-1-git-send-email-gautam.vivek@samsung.com>
@@ -24,19 +24,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Vivek gautam <gautam.vivek@samsung.com>
+
 Add required fixed-regulator for VBUS supply for USB 3.0
 controller phy.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- arch/arm/boot/dts/exynos5420-peach-pit.dts |   46 ++++++++++++++++++++++++++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts |   46 +++++++++++++++++++++++++++++
  1 file changed, 46 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index fae33dd..8402ec3 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -58,6 +58,28 @@
+diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+index 4ed9ccc..8301bca 100644
+--- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
++++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+@@ -56,6 +56,28 @@
  		pinctrl-0 = <&pwm0_out>;
  		pinctrl-names = "default";
  	};
@@ -65,7 +67,7 @@ index fae33dd..8402ec3 100644
  };
  
  &pinctrl_0 {
-@@ -76,6 +98,22 @@
+@@ -74,6 +96,22 @@
  	};
  };
  
@@ -88,7 +90,7 @@ index fae33dd..8402ec3 100644
  &rtc {
  	status = "okay";
  };
-@@ -137,6 +175,14 @@
+@@ -134,6 +172,14 @@
  	};
  };
  
