@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854AbaENNVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:21:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58321 "EHLO mail.skyhub.de"
+	id S1755869AbaENNVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:21:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52491 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070AbaENNVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:21:33 -0400
-Date: Wed, 14 May 2014 15:21:21 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, "bp@suse.de" <bp@suse.de>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH 6/7] acpi, apei, ghes: Make unmapping functionality
- independent from architecture.
-Message-ID: <20140514132121.GF5231@pd.tnic>
-References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
- <1397056476-9183-7-git-send-email-tomasz.nowicki@linaro.org>
- <20140513201118.GF8760@pd.tnic>
- <5373625B.4050401@linaro.org>
- <20140514123542.GG10145@arm.com>
- <20140514124505.GA19866@localhost>
- <20140514124834.GH10145@arm.com>
- <5373670D.5040603@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5373670D.5040603@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754204AbaENNVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 09:21:51 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Cedric Le Goater <clg@fr.ibm.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] offb: Fix little-endian support
+Date: Wed, 14 May 2014 15:21:49 +0200
+Message-Id: <1400073709-15012-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 02:52:29PM +0200, Tomasz Nowicki wrote:
-> I am aiming ARM64 but ideally it should work for x86, arm64 and arm.
+Although the color palette was corrected for little endian by the
+commit  [e1edf18b: offb: Add palette hack for little endian], the
+graphics mode is still shown in psychedelic colors.  For fixing this
+properly, we rather need to correct the RGB offsets depending on
+endianess.
 
-I guess you can call it local_flush_tlb_one() which calls
-__flush_tlb_one() on x86 and flush_tlb_kernel_range() on arm*
+Since the RGB base offsets are corrected, we don't need the hack for
+pallette color entries.  This patch reverts that, too.
 
-A bunch of other arches have local_flush_tlb_one so going with that
-naming might be on the right track :)
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/video/fbdev/offb.c | 51 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 32 insertions(+), 19 deletions(-)
 
+diff --git a/drivers/video/fbdev/offb.c b/drivers/video/fbdev/offb.c
+index 7d44d669d5b6..0224a62aa49d 100644
+--- a/drivers/video/fbdev/offb.c
++++ b/drivers/video/fbdev/offb.c
+@@ -93,13 +93,6 @@ extern boot_infos_t *boot_infos;
+ 
+ #define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
+ 
+-static inline u32 offb_cmap_byteswap(struct fb_info *info, u32 value)
+-{
+-	u32 bpp = info->var.bits_per_pixel;
+-
+-	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
+-}
+-
+     /*
+      *  Set a single color register. The values supplied are already
+      *  rounded down to the hardware's capabilities (according to the
+@@ -129,7 +122,7 @@ static int offb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+ 			mask <<= info->var.transp.offset;
+ 			value |= mask;
+ 		}
+-		pal[regno] = offb_cmap_byteswap(info, value);
++		pal[regno] = value;
+ 		return 0;
+ 	}
+ 
+@@ -451,6 +444,8 @@ static void __init offb_init_fb(const char *name, const char *full_name,
+ 	else
+ 		fix->visual = FB_VISUAL_TRUECOLOR;
+ 
++	info->flags = FBINFO_DEFAULT | FBINFO_MISC_FIRMWARE | foreign_endian;
++
+ 	var->xoffset = var->yoffset = 0;
+ 	switch (depth) {
+ 	case 8:
+@@ -466,35 +461,54 @@ static void __init offb_init_fb(const char *name, const char *full_name,
+ 		break;
+ 	case 15:		/* RGB 555 */
+ 		var->bits_per_pixel = 16;
+-		var->red.offset = 10;
++		if (fb_be_math(info)) {
++			var->red.offset = 10;
++			var->green.offset = 5;
++			var->blue.offset = 0;
++		} else {
++			var->red.offset = 0;
++			var->green.offset = 5;
++			var->blue.offset = 10;
++		}
+ 		var->red.length = 5;
+-		var->green.offset = 5;
+ 		var->green.length = 5;
+-		var->blue.offset = 0;
+ 		var->blue.length = 5;
+ 		var->transp.offset = 0;
+ 		var->transp.length = 0;
+ 		break;
+ 	case 16:		/* RGB 565 */
+ 		var->bits_per_pixel = 16;
+-		var->red.offset = 11;
++		if (fb_be_math(info)) {
++			var->red.offset = 11;
++			var->green.offset = 5;
++			var->blue.offset = 0;
++		} else {
++			var->red.offset = 0;
++			var->green.offset = 5;
++			var->blue.offset = 11;
++		}
+ 		var->red.length = 5;
+-		var->green.offset = 5;
+ 		var->green.length = 6;
+-		var->blue.offset = 0;
+ 		var->blue.length = 5;
+ 		var->transp.offset = 0;
+ 		var->transp.length = 0;
+ 		break;
+ 	case 32:		/* RGB 888 */
+ 		var->bits_per_pixel = 32;
+-		var->red.offset = 16;
++		if (fb_be_math(info)) {
++			var->red.offset = 16;
++			var->green.offset = 8;
++			var->blue.offset = 0;
++			var->transp.offset = 24;
++		} else {
++			var->red.offset = 8;
++			var->green.offset = 16;
++			var->blue.offset = 24;
++			var->transp.offset = 0;
++		}
+ 		var->red.length = 8;
+-		var->green.offset = 8;
+ 		var->green.length = 8;
+-		var->blue.offset = 0;
+ 		var->blue.length = 8;
+-		var->transp.offset = 24;
+ 		var->transp.length = 8;
+ 		break;
+ 	}
+@@ -521,7 +535,6 @@ static void __init offb_init_fb(const char *name, const char *full_name,
+ 	info->fbops = &offb_ops;
+ 	info->screen_base = ioremap(address, fix->smem_len);
+ 	info->pseudo_palette = (void *) (info + 1);
+-	info->flags = FBINFO_DEFAULT | FBINFO_MISC_FIRMWARE | foreign_endian;
+ 
+ 	fb_alloc_cmap(&info->cmap, 256, 0);
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.9.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
