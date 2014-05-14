@@ -1,141 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaENXdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:33:13 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50303 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaENXdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:33:11 -0400
-Date: Wed, 14 May 2014 19:33:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.16] cgroup: disallow debug controller on the
- default hierarchy
-Message-ID: <20140514233307.GI15690@htj.dyndns.org>
+	id S1753300AbaENXdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:33:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59897 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705AbaENXdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 19:33:43 -0400
+Message-ID: <5373FD38.3060805@ti.com>
+Date: Thu, 15 May 2014 02:33:12 +0300
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: <grygorii.strashko@ti.com>, Murali Karicheri <m-karicheri2@ti.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nand: davinci: add support for 4K page size nand devices
+References: <1399588265-7130-1-git-send-email-ivan.khoronzhuk@ti.com> <5370E6F3.3050705@ti.com>
+In-Reply-To: <5370E6F3.3050705@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debug controller, as its name suggests, exposes cgroup core
-internals to userland to aid debugging.  Unfortunately, except for the
-name, there's no provision to prevent its usage in production
-configurations and the controller is widely enabled and mounted
-leaking internal details to userland.  Like most other debug
-information, the information exposed by debug isn't interesting even
-for debugging itself once the related parts are working reliably.
 
-This controller has no reason for existing.  This patch implements
-cgrp_dfl_root_inhibit_ss_mask which can suppress specific subsystems
-on the default hierarchy and adds the debug subsystem to it so that it
-can be gradually deprecated as usages move towards the unified
-hierarchy.
+On 05/12/2014 06:21 PM, Santosh Shilimkar wrote:
+> On Thursday 08 May 2014 06:31 PM, Ivan Khoronzhuk wrote:
+>> From: Sandeep Paulraj <s-paulraj@ti.com>
+>>
+>> It is needed for k2l keystone2 EVM which uses NAND flash with 4K page
+>> size, hence add support for 4K page size nand devices.
+>>
+>> Signed-off-by: Sandeep Paulraj <s-paulraj@ti.com>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>>
+>> Based on l2-mtd/master
+>>
+>>   drivers/mtd/nand/davinci_nand.c | 41 ++++++++++++++++++++++++++++++-----------
+>>   1 file changed, 30 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>> index b922c8e..24a5769 100644
+>> --- a/drivers/mtd/nand/davinci_nand.c
+>> +++ b/drivers/mtd/nand/davinci_nand.c
+>> @@ -520,6 +520,31 @@ static struct nand_ecclayout hwecc4_2048 = {
+>>   	},
+>>   };
+>>   
+>> +/* An ECC layout for using 4-bit ECC with large-page (4096bytes) flash,
+>> + * storing ten ECC bytes plus the manufacturer's bad block marker byte,
+>> + * and not overlapping the default BBT markers.
+>> + */
+> Comment style ....
+> /*
+>   *
+>   */
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/cgroup.h        |    2 ++
- include/linux/cgroup_subsys.h |   11 +++++++----
- kernel/cgroup.c               |   21 ++++++++++++++++++---
- 3 files changed, 27 insertions(+), 7 deletions(-)
+yes
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -296,6 +296,8 @@ enum {
- 	 *   the flag is not created.
- 	 *
- 	 * - blkcg: blk-throttle becomes properly hierarchical.
-+	 *
-+	 * - debug: disallowed on the default hierarchy.
- 	 */
- 	CGRP_ROOT_SANE_BEHAVIOR	= (1 << 0),
- 
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -7,10 +7,6 @@
- SUBSYS(cpuset)
- #endif
- 
--#if IS_ENABLED(CONFIG_CGROUP_DEBUG)
--SUBSYS(debug)
--#endif
--
- #if IS_ENABLED(CONFIG_CGROUP_SCHED)
- SUBSYS(cpu)
- #endif
-@@ -50,6 +46,13 @@ SUBSYS(net_prio)
- #if IS_ENABLED(CONFIG_CGROUP_HUGETLB)
- SUBSYS(hugetlb)
- #endif
-+
-+/*
-+ * The following subsystems are not supported on the default hierarchy.
-+ */
-+#if IS_ENABLED(CONFIG_CGROUP_DEBUG)
-+SUBSYS(debug)
-+#endif
- /*
-  * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
-  */
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -148,6 +148,13 @@ struct cgroup_root cgrp_dfl_root;
-  */
- static bool cgrp_dfl_root_visible;
- 
-+/* some controllers are not supported in the default hierarchy */
-+static const unsigned int cgrp_dfl_root_inhibit_ss_mask = 0
-+#ifdef CONFIG_CGROUP_DEBUG
-+	| (1 << debug_cgrp_id)
-+#endif
-+	;
-+
- /* The list of hierarchy roots */
- 
- static LIST_HEAD(cgroup_roots);
-@@ -1160,6 +1167,7 @@ static void cgroup_clear_dir(struct cgro
- static int rebind_subsystems(struct cgroup_root *dst_root, unsigned int ss_mask)
- {
- 	struct cgroup_subsys *ss;
-+	unsigned int tmp_ss_mask;
- 	int ssid, i, ret;
- 
- 	lockdep_assert_held(&cgroup_mutex);
-@@ -1177,7 +1185,12 @@ static int rebind_subsystems(struct cgro
- 			return -EBUSY;
- 	}
- 
--	ret = cgroup_populate_dir(&dst_root->cgrp, ss_mask);
-+	/* skip creating root files on dfl_root for inhibited subsystems */
-+	tmp_ss_mask = ss_mask;
-+	if (dst_root == &cgrp_dfl_root)
-+		tmp_ss_mask &= ~cgrp_dfl_root_inhibit_ss_mask;
-+
-+	ret = cgroup_populate_dir(&dst_root->cgrp, tmp_ss_mask);
- 	if (ret) {
- 		if (dst_root != &cgrp_dfl_root)
- 			return ret;
-@@ -2444,7 +2457,8 @@ static int cgroup_root_controllers_show(
- {
- 	struct cgroup *cgrp = seq_css(seq)->cgroup;
- 
--	cgroup_print_ss_mask(seq, cgrp->root->subsys_mask);
-+	cgroup_print_ss_mask(seq, cgrp->root->subsys_mask &
-+			     ~cgrp_dfl_root_inhibit_ss_mask);
- 	return 0;
- }
- 
-@@ -2582,7 +2596,8 @@ static ssize_t cgroup_subtree_control_wr
- 		if (tok[0] == '\0')
- 			continue;
- 		for_each_subsys(ss, ssid) {
--			if (ss->disabled || strcmp(tok + 1, ss->name))
-+			if (ss->disabled || strcmp(tok + 1, ss->name) ||
-+			    ((1 << ss->id) & cgrp_dfl_root_inhibit_ss_mask))
- 				continue;
- 
- 			if (*tok == '+') {
+>> +static struct nand_ecclayout hwecc4_4096 __initconst = {
+>> +          .eccbytes = 80,
+>> +          .eccpos = {
+>> +                  /* at the end of spare sector */
+>> +                  48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+>> +                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+>> +                  68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+>> +                  78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
+>> +                  88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
+>> +                  98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+>> +                  108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+>> +                  118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
+>> +                  },
+>> +          .oobfree = {
+>> +                  /* 2 bytes at offset 0 hold manufacturer badblock markers */
+>> +                  {.offset = 2, .length = 46, },
+>> +                  /* 5 bytes at offset 8 hold BBT markers */
+>> +                  /* 8 bytes at offset 16 hold JFFS2 clean markers */
+>> +         },
+>> +};
+>> +
+>>   #if defined(CONFIG_OF)
+>>   static const struct of_device_id davinci_nand_of_match[] = {
+>>   	{.compatible = "ti,davinci-nand", },
+>> @@ -796,18 +821,12 @@ static int nand_davinci_probe(struct platform_device *pdev)
+>>   			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
+>>   			goto syndrome_done;
+>>   		}
+>> +		if (chunks == 8) {
+> May be use some meaning macros instead of magic value '8'
+
+It just continues style used in the code:
+
+if (chunks == 1) {
+...
+if (chunks == 4) {
+...
+if (chunks == 8) {
+...
+
+>
+>> +			info->ecclayout = hwecc4_4096;
+>> +			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
+>> +			goto syndrome_done;
+>> +		}
+>>   
+>> -		/* 4KiB page chips are not yet supported. The eccpos from
+>> -		 * nand_ecclayout cannot hold 80 bytes and change to eccpos[]
+>> -		 * breaks userspace ioctl interface with mtd-utils. Once we
+>> -		 * resolve this issue, NAND_ECC_HW_OOB_FIRST mode can be used
+>> -		 * for the 4KiB page chips.
+>> -		 *
+>> -		 * TODO: Note that nand_ecclayout has now been expanded and can
+>> -		 *  hold plenty of OOB entries.
+>> -		 */
+>> -		dev_warn(&pdev->dev, "no 4-bit ECC support yet "
+>> -				"for 4KiB-page NAND\n");
+>>   		ret = -EIO;
+>>   		goto err;
+>>   
+>>
+
+-- 
+Regards,
+Ivan Khoronzhuk
+
