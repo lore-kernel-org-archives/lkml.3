@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaENCJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 22:09:23 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16600 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaENCJU (ORCPT
+	id S1753064AbaENCJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 22:09:52 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:8460 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaENCJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 22:09:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 13 May 2014 19:04:15 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v2] ARM: tegra: enable joystick in tegra_defconfig
-Date: Wed, 14 May 2014 11:09:13 +0900
-Message-ID: <1400033353-25673-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.2
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 May 2014 22:09:49 -0400
+X-AuditID: cbfec37d-b7f966d000005e7e-b3-5372d06b3039
+Message-id: <5372D069.7030906@samsung.com>
+Date: Tue, 13 May 2014 20:09:45 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.12 000/182] 3.12.20-stable review
+References: <cover.1399973152.git.jslaby@suse.cz>
+In-reply-to: <cover.1399973152.git.jslaby@suse.cz>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.217]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9hX93sC0XBBv13rCw+/97FanF51xw2
+	iycLzzBZTD01gcViwcZHjA6sHjtn3WX32Pm9gd3jzIIj7B6fN8kFsERx2aSk5mSWpRbp2yVw
+	ZTz/uZml4BhbxcqmwAbGOaxdjJwcEgImEi0TN7FA2GISF+6tZwOxhQSWMUpc+WnexcgFZPcy
+	SWx6e58RwtnGKLFx3VImkCpeAS2J9guXmEFsFgFViWNPrjGC2GwC6hKfX+9gh5gkJ9G0ZDVQ
+	DQeHqECExOMLQhCtghI/Jt8DWywiYC7x4M4BsHJmgRKJ68+/gB0hDBS/NW021EGGEl//LmUE
+	GcMpYCTx6rgkRLmZxKOWdcwQtrzE5jVvmSHKlSX+XD7FBPGXssT9yQdZJjCKzEKyeRaS9llI
+	2hcwMq9iFCstTi4oTkpPrTDRK07MLS7NS9dLzs/dxAiJktodjPe/2hxiFOBgVOLhveFcFCzE
+	mlhWXJl7iFGCg1lJhLd8C1CINyWxsiq1KD++qDQntfgQIxMHp1QDo6ktq2DS+SyPVy0rHskf
+	ik5s/Rvd6JBmciblevW8z/VNCgXrrY93VH6Jzb71pLjWgrX7zsTNQpt8tA4kTi6Ys8NL56Tl
+	9cPH3q5njpwZwndK/ID7jtLC/9dc/82Z7KM85XNExBqWJukJemklMupuf5dFHe3pzpTcofOK
+	3bGJ52+3Z+vS+9/2KrEUZyQaajEXFScCAE7Vi+JwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA SHIELD embeds a USB joystick device. Enable the corresponding
-support in tegra_defconfig.
+On 05/13/2014 03:26 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.20 release.
+> There are 182 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu May 15 09:25:52 2014
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.20-rc1.xz
+> and the diffstat can be found below.
+>
+> thanks,
+> js
+>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
-Changes since v1:
-- Have support built-in instead of as a module
-- Fixed wording in commit message
+Compiled and booted on my test system. No dmesg regressions.
 
- arch/arm/configs/tegra_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+-- Shuah
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 8c1625b78034..1faa68f8988b 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -114,6 +114,7 @@ CONFIG_USB_NET_SMSC95XX=y
- CONFIG_BRCMFMAC=m
- CONFIG_RT2X00=y
- CONFIG_RT2800USB=m
-+CONFIG_INPUT_JOYDEV=y
- CONFIG_INPUT_EVDEV=y
- CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_TEGRA=y
+
 -- 
-1.9.2
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
