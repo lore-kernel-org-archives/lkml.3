@@ -1,117 +1,1377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaENDDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 23:03:13 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:33699 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679AbaENDDH (ORCPT
+	id S1752895AbaENDGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 23:06:21 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:51521 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751612AbaENDGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 23:03:07 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 13 May 2014 23:06:44 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: perfevents: irq loop stuck!
-Message-ID: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 13 May 2014 23:06:19 -0400
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-9.tower-39.messagelabs.com!1400036774!14134979!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201405140306.s4E36COM023118@swsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Wed, 14 May 2014 04:02:34 +0100
+Subject: [RESEND PATCH V1] regulator: DA9211 : new regulator driver
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the driver for the Dialog DA9211 Multi-phase 12A DC-DC Buck
+Converter regulator. It communicates via an I2C bus to the device.
 
-I've gotten the following warning a few times now with the perf_fuzzer.
-In each case it looks like the culprit might be the fixed-counter 0
-value being 0000fffffffffffe
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
+---
 
-I have a somewhat repeatable trace and it looks like the problem event is:
+Please ignore previous patch since it has a bug on two bucks configuration.
+This patch is relative to linux-next repository tag next-20140509
 
-        pe[32].type=PERF_TYPE_HARDWARE;
-        pe[32].size=80;
-        pe[32].config=PERF_COUNT_HW_INSTRUCTIONS;
-        pe[32].sample_period=0xc0000000000000bd;
+ drivers/regulator/Kconfig            |  10 +
+ drivers/regulator/Makefile           |   1 +
+ drivers/regulator/da9211-regulator.c | 922 +++++++++++++++++++++++++++++++++++
+ drivers/regulator/da9211-regulator.h | 271 ++++++++++
+ include/linux/regulator/da9211.h     |  81 +++
+ 5 files changed, 1285 insertions(+)
+ create mode 100644 drivers/regulator/da9211-regulator.c
+ create mode 100644 drivers/regulator/da9211-regulator.h
+ create mode 100644 include/linux/regulator/da9211.h
 
-Should it be possible to open an event with a large negative sample_period 
-like that?  I tried tracing through the sample_period setting code and 
-there are places that cast from u64 to s64 and other dubious things, but 
-as always I find the code very hard to follow.
-
-This is on a Haswell machine.
-
-[  425.815773] ------------[ cut here ]------------
-[  425.821212] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/perf_event_intel.c:1373 intel_pmu_handle_irq+0x2a4/0x3c0()
-[  425.833692] perfevents: irq loop stuck!
-[  425.839116] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp kvm snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel aesni_intel aes_x86_64 lrw gf128mul snd_hda_intel i915 glue_helper snd_hda_controller snd_hda_codec snd_hwdep snd_pcm drm_kms_helper snd_seq snd_timer snd_seq_device ablk_helper snd cryptd ppdev iTCO_wdt iTCO_vendor_support lpc_ich drm soundcore mei_me parport_pc mfd_core evdev i2c_algo_bit i2c_i801 i2c_core button processor video battery wmi mei parport psmouse serio_raw pcspkr tpm_tis tpm sd_mod sr_mod crc_t10dif crct10dif_common cdrom ahci ehci_pci libahci e1000e ehci_hcd xhci_hcd libata ptp crc32c_intel usbcore scsi_mod pps_core usb_common thermal fan thermal_sys
-[  425.930947] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.15.0-rc1+ #104
-[  425.937876] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[  425.945817]  0000000000000009 ffff88011ea06cb0 ffffffff81649ca0 ffff88011ea06cf8
-[  425.953957]  ffff88011ea06ce8 ffffffff810646ad 0000000000000064 ffff88011ea0cbe0
-[  425.961986]  ffff8800cd1f4800 0000000000000040 ffff88011ea0cde0 ffff88011ea06d48
-[  425.970169] Call Trace:
-[  425.972858]  <NMI>  [<ffffffff81649ca0>] dump_stack+0x45/0x56
-[  425.979150]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
-[  425.985617]  [<ffffffff8106471c>] warn_slowpath_fmt+0x4c/0x50
-[  425.991770]  [<ffffffff8102ef94>] intel_pmu_handle_irq+0x2a4/0x3c0
-[  425.998417]  [<ffffffff8165378b>] perf_event_nmi_handler+0x2b/0x50
-[  426.005116]  [<ffffffff81652f58>] nmi_handle.isra.5+0xa8/0x150
-[  426.011428]  [<ffffffff81652eb5>] ? nmi_handle.isra.5+0x5/0x150
-[  426.017729]  [<ffffffff816530d8>] do_nmi+0xd8/0x340
-[  426.022979]  [<ffffffff81652581>] end_repeat_nmi+0x1e/0x2e
-[  426.028917]  [<ffffffff8105034a>] ? native_write_msr_safe+0xa/0x10
-[  426.035514]  [<ffffffff8105034a>] ? native_write_msr_safe+0xa/0x10
-[  426.042139]  [<ffffffff8105034a>] ? native_write_msr_safe+0xa/0x10
-[  426.048752]  <<EOE>>  <IRQ>  [<ffffffff8102eb7d>] intel_pmu_enable_event+0x21d/0x240
-[  426.057185]  [<ffffffff81027baa>] x86_pmu_start+0x7a/0x100
-[  426.063125]  [<ffffffff810283a5>] x86_pmu_enable+0x295/0x310
-[  426.069206]  [<ffffffff8113528f>] perf_pmu_enable+0x2f/0x40
-[  426.075185]  [<ffffffff8102644a>] x86_pmu_commit_txn+0x7a/0xa0
-[  426.081423]  [<ffffffff813ca99b>] ? debug_object_activate+0x17b/0x220
-[  426.088298]  [<ffffffff810b0cad>] ? __lock_acquire.isra.29+0x3bd/0xb90
-[  426.095245]  [<ffffffff81135fe0>] ? event_sched_in.isra.76+0x150/0x1e0
-[  426.102269]  [<ffffffff81136230>] group_sched_in+0x1c0/0x1e0
-[  426.108394]  [<ffffffff81136725>] __perf_event_enable+0x255/0x260
-[  426.114976]  [<ffffffff811318f0>] remote_function+0x40/0x50
-[  426.120916]  [<ffffffff810de20d>] generic_smp_call_function_single_interrupt+0x5d/0x100
-[  426.129515]  [<ffffffff810421dd>] smp_trace_call_function_single_interrupt+0x2d/0xb0
-[  426.137854]  [<ffffffff8165bc1d>] trace_call_function_single_interrupt+0x6d/0x80
-[  426.145827]  <EOI>  [<ffffffff814e1b72>] ? cpuidle_enter_state+0x52/0xc0
-[  426.153044]  [<ffffffff814e1b68>] ? cpuidle_enter_state+0x48/0xc0
-[  426.159612]  [<ffffffff814e1c17>] cpuidle_enter+0x17/0x20
-[  426.165411]  [<ffffffff810aa270>] cpu_startup_entry+0x2c0/0x3d0
-[  426.171810]  [<ffffffff81639bc6>] rest_init+0xb6/0xc0
-[  426.177259]  [<ffffffff81639b15>] ? rest_init+0x5/0xc0
-[  426.182778]  [<ffffffff81d05f75>] start_kernel+0x43d/0x448
-[  426.188647]  [<ffffffff81d05941>] ? repair_env_string+0x5c/0x5c
-[  426.195040]  [<ffffffff81d05120>] ? early_idt_handlers+0x120/0x120
-[  426.201643]  [<ffffffff81d055ee>] x86_64_start_reservations+0x2a/0x2c
-[  426.208575]  [<ffffffff81d05733>] x86_64_start_kernel+0x143/0x152
-[  426.215176] ---[ end trace 515d2dd21a07f5dd ]---
-[  426.220078] 
-[  426.221698] CPU#0: ctrl:       0000000000000000
-[  426.226591] CPU#0: status:     0000000000000000
-[  426.231480] CPU#0: overflow:   0000000000000000
-[  426.236361] CPU#0: fixed:      00000000000000b8
-[  426.241211] CPU#0: pebs:       0000000000000000
-[  426.246076] CPU#0: active:     0000000300000002
-[  426.250948] CPU#0:   gen-PMC0 ctrl:  00000000001300c5
-[  426.256392] CPU#0:   gen-PMC0 count: 0000000000088ff0
-[  426.261838] CPU#0:   gen-PMC0 left:  0000fffffff77328
-[  426.267273] CPU#0:   gen-PMC1 ctrl:  0000000000530254
-[  426.272727] CPU#0:   gen-PMC1 count: 0000000000000001
-[  426.279307] CPU#0:   gen-PMC1 left:  0000ffffffffffff
-[  426.285847] CPU#0:   gen-PMC2 ctrl:  000000000013412e
-[  426.292354] CPU#0:   gen-PMC2 count: 0000000000010545
-[  426.298874] CPU#0:   gen-PMC2 left:  0000fffffffefb07
-[  426.305405] CPU#0:   gen-PMC3 ctrl:  00000000001300c0
-[  426.311913] CPU#0:   gen-PMC3 count: 0000000001699699
-[  426.318311] CPU#0:   gen-PMC3 left:  0000fffffeaa1a64
-[  426.324715] CPU#0: fixed-PMC0 count: 0000fffffffffffe
-[  426.331093] CPU#0: fixed-PMC1 count: 0000fffe069f640d
-[  426.337399] CPU#0: fixed-PMC2 count: 0000000005cd7211
-[  426.343626] perf_event_intel: clearing PMU state on CPU#0
-
-
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index b4f57a4..3b0c28d 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -198,6 +198,16 @@ config REGULATOR_DA9210
+ 	  converter 12A DC-DC Buck controlled through an I2C
+ 	  interface.
+ 
++config REGULATOR_DA9211
++	tristate "Dialog Semiconductor DA9211/DA9212 regulator"
++	depends on I2C
++	select REGMAP_I2C
++	help
++	  Say y here to support for the Dialog Semiconductor DA9211/DA9212.
++	  The DA9211/DA9212 is a multi-phase synchronous step down
++	  converter 12A DC-DC Buck controlled through an I2C
++	  interface.
++
+ config REGULATOR_DBX500_PRCMU
+ 	bool
+ 
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index c14696b2..8c0c0e3 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
+ obj-$(CONFIG_REGULATOR_DA9055)	+= da9055-regulator.o
+ obj-$(CONFIG_REGULATOR_DA9063)	+= da9063-regulator.o
+ obj-$(CONFIG_REGULATOR_DA9210) += da9210-regulator.o
++obj-$(CONFIG_REGULATOR_DA9211) += da9211-regulator.o
+ obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
+ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ obj-$(CONFIG_REGULATOR_FAN53555) += fan53555.o
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+new file mode 100644
+index 0000000..2b1bd90
+--- /dev/null
++++ b/drivers/regulator/da9211-regulator.c
+@@ -0,0 +1,922 @@
++/*
++ * da9211-regulator.c - Regulator device driver for DA9211
++ * Copyright (C) 2014  Dialog Semiconductor Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ */
++
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regmap.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/regulator/da9211.h>
++#include "da9211-regulator.h"
++
++#define DA9211_BUCK_MODE_SLEEP	1
++#define DA9211_BUCK_MODE_SYNC	2
++#define DA9211_BUCK_MODE_AUTO	3
++
++/* DA9211 REGULATOR IDs */
++#define DA9211_ID_BUCKA	0
++#define DA9211_ID_BUCKB	1
++
++struct da9211_conf_reg {
++	int reg;
++	int sel_mask;
++};
++
++struct da9211_volt_reg {
++	int reg_a;
++	int reg_b;
++	int v_mask;
++};
++
++struct da9211_mode_reg {
++	int reg;
++	int mask;
++	int shift;
++};
++
++struct da9211_regulator_info {
++	struct regulator_desc reg_desc;
++	struct da9211_conf_reg conf;
++	struct da9211_volt_reg volt;
++	struct da9211_mode_reg mode;
++	int current_shift;
++};
++
++/* Number of IRQ and IRQ offset */
++enum {
++	DA9211_INT_OFFSET_1 = 0,
++	DA9211_INT_OFFSET_2,
++	DA9211_NUM_IRQ_EVT_REGS
++};
++
++struct da9211_irq {
++	irq_handler_t handler;
++	void *data;
++};
++
++struct da9211 {
++	struct device *dev;
++	struct regmap *regmap;
++	struct da9211_pdata *pdata;
++	struct da9211_regulator_info *info;
++	struct regulator_dev *rdev[DA9211_MAX_REGULATORS];
++	int num_regulator;
++	/* Interrupt handling */
++	struct work_struct irq_work;
++	struct task_struct *irq_task;
++	struct mutex irq_mutex; /* IRQ table mutex */
++	struct da9211_irq irq[DA9211_NUM_IRQ];
++	int chip_irq;
++};
++
++struct da9211_regulator {
++	struct da9211 *da9211;
++	struct da9211_regulator_info *info;
++	struct regulator_dev *rdev;
++	enum da9211_gpio_rsel_select reg_rselect;
++};
++
++static const struct regmap_config da9211_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
++/* Default limits measured in millivolts and milliamps */
++#define DA9211_MIN_MV		300
++#define DA9211_MAX_MV		1570
++#define DA9211_STEP_MV		10
++
++/* Current limits for buck (uA) indices corresponds with register values */
++static const int da9211_current_limits[] = {
++	2000000, 2200000, 2400000, 2600000, 2800000, 3000000, 3200000, 3400000,
++	3600000, 3800000, 4000000, 4200000, 4400000, 4600000, 4800000, 5000000
++};
++
++/* struct of IRQ's register and mask */
++struct da9211_irq_data {
++	int reg_offset;
++	int mask;
++};
++
++static struct da9211_irq_data da9211_irqs[] = {
++	[DA9211_IRQ_EGPI0] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_GPI0,
++	},
++	[DA9211_IRQ_EGPI1] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_GPI1,
++	},
++	[DA9211_IRQ_EGPI2] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_GPI2,
++	},
++	[DA9211_IRQ_EGPI3] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_GPI3,
++	},
++	[DA9211_IRQ_EGPI4] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_GPI4,
++	},
++	[DA9211_IRQ_EUVLO_IO] = {
++		.reg_offset = DA9211_INT_OFFSET_1,
++		.mask = DA9211_M_UVLO_IO,
++	},
++	[DA9211_IRQ_EPWRGOOD_A] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_PWRGOOD_A,
++	},
++	[DA9211_IRQ_EPWRGOOD_B] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_PWRGOOD_B,
++	},
++	[DA9211_IRQ_ETEMP_WARN] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_TEMP_WARN,
++	},
++	[DA9211_IRQ_ETEMP_CRIT] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_TEMP_CRIT,
++	},
++	[DA9211_IRQ_EOV_CURR_A] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_OV_CURR_A,
++	},
++	[DA9211_IRQ_EOV_CURR_B] = {
++		.reg_offset = DA9211_INT_OFFSET_2,
++		.mask = DA9211_M_OV_CURR_B,
++	},
++};
++
++static unsigned int da9211_buck_get_mode(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	unsigned int data;
++	int ret, mode = 0;
++
++	ret = regmap_read(chip->regmap, info->mode.reg, &data);
++
++	if (ret < 0)
++		return ret;
++
++	switch ((data & info->mode.mask) >> info->mode.shift) {
++	case DA9211_BUCK_MODE_SYNC:
++		mode = REGULATOR_MODE_FAST;
++		break;
++	case DA9211_BUCK_MODE_AUTO:
++		mode = REGULATOR_MODE_NORMAL;
++		break;
++	case DA9211_BUCK_MODE_SLEEP:
++		mode = REGULATOR_MODE_STANDBY;
++		break;
++	}
++
++	return mode;
++}
++
++static int da9211_buck_set_mode(struct regulator_dev *rdev,
++					unsigned int mode)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	int val = 0;
++
++	switch (mode) {
++	case REGULATOR_MODE_FAST:
++		val = DA9211_BUCK_MODE_SYNC << info->mode.shift;
++		break;
++	case REGULATOR_MODE_NORMAL:
++		val = DA9211_BUCK_MODE_AUTO << info->mode.shift;
++		break;
++	case REGULATOR_MODE_STANDBY:
++		val = DA9211_BUCK_MODE_SLEEP << info->mode.shift;
++		break;
++	}
++
++	return regmap_update_bits(chip->regmap, info->mode.reg,
++					info->mode.mask, val);
++}
++
++static int da9211_set_current_limit(struct regulator_dev *rdev, int min,
++				    int max)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	int i;
++
++	/* search for closest to maximum */
++	for (i = ARRAY_SIZE(da9211_current_limits)-1; i >= 0; i--) {
++		if (min <= da9211_current_limits[i] &&
++		    max >= da9211_current_limits[i]) {
++				return regmap_update_bits(chip->regmap,
++					DA9211_REG_BUCK_ILIM,
++					(0x0F << info->current_shift), i);
++		}
++	}
++
++	return -EINVAL;
++}
++
++static int da9211_regulator_enable(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	int ret;
++
++	/* Make sure to exit from suspend mode on enable */
++	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
++		ret = regmap_update_bits(chip->regmap, info->conf.reg,
++					info->conf.sel_mask,
++					DA9211_VBUCKA_SEL_A);
++		if (ret < 0)
++			return ret;
++	}
++
++	return regulator_enable_regmap(rdev);
++}
++
++static int da9211_get_current_limit(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	unsigned int data;
++	int ret;
++
++	ret = regmap_read(chip->regmap, DA9211_REG_BUCK_ILIM, &data);
++	if (ret < 0)
++		return ret;
++
++	/* select one of 16 values: 0000 (2000mA) to 1111 (5000mA) */
++	data = (data >> info->current_shift) & 0x0F;
++	return da9211_current_limits[data];
++}
++
++static int da9211_regulator_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	struct da9211_volt_reg volt = info->volt;
++	unsigned int data;
++	int ret, sel;
++
++	/*
++	 * There are two voltage register set A & B for voltage ramping but
++	 * either one of then can be active therefore we first determine
++	 * the active register set.
++	 */
++	ret = regmap_read(chip->regmap, info->conf.reg, &data);
++	if (ret < 0)
++		return ret;
++
++	data &= info->conf.sel_mask;
++
++	/* Get the voltage for the active register set A/B */
++	if (data == DA9211_VBUCKA_SEL_A)
++		ret = regmap_read(chip->regmap, volt.reg_a, &data);
++	else
++		ret = regmap_read(chip->regmap, volt.reg_b, &data);
++
++	if (ret < 0)
++		return ret;
++
++	sel = (data & volt.v_mask);
++	return sel;
++}
++
++static int da9211_regulator_set_voltage_sel(struct regulator_dev *rdev,
++					    unsigned int selector)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	unsigned int data;
++	int ret;
++
++	/*
++	 * Regulator register set A/B is not selected through GPIO therefore
++	 * we use default register set A for voltage ramping.
++	 */
++	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
++		/* Select register set A */
++		ret = regmap_update_bits(chip->regmap, info->conf.reg,
++					info->conf.sel_mask,
++					DA9211_VBUCKA_SEL_A);
++		if (ret < 0)
++			return ret;
++
++		/* Set the voltage */
++		return regmap_update_bits(chip->regmap, info->volt.reg_a,
++					 info->volt.v_mask, selector);
++	}
++
++	/*
++	 * Here regulator register set A/B is selected through GPIO.
++	 * Therefore we first determine the selected register set A/B and
++	 * then set the desired voltage for that register set A/B.
++	 */
++	ret = regmap_read(chip->regmap, info->conf.reg, &data);
++	if (ret < 0)
++		return ret;
++
++	data &= info->conf.sel_mask;
++
++	/* Set the voltage */
++	if (data == DA9211_VBUCKA_SEL_A)
++		return regmap_update_bits(chip->regmap, info->volt.reg_a,
++					 info->volt.v_mask, selector);
++	else
++		return regmap_update_bits(chip->regmap, info->volt.reg_b,
++					 info->volt.v_mask, selector);
++}
++
++static int da9211_regulator_set_suspend_voltage(struct regulator_dev *rdev,
++						int uV)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++	int ret;
++
++	/* Select register set B for suspend voltage ramping. */
++	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
++		ret = regmap_update_bits(chip->regmap, info->conf.reg,
++					info->conf.sel_mask,
++					DA9211_VBUCKA_SEL_B);
++		if (ret < 0)
++			return ret;
++	}
++
++	ret = regulator_map_voltage_linear(rdev, uV, uV);
++	if (ret < 0)
++		return ret;
++
++	return regmap_update_bits(chip->regmap, info->volt.reg_b,
++				 info->volt.v_mask, ret);
++}
++
++static int da9211_suspend_enable(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++
++	/* Select register set B for voltage ramping. */
++	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO)
++		return regmap_update_bits(chip->regmap, info->conf.reg,
++					info->conf.sel_mask,
++					DA9211_VBUCKA_SEL_B);
++	else
++		return 0;
++}
++
++static int da9211_suspend_disable(struct regulator_dev *rdev)
++{
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9211_regulator_info *info = regulator->info;
++	struct da9211 *chip = regulator->da9211;
++
++	/* Diselect register set B. */
++	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO)
++		return regmap_update_bits(chip->regmap, info->conf.reg,
++					info->conf.sel_mask,
++					DA9211_VBUCKA_SEL_A);
++	else
++		return 0;
++}
++
++static struct regulator_ops da9211_buck_ops = {
++	.get_mode = da9211_buck_get_mode,
++	.set_mode = da9211_buck_set_mode,
++	.enable = da9211_regulator_enable,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.map_voltage = regulator_map_voltage_linear,
++	.set_voltage_sel = da9211_regulator_set_voltage_sel,
++	.get_voltage_sel = da9211_regulator_get_voltage_sel,
++	.list_voltage = regulator_list_voltage_linear,
++	.set_current_limit = da9211_set_current_limit,
++	.get_current_limit = da9211_get_current_limit,
++	.set_suspend_voltage = da9211_regulator_set_suspend_voltage,
++	.set_suspend_enable = da9211_suspend_enable,
++	.set_suspend_disable = da9211_suspend_disable,
++	.set_suspend_mode = da9211_buck_set_mode,
++};
++
++#define DA9211_BUCK(_id, step, min, max, vbits, voffset, cshift, oc_irq) \
++{\
++	.reg_desc = {\
++		.name = #_id,\
++		.ops = &da9211_buck_ops,\
++		.irq = oc_irq, \
++		.type = REGULATOR_VOLTAGE,\
++		.id = DA9211_ID_##_id,\
++		.n_voltages = (max - min) / step + 1 + (voffset), \
++		.enable_reg = DA9211_REG_BUCKA_CONT + DA9211_ID_##_id, \
++		.enable_mask = 1,\
++		.min_uV = (min) * 1000,\
++		.uV_step = (step) * 1000,\
++		.linear_min_sel = (voffset),\
++		.owner = THIS_MODULE,\
++	},\
++	.conf = {\
++		.reg = DA9211_REG_BUCKA_CONT + DA9211_ID_##_id, \
++		.sel_mask = (1 << 4),\
++	},\
++	.volt = {\
++		.reg_a = DA9211_REG_VBUCKA_A + DA9211_ID_##_id * 2, \
++		.reg_b = DA9211_REG_VBUCKA_B + DA9211_ID_##_id * 2, \
++		.v_mask = (1 << (vbits)) - 1,\
++	},\
++	.mode = {\
++		.reg = DA9211_REG_BUCKA_CONF + DA9211_ID_##_id,\
++		.mask = 3,\
++		.shift = 0,\
++	},\
++	.current_shift = cshift,\
++}
++
++static struct da9211_regulator_info da9211_regulator_info[] = {
++	DA9211_BUCK(BUCKA, DA9211_STEP_MV, DA9211_MIN_MV, DA9211_MAX_MV, 7, 0,
++		0, DA9211_IRQ_EOV_CURR_A),
++	DA9211_BUCK(BUCKB, DA9211_STEP_MV, DA9211_MIN_MV, DA9211_MAX_MV, 7, 0,
++		4, DA9211_IRQ_EOV_CURR_B),
++};
++
++/*
++ * Configures regulator to be controlled either through GPIO 0, 1 or 3.
++ * GPIO can control regulator state and/or select the regulator register
++ * set A/B for voltage ramping.
++ */
++static int da9211_gpio_init(struct da9211_regulator *regulator,
++				struct regulator_config *config,
++				struct da9211_pdata *pdata, int id)
++{
++	struct da9211 *chip = regulator->da9211;
++	int ret = 0;
++
++	if (pdata->buck_data[id].gpio_ren) {
++
++		config->ena_gpio = pdata->buck_data[id].gpio_ren;
++		config->ena_gpio_flags = pdata->buck_data[id].ena_init_state;
++		config->ena_gpio_invert = 0;
++
++		/*
++		 * Let the regulator know that its state is controlled
++		 * through GPI.
++		 */
++		ret = regmap_update_bits(chip->regmap, DA9211_REG_BUCKA_CONT+id,
++						DA9211_BUCKA_GPI_MASK,
++						pdata->buck_data[id].reg_ren
++						<< DA9211_BUCKA_GPI_SHIFT);
++		if (ret < 0)
++			goto err;
++	}
++
++	if (pdata->buck_data[id].gpio_rsel) {
++		char name[18];
++
++		regulator->reg_rselect = pdata->buck_data[id].reg_rsel;
++		/*
++		 * GPI pin is muxed with regulator to select the
++		 * regulator register set A/B for voltage ramping.
++		 */
++		sprintf(name, "DA9211 RSEL %d", id);
++		ret = devm_gpio_request_one(config->dev,
++			pdata->buck_data[id].gpio_rsel,
++			GPIOF_OUT_INIT_LOW, name);
++		if (ret < 0)
++			goto err;
++
++		/*
++		 * Let the regulator know that its register set A/B
++		 * will be selected through GPI for voltage ramping.
++		 */
++		ret = regmap_update_bits(chip->regmap,
++			DA9211_REG_BUCKA_CONT+id,
++			DA9211_VBUCKA_GPI_MASK,
++			pdata->buck_data[id].reg_rsel
++			<< DA9211_VBUCKA_GPI_SHIFT);
++	}
++
++err:
++	return ret;
++}
++
++static inline struct da9211_regulator_info *find_regulator_info(int id)
++{
++	struct da9211_regulator_info *info;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(da9211_regulator_info); i++) {
++		info = &da9211_regulator_info[i];
++		if (info->reg_desc.id == id)
++			return info;
++	}
++
++	return NULL;
++}
++
++int da9211_enable_irq(struct da9211 *chip, int irq)
++{
++	enable_irq(irq);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9211_enable_irq);
++
++int da9211_disable_irq(struct da9211 *chip, int irq)
++{
++
++	disable_irq(irq);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9211_disable_irq);
++
++int da9211_mask_irq(struct da9211 *chip, int irq)
++{
++	regmap_update_bits(chip->regmap, DA9211_REG_MASK_A
++		+ da9211_irqs[irq].reg_offset, da9211_irqs[irq].mask, 1);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9211_mask_irq);
++
++int da9211_unmask_irq(struct da9211 *chip, int irq)
++{
++	regmap_update_bits(chip->regmap, DA9211_REG_MASK_A
++		+ da9211_irqs[irq].reg_offset, da9211_irqs[irq].mask, 0);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9211_unmask_irq);
++
++static void da9211_irq_call_handler(struct da9211 *chip, int irq)
++{
++	mutex_lock(&chip->irq_mutex);
++
++	if (chip->irq[irq].handler)
++		chip->irq[irq].handler(irq, chip->irq[irq].data);
++	else
++		da9211_mask_irq(chip, irq);
++
++	mutex_unlock(&chip->irq_mutex);
++}
++
++static irqreturn_t da9211_irq(int irq, void *data)
++{
++	struct da9211 *chip = data;
++	int reg_val;
++	int sub_reg[DA9211_NUM_IRQ_EVT_REGS] = {0,};
++	int read_done[DA9211_NUM_IRQ_EVT_REGS];
++	struct da9211_irq_data *irq_data;
++	int i, ret;
++
++	memset(&read_done, 0, sizeof(read_done));
++
++	for (i = 0; i < ARRAY_SIZE(da9211_irqs); i++) {
++		irq_data = &da9211_irqs[i];
++
++		if (!read_done[irq_data->reg_offset]) {
++			ret = regmap_read(chip->regmap, DA9211_REG_EVENT_A
++				+ irq_data->reg_offset, &reg_val);
++
++			if (ret < 0)
++				return ret;
++
++			sub_reg[irq_data->reg_offset] = reg_val;
++			ret = regmap_read(chip->regmap, DA9211_REG_MASK_A
++				+ irq_data->reg_offset, &reg_val);
++
++			if (ret < 0)
++				return ret;
++
++			sub_reg[irq_data->reg_offset] &= ~reg_val;
++			read_done[irq_data->reg_offset] = 1;
++		}
++
++		if (sub_reg[irq_data->reg_offset] & irq_data->mask) {
++			da9211_irq_call_handler(chip, i);
++			/* Now clear EVENT registers */
++			ret = regmap_write(chip->regmap, DA9211_REG_EVENT_A
++				+ irq_data->reg_offset, da9211_irqs[i].mask);
++
++			if (ret < 0)
++				return ret;
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++int da9211_request_irq(struct da9211 *chip, int irq, char *name,
++			   irq_handler_t handler, void *data)
++{
++	if (irq < 0 || irq >= DA9211_NUM_IRQ || !handler)
++		return -EINVAL;
++
++	if (chip->irq[irq].handler)
++		return -EBUSY;
++	mutex_lock(&chip->irq_mutex);
++	chip->irq[irq].handler = handler;
++	chip->irq[irq].data = data;
++	mutex_unlock(&chip->irq_mutex);
++
++	da9211_unmask_irq(chip, irq);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(da9211_request_irq);
++
++void da9211_free_irq(struct da9211 *chip, int irq)
++{
++	if (irq < 0 || irq >= DA9211_NUM_IRQ)
++		return;
++
++	da9211_mask_irq(chip, irq);
++
++	mutex_lock(&chip->irq_mutex);
++	chip->irq[irq].handler = NULL;
++	mutex_unlock(&chip->irq_mutex);
++}
++EXPORT_SYMBOL_GPL(da9211_free_irq);
++
++int da9211_irq_exit(struct da9211 *chip)
++{
++	free_irq(chip->chip_irq, chip);
++
++	return 0;
++}
++
++static int da9211_irq_init(struct da9211 *chip)
++{
++	int ret = -EINVAL;
++
++	mutex_init(&chip->irq_mutex);
++
++	ret = regmap_write(chip->regmap, DA9211_REG_EVENT_A, 0xFF);
++	if (ret != 0) {
++		dev_err(chip->dev, "Failed to clear event A\n");
++		return ret;
++	}
++	ret = regmap_write(chip->regmap, DA9211_REG_EVENT_B, 0xFF);
++	if (ret != 0) {
++		dev_err(chip->dev, "Failed to clear event B\n");
++		return ret;
++	}
++	ret = request_threaded_irq(chip->chip_irq, NULL, da9211_irq,
++			IRQF_TRIGGER_LOW|IRQF_ONESHOT,
++			"da9211", chip);
++	if (ret != 0) {
++		dev_err(chip->dev, "Failed to request IRQ: %d\n",
++			chip->chip_irq);
++		return ret;
++	}
++	dev_info(chip->dev, "# IRQ configured [%d]\n", chip->chip_irq);
++
++	enable_irq_wake(chip->chip_irq);
++
++	return ret;
++}
++
++static irqreturn_t da9211_oc_handler(int irq, void *data)
++{
++	struct regulator_dev *rdev = (struct regulator_dev *)data;
++	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
++
++	regulator_notifier_call_chain(rdev, REGULATOR_EVENT_OVER_CURRENT,
++		regulator);
++
++	return IRQ_HANDLED;
++}
++
++static int da9211_regulator_init(struct da9211 *chip)
++{
++	struct regulator_config config = { };
++	struct da9211_regulator *regulator;
++	int i, ret;
++	unsigned int data;
++
++	ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
++			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE2);
++
++	if (ret < 0) {
++		dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
++		goto err;
++	}
++
++	ret = regmap_read(chip->regmap, DA9211_REG_CONTROL_E, &data);
++
++	if (ret < 0) {
++		ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
++			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE0);
++		ret = -EINVAL;
++		dev_err(chip->dev, "Failed to read CONTROL_E reg: %d\n", ret);
++		goto err;
++	}
++
++	data &= DA9211_SLAVE_SEL;
++	/* If configuration for 1/2 bucks is different between platform data
++	 * and the register, driver should exit.
++	 */
++	if ((chip->pdata->num_buck == 2 && data == 0x40)
++		|| (chip->pdata->num_buck == 1 && data == 0x00)) {
++		if (data == 0)
++			chip->num_regulator = 1;
++		else
++			chip->num_regulator = 2;
++	} else {
++		ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
++			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE0);
++		ret = -EINVAL;
++		dev_err(chip->dev, "Configuration is mismatched\n");
++		goto err;
++	}
++
++	ret = regmap_update_bits(chip->regmap, DA9211_REG_PAGE_CON,
++			DA9211_REG_PAGE_MASK, DA9211_REG_PAGE0);
++
++	if (ret < 0) {
++		dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
++		goto err;
++	}
++
++	for (i = 0; i < chip->num_regulator; i++) {
++		regulator = devm_kzalloc(chip->dev,
++			sizeof(struct da9211_regulator),
++			GFP_KERNEL);
++		if (!regulator) {
++			ret = -ENOMEM;
++			goto err_regulator;
++		}
++
++		regulator->da9211 = chip;
++
++		regulator->info = find_regulator_info(i);
++		if (regulator->info == NULL) {
++			dev_err(chip->dev,
++				"Invalid regulator ID specified\n");
++			ret = -EINVAL;
++			goto err_regulator;
++		}
++
++		if (chip->pdata)
++			config.init_data =
++				chip->pdata->buck_data[i].constraints;
++
++		config.dev = chip->dev;
++		config.driver_data = regulator;
++		config.regmap = chip->regmap;
++
++		ret = da9211_gpio_init(regulator, &config, chip->pdata, i);
++
++		if (ret < 0)
++			goto err_regulator;
++
++		regulator->rdev = regulator_register(&regulator->info->reg_desc,
++			&config);
++		if (IS_ERR(regulator->rdev)) {
++			dev_err(chip->dev,
++				"Failed to register DA9211 regulator\n");
++			ret = PTR_ERR(regulator->rdev);
++			goto err_regulator;
++		}
++
++		chip->rdev[i] = regulator->rdev;
++
++		if (chip->irq > 0) {
++			ret = da9211_request_irq(chip,
++				da9211_regulator_info[i].reg_desc.irq, NULL,
++				da9211_oc_handler, regulator->rdev);
++			if (ret < 0) {
++				regulator_unregister(chip->rdev[i]);
++				dev_err(chip->dev,
++					"Failed to register OC irq\n");
++				goto err_irq;
++			}
++		}
++	}
++
++	return 0;
++
++err_irq:
++	i++;
++err_regulator:
++	while (--i >= 0)
++		regulator_unregister(chip->rdev[i]);
++err:
++	return ret;
++}
++/*
++ * I2C driver interface functions
++ */
++static int da9211_i2c_probe(struct i2c_client *i2c,
++		const struct i2c_device_id *id)
++{
++	struct da9211 *chip;
++	int error, ret;
++
++	chip = devm_kzalloc(&i2c->dev, sizeof(struct da9211), GFP_KERNEL);
++	if (NULL == chip) {
++		dev_err(&i2c->dev,
++			"Cannot kzalloc memory for regulator structure\n");
++		return -ENOMEM;
++	}
++
++	chip->dev = &i2c->dev;
++	chip->regmap = devm_regmap_init_i2c(i2c, &da9211_regmap_config);
++	if (IS_ERR(chip->regmap)) {
++		error = PTR_ERR(chip->regmap);
++		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
++			error);
++		return error;
++	}
++
++	i2c_set_clientdata(i2c, chip);
++
++	chip->pdata = i2c->dev.platform_data;
++
++	if (!chip->pdata) {
++		dev_err(&i2c->dev, "No platform init data supplied\n");
++		return -ENODEV;
++	}
++
++	chip->chip_irq = i2c->irq;
++
++	if (chip->chip_irq != 0) {
++		ret = da9211_irq_init(chip);
++		if (ret < 0) {
++			dev_err(&i2c->dev, "Failed to initialize irq: %d\n",
++				ret);
++			return ret;
++		}
++	} else {
++		dev_warn(chip->dev, "No IRQ configured\n");
++	}
++
++	ret = da9211_regulator_init(chip);
++
++	if (ret < 0)
++		dev_err(&i2c->dev, "Failed to initialize regulator: %d\n", ret);
++
++	return ret;
++}
++
++static int da9211_i2c_remove(struct i2c_client *i2c)
++{
++	struct da9211 *chip = i2c_get_clientdata(i2c);
++	int i;
++
++	for (i = 0; i < chip->num_regulator; i++)
++		regulator_unregister(chip->rdev[i]);
++
++	if (chip->irq != 0)
++		da9211_free_irq(chip, chip->chip_irq);
++
++	return 0;
++}
++
++static const struct i2c_device_id da9211_i2c_id[] = {
++	{"da9211", 0},
++	{},
++};
++
++MODULE_DEVICE_TABLE(i2c, da9211_i2c_id);
++
++static struct i2c_driver da9211_regulator_driver = {
++	.driver = {
++		.name = "da9211",
++		.owner = THIS_MODULE,
++	},
++	.probe = da9211_i2c_probe,
++	.remove = da9211_i2c_remove,
++	.id_table = da9211_i2c_id,
++};
++
++module_i2c_driver(da9211_regulator_driver);
++
++MODULE_AUTHOR("James Ban <James.Ban.opensource@diasemi.com>");
++MODULE_DESCRIPTION("Regulator device driver for Dialog DA9211");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/regulator/da9211-regulator.h b/drivers/regulator/da9211-regulator.h
+new file mode 100644
+index 0000000..afba596
+--- /dev/null
++++ b/drivers/regulator/da9211-regulator.h
+@@ -0,0 +1,271 @@
++/*
++ * da9211-regulator.h - Regulator definitions for DA9211
++ * Copyright (C) 2014  Dialog Semiconductor Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ */
++
++#ifndef __DA9211_REGISTERS_H__
++#define __DA9211_REGISTERS_H__
++
++/* Page selection */
++#define	DA9211_REG_PAGE_CON			0x00
++
++/* System Control and Event Registers */
++#define	DA9211_REG_STATUS_A			0x50
++#define	DA9211_REG_STATUS_B			0x51
++#define	DA9211_REG_EVENT_A			0x52
++#define	DA9211_REG_EVENT_B			0x53
++#define	DA9211_REG_MASK_A			0x54
++#define	DA9211_REG_MASK_B			0x55
++#define	DA9211_REG_CONTROL_A		0x56
++
++/* GPIO Control Registers */
++#define	DA9211_REG_GPIO_0_1			0x58
++#define	DA9211_REG_GPIO_2_3			0x59
++#define	DA9211_REG_GPIO_4			0x5A
++
++/* Regulator Registers */
++#define	DA9211_REG_BUCKA_CONT			0x5D
++#define	DA9211_REG_BUCKB_CONT			0x5E
++#define	DA9211_REG_BUCK_ILIM			0xD0
++#define	DA9211_REG_BUCKA_CONF			0xD1
++#define	DA9211_REG_BUCKB_CONF			0xD2
++#define	DA9211_REG_BUCK_CONF			0xD3
++#define	DA9211_REG_VBACKA_MAX			0xD5
++#define	DA9211_REG_VBACKB_MAX			0xD6
++#define	DA9211_REG_VBUCKA_A				0xD7
++#define	DA9211_REG_VBUCKA_B				0xD8
++#define	DA9211_REG_VBUCKB_A				0xD9
++#define	DA9211_REG_VBUCKB_B				0xDA
++
++/* I2C Interface Settings */
++#define DA9211_REG_INTERFACE			(0x105 - 0x100)
++
++/* BUCK Phase Selection*/
++#define DA9211_REG_CONTROL_E			(0x147 - 0x100)
++
++/*
++ * Registers bits
++ */
++/* DA9211_REG_PAGE_CON (addr=0x00) */
++#define	DA9211_REG_PAGE_SHIFT			0
++#define	DA9211_REG_PAGE_MASK			0x0F
++/* On I2C registers 0x00 - 0xFF */
++#define	DA9211_REG_PAGE0			0
++/* On I2C registers 0x100 - 0x1FF */
++#define	DA9211_REG_PAGE2			2
++#define	DA9211_PAGE_WRITE_MODE			0x00
++#define	DA9211_REPEAT_WRITE_MODE		0x40
++#define	DA9211_PAGE_REVERT			0x80
++
++/* DA9211_REG_STATUS_A (addr=0x50) */
++#define	DA9211_GPI0				0x01
++#define	DA9211_GPI1				0x02
++#define	DA9211_GPI2				0x04
++#define	DA9211_GPI3				0x08
++#define	DA9211_GPI4				0x10
++
++/* DA9211_REG_EVENT_A (addr=0x52) */
++#define	DA9211_E_GPI0				0x01
++#define	DA9211_E_GPI1				0x02
++#define	DA9211_E_GPI2				0x04
++#define	DA9211_E_GPI3				0x08
++#define	DA9211_E_GPI4				0x10
++#define	DA9211_E_UVLO_IO			0x40
++
++/* DA9211_REG_EVENT_B (addr=0x53) */
++#define	DA9211_E_PWRGOOD_A			0x01
++#define	DA9211_E_PWRGOOD_B			0x02
++#define	DA9211_E_TEMP_WARN			0x04
++#define	DA9211_E_TEMP_CRIT			0x08
++#define	DA9211_E_OV_CURR_A			0x10
++#define	DA9211_E_OV_CURR_B			0x20
++
++/* DA9211_REG_MASK_A (addr=0x54) */
++#define	DA9211_M_GPI0				0x01
++#define	DA9211_M_GPI1				0x02
++#define	DA9211_M_GPI2				0x04
++#define	DA9211_M_GPI3				0x08
++#define	DA9211_M_GPI4				0x10
++#define	DA9211_M_UVLO_IO			0x40
++
++/* DA9211_REG_MASK_B (addr=0x55) */
++#define	DA9211_M_PWRGOOD_A			0x01
++#define	DA9211_M_PWRGOOD_B			0x02
++#define	DA9211_M_TEMP_WARN			0x04
++#define	DA9211_M_TEMP_CRIT			0x08
++#define	DA9211_M_OV_CURR_A			0x10
++#define	DA9211_M_OV_CURR_B			0x20
++
++/* DA9211_REG_CONTROL_A (addr=0x56) */
++#define	DA9211_DEBOUNCING_SHIFT		0
++#define	DA9211_DEBOUNCING_MASK		0x07
++#define	DA9211_SLEW_RATE_SHIFT		3
++#define	DA9211_SLEW_RATE_A_MASK		0x18
++#define	DA9211_SLEW_RATE_B_SHIFT	5
++#define	DA9211_SLEW_RATE_B_MASK		0x60
++#define	DA9211_V_LOCK				0x80
++
++/* DA9211_REG_GPIO_0_1 (addr=0x58) */
++#define	DA9211_GPIO0_PIN_SHIFT		0
++#define	DA9211_GPIO0_PIN_MASK		0x03
++#define	DA9211_GPIO0_PIN_GPI		0x00
++#define	DA9211_GPIO0_PIN_GPO_OD		0x02
++#define	DA9211_GPIO0_PIN_GPO		0x03
++#define	DA9211_GPIO0_TYPE			0x04
++#define	DA9211_GPIO0_TYPE_GPI		0x00
++#define	DA9211_GPIO0_TYPE_GPO		0x04
++#define	DA9211_GPIO0_MODE			0x08
++#define	DA9211_GPIO1_PIN_SHIFT		4
++#define	DA9211_GPIO1_PIN_MASK		0x30
++#define	DA9211_GPIO1_PIN_GPI		0x00
++#define	DA9211_GPIO1_PIN_VERROR		0x10
++#define	DA9211_GPIO1_PIN_GPO_OD		0x20
++#define	DA9211_GPIO1_PIN_GPO		0x30
++#define	DA9211_GPIO1_TYPE_SHIFT		0x40
++#define	DA9211_GPIO1_TYPE_GPI		0x00
++#define	DA9211_GPIO1_TYPE_GPO		0x40
++#define	DA9211_GPIO1_MODE			0x80
++
++/* DA9211_REG_GPIO_2_3 (addr=0x59) */
++#define	DA9211_GPIO2_PIN_SHIFT		0
++#define	DA9211_GPIO2_PIN_MASK		0x03
++#define	DA9211_GPIO2_PIN_GPI		0x00
++#define	DA9211_GPIO5_PIN_BUCK_CLK	0x10
++#define	DA9211_GPIO2_PIN_GPO_OD		0x02
++#define	DA9211_GPIO2_PIN_GPO		0x03
++#define	DA9211_GPIO2_TYPE			0x04
++#define	DA9211_GPIO2_TYPE_GPI		0x00
++#define	DA9211_GPIO2_TYPE_GPO		0x04
++#define	DA9211_GPIO2_MODE			0x08
++#define	DA9211_GPIO3_PIN_SHIFT		4
++#define	DA9211_GPIO3_PIN_MASK		0x30
++#define	DA9211_GPIO3_PIN_GPI		0x00
++#define	DA9211_GPIO3_PIN_IERROR		0x10
++#define	DA9211_GPIO3_PIN_GPO_OD		0x20
++#define	DA9211_GPIO3_PIN_GPO		0x30
++#define	DA9211_GPIO3_TYPE_SHIFT		0x40
++#define	DA9211_GPIO3_TYPE_GPI		0x00
++#define	DA9211_GPIO3_TYPE_GPO		0x40
++#define	DA9211_GPIO3_MODE			0x80
++
++/* DA9211_REG_GPIO_4 (addr=0x5A) */
++#define	DA9211_GPIO4_PIN_SHIFT		0
++#define	DA9211_GPIO4_PIN_MASK		0x03
++#define	DA9211_GPIO4_PIN_GPI		0x00
++#define	DA9211_GPIO4_PIN_GPO_OD		0x02
++#define	DA9211_GPIO4_PIN_GPO		0x03
++#define	DA9211_GPIO4_TYPE			0x04
++#define	DA9211_GPIO4_TYPE_GPI		0x00
++#define	DA9211_GPIO4_TYPE_GPO		0x04
++#define	DA9211_GPIO4_MODE			0x08
++
++/* DA9211_REG_BUCKA_CONT (addr=0x5D) */
++#define	DA9211_BUCKA_EN				0x01
++#define	DA9211_BUCKA_GPI_SHIFT		1
++#define DA9211_BUCKA_GPI_MASK		0x06
++#define	DA9211_BUCKA_GPI_OFF		0x00
++#define	DA9211_BUCKA_GPI_GPIO0		0x02
++#define	DA9211_BUCKA_GPI_GPIO1		0x04
++#define	DA9211_BUCKA_GPI_GPIO3		0x06
++#define	DA9211_BUCKA_PD_DIS			0x08
++#define	DA9211_VBUCKA_SEL			0x10
++#define	DA9211_VBUCKA_SEL_A			0x00
++#define	DA9211_VBUCKA_SEL_B			0x10
++#define	DA9211_VBUCKA_GPI_SHIFT		5
++#define	DA9211_VBUCKA_GPI_MASK		0x60
++#define	DA9211_VBUCKA_GPI_OFF		0x00
++#define	DA9211_VBUCKA_GPI_GPIO1		0x20
++#define	DA9211_VBUCKA_GPI_GPIO2		0x40
++#define	DA9211_VBUCKA_GPI_GPIO4		0x60
++
++/* DA9211_REG_BUCKB_CONT (addr=0x5E) */
++#define	DA9211_BUCKB_EN				0x01
++#define	DA9211_BUCKB_GPI_SHIFT		1
++#define DA9211_BUCKB_GPI_MASK		0x06
++#define	DA9211_BUCKB_GPI_OFF		0x00
++#define	DA9211_BUCKB_GPI_GPIO0		0x02
++#define	DA9211_BUCKB_GPI_GPIO1		0x04
++#define	DA9211_BUCKB_GPI_GPIO3		0x06
++#define	DA9211_BUCKB_PD_DIS			0x08
++#define	DA9211_VBUCKB_SEL			0x10
++#define	DA9211_VBUCKB_SEL_A			0x00
++#define	DA9211_VBUCKB_SEL_B			0x10
++#define	DA9211_VBUCKB_GPI_SHIFT		5
++#define	DA9211_VBUCKB_GPI_MASK		0x60
++#define	DA9211_VBUCKB_GPI_OFF		0x00
++#define	DA9211_VBUCKB_GPI_GPIO1		0x20
++#define	DA9211_VBUCKB_GPI_GPIO2		0x40
++#define	DA9211_VBUCKB_GPI_GPIO4		0x60
++
++/* DA9211_REG_BUCK_ILIM (addr=0xD0) */
++#define DA9211_BUCKA_ILIM_SHIFT			0
++#define DA9211_BUCKA_ILIM_MASK			0x0F
++#define DA9211_BUCKB_ILIM_SHIFT			4
++#define DA9211_BUCKB_ILIM_MASK			0xF0
++
++/* DA9211_REG_BUCKA_CONF (addr=0xD1) */
++#define DA9211_BUCKA_MODE_SHIFT			0
++#define DA9211_BUCKA_MODE_MASK			0x03
++#define	DA9211_BUCKA_MODE_MANUAL		0x00
++#define	DA9211_BUCKA_MODE_SLEEP			0x01
++#define	DA9211_BUCKA_MODE_SYNC			0x02
++#define	DA9211_BUCKA_MODE_AUTO			0x03
++#define DA9211_BUCKA_UP_CTRL_SHIFT		2
++#define DA9211_BUCKA_UP_CTRL_MASK		0x1C
++#define DA9211_BUCKA_DOWN_CTRL_SHIFT	5
++#define DA9211_BUCKA_DOWN_CTRL_MASK		0xE0
++
++/* DA9211_REG_BUCKB_CONF (addr=0xD2) */
++#define DA9211_BUCKB_MODE_SHIFT			0
++#define DA9211_BUCKB_MODE_MASK			0x03
++#define	DA9211_BUCKB_MODE_MANUAL		0x00
++#define	DA9211_BUCKB_MODE_SLEEP			0x01
++#define	DA9211_BUCKB_MODE_SYNC			0x02
++#define	DA9211_BUCKB_MODE_AUTO			0x03
++#define DA9211_BUCKB_UP_CTRL_SHIFT		2
++#define DA9211_BUCKB_UP_CTRL_MASK		0x1C
++#define DA9211_BUCKB_DOWN_CTRL_SHIFT	5
++#define DA9211_BUCKB_DOWN_CTRL_MASK		0xE0
++
++/* DA9211_REG_BUCK_CONF (addr=0xD3) */
++#define DA9211_PHASE_SEL_A_SHIFT		0
++#define DA9211_PHASE_SEL_A_MASK			0x03
++#define DA9211_PHASE_SEL_B_SHIFT		2
++#define DA9211_PHASE_SEL_B_MASK			0x04
++#define DA9211_PH_SH_EN_A_SHIFT			3
++#define DA9211_PH_SH_EN_A_MASK			0x08
++#define DA9211_PH_SH_EN_B_SHIFT			4
++#define DA9211_PH_SH_EN_B_MASK			0x10
++
++/* DA9211_REG_VBUCKA_MAX (addr=0xD5) */
++#define DA9211_VBUCKA_BASE_SHIFT		0
++#define DA9211_VBUCKA_BASE_MASK			0x7F
++
++/* DA9211_REG_VBUCKB_MAX (addr=0xD6) */
++#define DA9211_VBUCKB_BASE_SHIFT		0
++#define DA9211_VBUCKB_BASE_MASK			0x7F
++
++/* DA9211_REG_VBUCKA/B_A/B (addr=0xD7/0xD8/0xD9/0xDA) */
++#define DA9211_VBUCK_SHIFT			0
++#define DA9211_VBUCK_MASK			0x7F
++#define DA9211_VBUCK_BIAS			0
++#define DA9211_BUCK_SL				0x80
++
++/* DA9211_REG_INTERFACE (addr=0x105) */
++#define DA9211_IF_BASE_ADDR_SHIFT		4
++#define DA9211_IF_BASE_ADDR_MASK		0xF0
++
++/* DA9211_REG_CONFIG_E (addr=0x147) */
++#define DA9211_SLAVE_SEL			0x40
++
++#endif	/* __DA9211_REGISTERS_H__ */
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+new file mode 100644
+index 0000000..3575de2
+--- /dev/null
++++ b/include/linux/regulator/da9211.h
+@@ -0,0 +1,81 @@
++/*
++ * da9211.h - Regulator device driver for DA9211
++ * Copyright (C) 2014  Dialog Semiconductor Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ */
++
++#ifndef __LINUX_REGULATOR_DA9211_H
++#define __LINUX_REGULATOR_DA9211_H
++
++#include <linux/regulator/machine.h>
++
++#define DA9211_MAX_REGULATORS	2
++
++enum da9211_gpio_ren_select {
++	DA9211_REN_NO_GPIO = 0,
++	DA9211_REN_GPIO_0,
++	DA9211_REN_GPIO_1,
++	DA9211_REN_GPIO_3,
++};
++
++enum da9211_gpio_rsel_select {
++	DA9211_RSEL_NO_GPIO = 0,
++	DA9211_RSEL_GPIO_1,
++	DA9211_RSEL_GPIO_2,
++	DA9211_RSEL_GPIO_4,
++};
++
++enum DA9211_IRQ {
++	DA9211_IRQ_EGPI0 = 0,
++	DA9211_IRQ_EGPI1,
++	DA9211_IRQ_EGPI2,
++	DA9211_IRQ_EGPI3,
++	DA9211_IRQ_EGPI4,
++	DA9211_IRQ_EUVLO_IO,
++	DA9211_IRQ_EPWRGOOD_A,
++	DA9211_IRQ_EPWRGOOD_B,
++	DA9211_IRQ_ETEMP_WARN,
++	DA9211_IRQ_ETEMP_CRIT,
++	DA9211_IRQ_EOV_CURR_A,
++	DA9211_IRQ_EOV_CURR_B,
++	DA9211_NUM_IRQ,
++};
++
++struct da9211_buck_data {
++	/* gpio of platform for buck eanble/disable */
++	int gpio_ren;
++
++	/* gpio of platform for buck(a/b) selection */
++	int gpio_rsel;
++
++	/* init state of gpio_ren */
++	int ena_init_state;
++
++	/* gpio of da9211 for buck eanble/disable */
++	enum da9211_gpio_ren_select reg_ren;
++
++	/* gpio of da9211 for buck(a/b) selection */
++	enum da9211_gpio_rsel_select reg_rsel;
++
++	struct regulator_init_data *constraints;
++};
++
++struct da9211_pdata {
++	/*
++	 * Number of buck
++	 * 1 : 4 phase 1 buck
++	 * 2 : 2 phase 2 buck
++	 */
++	int num_buck;
++	struct da9211_buck_data buck_data[DA9211_MAX_REGULATORS];
++};
++#endif
+-- 
+end-of-patch for regulator: DA9211 : new regulator driver V1
 
