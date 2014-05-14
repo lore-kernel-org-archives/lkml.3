@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaENEVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 00:21:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32645 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaENEVq (ORCPT
+	id S1753397AbaENE2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 00:28:30 -0400
+Received: from [162.105.203.56] ([162.105.203.56]:56096 "EHLO
+	mail.sei.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaENE23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 00:21:46 -0400
-Message-ID: <5372EF45.8060701@huawei.com>
-Date: Wed, 14 May 2014 12:21:25 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 14 May 2014 00:28:29 -0400
+From: "Yuan Pengfei" <yuanpf12@sei.pku.edu.cn>
+To: "'Andi Kleen'" <andi@firstfloor.org>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Peter Oberparleiter'" <oberpar@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>,
+        "'Yuan Pengfei'" <yuanpf12@sei.pku.edu.cn>
+Subject: [PATCH v4] gcov: add support for GCC 4.9
+Date: Wed, 14 May 2014 12:27:35 +0800
+Message-ID: <001f01cf6f2c$d4e62350$7eb269f0$@sei.pku.edu.cn>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hannes@cmpxchg.org>
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
- directly
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: Ac9vLKOf0z5V79xVSzyZuvh1e/kf1Q==
+Content-Language: zh-cn
+X-Spam_score: -102.9
+X-Spam_score_int: -1028
+X-Spam_bar: ---------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+From: Yuan Pengfei <coolypf@qq.com>
 
-On 2014/5/10 5:31, Tejun Heo wrote:
-> Hello,
-> 
-> Currently, while csses (cgroup_subsys_states) have ->parent linkage
-> too, only cgroups form full tree through their ->children and
-> ->sibling fields and css iterations naturally is implemented by
-> iterating cgroups and then dereferencing the css for the specified
-> subsystem.
-> 
-> There are now use cases where controllers need to iterate through
-> csses regardless of their online state as long as they have positive
+This patch handles the gcov-related changes in GCC 4.9:
+  A new counter (time profile) is added. The total number is 9 now.
+  A new profile merge function __gcov_merge_time_profile is added.
+See gcc/gcov-io.h and libgcc/libgcov-merge.c
+For the first change, the layout of struct gcov_info is affected.
+For the second one, a dummy function is added to kernel/gcov/base.c similarly.
+Signed-off-by: Yuan Pengfei <coolypf@qq.com>
+---
+ kernel/gcov/base.c    | 6 ++++++
+ kernel/gcov/gcc_4_7.c | 5 +++++
+ 2 files changed, 11 insertions(+)
 
-What use cases are we talking about here?
+diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
+index f45b75b..b358a80 100644
+--- a/kernel/gcov/base.c
++++ b/kernel/gcov/base.c
+@@ -85,6 +85,12 @@ void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters)
+ }
+ EXPORT_SYMBOL(__gcov_merge_ior);
+ 
++void __gcov_merge_time_profile(gcov_type *counters, unsigned int n_counters)
++{
++	/* Unused. */
++}
++EXPORT_SYMBOL(__gcov_merge_time_profile);
++
+ /**
+  * gcov_enable_events - enable event reporting through gcov_event()
+  *
+diff --git a/kernel/gcov/gcc_4_7.c b/kernel/gcov/gcc_4_7.c
+index 7465944..7f74b59 100644
+--- a/kernel/gcov/gcc_4_7.c
++++ b/kernel/gcov/gcc_4_7.c
+@@ -18,7 +18,12 @@
+ #include <linux/vmalloc.h>
+ #include "gcov.h"
+ 
++#if __GNUC__ == 4 && __GNUC_MINOR__ >= 9
++#define GCOV_COUNTERS			9
++#else
+ #define GCOV_COUNTERS			8
++#endif
++
+ #define GCOV_TAG_FUNCTION_LENGTH	3
+ 
+ static struct gcov_info *gcov_info_head;
+-- 
+2.0.0.rc2
 
-> reference.  This can't easily be achieved by iterating cgroups because
-> its css pointer array needs to be cleared on offline and there may be
-> multiple dying csses for a cgroup for the same subsystem and there's
-> only one pointer per cgroup-subsystem pair.
-> 
 
