@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751174AbaENTcs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:32:48 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:65058 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaENTcq (ORCPT
+	id S1751455AbaENTdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:33:14 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:60104 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaENTdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:32:46 -0400
-Message-ID: <5373C4D1.3070703@gmail.com>
-Date: Wed, 14 May 2014 21:32:33 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 15:33:12 -0400
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com,
-        t.figa@samsung.com
-CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
-        arnd@arndb.de, olof@lixom.net, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com, hyunhee.kim@samsung.com,
-        yj44.cho@samsung.com, chanho61.park@samsung.com,
-        sajjan.linux@gmail.com, tushar.behera@linaro.org,
-        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv5 2/5] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <1399986308-23744-3-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1399986308-23744-3-git-send-email-cw00.choi@samsung.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <53738496.2070800@ahsoftware.de>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+ <1399913280-6915-6-git-send-email-holler@ahsoftware.de> <20140514141300.67206C4153D@trevor.secretlab.ca>
+ <53738496.2070800@ahsoftware.de>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 14 May 2014 20:32:50 +0100
+X-Google-Sender-Auth: hIJS5txnTIyXree8r6sxKLXXjmY
+Message-ID: <CACxGe6tThM_0+Kvo62_AEN5D_5E0GDpwowMZC4Nq=oqAZ57RxA@mail.gmail.com>
+Subject: Re: [RFC PATCH 5/9] dt: deps: register drivers based on the
+ initialization order based on DT
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 14, 2014 at 3:58 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 14.05.2014 16:13, schrieb Grant Likely:
+>
+>> On Mon, 12 May 2014 18:47:56 +0200, Alexander Holler
+>> <holler@ahsoftware.de> wrote:
+>>>
+>>> The init system currently calls unknown functions with almost unknown
+>>> functionality in an almost random order.
+>>
+>>
+>> Correct, we've got a module system. Some would say that is a strength!
+>> :-) That said, I don't object to optimizing to the optimal order when
+>> possible.
+>
+>
+> Modules do work after init happened, that isn't what this feature is about.
 
-On 13.05.2014 15:05, Chanwoo Choi wrote:
-> This patch fix the offset of CPU boot address and don't need to send smc call
-> of SMC_CMD_CPU1BOOT command for secondary CPU boot because Exynos3250 removes
-> WFE in secure mode.
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/mach-exynos/firmware.c | 9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-> index 739bdc8..eb91d23 100644
-> --- a/arch/arm/mach-exynos/firmware.c
-> +++ b/arch/arm/mach-exynos/firmware.c
-> @@ -30,6 +30,13 @@ static int exynos_do_idle(void)
->  static int exynos_cpu_boot(int cpu)
->  {
->  	/*
-> +	 * Exynos3250 doesn't need to send smc command for secondary CPU boot
-> +	 * because Exynos3250 removes WFE in secure mode.
-> +	 */
-> +	if (soc_is_exynos3250())
-> +		return 0;
-> +
-> +	/*
->  	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
->  	 * But, Exynos4212 has only one secondary CPU so second parameter
->  	 * isn't used for informing secure firmware about CPU id.
-> @@ -50,7 +57,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
->  
->  	boot_reg = sysram_ns_base_addr + 0x1c;
->  
-> -	if (!soc_is_exynos4212())
-> +	if (!soc_is_exynos4212() && !soc_is_exynos3250())
->  		boot_reg += 4*cpu;
->  
->  	__raw_writel(boot_addr, boot_reg);
-> 
+Oops, I meant modular. I wasn't talking about modules either. The
+driver model is designed to match devices with drivers regardless of
+the order that either of them get registered to the system. I think
+that is a strong aspect of the drivercore. What it doesn't have is any
+way of optimizing the probe order, which is at the heart of your
+proposal.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>
+>
+>>
+>>> Fixing this is on a short-term basis is a bit tricky.
+>>>
+>>> In order to register drivers with a deterministic order, a list of all
+>>> available in-kernel drivers is needed. Unfortunately such a list doesn't
+>>> exist, just a list of initcalls does exist.
+>>>
+>>> The trick now is to first call special annotated initcalls (I call those
+>>> "well done") for platform drivers, but not actualy starting those drivers
+>>> by calling their probe function, but just collectiong their meta datas
+>>> (struct platform_driver). After all those informations were collected,
+>>> available the drivers will be started according to the previously
+>>> determined order.
+>>
+>>
+>> Why does the initcall level matter? Why not just let the initcalls
+>> happen, capture the calls that register a driver, and then use that list
+>> later?
+>
+>
+> Some initcalls assume that stuff is present when they called probe or
+> register and do further action based on the rc code.
 
-Best regards,
-Tomasz
+What I mean is that manipulating the initcall level isn't the best way
+to handle it. We've got enough initcalls and there isn't a need to add
+more. Other ways to handle the problem would be to either have a
+variant of the platform_driver_register() that triggers your desired
+behavour, or add a flag to the struct device_driver that tells the
+driver core that it should try to resolve ordering. In both cases the
+module_platform_driver() macro can do the magic bit. Other drivers
+will have to do it manually.
+
+g.
