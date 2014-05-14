@@ -1,92 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaENEIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 00:08:14 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:44572 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaENEIN (ORCPT
+	id S1752793AbaENENt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 00:13:49 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:61769 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaENENs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 00:08:13 -0400
-Message-ID: <1400040489.5157.44.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: wake up task on prev_cpu if not in
- SD_WAKE_AFFINE domain with cpu
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com, mingo@kernel.org,
-        george.mccollister@gmail.com, ktkhai@parallels.com,
-        Mel Gorman <mgorman@suse.de>, "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 14 May 2014 06:08:09 +0200
-In-Reply-To: <53722754.6040102@redhat.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
-	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
-	 <1399030032.5233.142.camel@marge.simpson.net> <5363B793.9010208@redhat.com>
-	 <20140506115448.GH11096@twins.programming.kicks-ass.net>
-	 <536943C9.4030502@redhat.com>
-	 <20140506203916.GQ17778@laptop.programming.kicks-ass.net>
-	 <536C3B69.1000208@redhat.com>
-	 <20140509012743.67d4006d@annuminas.surriel.com>
-	 <1399620873.5200.68.camel@marge.simpson.net> <536CE48E.2060305@redhat.com>
-	 <1399649042.31219.47.camel@marge.simpson.net> <536CF346.6080009@redhat.com>
-		 <1399658123.5187.2.camel@marge.simpson.net> <536D1B6D.8060004@redhat.com>
-	 <1399694090.5146.13.camel@marge.simpson.net> <53722754.6040102@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 May 2014 00:13:48 -0400
+Date: Tue, 13 May 2014 21:12:28 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jianyu Zhan <nasa4836@gmail.com>
+cc: akpm@linux-foundation.org, mgorman@suse.de, sasha.levin@oracle.com,
+        zhangyanfei@cn.fujitsu.com, oleg@redhat.com, fabf@skynet.be,
+        cldu@marvell.com, iamjoonsoo.kim@lge.com, n-horiguchi@ah.jp.nec.com,
+        kirill.shutemov@linux.intel.com, schwidefsky@de.ibm.com,
+        gorcunov@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: use a light-weight __mod_zone_page_state in
+ mlocked_vma_newpage()
+In-Reply-To: <1399917481-28917-1-git-send-email-nasa4836@gmail.com>
+Message-ID: <alpine.LSU.2.11.1405132100260.4154@eggly.anvils>
+References: <1399917481-28917-1-git-send-email-nasa4836@gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-13 at 10:08 -0400, Rik van Riel wrote:
+On Tue, 13 May 2014, Jianyu Zhan wrote:
 
-> OK, after doing some other NUMA stuff, and then looking at the scheduler
-> again with a fresh mind, I have drawn some more conclusions about what
-> the scheduler does, and how it breaks NUMA locality :)
+> Andrew, since the previous patch
 > 
-> 1) If the node_distance between nodes on a NUMA system is
->    <= RECLAIM_DISTANCE, we will call select_idle_sibling for
->    a wakeup of a previously existing task (SD_BALANCE_WAKE)
+>  [PATCH 1/3] mm: add comment for __mod_zone_page_stat
 > 
-> 2) If the node distance exceeds RECLAIM_DISTANCE, we will
->    wake up a task on prev_cpu, even if it is not currently
->    idle
+> is updated, update this one accordingly.
 > 
->    This behaviour only happens on certain large NUMA systems,
->    and is different from the behaviour on small systems.
->    I suspect we will want to call select_idle_sibling with
->    prev_cpu in case target and prev_cpu are not in the same
->    SD_WAKE_AFFINE domain.
-
-Sometimes.  It's the same can of worms remote as it is local.. latency
-gain may or may not outweigh cache miss pain.
-
-> 3) If wake_wide is false, we call select_idle_sibling with
->    the CPU number of the code that is waking up the task
+> -----<8-----
+> From 9701fbdb3f9e7730b89780a5bf22effd1580cf35 Mon Sep 17 00:00:00 2001
+> From: Jianyu Zhan <nasa4836@gmail.com>
+> Date: Tue, 13 May 2014 01:48:01 +0800
+> Subject: [PATCH] mm: fold mlocked_vma_newpage() into its only call site
 > 
-> 4) If wake_wide is true, we call select_idle_sibling with
->    the CPU number the task was previously running on (prev_cpu)
+> In previous commit(mm: use the light version __mod_zone_page_state in
+> mlocked_vma_newpage()) a irq-unsafe __mod_zone_page_state is used.
+> And as suggested by Andrew, to reduce the risks that new call sites
+> incorrectly using mlocked_vma_newpage() without knowing they are adding
+> racing, this patch folds mlocked_vma_newpage() into its only call site,
+> page_add_new_anon_rmap, to make it open-cocded for people to know what
+> is going on.
 > 
->    In effect, the "wake task on waking task's CPU" behaviour
->    is the default, regardless of how frequently a task wakes up
->    its wakee, and regardless of impact on NUMA locality.
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Suggested-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+
+Acked-by: Hugh Dickins <hughd@google.com>
+
+Yes, much better, thanks: you made and commented the __ change in the
+previous patch, and now you just do the move.  I'd have probably moved
+the VM_BUG_ON_PAGE(PageLRU,) up to the top of page_add_new_anon_rmap(),
+where we already document some expectations on entry (or else removed it
+completely, given that lru_cache_add() does the same); but that's a nit,
+no need to make further change now.
+
+> ---
+>  mm/internal.h | 29 -----------------------------
+>  mm/rmap.c     | 20 +++++++++++++++++---
+>  2 files changed, 17 insertions(+), 32 deletions(-)
 > 
->    This may need to be changed.
-
-That behavior also improves the odds of communicating tasks sharing a
-cache though.
-
-> Am I overlooking anything?
-
-No, I think you're seeing where the worms live. 
-
-> What benchmarks should I run to test any changes I make?
-
-Mixed bag, it'll affects all, bursty, static, ramp up/down.
-
--Mike
-
-
-
+> diff --git a/mm/internal.h b/mm/internal.h
+> index d6a4868..29f3dc8 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -184,31 +184,6 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
+>  }
+>  
+>  /*
+> - * Called only in fault path, to determine if a new page is being
+> - * mapped into a LOCKED vma.  If it is, mark page as mlocked.
+> - */
+> -static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+> -				    struct page *page)
+> -{
+> -	VM_BUG_ON_PAGE(PageLRU(page), page);
+> -
+> -	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED))
+> -		return 0;
+> -
+> -	if (!TestSetPageMlocked(page)) {
+> -		/*
+> -		 * We use the irq-unsafe __mod_zone_page_stat because
+> -		 * this counter is not modified from interrupt context, and the
+> -		 * pte lock is held(spinlock), which implies preemption disabled.
+> -		 */
+> -		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+> -				    hpage_nr_pages(page));
+> -		count_vm_event(UNEVICTABLE_PGMLOCKED);
+> -	}
+> -	return 1;
+> -}
+> -
+> -/*
+>   * must be called with vma's mmap_sem held for read or write, and page locked.
+>   */
+>  extern void mlock_vma_page(struct page *page);
+> @@ -250,10 +225,6 @@ extern unsigned long vma_address(struct page *page,
+>  				 struct vm_area_struct *vma);
+>  #endif
+>  #else /* !CONFIG_MMU */
+> -static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
+> -{
+> -	return 0;
+> -}
+>  static inline void clear_page_mlock(struct page *page) { }
+>  static inline void mlock_vma_page(struct page *page) { }
+>  static inline void mlock_migrate_page(struct page *new, struct page *old) { }
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index fa73194..386b78f 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1029,11 +1029,25 @@ void page_add_new_anon_rmap(struct page *page,
+>  	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
+>  			hpage_nr_pages(page));
+>  	__page_set_anon_rmap(page, vma, address, 1);
+> -	if (!mlocked_vma_newpage(vma, page)) {
+> +
+> +	VM_BUG_ON_PAGE(PageLRU(page), page);
+> +	if (likely((vma->vm_flags & (VM_LOCKED | VM_SPECIAL)) != VM_LOCKED)) {
+>  		SetPageActive(page);
+>  		lru_cache_add(page);
+> -	} else
+> -		add_page_to_unevictable_list(page);
+> +		return;
+> +	}
+> +
+> +	if (!TestSetPageMlocked(page)) {
+> +		/*
+> +		 * We use the irq-unsafe __mod_zone_page_stat because
+> +		 * this counter is not modified from interrupt context, and the
+> +		 * pte lock is held(spinlock), which implies preemption disabled.
+> +		 */
+> +		__mod_zone_page_state(page_zone(page), NR_MLOCK,
+> +				    hpage_nr_pages(page));
+> +		count_vm_event(UNEVICTABLE_PGMLOCKED);
+> +	}
+> +	add_page_to_unevictable_list(page);
+>  }
+>  
+>  /**
+> -- 
+> 2.0.0-rc1
