@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021AbaENR7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:59:51 -0400
-Received: from rydia.net ([69.46.88.68]:48452 "EHLO mail.rydia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786AbaENR7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:59:49 -0400
-Date: Wed, 14 May 2014 10:59:41 -0700 (PDT)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dinf
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Multitude of dst obsolescense race conditions
-In-Reply-To: <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
-Message-ID: <alpine.DEB.2.10.1405141058570.9591@dinf>
-References: <alpine.DEB.2.02.1405140233210.16893@dtop> <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751501AbaENSAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:00:32 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:39239 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaENSA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 14:00:29 -0400
+Message-ID: <5373AF39.7030406@colorfullife.com>
+Date: Wed, 14 May 2014 20:00:25 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Davidlohr Bueso <davidlohr@hp.com>, akpm@linux-foundation.org
+CC: aswin@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] ipc,msg: loosen check for full queue
+References: <1400012857-11733-1-git-send-email-davidlohr@hp.com> <1400012857-11733-6-git-send-email-davidlohr@hp.com>
+In-Reply-To: <1400012857-11733-6-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Davidlohr, Hi Andrew,
 
-> On Wed, 2014-05-14 at 02:57 -0700, dormando wrote:
-> > Hi,
-> >
-> > Given a machine with frequently changing routes (ie; a router with an
-> > active internet BGP table and multiple interfaces), there're at least
-> > several places where obsolete dst's are handled improperly. If I pause the
-> > route changes, the crashes appear to stop. This first one has a crash
-> > utility we've made, so I was able to more quickly find a patch and test
-> > it. The others take time to reproduce.
-> >
-> > I'm testing against 3.10.39, but I think if these were fixed they'd be
-> > backported to stable? I've also had recent 3.12's running that have
-> > crashed in the same spots. Anyway correct me if I'm wrong...
+On 05/13/2014 10:27 PM, Davidlohr Bueso wrote:
+> When sending a message, we must guarantee that there will be
+> enough room in the queue to add it, otherwise wait until space
+> becomes available -- which requires blocking the calling task.
+> Currently, this relies meeting both of the following conditions:
 >
-> Is this a vanilla kernel ? I never had any issues like that.
+> (i) The new msg size + current size is lower than the queue's max size.
+> (ii) The current amount of messages in the queue + 1 (this msg) is lower
+>       than the queue's max size.
 >
-> I wonder if you have some RCU issues.
->
-> static inline struct dst_entry *
-> sk_dst_get(struct sock *sk)
-> {
->         struct dst_entry *dst;
->
->         rcu_read_lock();
->         dst = rcu_dereference(sk->sk_dst_cache);
->         if (dst)
->                 dst_hold(dst);
->         rcu_read_unlock();
->         return dst;
-> }
->
-> static inline void
-> __sk_dst_set(struct sock *sk, struct dst_entry *dst)
-> {
->         struct dst_entry *old_dst;
->
->         sk_tx_queue_clear(sk);
->         /*
->          * This can be called while sk is owned by the caller only,
->          * with no state that can be checked in a rcu_dereference_check() cond
->          */
->         old_dst = rcu_dereference_raw(sk->sk_dst_cache);
->         rcu_assign_pointer(sk->sk_dst_cache, dst);
->         dst_release(old_dst);
-> }
->
-> static inline void
-> sk_dst_set(struct sock *sk, struct dst_entry *dst)
-> {
->         spin_lock(&sk->sk_dst_lock);
->         __sk_dst_set(sk, dst);
->         spin_unlock(&sk->sk_dst_lock);
-> }
->
->
->
->
+> While (i) is obvious and well documented in the msgsnd(2) manpage, the
+> second one is far more ambiguous and does not serve the purpose, as we do
+> not control the amount of messages in the queue (unlike posix queues do).
+> Thus remove (ii) and loosen how we check for space.
+I know that (ii) is undocumented and not part of SUS, but I think it is 
+required:
+Otherwise it would be possible to use up an infinite amount of locked 
+memory by sending 0-byte messages.
 
-We have some minor patches, but I've removed them before and they still
-happen. I'd crashed a vanilla 3.12 + just the stable patches recently I
-think.
+I added it some long time ago, and at that time I didn't check what the 
+other sysv msg implementation were doing.
+
+ From a quick search:
+
+FreeBSD:
+- Optional: RACCT_MSGQQUEUED
+- Always: The number of messages is limited due to a global array 
+(limited to MSGTQL entries: array msghdrs, free list  free_msghdrs)
+
+http://fxr.watson.org/fxr/source/kern/sysv_msg.c
+
+Opensolaris:
+- Also a limit of the number of messages:
+http://fxr.watson.org/fxr/source/common/os/msg.c?v=OPENSOLARIS;im=bigexcerpts#L1166
+
+- it appears that it is related to MSGTQL:
+http://fxr.watson.org/fxr/source/common/os/msg.c?v=OPENSOLARIS;im=bigexcerpts#L652
+
+I.e.: We cannot remove the check unless we add another mechanism that 
+limits the number of messages.
+
+--
+     Manfred
