@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145AbaENOwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:52:44 -0400
-Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:13359 "EHLO
-	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaENOwn (ORCPT
+	id S1755323AbaENOxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:53:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42544 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754024AbaENOxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:52:43 -0400
-Message-ID: <1400079158.9356.10.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 6/6] ipc/sem.c: make semctl(,,{GETNCNT,GETZCNT})
- standard compliant
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
-Date: Wed, 14 May 2014 07:52:38 -0700
-In-Reply-To: <1399716199-26776-7-git-send-email-manfred@colorfullife.com>
-References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-2-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-4-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-5-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-6-git-send-email-manfred@colorfullife.com>
-	 <1399716199-26776-7-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 10:53:17 -0400
+Date: Wed, 14 May 2014 10:53:16 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
+ runtime-suspended devices unnecessarily
+In-Reply-To: <16671603.abrivY8Odm@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
-> Per definition, a task waits on exactly one semaphore:
-> The semaphore from the first operation in the sop array that cannot proceed.
+On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+
+> > It would be surprising if ->prepare() needed to make any difficult
+> > checks.  This would imply that the device could have multiple
+> > runtime-suspend states, some of which are appropriate for system
+> > suspend while others aren't.  Not impossible, but I wouldn't expect it
+> > to come up often.
 > 
-> The Linux implementation never followed the standard, it tried to count all
-> semaphores that might be the reason why a task sleeps.
+> That is the case for every device with ACPI power management in principle. :-)
 > 
-> This patch fixes that.
+> Please see patch [3/3] for details.
+
+I don't understand enough about the ACPI subsystem to follow the
+details of that patch.
+
+> OK, I've updated the $subject patch in the meantime and the result is appended
+> Former patch [1/3] is not necessary any more now and patch [3/3] is still valid.
 > 
-> Note:
-> The implementation assumes that GETNCNT and GETZCNT are rare operations,
-> therefore the code counts them only on demand.
-> (If they wouldn't be rare, then the non-compliance would have
-> been found earlier)
+> Rafael
 > 
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 > ---
->  ipc/sem.c | 37 ++++++++++++++++---------------------
->  1 file changed, 16 insertions(+), 21 deletions(-)
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
 > 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 22a4c12..5e8bcde 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -993,38 +993,33 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
->  }
+> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> resume all runtime-suspended devices during system suspend, mostly
+> because those devices may need to be reprogrammed due to different
+> wakeup settings for system sleep and for runtime PM.
+
+...
+
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+This is looking quite good.  I have one suggestion for a small 
+improvement...
+
+> @@ -1332,6 +1338,16 @@ static int __device_suspend(struct devic
+>  	if (dev->power.syscore)
+>  		goto Complete;
 >  
->  /*
-> - * check_qop: Test how often a queued operation sleeps on the semaphore semnum
-> + * check_qop: Test if a queued operation sleeps on the semaphore semnum
->   */
->  static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
->  			bool count_zero)
->  {
-> -	struct sembuf *sops = q->sops;
-> -	int nsops = q->nsops;
-> -	int i, semcnt;
-> +	struct sembuf *sop = q->blocking;
->  
-> -	semcnt = 0;
-> +	BUG_ON(sop->sem_flg & IPC_NOWAIT);
-> +	BUG_ON(sop->sem_op > 0);
+> +	if (dev->power.direct_complete) {
+> +		pm_runtime_disable(dev);
+> +		if (dev->power.disable_depth == 1
+> +		    && pm_runtime_status_suspended(dev))
+> +			goto Complete;
+> +
+> +		dev->power.direct_complete = false;
+> +		pm_runtime_enable(dev);
+> +	}
 
-Hmm in light of Linus' recent criticism about randomly sprinkling
-BUG_ONs in the kernel I'm not sure we want this. Yes, all those calls
-are correct from a logical pov and should never occur, however, would
-WARN be more suitable instead? I don't know. 
+Do we want to allow ->prepare() to return > 0 if the device isn't
+runtime suspended?  If we do then non-suspended devices may be a common
+case.  We should then avoid the extra overhead of disable + enable.  
+So I would write:
 
-Andrew, any thoughts?
+	if (dev->power.direct_complete) {
+		if (pm_runtime_status_suspended(dev)) {
+			pm_runtime_disable(dev);
+			if (dev->power.disable_depth == 1
+			    && pm_runtime_status_suspended(dev))
+				goto Complete;
+			pm_runtime_enable(dev);
+		}
+		dev->power.direct_complete = false;
+	}
 
-Thanks.
+Also, now that we have finally settled on the appropriate API, there
+needs to ba a patch updating the PM documentation.
+
+Alan Stern
 
