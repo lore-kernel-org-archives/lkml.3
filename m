@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaENJp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:45:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47252 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747AbaENJpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:45:53 -0400
-Date: Wed, 14 May 2014 11:45:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
-Message-ID: <20140514094550.GB15756@dhcp22.suse.cz>
-References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
- <20140513143953.0b91925ee1e81580a4025a2e@linux-foundation.org>
+	id S1754448AbaENJtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:49:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45047 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751308AbaENJtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:49:08 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/6] ARM: berlin: add AHCI support
+Date: Wed, 14 May 2014 11:48:56 +0200
+Message-Id: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513143953.0b91925ee1e81580a4025a2e@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-05-14 14:39:53, Andrew Morton wrote:
-> On Tue, 13 May 2014 17:29:16 +0200 Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > force_empty has been introduced primarily to drop memory before it gets
-> > reparented on the group removal. This alone doesn't sound fully
-> > justified because reparented pages which are not in use can be reclaimed
-> > also later when there is a memory pressure on the parent level.
-> > 
-> > Mark the knob CFTYPE_INSANE which tells the cgroup core that it
-> > shouldn't create the knob with the experimental sane_behavior. Other
-> > users will get informed about the deprecation and asked to tell us more
-> > because I do not expect most users will use sane_behavior cgroups mode
-> > very soon.
-> > Anyway I expect that most users will be simply cgroup remove handlers
-> > which do that since ever without having any good reason for it.
-> > 
-> > If somebody really cares because reparented pages, which would be
-> > dropped otherwise, push out more important ones then we should fix the
-> > reparenting code and put pages to the tail.
-> > 
-> > ...
-> >
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -4793,6 +4793,10 @@ static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
-> >  
-> >  	if (mem_cgroup_is_root(memcg))
-> >  		return -EINVAL;
-> > +	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
-> > +			current->comm, task_pid_nr(current));
-> > +	pr_cont(" Let us know if you know if it needed in your usecase at");
-> > +	pr_cont(" linux-mm@kvack.org\n");
-> >  	return mem_cgroup_force_empty(memcg);
-> >  }
-> >  
-> 
-> Do we really want to spam the poor user each and every time they use
-> this?  Using pr_info_once() is kinder and gentler?
+This series adds the support for Berlin SoCs AHCI controllers. The
+controller allows to use the SATA host interface and, for example, the
+eSATA port on the BG2Q.
 
-We do not catch all potential callers but it is true that some
-configurations might have thousands of cgroups and the notify_on_release
-handler will spam the log.
+The series adds a PHY driver to control the two SATA ports available.
 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: memcg-deprecate-memoryforce_empty-knob-fix
-> 
-> - s/pr_info/pr_info_once/
-> - fix garbled printk text
-> 
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Also enable the eSATA interface on the BG2Q DMP.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Changes since v2:
+	- modeled each PHY as a sub-node
+	- cosmetic fixups
 
-> ---
-> 
->  Documentation/cgroups/memory.txt |    2 +-
->  mm/memcontrol.c                  |    8 ++++----
->  2 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff -puN Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix Documentation/cgroups/memory.txt
-> --- a/Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix
-> +++ a/Documentation/cgroups/memory.txt
-> @@ -482,7 +482,7 @@ About use_hierarchy, see Section 6.
->    memory.kmem.usage_in_bytes == memory.usage_in_bytes.
->  
->    Please note that this knob is considered deprecated and will be removed
-> -  in future.
-> +  in the future.
->  
->    About use_hierarchy, see Section 6.
->  
-> diff -puN mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix mm/memcontrol.c
-> --- a/mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix
-> +++ a/mm/memcontrol.c
-> @@ -4799,10 +4799,10 @@ static int mem_cgroup_force_empty_write(
->  
->  	if (mem_cgroup_is_root(memcg))
->  		return -EINVAL;
-> -	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
-> -			current->comm, task_pid_nr(current));
-> -	pr_cont(" Let us know if you know if it needed in your usecase at");
-> -	pr_cont(" linux-mm@kvack.org\n");
-> +	pr_info_once("%s (%d): memory.force_empty is deprecated and will be "
-> +		     "removed.  Let us know if it is needed in your usecase at "
-> +		     "linux-mm@kvack.org\n",
-> +		     current->comm, task_pid_nr(current));
->  	return mem_cgroup_force_empty(memcg);
->  }
->  
-> _
-> 
+Changes since v1:
+        - added a PHY driver, allowing to enable each port
+          individually and removed the 'force-port-map' property
+        - made the drivers a bit less magic :)
+        - wrote a function to select and configure registers in the
+          AHCI driver
+        - removed BG2 / BG2CD nodes
+
+Antoine Ténart (6):
+  phy: add a driver for the Berlin SATA PHY
+  Documentation: bindings: add the Berlin SATA PHY
+  ata: ahci: add AHCI support for the Berlin BG2Q
+  Documentation: bindings: add the berlin-ahci compatible to the ahci
+    platform
+  ARM: berlin: add the AHCI node for the BG2Q
+  ARM: berlin: enable the eSATA interface on the BG2Q DMP
+
+ .../devicetree/bindings/ata/ahci-berlin.txt        |  18 ++
+ .../devicetree/bindings/phy/berlin-sata-phy.txt    |  34 ++++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |  10 +
+ arch/arm/boot/dts/berlin2q.dtsi                    |  25 +++
+ drivers/ata/Kconfig                                |  10 +
+ drivers/ata/Makefile                               |   1 +
+ drivers/ata/ahci_berlin.c                          | 202 +++++++++++++++++++++
+ drivers/phy/Kconfig                                |   5 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-berlin-sata.c                      | 180 ++++++++++++++++++
+ 10 files changed, 486 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/ahci-berlin.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+ create mode 100644 drivers/ata/ahci_berlin.c
+ create mode 100644 drivers/phy/phy-berlin-sata.c
 
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
