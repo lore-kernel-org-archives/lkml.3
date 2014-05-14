@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaENFR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:17:59 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42861 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaENFR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:17:57 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 5/9] perf, tools: Add perf download to download event files v2
-References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
-	<1399935074-25167-6-git-send-email-andi@firstfloor.org>
-Date: Wed, 14 May 2014 14:17:55 +0900
-In-Reply-To: <1399935074-25167-6-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Mon, 12 May 2014 15:51:10 -0700")
-Message-ID: <87zjilkkfw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753346AbaENFTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:19:48 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43790 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaENFTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 01:19:46 -0400
+Message-ID: <1400044769.17624.237.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 14 May 2014 15:19:29 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 15:51:10 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add a downloader to automatically download the right
-> files from a download site.
->
-> This is implemented as a script calling wget, similar to
-> perf archive. The perf driver automatically calls the right
-> binary. The downloader is extensible, but currently only
-> implements an Intel event download.  It would be straightforward
-> to add other sites too for other vendors.
->
-> The downloaded event files are put into ~/.cache/pmu-events, where the
-> builtin event parser in util/* can find them automatically.
->
-> Cc: Use ~/.cache
+Hi Linus !
 
-???
+Here are a couple of fixes for 3.15. One from Anton fixes a nasty regression
+I introduced when trying to fix a loss of irq_work whose consequences is
+that we can completely lose timer interrupts on a CPU... not pretty.
 
+The other one is a change to our PCIe reset hook to use a firmware call
+instead of direct config space accesses to trigger a fundamental reset
+on the root port. This is necessary so that the FW gets a chance to
+disable the link down error monitoring, which would otherwise trip
+and cause subsequent fatal EEH error.
 
-[SNIP]
-> @@ -0,0 +1,52 @@
-> +#!/bin/bash
-> +# download event files for current cpu for perf
-> +
-> +WGETOPT=${WGETOPT:---no-verbose --timeout 5}
+Cheers,
+Ben.
 
-Could you please extend this script to support curl also?  It seems the
-wget is not installed by default on my system.
+The following changes since commit e4565362c7adc31201135c4b6d649fc1bdc3bf20:
 
-> +
-> +set -e
-> +
-> +if [ "$1" == "" ] ; then
-> +	S=$(awk '
-> +/^vendor/     		{ V=$3 }
-> +/^model/ && $2 == ":" 	{ M=$3 }
-> +/^cpu family/ 		{ F = $4 }
+  powerpc/4xx: Fix section mismatch in ppc4xx_pci.c (2014-04-28 16:32:53 +1000)
 
-Inconsistency in using whitespace..
+are available in the git repository at:
 
-Thanks,
-Namhyung
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 8050936caf125fbe54111ba5e696b68a360556ba:
+
+  powerpc: irq work racing with timer interrupt can result in timer interrupt hang (2014-05-12 14:29:28 +1000)
+
+----------------------------------------------------------------
+Anton Blanchard (1):
+      powerpc: irq work racing with timer interrupt can result in timer interrupt hang
+
+Gavin Shan (1):
+      powerpc/powernv: Reset root port in firmware
+
+ arch/powerpc/kernel/time.c                | 3 ---
+ arch/powerpc/platforms/powernv/eeh-ioda.c | 3 ++-
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
 
-> +END	      { printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
-> +else
-> +	S="$1"
-> +fi
-> +V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
-> +
-> +CACHEDIR=${XDG_CACHE_HOME:-~/.cache}
-> +[ ! -d $CACHEDIR/pmu-events ] && mkdir -p $CACHEDIR/pmu-events
-> +cd $CACHEDIR/pmu-events
-> +
-> +case "$V" in
-> +GenuineIntel)
-> +	echo "Downloading models file"
-> +	URLBASE=${URLBASE:-https://download.01.org/perfmon}
-> +	MAPFILE=${MAPFILE:-mapfile.csv}
-> +	echo "Downloading readme.txt"
-> +	wget -N $WGETOPT $URLBASE/readme.txt
-> +	;;
-> +
-> +# Add more CPU vendors here
-> +
-> +*)
-> +	echo "Unsupported CPU vendor $V"
-> +	exit 1
-> +	;;
-> +esac
-> +
-> +wget -N $WGETOPT $URLBASE/$MAPFILE
-> +
-> +echo "Downloading events file"
-> +awk -v urlbase=$URLBASE -v cpu="$S" -F, \
-> +	'$1 == cpu && $4 == "core" { print urlbase $3; exit 0 }' \
-> +	$MAPFILE > url$$
-> +if [ -s url$$ ] ; then
-> +	wget $WGETOPT -q -i url$$ -O $S-core.json
-> +else
-> +	echo "CPU $S not found"
-> +fi
-> +rm -f url$$
-> +
