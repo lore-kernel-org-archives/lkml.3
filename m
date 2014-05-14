@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaENURh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:17:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaENURf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:17:35 -0400
-Date: Wed, 14 May 2014 21:29:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
-	waitqueue lookups in unlock_page fastpath
-Message-ID: <20140514192945.GA10830@redhat.com>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140514161152.GA2615@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514161152.GA2615@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752438AbaENUPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:15:36 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:37327 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaENUPd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 16:15:33 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jisheng Zhang <jszhang@marvell.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 00/10] Marvell Berlin full clock support
+Date: Wed, 14 May 2014 22:15:11 +0200
+Message-Id: <1400098522-14770-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14, Oleg Nesterov wrote:
->
-> The subsequent discussion was "off-topic", and it seems that the patch
-> itself needs a bit more discussion,
->
-> On 05/13, Peter Zijlstra wrote:
-> >
-> > On Tue, May 13, 2014 at 01:53:13PM +0100, Mel Gorman wrote:
-> > > On Tue, May 13, 2014 at 10:45:50AM +0100, Mel Gorman wrote:
-> > > >  void unlock_page(struct page *page)
-> > > >  {
-> > > > +	wait_queue_head_t *wqh = clear_page_waiters(page);
-> > > > +
-> > > >  	VM_BUG_ON_PAGE(!PageLocked(page), page);
-> > > > +
-> > > > +	/*
-> > > > +	 * No additional barrier needed due to clear_bit_unlock barriering all updates
-> > > > +	 * before waking waiters
-> > > > +	 */
-> > > >  	clear_bit_unlock(PG_locked, &page->flags);
-> > > > -	smp_mb__after_clear_bit();
-> > > > -	wake_up_page(page, PG_locked);
-> > >
-> > > This is wrong.
->
-> Yes,
->
-> > > The smp_mb__after_clear_bit() is still required to ensure
-> > > that the cleared bit is visible before the wakeup on all architectures.
->
-> But note that "the cleared bit is visible before the wakeup" is confusing.
-> I mean, we do not need mb() before __wake_up(). We need it only because
-> __wake_up_bit() checks waitqueue_active().
+This is version 2 of a patch set to bring proper DT based clocks to
+Marvell Berlin SoCs.
 
-OOPS. Sorry Mel, I wrote this looking at the chunk above.  But when I found
-the whole patch http://marc.info/?l=linux-mm&m=139997442008267 I see that
-it removes waitqueue_active(), so this can be correct. I do not really know,
-so far I can't say I fully understand this PageWaiters() trick.
+The overall changes are:
 
-Hmm. But at least prepare_to_wait_exclusive() doesn't look right ;)
+* Dropped of_clk_create_name() helper
+Booting into an initramfs rootfs revealed that the unique clock names
+created with that helper clash with the way of_clk_get_parent_name()
+resolves the clock specifier to get the correct clock name. Anyway,
+I still consider the helper a good idea and postpone it to the next
+cycle when I have more time to look at the details.
 
-If nothing else, this needs abort_exclusive_wait() if killed. And while
-"exclusive" is probably fine for __lock_page.*(), I am not sure that
-__wait_on_page_locked_*() should be exclusive.
+* Added BG2Q core clock driver and dtsi changes
+Alexandre just provided them, so I added them to this patch set.
 
-Oleg.
+The single patch overview now is:
+
+Patch 1 adds the whole binding documentation for all clock related IP
+found on BG2, BG2CD, and BG2Q.
+
+Patch 2 adds corresponding dt-binding includes for the core clock
+indices to be used in both DT and the driver.
+
+Patches 3, 4, and 5 add clock drivers for the Audio/Video PLL, simple
+PLLs, and complex clock divider cells found on Berlin SoCs. Where
+required, currently known differences between BG2/BG2CD and BG2Q are
+taken care of.
+
+Patches 6 and 7 add core clock drivers for the remaining clocks of
+BG2/BG2CD and BG2Q. The register set dealing with it, is shared among
+input and bypass muxes, clock dividers and clock gates.
+
+Patches 8, 9, and 10 finally convert the DT SoC includes for BG2,
+BG2CD, and BG2Q to make use of the new clock related DT nodes.
+
+Alexandre Belloni (4):
+  clk: berlin: add driver for BG2x simple PLLs
+  clk: berlin: add driver for BG2x complex divider cells
+  clk: berlin: add core clock driver for BG2Q
+  ARM: dts: berlin: convert BG2Q to DT clock nodes
+
+Sebastian Hesselbarth (6):
+  dt-binding: clk: add clock binding docs for Marvell Berlin2 SoCs
+  clk: berlin: add binding include for BG2/BG2CD clock ids
+  clk: berlin: add driver for BG2x audio/video PLL
+  clk: berlin: add core clock driver for BG2/BG2CD
+  ARM: dts: berlin: convert BG2CD to DT clock nodes
+  ARM: dts: berlin: convert BG2 to DT clock nodes
+
+ .../devicetree/bindings/clock/berlin2-clock.txt    | 195 ++++++++
+ arch/arm/boot/dts/berlin2.dtsi                     | 207 +++++++--
+ arch/arm/boot/dts/berlin2cd.dtsi                   | 205 +++++++--
+ arch/arm/boot/dts/berlin2q.dtsi                    |  80 +++-
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/berlin/Makefile                        |   4 +
+ drivers/clk/berlin/berlin2-avpll.c                 | 368 +++++++++++++++
+ drivers/clk/berlin/berlin2-div.c                   | 324 +++++++++++++
+ drivers/clk/berlin/berlin2-div.h                   |  80 ++++
+ drivers/clk/berlin/berlin2-pll.c                   | 168 +++++++
+ drivers/clk/berlin/bg2.c                           | 502 +++++++++++++++++++++
+ drivers/clk/berlin/bg2q.c                          | 269 +++++++++++
+ include/dt-bindings/clock/berlin2.h                |  35 ++
+ include/dt-bindings/clock/berlin2q.h               |  28 ++
+ 14 files changed, 2385 insertions(+), 81 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/berlin2-clock.txt
+ create mode 100644 drivers/clk/berlin/Makefile
+ create mode 100644 drivers/clk/berlin/berlin2-avpll.c
+ create mode 100644 drivers/clk/berlin/berlin2-div.c
+ create mode 100644 drivers/clk/berlin/berlin2-div.h
+ create mode 100644 drivers/clk/berlin/berlin2-pll.c
+ create mode 100644 drivers/clk/berlin/bg2.c
+ create mode 100644 drivers/clk/berlin/bg2q.c
+ create mode 100644 include/dt-bindings/clock/berlin2.h
+ create mode 100644 include/dt-bindings/clock/berlin2q.h
+
+---
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Jisheng Zhang <jszhang@marvell.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+-- 
+1.9.1
 
