@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaENVSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:18:36 -0400
-Received: from mta-out1.inet.fi ([62.71.2.199]:41170 "EHLO kirsi1.inet.fi"
+	id S1753510AbaENVSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:18:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343AbaENVSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:18:30 -0400
-Date: Thu, 15 May 2014 00:17:48 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@kernel.org
-Subject: Re: [PATCH 2/2] mm: replace remap_file_pages() syscall with emulation
-Message-ID: <20140514211748.GA15970@node.dhcp.inet.fi>
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1399552888-11024-3-git-send-email-kirill.shutemov@linux.intel.com>
- <20140508145729.3d82d2c989cfc483c94eb324@linux-foundation.org>
- <5370E4B4.1060802@oracle.com>
- <20140512170514.GA28227@node.dhcp.inet.fi>
- <5373D781.7020109@oracle.com>
+	id S1753321AbaENVSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 17:18:32 -0400
+Message-ID: <5373DD6F.40506@redhat.com>
+Date: Wed, 14 May 2014 17:17:35 -0400
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5373D781.7020109@oracle.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
+References: <20140512190438.314125476@linutronix.de> <20140513035404.GA68181@dvhart-mac01.local> <537313FD.4000306@redhat.com> <20140514092203.GE30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140514092203.GE30445@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 04:52:17PM -0400, Sasha Levin wrote:
-> On 05/12/2014 01:05 PM, Kirill A. Shutemov wrote:
-> > Taking into account your employment, is it possible to check how the RDBMS
-> > (old but it still supported 32-bit versions) would react on -ENOSYS here?
+On 05/14/2014 05:22 AM, Peter Zijlstra wrote:
+>>> I believe the thinking goes that if we get to here, then the lock is in an
+>>> inconsistent state (between kernel and userspace). I don't have an answer for
+>>> why pausing forever would be preferable to returning an error however...
+>>
+>> What error would we return?
 > 
-> Alrighty, I got an answer:
+> EDEADLK is a valid user return for pthread_mutex_lock() as per:
 > 
-> 1. remap_file_pages() only works when the "VLM" feature of the db is enabled,
-> so those databases can work just fine without it, but be limited to 3-4GB of
-> memory. This is not needed at all on 64bit machines.
+>   http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_mutex_lock.html
 
-Okay. And it seems user need to enable it manually with option
-USE_INDIRECT_DATA_BUFFERS=TRUE.
-
-http://docs.oracle.com/cd/B28359_01/server.111/b32009/appi_vlm.htm
-
-> 2. As of OL7 (kernel 3.8), there will not be a 32bit kernel build. I'm still
-> waiting for an answer whether there will do a 32bit DB build for a 64bit kernel,
-> but that never happened before and seems unlikely.
+How is that correct? It isn't a deadlock we've detected but inconsistent
+state between glibc and the kernel. In this case glibc should assert.
+Delaying indefinitely with pause() never seems correct (despite that being
+what we do today).
+ 
+>> This particular case is a serious error for which we have no good error code
+>> to return to userspace. It's an implementation defect, a bug, we should probably
+>> assert instead of pausing.
 > 
-> 3. They're basically saying that by the time upstream releases a kernel without
-> remap_file_pages() no one will need it here.
+> No, its perfectly fine to have a lock sequence abort with -EDEADLK.
+> Userspace should release its locks and re-attempt.
+
+I agree. If I can prove that it's actually a deadlock, and
+that unlock/relock will work to fix it, then we can arrange for glibc
+to return EDEADLK.
+
+> You can implement usable locking schemes using this error, like
+> wound/wait locking.
+
+Agreed.
+
+>> We can't cancel the stuck thread because pthread_mutex_lock is not a cancellation
+>> point.
+>>
+>> In practice the rest of the application can make forward progress with a single
+>> thread stuck. You can attach the debugger and inspect state, so it's useful
+>> from that perspective.
 > 
-> To sum it up, they're fine with removing remap_file_pages().
+> That's just totally braindead. Return EDEADLK to userspace already, let
+> the user deal with it.
 
-Andrew, Linus, what will we do here: live with emulation or just kill the
-syscall? Or may be kill the syscall after few releases with emulation?
+Not all cases where EDEADLK returns is it such a case that the user
+can make forward progress, it might be a corrupt state, in which case
+if we detect the corrupt state I would assert. Otherwise, yes, we can
+return EDEADLK and let the user figure it out.
 
--- 
- Kirill A. Shutemov
+Does that make sense?
+
+Cheers,
+Carlos.
+
