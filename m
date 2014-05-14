@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224AbaENQwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:52:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33380 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276AbaENQwN (ORCPT
+	id S1756246AbaENQwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:52:21 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45369 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaENQwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:52:13 -0400
-Date: Wed, 14 May 2014 18:52:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>
-Subject: Re: perf: use after free in perf_remove_from_context
-Message-ID: <20140514165205.GU30445@twins.programming.kicks-ass.net>
-References: <5370EBE9.6@oracle.com>
- <20140514162943.GR30445@twins.programming.kicks-ass.net>
- <53739A9A.5010703@oracle.com>
- <20140514163535.GS30445@twins.programming.kicks-ass.net>
- <53739BF2.1030100@oracle.com>
+	Wed, 14 May 2014 12:52:18 -0400
+Message-ID: <53739F3B.4060608@linux.vnet.ibm.com>
+Date: Wed, 14 May 2014 12:52:11 -0400
+From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
+Reply-To: jjherne@linux.vnet.ibm.com
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="q3YFxXYBXviVjKLs"
-Content-Disposition: inline
-In-Reply-To: <53739BF2.1030100@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Sasha Levin <sasha.levin@oracle.com>, Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org> <53718119.1090000@cn.fujitsu.com> <537180B9.6080407@oracle.com>
+In-Reply-To: <537180B9.6080407@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051416-1344-0000-0000-0000018BBE63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/12/2014 10:17 PM, Sasha Levin wrote:
+> I don't have an easy way to reproduce it as I only saw the bug once, but
+> it happened when I started pressuring CPU hotplug paths by adding and removing
+> CPUs often. Maybe it has anything to do with that?
 
---q3YFxXYBXviVjKLs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+As per the original report 
+(http://article.gmane.org/gmane.linux.kernel/1643027)
+I am able to reproduce the problem.
 
-On Wed, May 14, 2014 at 12:38:10PM -0400, Sasha Levin wrote:
-> ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xcloc=
-k_nanosleep -xuselib -xumount -xmount -m --quiet --dangerous -C 400 -l off
->=20
-> Note that I run it as root in a disposable VM. Running that as root on yo=
-ur
-> machine will likely kill it.
+The workload is (on S390 architecture):
+2 processes onlining random cpus in a tight loop by using 'echo 1 >
+/sys/bus/cpu.../online'
+2 processes offlining random cpus in a tight loop by using 'echo 0 >
+/sys/bus/cpu.../online'
+Otherwise, fairly idle system. load average: 5.82, 6.27, 6.27
 
-Right, so i'll start with !root running. That said, I seem to get an
-endless stream of double free or corrupt msgs:
-
-trinity$ ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl=
- -xclock_nanosleep -xuselib -xumount -xmount -m --quiet  -C 400 -l off
-
-=2E..
-
-*** Error in `./trinity': double free or corruption (top): 0x000000000135af=
-60 ***
-[main] Random reseed: 3671679404
-[main] Random reseed: 67838733
-*** Error in `./trinity': double free or corruption (top): 0x000000000135ef=
-60 ***
-[main] Random reseed: 943044433
-*** Error in `./trinity': double free or corruption (top): 0x00000000012bb2=
-10 ***
-[main] Random reseed: 3627649145
-*** Error in `./trinity': double free or corruption (top): 0x000000000139db=
-e0 ***
-[main] Random reseed: 935036390
-[main] Random reseed: 3922349807
-[main] Random reseed: 835563887
-*** Error in `./trinity': double free or corruption (top): 0x00000000013238=
-90 ***
-[main] Random reseed: 974945617
-*** Error in `./trinity': double free or corruption (top): 0x00000000013081=
-90 ***
-[main] Random reseed: 2912296953
-[main] Random reseed: 681900861
+The machine has 10 processors.
+The warning message some times hits within a few minutes on starting the
+workload. Other times it takes several hours.
 
 
-Is this 'expected' behaviour?
+-- Jason J. Herne (jjherne@linux.vnet.ibm.com)
 
-trinity$ git describe
-1.1-1418-g8bf4840
-
-
---q3YFxXYBXviVjKLs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc581AAoJEHZH4aRLwOS6Oh0P/1YKKFVTLaJ2SBWJC8io8ZMR
-brhbkWz6hv4tfwFr74yp76iX7eOyV1BMpYpTn+1aiGJKDx2Q901bcH/c6BK6ujqj
-jmK/GdVH90zF1Ea1/kt4j017L+UUXRTU95O2utvNj6Cv+KkLTx+axvzY2mWqNZTi
-s8FgCV/Yt9siBPZ+1prnoTnkIiMbxQdhFwVp1aoQeQ9KUUBYV+wB99rBu5xwlmqe
-/Jlxt3a2SQ7RQilJBz2w7Se6LCrQO1m5t7zjsMZ7gmznyJhj855wMhwRf4wIUTYr
-9F+ow+aC+gCm7Qfbew20C3mOglckBZTN1pX3b4BW//gMKn44ZzcudI3ngGzVu/G/
-YLex6Z/IIeUz+x1l+O9yA/5+8hiwskRYAadSxgBjyfiVZMonTXWHDKSBDhjjxwfu
-kghbXuTKXpQ7r41m+i2xMouauvo73BmMYO6P0eqoFCbJyfaSO2zlWc/bFHb1hbqR
-wgF/sK1OQ0dYKN/W6Wuxnkiz2IOXkDO9fLTGeVDZFbcE43bxtGIIScs6vxsXsKur
-zIU5ZLOcL7+GKscmShJu8BEnV03SB/IGJ0KIueSw2YPkNehys28FfVE9ZzlwAoNb
-OLsgnsdzGwil9uTx3ItR2n+P3K2BwkJ4M1Cqlt1hBNGjCfl/5gLCe/LiGJf1u5rs
-moqvh/JXbyMPhj2MJdqZ
-=deD+
------END PGP SIGNATURE-----
-
---q3YFxXYBXviVjKLs--
