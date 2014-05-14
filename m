@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786AbaENO0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:26:53 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:54624 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaENO0w (ORCPT
+	id S1754964AbaENO1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:27:14 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:53353 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168AbaENO1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:26:52 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 0/6] DT early console initialization
-To: Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: benh@kernel.crashing.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh@kernel.org>
-In-Reply-To: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
-References: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
-Date: Wed, 14 May 2014 15:26:44 +0100
-Message-Id: <20140514142644.1C922C4153D@trevor.secretlab.ca>
+	Wed, 14 May 2014 10:27:12 -0400
+Message-ID: <1400077624.9356.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:locking/core] rwsem: Add comments to explain the meaning
+ of the rwsem's count field
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tim.c.chen@linux.intel.com, peter@hurleysoftware.com,
+        jason.low2@hp.com, riel@redhat.com, alex.shi@linaro.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, walken@google.com
+Cc: linux-tip-commits@vger.kernel.org
+Date: Wed, 14 May 2014 07:27:04 -0700
+In-Reply-To: <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
+References: <1399060437.2970.146.camel@schen9-DESK>
+	 <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 May 2014 17:23:37 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
+On Mon, 2014-05-05 at 01:46 -0700, tip-bot for Tim Chen wrote:
+> Commit-ID:  3cf2f34e1a3d4d5ff209d087925cf950e52f4805
+> Gitweb:     http://git.kernel.org/tip/3cf2f34e1a3d4d5ff209d087925cf950e52f4805
+> Author:     Tim Chen <tim.c.chen@linux.intel.com>
+> AuthorDate: Fri, 2 May 2014 12:53:57 -0700
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Sun, 4 May 2014 20:34:26 +0200
 > 
-> This series adds support for early serial console initialization using 
-> DT. This enables determining the serial port type and address using the 
-> FDT and allows enabling the console before platform specific 
-> initialization runs. I've tested this on arm64. ARM support is dependent 
-> on adding fixmap support.
+> rwsem: Add comments to explain the meaning of the rwsem's count field
 > 
-> Currently, the earlycon is only enabled if "earlycon" is present on the 
-> kernel command line. The FDT needs to have /chosen/stdout-path set to 
-> the path of the serial port.
+> It took me quite a while to understand how rwsem's count field
+> mainifested itself in different scenarios.
 > 
-> This series is dependent on generic earlycon[1], libfdt support[2], and 
-> vmlinux.lds.h clean-ups[3]. The first 2 are in linux-next already. A git 
-> branch is available here:
+> Add comments to provide a quick reference to the the rwsem's count
+> field for each scenario where readers and writers are contending
+> for the lock.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git earlycon-dt
+> Hopefully it will be useful for future maintenance of the code and
+> for people to get up to speed on how the logic in the code works.
 
-Nice. For the whole series:
-
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-I haven't tested it though.
-
-> 
-> Rob
-> 
-> [1] https://lkml.org/lkml/2014/4/18/573
-> [2] https://lkml.org/lkml/2014/4/22/1202
-> [3] https://lkml.org/lkml/2014/3/27/285
-> 
-> Rob Herring (6):
->   of: align RESERVEDMEM_OF_DECLARE function callbacks to other callbacks
->   of: consolidate linker section OF match table declarations
->   serial: earlycon: add DT support
->   of/fdt: add FDT address translation support
->   of/fdt: add FDT serial scanning for earlycon
->   tty/serial: pl011: add DT based earlycon support
-> 
->  drivers/clocksource/clksrc-of.c   |   2 +-
->  drivers/irqchip/irqchip.h         |   7 +-
->  drivers/of/Makefile               |   2 +
->  drivers/of/fdt.c                  |  56 +++++++++
->  drivers/of/fdt_address.c          | 241 ++++++++++++++++++++++++++++++++++++++
->  drivers/of/of_reserved_mem.c      |   2 +-
->  drivers/tty/serial/amba-pl011.c   |   1 +
->  drivers/tty/serial/earlycon.c     |  27 +++++
->  include/asm-generic/vmlinux.lds.h |   4 +-
->  include/linux/clk-provider.h      |   5 +-
->  include/linux/clocksource.h       |  16 +--
->  include/linux/of.h                |  22 ++++
->  include/linux/of_fdt.h            |   1 +
->  include/linux/of_reserved_mem.h   |  22 +---
->  include/linux/serial_core.h       |   6 +
->  15 files changed, 372 insertions(+), 42 deletions(-)
->  create mode 100644 drivers/of/fdt_address.c
-> 
-> -- 
-> 1.9.1
-> 
+sigh, after this commit, the opt spin patch no longer applies, I'm
+rebasing and send out v5.
 
