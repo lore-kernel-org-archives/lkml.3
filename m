@@ -1,180 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaENH4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:56:23 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:40691 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaENH4U (ORCPT
+	id S1752481AbaENIAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:00:51 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:41817 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaENIAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:56:20 -0400
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: "sdu.liu@huawei.com" <sdu.liu@huawei.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "will.deacon@arm.com" <will.deacon@arm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        "liusdu@126.com" <liusdu@126.com>
-Subject: RE: [RFC PATCH 2/2] makedumpfile: get additional information from
- vmcore
-Thread-Topic: [RFC PATCH 2/2] makedumpfile: get additional information from
- vmcore
-Thread-Index: AQHPafj9zWy25+zH3Ei/KNRE53umlZs+B23w//+GxgCAAi0E8A==
-Date: Wed, 14 May 2014 07:53:38 +0000
-Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE97210997@BPXM01GP.gisp.nec.co.jp>
-References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
- <1399469234-54925-3-git-send-email-sdu.liu@huawei.com>
- <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
- <5371C8E6.6080700@huawei.com>
-In-Reply-To: <5371C8E6.6080700@huawei.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.40.240]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 14 May 2014 04:00:47 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: jan.kiszka@siemens.com, kvm@vger.kernel.org, gleb@kernel.org,
+        avi.kivity@gmail.com
+Subject: [PATCH] KVM: x86: get CPL from SS.DPL
+Date: Wed, 14 May 2014 10:00:40 +0200
+Message-Id: <1400054440-18661-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4E7uX5T003001
 
->On 2014/5/13 14:21, Atsushi Kumagai wrote:
->> Hello Liu,
->>
->>> Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
->>> macros. So if we deal with vmcores with different values
->>> of these two macros. We have to recompile makedumpfile.
->>
->> There are other macros which have architecture-specific values
->> (e.g. __PAGE_OFFSET), and some functions are specific to each
->> architecture (e.g. vaddr_to_paddr()), so we need recompilation
->> eventually.
->>
->> OTOH, we already don't need recompilation for the same architecture
->> since the values of such macros are defined for each kernel version
->> like below:
->>
->> #ifdef __x86_64__
->> ...
->> #define _MAX_PHYSMEM_BITS_ORIG          (40)
->> #define _MAX_PHYSMEM_BITS_2_6_26        (44)
->> #define _MAX_PHYSMEM_BITS_2_6_31        (46)
->>
->> So I don't think this patch is valuable.
->
->Hi Atsushi,
->
->For x86, it is not necessory. But for arm, different venders
->may define different SECTION_SIZE_BITS. for example:
->
->   1 arch/arm/mach-clps711x/include/mach/memory.h
->     #define SECTION_SIZE_BITS 24
->   2 arch/arm/mach-exynos/include/mach/memory.h
->     #define SECTION_SIZE_BITS 28
->   4 arch/arm/mach-hisi/include/mach/memory.h
->     #define SECTION_SIZE_BITS 26
->   8 arch/arm/mach-sa1100/include/mach/memory.h
->     #define SECTION_SIZE_BITS 27
->
->Perhaps we should find another way to let the userspace tools
->to get the architecture-specific values.
+CS.RPL is not equal to the CPL in the few instructions between
+setting CR0.PE and reloading CS.  And CS.DPL is also not equal
+to the CPL for conforming code segments.
 
-I see, I think this description is better than the first one.
+However, SS.DPL *is* always equal to the CPL except for the weird
+case of SYSRET on AMD processors, which sets SS.DPL=SS.RPL from the
+value in the STAR MSR, but force CPL=3 (Intel instead forces
+SS.DPL=SS.RPL=CPL=3).
 
-Now, makedumpfile can't get an appropriate values of the two macros since the
-values are variable even if the architecture and the kernel version are fixed
-(at least for arm), and we can't solve this without *manual code fixing*, right?
+So this patch:
 
-In practice, the current code expects that all arm machines adopt Exynos
-processors, this is an problem definitely.
+- modifies SVM to update the CPL from SS.DPL rather than CS.RPL;
+the above case with SYSRET is not broken further, and the way
+to fix it would be to pass the CPL to userspace and back
 
-  #ifdef __arm__
-  #define KVBASE_MASK             (0xffff)
-  #define KVBASE                  (SYMBOL(_stext) & ~KVBASE_MASK)
-  #define _SECTION_SIZE_BITS      (28)
-  #define _MAX_PHYSMEM_BITS       (32)
+- modifies VMX to always return the CPL from SS.DPL (except
+forcing it to 0 if we are emulating real mode via vm86 mode;
+in vm86 mode all DPLs have to be 3, but real mode does allow
+privileged instructions).  It also removes the CPL cache,
+which becomes a duplicate of the SS access rights cache.
 
-I think it's better to fix the descriptions to get acceptability,
-but this patch is necessary from the view point of makedumpfile.
-So I recommend you to repost this patch set, then I'll accept it.
+This fixes doing KVM_IOCTL_SET_SREGS exactly after setting
+CR0.PE=1 but before CS has been reloaded.
 
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/include/asm/kvm_host.h |  1 -
+ arch/x86/kvm/svm.c              | 35 ++++++++++++++---------------------
+ arch/x86/kvm/vmx.c              | 24 ++++--------------------
+ 3 files changed, 18 insertions(+), 42 deletions(-)
 
-Thanks
-Atsushi Kumagai
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index e21aee98a5c2..49314155b66c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -130,7 +130,6 @@ enum kvm_reg_ex {
+ 	VCPU_EXREG_PDPTR = NR_VCPU_REGS,
+ 	VCPU_EXREG_CR3,
+ 	VCPU_EXREG_RFLAGS,
+-	VCPU_EXREG_CPL,
+ 	VCPU_EXREG_SEGMENTS,
+ };
+ 
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 0b7d58d0c5fb..ec8366c5cfea 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1338,21 +1338,6 @@ static void svm_vcpu_put(struct kvm_vcpu *vcpu)
+ 		wrmsrl(host_save_user_msrs[i], svm->host_user_msrs[i]);
+ }
+ 
+-static void svm_update_cpl(struct kvm_vcpu *vcpu)
+-{
+-	struct vcpu_svm *svm = to_svm(vcpu);
+-	int cpl;
+-
+-	if (!is_protmode(vcpu))
+-		cpl = 0;
+-	else if (svm->vmcb->save.rflags & X86_EFLAGS_VM)
+-		cpl = 3;
+-	else
+-		cpl = svm->vmcb->save.cs.selector & 0x3;
+-
+-	svm->vmcb->save.cpl = cpl;
+-}
+-
+ static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
+ {
+ 	return to_svm(vcpu)->vmcb->save.rflags;
+@@ -1360,11 +1345,12 @@ static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
+ 
+ static void svm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
+ {
+-	unsigned long old_rflags = to_svm(vcpu)->vmcb->save.rflags;
+-
++       /*
++        * Any change of EFLAGS.VM is accompained by a reload of SS
++        * (caused by either a task switch or an inter-privilege IRET),
++        * so we do not need to update the CPL here.
++        */
+ 	to_svm(vcpu)->vmcb->save.rflags = rflags;
+-	if ((old_rflags ^ rflags) & X86_EFLAGS_VM)
+-		svm_update_cpl(vcpu);
+ }
+ 
+ static void svm_cache_reg(struct kvm_vcpu *vcpu, enum kvm_reg reg)
+@@ -1631,8 +1617,15 @@ static void svm_set_segment(struct kvm_vcpu *vcpu,
+ 		s->attrib |= (var->db & 1) << SVM_SELECTOR_DB_SHIFT;
+ 		s->attrib |= (var->g & 1) << SVM_SELECTOR_G_SHIFT;
+ 	}
+-	if (seg == VCPU_SREG_CS)
+-		svm_update_cpl(vcpu);
++
++	/*
++	 * This is always accurate, except if SYSRET returned to a segment
++	 * with SS.DPL != 3.  Intel does not have this quirk, and always
++	 * forces SS.DPL to 3 on sysret, so we ignore that case; fixing it
++	 * would entail passing the CPL to userspace and back.
++	 */
++	if (seg == VCPU_SREG_SS)
++		svm->vmcb->save.cpl = (s->attrib >> SVM_SELECTOR_DPL_SHIFT) & 3;
+ 
+ 	mark_dirty(svm->vmcb, VMCB_SEG);
+ }
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6f7463f53ed9..a267108403f5 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -414,7 +414,6 @@ struct vcpu_vmx {
+ 	struct kvm_vcpu       vcpu;
+ 	unsigned long         host_rsp;
+ 	u8                    fail;
+-	u8                    cpl;
+ 	bool                  nmi_known_unmasked;
+ 	u32                   exit_intr_info;
+ 	u32                   idt_vectoring_info;
+@@ -3150,10 +3149,6 @@ static void enter_pmode(struct kvm_vcpu *vcpu)
+ 	fix_pmode_seg(vcpu, VCPU_SREG_DS, &vmx->rmode.segs[VCPU_SREG_DS]);
+ 	fix_pmode_seg(vcpu, VCPU_SREG_FS, &vmx->rmode.segs[VCPU_SREG_FS]);
+ 	fix_pmode_seg(vcpu, VCPU_SREG_GS, &vmx->rmode.segs[VCPU_SREG_GS]);
+-
+-	/* CPL is always 0 when CPU enters protected mode */
+-	__set_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
+-	vmx->cpl = 0;
+ }
+ 
+ static void fix_rmode_seg(int seg, struct kvm_segment *save)
+@@ -3555,22 +3550,14 @@ static int vmx_get_cpl(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 
+-	if (!is_protmode(vcpu))
++	if (unlikely(vmx->rmode.vm86_active))
+ 		return 0;
+-
+-	if (!is_long_mode(vcpu)
+-	    && (kvm_get_rflags(vcpu) & X86_EFLAGS_VM)) /* if virtual 8086 */
+-		return 3;
+-
+-	if (!test_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail)) {
+-		__set_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
+-		vmx->cpl = vmx_read_guest_seg_selector(vmx, VCPU_SREG_CS) & 3;
++	else {
++		int ar = vmx_read_guest_seg_ar(vmx, VCPU_SREG_SS);
++		return AR_DPL(ar);
+ 	}
+-
+-	return vmx->cpl;
+ }
+ 
+-
+ static u32 vmx_segment_access_rights(struct kvm_segment *var)
+ {
+ 	u32 ar;
+@@ -3598,8 +3585,6 @@ static void vmx_set_segment(struct kvm_vcpu *vcpu,
+ 	const struct kvm_vmx_segment_field *sf = &kvm_vmx_segment_fields[seg];
+ 
+ 	vmx_segment_cache_clear(vmx);
+-	if (seg == VCPU_SREG_CS)
+-		__clear_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
+ 
+ 	if (vmx->rmode.vm86_active && seg != VCPU_SREG_LDTR) {
+ 		vmx->rmode.segs[seg] = *var;
+@@ -7471,7 +7456,6 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->arch.regs_avail = ~((1 << VCPU_REGS_RIP) | (1 << VCPU_REGS_RSP)
+ 				  | (1 << VCPU_EXREG_RFLAGS)
+-				  | (1 << VCPU_EXREG_CPL)
+ 				  | (1 << VCPU_EXREG_PDPTR)
+ 				  | (1 << VCPU_EXREG_SEGMENTS)
+ 				  | (1 << VCPU_EXREG_CR3));
+-- 
+1.8.3.1
 
->>
->>> This patch makes makedumpfile get these two values from
->>> vmcore info, if existing. It makes the makedumpfile more
->>> compatible to vmcores with different section size.
->>>
->>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->>> ---
->>> makedumpfile.c | 17 +++++++++++++++++
->>> makedumpfile.h |  2 ++
->>> 2 files changed, 19 insertions(+)
->>>
->>> diff --git a/makedumpfile.c b/makedumpfile.c
->>> index 6cf6e24..3cdf323 100644
->>> --- a/makedumpfile.c
->>> +++ b/makedumpfile.c
->>> @@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
->>> 	READ_NUMBER("PG_slab", PG_slab);
->>> 	READ_NUMBER("PG_buddy", PG_buddy);
->>> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
->>> +	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
->>> +	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
->>>
->>> 	READ_SRCFILE("pud_t", pud_t);
->>>
->>> @@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
->>> }
->>>
->>> int
->>> +calibrate_machdep_info(void)
->>> +{
->>> +	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
->>> +		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
->>> +
->>> +	if (NUMBER(SECTION_SIZE_BITS) > 0)
->>> +		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
->>> +
->>> +	return TRUE;
->>> +}
->>> +
->>> +int
->>> initial(void)
->>> {
->>> 	off_t offset;
->>> @@ -3214,6 +3228,9 @@ out:
->>> 	if (debug_info && !get_machdep_info())
->>> 		return FALSE;
->>>
->>> +	if (debug_info && !calibrate_machdep_info())
->>> +		return FALSE;
->>> +
->>> 	if (is_xen_memory() && !get_dom0_mapnr())
->>> 		return FALSE;
->>>
->>> diff --git a/makedumpfile.h b/makedumpfile.h
->>> index eb03688..7acb23a 100644
->>> --- a/makedumpfile.h
->>> +++ b/makedumpfile.h
->>> @@ -1434,6 +1434,8 @@ struct number_table {
->>> 	long    PG_hwpoison;
->>>
->>> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
->>> +	long	SECTION_SIZE_BITS;
->>> +	long	MAX_PHYSMEM_BITS;
->>> };
->>>
->>> struct srcfile_table {
->>> --
->>> 1.9.0
->>
->> .
->>
->
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
