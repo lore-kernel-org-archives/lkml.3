@@ -1,51 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbaENHpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:45:03 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:39610 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaENHpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:45:00 -0400
-Date: Wed, 14 May 2014 09:44:57 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 04/25] avr32: Add 32 bit time_t and clock_t
-Message-ID: <20140514074456.GB17409@samfundet.no>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
- <1399971769-4116-1-git-send-email-lftan@altera.com>
- <20140513201944.GA14023@samfundet.no>
- <CAFiDJ5_5ret2H-OynLMhBStzyDDBLpF6Tsy4bbEUX+mKu2V4uA@mail.gmail.com>
+	id S1752652AbaENHr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:47:59 -0400
+Received: from ozlabs.org ([103.22.144.67]:37389 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253AbaENHr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 03:47:57 -0400
+Date: Wed, 14 May 2014 17:47:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140514174749.1ec4d37f@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFiDJ5_5ret2H-OynLMhBStzyDDBLpF6Tsy4bbEUX+mKu2V4uA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Kq._m=Eyug.o66EvUr4vXOx"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Wed 14 May 2014 09:54:25 +0800 or thereabout, Ley Foon Tan wrote:
-> On Wed, May 14, 2014 at 4:19 AM, Hans-Christian Egtvedt <egtvedt@samfundet.no> wrote:
->> Around Tue 13 May 2014 17:02:49 +0800 or thereabout, Ley Foon Tan wrote:
->>> Override time_t and clock_t in include/uapi/asm-generic.
->>>
->>> Signed-off-by: Ley Foon Tan <lftan@altera.com>
->>
->> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
->>
->> Quickly looked over some of the other patches in the series, and they all
->> seem to add the same. Could this be generic, with the possibility for arch to
->> override?
-> In this patchset, the generic one will be 64 bit (long long). So, the
-> existing 32 bit users need to override this.
+--Sig_/Kq._m=Eyug.o66EvUr4vXOx
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Would it be wrong to use the architecture defined size, or does some 32-bit
-architectures use 64-bit time types?
+Hi Andrew,
 
--- 
-Hans-Christian Egtvedt
+After merging the akpm-current tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+mm/memcontrol.c: In function 'mem_cgroup_write':
+mm/memcontrol.c:5088:45: error: 'buffer' undeclared (first use in this func=
+tion)
+   ret =3D res_counter_memparse_write_strategy(buffer, &val);
+                                             ^
+mm/memcontrol.c: At top level:
+/scratch/sfr/next/mm/memcontrol.c:6029:3: error: unknown field 'write_strin=
+g' specified in initializer
+   .write_string =3D mem_cgroup_write,
+   ^
+
+Caused by commit a4bf584ed8c2 ("memcg: allow setting low_limit")
+interacting with commit 451af504df0c ("cgroup: replace
+cftype->write_string() with cftype->write()") from the cgroup tree.
+(I love API changes and unnecessary variable renaming :-()
+
+I applied the following merge fix patch and can carry it as necessary:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 14 May 2014 17:42:00 +1000
+Subject: [PATCH] memcg: update for change from write_string() to write()
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ mm/memcontrol.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 493175e616e3..98e38b50cc82 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5085,7 +5085,7 @@ static ssize_t mem_cgroup_write(struct kernfs_open_fi=
+le *of,
+ 			ret =3D -EINVAL;
+ 			break;
+ 		}
+-		ret =3D res_counter_memparse_write_strategy(buffer, &val);
++		ret =3D res_counter_memparse_write_strategy(buf, &val);
+ 		if (ret)
+ 			break;
+ 		if (type =3D=3D _MEM) {
+@@ -6026,7 +6026,7 @@ static struct cftype mem_cgroup_files[] =3D {
+ 	{
+ 		.name =3D "low_limit_in_bytes",
+ 		.private =3D MEMFILE_PRIVATE(_MEM, RES_LOW_LIMIT),
+-		.write_string =3D mem_cgroup_write,
++		.write =3D mem_cgroup_write,
+ 		.read_u64 =3D mem_cgroup_read_u64,
+ 	},
+ 	{
+--=20
+2.0.0.rc2
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Kq._m=Eyug.o66EvUr4vXOx
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTcx+qAAoJEMDTa8Ir7ZwVa/IP/07w47tDfmobz+LvBHefnRVu
+TlMbUPc+G76iSupuIkwMwqrZSQ7L6WkbX1/iXDl6VJC/58bOZIMTKIptgDuvbuKP
+ND0FKKseEXLWgvAUwiKZJeIHLW6yPasgq9t5C0z9AqYH4B3NHbp0ZP/7632Xtq1t
+tMugasjTmE93N5d7jkUj0pZ6b9BqM/RO3LRCGotdROjhiNwx4z1vtNXDr7e0xfe9
+MOjyLmbPgwrb0w36Q1dq+4es2YE2WVUA9nK9hcgx7YF7duyEhBHLv5W47BIBXb6v
+fr34IEiBNMGWhwdtPFAK8OfzSVVhNNTuHokajQTb0zp4hjJXrQF1M7bLXZ/Ri6jX
+PO8dNdosbzjyjVmwzIPvw5DTKSELsXgtoyEaBML6WCLY2YmRTnJmY3vcN/hxw6A5
+byRpGxdzGyCIlOm4aR9KC/fPFiNL9fKkydqCvnm1hmv5WNvut9rlOZ7N/T931MRF
+SSWMxLTIKpW9nNYbLzxTT1GhGZkOFSqF8bsSQbkXmKNRFw3iR6XHsZs6CGvtwRcE
+carNi+jtHNX9TZTrMZRr1ndgcOawfvsG3fnhsVpbzsn4KMq3kWsRkBV9NrLolBep
+m9HJIaqhIL9ZWLWuQWnPYvivXgpPwlwivjV+debgg5Mq0ZnI06f+mIXf7AWUHCCs
+wBJltZtq3tSinL4o6k8b
+=7YfV
+-----END PGP SIGNATURE-----
+
+--Sig_/Kq._m=Eyug.o66EvUr4vXOx--
