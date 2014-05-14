@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400AbaENMfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:35:31 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:49391 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351AbaENMf3 (ORCPT
+	id S1755447AbaENMfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:35:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46518 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751697AbaENMfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:35:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <4645786.pJABUgPlCA@wuerfel>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
-	<20140509220915.GA391@arch.cereza>
-	<20140513205548.GC22907@obsidianresearch.com>
-	<4645786.pJABUgPlCA@wuerfel>
-Date: Wed, 14 May 2014 14:35:28 +0200
-X-Google-Sender-Auth: FOiGY38_q4wEIA-JV-xNfAzFqZw
-Message-ID: <CAMuHMdXD7HhG_jGJdz8hCR847tKcRC-tQnHp=xtTDYVKBc6yQQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mtd: orion-nand: fix build error with ARMv4
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>,
+	Wed, 14 May 2014 08:35:42 -0400
+Date: Wed, 14 May 2014 13:35:42 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>, "bp@suse.de" <bp@suse.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        MTD Maling List <linux-mtd@lists.infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH 6/7] acpi, apei, ghes: Make unmapping functionality
+ independent from architecture.
+Message-ID: <20140514123542.GG10145@arm.com>
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1397056476-9183-7-git-send-email-tomasz.nowicki@linaro.org>
+ <20140513201118.GF8760@pd.tnic>
+ <5373625B.4050401@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5373625B.4050401@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 1:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> Sure, but did anyone (Arnd?) have thoughts on a better way to do this:
->>
->> +#ifdef CONFIG_64BIT
->> +               buf64[i++] = readq_relaxed(io_base);
->> +#else
->> +               buf64[i++] = *(const volatile u64 __force *)io_base;
->> +#endif
->>
->> IMHO, readq should exist on any platform that can issue a 64 bit bus
->> transaction, and I expect many ARM's qualify.
->
-> Well, the original problem happened specifically for the case that doesn't
-> have a 64-bit bus transaction (building for ARMv4). If we define
-> readq_relaxed, it has to be an inline assembly, in order to work for
-> drivers that require an atomic transaction, so that would have the
-> same problem. We are a bit inconsistent here though: most 32-bit
-> architectures have no readq, parisc has one that does two 32-bit accesses,
-> sh relies on the compiler, and tile apparently has a native instruction.
->
-> It seems reasonable to replace the inline assembly in this driver with
-> a new function as a cleanup, but then how do you want to solve the case
-> of building a combined armv4/v5 kernel?
+On Wed, May 14, 2014 at 01:32:27PM +0100, Tomasz Nowicki wrote:
+> On 13.05.2014 22:11, Borislav Petkov wrote:
+> > On Wed, Apr 09, 2014 at 05:14:34PM +0200, Tomasz Nowicki wrote:
+> >> Till now __flush_tlb_one was used for unmapping virtual memory which
+> >> is x86 specific function. Replace it with more generic
+> >> flush_tlb_kernel_range.
+> >>
+> >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> >> ---
+> >>   drivers/acpi/apei/ghes.c |    4 ++--
+> >>   1 file changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> >> index aaf8db3..624878b 100644
+> >> --- a/drivers/acpi/apei/ghes.c
+> >> +++ b/drivers/acpi/apei/ghes.c
+> >> @@ -185,7 +185,7 @@ static void ghes_iounmap_nmi(void __iomem *vaddr_ptr)
+> >>
+> >>   	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_NMI_PAGE(base));
+> >>   	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
+> >> -	__flush_tlb_one(vaddr);
+> >> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
+> >>   }
+> >>
+> >>   static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
+> >> @@ -195,7 +195,7 @@ static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
+> >>
+> >>   	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_IRQ_PAGE(base));
+> >>   	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
+> >> -	__flush_tlb_one(vaddr);
+> >> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
+> >
+> > flush_tlb_kernel_range() does send an IPI to every core on x86 which is
+> > much more expensive than what __flush_tlb_one does.
+> >
+> > Fairer it would be if you added a __flush_tlb_one() version for arm
+> > which does flush_tlb_kernel_range for you.
+> >
+> 
+> Thanks for comment. I am not sure if maintainers will allow me to add 
+> sth like __flush_tlb_one() for arm/arm64. Let me ask them directly. 
+> Catalin, Russell what do you think?
 
-Provide two helper functions, one for v4, one for v5, and call
-them through a function pointer that's set up during driver probe?
+I don't have the background for this, but if you don't need broadcasting
+(if this avoids IPIs on x86, I guess you don't) then why not use
+local_flush_tlb_kernel_range instead?
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Will
