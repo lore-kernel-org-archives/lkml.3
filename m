@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaENCP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 22:15:59 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46069 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbaENCP5 (ORCPT
+	id S1752866AbaENC2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 22:28:42 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:35880 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752024AbaENC2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 22:15:57 -0400
-Message-ID: <5372D1D9.4070503@gmail.com>
-Date: Tue, 13 May 2014 20:15:53 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 13 May 2014 22:28:39 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: Sudeep Holla <Sudeep.Holla@arm.com>,
+        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>
+Date: Tue, 13 May 2014 19:28:02 -0700
+Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Index: Ac9u24W9Lw/UazH9SOGhSwVZQJSzigAP/JXQ
+Message-ID: <9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
+References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
+ <20140422103642.GF7484@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
+ <20140423170821.GJ5649@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
+ <5360FB07.5030407@arm.com>
+ <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
+ <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
+ <20140513184503.GF16388@arm.com>
+In-Reply-To: <20140513184503.GF16388@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Alexis Berlemont <alexis.berlemont@gmail.com>,
-        linux-kernel@vger.kernel.org
-CC: jolsa@redhat.com, acme@ghostprotocols.net, mingo@kernel.org
-Subject: Re: [PATCH 00/34] perf and kconfig / kbuild
-References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
-In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-13_07:2014-05-13,2014-05-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405140032
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4E2Sogi001578
 
-On 5/13/14, 4:02 PM, Alexis Berlemont wrote:
-> Hello,
->
-> A few months ago, I tried to make a proposal to introduce Kconfig in
-> perf's generation procedure.
-> (cf. https://lkml.org/lkml/2013/12/20/511)
->
-> I started from David Ahern's work; I was not aware that Jiri Olsa
-> pushed further the idea and proposed an alternative which integrated
-> kbuild too.
->
-> So, here is another proposal based on Jiri Olsa work (from April 2013).
-> * Most of the NO_* and HAVE_* makefile variables were removed on
->    behalf of Kconfig's ones (CONFIG_*); perf source code was modified
->    accordingly;
-> * These changes make the glue files tools/perf/config/Makefile.fix-* useless
-> * The build test cases now relies on generated configuration files (in
->    tools/perf/tests/configs);
->
+> -----Original Message-----
+> From: Will Deacon [mailto:will.deacon@arm.com]
+> Sent: 2014Äê5ÔÂ14ÈÕ 2:45
+> To: Neil Zhang
+> Cc: Sudeep Holla; 'linux@arm.linux.org.uk';
+> 'linux-arm-kernel@lists.infradead.org'; 'linux-kernel@vger.kernel.org';
+> 'devicetree@vger.kernel.org'
+> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+> 
+> On Mon, May 12, 2014 at 11:22:09AM +0100, Neil Zhang wrote:
+> > > > The device tree bindings for power domains is under discussion [1]
+> > >
+> > > Thanks for the information.
+> > > But it currently for device only, core related stuff are not supported.
+> > > And is it really good to register power provider for core and let
+> > > vfp / pmu etc to get it?
+> > >
+> >
+> > What's your suggestion about it?
+> > Is it OK that I add it under the PMU node?
+> 
+> I don't really mind. I just want to avoid re-inventing the wheel in a
+> PMU-specific way and having to maintain that code forever because it ended
+> up in our DT description.
+> 
+> Will
 
-Thanks for picking this up. I skimmed through all of the patches and 
-conceptually looks good. I doubt I will have time for a detailed review 
-any time soon.
+I will prepare another patch to add DT description under PMU since there is 
+no generic power domain support for pm notifier if no other concerns.
+We can change the manner if there is generic power domain support for pm notifier later.
+Thanks.
 
-Looks like they apply to Linus' top of tree but with a few errors -- see 
-below. You should always run checkpatch.pl before sending out:
-
-Applying: kbuild: Introduce KBUILD_AUTOCONF variable for auto.conf include
-Applying: kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable for conf tool
-Applying: perf tools: Kbuild builtin source related fixies
-Applying: perf tools: Kbuild source related fixies
-Applying: perf tools: Add kbuild support into Makefile.kbuild
-Applying: perf kbuild: fix recursive invocation of config/features-checks
-Applying: perf kbuild: store in config-detected missing variables 
-(libdir, ...)
-Applying: perf kbuild: remove useless #ifdef directives
-Applying: perf kbuild: fix a link issue if BUILTIN_TRACE is disabled
-Applying: perf kbuild: add missing files and missing flags in Kbuild files
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:30: trailing 
-whitespace.
-CFLAGS_Context.o += -Wno-redundant-decls -Wno-strict-prototypes
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:137: trailing 
-whitespace.
-CFLAGS_trace-event-perl.o   += -Wno-redundant-decls -Wno-strict-prototypes
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:138: trailing 
-whitespace.
-CFLAGS_trace-event-perl.o   += -Wno-unused-parameter -Wno-shadow -Wno-undef
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:143: trailing 
-whitespace.
-CFLAGS_trace-event-python.o += -Wno-redundant-decls -Wno-strict-prototypes
-warning: 4 lines applied after fixing whitespace errors.
-Applying: perf kbuild: update kbuild files according to last changes
-Applying: perf kbuild: remove legacy slang-related build variables
-Applying: perf kbuild: remove legacy libaudit-related build variables
-Applying: perf kbuild: remove legacy libgtk2-related build variables
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:204: trailing 
-whitespace.
-#else
-warning: 1 line applied after fixing whitespace errors.
-Applying: perf kbuild: remove legacy libperl-related build variables
-Applying: perf kbuild: remove legacy timerfd-related build variable
-Applying: perf kbuild: remove legacy demangle-related build variables
-Applying: perf kbuild: remove legacy on_exit-related build variable
-Applying: perf kbuild: remove legacy backtrace-related build variable
-Applying: perf kbuild: remove legacy numa-related build variable
-Applying: perf kbuild: remove legacy bionic-related build variable
-Applying: perf kbuild: remove legacy libelf-related build variables (1st 
-part)
-Applying: perf kbuild: remove legacy libelf-related build variables (2nd 
-part)
-Applying: perf kbuild: remove legacy libdwarf-related build variables
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:342: trailing 
-whitespace.
-       endif # CONFIG_LIBDWARF_UNWIND
-warning: 1 line applied after fixing whitespace errors.
-Applying: perf kbuild: remove legacy libunwind-related build variables
-Applying: perf kbuild: remove legacy libpython-related build variable
-Applying: perf kbuild: add generated Kconfig build-test cases
-Applying: perf kbuild: fix installation of traceevent plugins
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:74: trailing 
-whitespace.
-make_pure           :=
-warning: 1 line applied after fixing whitespace errors.
-Applying: perf kbuild: fix tarpkg target in tests/make
-Applying: perf kbuild: update Kbuild files with new and removed sources
-Applying: perf kbuild: update build test configurations
-/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:773: trailing 
-whitespace.
-
-warning: 1 line applied after fixing whitespace errors.
-Applying: perf kbuild: relocate the configs generating script
-Applying: perf kbuild: minor changes
-Applying: perf kbuild: remove Makefile.perf
-
-David
-
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
