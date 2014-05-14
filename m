@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaENNFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:05:23 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:50834 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaENNFV (ORCPT
+	id S1755536AbaENNH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:07:28 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:64368 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317AbaENNHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:05:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Chander Kashyap <k.chander@samsung.com>, lorenzo.pieralisi@arm.com,
-        daniel.lezcano@linaro.org, rjw@rjwysocki.net, kgene.kim@samsung.com
-Subject: Re: [PATCH v5 4/6] driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
-Date: Wed, 14 May 2014 15:04:51 +0200
-Message-ID: <5587958.90ud9NuKXm@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400054637-21505-5-git-send-email-chander.kashyap@linaro.org>
-References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com> <1400054637-21505-1-git-send-email-chander.kashyap@linaro.org> <1400054637-21505-5-git-send-email-chander.kashyap@linaro.org>
+	Wed, 14 May 2014 09:07:25 -0400
+Date: Wed, 14 May 2014 09:07:22 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
+ directly
+Message-ID: <20140514130722.GE28815@htj.dyndns.org>
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+ <5372EF45.8060701@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:A3pOebyP09lrIKf0mjWFiEzcQOfe9egVOuBT6lTWLY7
- IhGz/w42pcW2oAqHaG5DATtLIQ1mN9UN86lcicrAD8Tmd55zLE
- mmYiAssNbSTtqAXaG9oTKgPmBkRdG7O8ocYsi/sYAY4lDlIpEr
- /yJbKjnxLKcqXn2otjRReki6dzOWiLn3WZy+UEK0aFZ/dzaoLb
- BkhSFQIPRmcPJ9mkJH1DdcNxxYXYfNFpUS+vv8rELQ9PDPWbfQ
- CTGurBqagaMDUlF3lCNrJpHGeRARU+hLxNx+10LWborLaQNT/R
- VAAeFTpAn2clqX1YWIk4rLn+CP0mno8edFEPycn5Xxp0wzfl7M
- jLLmzHK5RPJsu1Kj19z4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5372EF45.8060701@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 13:33:55 Chander Kashyap wrote:
+Hello, Li.
+
+On Wed, May 14, 2014 at 12:21:25PM +0800, Li Zefan wrote:
+> > There are now use cases where controllers need to iterate through
+> > csses regardless of their online state as long as they have positive
 > 
-> diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-> index 4cd02bd..344d79fa 100644
-> --- a/drivers/cpuidle/cpuidle-big_little.c
-> +++ b/drivers/cpuidle/cpuidle-big_little.c
-> @@ -165,6 +165,7 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
->  
->  static const struct of_device_id compatible_machine_match[] = {
->         { .compatible = "arm,vexpress,v2p-ca15_a7" },
-> +       { .compatible = "samsung,exynos5420" },
->         {},
->  };
+> What use cases are we talking about here?
 
-Does the cpuidle-big_little driver actually care about the platform?
-If not, it would be good to add a generic string here as well, for
-future platforms to match.
+memcg wants to be able to iterate all csses whose refcnts haven't
+reached zero yet so that it can treat offline csses the same way as
+online ones in terms of memory reclaim.  They don't contain new tasks
+so new charges won't be created but offlining won't try to transfer
+all charges to the parent but just leave the offline child attached
+until all charges are eventually reclaimed from the pressure from the
+parent.
 
-It still makes sense to list both the generic string and the platform
-specific one though, in case we have to work around subtle differences.
+I'm not too familiar with the details but this makes sense in generic
+sense too.  Offline marks an object starting its draining phase and
+release marks the actual destruction point.  For controllers with
+persistent states like memcg, it's a lot more natural to deal offlined
+csses as "active but draining following the usual hierarchical
+operation" rather than trying to explicitly update the states from
+offline to move them to the parent especially as the effort there
+essentially is a waste as most of those moved charges aren't gonna be
+used in the parent and will be released eventually.
 
-	Arnd
+Guaranteeing iteration of offline but not-released csses allow
+controllers to treat the draining stage between offline and release
+more or less identically to online state which in turn can make
+->css_offline() significantly simpler and lighter.
+
+Thanks.
+
+-- 
+tejun
