@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179AbaENO6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:58:55 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42729 "EHLO
+	id S1756203AbaENO7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:59:01 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42741 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932275AbaENO6x (ORCPT
+	with ESMTP id S1756185AbaENO67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:58:53 -0400
-Subject: [RFC PATCH v1 15/16] drm/vmwgfx: use rcu in
- vmw_user_dmabuf_synccpu_grab
+	Wed, 14 May 2014 10:58:59 -0400
+Subject: [RFC PATCH v1 16/16] drm/ttm: use rcu in core ttm
 To: airlied@linux.ie
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org
-Date: Wed, 14 May 2014 16:58:50 +0200
-Message-ID: <20140514145850.21163.43443.stgit@patser>
+Date: Wed, 14 May 2014 16:58:56 +0200
+Message-ID: <20140514145856.21163.96610.stgit@patser>
 In-Reply-To: <20140514145134.21163.32350.stgit@patser>
 References: <20140514145134.21163.32350.stgit@patser>
 User-Agent: StGit/0.15
@@ -27,35 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo.c |   76 +++++++-----------------------------------
+ 1 file changed, 13 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-index 20a1a866ceeb..79e950df3018 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -567,13 +567,16 @@ static int vmw_user_dmabuf_synccpu_grab(struct vmw_user_dma_buffer *user_bo,
- 	int ret;
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 31c4a6dd722d..6fe1f4bf37ed 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -466,66 +466,6 @@ static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
+ 			      ((HZ / 100) < 1) ? 1 : HZ / 100);
+ }
  
- 	if (flags & drm_vmw_synccpu_allow_cs) {
--		ret = ttm_bo_reserve(bo, true, !!(flags & drm_vmw_synccpu_dontblock), false, 0);
--		if (!ret) {
--			ret = ttm_bo_wait(bo, false, true,
--					  !!(flags & drm_vmw_synccpu_dontblock));
--			ttm_bo_unreserve(bo);
+-static int ttm_bo_unreserve_and_wait(struct ttm_buffer_object *bo,
+-				     bool interruptible)
+-{
+-	struct ttm_bo_global *glob = bo->glob;
+-	struct reservation_object_list *fobj;
+-	struct fence *excl = NULL;
+-	struct fence **shared = NULL;
+-	u32 shared_count = 0, i;
+-	int ret = 0;
+-
+-	fobj = reservation_object_get_list(bo->resv);
+-	if (fobj && fobj->shared_count) {
+-		shared = kmalloc(sizeof(*shared) * fobj->shared_count,
+-				 GFP_KERNEL);
+-
+-		if (!shared) {
+-			ret = -ENOMEM;
+-			__ttm_bo_unreserve(bo);
+-			spin_unlock(&glob->lru_lock);
+-			return ret;
 -		}
--		return ret;
-+		long lret;
-+		if (flags & drm_vmw_synccpu_dontblock)
-+			return reservation_object_test_signaled_rcu(bo->resv, true) ? 0 : -EBUSY;
-+
-+		lret = reservation_object_wait_timeout_rcu(bo->resv, true, true, MAX_SCHEDULE_TIMEOUT);
-+		if (!lret)
-+			return -EBUSY;
-+		else if (lret < 0)
-+			return lret;
-+		return 0;
- 	}
+-
+-		for (i = 0; i < fobj->shared_count; ++i) {
+-			if (!fence_is_signaled(fobj->shared[i])) {
+-				fence_get(fobj->shared[i]);
+-				shared[shared_count++] = fobj->shared[i];
+-			}
+-		}
+-		if (!shared_count) {
+-			kfree(shared);
+-			shared = NULL;
+-		}
+-	}
+-
+-	excl = reservation_object_get_excl(bo->resv);
+-	if (excl && !fence_is_signaled(excl))
+-		fence_get(excl);
+-	else
+-		excl = NULL;
+-
+-	__ttm_bo_unreserve(bo);
+-	spin_unlock(&glob->lru_lock);
+-
+-	if (excl) {
+-		ret = fence_wait(excl, interruptible);
+-		fence_put(excl);
+-	}
+-
+-	if (shared_count > 0) {
+-		for (i = 0; i < shared_count; ++i) {
+-			if (!ret)
+-				ret = fence_wait(shared[i], interruptible);
+-			fence_put(shared[i]);
+-		}
+-		kfree(shared);
+-	}
+-
+-	return ret;
+-}
+-
+ /**
+  * function ttm_bo_cleanup_refs_and_unlock
+  * If bo idle, remove from delayed- and lru lists, and unref.
+@@ -549,9 +489,19 @@ static int ttm_bo_cleanup_refs_and_unlock(struct ttm_buffer_object *bo,
+ 	ret = ttm_bo_wait(bo, false, false, true);
  
- 	ret = ttm_bo_synccpu_write_grab
+ 	if (ret && !no_wait_gpu) {
+-		ret = ttm_bo_unreserve_and_wait(bo, interruptible);
+-		if (ret)
+-			return ret;
++		long lret;
++		ww_mutex_unlock(&bo->resv->lock);
++		spin_unlock(&glob->lru_lock);
++
++		lret = reservation_object_wait_timeout_rcu(bo->resv,
++							   true,
++							   interruptible,
++							   30 * HZ);
++
++		if (lret < 0)
++			return lret;
++		else if (lret == 0)
++			return -EBUSY;
+ 
+ 		spin_lock(&glob->lru_lock);
+ 		ret = __ttm_bo_reserve(bo, false, true, false, 0);
 
