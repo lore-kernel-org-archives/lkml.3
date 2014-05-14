@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970AbaENNZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:25:42 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:59587 "EHLO
+	id S1755950AbaENNZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:25:40 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34503 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755766AbaENNZc (ORCPT
+	by vger.kernel.org with ESMTP id S1755763AbaENNZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:25:32 -0400
+	Wed, 14 May 2014 09:25:31 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
         Maxime Coquelin <maxime.coquelin@st.com>,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v2 10/10] ARM: STi: DT: STiH41x Add clk_ignore_unused to bootargs
-Date: Wed, 14 May 2014 15:24:18 +0200
-Message-Id: <1400073858-28912-11-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 07/10] ARM: STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock
+Date: Wed, 14 May 2014 15:24:15 +0200
+Message-Id: <1400073858-28912-8-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -32,41 +32,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interconnect clocks are not yet managed at the init, then
-we have to start the kernel with clk_ignore_unused.
+CLK_S_ICN_REG_0 clock is no longer used.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih41x-b2000.dtsi | 2 +-
- arch/arm/boot/dts/stih41x-b2020.dtsi | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/stih415-clock.dtsi | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
-index bf65c49..a29ced6 100644
---- a/arch/arm/boot/dts/stih41x-b2000.dtsi
-+++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
-@@ -14,7 +14,7 @@
- 	};
+diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
+index 9b8f4c0..8b7a795 100644
+--- a/arch/arm/boot/dts/stih415-clock.dtsi
++++ b/arch/arm/boot/dts/stih415-clock.dtsi
+@@ -32,16 +32,6 @@
+ 			clock-frequency = <500000000>;
+ 		};
  
- 	chosen {
--		bootargs = "console=ttyAS0,115200";
-+		bootargs = "console=ttyAS0,115200 clk_ignore_unused";
- 		linux,stdout-path = &serial2;
- 	};
- 
-diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
-index 838513f..d8a8429 100644
---- a/arch/arm/boot/dts/stih41x-b2020.dtsi
-+++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
-@@ -14,7 +14,7 @@
- 	};
- 
- 	chosen {
--		bootargs = "console=ttyAS0,115200";
-+		bootargs = "console=ttyAS0,115200 clk_ignore_unused";
- 		linux,stdout-path = &sbc_serial1;
- 	};
- 
+-		/*
+-		 * Bootloader initialized system infrastructure clock for
+-		 * serial devices.
+-		 */
+-		CLKS_ICN_REG_0: CLKS_ICN_REG_0 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <100000000>;
+-		};
+-
+ 		CLKS_GMAC0_PHY: clockgenA1@7 {
+ 			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
 -- 
 1.9.1
 
