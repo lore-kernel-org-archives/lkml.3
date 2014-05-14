@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaENBXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 21:23:40 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:43906 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751612AbaENBXi (ORCPT
+	id S1752684AbaENBZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 21:25:46 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:48339 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbaENBZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 21:23:38 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1048,1389715200"; 
-   d="scan'208";a="30487425"
-Message-ID: <5372C32B.8050906@cn.fujitsu.com>
-Date: Wed, 14 May 2014 09:13:15 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Tue, 13 May 2014 21:25:42 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <stable@vger.kernel.org>, <viro@zeniv.linux.org.uk>, <bcrl@kvack.org>,
-        <jmoyer@redhat.com>, <kosaki.motohiro@gmail.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <linux-fsdevel@vger.kernel.org>, <linux-aio@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <miaox@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: Re: [RESEND v2 PATCH 0/2] Bug fix in aio ring page migration
-References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com> <53217E46.3060100@cn.fujitsu.com> <20140513235840.GD29623@kroah.com>
-In-Reply-To: <20140513235840.GD29623@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+In-Reply-To: <D38E8E86660E514AB505863C19C9287C73FBD0FE@ORSMSX102.amr.corp.intel.com>
+References: <1399957629-13536-1-git-send-email-xuyongjiande@gmail.com> <D38E8E86660E514AB505863C19C9287C73FBD0FE@ORSMSX102.amr.corp.intel.com>
+From: =?UTF-8?B?5b6Q5rC45YGl?= <xuyongjiande@gmail.com>
+Date: Wed, 14 May 2014 09:25:21 +0800
+Message-ID: <CABVvea3GLVqwg7xMG9KhMfqvLxLQ8cE1NDeHXMxoA2+ZG06w4w@mail.gmail.com>
+Subject: Re: [E1000-devel] [PATCH] e1000: remove the check: skb->len<=0
+To: "Ronciak, John" <john.ronciak@intel.com>
+Cc: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-Thanks for your attention on this thread.
-On 05/14/2014 07:58 AM, Greg Kroah-Hartman wrote:
+The check is not right, it should be "(int)(skb->len) <= 0", or we
+just remove this check if "skb->len will never be negative or 0".
 
-> On Thu, Mar 13, 2014 at 05:45:42PM +0800, Gu Zheng wrote:
->> This patchset has been applied to linux-next, and these problems also exist
->> in 3.12.y and 3.13.y stable tree.
->> So please merge this patchset to 3.12.y and 3.13.y stable tree.
+2014-05-13 22:57 GMT+08:00 Ronciak, John <john.ronciak@intel.com>:
+>> -----Original Message-----
+>> From: xuyongjiande@gmail.com [mailto:xuyongjiande@gmail.com]
+>> Sent: Monday, May 12, 2014 10:07 PM
+>> To: eric.dumazet@gmail.com
+>> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
+>> kernel@vger.kernel.org; Yongjian Xu
+>> Subject: [E1000-devel] [PATCH] e1000: remove the check: skb->len<=0
 >>
->> commit 692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
->> Author: Tang Chen <tangchen@cn.fujitsu.com>
->> Date:   Mon Mar 10 16:15:33 2014 +0800
+>> From: Yongjian Xu <xuyongjiande@gmail.com>
 >>
->>     aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
+>> There is no case skb->len would be 0 or 'negative'.
+>> Remove the check.
 >>
->> commit e0f5e0add36d2e3c456cf2f4283673ed834b3c24
->> Author: Tang Chen <tangchen@cn.fujitsu.com>
->> Date:   Mon Mar 10 16:15:34 2014 +0800
+>> Signed-off-by: Yongjian Xu <xuyongjiande@gmail.com>
+>> ---
+>>  drivers/net/ethernet/intel/e1000/e1000_main.c | 5 -----
+>>  1 file changed, 5 deletions(-)
 >>
->>     aio, mem-hotplug: Add memory barrier to aio ring page migration.
+>> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> index 27058df..660971f 100644
+>> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> @@ -3105,11 +3105,6 @@ static netdev_tx_t e1000_xmit_frame(struct
+>> sk_buff *skb,
+>>        */
+>>       tx_ring = adapter->tx_ring;
 >>
->> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
->> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=e0f5e0add36d2e3c456cf2f4283673ed834b3c24
->>
->> https://lkml.org/lkml/2014/3/10/56
->> https://lkml.org/lkml/2014/3/10/58
-> 
-> I don't see these in Linus's tree, what happened?
-
-These two patches were replaced by the better one from Benjamin, and it has been
-merged into upstream.
-commit fa8a53c39f3fdde98c9eace6a9b412143f0f6ed6
-Author: Benjamin LaHaise <bcrl@kvack.org>
-Date:   Fri Mar 28 10:14:45 2014 -0400
-
-    aio: v4 ensure access to ctx->ring_pages is correctly serialised for migration
-And I have already received the notify that it has been applied into stable tree.
-
-Best regards,
-Gu
-
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-aio' in
-> the body to majordomo@kvack.org.  For more info on Linux AIO,
-> see: http://www.kvack.org/aio/
-> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
-> .
-> 
-
-
+>> -     if (unlikely(skb->len <= 0)) {
+>> -             dev_kfree_skb_any(skb);
+>> -             return NETDEV_TX_OK;
+>> -     }
+>> -
+>>       /* On PCI/PCI-X HW, if packet size is less than ETH_ZLEN,
+>>        * packets may get corrupted during padding by HW.
+>>        * To WA this issue, pad all small packets manually.
+>> --
+>> 1.9.1
+> What is the exact problem that this is fixing?  Did you have a test case that showed a problem with it?
+>
+> Cheers,
+> John
+>
+>
