@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaENWg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:36:56 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:35017 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384AbaENWgx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753105AbaENWgx (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 May 2014 18:36:53 -0400
-Date: Wed, 14 May 2014 15:35:34 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tony Battersby <tonyb@cybernetics.com>
-cc: Hugh Dickins <hughd@google.com>, David Herrmann <dh.herrmann@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kristian Hogsberg <krh@bitplanet.net>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
-In-Reply-To: <537396A2.9090609@cybernetics.com>
-Message-ID: <alpine.LSU.2.11.1405141456420.2268@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405132118330.4401@eggly.anvils> <537396A2.9090609@cybernetics.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:50309 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaENWgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 18:36:52 -0400
+Date: Wed, 14 May 2014 18:36:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Bruce Allan <bruce.w.allan@intel.com>
+Subject: Re: [REGRESSION] funny sched_domain build failure during resume
+Message-ID: <20140514223648.GH15690@htj.dyndns.org>
+References: <20140509160455.GA4486@htj.dyndns.org>
+ <20140514140034.GM30445@twins.programming.kicks-ass.net>
+ <20140514170238.GB15690@htj.dyndns.org>
+ <20140514171051.GX30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514171051.GX30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, Tony Battersby wrote:
-> Hugh Dickins wrote:
-> > Checking page counts in a GB file prior to sealing does not appeal at
-> > all: we'd be lucky ever to find them all accounted for.
+On Wed, May 14, 2014 at 07:10:51PM +0200, Peter Zijlstra wrote:
+> On Wed, May 14, 2014 at 01:02:38PM -0400, Tejun Heo wrote:
+> > On Wed, May 14, 2014 at 04:00:34PM +0200, Peter Zijlstra wrote:
+> > > Does something like the below help any? I noticed those things (cpudl
+> > > and cpupri) had [NR_CPUS] arrays, which is always 'fun'.
+> > > 
+> > > The below is a mostly no thought involved conversion of cpudl which
+> > > boots, I'll also do cpupri and then actually stare at the algorithms to
+> > > see if I didn't make any obvious fails.
+> > 
+> > Yeah, should avoid large allocation on reasonably sized machines and I
+> > don't think 2k CPU machines suspend regularly.  Prolly good / safe
+> > enough for -stable port?  
 > 
-> Here is a refinement of that idea: during a seal operation, iterate over
-> all the pages in the file and check their refcounts.  On any page that
-> has an unexpected extra reference, allocate a new page, copy the data
-> over to the new page, and then replace the page having the extra
-> reference with the newly-allocated page in the file.  That way you still
-> get zero-copy on pages that don't have extra references, and you don't
-> have to fail the seal operation if some of the pages are still being
-> referenced by something else.
+> Yeah, its certainly -stable material. Esp. if this cures the immediate
+> problem.
 
-That does seem a more promising idea than any that I'd had: thank you.
+The patches are URL encoded.  Tried to reproduce the problem but
+haven't succeeded but I'm quite confident about the analysis, so
+verifying that the high order allocation goes away should be enough.
 
-But whether it can actually be made to work (safely) is not yet clear
-to me.
+I instrumented the allocator and it looks like we also have other
+sources of high order allocation during resume before GFP_IOFS is
+cleared.  Some kthread creations (order 2, probably okay) and on my
+test setup a series of order 3 allocations from e1000.
 
-It would be rather like page migration; but whereas page migration
-backs off whenever the page count cannot be fully accounted for
-(as does KSM), that is precisely when this would have to act.
+Cc'ing Bruce for e1000.  Is it necessary to free and re-allocate
+buffers across suspend/resume?  The driver ends up allocating multiple
+order-3 regions during resume where mm doesn't have access to backing
+devices and thus can't compact or reclaim and it's not too unlikely
+for those allocations to fail.
 
-Taking action in the case of ignorance does not make me feel very
-comfortable.  Page lock and radix tree lock would guard against
-many surprises, but not necessarily all.
+I wonder whether we need some generic solution to address the issue.
+Unfortunately, I don't think it'd be possible to order device
+initialization to bring up backing devices earlier.  We don't really
+have that kind of knowledge easily accessible.  Also, I don't think
+it's realistic to require drivers to avoid high order allocations
+during resume.
 
-> 
-> The downside of course is the extra memory usage and memcpy overhead if
-> something is holding extra references to the pages.  So whether this is
-> a good approach depends on:
-> 
-> *) Whether extra page references would happen frequently or infrequently
-> under various kernel configurations and usage scenarios.  I don't know
-> enough about the mm system to answer this myself.
-> 
-> *) Whether or not the extra memory usage and memcpy overhead could be
-> considered a DoS attack vector by someone who has found a way to add
-> extra references to the pages intentionally.
+Maybe we should pre-reclaim and set aside some amount of memory to be
+used during resume?  It's a mushy solution but could be good enough.
+Rafael, Johannes, what do you guys think?
 
-I may just be too naive on such issues, but neither of those worries
-me particularly.  If something can already add an extra pin to many
-pages, that is already a concern for memory usage.  The sealing case
-would double its scale, but I don't see that as a new issue.
+Thanks.
 
-The aspect which really worries me is this: the maintenance burden.
-This approach would add some peculiar new code, introducing a rare
-special case: which we might get right today, but will very easily
-forget tomorrow when making some other changes to mm.  If we compile
-a list of danger areas in mm, this would surely belong on that list.
-
-Hugh
+-- 
+tejun
