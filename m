@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaENPJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:09:57 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:37048 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738AbaENPJv (ORCPT
+	id S1755933AbaENPK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:10:26 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48737 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455AbaENPJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:09:51 -0400
-Message-ID: <537386D7.4060407@windriver.com>
-Date: Wed, 14 May 2014 10:08:07 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>
-CC: <patches@linaro.org>, <linaro-kernel@lists.linaro.org>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, <kernel-team@android.com>,
-        <kgdb-bugreport@lists.sourceforge.net>, Jiri Slaby <jslaby@suse.cz>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Pantelis Antoniou <panto@intracom.gr>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Joe Schultz <jschultz@xes-inc.com>,
-        Loic Poulain <loic.poulain@intel.com>,
-        Kyle McMartin <kyle@infradead.org>,
-        Stephen Warren <swarren@nvidia.com>, Ingo Molnar <mingo@elte.hu>,
+	Wed, 14 May 2014 11:09:41 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users@vger.kernel.org,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Christophe Leroy <christophe.leroy@c-s.fr>
-Subject: Re: [PATCH 1/4] serial: core: Consistent LF handling for poll_put_char
-References: <1400079335-32125-1-git-send-email-daniel.thompson@linaro.org> <1400079335-32125-2-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1400079335-32125-2-git-send-email-daniel.thompson@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH] sched/rt: don't try to balance rt_runtime when it is futile
+Date: Wed, 14 May 2014 11:08:35 -0400
+Message-Id: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 09:55 AM, Daniel Thompson wrote:
-> The behaviour of the UART poll_put_char infrastructure is inconsistent
-> with respect to linefeed conversions. This in turn leads to difficulty
-> using kdb on serial ports that are not also consoles
-> (e.g. console=ttyAMA0,115200 kgdboc=ttyAMA1,115200).
->
-> The following drivers automatically convert '\n' to '\r\n' inside their
-> own poll functions but the remaining seventeen do not:
->
->     serial8250, cpm, pch_uart, serial_pxa, serial_txx9,
->
-> This can be made fully consistent but performing the conversion in
-> uart_poll_put_char(). A similar conversion is already made inside
-> uart_console_write() but it is optional for drivers to use this
-> function. Fortunately we can be confident the translation is safe
-> because the (very common) 8250 already does this translation.
+As of the old commit ac086bc22997a2be24fc40fc8d46522fe7e03d11
+("sched: rt-group: smp balancing") the concept of borrowing per
+cpu rt_runtime from one core to another was introduced.
 
+However, this prevents the RT throttling message from ever being
+emitted when someone does a common (but mistaken) attempt at
+using too much CPU in RT context.  Consider the following test:
 
-I'll have to take a look at some of the other drivers.  If all the instances of the function calls are going to coded per driver, it might make more sense to add variable to struct uart_port, vs changing the number of arguments to uart_poll_put_char.  And then the default can simply be coded in the struct initialization to the most common need.
+  echo "main() {for(;;);}" > full_load.c
+  gcc full_load.c -o full_load
+  taskset -c 1 ./full_load &
+  chrt -r -p 80 `pidof full_load`
 
-Cheers,
-Jason.
+When run on x86_64 defconfig, what happens is as follows:
+
+-task runs on core1 for 95% of an rt_period as documented in
+ the file Documentation/scheduler/sched-rt-group.txt
+
+-at 95%, the code in balance_runtime sees this threshold and
+ calls do_balance_runtime()
+
+-do_balance_runtime sees that core 1 is in need, and does this:
+	---------------
+        if (rt_rq->rt_runtime + diff > rt_period)
+                diff = rt_period - rt_rq->rt_runtime;
+        iter->rt_runtime -= diff;
+        rt_rq->rt_runtime += diff;
+	---------------
+ which extends core1's rt_runtime by 5%, making it 100% of rt_period
+ by stealing 5% from core0 (or possibly some other core).
+
+However, the next time core1's rt_rq enters sched_rt_runtime_exceeded(),
+we hit this near the top of that function:
+	---------------
+        if (runtime >= sched_rt_period(rt_rq))
+                return 0;
+	---------------
+and hence we'll _never_ look at/set any of the throttling checks and
+messages in sched_rt_runtime_exceeded().  Instead, we will happily
+plod along for CONFIG_RCU_CPU_STALL_TIMEOUT seconds, at which point
+the RCU subsystem will get angry and trigger an NMI in response to
+what it rightly sees as a WTF situation.
+
+Granted, there are lots of ways you can do bad things to yourself with
+RT, but in the current zeitgeist of multicore systems with people
+dedicating individual cores to individual tasks, I'd say the above is
+common enough that we should react to it sensibly, and an RCU stall
+really doesn't translate well to an end user vs a simple message that
+says "throttling activated".
+
+One way to get the throttle message instead of the ambiguous and lengthy
+NMI triggered all core backtrace of the RCU stall is to change the
+SCHED_FEAT(RT_RUNTIME_SHARE, true) to false.  One could make a good
+case for this being the default for the out-of-tree preempt-rt series,
+since folks using that are more apt to be manually tuning the system
+and won't want an invisible hand coming in and making changes.
+
+However, in mainline, where it is more likely that there will be
+n+x (x>0) RT tasks on an n core system, we can leave the sharing on,
+and still avoid the RCU stalls by noting that there is no point in
+trying to balance when there are no tasks to migrate, or only a
+single RT task is present.  Inflating the rt_runtime does nothing
+in this case other than defeat sched_rt_runtime_exceeded().
+
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[I'd mentioned a similar use case here: https://lkml.org/lkml/2013/3/6/338
+ and tglx asked why they wouldn't see the throttle message; it is only
+ now that I had a chance to dig in and figure out why.  Oh, and the patch
+ is against linux-next, in case that matters...]
+
+ kernel/sched/rt.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index ea4d500..698aac9 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -774,6 +774,15 @@ static int balance_runtime(struct rt_rq *rt_rq)
+ 	if (!sched_feat(RT_RUNTIME_SHARE))
+ 		return more;
+ 
++	/*
++	 * Stealing from another core won't help us at all if
++	 * we have nothing to migrate over there, or only one
++	 * task that is running up all the rt_time.  In fact it
++	 * will just inhibit the throttling message in that case.
++	 */
++	if (!rt_rq->rt_nr_migratory || rt_rq->rt_nr_total == 1)
++		return more;
++
+ 	if (rt_rq->rt_time > rt_rq->rt_runtime) {
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		more = do_balance_runtime(rt_rq);
+-- 
+1.8.2.3
+
