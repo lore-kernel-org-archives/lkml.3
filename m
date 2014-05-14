@@ -1,146 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaENDLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 23:11:04 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:51234 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679AbaENDLB (ORCPT
+	id S1753105AbaENDPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 23:15:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57640 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaENDPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 23:11:01 -0400
-Message-ID: <1400037057.5157.16.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14.3-rt5
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 14 May 2014 05:10:57 +0200
-In-Reply-To: <20140513154002.GD15049@linutronix.de>
-References: <20140509181214.GK29014@linutronix.de>
-	 <1399695303.5146.21.camel@marge.simpson.net>
-	 <20140513154002.GD15049@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 13 May 2014 23:15:16 -0400
+Message-ID: <5372DFBC.6020303@huawei.com>
+Date: Wed, 14 May 2014 11:15:08 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: use css->refcnt for cgroup
+ reference counting
+References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-13 at 17:40 +0200, Sebastian Andrzej Siewior wrote: 
-> * Mike Galbraith | 2014-05-10 06:15:03 [+0200]:
+On 2014/5/10 5:13, Tejun Heo wrote:
+> Hello,
 > 
-> >On Fri, 2014-05-09 at 20:12 +0200, Sebastian Andrzej Siewior wrote:
-> >
-> >> Known issues:
-> >> 
-> >>       - bcache is disabled.
-> >> 
-> >>       - lazy preempt on x86_64 leads to a crash with some load.
-> >
-> >That is only with NO_HZ_FUL enabled here.  Box blows the stack during
-> >task exit, eyeballing hasn't spotted the why.
+> Currently, cgroup and css (cgroup_subsys_state) are separately
+> reference counted.  cgroup->refcnt is an atomic_t and css->refcnt is a
+> percpu_ref.  css is becoming the primary structural block and used
+> widely in various operaitons.  cgroup already has a css embedded in it
+> (cgroup->dummy_css) to use as its proxy in such operations; however,
+> there still are quite a few differences between cgroup and css
+> handling limitng how cgroup->dummy_css can be used.
 > 
-> Even if I disable NO_HZ_FULL it explodes as soon as hackbench starts.
+> This patchset makes cgroup use the embedded css's refcnt for reference
+> counting.  This closes one of the gaps between an cgroup embedded css,
+> which is renamed to cgroup->self early in the patchset, and a normal
+> css and will allow more unified handling of cgroups and csses.  In
+> addition, this makes cgroup refcnting use percpu_ref too, which is a
+> lot more scalable than an atomic_t.
+> 
+> Ultimately, it'd make things far simpler to assign a proper
+> cgroup_subsys to the cgroup embedded csses and handle them the same as
+> other csses; however, we can't yet do it thanks to multiple
+> hierarchies as we end up with multiple csses of the same subsystem for
+> the same task, but in the very long term, if multiple hierarchies can
+> be removed, that's where it's headed.
+> 
+> This patchset contains the following nine patches.
+> 
+>  0001-cgroup-use-restart_syscall-for-mount-retries.patch
+>  0002-cgroup-rename-cgroup-dummy_css-to-self-and-move-it-t.patch
+>  0003-cgroup-separate-out-cgroup_has_live_children-from-cg.patch
+>  0004-cgroup-move-check_for_release-parent-call-to-the-end.patch
+>  0005-cgroup-move-cgroup-sibling-unlinking-to-cgroup_put.patch
+>  0006-cgroup-remove-cgroup_destory_css_killed.patch
+>  0007-cgroup-bounce-css-release-through-css-destroy_work.patch
+>  0008-cgroup-enable-refcnting-for-root-csses.patch
+>  0009-cgroup-use-cgroup-self.refcnt-for-cgroup-refcnting.patch
+> 
+> 0001-0003 are prep patches.
+> 
+> 0004-0006 remove cgroup_destroy_css_killed().  This brings cgroup's
+> destruction path closer to css's so that they can be merged.
+> 
+> 0007-0009 make cgroup use the embedded css's refcnt.
+> 
+> This pachset is on top of
+> 
+>  b9a63d0116e8 ("Merge branch 'for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu into for-3.16")
+>  + [1] [PATCHSET v2 cgroup/for-3.16] cgroup: post unified hierarchy fixes and updates
+>  + [2] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: implement cftype->write()
+>  + [3] (REFRESHED) [PATCHSET cgroup/for-3.16] cgroup: remove cgroup_tree_mutex
+> 
+> and available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-use-css-ref
+> 
+> diffstat follows.  Thanks.
+> 
+>  include/linux/cgroup.h |   25 ----
+>  kernel/cgroup.c        |  284 ++++++++++++++++++++++---------------------------
+>  2 files changed, 136 insertions(+), 173 deletions(-)
+> 
 
-Well good, that makes a hell of a lot more sense.  The below is with
-NO_HZ_FULL enabled, and hackbench exploding on exit.  Every kaboom I've
-see has been a dead task exploding on scrambled thread_info.
+With the memory leak fixed:
 
-Accessing per-anti-cpu data doesn't work well from our universe ;-)
-
-crash> bt  6657
-PID: 6657   TASK: ffff8801f947ac00  CPU: 1   COMMAND: "hackbench"
- #0 [ffff88022fc86e00] crash_nmi_callback at ffffffff8102b8f4
- #1 [ffff88022fc86e10] nmi_handle at ffffffff8164865a
- #2 [ffff88022fc86ea0] default_do_nmi at ffffffff81648883
- #3 [ffff88022fc86ed0] do_nmi at ffffffff81648b50
- #4 [ffff88022fc86ef0] end_repeat_nmi at ffffffff81647b71
-    [exception RIP: oops_begin+162]
-    RIP: ffffffff816483e2  RSP: ffff8800b220d9d8  RFLAGS: 00000097
-    RAX: 0000000000000010  RBX: 0000000000000010  RCX: 0000000000000097
-    RDX: ffff8800b220d9d8  RSI: 0000000000000018  RDI: 0000000000000001
-    RBP: ffffffff816483e2   R8: ffffffff816483e2   R9: 0000000000000018
-    R10: ffff8800b220d9d8  R11: 0000000000000097  R12: ffffffffffffffff
-    R13: ffff88022700bf00  R14: 0000000000000100  R15: 0000000000000001
-    ORIG_RAX: 0000000000000001  CS: 0010  SS: 0018
---- <NMI exception stack> ---
- #5 [ffff8800b220d9d8] oops_begin at ffffffff816483e2
- #6 [ffff8800b220d9f0] no_context at ffffffff8162ef25
- #7 [ffff8800b220da40] __bad_area_nosemaphore at ffffffff8162f19d
- #8 [ffff8800b220daa0] bad_area_nosemaphore at ffffffff8162f1ca
- #9 [ffff8800b220dab0] __do_page_fault at ffffffff8164a68e
-#10 [ffff8800b220dbd0] do_page_fault at ffffffff8164ab9e
-#11 [ffff8800b220dc00] page_fault at ffffffff81647808
-    [exception RIP: cpuacct_charge+148]
-    RIP: ffffffff810a1874  RSP: ffff8800b220dcb8  RFLAGS: 00010046
-    RAX: 0000000000000040  RBX: 000000000000dd08  RCX: 0000000000000003
-    RDX: 0000000000000006  RSI: 0000000000000006  RDI: ffff88022700bf00
-    RBP: ffff8800b220dcf8   R8: 00000000000006c0   R9: 000000000000000b
-    R10: 0000000000000000  R11: 0000000000013f40  R12: ffffffff81c3b180
-    R13: ffff8801f947ac00  R14: ffffffffb220ddd8  R15: 0000000000001d64
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-#12 [ffff8800b220dd00] update_curr at ffffffff81092451
-#13 [ffff8800b220dd60] dequeue_entity at ffffffff810928f3
-#14 [ffff8800b220ddc0] dequeue_task_fair at ffffffff81092d4d
-#15 [ffff8800b220de10] dequeue_task at ffffffff8108442e
-#16 [ffff8800b220de40] deactivate_task at ffffffff81084f9e
-#17 [ffff8800b220de50] __schedule at ffffffff816440d4
-#18 [ffff8800b220ded0] schedule at ffffffff81644899
-#19 [ffff8800b220def0] do_exit at ffffffff810530d0
-#20 [ffff8800b220df40] do_group_exit at ffffffff8105334c
-#21 [ffff8800b220df70] sys_exit_group at ffffffff810533e2
-#22 [ffff8800b220df80] tracesys at ffffffff8164f109 (via system_call)
-    RIP: 00007fcc1a078ca8  RSP: 00007fff62546c48  RFLAGS: 00000246
-    RAX: ffffffffffffffda  RBX: ffffffff8164f109  RCX: ffffffffffffffff
-    RDX: 0000000000000000  RSI: 000000000000003c  RDI: 0000000000000000
-    RBP: 00007fcc1a355840   R8: 00000000000000e7   R9: ffffffffffffffa8
-    R10: 00007fcc1a969700  R11: 0000000000000246  R12: ffffffff810533e2
-    R13: ffff8800b220df78  R14: 0000000001ad9c88  R15: 0000000000000001
-    ORIG_RAX: 00000000000000e7  CS: 0033  SS: 002b
-
-crash> struct thread_info 0xffff8800b220c000
-struct thread_info {
-  task = 0xffffffff, 
-  exec_domain = 0xffffffff811bae66 <__d_free+70>, 
-  flags = 2, 
-  status = 0, 
-  cpu = 2988498392, 
-  saved_preempt_count = -30720, 
-  preempt_lazy_count = -112742225, 
-  addr_limit = {
-    seg = 524802
-  }, 
-  restart_block = {
-    fn = 0xffff88022fc91358, 
-    {
-      futex = {
-        uaddr = 0x80202, 
-        val = 3, 
-        flags = 0, 
-        bitset = 2988490752, 
-        time = 18446744071585425101, 
-        uaddr2 = 0xffff88022fc91358
-      }, 
-      nanosleep = {
-        clockid = 524802, 
-        rmtp = 0x3, 
-        compat_rmtp = 0xffff8800b220c000, 
-        expires = 18446744071585425101
-      }, 
-      poll = {
-        ufds = 0x80202, 
-        nfds = 3, 
-        has_timeout = 0, 
-        tv_sec = 18446612135302709248, 
-        tv_nsec = 18446744071585425101
-      }
-    }
-  }, 
-  sysenter_return = 0xffffffff, 
-  sig_on_uaccess_error = 0, 
-  uaccess_err = 0
-}
-
+Acked-by: Li Zefan <lizefan@huawei.com>
 
