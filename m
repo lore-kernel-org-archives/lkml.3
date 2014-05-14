@@ -1,195 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaENIAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:00:51 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:41817 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaENIAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:00:47 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: jan.kiszka@siemens.com, kvm@vger.kernel.org, gleb@kernel.org,
-        avi.kivity@gmail.com
-Subject: [PATCH] KVM: x86: get CPL from SS.DPL
-Date: Wed, 14 May 2014 10:00:40 +0200
-Message-Id: <1400054440-18661-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752928AbaENICV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:02:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938AbaENICQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:02:16 -0400
+Date: Wed, 14 May 2014 16:02:01 +0800
+From: Dave Young <dyoung@redhat.com>
+To: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86: kaslr to avoid setup_data regions
+Message-ID: <20140514080201.GA18922@dhcp-16-198.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CS.RPL is not equal to the CPL in the few instructions between
-setting CR0.PE and reloading CS.  And CS.DPL is also not equal
-to the CPL for conforming code segments.
+X86 will pass setup_data region while necessary, these regions could be
+overwitten by kernel due to kaslr.
 
-However, SS.DPL *is* always equal to the CPL except for the weird
-case of SYSRET on AMD processors, which sets SS.DPL=SS.RPL from the
-value in the STAR MSR, but force CPL=3 (Intel instead forces
-SS.DPL=SS.RPL=CPL=3).
+Thus iterate and add setup regions to mem_avoid[] in this patch.
+Set max mem avoid entries 32, hopefully it will be enough.
 
-So this patch:
-
-- modifies SVM to update the CPL from SS.DPL rather than CS.RPL;
-the above case with SYSRET is not broken further, and the way
-to fix it would be to pass the CPL to userspace and back
-
-- modifies VMX to always return the CPL from SS.DPL (except
-forcing it to 0 if we are emulating real mode via vm86 mode;
-in vm86 mode all DPLs have to be 3, but real mode does allow
-privileged instructions).  It also removes the CPL cache,
-which becomes a duplicate of the SS access rights cache.
-
-This fixes doing KVM_IOCTL_SET_SREGS exactly after setting
-CR0.PE=1 but before CS has been reloaded.
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |  1 -
- arch/x86/kvm/svm.c              | 35 ++++++++++++++---------------------
- arch/x86/kvm/vmx.c              | 24 ++++--------------------
- 3 files changed, 18 insertions(+), 42 deletions(-)
+ arch/x86/boot/compressed/aslr.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index e21aee98a5c2..49314155b66c 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -130,7 +130,6 @@ enum kvm_reg_ex {
- 	VCPU_EXREG_PDPTR = NR_VCPU_REGS,
- 	VCPU_EXREG_CR3,
- 	VCPU_EXREG_RFLAGS,
--	VCPU_EXREG_CPL,
- 	VCPU_EXREG_SEGMENTS,
+Index: linux-2.6/arch/x86/boot/compressed/aslr.c
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/compressed/aslr.c
++++ linux-2.6/arch/x86/boot/compressed/aslr.c
+@@ -110,8 +110,9 @@ struct mem_vector {
+ 	unsigned long size;
  };
  
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 0b7d58d0c5fb..ec8366c5cfea 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1338,21 +1338,6 @@ static void svm_vcpu_put(struct kvm_vcpu *vcpu)
- 		wrmsrl(host_save_user_msrs[i], svm->host_user_msrs[i]);
+-#define MEM_AVOID_MAX 5
++#define MEM_AVOID_MAX 32
+ static struct mem_vector mem_avoid[MEM_AVOID_MAX];
++static int mem_avoid_nr;
+ 
+ static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
+ {
+@@ -135,6 +136,28 @@ static bool mem_overlaps(struct mem_vect
+ 	return true;
  }
  
--static void svm_update_cpl(struct kvm_vcpu *vcpu)
--{
--	struct vcpu_svm *svm = to_svm(vcpu);
--	int cpl;
--
--	if (!is_protmode(vcpu))
--		cpl = 0;
--	else if (svm->vmcb->save.rflags & X86_EFLAGS_VM)
--		cpl = 3;
--	else
--		cpl = svm->vmcb->save.cs.selector & 0x3;
--
--	svm->vmcb->save.cpl = cpl;
--}
--
- static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
- {
- 	return to_svm(vcpu)->vmcb->save.rflags;
-@@ -1360,11 +1345,12 @@ static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
- 
- static void svm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
- {
--	unsigned long old_rflags = to_svm(vcpu)->vmcb->save.rflags;
--
-+       /*
-+        * Any change of EFLAGS.VM is accompained by a reload of SS
-+        * (caused by either a task switch or an inter-privilege IRET),
-+        * so we do not need to update the CPL here.
-+        */
- 	to_svm(vcpu)->vmcb->save.rflags = rflags;
--	if ((old_rflags ^ rflags) & X86_EFLAGS_VM)
--		svm_update_cpl(vcpu);
- }
- 
- static void svm_cache_reg(struct kvm_vcpu *vcpu, enum kvm_reg reg)
-@@ -1631,8 +1617,15 @@ static void svm_set_segment(struct kvm_vcpu *vcpu,
- 		s->attrib |= (var->db & 1) << SVM_SELECTOR_DB_SHIFT;
- 		s->attrib |= (var->g & 1) << SVM_SELECTOR_G_SHIFT;
- 	}
--	if (seg == VCPU_SREG_CS)
--		svm_update_cpl(vcpu);
++static void mem_avoid_setup_data(void)
++{
++	struct setup_data *data;
++	u64 pa_data;
 +
-+	/*
-+	 * This is always accurate, except if SYSRET returned to a segment
-+	 * with SS.DPL != 3.  Intel does not have this quirk, and always
-+	 * forces SS.DPL to 3 on sysret, so we ignore that case; fixing it
-+	 * would entail passing the CPL to userspace and back.
-+	 */
-+	if (seg == VCPU_SREG_SS)
-+		svm->vmcb->save.cpl = (s->attrib >> SVM_SELECTOR_DPL_SHIFT) & 3;
- 
- 	mark_dirty(svm->vmcb, VMCB_SEG);
- }
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6f7463f53ed9..a267108403f5 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -414,7 +414,6 @@ struct vcpu_vmx {
- 	struct kvm_vcpu       vcpu;
- 	unsigned long         host_rsp;
- 	u8                    fail;
--	u8                    cpl;
- 	bool                  nmi_known_unmasked;
- 	u32                   exit_intr_info;
- 	u32                   idt_vectoring_info;
-@@ -3150,10 +3149,6 @@ static void enter_pmode(struct kvm_vcpu *vcpu)
- 	fix_pmode_seg(vcpu, VCPU_SREG_DS, &vmx->rmode.segs[VCPU_SREG_DS]);
- 	fix_pmode_seg(vcpu, VCPU_SREG_FS, &vmx->rmode.segs[VCPU_SREG_FS]);
- 	fix_pmode_seg(vcpu, VCPU_SREG_GS, &vmx->rmode.segs[VCPU_SREG_GS]);
--
--	/* CPL is always 0 when CPU enters protected mode */
--	__set_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
--	vmx->cpl = 0;
- }
- 
- static void fix_rmode_seg(int seg, struct kvm_segment *save)
-@@ -3555,22 +3550,14 @@ static int vmx_get_cpl(struct kvm_vcpu *vcpu)
++	if (mem_avoid_nr >= MEM_AVOID_MAX) {
++		debug_putstr("KASLR: too many setup_data ranges.\n");
++		return;
++	}
++
++	pa_data = real_mode->hdr.setup_data;
++	while (pa_data) {
++		data = (struct setup_data *)pa_data;
++		if (pa_data < CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
++			mem_avoid[mem_avoid_nr].start = pa_data;
++			mem_avoid[mem_avoid_nr].size = sizeof(*data) + data->len;
++			mem_avoid_nr++;
++		}
++		pa_data = data->next;
++	}
++}
++
+ static void mem_avoid_init(unsigned long input, unsigned long input_size,
+ 			   unsigned long output, unsigned long output_size)
  {
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+@@ -177,6 +200,9 @@ static void mem_avoid_init(unsigned long
+ 	/* Avoid stack memory. */
+ 	mem_avoid[4].start = (unsigned long)free_mem_end_ptr;
+ 	mem_avoid[4].size = BOOT_STACK_SIZE;
++	mem_avoid_nr = 5;
++
++	mem_avoid_setup_data();
+ }
  
--	if (!is_protmode(vcpu))
-+	if (unlikely(vmx->rmode.vm86_active))
- 		return 0;
--
--	if (!is_long_mode(vcpu)
--	    && (kvm_get_rflags(vcpu) & X86_EFLAGS_VM)) /* if virtual 8086 */
--		return 3;
--
--	if (!test_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail)) {
--		__set_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
--		vmx->cpl = vmx_read_guest_seg_selector(vmx, VCPU_SREG_CS) & 3;
-+	else {
-+		int ar = vmx_read_guest_seg_ar(vmx, VCPU_SREG_SS);
-+		return AR_DPL(ar);
+ /* Does this memory vector overlap a known avoided area? */
+@@ -184,7 +210,7 @@ static bool mem_avoid_overlap(struct mem
+ {
+ 	int i;
+ 
+-	for (i = 0; i < MEM_AVOID_MAX; i++) {
++	for (i = 0; i < mem_avoid_nr; i++) {
+ 		if (mem_overlaps(img, &mem_avoid[i]))
+ 			return true;
  	}
--
--	return vmx->cpl;
- }
- 
--
- static u32 vmx_segment_access_rights(struct kvm_segment *var)
- {
- 	u32 ar;
-@@ -3598,8 +3585,6 @@ static void vmx_set_segment(struct kvm_vcpu *vcpu,
- 	const struct kvm_vmx_segment_field *sf = &kvm_vmx_segment_fields[seg];
- 
- 	vmx_segment_cache_clear(vmx);
--	if (seg == VCPU_SREG_CS)
--		__clear_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
- 
- 	if (vmx->rmode.vm86_active && seg != VCPU_SREG_LDTR) {
- 		vmx->rmode.segs[seg] = *var;
-@@ -7471,7 +7456,6 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 
- 	vcpu->arch.regs_avail = ~((1 << VCPU_REGS_RIP) | (1 << VCPU_REGS_RSP)
- 				  | (1 << VCPU_EXREG_RFLAGS)
--				  | (1 << VCPU_EXREG_CPL)
- 				  | (1 << VCPU_EXREG_PDPTR)
- 				  | (1 << VCPU_EXREG_SEGMENTS)
- 				  | (1 << VCPU_EXREG_CR3));
--- 
-1.8.3.1
-
