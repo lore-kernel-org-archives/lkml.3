@@ -1,140 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaENLiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:38:25 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:60294 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbaENLiY (ORCPT
+	id S1755274AbaENLih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:38:37 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:64706 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988AbaENLif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:38:24 -0400
-Date: Wed, 14 May 2014 13:38:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
-Message-ID: <20140514113808.GA1278@localhost.localdomain>
-References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
- <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
- <20140514090629.GC30445@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514090629.GC30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 May 2014 07:38:35 -0400
+Subject: [PATCH v1.2 12/16] arcmsr: revise alloction of second
+ dma_coherent_handle for type B adapter
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 May 2014 19:38:21 +0800
+Message-ID: <1400067501.6957.46.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 11:06:29AM +0200, Peter Zijlstra wrote:
-> On Wed, May 14, 2014 at 12:25:54AM +0200, Frederic Weisbecker wrote:
-> > irq work currently only supports local callbacks. However its code
-> > is mostly ready to run remote callbacks and we have some potential user.
-> > 
-> > The full nohz subsystem currently open codes its own remote irq work
-> > on top of the scheduler ipi when it wants a CPU to reevaluate its next
-> > tick. However this ad hoc solution bloats the scheduler IPI.
-> > 
-> > Lets just extend the irq work subsystem to support remote queuing on top
-> > of the generic SMP IPI to handle this kind of user. This shouldn't add
-> > noticeable overhead.
-> > 
-> > Suggested-by: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  include/linux/irq_work.h |  2 ++
-> >  kernel/irq_work.c        | 19 ++++++++++++++++++-
-> >  kernel/smp.c             |  4 ++++
-> >  3 files changed, 24 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-> > index 19ae05d..ae44aa2 100644
-> > --- a/include/linux/irq_work.h
-> > +++ b/include/linux/irq_work.h
-> > @@ -33,6 +33,8 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
-> >  #define DEFINE_IRQ_WORK(name, _f) struct irq_work name = { .func = (_f), }
-> >  
-> >  bool irq_work_queue(struct irq_work *work);
-> > +bool irq_work_queue_on(struct irq_work *work, int cpu);
-> > +
-> >  void irq_work_run(void);
-> >  void irq_work_sync(struct irq_work *work);
-> >  
-> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> > index a82170e..9f9be55 100644
-> > --- a/kernel/irq_work.c
-> > +++ b/kernel/irq_work.c
-> > @@ -56,11 +56,28 @@ void __weak arch_irq_work_raise(void)
-> >  }
-> >  
-> >  /*
-> > - * Enqueue the irq_work @entry unless it's already pending
-> > + * Enqueue the irq_work @work on @cpu unless it's already pending
-> >   * somewhere.
-> >   *
-> >   * Can be re-enqueued while the callback is still in progress.
-> >   */
-> > +bool irq_work_queue_on(struct irq_work *work, int cpu)
-> > +{
-> > +	/* Only queue if not already pending */
-> > +	if (!irq_work_claim(work))
-> > +		return false;
-> > +
-> > +	/* All work should have been flushed before going offline */
-> > +	WARN_ON_ONCE(cpu_is_offline(cpu));
-> 
-> 	WARN_ON_ONCE(in_nmi());
+From: Ching<ching2048@areca.com.tw>
 
-Well... I think it's actually NMI-safe.
+This modification is for consistency with up-coming adapter type D.
+They have similar H/W and S/W structure.
+Also, it makes code easier reading.
 
-> 
-> > +
-> > +	llist_add(&work->llnode, &per_cpu(irq_work_list, cpu));
-> > +	native_send_call_func_single_ipi(cpu);
-> 
-> At the very leastestest make that:
-> 
-> 	if (llist_add(&work->llnode, &per_cpu(irq_work_list, cpu)))
-> 		native_send_call_func_single_ipi(cpu);
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
-So yeah the issue is that we may have IRQ_WORK_LAZY in the queue. And
-if we have only such work in the queue, nobody has raised before us.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:27:38.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
+@@ -507,6 +507,7 @@ struct AdapterControlBlock
+ 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
+ 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
+ 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
++	u32				roundup_ccbsize;
+ 	struct pci_dev *		pdev;
+ 	struct Scsi_Host *		host;
+ 	unsigned long			vir2phy_offset;
+@@ -563,6 +564,7 @@ struct AdapterControlBlock
+ 	dma_addr_t			dma_coherent_handle;
+ 	/* dma_coherent_handle used for memory free */
+ 	dma_addr_t				dma_coherent_handle2;
++	void				*dma_coherent2;
+ 	unsigned int				uncache_size;
+ 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
+ 	/* data collection buffer for read from 80331 */
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:48:36.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:49:26.000000000 +0800
+@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
+ static void arcmsr_free_mu(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A:
+-	case ACB_ADAPTER_TYPE_C:
+-		break;
+ 	case ACB_ADAPTER_TYPE_B:{
+-		dma_free_coherent(&acb->pdev->dev,
+-			sizeof(struct MessageUnit_B),
+-			acb->pmuB, acb->dma_coherent_handle2);
++		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
++			acb->dma_coherent2, acb->dma_coherent_handle2);
++		break;
+ 	}
+ 	}
+ }
+@@ -2258,12 +2255,15 @@ static bool arcmsr_hbaB_get_config(struc
+ 	char __iomem *iop_device_map;
+ 	/*firm_version,21,84-99*/
+ 	int count;
+-	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
++
++	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
++	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
+ 	if (!dma_coherent){
+ 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
+ 		return false;
+ 	}
+ 	acb->dma_coherent_handle2 = dma_coherent_handle;
++	acb->dma_coherent2 = dma_coherent;
+ 	reg = (struct MessageUnit_B *)dma_coherent;
+ 	acb->pmuB = reg;
+ 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
+@@ -2609,6 +2609,7 @@ static int arcmsr_polling_ccbdone(struct
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
+ {
+ 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
++	dma_addr_t dma_coherent_handle;
+ 
+ 	/*
+ 	********************************************************************
+@@ -2616,8 +2617,16 @@ static int arcmsr_iop_confirm(struct Ada
+ 	** if freeccb.HighPart is not zero
+ 	********************************************************************
+ 	*/
+-	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
+-	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
++	switch (acb->adapter_type) {
++		case ACB_ADAPTER_TYPE_B:
++			dma_coherent_handle = acb->dma_coherent_handle2;
++			break;
++		default:
++			dma_coherent_handle = acb->dma_coherent_handle;
++			break;
++	}
++	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
++	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
+ 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
+ 	/*
+ 	***********************************************************************
+@@ -2645,7 +2654,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 		break;
+ 
+ 	case ACB_ADAPTER_TYPE_B: {
+-		unsigned long post_queue_phyaddr;
+ 		uint32_t __iomem *rwbuffer;
+ 
+ 		struct MessageUnit_B *reg = acb->pmuB;
+@@ -2657,16 +2665,15 @@ static int arcmsr_iop_confirm(struct Ada
+ 				acb->host->host_no);
+ 			return 1;
+ 		}
+-		post_queue_phyaddr = acb->dma_coherent_handle2;
+ 		rwbuffer = reg->message_rwbuffer;
+ 		/* driver "set config" signature */
+ 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
+ 		/* normal should be zero */
+ 		writel(cdb_phyaddr_hi32, rwbuffer++);
+ 		/* postQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr, rwbuffer++);
++		writel(cdb_phyaddr, rwbuffer++);
+ 		/* doneQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr + 1056, rwbuffer++);
++		writel(cdb_phyaddr + 1056, rwbuffer++);
+ 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
+ 		writel(1056, rwbuffer);
+ 
 
-So we can't just test with llist_add(). Or if we do, we must then
-separate raised and lazy list.
 
-Also note that nohz is the only user for now and irq_work_claim() thus
-prevents from double IPI. Of course if more users come up the issue arise
-again.
-
-> 
-> But ideally, also test the IRQ_WORK_LAZY support, its weird to have that
-> only be supported for the other queue.
-
-OTOH IRQ_WORK_LAZY don't make much sense in remote queueing. We can't safely
-just *wait* for another CPU's tick. The IPI is necessary anyway.
-
-> 
-> Hmm, why do we need that LAZY crap, that completely wrecks a perfectly
-> simple thing.
-> 
-> The changelog (bc6679aef673f), not the printk() usage make much sense,
-> printk() can't cause an IPI storm... printk() isn't fast enough to storm
-> anything.
-
-Maybe I was paranoid but I was worried about the overhead of printk() wakeups
-on boot if implemented with IPIs.
-
-Of course if I can be proven that it won't bring much damage to use an IPI, I'd
-be very happy to remove it.
