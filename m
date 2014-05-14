@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaENWao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:30:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48698 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaENWan (ORCPT
+	id S1753732AbaENWbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:31:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:53118 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875AbaENWbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:30:43 -0400
-Date: Wed, 14 May 2014 15:30:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, 1vier1@web.de
-Subject: Re: [PATCH 6/6] ipc/sem.c: make semctl(,,{GETNCNT,GETZCNT})
- standard compliant
-Message-Id: <20140514153042.40e75ab7b63c0d32afa1e10c@linux-foundation.org>
-In-Reply-To: <1400079158.9356.10.camel@buesod1.americas.hpqcorp.net>
-References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-2-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-3-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-4-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-5-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-6-git-send-email-manfred@colorfullife.com>
-	<1399716199-26776-7-git-send-email-manfred@colorfullife.com>
-	<1400079158.9356.10.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 18:31:16 -0400
+From: David Riley <davidriley@chromium.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
+        David Riley <davidriley@chromium.org>
+Subject: [PATCH v2 0/2] Add test to validate udelay
+Date: Wed, 14 May 2014 15:30:15 -0700
+Message-Id: <1400106617-17085-1-git-send-email-davidriley@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
+References: <1399421543-7751-1-git-send-email-davidriley@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 07:52:38 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+This change adds a module and a script that makes use of it to
+validate that udelay delays for at least as long as requested
+(as compared to ktime).
 
-> > --- a/ipc/sem.c
-> > +++ b/ipc/sem.c
-> > @@ -993,38 +993,33 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
-> >  }
-> >  
-> >  /*
-> > - * check_qop: Test how often a queued operation sleeps on the semaphore semnum
-> > + * check_qop: Test if a queued operation sleeps on the semaphore semnum
-> >   */
-> >  static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
-> >  			bool count_zero)
-> >  {
-> > -	struct sembuf *sops = q->sops;
-> > -	int nsops = q->nsops;
-> > -	int i, semcnt;
-> > +	struct sembuf *sop = q->blocking;
-> >  
-> > -	semcnt = 0;
-> > +	BUG_ON(sop->sem_flg & IPC_NOWAIT);
-> > +	BUG_ON(sop->sem_op > 0);
-> 
-> Hmm in light of Linus' recent criticism about randomly sprinkling
-> BUG_ONs in the kernel I'm not sure we want this. Yes, all those calls
-> are correct from a logical pov and should never occur, however, would
-> WARN be more suitable instead? I don't know. 
+Changes since v1:
+- allow udelay() to be 0.5% faster than requested as per feedback
 
-Well, this BUG_ON is so old that a decent approach would be to just
-delete the thing, if only Manfred wasn't changing stuff.
+David Riley (2):
+  kernel: time: Add udelay_test module to validate udelay
+  tools: add script to test udelay
 
-Yes, if we can reasonably warn-then-recover then I guess that's worth
-doing.
+ kernel/time/Kconfig       |    7 ++
+ kernel/time/Makefile      |    1 +
+ kernel/time/udelay_test.c |  169 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/time/udelay_test.sh |   66 ++++++++++++++++++
+ 4 files changed, 243 insertions(+)
+ create mode 100644 kernel/time/udelay_test.c
+ create mode 100644 tools/time/udelay_test.sh
+
+-- 
+1.7.9.5
 
