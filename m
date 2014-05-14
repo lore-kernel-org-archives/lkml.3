@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751153AbaENSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:49:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63124 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaENSt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:49:56 -0400
-Message-ID: <5373BACB.9090807@redhat.com>
-Date: Wed, 14 May 2014 19:49:47 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751546AbaENSwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:52:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:50476 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaENSv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 14:51:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org, kishon@ti.com, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        tj@kernel.org
+Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
+Date: Wed, 14 May 2014 20:51:44 +0200
+Message-ID: <17808571.N5ZGjXFEVP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5373B908.5090904@gmail.com>
+References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>,
-        Sergio Durigan Junior <sergiodj@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Tom Tromey <tromey@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
-References: <m3wqic205t.fsf@redhat.com> <20140107153036.GA4749@redhat.com> <52CEEF1F.90803@redhat.com> <20140110135802.GA26953@redhat.com> <m3sisk4rfq.fsf@redhat.com> <20140119152922.GA13689@redhat.com>
-In-Reply-To: <20140119152922.GA13689@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:TGDYTpXy860fII+wvxROpYG9tKjvy/dc49y0VVpolRy
+ 044UzoltxYxwmVLBcf+eGsmhGEA1rFXO9W2iJzwNPyU/SfCCaV
+ 3f4OggYHQURgsGdXP4ALlMvxU8Mg3kqixf5CikwEUioBvBABE+
+ 1SY9PXgYExGjd2q0XIxb/+Jt3PANEpyGMtXz4WhUzN0KSaC/KL
+ z95DuKd6ECkUmkVxFBaYW4IOh9k97DxxGg2zgFjtN6fHHQEps5
+ g/+2juRb+MegHuAyJhOGh+t+sqL2Tt1eOWkWVEWSYzE6o/IAXk
+ zQgbpPksO81TmcATOiZOKOZxYLv74wGlATeCp2UPiXxlHo7+Sd
+ ZTtkkon69FWA0eXBiYYY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I realized now that I responded to this.  Sorry about that.
-
-On 01/19/2014 03:29 PM, Oleg Nesterov wrote:
-> On 01/19, Sergio Durigan Junior wrote:
->>
->> On Friday, January 10 2014, Oleg Nesterov wrote:
->>
->>> So suppose that gdb does ptrace(PTRACE_SINGLESTEP) and the tracee
->>> executes the "syscall" insn. What it should report?
->> [...]
->>> But what should syscall-exit do? Should it still report SIGSEGV as
->>> it currently does, or should it report _SYSCALL_EXIT instead (if
->>> PTRACE_O_SYSCALL_EXIT of course), or should it report both?
->>
->> Both only if _SYSCALL_EXIT is set.  Otherwise, stick to the current
->> behavior, I guess.
+On Wednesday 14 May 2014 20:42:16 Sebastian Hesselbarth wrote:
+> >> For the driver, Antoine then would have to squeeze all PHY register
+> >> mangling in phy-berlin2.c and see how to make ahci-platform aware of
+> >> individual port nodes (I haven't looked up if it already exists, sorry)
+> >> and announce only enabled port child nodes, right?
+> > 
+> > I've been thinking some more about this aspect. I don't actually have
+> > a strong opinion on whether it's better to use the generic ahci-platform
+> > driver, or to keep the multi-phy support as a special variant for
+> > berlin. If we do the latter, it would however be good to define the
+> > binding in a way that lets us later merge things into the generic phy
+> > driver in case we get more of the same.
 > 
-> OK, both. In which order? Probably _EXIT first. But this looks a bit
-> strange. Suppose that the tracee reports _EXIT, then debugger does
-> ptrace(PTRACE_CONT), should the tracee report SIGTRAP?
+> Hmm, IMHO multi-phy support is orthogonal to ahci-platform, isn't it?
+> ahci-platform needs to know about the phy property and calls some
+> helper that deals with the phy-specifier?
+> 
+> About a generic _phy_ driver, I am not so sure if berlin is the best
+> template right now 
+> 
+> So, my call would be:
+> - make ahci-platform aware of port sub-nodes and phy properties
+> - have a berlin specific PHY driver
 
-Seems to me that this should be very much the same as fork/vfork/clone
-event handling.  Those are triggered by a syscall anyway.  So, say:
+I'm not sure if we need sub-nodes per port, it should be enough
+to have an array of phys, plus a way to match them up with the
+ports.
 
-- ptrace(PTRACE_SINGLESTEP)
-- the tracee executes the "syscall" insn, and the syscall is "clone".
-- PTRACE_EVENT_FORK is reported.
-- The debugger does ptrace(PTRACE_CONT).
-
-What should be reported?  What is reported now?
-
--- 
-Pedro Alves
-
+	Arnd
