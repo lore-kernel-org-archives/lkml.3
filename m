@@ -1,89 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaENPab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:30:31 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39121 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188AbaENPaa (ORCPT
+	id S1755788AbaENPbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:31:37 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:58140 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaENPbf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:30:30 -0400
-Date: Wed, 14 May 2014 08:30:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
-Message-ID: <20140514153008.GD4570@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
- <1398868249-26169-10-git-send-email-jslaby@suse.cz>
- <20140501142414.GA31611@htj.dyndns.org>
- <alpine.LNX.2.00.1405012206430.29834@pobox.suse.cz>
- <20140501210242.GA28948@mtj.dyndns.org>
- <20140501210943.GB28948@mtj.dyndns.org>
- <537384B9.5090907@suse.cz>
- <20140514151501.GA24142@suse.cz>
+	Wed, 14 May 2014 11:31:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        tj@kernel.org, sebastian.hesselbarth@gmail.com
+Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
+Date: Wed, 14 May 2014 17:31:24 +0200
+Message-ID: <31922167.uMVzxsQNIT@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140514145002.GA18392@kwain>
+References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <16480004.aaDhzlOZgi@wuerfel> <20140514145002.GA18392@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514151501.GA24142@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051415-0928-0000-0000-000001E22415
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:ldrVTMuOMbbY6yxNqoVO1cb9iEEtRnT1oWx+DOPJBHq
+ 8fp7aImIaSZU3GJCQUDh6l6GrCNDjMwX7kInTY+MijZwhUOMTE
+ LK9As8uzwk6f1/uH7niLttLsGtdTF9dFasfi32yDwSgfU3Dvmn
+ pBv8Hn1OIH+MD591opM3LAE+t2fSl5quUjuIxcFbETYleQAVhJ
+ FB52l8IfgaMfnHk3LGZG/G5w0NUgndOSW3CrpB7uV5iY2EZjtH
+ iFA6MIdKFhlHL///sjogqH0ycXEsOZBJHzYKgFiv7HclAkJ5xL
+ yxSZ921VhTivwIi/0ExJxihWKSObFnoyBQ1/kHumkGONBj65YC
+ dUWzHsAh2i6PcZldOYLM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 05:15:01PM +0200, Vojtech Pavlik wrote:
-> On Wed, May 14, 2014 at 04:59:05PM +0200, Jiri Slaby wrote:
+On Wednesday 14 May 2014 16:50:02 Antoine Ténart wrote:
+> On Wed, May 14, 2014 at 03:02:34PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 14 May 2014 11:48:57 Antoine Ténart wrote:
+> > > +static int phy_berlin_sata_power_on(struct phy *phy)
+> > > +{
+> > > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> > > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
+> > > +       u32 regval;
+> > > +
+> > > +       spin_lock(&priv->lock);
+> > > +
+> > > +       /* Power up PHY */
+> > > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> > > +       regval = readl(priv->base + HOST_VSA_DATA);
+> > > +       regval &= ~(desc->val);
+> > > +       writel(regval, priv->base + HOST_VSA_DATA);
+> > > +
+> > > +       /* Configure MBus */
+> > > +       writel(MBUS_SIZE_CONTROL, priv->base + HOST_VSA_ADDR);
+> > > +       regval = readl(priv->base + HOST_VSA_DATA);
+> > > +       regval |= MBUS_WRITE_REQUEST_SIZE_128 | MBUS_READ_REQUEST_SIZE_128;
+> > > +       writel(regval, priv->base + HOST_VSA_DATA);
+> > > +
+> > > +       spin_unlock(&priv->lock);
+> > > +
+> > > +       return 0;
+> > > +}
+> > > +
+> > > +static int phy_berlin_sata_power_off(struct phy *phy)
+> > > +{
+> > > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> > > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
+> > > +       u32 regval;
+> > > +
+> > > +       spin_lock(&priv->lock);
+> > > +
+> > > +       /* Power down PHY */
+> > > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> > > +       regval = readl(priv->base + HOST_VSA_DATA);
+> > > +       regval |= desc->val;
+> > > +       writel(regval, priv->base + HOST_VSA_DATA);
+> > > +
+> > > +       spin_unlock(&priv->lock);
+> > > +
+> > > +       return 0;
+> > 
+> > I don't get this part: you have a reference to the phy here,
+> > but then you go poking the phy registers from the SATA driver
+> > rather than calling a PHY API function.
 > 
-> > I see the worst case scenario. (For curious readers, it is for example
-> > this kthread body:
-> > while (1) {
-> >   some_paired_call(); /* invokes pre-patched code */
-> >   if (kthread_should_stop()) { /* kgraft switches to the new code */
-> >     its_paired_function(); /* invokes patched code (wrong) */
-> >     break;
-> >   }
-> >   its_paired_function(); /* the same (wrong) */
-> > })
-> > 
-> > What to do with that now? We have come up with a couple possibilities.
-> > Would you consider try_to_freeze() a good state-defining function? As it
-> > is called when a kthread expects weird things can happen, it should be
-> > safe to switch to the patched version in our opinion.
-> > 
-> > The other possibility is to patch every kthread loop (~300) and insert
-> > kgr_task_safe() semi-manually at some proper place.
-> > 
-> > Or if you have any other suggestions we would appreciate that?
+> The v1 only introduced an AHCI driver. I somewhat agree the PHY
+> operations done in the AHCI driver could be in there.
 > 
-> A heretic idea would be to convert all kernel threads into functions
-> that do not sleep and exit after a single iteration and are called from
-> a central kthread main loop function. That would get all of
-> kthread_should_stop() and try_to_freeze() and kgr_task_safe() nicely
-> into one place and at the same time put enough constraint on what the
-> thread function can do to prevent it from breaking the assumptions of
-> each of these calls. 
+> I can move the initialization done in the AHCI driver here, but I'll
+> still need the driver: the Berlin AHCI needs to call the framework
+> generic functions with a custom mask and has custom pm_ops. So I'll
+> end up with a nearly empty AHCI driver, not able to control the port
+> parameters.
+> 
+> Or I can put all this in the AHCI driver, but then we'll need to
+> describe the PHYs there (to be able to enable each PHY independently)
+> and add bindings to the SATA ones.
+> 
+> What do you think? I prefer the first solution, but we'll have SATA
+> port related configuration in the PHY and a very tiny AHCI driver
+> because I can't really use the default behaviour of the ahci_platform.
 
-Some substantial restructuring would be required for several of
-the kthreads I am aware of, which contain kthread_should_stop()
-inside loop bodies as well as on their conditions.  Also, a number
-of them do things like wait_event() and the like, which would mean
-that the central kthread main loop function would need to know
-about the wait queues and wait conditions and handle them properly.
-See for example rcu_torture_barrier_cbs() and rcu_torture_barrier()
-in kernel/rcu/rcutorture.c [*], which wait on each other in order to
-test RCU's rcu_barrier() primitives.
+I just noticed I quoted the wrong driver with my comment, but I think
+you got what I meant.
 
-							Thanx, Paul
+Why do you need a custom mask? Is that something you could pass
+as the argument in the phy descriptor using #phy-cells=<1>?
 
-* In older kernels, this is kernel/rcu/torture.c or kernel/rcutorture.c.
+> > > +                * By default the PHY node is used to request and match a PHY.
+> > > +                * We describe one PHY per sub-node here. Use the right node.
+> > > +                */
+> > > +               phy->dev.of_node = child;
+> > > +
+> > > +               priv->phys[phy_id].phy = phy;
+> > > +               priv->phys[phy_id].val = desc[phy_id].val;
+> > > +               priv->phys[phy_id].index = phy_id;
+> > > +               phy_set_drvdata(phy, &priv->phys[phy_id]);
+> > 
+> > And here, you set a driver specific value into a structure used by the
+> > PHY.
+> 
+> Values in priv->phys[] are related to the PHYs. phy_set_drvdata() allows
+> to store PHY related data, which is what I'm doing there. Nearly all PHY
+> drivers are doing this.
+> 
+> Or am I missing something?
 
+This part is really ok, I got confused when I replied to the wrong email.
+Sorry about this.
+
+> > Both of these are layering violations. You should either use the PHY
+> > interfaces correctly so the SATA driver doesn't have to know about the
+> > specific, or not use a PHY device node at all and do everything in
+> > the SATA front-end.
+> 
+> To be sure: you mean using the PHY init() interface in the AHCI driver?
+
+If this PHY is specific to the ahci-berlin hardware and not shared with
+anything else, you don't really need to split out a phy driver. That
+would somewhat simplify what you ahve here.
+
+The alternative is to make it as generic as you can. If you can manage
+to move all the phy code into phy-berlin-sata driver, it should be
+possible to just extend the ahci-platform driver resume function to
+reinitialize the phy if there is one.
+
+	Arnd
