@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950AbaENMHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:07:06 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:52840 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918AbaENMHE (ORCPT
+	id S1755165AbaENMLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:11:36 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:51049 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaENMLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:07:04 -0400
+	Wed, 14 May 2014 08:11:35 -0400
+Date: Wed, 14 May 2014 14:11:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
+Message-ID: <20140514121122.GC1278@localhost.localdomain>
+References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
+ <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
+ <20140514090629.GC30445@twins.programming.kicks-ass.net>
+ <20140514113808.GA1278@localhost.localdomain>
+ <20140514115406.GA11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com>
-References: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org>
-	<CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com>
-Date: Wed, 14 May 2014 17:37:03 +0530
-Message-ID: <CAHbNUh0fVND_oGLXWzsyKzbmJc_=FqhZTAnVHE4GGZ5aaJQbEg@mail.gmail.com>
-Subject: Re: [PATCH] dma: pl330: Add support for DMA_PAUSE command
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514115406.GA11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2014 17:29, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Wed, May 14, 2014 at 8:53 AM, Tushar Behera <tushar.behera@linaro.org> wrote:
->> While playing back audio, pmc_dmaengine requests the DMA channel to
->> stop DMA transmission through DMA_PAUSE command.
->>
->> Currently PL330 driver doesn't support DMA pause command, leaving
->> the DMA state inconsistent when the system resumes. Instead, it would
->> be better to terminate the DMA transfer during suspend and restart
->> again during resume.
->>
->> Tested with audio playback across a suspend-resume cycle.
->>
-> What is pmc_dmaengine? How does DMA_PAUSE help, when there is no DMA_RESUME?
->
+On Wed, May 14, 2014 at 01:54:06PM +0200, Peter Zijlstra wrote:
+> On Wed, May 14, 2014 at 01:38:14PM +0200, Frederic Weisbecker wrote:
+> > > > +bool irq_work_queue_on(struct irq_work *work, int cpu)
+> > > > +{
+> > > > +	/* Only queue if not already pending */
+> > > > +	if (!irq_work_claim(work))
+> > > > +		return false;
+> > > > +
+> > > > +	/* All work should have been flushed before going offline */
+> > > > +	WARN_ON_ONCE(cpu_is_offline(cpu));
+> > > 
+> > > 	WARN_ON_ONCE(in_nmi());
+> > 
+> > Well... I think it's actually NMI-safe.
+> 
+> I don't think it is, most apic calls do apic_wait_icr_idle() then the
+> apic op, if an NMI happens in between and writes to the APIC, the return
+> context will see a !idle icr and fail.
+> 
+> This is why arch_irq_work_raise() again idles the icr after sending the
+> IPI.
+> 
+> Also, I think, seeing what benh said earlier, its unsafe for other archs
+> too.
 
-Sorry, it is a typo.
+Ah I don't know much these archs details, so I concede it.
 
-sound/core/pcm_dmaengine.c:snd_dmaengine_pcm_trigger() -->
-dmaengine_pause() is called during system suspend.
+> 
+> > > > +	llist_add(&work->llnode, &per_cpu(irq_work_list, cpu));
+> > > > +	native_send_call_func_single_ipi(cpu);
+> > > 
+> > > At the very leastestest make that:
+> > > 
+> > > 	if (llist_add(&work->llnode, &per_cpu(irq_work_list, cpu)))
+> > > 		native_send_call_func_single_ipi(cpu);
+> > 
+> > So yeah the issue is that we may have IRQ_WORK_LAZY in the queue. And
+> > if we have only such work in the queue, nobody has raised before us.
+> > 
+> > So we can't just test with llist_add(). Or if we do, we must then
+> > separate raised and lazy list.
+> 
+> Then do the remote irq_work_raised thing. But it really stinks you broke
+> this very nice and simple thing.
 
-> DMA_PAUSE means freezing the transfer, not dropping it. DMA_RESUME
-> then moves the transfer again from that point. Clubbing PAUSE with
-> TERMINATE is plain wrong.  Sorry.
->
+I tried not to break boot with printk overhead. That said I've considered having
+a very simple "tick work" that can rely on irq work when the tick is stopped
+and use it for printk. That would restore the initial simplicity.
 
-Would you please suggest how should we go ahead with implementing
-DMA_PAUSE/DMA_RESUME support for PL330 driver?
+> 
+> > Also note that nohz is the only user for now and irq_work_claim() thus
+> > prevents from double IPI. Of course if more users come up the issue arise
+> > again.
+> 
+> DANGER, half arsed engineering at work, seriously? Just write proper
+> code already.
+> 
+> There's no fucking way the next user will check the implementation to
+> make sure its 'sane'.
 
-> Regards
-> Jassi
+Are you competing with tglx on grumpiness? You guys are free to treat us
+like shit but don't be surprised if one day you'll be alone in kernel/*
 
-Thanks,
--- 
-Tushar Behera
+> 
+> > Maybe I was paranoid but I was worried about the overhead of printk() wakeups
+> > on boot if implemented with IPIs.
+> > 
+> > Of course if I can be proven that it won't bring much damage to use an IPI, I'd
+> > be very happy to remove it.
+> 
+> That's the wrong fucking way around, first proof its needed then do
+> something about it. As is I think the LAZY thing is horrid.
