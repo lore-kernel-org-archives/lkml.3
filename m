@@ -1,118 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbaENAyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 20:54:50 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:34635 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798AbaENAys (ORCPT
+	id S1751850AbaENBD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 21:03:56 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:37681 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaENBDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 20:54:48 -0400
+	Tue, 13 May 2014 21:03:54 -0400
 MIME-Version: 1.0
 From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Tue, 13 May 2014 19:54:26 -0500
-Message-ID: <CA+BWVUTOHr-sktWtpGL7-1wTdz2suDWFjcyX=fFU+JHjs5+TTQ@mail.gmail.com>
-Subject: [PATCH] HID: Debug: Add labels for HID Sensor Usages
-To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input <linux-input@vger.kernel.org>,
+Date: Tue, 13 May 2014 20:03:32 -0500
+Message-ID: <CA+BWVUS0QYG54W3ws5s3g6iM=SXQHxBxJcKnjCxcEfZRAqp_Dg@mail.gmail.com>
+Subject: [PATCH] HID: hid-sensor-hub: Fix lockdep warning for dynamic callback locks.
+To: linux-kernel@vger.kernel.org, linux-input <linux-input@vger.kernel.org>,
+        linux-iio@vger.kernel.org,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes all dyn_callback_lock spinlocks to spinlocks that disable
+interrupts. The dynamic callback lock (dyn_callback_lock) must not be
+interrupted when locked as it is used in an interrupt handler
+function, sensor_hub_raw_event.
 ---
- drivers/hid/hid-debug.c | 79 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 79 insertions(+)
+ drivers/hid/hid-sensor-hub.c | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-index 53b771d..25cc71c 100644
---- a/drivers/hid/hid-debug.c
-+++ b/drivers/hid/hid-debug.c
-@@ -272,6 +272,85 @@ static const struct hid_usage_entry hid_usage_table[] = {
-     {0, 0xAA, "Shared_Parameter_Blocks"},
-     {0, 0xAB, "Create_New_Effect_Report"},
-     {0, 0xAC, "RAM_Pool_Available"},
-+  {  0x20, 0, "Sensor" },
-+    { 0x20, 0x01, "Sensor" },
-+    { 0x20, 0x10, "Biometric" },
-+      { 0x20, 0x11, "BiometricHumanPresence" },
-+      { 0x20, 0x12, "BiometricHumanProximity" },
-+      { 0x20, 0x13, "BiometricHumanTouch" },
-+    { 0x20, 0x20, "Electrical" },
-+      { 0x20, 0x21, "ElectricalCapacitance" },
-+      { 0x20, 0x22, "ElectricalCurrent" },
-+      { 0x20, 0x23, "ElectricalPower" },
-+      { 0x20, 0x24, "ElectricalInductance" },
-+      { 0x20, 0x25, "ElectricalResistance" },
-+      { 0x20, 0x26, "ElectricalVoltage" },
-+      { 0x20, 0x27, "ElectricalPoteniometer" },
-+      { 0x20, 0x28, "ElectricalFrequency" },
-+      { 0x20, 0x29, "ElectricalPeriod" },
-+    { 0x20, 0x30, "Environmental" },
-+      { 0x20, 0x31, "EnvironmentalAtmosphericPressure" },
-+      { 0x20, 0x32, "EnvironmentalHumidity" },
-+      { 0x20, 0x33, "EnvironmentalTemperature" },
-+      { 0x20, 0x34, "EnvironmentalWindDirection" },
-+      { 0x20, 0x35, "EnvironmentalWindSpeed" },
-+    { 0x20, 0x40, "Light" },
-+      { 0x20, 0x41, "LightAmbientLight" },
-+      { 0x20, 0x42, "LightConsumerInfrared" },
-+    { 0x20, 0x50, "Location" },
-+      { 0x20, 0x51, "LocationBroadcast" },
-+      { 0x20, 0x52, "LocationDeadReckoning" },
-+      { 0x20, 0x53, "LocationGPS" },
-+      { 0x20, 0x54, "LocationLookup" },
-+      { 0x20, 0x55, "LocationOther" },
-+      { 0x20, 0x56, "LocationStatic" },
-+      { 0x20, 0x57, "LocationTriangulation" },
-+    { 0x20, 0x60, "Mechanical" },
-+      { 0x20, 0x61, "MechanicalBooleanSwitch" },
-+      { 0x20, 0x62, "MechanicalBooleanSwitchArray" },
-+      { 0x20, 0x63, "MechanicalMultivalueSwitch" },
-+      { 0x20, 0x64, "MechanicalForce" },
-+      { 0x20, 0x65, "MechanicalPressure" },
-+      { 0x20, 0x66, "MechanicalStrain" },
-+      { 0x20, 0x67, "MechanicalWeight" },
-+      { 0x20, 0x68, "MechanicalHapticVibrator" },
-+      { 0x20, 0x69, "MechanicalHallEffectSwitch" },
-+    { 0x20, 0x70, "Motion" },
-+      { 0x20, 0x71, "MotionAccelerometer1D" },
-+      { 0x20, 0x72, "MotionAccelerometer2D" },
-+      { 0x20, 0x73, "MotionAccelerometer3D" },
-+      { 0x20, 0x74, "MotionGyrometer1D" },
-+      { 0x20, 0x75, "MotionGyrometer2D" },
-+      { 0x20, 0x76, "MotionGyrometer3D" },
-+      { 0x20, 0x77, "MotionMotionDetector" },
-+      { 0x20, 0x78, "MotionSpeedometer" },
-+      { 0x20, 0x79, "MotionAccelerometer" },
-+      { 0x20, 0x7A, "MotionGyrometer" },
-+    { 0x20, 0x80, "Orientation" },
-+      { 0x20, 0x81, "OrientationCompass1D" },
-+      { 0x20, 0x82, "OrientationCompass2D" },
-+      { 0x20, 0x83, "OrientationCompass3D" },
-+      { 0x20, 0x84, "OrientationInclinometer1D" },
-+      { 0x20, 0x85, "OrientationInclinometer2D" },
-+      { 0x20, 0x86, "OrientationInclinometer3D" },
-+      { 0x20, 0x87, "OrientationDistance1D" },
-+      { 0x20, 0x88, "OrientationDistance2D" },
-+      { 0x20, 0x89, "OrientationDistance3D" },
-+      { 0x20, 0x8A, "OrientationDeviceOrientation" },
-+      { 0x20, 0x8B, "OrientationCompass" },
-+      { 0x20, 0x8C, "OrientationInclinometer" },
-+      { 0x20, 0x8D, "OrientationDistance" },
-+    { 0x20, 0x90, "Scanner" },
-+      { 0x20, 0x91, "ScannerBarcode" },
-+      { 0x20, 0x91, "ScannerRFID" },
-+      { 0x20, 0x91, "ScannerNFC" },
-+    { 0x20, 0xA0, "Time" },
-+      { 0x20, 0xA1, "TimeAlarmTimer" },
-+      { 0x20, 0xA2, "TimeRealTimeClock" },
-+    { 0x20, 0xE0, "Other" },
-+      { 0x20, 0xE1, "OtherCustom" },
-+      { 0x20, 0xE2, "OtherGeneric" },
-+      { 0x20, 0xE3, "OtherGenericEnumerator" },
-   { 0x84, 0, "Power Device" },
-     { 0x84, 0x02, "PresentStatus" },
-     { 0x84, 0x03, "ChangeStatus" },
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index af8244b..1e1644c 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -133,10 +133,11 @@ static struct hid_sensor_hub_callbacks
+*sensor_hub_get_callback(
+  struct hid_sensor_hub_device **hsdev,
+  void **priv)
+ {
++ unsigned long flags;
+  struct hid_sensor_hub_callbacks_list *callback;
+  struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
+
+- spin_lock(&pdata->dyn_callback_lock);
++ spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+  list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+  if (callback->usage_id == usage_id &&
+  (collection_index >=
+@@ -145,10 +146,10 @@ static struct hid_sensor_hub_callbacks
+*sensor_hub_get_callback(
+  callback->hsdev->end_collection_index)) {
+  *priv = callback->priv;
+  *hsdev = callback->hsdev;
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+  return callback->usage_callback;
+  }
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+
+  return NULL;
+ }
+@@ -157,19 +158,20 @@ int sensor_hub_register_callback(struct
+hid_sensor_hub_device *hsdev,
+  u32 usage_id,
+  struct hid_sensor_hub_callbacks *usage_callback)
+ {
++ unsigned long flags;
+  struct hid_sensor_hub_callbacks_list *callback;
+  struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
+
+- spin_lock(&pdata->dyn_callback_lock);
++ spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+  list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+  if (callback->usage_id == usage_id &&
+  callback->hsdev == hsdev) {
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+  return -EINVAL;
+  }
+  callback = kzalloc(sizeof(*callback), GFP_ATOMIC);
+  if (!callback) {
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+  return -ENOMEM;
+  }
+  callback->hsdev = hsdev;
+@@ -177,7 +179,7 @@ int sensor_hub_register_callback(struct
+hid_sensor_hub_device *hsdev,
+  callback->usage_id = usage_id;
+  callback->priv = NULL;
+  list_add_tail(&callback->list, &pdata->dyn_callback_list);
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+
+  return 0;
+ }
+@@ -186,10 +188,11 @@ EXPORT_SYMBOL_GPL(sensor_hub_register_callback);
+ int sensor_hub_remove_callback(struct hid_sensor_hub_device *hsdev,
+  u32 usage_id)
+ {
++ unsigned long flags;
+  struct hid_sensor_hub_callbacks_list *callback;
+  struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
+
+- spin_lock(&pdata->dyn_callback_lock);
++ spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+  list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+  if (callback->usage_id == usage_id &&
+  callback->hsdev == hsdev) {
+@@ -197,7 +200,7 @@ int sensor_hub_remove_callback(struct
+hid_sensor_hub_device *hsdev,
+  kfree(callback);
+  break;
+  }
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+
+  return 0;
+ }
+@@ -376,34 +379,36 @@ EXPORT_SYMBOL_GPL(sensor_hub_input_get_attribute_info);
+ #ifdef CONFIG_PM
+ static int sensor_hub_suspend(struct hid_device *hdev, pm_message_t message)
+ {
++ unsigned long flags;
+  struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
+  struct hid_sensor_hub_callbacks_list *callback;
+
+  hid_dbg(hdev, " sensor_hub_suspend\n");
+- spin_lock(&pdata->dyn_callback_lock);
++ spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+  list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
+  if (callback->usage_callback->suspend)
+  callback->usage_callback->suspend(
+  callback->hsdev, callback->priv);
+  }
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+
+  return 0;
+ }
+
+ static int sensor_hub_resume(struct hid_device *hdev)
+ {
++ unsigned long flags;
+  struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
+  struct hid_sensor_hub_callbacks_list *callback;
+
+  hid_dbg(hdev, " sensor_hub_resume\n");
+- spin_lock(&pdata->dyn_callback_lock);
++ spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+  list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
+  if (callback->usage_callback->resume)
+  callback->usage_callback->resume(
+  callback->hsdev, callback->priv);
+  }
+- spin_unlock(&pdata->dyn_callback_lock);
++ spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+
+  return 0;
+ }
 -- 
 1.9.0
