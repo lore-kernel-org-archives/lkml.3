@@ -1,150 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaENHDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:03:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39814 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717AbaENHDH convert rfc822-to-8bit (ORCPT
+	id S1752191AbaENHFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:05:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44005 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750721AbaENHFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:03:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1050,1389772800"; 
-   d="scan'208";a="431884094"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] pwm: lpss: remove dependency on clk framework
-Thread-Topic: [PATCH] pwm: lpss: remove dependency on clk framework
-Thread-Index: AQHPa2HlssGmNDZgIEys6Mqka80XEps/rNfA
-Date: Wed, 14 May 2014 07:00:59 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0B004D2D@PGSMSX108.gar.corp.intel.com>
-References: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
-In-Reply-To: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 May 2014 03:05:04 -0400
+Date: Wed, 14 May 2014 09:00:38 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        gregory.clement@free-electrons.com, arnd@arndb.de,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 4/6] arm: add basic support for Mediatek MT6589 boards
+Message-ID: <20140514070038.GG29258@lukather>
+References: <1399938570-11356-1-git-send-email-matthias.bgg@gmail.com>
+ <1399938570-11356-5-git-send-email-matthias.bgg@gmail.com>
+ <20140513224732.GJ20486@codeaurora.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzX0AQGjRQPusK/O"
+Content-Disposition: inline
+In-Reply-To: <20140513224732.GJ20486@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> Unlike other Intel LPSS devices, the PWM does not have the clock dividers or
-> the gate. All we get from the clock is the rate. Since PCI case uses the driver
-> data to get the rate, we can drop the clk and use the same data also in case of
-> ACPI. The frequency is the same.
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  drivers/pwm/pwm-lpss.c | 32 ++++++++++----------------------
->  1 file changed, 10 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c index
-> 44ce6c6..4df994f 100644
-> --- a/drivers/pwm/pwm-lpss.c
-> +++ b/drivers/pwm/pwm-lpss.c
-> @@ -14,7 +14,6 @@
->   */
-> 
->  #include <linux/acpi.h>
-> -#include <linux/clk.h>
->  #include <linux/device.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> @@ -37,7 +36,6 @@ static int pci_drv, plat_drv;	/* So we know which drivers
-> registered */
->  struct pwm_lpss_chip {
->  	struct pwm_chip chip;
->  	void __iomem *regs;
-> -	struct clk *clk;
->  	unsigned long clk_rate;
->  };
-> 
-> @@ -97,11 +95,6 @@ static int pwm_lpss_enable(struct pwm_chip *chip,
-> struct pwm_device *pwm)  {
->  	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
->  	u32 ctrl;
-> -	int ret;
-> -
-> -	ret = clk_prepare_enable(lpwm->clk);
-> -	if (ret)
-> -		return ret;
-> 
->  	ctrl = readl(lpwm->regs + PWM);
->  	writel(ctrl | PWM_ENABLE, lpwm->regs + PWM); @@ -116,8 +109,6
-> @@ static void pwm_lpss_disable(struct pwm_chip *chip, struct pwm_device
-> *pwm)
-> 
->  	ctrl = readl(lpwm->regs + PWM);
->  	writel(ctrl & ~PWM_ENABLE, lpwm->regs + PWM);
-> -
-> -	clk_disable_unprepare(lpwm->clk);
->  }
-> 
->  static const struct pwm_ops pwm_lpss_ops = { @@ -142,17 +133,7 @@ static
-> struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
->  	if (IS_ERR(lpwm->regs))
->  		return ERR_CAST(lpwm->regs);
-> 
-> -	if (info) {
-> -		lpwm->clk_rate = info->clk_rate;
-> -	} else {
-> -		lpwm->clk = devm_clk_get(dev, NULL);
-> -		if (IS_ERR(lpwm->clk)) {
-> -			dev_err(dev, "failed to get PWM clock\n");
-> -			return ERR_CAST(lpwm->clk);
-> -		}
-> -		lpwm->clk_rate = clk_get_rate(lpwm->clk);
-> -	}
-> -
-> +	lpwm->clk_rate = info->clk_rate;
->  	lpwm->chip.dev = dev;
->  	lpwm->chip.ops = &pwm_lpss_ops;
->  	lpwm->chip.base = -1;
-> @@ -221,12 +202,19 @@ static struct pci_driver pwm_lpss_driver_pci = {
-> 
->  static int pwm_lpss_probe_platform(struct platform_device *pdev)  {
-> +	const struct pwm_lpss_boardinfo *info;
-> +	const struct acpi_device_id *id;
->  	struct pwm_lpss_chip *lpwm;
->  	struct resource *r;
-> 
-> +	id = acpi_match_device(pdev->dev.driver->acpi_match_table, &pdev-
-> >dev);
-> +	if (!id)
-> +		return -ENODEV;
-> +
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> 
-> -	lpwm = pwm_lpss_probe(&pdev->dev, r, NULL);
-> +	info = (struct pwm_lpss_boardinfo *)id->driver_data;
-> +	lpwm = pwm_lpss_probe(&pdev->dev, r, info);
->  	if (IS_ERR(lpwm))
->  		return PTR_ERR(lpwm);
-> 
-> @@ -242,7 +230,7 @@ static int pwm_lpss_remove_platform(struct
-> platform_device *pdev)  }
-> 
->  static const struct acpi_device_id pwm_lpss_acpi_match[] = {
-> -	{ "80860F09", 0 },
-> +	{ "80860F09", (unsigned long)&byt_info },
->  	{ },
->  };
+--NzX0AQGjRQPusK/O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Heikki,
-For ACPI mode, the clock rate information for PWM is being setup in the acpi_lpss.c layer.
-Thus, only PCI mode depends on the driver_data to pass in the clock rate information.
+Hi Stephen,
 
+On Tue, May 13, 2014 at 03:47:32PM -0700, Stephen Boyd wrote:
+> On 05/13, Matthias Brugger wrote:
+> > diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek=
+/mediatek.c
+> > new file mode 100644
+> > index 0000000..73dfb05
+> > --- /dev/null
+> > +++ b/arch/arm/mach-mediatek/mediatek.c
+> > @@ -0,0 +1,32 @@
+> > +/*
+> > + * Device Tree support for Mediatek SoCs
+> > + *
+> > + * Copyright (c) 2014 MundoReader S.L.
+> > + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/init.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/irqchip.h>
+> > +#include <asm/mach/arch.h>
+> > +#include <asm/mach/map.h>
+> > +
+> > +static const char * const mediatek_board_dt_compat[] =3D {
+>=20
+> __initconst?
+>=20
+> > +	"mediatek,mt6589",
+> > +	NULL,
+> > +};
+> > +
+> > +DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
+> > +	.dt_compat	=3D mediatek_board_dt_compat,
+> > +MACHINE_END
+>=20
+> You shouldn't need this file at all if the platform is part of
+> the multi-platform kernel.
 
->  MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
-> --
-> 2.0.0.rc2
+=46rom a technical point of view, you don't. But it's interesting to
+keep it mostly for two things:
+  - You get to see the platform name in /proc/cpuinfo
+  - If you ever need to add platform quirks, it's already there
 
+We had a similar discussion two weeks ago for mach-sunxi with Olof and
+Arnd, and ended up keeping this minimal machine.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--NzX0AQGjRQPusK/O
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTcxSWAAoJEBx+YmzsjxAgWbUP/1KjxjXr7cMTDuUDXH3PeY82
+MD2yTOL0Xu8nkg8I8kw38RCNb5/6TEavsNm3gBkAANo+h45VQPtNC3oyzsWIOMOQ
+8MTJAh3azNQKO4YHJ92G2uR1o/O0nzkWXJB6yWeWlVjsOKk2dytVUD4d17g2yy4B
+kfMNjH7/Zu3PeFHgIvgTBsKptvbl5iOUq9RY3V/soH0jVoS4s2JIWHnegcu4dNU9
+X1mzlkPnbf2WvrIVPdzLg20jiqo8/w9Roq6PIsv9R9eaUYrXz7WVlAcEEFP2Xqyp
+rgenE5ysbqJznHu8mUmkWf3TkUdZ72od+GiYA/2FEox0UK2M8m/OaNlYBh3Ikn0k
+7X9kGtaoHnF70IzvNfJi8vnZuWJz2Uz7SHPYpEgwb2sEbu56kB0biLI8dQQjqtOw
+jOsH75GnvqW37K4FVTsfH5KVXRWZYNVky/1nm+ANmnMHAdUk9uz9ICiUM8I8YOyK
+9BH5BP8Ggwmnwo6wz6pNMfAP1cr1D6hSGhJqNfVzduFg8DMp0MK1+agkSZ/PCarV
+CBWSo3QP95E+zGLl2red0MnumxCckQG+9znSH/QppMiQPT40DnIDtxVQ1yPagelS
+LfyXV/J2x8t0iaFiuZvt9uaN82Q5m7jxyVUQylHxTjm29P/om8d/PadksHdBq4fw
+IY74rYaRWr/Rk6NxoD4V
+=esYU
+-----END PGP SIGNATURE-----
+
+--NzX0AQGjRQPusK/O--
