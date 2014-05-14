@@ -1,101 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaENUj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:39:29 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:58506 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaENUj1 (ORCPT
+	id S1752506AbaENUly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:41:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30476 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbaENUlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:39:27 -0400
-Date: Thu, 15 May 2014 00:39:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140514203924.GE28328@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140506202307.GA1458@moon>
- <20140508020050.GX39568@redhat.com>
- <20140508073756.GM8607@moon>
- <20140508074930.GN8607@moon>
- <20140508080234.GO8607@moon>
- <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu>
+	Wed, 14 May 2014 16:41:53 -0400
+Message-ID: <5373D509.7090207@oracle.com>
+Date: Wed, 14 May 2014 16:41:45 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+In-Reply-To: <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 12:19:49PM -0400, Vince Weaver wrote:
-> On Thu, 8 May 2014, Cyrill Gorcunov wrote:
-> > 
-> > Updated.
-> > ---
-> >  arch/x86/kernel/cpu/perf_event_p4.c |   67 ++++++++++++++++--------------------
-> >  1 file changed, 30 insertions(+), 37 deletions(-)
+On 05/14/2014 04:23 PM, Andrew Morton wrote:
+> On Wed, 14 May 2014 11:55:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 > 
-> I tried this patch, and even though it seemed to fix one of the NMI storms 
-> I was experiencing I've managed to trigger again using a different random 
-> seed.
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> kernel I've stumbled on the following spew:
+>>
+>> [ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
+>> [ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
+>> [ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
+>> [ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> [ 1634.972913] Dumping ftrace buffer:
+>> [ 1634.975493]    (ftrace buffer empty)
+>> [ 1634.977470] Modules linked in:
+>> [ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
+>> [ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
+>> [ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
 > 
-> I've been trying to track down a trace of what is triggering things, but 
-> this is very difficult as the full log isn't making it to the serial 
-> console, even when I fsync() stdout.
-> 
-> Maybe related, but the following messages tend to happen a lot while 
-> fuzzing, and always happen before the fuzzing that eventually locks up:
-> 
-> The warnings are for
-> 	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-> and
-> 	WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
+> Somebody's gone and broken the x86 oops output.  It used to say
+> "special_mapping_fault+0x30/0x120" but the offset info has now
+> disappeared.  That was useful for guesstimating whereabouts in the
+> function it died.
 
-So I'm experiencing the same problem on latest -tip + my patches applied.
+I'm the one who "broke" the oops output, but I thought I'm helping people
+read that output instead of making it harder...
 
-[  635.184382] perf interrupt took too long (2522 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-[  638.674769] perf interrupt took too long (5009 > 5000), lowering kernel.perf_event_max_sample_rate to 25000
-[ 1126.156992] ------------[ cut here ]------------
-[ 1126.157010] WARNING: CPU: 0 PID: 6166 at arch/x86/kernel/cpu/perf_event.c:1083 x86_pmu_start+0x50/0xe5()
-[ 1126.157014] Modules linked in:
-[ 1126.157022] CPU: 0 PID: 6166 Comm: perf_fuzzer Not tainted 3.15.0-rc5-gfddecae-dirty #2
-[ 1126.157024] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./P5GD1 PRO, BIOS 1012.001 10/13/2005
-[ 1126.157024]  00000000 00000000 f49add90 c15684ed 00000000 f49adda8 c10385cc c10112a9
-[ 1126.157024]  f5d5e7f0 f3bafc00 0000000c f49addb8 c10385f7 00000009 00000000 f49addd0
-[ 1126.157024]  c10112a9 00000002 f5d5e7f4 f3bafc00 f5d5e7f0 f49addf8 c10118ea 00000001
-[ 1126.157024] Call Trace:
-[ 1126.157024]  [<c15684ed>] dump_stack+0x49/0x73
-[ 1126.157024]  [<c10385cc>] warn_slowpath_common+0x66/0x7d
-[ 1126.157024]  [<c10112a9>] ? x86_pmu_start+0x50/0xe5
-[ 1126.157024]  [<c10385f7>] warn_slowpath_null+0x14/0x18
-[ 1126.157024]  [<c10112a9>] x86_pmu_start+0x50/0xe5
-[ 1126.157024]  [<c10118ea>] x86_pmu_enable+0x221/0x260
-[ 1126.157024]  [<c10c6e8f>] perf_pmu_enable+0x1f/0x23
-[ 1126.157024]  [<c10c87a0>] perf_cpu_hrtimer_handler+0xe9/0x131
-[ 1126.157024]  [<c10c86b7>] ? __perf_install_in_context+0xc7/0xc7
-[ 1126.157024]  [<c1053304>] __run_hrtimer+0xa6/0x149
-[ 1126.157024]  [<c1053b57>] hrtimer_interrupt+0xe6/0x1e5
-[ 1126.157024]  [<c12b28c0>] ? __this_cpu_preempt_check+0xf/0x11
-[ 1126.157024]  [<c1026a7f>] local_apic_timer_interrupt+0x45/0x4a
-[ 1126.157024]  [<c1026f7c>] smp_trace_apic_timer_interrupt+0x48/0xa2
-[ 1126.157024]  [<c156f006>] trace_apic_timer_interrupt+0x32/0x38
-[ 1126.157024]  [<c106007b>] ? sched_slice.isra.40+0x7e/0x91
-[ 1126.157024]  [<c108bec1>] ? generic_exec_single+0x4f/0xea
-[ 1126.157024]  [<c10c4179>] ? perf_cgroup_exit+0x17/0x17
-[ 1126.157024]  [<c10c4179>] ? perf_cgroup_exit+0x17/0x17
-[ 1126.157024]  [<c108c011>] smp_call_function_single+0x66/0x9a
-[ 1126.157024]  [<c10c3730>] cpu_function_call+0x29/0x2e
-[ 1126.157024]  [<c10c7107>] ? group_sched_out+0x66/0x66
-[ 1126.157024]  [<c10c5aae>] perf_event_disable+0x2d/0x7b
-[ 1126.157024]  [<c10c5a81>] ? list_del_event+0xa8/0xa8
-[ 1126.157024]  [<c10c3a2a>] perf_event_for_each_child+0x4c/0x7b
-[ 1126.157024]  [<c10c768f>] perf_event_task_disable+0x3a/0x67
-[ 1126.157024]  [<c1048bb9>] SyS_prctl+0x14a/0x345
-[ 1126.157024]  [<c106e363>] ? trace_hardirqs_on_caller+0x177/0x1d2
-[ 1126.157024]  [<c156e644>] sysenter_do_call+0x12/0x32
-[ 1126.157024] ---[ end trace 1c8a0d8dcf7e5bde ]---
+What happened before is that due to my rather complex .config, the offsets
+didn't make sense to anyone who didn't build the kernel with my .config,
+so I had to repeatedly send it out to folks who attempted to get basic
+things like line numbers.
 
-Continue investigating...
+> The line number isn't very useful as it's not possible (or at least,
+> not convenient) for others to reliably reproduce your kernel.
+
+I don't understand that part. I'm usually stating in the beginning of my
+mails that I run my testing on the latest -next kernel. And indeed if
+you look at today's -next, that line number would point to:
+
+        for (pages = vma->vm_private_data; pgoff && *pages; ++pages) <=== HERE
+                pgoff--;
+
+So I'm not sure how replacing the offset with line numbers is making things
+worse? previously offsets were useless for people who tried to debug these
+spews so that's why I switched it to line numbers in the first place.
+
+> <scrabbles with git for a while>
+> 
+> : static int special_mapping_fault(struct vm_area_struct *vma,
+> : 				struct vm_fault *vmf)
+> : {
+> : 	pgoff_t pgoff;
+> : 	struct page **pages;
+> : 
+> : 	/*
+> : 	 * special mappings have no vm_file, and in that case, the mm
+> : 	 * uses vm_pgoff internally. So we have to subtract it from here.
+> : 	 * We are allowed to do this because we are the mm; do not copy
+> : 	 * this code into drivers!
+> : 	 */
+> : 	pgoff = vmf->pgoff - vma->vm_pgoff;
+> : 
+> : 	for (pages = vma->vm_private_data; pgoff && *pages; ++pages)
+> : 		pgoff--;
+> : 
+> : 	if (*pages) {
+> : 		struct page *page = *pages;
+> : 		get_page(page);
+> : 		vmf->page = page;
+> : 		return 0;
+> : 	}
+> : 
+> : 	return VM_FAULT_SIGBUS;
+> : }
+> 
+> OK so it might be the "if (*pages)".  So vma->vm_private_data was NULL
+> and pgoff was zero.  As usual, I can't imagine what race would cause
+> that :(
+
+Yup, it's the *pages part in the 'for' loop above that. I did find the
+following in the vdso code:
+
+        vma = _install_special_mapping(mm,
+                                       addr + image->size,
+                                       image->sym_end_mapping - image->size,
+                                       VM_READ,
+                                       NULL);
+
+Which installs a mapping with a NULL ptr for pages (if I understand that
+correctly), but that code has been there for a while now.
+
+
+Thanks,
+Sasha
+been there
