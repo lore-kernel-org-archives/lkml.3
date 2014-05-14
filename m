@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884AbaENKon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 06:44:43 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:62800 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaENKoi (ORCPT
+	id S1754622AbaENKwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:52:16 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:28741
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752925AbaENKwP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 06:44:38 -0400
-Message-ID: <53734911.30306@suse.cz>
-Date: Wed, 14 May 2014 12:44:33 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 06:52:15 -0400
+X-Greylist: delayed 863 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 May 2014 06:52:14 EDT
+From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
+To: Stanislav Meduna <stano@meduna.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: RE: Freescale FEC i.MX28 VLAN support?
+Thread-Topic: Freescale FEC i.MX28 VLAN support?
+Thread-Index: AQHPb117rlhoJapyjkC2Emq6lusmNps/4VrQ
+Date: Wed, 14 May 2014 10:37:47 +0000
+Message-ID: <af16d562c5674929a5d12f0625a5685a@BLUPR03MB373.namprd03.prod.outlook.com>
+References: <5373418F.6090602@meduna.org>
+In-Reply-To: <5373418F.6090602@meduna.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-forefront-prvs: 0211965D06
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(51704005)(377454003)(164054003)(20776003)(81542001)(79102001)(101416001)(85852003)(83072002)(86362001)(76482001)(2656002)(81342001)(64706001)(92566001)(4396001)(2201001)(77096999)(74662001)(33646001)(19580395003)(74502001)(76576001)(74316001)(31966008)(99396002)(66066001)(21056001)(54356999)(87936001)(83322001)(77982001)(19580405001)(50986999)(99286001)(46102001)(76176999)(80022001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB373;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=fugang.duan@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Aravinda Prasad <aravinda@linux.vnet.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>
-CC: linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
-        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 03/16] kgr: initial code
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz> <1398868249-26169-4-git-send-email-jslaby@suse.cz> <53733746.1040200@linux.vnet.ibm.com> <53734176.5000003@suse.cz> <5373483E.50300@linux.vnet.ibm.com>
-In-Reply-To: <5373483E.50300@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 12:41 PM, Aravinda Prasad wrote:
-> 
-> 
-> On Wednesday 14 May 2014 03:42 PM, Jiri Slaby wrote:
->> On 05/14/2014 11:28 AM, Aravinda Prasad wrote:
->>> On Wednesday 30 April 2014 08:00 PM, Jiri Slaby wrote:
->>>> From: Jiri Kosina <jkosina@suse.cz>
->>>>
->>>> Provide initial implementation. We are now able to do ftrace-based
->>>> runtime patching of the kernel code.
->>>>
->>>> In addition to that, we will provide a kgr_patcher module in the next
->>>> patch to test the functionality.
->>>
->>> Hi Jiri,
->>>
->>> Interesting! I have couple of comments:
->>>
->>> I think with kgraft (also with kpatch, though have not looked into
->>> it yet), the patched function cannot be dynamically ftraced.
->>> Though dynamic ftrace can be enabled on the new code, the user is
->>> required to know the function label of the new code. This could
->>> potentially break existing scripts. I think this should be documented.
->>
->> Hi,
->>
->> of course that the functions can be traced. Look, I turned on tracing
->> for capable, then patched, then turned on tracing for new_capable (which
->> is the patched function). So now, trace shows:
->>   console-kit-dae-535   [001] ...1   181.729698: capable <-vt_ioctl
->>  console-kit-dae-539   [001] ...1   181.729741: capable <-vt_ioctl
->>  console-kit-dae-541   [000] .N.1   181.906014: capable <-vt_ioctl
->>          systemd-1     [001] ...1   181.937328: capable <-SyS_epoll_ctl
->>             sshd-662   [001] ...1   246.437561: capable <-sock_setsockopt
->>             sshd-662   [001] ...1   246.437564: new_capable
->> <-sock_setsockopt
->>             sshd-662   [001] ...1   246.444790: capable <-sock_setsockopt
->>             sshd-662   [001] ...1   246.444793: new_capable
->> <-sock_setsockopt
->>      dbus-daemon-128   [000] .N.1   246.456307: capable <-SyS_epoll_ctl
->>      dbus-daemon-128   [000] ...1   246.456611: new_capable <-SyS_epoll_ctl
->>
->>
->> There is no limitation thanks to the use of the ftrace subsystem. We are
->> just another user, i.e. another piece of code called in a loop for a
->> particular fentry location.
-> 
-> Yes true. What I intended to mention is that: the trace is turned on
-> for "capable" then the function is patched. Eventually, once the patch
-> is finalized, there will be no trace log for "capable". Someone tracing
-> the function "capable", not aware of patching, may think that it has not
-> been invoked. The user, hence, is expected to start tracing
-> "new_capable". I think this should be documented.
+Hi, Stano,
 
-As you can see in the trace log above, no. fentry of capable is still
-traced (and new_capable is traced along)...
+From: Stanislav Meduna <stano@meduna.org> Data: Wednesday, May 14, 2014 6:13 PM
+>To: linux-kernel@vger.kernel.org; netdev@vger.kernel.org; Linux ARM Kernel
+>Subject: Freescale FEC i.MX28 VLAN support?
+>
+>Hi,
+>
+>is there any particular reason why the FEC_QUIRK_HAS_VLAN is only set for imx6q-
+>fec ?
+>
+>According to the reference manual the VLAN support is also present in i.MX28 and
+>the DMA descriptors look the same in this regard, but this is from eyeballing only,
+>I did not try to play with it yet.
+>
+>The reason I am asking is that I am using a switch that can tag the frames
+>according to the port a packet is received from/sent to and I would like to use
+>that feature.
+>
+>Please Cc: me when replying.
+>
+>Thanks
+>--
+>                                Stano
 
-> What if someone turns on tracing for "capable" after it is patched?
-> Will it overwrite the slow/fast stub?
+Imx28 also support the feature, you can enable it.
+HW only support detect VLAN packet. The function with the config just using software to remove VLAN tag while receiving one packet.
 
-Nope, it would look like in the example above.
-
-thanks,
--- 
-js
-suse labs
+Thanks,
+Andy
