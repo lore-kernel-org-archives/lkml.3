@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606AbaENMx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:53:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755380AbaENMxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:53:55 -0400
-Message-ID: <5373675B.5030102@redhat.com>
-Date: Wed, 14 May 2014 14:53:47 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755639AbaENMyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:54:40 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49555 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375AbaENMyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 08:54:39 -0400
+Date: Wed, 14 May 2014 15:54:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jens Axboe <axboe@fb.com>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>,
+        Sam Bradshaw <sbradshaw@micron.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] mtip32xx: blk_mq_init_queue() returns an ERR_PTR
+Message-ID: <20140514125418.GA14571@mwanda>
 MIME-Version: 1.0
-To: ching <ching2048@areca.com.tw>, jbottomley@parallels.com,
-        dan.carpenter@oracle.com, agordeev@redhat.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after
- all initialization done
-References: <1400068509.6957.62.camel@localhost>
-In-Reply-To: <1400068509.6957.62.camel@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 01:55 PM, ching wrote:
-> From: Ching<ching2048@areca.com.tw>
->
-> This is a new patch after patch v1.1 series.
->
-> Fixed calling scsi_scan_host until all initialization are done.
-> And fixed error path free allocated resource.
->
-> Signed-off-by: Ching<ching2048@areca.com.tw>
-> ---
->
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
-> @@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
->  static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
->  static const char *arcmsr_info(struct Scsi_Host *);
->  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
-> +static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
->  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
->  					  int queue_depth, int reason)
->  {
-> @@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
->  	}
->  	error = scsi_add_host(host, &pdev->dev);
->  	if(error){
-> -		goto RAID_controller_stop;
-> +		goto free_ccb_pool;
->  	}
->  	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
->  		goto scsi_host_remove;
->  	arcmsr_iop_init(acb);
-> -    	scsi_scan_host(host);
->  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
->  	atomic_set(&acb->rq_map_token, 16);
->  	atomic_set(&acb->ante_token_value, 16);
-> @@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
->  	add_timer(&acb->eternal_timer);
->  	if(arcmsr_alloc_sysfs_attr(acb))
->  		goto out_free_sysfs;
-> +    	scsi_scan_host(host);
->  	return 0;
->  out_free_sysfs:
-> -scsi_host_remove:
-> -	scsi_remove_host(host);
-> -RAID_controller_stop:
-> +	del_timer_sync(&acb->eternal_timer);
-> + 	flush_work(&acb->arcmsr_do_message_isr_bh);
+We changed this from blk_alloc_queue_node() to blk_mq_init_queue() so
+the check needs to be updated as well.
 
-In your driver you use both flush_work(struct work_struct *) and flush_scheduled_work(),
-the second form is used used to flush the shared workqueue. 
-That said (and I think you use just one queue) you should decide which one is correct.
-In my previous mail I have asked about flush_work because i have it seen elsewhere in
-your code, now I've noticed the use of schedule_work and that means that you are using the global wq.
+Fixes: ee5036035df1 ('mtip32xx: convert to use blk-mq')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 3a0882e..5979ab3 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -3890,7 +3890,7 @@ skip_create_disk:
  
-
->  	arcmsr_stop_adapter_bgrb(acb);
->  	arcmsr_flush_adapter_cache(acb);
-> +	arcmsr_free_irq(pdev, acb);
-> +scsi_host_remove:
-> +	scsi_remove_host(host);
-> +free_ccb_pool:
->  	arcmsr_free_ccb_pool(acb);
->  free_hbb_mu:
->  	arcmsr_free_mu(acb);
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+ 	/* Allocate the request queue. */
+ 	dd->queue = blk_mq_init_queue(&dd->tags);
+-	if (dd->queue == NULL) {
++	if (IS_ERR(dd->queue)) {
+ 		dev_err(&dd->pdev->dev,
+ 			"Unable to allocate request queue\n");
+ 		rv = -ENOMEM;
