@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaENHbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:31:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44176 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752295AbaENHbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:31:13 -0400
-Message-ID: <53731BB3.4060504@free-electrons.com>
-Date: Wed, 14 May 2014 09:30:59 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752661AbaENHbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:31:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44243 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaENHbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 03:31:39 -0400
+Date: Wed, 14 May 2014 08:31:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookups in unlock_page fastpath
+Message-ID: <20140514073133.GY23991@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-20-git-send-email-mgorman@suse.de>
+ <20140513165223.GB5226@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 5/7] clk: sunxi: add PRCM (Power/Reset/Clock Management)
- clks support
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com> <1399633911-7094-6-git-send-email-boris.brezillon@free-electrons.com> <20140514005119.16152.19787@quantum>
-In-Reply-To: <20140514005119.16152.19787@quantum>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140513165223.GB5226@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike,
+On Tue, May 13, 2014 at 06:52:23PM +0200, Peter Zijlstra wrote:
+> On Tue, May 13, 2014 at 10:45:50AM +0100, Mel Gorman wrote:
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index c60ed0f..d81ed7d 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -241,15 +241,15 @@ void delete_from_page_cache(struct page *page)
+> >  }
+> >  EXPORT_SYMBOL(delete_from_page_cache);
+> >  
+> > -static int sleep_on_page(void *word)
+> > +static int sleep_on_page(void)
+> >  {
+> > -	io_schedule();
+> > +	io_schedule_timeout(HZ);
+> >  	return 0;
+> >  }
+> >  
+> > -static int sleep_on_page_killable(void *word)
+> > +static int sleep_on_page_killable(void)
+> >  {
+> > -	sleep_on_page(word);
+> > +	sleep_on_page();
+> >  	return fatal_signal_pending(current) ? -EINTR : 0;
+> >  }
+> >  
+> 
+> I've got a patch from NeilBrown that conflicts with this, shouldn't be
+> hard to resolve though.
+> 
 
-On 14/05/2014 02:51, Mike Turquette wrote:
-> Quoting Boris BREZILLON (2014-05-09 04:11:49)
->> +struct clk_ops ar100_ops = {
->> +       .recalc_rate = ar100_recalc_rate,
->> +       .determine_rate = ar100_determine_rate,
->> +       .set_parent = ar100_set_parent,
->> +       .get_parent = ar100_get_parent,
->> +       .set_rate = ar100_set_rate,
->> +};
-> I might be having a brain fart, but is there a valid case for having
-> both a .recalc_rate and a .determine_rate? I believe that the former
-> will never be used and the latter will always be used by the clock
-> framework core.
+Kick me if there are problems.
 
-I think you're mistaking recalc_rate for round_rate.
-AFAIK, recalc_rate is mandatory for a clk that implement either
-round_rate or determine_rate.
+> > @@ -680,30 +680,105 @@ static wait_queue_head_t *page_waitqueue(struct page *page)
+> >  	return &zone->wait_table[hash_ptr(page, zone->wait_table_bits)];
+> >  }
+> >  
+> > -static inline void wake_up_page(struct page *page, int bit)
+> > +static inline wait_queue_head_t *clear_page_waiters(struct page *page)
+> >  {
+> > -	__wake_up_bit(page_waitqueue(page), &page->flags, bit);
+> > +	wait_queue_head_t *wqh = NULL;
+> > +
+> > +	if (!PageWaiters(page))
+> > +		return NULL;
+> > +
+> > +	/*
+> > +	 * Prepare to clear PG_waiters if the waitqueue is no longer
+> > +	 * active. Note that there is no guarantee that a page with no
+> > +	 * waiters will get cleared as there may be unrelated pages
+> > +	 * sleeping on the same page wait queue. Accurate detection
+> > +	 * would require a counter. In the event of a collision, the
+> > +	 * waiter bit will dangle and lookups will be required until
+> > +	 * the page is unlocked without collisions. The bit will need to
+> > +	 * be cleared before freeing to avoid triggering debug checks.
+> > +	 *
+> > +	 * Furthermore, this can race with processes about to sleep on
+> > +	 * the same page if it adds itself to the waitqueue just after
+> > +	 * this check. The timeout in sleep_on_page prevents the race
+> > +	 * being a terminal one. In effect, the uncontended and non-race
+> > +	 * cases are faster in exchange for occasional worst case of the
+> > +	 * timeout saving us.
+> > +	 */
+> > +	wqh = page_waitqueue(page);
+> > +	if (!waitqueue_active(wqh))
+> > +		ClearPageWaiters(page);
+> > +
+> > +	return wqh;
+> > +}
+> 
+> This of course is properly disgusting, but my brain isn't working right
+> on 4 hours of sleep, so I'm able to suggest anything else.
 
+It could be "solved" by adding a zone lock or abusing the mapping tree_lock
+to protect the waiters bit but that would put a very expensive operation into
+the unlock page path. Same goes for any sort of sequence counter tricks. The
+waitqueue lock cannot be used in this case because that would necessitate
+looking up page_waitqueue every time which would render the patch useless.
 
-Best Regards,
-
-Boris
+It occurs to me that one option would be to recheck waiters once we're
+added to the waitqueue and if PageWaiters is clear then recheck the bit
+we're waiting on instead of going to sleep.
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+Mel Gorman
+SUSE Labs
