@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaENPLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:11:46 -0400
-Received: from host171.canaca.com ([67.55.55.225]:56897 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbaENPLo (ORCPT
+	id S1755619AbaENPNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:13:00 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42578 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752156AbaENPM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:11:44 -0400
-Message-ID: <ceda9d065796952132cc6ff971c0537b.squirrel@mungewell.org>
-In-Reply-To: <1818063.tFLKhAd1oy@sigyn>
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
-    <1398524543-15012-2-git-send-email-madcatxster@devoid-pointer.net>
-    <20140514063806.GC13621@core.coreip.homeip.net>
-    <1818063.tFLKhAd1oy@sigyn>
-Date: Wed, 14 May 2014 11:11:40 -0400
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-From: simon@mungewell.org
-To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-User-Agent: SquirrelMail/1.4.22
+	Wed, 14 May 2014 11:12:58 -0400
+Date: Wed, 14 May 2014 11:12:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Emil Goode <emilgoode@gmail.com>
+cc: "David S. Miller" <davem@davemloft.net>, Freddy Xin <freddy@asix.com.tw>,
+        Eric Dumazet <edumazet@google.com>, David Chang <dchang@suse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Gerry Demaret <gerry@tigron.be>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ax88179_178a: don't send commands to detached device
+In-Reply-To: <1400079730-22424-1-git-send-email-emilgoode@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1405141111420.1432-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 14 May 2014, Emil Goode wrote:
 
-> If we ever come across a really memoryless device it should not be
-> particularly difficult to add another callback to ff-memless-next which
-> would emulate conditional effects with constant force.
+> The .stop and .unbind callbacks of struct driver_info are
+> called even after a DETACH hot-plug event. In the case of
+> the ax88179_178a minidriver we need to make sure we are not
+> trying to send commands to a device that has been detached.
+> This leads to failure messages like below.
+> 
+> ax88179_178a 1-1.3:1.0 (unregistered net_device):
+> 	Failed to write reg index 0x0001: -19
 
-It should be noted that some (/many?) applications/games already use the
-CF with position feedback to emulate behaviour such as springs. The feed
-back loop is simply not fast enough to do emulation of friction/inertia.
+Most driver don't bother to do this.  A few error messages in the log 
+when a device gets unplugged are harmless.  Besides, this won't help 
+with errors that occur between the time the device is unplugged and the 
+time when the unbind callback runs.
 
-I don't believe that the FF layer in the kernel should be 'tricked out'
-with lots of emulation features.
-
-As a game designer (ok... tinkerer) it's a bit of a pain that devices lie
-about what they can really do - ie. gamepads claiming periodic ability
-when all they are doing is faking it with rumble.
-
-Simon.
-
-
+Alan Stern
 
