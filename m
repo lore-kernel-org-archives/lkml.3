@@ -1,108 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaENQIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:08:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44724 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaENQIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:08:51 -0400
-Date: Wed, 14 May 2014 17:08:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140514160838.GJ12304@sirena.org.uk>
+	id S1756187AbaENQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:10:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56386 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620AbaENQKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:10:24 -0400
+Date: Wed, 14 May 2014 18:10:22 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc: regression in suspend
+In-Reply-To: <20140514155759.GB9723@amd.pavel.ucw.cz>
+Message-ID: <alpine.LNX.2.00.1405141809000.16459@pobox.suse.cz>
+References: <20140513160926.GA3621@amd.pavel.ucw.cz> <20140513163734.GA4602@amd.pavel.ucw.cz> <20140513214155.GA5087@amd.pavel.ucw.cz> <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz> <20140514155759.GB9723@amd.pavel.ucw.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYSHSYKTlyb6iK5t"
-Content-Disposition: inline
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] SPI fixes for v3.15
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 14 May 2014, Pavel Machek wrote:
 
---zYSHSYKTlyb6iK5t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > So it might in the end of the day the same thing as I have reported in 
+> > 
+> > 	https://bugs.freedesktop.org/show_bug.cgi?id=76554
+> > 
+> > which is not 100% reproducible either (although with newer kernels it's 
+> > *much* more reproducible for me than with older).
+> > 
+> > > It worked few times on -rc5, but then I rebooted and problem 
+> > > re-appeared.
+> > 
+> > If you could capture dmesg of the resume where X fails to resume properly 
+> > to see whether you have i915 ring initialization errors there as well?
+> 
+> I did dmesg and I believe I would have noticed "*ERROR*" there.. but
+> I'll of course capture the buffer when it happens. 
 
-The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
+Thanks.
 
-  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
+> Note that X do work somehow after resume (I can't switch virtual
+> desktops and dialog is stuck on screen, but it is not complete
+> failure). I can do ctrl-alt-f1 and get to useful prompt.
 
-are available in the git repository at:
+I have similar symptoms. The windows are not redrawing, etc.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git spi-v3.15-rc5
-
-for you to fetch changes up to fd30c37331ad8ed7c7e0e4c21f5ee309fec21d7d:
-
-  Merge remote-tracking branches 'spi/fix/pxa2xx' and 'spi/fix/qup' into spi-linus (2014-05-13 19:08:34 +0100)
-
-----------------------------------------------------------------
-
-spi: Fixes for v3.15
-
-A few core fixes around outlying cases here, nothing that should affect
-most users but useful fixes.  The diffstat is rather larger than one
-might hope due some simple code motion in the fix for !CONFIG_DMA, the
-actual meaningful change is much smaller.
-
- - Fix handling of unsupported dual and quad mode support on slave
-   registration so that drivers that can degrade gracefully do so,
-   preventing regressions for drivers this is added.
- - Fix build in !CONFIG_DMA cases following addition of generic DMA
-   mapping support.
- - Fix error handling for queue creation which due to wider kernel
-   changes can be triggered more easily.
- - A couple of driver specific fixes.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      spi: qup: Fix return value checking for pm_runtime_get_sync()
-
-Geert Uytterhoeven (2):
-      spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
-      spi: core: Protect DMA code by #ifdef CONFIG_HAS_DMA
-
-Mark Brown (3):
-      spi: core: Don't destroy master queue if we fail to create it
-      Merge remote-tracking branch 'spi/fix/core' into spi-linus
-      Merge remote-tracking branches 'spi/fix/pxa2xx' and 'spi/fix/qup' into spi-linus
-
-Mika Westerberg (1):
-      spi/pxa2xx: Prevent DMA from transferring too many bytes
-
- drivers/spi/spi-pxa2xx-dma.c |  16 ------
- drivers/spi/spi-qup.c        |   2 +-
- drivers/spi/spi.c            | 124 +++++++++++++++++++++++++++----------------
- 3 files changed, 78 insertions(+), 64 deletions(-)
-
---zYSHSYKTlyb6iK5t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc5UDAAoJELSic+t+oim9sS8QAIrS1XDwmv1B5VsFNnXjqWpg
-+Q7XH14PZ6h9KZZy5UMrBsKwr5NmPYwz/8d6q8i3tZbmwHy8jqUxI00Lyf+k8L3L
-y73mq9jHDrsPt0kbPDmryDHvt9bTzonZS6rr1zRV8MxDYte/PJWZkMQN+DZ9WLQ9
-JuPcvQKdKAkLj/iPDahr+YlJbwkEwO26nA4Kbp3fTLROBBjTWyqr9i+tXMUrk2pA
-pW0HB8/tH8arJnW+EkCMLlI/TIBbd/uSib5a6qb8b9okYECu+hbX8sbhahjyNjAG
-ZgD+EpoxDf8AIBK24DkLyrNcaN9ADs9n1YMZhpuNlAtaJVjrpKM1uj1eKXONa8GB
-yJ5C0Wl5XzQ1ha4qE/fN40Ue7sVrIne8/0dc2Me8TDez96EZS8wnSY05JZ//1/Ja
-d1XSRKBvTMjGpjeOiRFizQycLJk0XH+EXZHro0hR1YR4rebcnW97L3hMwE/j/YqG
-PYHZic5XKUxvDN7UHMy4UFYMvJwk9uNzrzF0AzNC0vgaP6hXilXYah05DngsPvJN
-aFECv90bjDWLFKRNHWweXLPRP6k1SzhasZFb/5+4pCg+3MPc2EHoh2wU4ZT685Lq
-oAP9+Ja5OC6VQ6J3l6bONZJocPoEr7v+4radV2V3JVFsiUs8uOGJBnUPorD0Re2y
-hUwj6me5WFhkqq9oyfG9
-=r1wU
------END PGP SIGNATURE-----
-
---zYSHSYKTlyb6iK5t--
+-- 
+Jiri Kosina
+SUSE Labs
