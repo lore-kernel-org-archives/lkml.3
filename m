@@ -1,140 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035AbaENPia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:38:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50018 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaENPi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:38:28 -0400
-Message-ID: <53738DEF.70108@wwwdotorg.org>
-Date: Wed, 14 May 2014 09:38:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755569AbaENPlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:41:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24180 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754800AbaENPlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:41:18 -0400
+Date: Wed, 14 May 2014 11:40:37 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com, mingo@kernel.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com,
+        Mel Gorman <mgorman@suse.de>,
+        "Vinod, Chegu\" <chegu_vinod@hp.com>, Suresh Siddha <suresh.b.siddha@intel.com>"@redhat.com
+Subject: [PATCH] sched: call select_idle_sibling when not affine_sd
+Message-ID: <20140514114037.2d93266f@annuminas.surriel.com>
+In-Reply-To: <1400040489.5157.44.camel@marge.simpson.net>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	<1399011219.5233.55.camel@marge.simpson.net>
+	<53633B81.1080403@redhat.com>
+	<1399016273.5233.94.camel@marge.simpson.net>
+	<536379D0.8070306@redhat.com>
+	<1399030032.5233.142.camel@marge.simpson.net>
+	<5363B793.9010208@redhat.com>
+	<20140506115448.GH11096@twins.programming.kicks-ass.net>
+	<536943C9.4030502@redhat.com>
+	<20140506203916.GQ17778@laptop.programming.kicks-ass.net>
+	<536C3B69.1000208@redhat.com>
+	<20140509012743.67d4006d@annuminas.surriel.com>
+	<1399620873.5200.68.camel@marge.simpson.net>
+	<536CE48E.2060305@redhat.com>
+	<1399649042.31219.47.camel@marge.simpson.net>
+	<536CF346.6080009@redhat.com>
+	<1399658123.5187.2.camel@marge.simpson.net>
+	<536D1B6D.8060004@redhat.com>
+	<1399694090.5146.13.camel@marge.simpson.net>
+	<53722754.6040102@redhat.com>
+	<1400040489.5157.44.camel@marge.simpson.net>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-To: Marcel Ziswiler <marcel@ziswiler.com>, stefan@agner.ch,
-        thierry.reding@gmail.com, Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: tegra: initial add of Colibri T30
-References: <cover.1400001937.git.stefan@agner.ch> <d45ec5351ce8ef03256061bdc4b0ba673bd40c66.1400001937.git.stefan@agner.ch> <53727738.4080901@wwwdotorg.org> <537319CE.7020101@ziswiler.com>
-In-Reply-To: <537319CE.7020101@ziswiler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 01:22 AM, Marcel Ziswiler wrote:
-> On 05/13/2014 09:49 PM, Stephen Warren wrote:
->> On 05/13/2014 11:27 AM, stefan@agner.ch wrote:
->>> This patch adds the device tree to support Toradex Colibri T30, a
->>> computer on module which can be used on different carrier boards.
->>>
->>> The module consists of a Tegra 30 SoC, two PMIC, DDR3L RAM, eMMC,
->>> a LM95245 temperature sensor and an AX88772B USB Ethernet
->>> Controller. Furthermore, there is a STMPE811 and SGTL5000 audio
->>> codec which are not yet supported. Anything that is not self
->>> contained on the module is disabled by default.
->>>
->>> The device tree for the Evaluation Board includes the modules
->>> device tree and enables the supported pheripherials of the carrier
->>> board (the Evaluation Board supports almost all of them).
->>
->>> diff --git a/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
+On Wed, 14 May 2014 06:08:09 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> On Tue, 2014-05-13 at 10:08 -0400, Rik van Riel wrote:
 
->>> +    aliases {
->>> +        rtc0 = "/i2c@7000c000/rtc@68";
->>> +        rtc1 = "/i2c@7000d000/tps65911@2d";
->>> +        rtc2 = "/rtc@7000e000";
->>> +    };
->>
->> Wow, no shortage of RTCs!
+> > 1) If the node_distance between nodes on a NUMA system is
+> >    <= RECLAIM_DISTANCE, we will call select_idle_sibling for
+> >    a wakeup of a previously existing task (SD_BALANCE_WAKE)
+> > 
+> > 2) If the node distance exceeds RECLAIM_DISTANCE, we will
+> >    wake up a task on prev_cpu, even if it is not currently
+> >    idle
+> > 
+> >    This behaviour only happens on certain large NUMA systems,
+> >    and is different from the behaviour on small systems.
+> >    I suspect we will want to call select_idle_sibling with
+> >    prev_cpu in case target and prev_cpu are not in the same
+> >    SD_WAKE_AFFINE domain.
 > 
-> Yes (;-p). Please understand however that there are certain limitation
-> if it comes to real-time clocks: The first one is the ultra low-power
-> RTC available on the carrier board. The second one is PMIC integrated
-> usually drawing much more current that the first dedicated one. The
-> third one is Tegra SoC internal and won't keep the time across
-> power-cycles in our design.
+> Sometimes.  It's the same can of worms remote as it is local.. latency
+> gain may or may not outweigh cache miss pain.
 
-Sure, I understand this is just representing the HW. It was just
-surprising to see so many.
+Ahh, but it is a DIFFERENT can of worms. If the distance between
+cpu and prev_cpu exceeds RECLAIM_DISTANCE, we will not look for 
+an idle sibling in the same LLC domain as prev_cpu.
 
->>> +    /* SPI1: Colibri SSP */
->>> +    spi@7000d400 {
->>> +        status = "okay";
->>> +        spi-max-frequency = <25000000>;
->>> +        can0: can@0 {
->>> +            compatible = "microchip,mcp2515";
->>> +            reg = <0>;
->>> +            clocks = <&clk16m>;
->>> +            interrupt-parent = <&gpio>;
->>> +            interrupts = <TEGRA_GPIO(S, 0) GPIO_ACTIVE_LOW>;
->>> +            spi-max-frequency = <10000000>;
->>
->> So this chip doesn't get confused by a faster clock frequency when its
->> chip-select line isn't asserted? I would have expected spi-max-frequency
->> for the bus to be the minimum value that any device on the bus would
->> tolerate.
-> 
-> No SPI chip should ever get confused like that as long as they are chip
-> select gated. At least by the traditional chip select meaning as opposed
-> to NVIDIA's designers taking the term chip select a little too personal:
-> they indeed only select a chip otherwise all the chip select pins are
-> just left floating!
+If the distance is smaller, and we decide not to do an affine
+wakeup, then we do look for an idle sibling of prev_cpu.
 
-I'm not convinced about this. The clock signal still reaches all the
-chips, and hence still reaches some logic inside those chips. If the
-setup/hold timings aren't met (for internal parts of the chip's SPI
-state machine), then presumably all bets are off re: performance of the
-chip, irrespective of whether the CS line happens to gate how much of
-the chip actually does anything.
+This patch makes sure that both types of systems have the same
+can of worms :)
 
->> The dr_mode property is only for the PHY node.
->>
->>> +    panel: panel {
->>> +        compatible = "edt,et057090dhu", "simple-panel";
->>
->> The panel-simple driver doesn't seem to know about that EDT panel. How
->> will it work out the display timings?
-> 
-> Good question and me and Stefan actually even talked about that
-> yesterday. I am actually using KMS right now as follows:
-> 
-> video=HDMI-A-1:1280x720-16@60 video=LVDS-1:640x480-16@60'
-> 
-> So the panel node is purely used to hook up the back light part right now.
-> 
-> From our point of view for our completely generic module approach where
-> each customer potentially hooks up his own display make/model it would
-> be desirable to have some way of defining such timings directly through
-> the device tree.
+---8<---
 
-Like Thierry, I think the DT needs to represent the actual HW.
+Subject: sched: call select_idle_sibling when not affine_sd
 
-If there's no panel on the carrier board itself, then it probably
-shouldn't even be in the base DT. If a user adds a panel, then they will
-modify their own DT to correctly represent it.
+On smaller systems, the top level sched domain will be an affine
+domain, and select_idle_sibling is invoked for every SD_WAKE_AFFINE
+wakeup. This seems to be working well.
 
->>     compatible = "toradex,colibri_t30", "nvidia,tegra30";
->>
->>> +    aliases {
->>> +        serial0 = &uarta;
->>> +        serial1 = &uartd;
->>> +        serial2 = &uartb;
->>> +    };
->>
->> tegra20.dtsi already sets the alias names for the serial ports. Previous
->> discussions settled on giving each on-chip UART a static name, rather
->> than renaming them per board.
-> 
-> Understood, however our Colibri standard defines a completely different
-> order of the UARTs which is what we attempted to indicate by this aliases.
+On larger systems, with the node distance between far away NUMA nodes
+being > RECLAIM_DISTANCE, select_idle_sibling is only called if the
+waker and the wakee are on nodes less than RECLAIM_DISTANCE apart.
 
-I'd prefer that all Tegra boards use serial aliases consistently. If
-there's a real issue with this, please talk to Laxman (CC'd) and see if
-we can move all the UART alias entries into individual board files, so
-that this board isn't the odd one out.
+This patch leaves in place the policy of not pulling the task across
+nodes on such systems, while fixing the issue that select_idle_sibling
+is not called at all in certain circumstances.
+
+The code will look for an idle CPU in the same CPU package as the
+CPU where the task ran previously.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 39b63d0..1e58159 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4423,10 +4423,10 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 			sd = tmp;
+ 	}
+ 
+-	if (affine_sd) {
+-		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+-			prev_cpu = cpu;
++	if (affine_sd && cpu != prev_cpu && wake_affine(affine_sd, p, sync))
++		prev_cpu = cpu;
+ 
++	if (sd_flag & SD_WAKE_AFFINE) {
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+ 		goto unlock;
+ 	}
+
