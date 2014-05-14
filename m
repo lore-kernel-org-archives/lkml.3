@@ -1,195 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaENRET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:04:19 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:37622 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756317AbaENREP (ORCPT
+	id S1756235AbaENRIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:08:04 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:56495 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199AbaENRIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:04:15 -0400
-Message-ID: <5373A200.6080301@fr.ibm.com>
-Date: Wed, 14 May 2014 19:04:00 +0200
-From: Cedric Le Goater <clg@fr.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 14 May 2014 13:08:01 -0400
+Date: Wed, 14 May 2014 13:07:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kefeng Wang <kefeng.wang@linaro.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wangkefeng.wang@huawei.com, xuwei5@hisilicon.com
+Subject: Re: [PATCH v6 0/3] ahci: add support for hisilicon sata
+Message-ID: <20140514170757.GD15690@htj.dyndns.org>
+References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Dinar Valeev <dvaleev@suse.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] offb: Fix little-endian support
-References: <1400073709-15012-1-git-send-email-tiwai@suse.de> <5373772D.9060807@fr.ibm.com> <s5hha4sh20d.wl%tiwai@suse.de>
-In-Reply-To: <s5hha4sh20d.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051417-6892-0000-0000-000008C9E6BA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 04:24 PM, Takashi Iwai wrote:
-> At Wed, 14 May 2014 16:01:17 +0200,
-> Cedric Le Goater wrote:
->>
->> Hi Iwai-san,
->>
->> On 05/14/2014 03:21 PM, Takashi Iwai wrote:
->>> Although the color palette was corrected for little endian by the
->>> commit  [e1edf18b: offb: Add palette hack for little endian], the
->>> graphics mode is still shown in psychedelic colors.  
->>
->> Are you referring to the linux logo colors ? If so, could you please
->> try the patch below, it should be a fix.
-> 
-> Not only penguin logo but the whole X graphics got strange colors,
-> too, according to the bug report.  I put the original reporter/tester
-> (Dinar Valeev) to Cc.
-> I'm merely a person who tries to fix this mess ;)
-> 
-> BTW, did you try to run X on fbdev?
+Applied to libata/for-3.16.
 
-Not at the time, I was working on the console only, BE and LE. 
-I just tried fbdev and indeed this is a psychedelic mess :)
+Thanks.
 
-Your fix has also issues on BE and console and the patch of mine 
-below is of no use for fbdev. Damn, this is a nightmare.
-
-C. 
-
->>> For fixing this
->>> properly, we rather need to correct the RGB offsets depending on
->>> endianess.
->>>
->>> Since the RGB base offsets are corrected, we don't need the hack for
->>> pallette color entries.  This patch reverts that, too.
->>
->> Are you testing using qemu -vga std -vnc :x ? If so, did you try changing 
->> the depth to 8,15,16,32 ?
-> 
-> Yes, it was with qemu -vga std -vnc :x.
-> About different color depths, Dinar can test / clarify better, I
-> suppose.
-> 
->>  I think the patch might be breaking big endian 
->> too.
-> 
-> Big endian should work as is because my patch uses the original
-> offsets when fb_be_math() is true.  It corrects the RGB offsets if
-> !fb_be_math().
->
-> But, I'm also entirely not sure whether this is 100% correct, either.
-> Namely, if the RGB offsets were correct for some little endian
-> machines with offb, my patch would break it, of course.  But, then
-> your previous fix must have already broken it as well, so I took the
-> same fb_be_math() check.
-> 
-> 
-> thanks,
-> 
-> Takashi
-> 
->> Now, I am far from being an expert on frame buffers. It would be glad 
->> to have some insights on that topic. 
->>
->> Thanks,
->>
->> C. 
->>
->>
->> [PATCH] fb: fix logo palette entries for little endian
->>
->> The offb_cmap_byteswap() routine helps byteswapping the color map
->> entries when required. This patch externalizes and renames the helper 
->> routine to adjust the pseudo palette of the logo when running on 
->> little endian.
->>
->> Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
->> ---
->>  drivers/video/fbmem.c |    6 ++++--
->>  drivers/video/offb.c  |   11 +----------
->>  include/linux/fb.h    |    8 ++++++++
->>  3 files changed, 13 insertions(+), 12 deletions(-)
->>
->> Index: linux.git/drivers/video/fbmem.c
->> ===================================================================
->> --- linux.git.orig/drivers/video/fbmem.c
->> +++ linux.git/drivers/video/fbmem.c
->> @@ -252,7 +252,8 @@ static void  fb_set_logo_truepalette(str
->>  	blueshift  = info->var.blue.offset  - (8 - info->var.blue.length);
->>  
->>  	for ( i = 0; i < logo->clutsize; i++) {
->> -		palette[i+32] = (safe_shift((clut[0] & redmask), redshift) |
->> +		palette[i+32] = fb_cmap_byteswap(info,
->> +				 safe_shift((clut[0] & redmask), redshift) |
->>  				 safe_shift((clut[1] & greenmask), greenshift) |
->>  				 safe_shift((clut[2] & bluemask), blueshift));
->>  		clut += 3;
->> @@ -271,7 +272,8 @@ static void fb_set_logo_directpalette(st
->>  	blueshift = info->var.blue.offset;
->>  
->>  	for (i = 32; i < 32 + logo->clutsize; i++)
->> -		palette[i] = i << redshift | i << greenshift | i << blueshift;
->> +		palette[i] = fb_cmap_byteswap(info, i << redshift |
->> +					i << greenshift | i << blueshift);
->>  }
->>  
->>  static void fb_set_logo(struct fb_info *info,
->> Index: linux.git/drivers/video/offb.c
->> ===================================================================
->> --- linux.git.orig/drivers/video/offb.c
->> +++ linux.git/drivers/video/offb.c
->> @@ -91,15 +91,6 @@ extern boot_infos_t *boot_infos;
->>  #define AVIVO_DC_LUTB_WHITE_OFFSET_GREEN        0x6cd4
->>  #define AVIVO_DC_LUTB_WHITE_OFFSET_RED          0x6cd8
->>  
->> -#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
->> -
->> -static inline u32 offb_cmap_byteswap(struct fb_info *info, u32 value)
->> -{
->> -	u32 bpp = info->var.bits_per_pixel;
->> -
->> -	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
->> -}
->> -
->>      /*
->>       *  Set a single color register. The values supplied are already
->>       *  rounded down to the hardware's capabilities (according to the
->> @@ -129,7 +120,7 @@ static int offb_setcolreg(u_int regno, u
->>  			mask <<= info->var.transp.offset;
->>  			value |= mask;
->>  		}
->> -		pal[regno] = offb_cmap_byteswap(info, value);
->> +		pal[regno] = fb_cmap_byteswap(info, value);
->>  		return 0;
->>  	}
->>  
->> Index: linux.git/include/linux/fb.h
->> ===================================================================
->> --- linux.git.orig/include/linux/fb.h
->> +++ linux.git/include/linux/fb.h
->> @@ -582,6 +582,7 @@ static inline struct apertures_struct *a
->>  
->>  #endif
->>  
->> +#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
->>  #define FB_LEFT_POS(p, bpp)          (fb_be_math(p) ? (32 - (bpp)) : 0)
->>  #define FB_SHIFT_HIGH(p, val, bits)  (fb_be_math(p) ? (val) >> (bits) : \
->>  						      (val) << (bits))
->> @@ -681,6 +682,13 @@ static inline bool fb_be_math(struct fb_
->>  #endif /* CONFIG_FB_FOREIGN_ENDIAN */
->>  }
->>  
->> +static inline u32 fb_cmap_byteswap(struct fb_info *info, u32 value)
->> +{
->> +	u32 bpp = info->var.bits_per_pixel;
->> +
->> +	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
->> +}
->> +
->>  /* drivers/video/fbsysfs.c */
->>  extern struct fb_info *framebuffer_alloc(size_t size, struct device *dev);
->>  extern void framebuffer_release(struct fb_info *info);
->>
-> 
-
+-- 
+tejun
