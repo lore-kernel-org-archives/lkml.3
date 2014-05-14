@@ -1,137 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaENOuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:50:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47593 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751253AbaENOuH (ORCPT
+	id S1755145AbaENOwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:52:44 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:13359 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771AbaENOwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:50:07 -0400
-Date: Wed, 14 May 2014 16:50:02 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-Message-ID: <20140514145002.GA18392@kwain>
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com>
- <1400060942-10588-2-git-send-email-antoine.tenart@free-electrons.com>
- <16480004.aaDhzlOZgi@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <16480004.aaDhzlOZgi@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 May 2014 10:52:43 -0400
+Message-ID: <1400079158.9356.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 6/6] ipc/sem.c: make semctl(,,{GETNCNT,GETZCNT})
+ standard compliant
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, 1vier1@web.de
+Date: Wed, 14 May 2014 07:52:38 -0700
+In-Reply-To: <1399716199-26776-7-git-send-email-manfred@colorfullife.com>
+References: <1399716199-26776-1-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-2-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-3-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-4-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-5-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-6-git-send-email-manfred@colorfullife.com>
+	 <1399716199-26776-7-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
-
-On Wed, May 14, 2014 at 03:02:34PM +0200, Arnd Bergmann wrote:
-> On Wednesday 14 May 2014 11:48:57 Antoine Ténart wrote:
-> > +static int phy_berlin_sata_power_on(struct phy *phy)
-> > +{
-> > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
-> > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
-> > +       u32 regval;
-> > +
-> > +       spin_lock(&priv->lock);
-> > +
-> > +       /* Power up PHY */
-> > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
-> > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > +       regval &= ~(desc->val);
-> > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > +
-> > +       /* Configure MBus */
-> > +       writel(MBUS_SIZE_CONTROL, priv->base + HOST_VSA_ADDR);
-> > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > +       regval |= MBUS_WRITE_REQUEST_SIZE_128 | MBUS_READ_REQUEST_SIZE_128;
-> > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > +
-> > +       spin_unlock(&priv->lock);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +static int phy_berlin_sata_power_off(struct phy *phy)
-> > +{
-> > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
-> > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
-> > +       u32 regval;
-> > +
-> > +       spin_lock(&priv->lock);
-> > +
-> > +       /* Power down PHY */
-> > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
-> > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > +       regval |= desc->val;
-> > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > +
-> > +       spin_unlock(&priv->lock);
-> > +
-> > +       return 0;
+On Sat, 2014-05-10 at 12:03 +0200, Manfred Spraul wrote:
+> Per definition, a task waits on exactly one semaphore:
+> The semaphore from the first operation in the sop array that cannot proceed.
 > 
-> I don't get this part: you have a reference to the phy here,
-> but then you go poking the phy registers from the SATA driver
-> rather than calling a PHY API function.
-
-The v1 only introduced an AHCI driver. I somewhat agree the PHY
-operations done in the AHCI driver could be in there.
-
-I can move the initialization done in the AHCI driver here, but I'll
-still need the driver: the Berlin AHCI needs to call the framework
-generic functions with a custom mask and has custom pm_ops. So I'll
-end up with a nearly empty AHCI driver, not able to control the port
-parameters.
-
-Or I can put all this in the AHCI driver, but then we'll need to
-describe the PHYs there (to be able to enable each PHY independently)
-and add bindings to the SATA ones.
-
-What do you think? I prefer the first solution, but we'll have SATA
-port related configuration in the PHY and a very tiny AHCI driver
-because I can't really use the default behaviour of the ahci_platform.
-
-> > +                * By default the PHY node is used to request and match a PHY.
-> > +                * We describe one PHY per sub-node here. Use the right node.
-> > +                */
-> > +               phy->dev.of_node = child;
-> > +
-> > +               priv->phys[phy_id].phy = phy;
-> > +               priv->phys[phy_id].val = desc[phy_id].val;
-> > +               priv->phys[phy_id].index = phy_id;
-> > +               phy_set_drvdata(phy, &priv->phys[phy_id]);
+> The Linux implementation never followed the standard, it tried to count all
+> semaphores that might be the reason why a task sleeps.
 > 
-> And here, you set a driver specific value into a structure used by the
-> PHY.
-
-Values in priv->phys[] are related to the PHYs. phy_set_drvdata() allows
-to store PHY related data, which is what I'm doing there. Nearly all PHY
-drivers are doing this.
-
-Or am I missing something?
-
+> This patch fixes that.
 > 
-> Both of these are layering violations. You should either use the PHY
-> interfaces correctly so the SATA driver doesn't have to know about the
-> specific, or not use a PHY device node at all and do everything in
-> the SATA front-end.
+> Note:
+> The implementation assumes that GETNCNT and GETZCNT are rare operations,
+> therefore the code counts them only on demand.
+> (If they wouldn't be rare, then the non-compliance would have
+> been found earlier)
+> 
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> ---
+>  ipc/sem.c | 37 ++++++++++++++++---------------------
+>  1 file changed, 16 insertions(+), 21 deletions(-)
+> 
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 22a4c12..5e8bcde 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -993,38 +993,33 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+>  }
+>  
+>  /*
+> - * check_qop: Test how often a queued operation sleeps on the semaphore semnum
+> + * check_qop: Test if a queued operation sleeps on the semaphore semnum
+>   */
+>  static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
+>  			bool count_zero)
+>  {
+> -	struct sembuf *sops = q->sops;
+> -	int nsops = q->nsops;
+> -	int i, semcnt;
+> +	struct sembuf *sop = q->blocking;
+>  
+> -	semcnt = 0;
+> +	BUG_ON(sop->sem_flg & IPC_NOWAIT);
+> +	BUG_ON(sop->sem_op > 0);
 
-To be sure: you mean using the PHY init() interface in the AHCI driver?
+Hmm in light of Linus' recent criticism about randomly sprinkling
+BUG_ONs in the kernel I'm not sure we want this. Yes, all those calls
+are correct from a logical pov and should never occur, however, would
+WARN be more suitable instead? I don't know. 
 
-Antoine
+Andrew, any thoughts?
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks.
+
