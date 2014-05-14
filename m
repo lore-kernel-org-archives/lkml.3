@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbaENPUC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:20:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39150 "EHLO arroyo.ext.ti.com"
+	id S1755969AbaENPUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:20:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39188 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445AbaENPT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:19:59 -0400
-Message-ID: <5373897C.6080504@ti.com>
-Date: Wed, 14 May 2014 20:49:24 +0530
+	id S1753319AbaENPU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:20:27 -0400
+Message-ID: <53738993.8070708@ti.com>
+Date: Wed, 14 May 2014 20:49:47 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
@@ -15,129 +15,70 @@ To: Roger Quadros <rogerq@ti.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-pci@vger.kernel.org>
-CC: <balajitk@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 03/17] phy: ti-pipe3: add external clock support for PCIe
- PHY
-References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-4-git-send-email-kishon@ti.com> <53736CBC.2060702@ti.com>
-In-Reply-To: <53736CBC.2060702@ti.com>
+CC: <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 11/17] ARM: dts: dra7xx-clocks: Add missing 32khz clocks
+ used for PHY
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-12-git-send-email-kishon@ti.com> <53736E47.4070402@ti.com>
+In-Reply-To: <53736E47.4070402@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
 
-On Wednesday 14 May 2014 06:46 PM, Roger Quadros wrote:
+
+On Wednesday 14 May 2014 06:53 PM, Roger Quadros wrote:
 > Hi Kishon,
 > 
+> 
 > On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
->> APLL used by PCIE phy can either use external clock as input or the clock
->> from DPLL. Added support for the APLL to use external clock as input here.
->>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Tero Kristo <t-kristo@ti.com>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  Documentation/devicetree/bindings/phy/ti-phy.txt |    4 ++
->>  drivers/phy/phy-ti-pipe3.c                       |   75 ++++++++++++++--------
->>  2 files changed, 52 insertions(+), 27 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
->> index bc9afb5..d50f8ee 100644
->> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
->> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
->> @@ -76,6 +76,10 @@ Required properties:
->>     * "dpll_ref_m2" - external dpll ref clk
->>     * "phy-div" - divider for apll
->>     * "div-clk" - apll clock
->> +   * "apll_mux" - mux for pcie apll
->> +   * "refclk_ext" - external reference clock for pcie apll
->> + - ti,ext-clk: To specifiy if PCIE apll should use external clock. Applicable
->> +   only to PCIE PHY.
+>> Added missing 32khz clock used by PCIe PHY.
+>> The documention for this node can be found @ ../bindings/clock/ti/gate.txt.
 > 
-> Instead of specifying both clock sources "dpll_ref_clock", "refclk_ext" and then specifying a 3rd control option "ti,ext-clk" to select one of the 2 sources, why can't the DT just supply one clock source, i.e. the one that is being used in the board instance? The driver should then just configure the clock rate that is needed at that node. Shouldn't the clock framework automatically take care of muxing and parent rates?
+> Typo in $subject
+> s/clocks/clock
 
-Want the dt to have all the clocks used by the controller. "ti,ext-clk" should
-go in the board dt file (suggested by Nishanth).
-The point is at some point later if some one wants to change the clock source,
-it should be a simple enabling "ti,ext-clk" flag instead of finding the clock
-phandle etc..
-> 
->>  
->>  Optional properties:
->>   - ctrl-module : phandle of the control module used by PHY driver to power on
->> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
->> index d43019d..5513aa0 100644
->> --- a/drivers/phy/phy-ti-pipe3.c
->> +++ b/drivers/phy/phy-ti-pipe3.c
->> @@ -293,7 +293,7 @@ static int ti_pipe3_probe(struct platform_device *pdev)
->>  	struct device_node *control_node;
->>  	struct platform_device *control_pdev;
->>  	const struct of_device_id *match;
->> -	struct clk *clk;
->> +	struct clk *clk, *pclk;
->>  
->>  	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
->>  	if (!phy) {
->> @@ -302,6 +302,20 @@ static int ti_pipe3_probe(struct platform_device *pdev)
->>  	}
->>  	phy->dev		= &pdev->dev;
->>  
->> +	control_node = of_parse_phandle(node, "ctrl-module", 0);
->> +	if (!control_node) {
->> +		dev_err(&pdev->dev, "Failed to get control device phandle\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	control_pdev = of_find_device_by_node(control_node);
->> +	if (!control_pdev) {
->> +		dev_err(&pdev->dev, "Failed to get control device\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	phy->control_dev = &control_pdev->dev;
->> +
-> 
-> Why this code was moved move is not part of patch description/subject.
-
-external clock support needs 'control_dev', so had to move the get control
-device part before configuring the clocks.
-> 
->>  	if (!of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
->>  		match = of_match_device(of_match_ptr(ti_pipe3_id_table),
->>  					&pdev->dev);
->> @@ -345,19 +359,40 @@ static int ti_pipe3_probe(struct platform_device *pdev)
->>  	}
->>  
->>  	if (of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
->> -		clk = devm_clk_get(phy->dev, "dpll_ref");
->> -		if (IS_ERR(clk)) {
->> -			dev_err(&pdev->dev, "unable to get dpll ref clk\n");
->> -			return PTR_ERR(clk);
->> +		if (!of_property_read_bool(node, "ti,ext-clk")) {
->> +			clk = devm_clk_get(phy->dev, "dpll_ref");
->> +			if (IS_ERR(clk)) {
->> +				dev_err(&pdev->dev,
->> +					"unable to get dpll ref clk\n");
->> +				return PTR_ERR(clk);
->> +			}
->> +			clk_set_rate(clk, 1500000000);
->> +
->> +			clk = devm_clk_get(phy->dev, "dpll_ref_m2");
->> +			if (IS_ERR(clk)) {
->> +				dev_err(&pdev->dev,
->> +					"unable to get dpll ref m2 clk\n");
->> +				return PTR_ERR(clk);
->> +			}
->> +			clk_set_rate(clk, 100000000);
->> +		} else {
->> +			omap_control_pcie_tx_rx_control(phy->control_dev,
->> +						OMAP_CTRL_PCIE_PHY_RX_ACSPCIE);
-
-                        ^^here
+Will fix it.
 
 Thanks
 Kishon
+> 
+> --
+> cheers,
+> -roger
+> 
+>>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>> Cc: Tero Kristo <t-kristo@ti.com>
+>> Cc: Paul Walmsley <paul@pwsan.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>  arch/arm/boot/dts/dra7xx-clocks.dtsi |    8 ++++++++
+>>  1 file changed, 8 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> index 44993ec..e1bd052 100644
+>> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> @@ -1165,6 +1165,14 @@
+>>  		reg = <0x021c>, <0x0220>;
+>>  	};
+>>  
+>> +	optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
+>> +		compatible = "ti,gate-clock";
+>> +		clocks = <&sys_32k_ck>;
+>> +		#clock-cells = <0>;
+>> +		reg = <0x13b0>;
+>> +		ti,bit-shift = <8>;
+>> +	};
+>> +
+>>  	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
+>>  		compatible = "ti,divider-clock";
+>>  		clocks = <&apll_pcie_ck>;
+>>
+> 
