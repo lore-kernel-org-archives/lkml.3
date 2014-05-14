@@ -1,102 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaENVGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:06:01 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:21726 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaENVF7 (ORCPT
+	id S1752374AbaENVHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:07:39 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:61942 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175AbaENVHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:05:59 -0400
-Message-ID: <1400101522.6897.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: futex(2) man page update help request
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Date: Wed, 14 May 2014 14:05:22 -0700
-In-Reply-To: <CF98E3EF.90564%dvhart@linux.intel.com>
-References: <537346E5.4050407@gmail.com>
-	 <CF98E3EF.90564%dvhart@linux.intel.com>
+	Wed, 14 May 2014 17:07:38 -0400
+Message-ID: <1400101656.9826.4.camel@x220>
+Subject: [PATCH] arm: msm: remove board file for Nexus One (ie. mahimahi)
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 May 2014 23:07:36 +0200
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 May 2014 21:07:36.0300 (UTC) FILETIME=[87F9E2C0:01CF6FB8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-14 at 09:18 -0700, Darren Hart wrote:
-> On 5/14/14, 3:35, "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-> wrote:
-> 
-> >[So, some futex recent discussions remind me I should make this request]
-> >
-> >Hello all (especially those in the To:, namely Thomas, Darren, Ingo,
-> >Jakub),
-> >
-> >The futex man pages:
-> >http://man7.org/linux/man-pages/man2/futex.2.html
-> >http://man7.org/linux/man-pages/man7/futex.7.html
-> >are currently in a sorry state. I'm by no means convinced that all of the
-> >futex operations described there are explained fully and correctly. And
-> >probably not all error cases for each operation are properly documented.
-> >I'd be very happy if some folk could review those pages and send me
-> >corrections (Git: 
-> >http://git.kernel.org/pub/scm/docs/man-pages/man-pages).
-> >
-> >But worse, a number of futex operations remain undocumented in futex(2)
-> >(see the list below).
-> >
-> >I am aware of Documentation/pi-futex.txt and
-> >Documentation/futex-requeue-pi.txt. However, both of those documents
-> >are rather thin on details / explain what certain FUTEX_* operations are
-> >used for rather than what they do / focus on the implementation, rather
-> >than the semantics.
-> >
-> >What I would like is that the futex(2) page documenta each one of
-> >these operations with a focus on the semantics in a way that might be
-> >useful to writers of library functions or those who simply wish to
-> >better understand (from a user-space perspective) what futexes are
-> >and how they are used. However, I don't have the knowledge to do
-> >this well in any reasonable time.
-> >
-> >Would the folk in the To: list (or anyone else who is knowledgeable)
-> >be willing to write patches
-> >(Git: http://git.kernel.org/pub/scm/docs/man-pages/man-pages )
-> >or just supply me with some raw text that documents these currently
-> >undocumented futex operations, in the manner suggested?
-> 
-> Yes, I'll be glad to help.
-> 
-> However, unless I'm sorely mistaken, the larger problem is that glibc
-> removed the futex() call entirely, so these man pages don't describe
-> something users even have access to anymore. I had to revert to calling
-> the syscalls directly in the futextest test suite because of this:
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inclu
-> de/futextest.h#n67
-> 
-> 
-> Which basically defines:
-> 
-> #define futex(uaddr, op, val, timeout, uaddr2, val3, opflags) \
->         syscall(SYS_futex, uaddr, op | opflags, val, timeout, uaddr2, val3)
+Commit 1b802ff79f03 ("arm: msm: add board file for Nexus One (ie.
+mahimahi)") added just board-mahimahi.c. It did not add
+board-mahimahi.h, Makefile changes or Kconfig changes.
 
-Yeah, and I actually stole that from you for perf :)
+Four years have passed and this file is still dangling. Remove it.
 
-> 
-> Adding Carlos for his perspective.
-> 
-> If I'm wrong, or we can restore the futex() call, great. If not... Should
-> we keep the man-pages and document it as syscall(SYS_futex, ..., op, ...) ?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. But what to test here?
 
-+1, is there anything preventing adding a futex wrapper... glibc folks?
+ arch/arm/mach-msm/board-mahimahi.c | 88 --------------------------------------
+ 1 file changed, 88 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/board-mahimahi.c
+
+diff --git a/arch/arm/mach-msm/board-mahimahi.c b/arch/arm/mach-msm/board-mahimahi.c
+deleted file mode 100644
+index 7d9981cb400e..000000000000
+--- a/arch/arm/mach-msm/board-mahimahi.c
++++ /dev/null
+@@ -1,88 +0,0 @@
+-/* linux/arch/arm/mach-msm/board-mahimahi.c
+- *
+- * Copyright (C) 2009 Google, Inc.
+- * Copyright (C) 2009 HTC Corporation.
+- * Author: Dima Zavin <dima@android.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/delay.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/input.h>
+-#include <linux/io.h>
+-#include <linux/kernel.h>
+-#include <linux/platform_device.h>
+-
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/setup.h>
+-
+-#include <mach/hardware.h>
+-
+-#include "board-mahimahi.h"
+-#include "devices.h"
+-#include "proc_comm.h"
+-#include "common.h"
+-
+-static uint debug_uart;
+-
+-module_param_named(debug_uart, debug_uart, uint, 0);
+-
+-static struct platform_device *devices[] __initdata = {
+-#if !defined(CONFIG_MSM_SERIAL_DEBUGGER)
+-	&msm_device_uart1,
+-#endif
+-	&msm_device_uart_dm1,
+-	&msm_device_nand,
+-};
+-
+-static void __init mahimahi_init(void)
+-{
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
+-}
+-
+-static void __init mahimahi_fixup(struct tag *tags, char **cmdline,
+-				  struct meminfo *mi)
+-{
+-	mi->nr_banks = 2;
+-	mi->bank[0].start = PHYS_OFFSET;
+-	mi->bank[0].node = PHYS_TO_NID(PHYS_OFFSET);
+-	mi->bank[0].size = (219*1024*1024);
+-	mi->bank[1].start = MSM_HIGHMEM_BASE;
+-	mi->bank[1].node = PHYS_TO_NID(MSM_HIGHMEM_BASE);
+-	mi->bank[1].size = MSM_HIGHMEM_SIZE;
+-}
+-
+-static void __init mahimahi_map_io(void)
+-{
+-	msm_map_common_io();
+-	msm_clock_init();
+-}
+-
+-static void __init mahimahi_init_late(void)
+-{
+-	smd_debugfs_init();
+-}
+-
+-void msm_timer_init(void);
+-
+-MACHINE_START(MAHIMAHI, "mahimahi")
+-	.atag_offset	= 0x100,
+-	.fixup		= mahimahi_fixup,
+-	.map_io		= mahimahi_map_io,
+-	.init_irq	= msm_init_irq,
+-	.init_machine	= mahimahi_init,
+-	.init_late	= mahimahi_init_late,
+-	.init_time	= msm_timer_init,
+-MACHINE_END
+-- 
+1.9.0
 
