@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaENFCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:02:19 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:43085 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaENFCR (ORCPT
+	id S1753049AbaENFJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:09:15 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:35649 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaENFJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:02:17 -0400
-Date: Wed, 14 May 2014 07:02:03 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        acme@ghostprotocols.net, dsahern@gmail.com, mingo@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/34] kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable
- for conf tool
-Message-ID: <20140514050203.GB13791@ravnborg.org>
-References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
- <1400018609-20486-3-git-send-email-alexis.berlemont@gmail.com>
+	Wed, 14 May 2014 01:09:12 -0400
+Date: Wed, 14 May 2014 07:09:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC net-next] tracing: accelerate tracing filters with BPF
+Message-ID: <20140514050905.GA9448@gmail.com>
+References: <1400036111-7803-1-git-send-email-ast@plumgrid.com>
+ <20140513230713.1cc7db94@gandalf.local.home>
+ <CAMEtUuyHO-MGzL6nrLShG1UHTzb=HXTAPV5trv1SHL6TV0bMYw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400018609-20486-3-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <CAMEtUuyHO-MGzL6nrLShG1UHTzb=HXTAPV5trv1SHL6TV0bMYw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 12:02:57AM +0200, Alexis Berlemont wrote:
-> From: Jiri Olsa <jolsa@redhat.com>
+
+* Alexei Starovoitov <ast@plumgrid.com> wrote:
+
+> On Tue, May 13, 2014 at 8:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Tue, 13 May 2014 19:55:11 -0700
+> > Alexei Starovoitov <ast@plumgrid.com> wrote:
+> >
+> >> --- a/kernel/trace/Kconfig
+> >> +++ b/kernel/trace/Kconfig
+> >> @@ -79,6 +79,7 @@ config FTRACE_NMI_ENTER
+> >>         default y
+> >>
+> >>  config EVENT_TRACING
+> >> +     depends on NET
+> >>       select CONTEXT_SWITCH_TRACER
+> >>       bool
+> >>
+> >
+> > This part makes me a little nervous. I know a lot of embedded devices
+> > depend on tracing, but do they all have network?
 > 
-> Introducing KCONFIG_AUTOCONFIGDEP variable for conf tool
-> allowing to specify custom auto.conf.cmd file.
+> I think we may want to split BPF into its own config, since it doesn't
+> really depend on anything in net.
 
-The change looks good at it complments what we already have of overrides.
-But please document this in Documentation/kbuild/...
+Exactly, that's a good plan.
 
-	Sam
+Thanks,
+
+	Ingo
