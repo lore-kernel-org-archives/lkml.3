@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaENRKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:10:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44734 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939AbaENRKX (ORCPT
+	id S1756410AbaENRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:10:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51172 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812AbaENRK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:10:23 -0400
-Message-ID: <5373A34B.1010008@oracle.com>
-Date: Wed, 14 May 2014 13:09:31 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 14 May 2014 13:10:57 -0400
+Date: Wed, 14 May 2014 19:10:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [REGRESSION] funny sched_domain build failure during resume
+Message-ID: <20140514171051.GX30445@twins.programming.kicks-ass.net>
+References: <20140509160455.GA4486@htj.dyndns.org>
+ <20140514140034.GM30445@twins.programming.kicks-ass.net>
+ <20140514170238.GB15690@htj.dyndns.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>
-Subject: Re: perf: use after free in perf_remove_from_context
-References: <5370EBE9.6@oracle.com> <20140514162943.GR30445@twins.programming.kicks-ass.net> <53739A9A.5010703@oracle.com> <20140514163535.GS30445@twins.programming.kicks-ass.net> <53739BF2.1030100@oracle.com> <20140514165205.GU30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140514165205.GU30445@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5"
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	protocol="application/pgp-signature"; boundary="Hh0bd0om1WS2KCoe"
+Content-Disposition: inline
+In-Reply-To: <20140514170238.GB15690@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5
-Content-Type: text/plain; charset=ISO-8859-1
+
+--Hh0bd0om1WS2KCoe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 05/14/2014 12:52 PM, Peter Zijlstra wrote:
-> On Wed, May 14, 2014 at 12:38:10PM -0400, Sasha Levin wrote:
->> ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xc=
-lock_nanosleep -xuselib -xumount -xmount -m --quiet --dangerous -C 400 -l=
- off
->>
->> Note that I run it as root in a disposable VM. Running that as root on=
- your
->> machine will likely kill it.
+On Wed, May 14, 2014 at 01:02:38PM -0400, Tejun Heo wrote:
+> On Wed, May 14, 2014 at 04:00:34PM +0200, Peter Zijlstra wrote:
+> > Does something like the below help any? I noticed those things (cpudl
+> > and cpupri) had [NR_CPUS] arrays, which is always 'fun'.
+> >=20
+> > The below is a mostly no thought involved conversion of cpudl which
+> > boots, I'll also do cpupri and then actually stare at the algorithms to
+> > see if I didn't make any obvious fails.
 >=20
-> Right, so i'll start with !root running. That said, I seem to get an
-> endless stream of double free or corrupt msgs:
->=20
-> trinity$ ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsser=
-vctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet  -C 400 -l of=
-f
->=20
-> ...
->=20
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-35af60 ***
-> [main] Random reseed: 3671679404
-> [main] Random reseed: 67838733
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-35ef60 ***
-> [main] Random reseed: 943044433
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-2bb210 ***
-> [main] Random reseed: 3627649145
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-39dbe0 ***
-> [main] Random reseed: 935036390
-> [main] Random reseed: 3922349807
-> [main] Random reseed: 835563887
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-323890 ***
-> [main] Random reseed: 974945617
-> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
-308190 ***
-> [main] Random reseed: 2912296953
-> [main] Random reseed: 681900861
->=20
->=20
-> Is this 'expected' behaviour?
+> Yeah, should avoid large allocation on reasonably sized machines and I
+> don't think 2k CPU machines suspend regularly.  Prolly good / safe
+> enough for -stable port? =20
 
-I've talked about it with Dave a while ago, he said it happens because th=
-e threads that
-do all the testing sometimes corrupt themselves which result in that erro=
-r. It shouldn't
-be harmful as the thread will just get killed and a fresh one will be sta=
-rted in it's
-place.
+Yeah, its certainly -stable material. Esp. if this cures the immediate
+problem.
 
-Since then I set MALLOC_CHECK_=3D0 to avoid seeing that in my logs.
+> It'd be still nice to avoid allocations if
+> possible during online tho given that the operation happens while mm
+> is mostly crippled.
 
-So yes, it's probably a good thing you're seeing that.
+Yeah, I started looking at that but that turned out to be slightly more
+difficult than I had hoped (got lost in the suspend code). Also avoiding
+large order allocs is good practise regardless.
+
+So probably the easiest way to not free/alloc the entire sched_domain
+thing is just keeping it around in its entirety over suspend/resume, as
+I think the promise of suspend/resume is that you return to the
+status-quo.
+
+But I'll stick it on the todo list after fixing this use-after-free
+thing I've been trying to chase down.
 
 
-Thanks,
-Sasha
 
-
---j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Hh0bd0om1WS2KCoe
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTc6NUAAoJEN6mb/eXdyzcplYP/RCMM8uioeoQXcddSV2CaPXk
-Z6iW77ef/+fhsChd0UPEXr9BUUuwuK4O2N92HS1v6jhob5NUUJxV+EacSpGeXjCt
-EsVxpV37hwrF49aA+8WFczA/7x6bKtVWCpWssHNHspELaAag91iZ0YUXAFgLRApF
-YYmBKEV7H3WjfrA9Tq74fOEb/XthoBZHzr9K0N3KIrnFrn7z8nvzOjOWG+vv0BHA
-9Y7gGlMOWJYwqJLbYkcO7Sryc4Qru6eRrP0UkM9IeoLvGjxf6vA2+y+nyskgqqEK
-KHtIPc4p32wbLU9hWImuRQ1xwY8Ft1vVlNWmlPh8EShTpURw5+99sg4jT7C1oGvR
-LITALZHOtHL8osh/dTEoY1EYRez710YGMcdLw26xeE/AqwQeu1gWbCpoE9yTWxKb
-f1sE0HvJKYGviDuYyqRUV8DAMbwYG6KNelZ8r+trZDmNmMgpEMwhlEktuHQrrURh
-1tHFJrzMy832pUHQ/oZOS8SxxZZWAmbIlWPCX8brlmn/t964Za4OrDIBfZQ1OKgC
-siilK3XApsQBWITtCiNDRQGhqHd/b+ClOS1yRDsscExtl0y6Ei3KZE54796bu4NZ
-LOLMNagDrsSttT6AP8gfdVdrd9DZVueHJm9kvdWWNmTdkh7c5UjEDBsenLqJMiN6
-woLr6k2YaIkY8yKYK0YD
-=LB9H
+iQIcBAEBAgAGBQJTc6ObAAoJEHZH4aRLwOS6eAEP/R33MGH6fKXcS4w7exigB0Qk
+rG4yLgcyR7q4JtsEkAU22kS4yod5x2LmqzaSUiL9Lqc4liEgpZ08Ed1Nb5A40b9d
+pLfGsBcmYfzeyygznnxJThKo+nYX9rZJfYfXjI9tAGXIhuFG1MuZzpUbOGM3JjKq
+uwmbEUtD9MMFnHDnm9+AZTpJTpw7S+bZovtzkB8ZZiL6hvh6xiVee5TfnvVR1GfG
+EyzjwlhLemBadvUZnEOP+EKV+KdrzMZuGoKnwULXZpM+cgJyiFEiZ/gm/BJEVCeM
+Cb9Y6ywXbUqlt+YblMroXOYgc4bt7zg7KaUk2qgdIh644xAlpyfAaYC+ErdoheU0
+vy1d+C+JDzZAKNzTNKj+ybFQiZhHm7SUt/E7bOMcupuBs2GgY/jEvIHwPf6zL3fE
+/kbntqJS76WGpgasmbGVn4kuVCCy/pQhbQiel0CY4myBe7wOVaq0CVK5fnGCpzp5
+yORNq9/JunC8VL7MqPxyLQZ6MKe7ZbtMtrzD6ELpJCe/HR4Y6EU127u86LTOSc+u
+Ysvlsj4zva5yLgkxVRqeqe5rIrJcL2ZBa2V8HLneqOrrXW2q5FcbPShLV+k37pEd
+pTX9aaZ/eOv+NF6zYAq1z46XLASyWTl6BEvuAdYcK9Ep5FUy71SmbAeBnSdFQtUL
+LTSAxvK/63tcva0pAbMB
+=NM57
 -----END PGP SIGNATURE-----
 
---j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5--
+--Hh0bd0om1WS2KCoe--
