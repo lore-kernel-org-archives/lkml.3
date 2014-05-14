@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaENEUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 00:20:40 -0400
-Received: from [162.105.203.56] ([162.105.203.56]:56037 "EHLO
-	mail.sei.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaENEUg (ORCPT
+	id S1753110AbaENEVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 00:21:48 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:32645 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaENEVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 00:20:36 -0400
-From: "Yuan Pengfei" <yuanpf12@sei.pku.edu.cn>
-To: "'Andi Kleen'" <andi@firstfloor.org>
-Cc: <linux-kernel@vger.kernel.org>
-References: <000501cf6f08$7735a6a0$65a0f3e0$@sei.pku.edu.cn> <87lhu53ux3.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87lhu53ux3.fsf@tassilo.jf.intel.com>
-Subject: RE: [PATCH v3] gcov: add support for GCC 4.9
-Date: Wed, 14 May 2014 12:20:15 +0800
-Message-ID: <001d01cf6f2b$ce9ebc60$6bdc3520$@sei.pku.edu.cn>
+	Wed, 14 May 2014 00:21:46 -0400
+Message-ID: <5372EF45.8060701@huawei.com>
+Date: Wed, 14 May 2014 12:21:25 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hannes@cmpxchg.org>
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
+ directly
+References: <1399671091-23867-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1399671091-23867-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQGK5vUSNB6xLaJHXoPlcNzpuTBoDgHIl0XXm7pEHgA=
-Content-Language: zh-cn
-X-Spam_score: -102.9
-X-Spam_score_int: -1028
-X-Spam_bar: ---------------------------------------------------
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > +void __gcov_merge_time_profile(gcov_type *counters, unsigned int
-> > n_counters)
-> 
-> But can you repost please without word wrapping?
-> 
-> Except for that the patch looks good to me.
+Hi Tejun,
 
-Sorry. I will configure my email client and send again.
+On 2014/5/10 5:31, Tejun Heo wrote:
+> Hello,
+> 
+> Currently, while csses (cgroup_subsys_states) have ->parent linkage
+> too, only cgroups form full tree through their ->children and
+> ->sibling fields and css iterations naturally is implemented by
+> iterating cgroups and then dereferencing the css for the specified
+> subsystem.
+> 
+> There are now use cases where controllers need to iterate through
+> csses regardless of their online state as long as they have positive
 
---
-Yuan, Pengfei
-Peking University, China
+What use cases are we talking about here?
+
+> reference.  This can't easily be achieved by iterating cgroups because
+> its css pointer array needs to be cleared on offline and there may be
+> multiple dying csses for a cgroup for the same subsystem and there's
+> only one pointer per cgroup-subsystem pair.
+> 
 
