@@ -1,69 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaENS0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:26:55 -0400
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1821 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaENS0x (ORCPT
+	id S1750997AbaENSho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:37:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51683 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaENShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:26:53 -0400
-Message-ID: <5373B556.5010101@xs4all.nl>
-Date: Wed, 14 May 2014 20:26:30 +0200
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Wed, 14 May 2014 14:37:43 -0400
+Date: Wed, 14 May 2014 20:37:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: perf: use after free in perf_remove_from_context
+Message-ID: <20140514183739.GM2485@laptop.programming.kicks-ass.net>
+References: <5370EBE9.6@oracle.com>
+ <20140514162943.GR30445@twins.programming.kicks-ass.net>
+ <53739A9A.5010703@oracle.com>
+ <20140514163535.GS30445@twins.programming.kicks-ass.net>
+ <53739BF2.1030100@oracle.com>
+ <20140514165205.GU30445@twins.programming.kicks-ass.net>
+ <5373A34B.1010008@oracle.com>
+ <20140514172043.GA31281@redhat.com>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] media: davinci: vpif capture: upgrade the driver
- with v4l offerings
-References: <1399885110-9899-1-git-send-email-prabhakar.csengg@gmail.com> <1399885110-9899-2-git-send-email-prabhakar.csengg@gmail.com> <5370997C.1060700@xs4all.nl> <CA+V-a8vMtY32gMy6BWvewL1jafEKuuL5U_J8+BbFfWWsZn0hqg@mail.gmail.com>
-In-Reply-To: <CA+V-a8vMtY32gMy6BWvewL1jafEKuuL5U_J8+BbFfWWsZn0hqg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514172043.GA31281@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 07:28 PM, Prabhakar Lad wrote:
-> Hi Hans,
-> 
-> Thanks for the review.
-> 
-> On Mon, May 12, 2014 at 3:20 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
->> Hi Prabhakar,
->>
->> Thanks for the patch, but I have a few comments...
->>
->> On 05/12/2014 10:58 AM, Lad, Prabhakar wrote:
->>> Buffer ioctls:
->>>         test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
->>>                 fail: v4l2-test-buffers.cpp(506): q.has_expbuf()
->>
->> This is weird. I'm not sure why this happens since you seem to have VB2_DMABUF set
->> and also vb2_ioctl_expbuf.
->>
->>>         test VIDIOC_EXPBUF: FAIL
->>>
->>> Total: 38, Succeeded: 35, Failed: 3, Warnings: 0
->>
->> Also test with 'v4l2-compliance -s' (streaming). The '-i' option is available to
->> test streaming from a specific input.
->>
-> BTW the output is with -s option set.
+On Wed, May 14, 2014 at 01:20:43PM -0400, Dave Jones wrote:
+> Pretty strong odds it's mremap causing those double frees.  You can
+> -xmremap that to see if it goes away.
 
-Something is wrong. With -s you should see something like this:
-
-Buffer ioctls:
-        test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
-        test VIDIOC_EXPBUF: OK (Not Supported)
-        test read/write: OK
-        test MMAP: OK                                     
-        test USERPTR: OK                                  
-        test DMABUF: Cannot test, specify --expbuf-device
-
-Regards,
-
-	Hans
-
+unless I'm entirely pebkac atm it doesn't seem to help any.
