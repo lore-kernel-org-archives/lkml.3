@@ -1,71 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaENVLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:11:20 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:42681 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096AbaENVLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:11:16 -0400
-Message-ID: <5373DBCF.1080503@ahsoftware.de>
-Date: Wed, 14 May 2014 23:10:39 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752585AbaENVMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:12:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751260AbaENVMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 17:12:48 -0400
+Date: Wed, 14 May 2014 16:50:21 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        acme@ghostprotocols.net, jolsa@redhat.com, jmario@redhat.com,
+        eranian@google.com
+Subject: Haswell mem-store question
+Message-ID: <20140514205021.GU39568@redhat.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-3-git-send-email-holler@ahsoftware.de>	<20140514140534.897F8C4153D@trevor.secretlab.ca>	<53738261.4000000@ahsoftware.de> <20140514200645.15984C4095B@trevor.secretlab.ca>
-In-Reply-To: <20140514200645.15984C4095B@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 22:06, schrieb Grant Likely:
-> On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
->> Am 14.05.2014 16:05, schrieb Grant Likely:
->>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+Hi Andi,
 
->> Hmm, I don't really care if that will be merged. I have no motivation to 
->> fight with Linux kernel maintainers and I don't know if I will spend the 
->> necessary time to do so.
-> 
-> The people you need to convince are Rob, Greg, and me, and you've got my
-> attention. If I'm convinced, then I can probably convince Greg also.
-> You've got an interesting approach, and I hope you won't give up on it.
+Joe was playing with our c2c tool today and noticed we were losing store
+events from perf's mem-stores event.  Upon investigation we stumbled into
+some differences in data that Haswell reports vs. Ivy/Sandy Bridge.
 
-Sorry, but that point of the view is already a problem. Why do I have to
-convince you people?
+This leaves our tool needing two different paths depending on the
+architect, which seems odd.
 
-To summarize:
+I was hoping you or someone can explain to me the correct way to interpret
+the mem-stores data.
 
-Linux kernel maintainers
+My current problem is mem_lvl.  It can be defined as
 
-- don't like code they haven't written theirself,
-- don't like code which doesn't look like they have written it theirself,
-- don't like ideas they haven't had themself,
-- do feel good in their closed group they have formed,
-...
+/* memory hierarchy (memory level, hit or miss) */
+#define PERF_MEM_LVL_NA         0x01  /* not available */
+#define PERF_MEM_LVL_HIT        0x02  /* hit level */
+#define PERF_MEM_LVL_MISS       0x04  /* miss level  */
+#define PERF_MEM_LVL_L1         0x08  /* L1 */
+#define PERF_MEM_LVL_LFB        0x10  /* Line Fill Buffer */
+#define PERF_MEM_LVL_L2         0x20  /* L2 */
+#define PERF_MEM_LVL_L3         0x40  /* L3 */
+#define PERF_MEM_LVL_LOC_RAM    0x80  /* Local DRAM */
+#define PERF_MEM_LVL_REM_RAM1   0x100 /* Remote DRAM (1 hop) */
+#define PERF_MEM_LVL_REM_RAM2   0x200 /* Remote DRAM (2 hops) */
+#define PERF_MEM_LVL_REM_CCE1   0x400 /* Remote Cache (1 hop) */
+#define PERF_MEM_LVL_REM_CCE2   0x800 /* Remote Cache (2 hops) */
+#define PERF_MEM_LVL_IO         0x1000 /* I/O memory */
+#define PERF_MEM_LVL_UNC        0x2000 /* Uncached memory */
+#define PERF_MEM_LVL_SHIFT      5
 
-You see, I long have given up. The reason I still posted these patches
-is just because I don't care anymore about Linux kernel maintainers at
-all. I was prepared that I do that just for the fun of annoying some
-Linux kernel maintainers. I've already decided some time ago that I just
-will post my patches once to the LKML (so that other poor Linux kernel
-users may find them) and will ignore Linux kernel maintainers.
+Currently IVB and SNB use LVL_L1 & (LVL_HIT or LVL_MISS) seen here in
+arch/x86/kernel/cpu/perf_event_intel_ds.c
 
-Sorry, but I have a long and very unpleasant history in dealing with
-Linux kernel maintainers, and they already have called me almost
-anything like "ugly code writer", "frustrated" and such things more.
+static u64 precise_store_data(u64 status)
+{
+        union intel_x86_pebs_dse dse;
+        u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
+						^^^^^^^^^
+						defined here
 
-Fortunately I'm too old to care about such, that's why I still post
-patches (besides that I like to solve problems and help other people). ;)
+        dse.val = status;
 
-Regards,
+<snip>
+        /*
+         * bit 0: hit L1 data cache
+         * if not set, then all we know is that
+         * it missed L1D
+         */
+        if (dse.st_l1d_hit)
+                val |= P(LVL, HIT);
+        else
+                val |= P(LVL, MISS);
 
-Alexander Holler
+	^^^^^^^
+	updated here
+
+<snip>
+}
+
+However Haswell does something different:
+
+static u64 precise_store_data_hsw(u64 status)
+{
+        union perf_mem_data_src dse;
+
+        dse.val = 0;
+        dse.mem_op = PERF_MEM_OP_STORE;
+        dse.mem_lvl = PERF_MEM_LVL_NA;
+			^^^^^^
+			defines NA here
+
+
+        if (status & 1)
+                dse.mem_lvl = PERF_MEM_LVL_L1;
+
+		^^^^^^^
+		switch to LVL_L1 here
+<snip>
+}
+
+So our c2c tool kept store statistics to help determine what types of
+stores are causing conflicts
+
+<snip>
+        } else if (op & P(OP,STORE)) {
+                /* store */
+                stats->t.store++;
+
+                if (!daddr) {
+                        stats->t.st_noadrs++;
+                        return -1;
+                }
+
+                if (lvl & P(LVL,HIT)) {
+                        if (lvl & P(LVL,UNC)) stats->t.st_uncache++;
+			if (lvl & P(LVL,L1 )) stats->t.st_l1hit++;
+                } else if (lvl & P(LVL,MISS)) {
+                        if (lvl & P(LVL,L1)) stats->t.st_l1miss++;
+		}
+	}
+<snip>
+
+This no longer works on Haswell because Haswell doesn't set LVL_HIT or
+LVL_MISS any more.  Instead it uses LVL_NA or LVL_L1.
+
+So from a generic tool perspective, what is the recommended way to
+properly capture these stats to cover both arches?  The hack I have now
+is:
+
+        } else if (op & P(OP,STORE)) {
+                /* store */
+                stats->t.store++;
+
+                if (!daddr) {
+                        stats->t.st_noadrs++;
+                        return -1;
+                }
+
+                if ((lvl & P(LVL,HIT)) || (lvl & P(LVL,L1))) {
+                        if (lvl & P(LVL,UNC)) stats->t.st_uncache++;
+                        if (lvl & P(LVL,L1 )) stats->t.st_l1hit++;
+                } else if ((lvl & P(LVL,MISS)) || (lvl & P(LVL,NA))) {
+                        if (lvl & P(LVL,L1)) stats->t.st_l1miss++;
+                        if (lvl & P(LVL,NA)) stats->t.st_l1miss++;
+                }
+	}
+
+I am not sure that is really future proof.  Thoughts? Help?
+
+Cheers,
+Don
