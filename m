@@ -1,151 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaENJGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:06:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48281 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaENJGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:06:35 -0400
-Date: Wed, 14 May 2014 11:06:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
-Message-ID: <20140514090629.GC30445@twins.programming.kicks-ass.net>
-References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
- <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
+	id S1753795AbaENJHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:07:24 -0400
+Received: from mail-bl2on0136.outbound.protection.outlook.com ([65.55.169.136]:4855
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751055AbaENJHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:07:21 -0400
+From: Richard Lee <superlibj8301@gmail.com>
+To: <linux-mm@kvack.org>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>,
+        <robherring2@gmail.com>
+CC: <lauraa@codeaurora.org>, <akpm@linux-foundation.org>,
+        <d.hatayama@jp.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>,
+        <liwanp@linux.vnet.ibm.com>, <iamjoonsoo.kim@lge.com>,
+        <hannes@cmpxchg.org>, <linux-kernel@vger.kernel.org>,
+        Richard Lee <superlibj8301@gmail.com>
+Subject: [PATCHv2 1/2] mm/vmalloc: Add IO mapping space reused interface support.
+Date: Wed, 14 May 2014 16:18:51 +0800
+Message-ID: <1400055532-13134-2-git-send-email-superlibj8301@gmail.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1400055532-13134-1-git-send-email-superlibj8301@gmail.com>
+References: <1400055532-13134-1-git-send-email-superlibj8301@gmail.com>
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130445320277238280;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(189002)(199002)(36756003)(44976005)(74502001)(19580395003)(19580405001)(81542001)(31966008)(6806004)(102836001)(84676001)(55446002)(87286001)(4396001)(77156001)(81342001)(82202001)(50226001)(81156002)(99396002)(86362001)(46102001)(62966002)(68736004)(2009001)(64706001)(93916002)(69596002)(61266001)(81442001)(77982001)(85852003)(21056001)(92566001)(92726001)(2201001)(89996001)(50466002)(73972005)(48376002)(87792001)(87572001)(87936001)(20776003)(76176999)(79102001)(74662001)(50986999)(97736001)(77096999)(73392001)(83072002)(88136002)(80022001)(33646001)(47776003)(57042002)(46252002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB481;H:az84smr01.freescale.net;FPR:;MLV:nov;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kz6eUT30PReluLpA"
-Content-Disposition: inline
-In-Reply-To: <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Forefront-PRVS: 0211965D06
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=superlibj8301@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For the IO mapping, the same physical address space maybe
+mapped more than one time, for example, in some SoCs:
+  - 0x20001000 ~ 0x20001400 --> 1KB for Dev1
+  - 0x20001400 ~ 0x20001800 --> 1KB for Dev2
+  and the page size is 4KB.
 
---Kz6eUT30PReluLpA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Then both Dev1 and Dev2 will do ioremap operations, and the IO
+vmalloc area's virtual address will be aligned down to 4KB, and
+the size will be aligned up to 4KB. That's to say, only one
+4KB size's vmalloc area could contain Dev1 and Dev2 IO mapping area
+at the same time.
 
-On Wed, May 14, 2014 at 12:25:54AM +0200, Frederic Weisbecker wrote:
-> irq work currently only supports local callbacks. However its code
-> is mostly ready to run remote callbacks and we have some potential user.
->=20
-> The full nohz subsystem currently open codes its own remote irq work
-> on top of the scheduler ipi when it wants a CPU to reevaluate its next
-> tick. However this ad hoc solution bloats the scheduler IPI.
->=20
-> Lets just extend the irq work subsystem to support remote queuing on top
-> of the generic SMP IPI to handle this kind of user. This shouldn't add
-> noticeable overhead.
->=20
-> Suggested-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/irq_work.h |  2 ++
->  kernel/irq_work.c        | 19 ++++++++++++++++++-
->  kernel/smp.c             |  4 ++++
->  3 files changed, 24 insertions(+), 1 deletion(-)
->=20
-> diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-> index 19ae05d..ae44aa2 100644
-> --- a/include/linux/irq_work.h
-> +++ b/include/linux/irq_work.h
-> @@ -33,6 +33,8 @@ void init_irq_work(struct irq_work *work, void (*func)(=
-struct irq_work *))
->  #define DEFINE_IRQ_WORK(name, _f) struct irq_work name =3D { .func =3D (=
-_f), }
-> =20
->  bool irq_work_queue(struct irq_work *work);
-> +bool irq_work_queue_on(struct irq_work *work, int cpu);
-> +
->  void irq_work_run(void);
->  void irq_work_sync(struct irq_work *work);
-> =20
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index a82170e..9f9be55 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -56,11 +56,28 @@ void __weak arch_irq_work_raise(void)
->  }
-> =20
->  /*
-> - * Enqueue the irq_work @entry unless it's already pending
-> + * Enqueue the irq_work @work on @cpu unless it's already pending
->   * somewhere.
->   *
->   * Can be re-enqueued while the callback is still in progress.
->   */
-> +bool irq_work_queue_on(struct irq_work *work, int cpu)
-> +{
-> +	/* Only queue if not already pending */
-> +	if (!irq_work_claim(work))
-> +		return false;
-> +
-> +	/* All work should have been flushed before going offline */
-> +	WARN_ON_ONCE(cpu_is_offline(cpu));
+For this case, we can ioremap only one time, and the later ioremap
+operation will just return the exist vmalloc area.
 
-	WARN_ON_ONCE(in_nmi());
+Signed-off-by: Richard Lee <superlibj8301@gmail.com>
+---
+ include/linux/vmalloc.h |  5 +++
+ mm/vmalloc.c            | 82 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+)
 
-> +
-> +	llist_add(&work->llnode, &per_cpu(irq_work_list, cpu));
-> +	native_send_call_func_single_ipi(cpu);
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 4b8a891..a53b70f 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_VMALLOC_H
+ #define _LINUX_VMALLOC_H
+ 
++#include <linux/atomic.h>
+ #include <linux/spinlock.h>
+ #include <linux/init.h>
+ #include <linux/list.h>
+@@ -34,6 +35,7 @@ struct vm_struct {
+ 	struct page		**pages;
+ 	unsigned int		nr_pages;
+ 	phys_addr_t		phys_addr;
++	atomic_t		used;
+ 	const void		*caller;
+ };
+ 
+@@ -100,6 +102,9 @@ static inline size_t get_vm_area_size(const struct vm_struct *area)
+ 	return area->size - PAGE_SIZE;
+ }
+ 
++extern struct vm_struct *find_vm_area_paddr(phys_addr_t paddr, size_t size,
++				     unsigned long *offset,
++				     unsigned long flags);
+ extern struct vm_struct *get_vm_area(unsigned long size, unsigned long flags);
+ extern struct vm_struct *get_vm_area_caller(unsigned long size,
+ 					unsigned long flags, const void *caller);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index bf233b2..cf0093c 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1293,6 +1293,7 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+ 	vm->addr = (void *)va->va_start;
+ 	vm->size = va->va_end - va->va_start;
+ 	vm->caller = caller;
++	atomic_set(&vm->used, 1);
+ 	va->vm = vm;
+ 	va->flags |= VM_VM_AREA;
+ 	spin_unlock(&vmap_area_lock);
+@@ -1383,6 +1384,84 @@ struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
+ 				  NUMA_NO_NODE, GFP_KERNEL, caller);
+ }
+ 
++static int vm_area_used_inc(struct vm_struct *area)
++{
++	if (!(area->flags & VM_IOREMAP))
++		return -EINVAL;
++
++	atomic_add(1, &area->used);
++
++	return atomic_read(&va->vm->used);
++}
++
++static int vm_area_used_dec(const void *addr)
++{
++	struct vmap_area *va;
++
++	va = find_vmap_area((unsigned long)addr);
++	if (!va || !(va->flags & VM_VM_AREA))
++		return 0;
++
++	if (!(va->vm->flags & VM_IOREMAP))
++		return 0;
++
++	atomic_sub(1, &va->vm->used);
++
++	return atomic_read(&va->vm->used);
++}
++
++/**
++ *	find_vm_area_paddr  -  find a continuous kernel virtual area using the
++ *			physical addreess.
++ *	@paddr:		base physical address
++ *	@size:		size of the physical area range
++ *	@offset:	the start offset of the vm area
++ *	@flags:		%VM_IOREMAP for I/O mappings
++ *
++ *	Search for the kernel VM area, whoes physical address starting at
++ *	@paddr, and if the exsit VM area's size is large enough, then return
++ *	it with increasing the 'used' counter, or return NULL.
++ */
++struct vm_struct *find_vm_area_paddr(phys_addr_t paddr, size_t size,
++				     unsigned long *offset,
++				     unsigned long flags)
++{
++	struct vmap_area *va;
++	int off;
++
++	if (!(flags & VM_IOREMAP))
++		return NULL;
++
++	size = PAGE_ALIGN((paddr & ~PAGE_MASK) + size);
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(va, &vmap_area_list, list) {
++		phys_addr_t phys_addr;
++
++		if (!va || !(va->flags & VM_VM_AREA) || !va->vm)
++			continue;
++
++		if (!(va->vm->flags & VM_IOREMAP))
++			continue;
++
++		phys_addr = va->vm->phys_addr;
++
++		off = (paddr & PAGE_MASK) - (phys_addr & PAGE_MASK);
++		if (off < 0)
++			continue;
++
++		if (off + size <= va->vm->size - PAGE_SIZE) {
++			*offset = off + (paddr & ~PAGE_MASK);
++			vm_area_used_inc(va->vm);
++			rcu_read_unlock();
++			return va->vm;
++		}
++	}
++	rcu_read_unlock();
++
++	return NULL;
++}
++
+ /**
+  *	find_vm_area  -  find a continuous kernel virtual area
+  *	@addr:		base address
+@@ -1443,6 +1522,9 @@ static void __vunmap(const void *addr, int deallocate_pages)
+ 			addr))
+ 		return;
+ 
++	if (vm_area_used_dec(addr))
++		return;
++
+ 	area = remove_vm_area(addr);
+ 	if (unlikely(!area)) {
+ 		WARN(1, KERN_ERR "Trying to vfree() nonexistent vm area (%p)\n",
+-- 
+1.8.4
 
-At the very leastestest make that:
-
-	if (llist_add(&work->llnode, &per_cpu(irq_work_list, cpu)))
-		native_send_call_func_single_ipi(cpu);
-
-But ideally, also test the IRQ_WORK_LAZY support, its weird to have that
-only be supported for the other queue.
-
-Hmm, why do we need that LAZY crap, that completely wrecks a perfectly
-simple thing.
-
-The changelog (bc6679aef673f), not the printk() usage make much sense,
-printk() can't cause an IPI storm... printk() isn't fast enough to storm
-anything.
-
-> +
-> +	return true;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_work_queue_on);
-
---Kz6eUT30PReluLpA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTczIQAAoJEHZH4aRLwOS66sQQAJ6SVnxJRXxQtr+LoEwXNN/6
-zlpPJ4To45XxuRMNtSyIuZXwnEeItJtdprZ9KiHAgfCLHoX+FQ/LAVpGOMb/9tc6
-5hi+6saPF3VlqWJR6dH8AVBa292+qPQlhcP7Duvn0DYz6lL5ECLUPFqCKVqI+U/R
-JBnVFp69Y2RoxAmgjJfCAu/zVmpgpUZ92ev85RcfXoqlpHpopEkJYrd1NR1KhkMF
-V5oLVBVkqBxiYYe6RtBAP+bKWXTcOTmodSqBKCyUS271NmUFZBsdlII4eLfJrnpM
-Zn8UW1JVp+h3eJyP8QmLd+Heq6+3BZhh3fRbqwOwB/Tr9kMM6BgbCu5kUm9wu74J
-9ruQydXrEoVbAntCZSfMlT4wm/s6jHDkp24gvEn0nX97dgrAlC/MBELiwHCfqg+q
-OFSsUypfDuIULDzk3VSjGeBD5TgSiv/L71MKSb4bGOeIV2L6li4qIZ7H34/9dTBf
-zAaRMwbtsFqdcl0i+YcYMr0YxKN4YkwPDVQBla3ODaMswHxPaxcQzoIQm8aJNMH9
-c94iJeuom7xZ1pBl8cA1bpUF+tDDgUOwbCoXOIsRmmnO9jpFr/GPmWhNw3UzJNu/
-KnnNlVBYrk9mVqtfUGt7uMNeCdzPaA8kKy3TL1bTDGDf4ZQE+hpAxuWhtQsjgtsw
-szZlDOOc0tUYT81ycnjf
-=x1Vz
------END PGP SIGNATURE-----
-
---Kz6eUT30PReluLpA--
