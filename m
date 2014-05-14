@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaENV0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:26:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34257 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaENV0P (ORCPT
+	id S1753422AbaENV0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:26:33 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:46868 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaENV0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:26:15 -0400
-Date: Wed, 14 May 2014 14:26:12 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 4/6] arm: add basic support for Mediatek MT6589 boards
-Message-ID: <20140514212612.GK20486@codeaurora.org>
-References: <1399938570-11356-1-git-send-email-matthias.bgg@gmail.com>
- <1399938570-11356-5-git-send-email-matthias.bgg@gmail.com>
- <20140513224732.GJ20486@codeaurora.org>
- <20140514070038.GG29258@lukather>
+	Wed, 14 May 2014 17:26:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514070038.GG29258@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+ <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 May 2014 14:26:09 -0700
+Message-ID: <CALCETrXpFd7c35A5uSDD4xprokmsRL-Zjz6pVOwOKB_EUn8tpQ@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14, Maxime Ripard wrote:
-> On Tue, May 13, 2014 at 03:47:32PM -0700, Stephen Boyd wrote:
-> > On 05/13, Matthias Brugger wrote:
-> > > +	"mediatek,mt6589",
-> > > +	NULL,
-> > > +};
-> > > +
-> > > +DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
-> > > +	.dt_compat	= mediatek_board_dt_compat,
-> > > +MACHINE_END
-> > 
-> > You shouldn't need this file at all if the platform is part of
-> > the multi-platform kernel.
-> 
-> From a technical point of view, you don't. But it's interesting to
-> keep it mostly for two things:
->   - You get to see the platform name in /proc/cpuinfo
->   - If you ever need to add platform quirks, it's already there
-> 
-> We had a similar discussion two weeks ago for mach-sunxi with Olof and
-> Arnd, and ended up keeping this minimal machine.
-> 
+On Wed, May 14, 2014 at 2:03 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 14 May 2014 16:41:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+>> On 05/14/2014 04:23 PM, Andrew Morton wrote:
+>> > On Wed, 14 May 2014 11:55:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+>> >
+>> >> Hi all,
+>> >>
+>> >> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> >> kernel I've stumbled on the following spew:
+>> >>
+>> >> [ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
+>> >> [ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
+>> >> [ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
+>> >> [ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> >> [ 1634.972913] Dumping ftrace buffer:
+>> >> [ 1634.975493]    (ftrace buffer empty)
+>> >> [ 1634.977470] Modules linked in:
+>> >> [ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
+>> >> [ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
+>> >> [ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
+>> >
+>> > Somebody's gone and broken the x86 oops output.  It used to say
+>> > "special_mapping_fault+0x30/0x120" but the offset info has now
+>> > disappeared.  That was useful for guesstimating whereabouts in the
+>> > function it died.
+>>
+>> I'm the one who "broke" the oops output, but I thought I'm helping people
+>> read that output instead of making it harder...
+>>
+>> What happened before is that due to my rather complex .config, the offsets
+>> didn't make sense to anyone who didn't build the kernel with my .config,
+>> so I had to repeatedly send it out to folks who attempted to get basic
+>> things like line numbers.
+>>
+>> > The line number isn't very useful as it's not possible (or at least,
+>> > not convenient) for others to reliably reproduce your kernel.
+>>
+>> I don't understand that part. I'm usually stating in the beginning of my
+>> mails that I run my testing on the latest -next kernel.
+>
+> Your "latest next kernel" apparently differes from mine ;( It would be
+> useful if you could just quote the +/-5 lines, perhaps?
+>
+>
+>> And indeed if
+>> you look at today's -next, that line number would point to:
+>>
+>>         for (pages = vma->vm_private_data; pgoff && *pages; ++pages) <=== HERE
+>>                 pgoff--;
+>>
+>> So I'm not sure how replacing the offset with line numbers is making things
+>> worse? previously offsets were useless for people who tried to debug these
+>> spews so that's why I switched it to line numbers in the first place.
+>>
+>> > <scrabbles with git for a while>
+>> >
+>> > : static int special_mapping_fault(struct vm_area_struct *vma,
+>> > :                           struct vm_fault *vmf)
+>> > : {
+>> > :   pgoff_t pgoff;
+>> > :   struct page **pages;
+>> > :
+>> > :   /*
+>> > :    * special mappings have no vm_file, and in that case, the mm
+>> > :    * uses vm_pgoff internally. So we have to subtract it from here.
+>> > :    * We are allowed to do this because we are the mm; do not copy
+>> > :    * this code into drivers!
+>> > :    */
+>> > :   pgoff = vmf->pgoff - vma->vm_pgoff;
+>> > :
+>> > :   for (pages = vma->vm_private_data; pgoff && *pages; ++pages)
+>> > :           pgoff--;
+>> > :
+>> > :   if (*pages) {
+>> > :           struct page *page = *pages;
+>> > :           get_page(page);
+>> > :           vmf->page = page;
+>> > :           return 0;
+>> > :   }
+>> > :
+>> > :   return VM_FAULT_SIGBUS;
+>> > : }
+>> >
+>> > OK so it might be the "if (*pages)".  So vma->vm_private_data was NULL
+>> > and pgoff was zero.  As usual, I can't imagine what race would cause
+>> > that :(
+>>
+>> Yup, it's the *pages part in the 'for' loop above that. I did find the
+>> following in the vdso code:
+>>
+>>         vma = _install_special_mapping(mm,
+>>                                        addr + image->size,
+>>                                        image->sym_end_mapping - image->size,
+>>                                        VM_READ,
+>>                                        NULL);
+>>
+>> Which installs a mapping with a NULL ptr for pages (if I understand that
+>> correctly), but that code has been there for a while now.
+>
+> Well that's weird.  I don't see anything which permits that.  Maybe
+> nobody faulted against that address before?
+>
+> It's unclear what that code's actually doing and nobody bothered
+> commenting it of course.  Maybe it's installing a guard page?
+>
+> In my linux-next all that code got deleted by Andy's "x86, vdso:
+> Reimplement vdso.so preparation in build-time C" anyway.  What kernel
+> were you looking at?
+>
+> Andy, are you able to shed some light on why
+> arch_setup_additional_pages() is (or was) passing a NULL into
+> _install_special_mapping()?
+>
 
-It looks like it's only useful to make /proc/cpuinfo have the
-platform name because it really isn't that hard to add this file
-if we need to add platform quirks. The downside is we have to
-keep adding compatibles when we support new SoCs.
+Ugh.  I just moved that code; I didn't delete it.  In fact, I likely
+made it worse by causing x86_64 to use it, too.
 
-This all leads back to the patch from Rob that removes the .name
-field from the DT based machine descriptor[1]. I'm not sure that
-thread ever resolved but it looked like a step in the right
-direction. At least it matches what arm64 (and what looks like
-mips) are doing. The concern there was finding which machine
-descriptor was used for the init path. Perhaps we should only use
-of_flat_dt_get_machine_name() for the generic machine descriptor
-so platforms that are using their own machine descriptor get
-their .name field printed and they know that their descriptor was
-used (assuming the .name field is unique) but the platforms using
-the generic descriptor would get more meaningful information and
-we wouldn't need to have these skeleton machine descriptors.
+Oddly, this code worked when I tested it.  Do you know what Trinity
+did to break it?  Did the PTEs get nuked due to memory pressure?
 
-[1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/277536
+The intent is to use remap_pfn_range (a couple of lines below) to map
+some kernel data into userspace read-only.  I think the right fix
+would be to pass in the pages array directly but to modify
+_install_special_mapping to clear VM_MAYWRITE.  The idea is that
+ptrace and mprotect should *not* be usable to COW these pages:
+userspace will shoot itself in the foot quite thoroughly if the pages
+get COWed.  Additionally, one of those pages actually represents some
+hardware registers, which almost certainly needs to be mapped UC.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+IIRC on x86_32 there are two pages in there.  One is regular kernel
+memory that has a struct page associated with it.  The other is the
+HPET, which is a page of hardware registers that may not have a struct
+page.
+
+Can anyone who's less clueless than I am about how vmas work help?
+Does this need to use its own vmops instead of the special mapping
+stuff?
+
+--Andy
