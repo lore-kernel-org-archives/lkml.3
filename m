@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaENOzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:55:44 -0400
-Received: from cust-95-128-94-82.breedbanddelft.nl ([95.128.94.82]:39703 "EHLO
-	bitwizard.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750762AbaENOzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:55:44 -0400
-X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 May 2014 10:55:43 EDT
-Date: Wed, 14 May 2014 16:46:32 +0200
-From: Rogier Wolff <R.E.Wolff@bitwizard.nl>
-To: linux-kernel@vger.kernel.org
-Subject: Buffer cache not working. 
-Message-ID: <20140514144632.GB7404@bitwizard.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: BitWizard B.V.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755671AbaENOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:55:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42521 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754861AbaENOzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 10:55:55 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 0/4] serial: kgdb_nmi: Allow ttyNMIX to act as primary console
+Date: Wed, 14 May 2014 15:55:31 +0100
+Message-Id: <1400079335-32125-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset contains a number of fixes to make it possible to use
+ttyNMIX as the primary console, providing you also have that the
+additional architecture specific code to support it.
 
-Hi Guys, 
+The first patch is a generic improvement to make the behaviour of
+poll_put_char consistent for all UARTs. This is especially important
+for kgdb_nmi, which makes unusually heavy use of poll_put_char,
+although this fix also benefits other users of polled I/O.
 
-I have a file-server that has plenty of memory to cache most of the
-things that I use. But after I've upgraded the machine it seems to
-expire things from the cache even when there is zero memory pressure.
+The remaining patches are specific to kgdb_nmi and have no effect on
+any other part of the kernel.
 
-The case that irritates me most is my mailbox. Ok, I should clean it
-out, but also my linux-kernel mailbox has 20k messages (= 1 month).
+The series has been runtime tested on ARM and compile tested on
+x86 and powerpc.
 
-When I open such a mailbox in mutt, it takes 2 minutes for it to read
-all the messages. If I quit and restart, it takes less than a second. 
-I've resorted to a workaround: every 30 seconds: head Mailbox/cur/* . 
-That worked. 
+Daniel Thompson (4):
+  serial: core: Consistent LF handling for poll_put_char
+  serial: kgdb_nmi: Use container_of() to locate private data
+  serial: kgdb_nmi: Switch from tasklets to real timers
+  serial: kgdb_nmi: Improve console integration with KDB I/O
 
-Oh, before a recent upgrade all this worked as I expected: Once a day,
-after the backup had run, scanning the mailbox takes a while and then
-the rest of the day things are quick. 
-
-Then I gathered: Other people must have the same problem. It is
-probably a "tuning" setting which works for desktop machines, but not
-for my server. So I've googled a few "tuning your Linux system" pages
-and all I could think of that might relate to my problem is
-"swappiness".
-
-I've decreased the value from 100 (in a few steps) to 5 now, and this
-seems to help somewhat. But still after a few minutes, the buffer
-cache drops my maildir, and starting mutt takes a long time again.
-
-All this with the machine reporting 11Gb or more of RAM "Free"
-(empty). 
-
-With the default swappiness, I've tested that in a minute already some
-of the maildir gets ejected from the cache, while when accessing all
-files every 30 seconds seems to keep them cached. 
-
-Kernel: from Ubuntu 14.04, 3.13.0-19-generic
-32-bit userspace
-16Gb RAM installed. 
-Disks: 3x 3T in RAID5
-
-ganglia shows the server memory graph as follows: 
-http://prive.bitwizard.nl/server_mem.png
-
-All other computers have a "nice" filled graph there.
-
-So, is there a bug in my kernel or am I missing an important tuning
-parameter?
-
-
-	Roger. 
+ drivers/tty/serial/8250/8250_core.c         |  5 ---
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |  8 ++--
+ drivers/tty/serial/kgdb_nmi.c               | 59 +++++++++++++----------------
+ drivers/tty/serial/pch_uart.c               |  5 ---
+ drivers/tty/serial/pxa.c                    |  5 ---
+ drivers/tty/serial/serial_core.c            |  2 +
+ drivers/tty/serial/serial_txx9.c            |  5 ---
+ 7 files changed, 33 insertions(+), 56 deletions(-)
 
 -- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-The plan was simple, like my brother-in-law Phil. But unlike
-Phil, this plan just might work.
+1.9.0
+
