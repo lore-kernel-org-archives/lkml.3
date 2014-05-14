@@ -1,166 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaENRUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:20:34 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39210 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199AbaENRUd (ORCPT
+	id S932248AbaENRUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:20:50 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39445 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062AbaENRUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:20:33 -0400
-Date: Wed, 14 May 2014 19:20:27 +0200
-From: Pawel Lebioda <pawel.lebioda89@gmail.com>
-To: dan.carpenter@oracle.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: usbip: missing a blank lines after declarations
-Message-ID: <20140514172023.GA2663@ThinkPad>
+	Wed, 14 May 2014 13:20:48 -0400
+Message-ID: <5373A5D5.5080709@ahsoftware.de>
+Date: Wed, 14 May 2014 19:20:21 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-3-git-send-email-holler@ahsoftware.de> <20140514140534.897F8C4153D@trevor.secretlab.ca> <53738261.4000000@ahsoftware.de>
+In-Reply-To: <53738261.4000000@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix "Missing a blank line after declaration" style problems
-for all files in drivers/staging/usbip.
+Am 14.05.2014 16:49, schrieb Alexander Holler:
+> Am 14.05.2014 16:05, schrieb Grant Likely:
+>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler
+>> <holler@ahsoftware.de> wrote:
 
-Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
----
- drivers/staging/usbip/stub_dev.c                      | 1 +
- drivers/staging/usbip/stub_tx.c                       | 1 +
- drivers/staging/usbip/usbip_common.h                  | 2 ++
- drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 +-
- drivers/staging/usbip/userspace/src/usbip_attach.c    | 1 +
- drivers/staging/usbip/userspace/src/usbipd.c          | 6 +++++-
- drivers/staging/usbip/vhci_hcd.c                      | 2 ++
- 7 files changed, 13 insertions(+), 2 deletions(-)
+>> Personally, I think the parts of this patch that manipulate the device
+>> registration
+>> order is entirely the wrong way to handle it. If anything, I would say
+>> continue to register the devices, even if the dependencies are unmet.
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index de692d7..51d0c71 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -99,6 +99,7 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
- 
- 	if (sockfd != -1) {
- 		int err;
-+
- 		dev_info(dev, "stub up\n");
- 
- 		spin_lock_irq(&sdev->ud.lock);
-diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
-index 1622563..38fe551 100644
---- a/drivers/staging/usbip/stub_tx.c
-+++ b/drivers/staging/usbip/stub_tx.c
-@@ -218,6 +218,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 			 */
- 
- 			int i;
-+
- 			for (i = 0; i < urb->number_of_packets; i++) {
- 				iov[iovnum].iov_base = urb->transfer_buffer +
- 					urb->iso_frame_desc[i].offset;
-diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
-index f555d83..4da3866 100644
---- a/drivers/staging/usbip/usbip_common.h
-+++ b/drivers/staging/usbip/usbip_common.h
-@@ -321,12 +321,14 @@ int usbip_event_happened(struct usbip_device *ud);
- static inline int interface_to_busnum(struct usb_interface *interface)
- {
- 	struct usb_device *udev = interface_to_usbdev(interface);
-+
- 	return udev->bus->busnum;
- }
- 
- static inline int interface_to_devnum(struct usb_interface *interface)
- {
- 	struct usb_device *udev = interface_to_usbdev(interface);
-+
- 	return udev->devnum;
- }
- 
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-index 238bf5b..05a7443 100644
---- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-+++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
-@@ -75,6 +75,7 @@ const char *usbip_speed_string(int num)
- void dump_usb_interface(struct usbip_usb_interface *uinf)
- {
- 	char buff[100];
-+
- 	usbip_names_get_class(buff, sizeof(buff),
- 			uinf->bInterfaceClass,
- 			uinf->bInterfaceSubClass,
-@@ -86,7 +87,6 @@ void dump_usb_device(struct usbip_usb_device *udev)
- {
- 	char buff[100];
- 
--
- 	dbg("%-20s = %s", "path",  udev->path);
- 	dbg("%-20s = %s", "busid", udev->busid);
- 
-diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
-index 716a79e..d58a14d 100644
---- a/drivers/staging/usbip/userspace/src/usbip_attach.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
-@@ -56,6 +56,7 @@ static int record_connection(char *host, char *port, char *busid, int rhport)
- 		/* if VHCI_STATE_PATH exists, then it better be a directory */
- 		if (errno == EEXIST) {
- 			struct stat s;
-+
- 			ret = stat(VHCI_STATE_PATH, &s);
- 			if (ret < 0)
- 				return -1;
-diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
-index 2cae4ce..b32047a 100644
---- a/drivers/staging/usbip/userspace/src/usbipd.c
-+++ b/drivers/staging/usbip/userspace/src/usbipd.c
-@@ -372,6 +372,7 @@ static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[],
- 
- 	for (ai = ai_head; ai && nsockfd < maxsockfd; ai = ai->ai_next) {
- 		int sock;
-+
- 		addrinfo_to_text(ai, ai_buf, ai_buf_size);
- 		dbg("opening %s", ai_buf);
- 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-@@ -461,7 +462,9 @@ static void write_pid_file()
- {
- 	if (pid_file) {
- 		dbg("creating pid file %s", pid_file);
--		FILE *fp = fopen(pid_file, "w");
-+		FILE *fp;
-+
-+		fp = fopen(pid_file, "w");
- 		if (!fp) {
- 			err("pid_file: %s: %d (%s)",
- 			    pid_file, errno, strerror(errno));
-@@ -602,6 +605,7 @@ int main(int argc, char *argv[])
- 	int daemonize = 0;
- 	int ipv4 = 0, ipv6 = 0;
- 	int opt, rc = -1;
-+
- 	pid_file = NULL;
- 
- 	usbip_use_stderr = 1;
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 70e1755..0007d30 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -635,6 +635,7 @@ static int vhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
- 
- 	{
- 		int ret = 0;
-+
- 		ret = usb_hcd_check_unlink_urb(hcd, urb, status);
- 		if (ret) {
- 			spin_unlock(&the_controller->lock);
-@@ -885,6 +886,7 @@ static int vhci_start(struct usb_hcd *hcd)
- 
- 	for (rhport = 0; rhport < VHCI_NPORTS; rhport++) {
- 		struct vhci_device *vdev = &vhci->vdev[rhport];
-+
- 		vhci_device_init(vdev);
- 		vdev->rhport = rhport;
- 	}
--- 
-1.8.3.2
+(...)
+
+>> How does the dependency code decide which devices can be
+>> platform_devices? It's not clear to me from what I've read so far.
+>
+> Dependencies currently are only considered on stuff which has a
+> "compatibility" property, thus drivers. I wanted to get the drivers
+> loaded in order, not really caring for devices. Let me quote from
+> (outdated) ldd3:
+>
+> "For the most part, the Linux device model code takes care of all these
+> considerations without imposing itself upon driver authors. It sits
+> mostly in the background; direct interaction with the device model is
+> generally handled by bus-level logic and various other kernel
+> subsystems. As a result, many driver authors can ignore the device model
+> entirely, and trust it to take care of itself."
+>
+> So do I. ;)
+
+To explain a bit further, I've started with totally ignoring the device 
+model just careing for the order in why drivers will be initialized.
+
+Than the device model did come into my way. ;)
+
+But it isn't any problem at all to extend the stuff to care for devices. 
+That even  would reduce some code in dtc with the disadvantage that the 
+sizes of blobs will slightly increase a bit more, because they then 
+would include dependencies to devices too (instead of just dependencies 
+between drivers).
+
+So I'm absolutely open here. If using dependencies between devices is 
+necessary or has advantages, that could be changed with changing a few 
+lines.
+
+Regards,
+
+Alexander Holler
