@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765AbaENQXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:23:32 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60429 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaENQXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:23:31 -0400
-Message-ID: <53739871.9070407@ahsoftware.de>
-Date: Wed, 14 May 2014 18:23:13 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755700AbaENQ1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:27:31 -0400
+Received: from sauhun.de ([89.238.76.85]:41098 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620AbaENQ13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:27:29 -0400
+Date: Wed, 14 May 2014 18:27:25 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Wan ZongShun <mcuos.com@gmail.org>,
+        Marek Vasut <marek.vasut@gmail.com>, Baruch Siach <baruch@tkos.co.il>
+Subject: Re: [PATCH] i2c/nuc900: fix ancient build error
+Message-ID: <20140514162725.GG12911@katana>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-11-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
- order based on the DT)
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <20140514141914.446F7C4153D@trevor.secretlab.ca> <53738580.7000902@ahsoftware.de> <CACxGe6s4px_9CNk3bkc1OF1KGZGYdyh4gE_VufCKU5dLFBG48g@mail.gmail.com>
-In-Reply-To: <CACxGe6s4px_9CNk3bkc1OF1KGZGYdyh4gE_VufCKU5dLFBG48g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vSsTm1kUtxIHoa7M"
+Content-Disposition: inline
+In-Reply-To: <1399560990-1402858-11-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 18:05, schrieb Grant Likely:
-> On Wed, May 14, 2014 at 4:02 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->> Am 14.05.2014 16:19, schrieb Grant Likely:
->>
->>
->>> Rather than a dtb schema change, for the most common properties (irqs,
->>> clocks, gpios), we could extract dependencies at boot time. I don't like
->>> the idea of adding a separate depends-on property because it is very
->>> easy to get it out of sync with the actual binding data (dtc is not the
->>> only tool that manipulates .dtbs. Firmware will fiddle with it too).
->>
->>
->> Then that stuff has to fiddle correct. Sorry, but trying to solve all
->> problems right from the beginning just leads to endless talks with no end
->> and nothing will happen at all because nobody aggrees how to start.
->
-> I appreciate the problem that you're trying to solve and why you're
-> using the dtc approach. My job is to poke at the solution and make
-> sure it is going to be reliable. Making sure all users know how to
-> fiddle with the new property correctly is not a trivial problem,
-> especially when it is firmware that will not necessarily be updated.
 
-The answer is just that they don't have to use this feature.
+--vSsTm1kUtxIHoa7M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It is more meant as a long-term solution to fix for the problem of 
-increasing hard-coded workarounds which all are trying to fix the 
-initialization order of drivers. Hardware has become a lot more 
-complicated than it was in the good old days, and I think the time is 
-right trying to adopt the init-system to this new century instead of 
-still adding workarounds here and there.
+On Thu, May 08, 2014 at 04:56:22PM +0200, Arnd Bergmann wrote:
+> As far as I can tell, this driver must have produced this error
+> for as long as it has been merged into the mainline kernel, but
+> it was never part of the normal build tests:
+>=20
+> drivers/i2c/busses/i2c-nuc900.c: In function 'nuc900_i2c_probe':
+> drivers/i2c/busses/i2c-nuc900.c:601:17: error: request for member 'apbfre=
+q' in something not a structure or union
+>   ret =3D (i2c->clk.apbfreq)/(pdata->bus_freq * 5) - 1;
+>                  ^
+>=20
+> This is an attempt to get the driver to build and possibly
+> work correctly, although I do wonder whether we should just
+> remove it, as it has clearly never worked.
 
-> I'm not saying flat out 'no' here, but before I merge anything, I have
-> to be reasonably certain that the feature is not going to represent a
-> maintenance nightmare over the long term.
+I'd go for removing. For this platform, the last patch which was not a
+generic cleanup seems to be from late 2011?
 
-The maintenance nightmare is already present in form of all the 
-workarounds which are trying to fix the initialzation order necessary 
-for modern hardware.
 
-Regards,
+--vSsTm1kUtxIHoa7M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Alexander
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTc5ltAAoJEBQN5MwUoCm2PgwP/3OQlPYP7PlfTFovjqujX9i2
+9AnQjjazSvwk2lHbJVQSZI2PrEYq/FuMlaKwKoDmh2j92MEc5ChgCcmOQusVApTQ
+BkhSag2qUSB+Cv4l6BqmsC5XkNWI1+4pYVt7FgsRVyCd5ay5Kv9O4bYZ/EtZlrRH
+lx5Aw8tAkL0bsllrck9VDlNBWDkx65OEQRPBelt45R0jdHEZRwVqYc6ASgvR56dr
+TgXxnclq18ftG67IbeTNzbbGzm5TLbZ/upftz0o39j12JV6AH5vsuv0F7Jv3h3ni
+N3I2wxJN5E670RbGmvGHuV2saVD4NTPEsBVn4r0/hKwzu+HID3nO0OTE3/iGDAAF
+ZxAka2AaSCiDjNTNNapp9SWKv2MzSlPzefektBwI6KZcEVMANAzHhbq4Cn4hbil4
+qpLOGUlkKvKEOoSmFErkgB4gpHJtMJKV6o1KHJs0RfP9rYDzSWW1/IjQEzRJ1/3t
+FInsQV9LFidMirW7pkUVykLnLEDnEsAp5qRbEm1jreai+0dkIyF8hm0cV1Kzv4zT
+SClb16hRTUomQG6CdeftcnxOAV0IaUPUVMayEKWqBbq43khuS4qe7C1EVuYHeOUs
+bkwIIkHiUp2UVCx6pV55b/PtShRh8Y9DHsuj4nyWiUYDMktFkQlZRNziXl1eux35
+hYMlA/xVbT75VQwTJzgt
+=Xm4p
+-----END PGP SIGNATURE-----
+
+--vSsTm1kUtxIHoa7M--
