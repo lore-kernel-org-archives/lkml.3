@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaENAyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 20:54:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:58401 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798AbaENAyS (ORCPT
+	id S1752381AbaENAyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 20:54:50 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34635 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaENAys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 20:54:18 -0400
+	Tue, 13 May 2014 20:54:48 -0400
 MIME-Version: 1.0
 From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Tue, 13 May 2014 19:53:57 -0500
-Message-ID: <CA+BWVUQEa-X7D=d1eh4do=GQSjJ-TT4pLj-5eKpBp9wnVgQsRg@mail.gmail.com>
-Subject: [PATCH] HID: hid-sensor-hub: Add and set report quirk for Microsoft
- Surface Pro 2
-To: linux-kernel@vger.kernel.org, linux-input <linux-input@vger.kernel.org>,
-        derya.kiran@yahoo.de, linux-iio@vger.kernel.org,
+Date: Tue, 13 May 2014 19:54:26 -0500
+Message-ID: <CA+BWVUTOHr-sktWtpGL7-1wTdz2suDWFjcyX=fFU+JHjs5+TTQ@mail.gmail.com>
+Subject: [PATCH] HID: Debug: Add labels for HID Sensor Usages
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input <linux-input@vger.kernel.org>,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,43 +21,98 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- drivers/hid/hid-ids.h        | 3 +++
- drivers/hid/hid-sensor-hub.c | 8 ++++++++
- 2 files changed, 11 insertions(+)
+ drivers/hid/hid-debug.c | 79 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 34bb220..18e2099 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -633,6 +633,9 @@
- #define USB_DEVICE_ID_MS_PRESENTER_8K_USB 0x0713
- #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K 0x0730
- #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500 0x076c
-+#define USB_DEVICE_ID_MS_SURFACE_PRO_2   0x0799
-+#define USB_DEVICE_ID_MS_TOUCH_COVER_2   0x07a7
-+#define USB_DEVICE_ID_MS_TYPE_COVER_2    0x07a9
-
- #define USB_VENDOR_ID_MOJO 0x8282
- #define USB_DEVICE_ID_RETRO_ADAPTER 0x3201
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index be14b56..f6dc7ea 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -710,6 +710,14 @@ static const struct hid_device_id sensor_hub_devices[] = {
-  .driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
-  { HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB,
-USB_VENDOR_ID_TEXAS_INSTRUMENTS,
-  USB_DEVICE_ID_TEXAS_INSTRUMENTS_LENOVO_YOGA),
-+ { HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
-+ USB_DEVICE_ID_MS_SURFACE_PRO_2),
-+ .driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
-+ { HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
-+ USB_DEVICE_ID_MS_TOUCH_COVER_2),
-+ .driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
-+ { HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
-+ USB_DEVICE_ID_MS_TYPE_COVER_2),
-  .driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
-  { HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, HID_ANY_ID,
-      HID_ANY_ID) },
+diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
+index 53b771d..25cc71c 100644
+--- a/drivers/hid/hid-debug.c
++++ b/drivers/hid/hid-debug.c
+@@ -272,6 +272,85 @@ static const struct hid_usage_entry hid_usage_table[] = {
+     {0, 0xAA, "Shared_Parameter_Blocks"},
+     {0, 0xAB, "Create_New_Effect_Report"},
+     {0, 0xAC, "RAM_Pool_Available"},
++  {  0x20, 0, "Sensor" },
++    { 0x20, 0x01, "Sensor" },
++    { 0x20, 0x10, "Biometric" },
++      { 0x20, 0x11, "BiometricHumanPresence" },
++      { 0x20, 0x12, "BiometricHumanProximity" },
++      { 0x20, 0x13, "BiometricHumanTouch" },
++    { 0x20, 0x20, "Electrical" },
++      { 0x20, 0x21, "ElectricalCapacitance" },
++      { 0x20, 0x22, "ElectricalCurrent" },
++      { 0x20, 0x23, "ElectricalPower" },
++      { 0x20, 0x24, "ElectricalInductance" },
++      { 0x20, 0x25, "ElectricalResistance" },
++      { 0x20, 0x26, "ElectricalVoltage" },
++      { 0x20, 0x27, "ElectricalPoteniometer" },
++      { 0x20, 0x28, "ElectricalFrequency" },
++      { 0x20, 0x29, "ElectricalPeriod" },
++    { 0x20, 0x30, "Environmental" },
++      { 0x20, 0x31, "EnvironmentalAtmosphericPressure" },
++      { 0x20, 0x32, "EnvironmentalHumidity" },
++      { 0x20, 0x33, "EnvironmentalTemperature" },
++      { 0x20, 0x34, "EnvironmentalWindDirection" },
++      { 0x20, 0x35, "EnvironmentalWindSpeed" },
++    { 0x20, 0x40, "Light" },
++      { 0x20, 0x41, "LightAmbientLight" },
++      { 0x20, 0x42, "LightConsumerInfrared" },
++    { 0x20, 0x50, "Location" },
++      { 0x20, 0x51, "LocationBroadcast" },
++      { 0x20, 0x52, "LocationDeadReckoning" },
++      { 0x20, 0x53, "LocationGPS" },
++      { 0x20, 0x54, "LocationLookup" },
++      { 0x20, 0x55, "LocationOther" },
++      { 0x20, 0x56, "LocationStatic" },
++      { 0x20, 0x57, "LocationTriangulation" },
++    { 0x20, 0x60, "Mechanical" },
++      { 0x20, 0x61, "MechanicalBooleanSwitch" },
++      { 0x20, 0x62, "MechanicalBooleanSwitchArray" },
++      { 0x20, 0x63, "MechanicalMultivalueSwitch" },
++      { 0x20, 0x64, "MechanicalForce" },
++      { 0x20, 0x65, "MechanicalPressure" },
++      { 0x20, 0x66, "MechanicalStrain" },
++      { 0x20, 0x67, "MechanicalWeight" },
++      { 0x20, 0x68, "MechanicalHapticVibrator" },
++      { 0x20, 0x69, "MechanicalHallEffectSwitch" },
++    { 0x20, 0x70, "Motion" },
++      { 0x20, 0x71, "MotionAccelerometer1D" },
++      { 0x20, 0x72, "MotionAccelerometer2D" },
++      { 0x20, 0x73, "MotionAccelerometer3D" },
++      { 0x20, 0x74, "MotionGyrometer1D" },
++      { 0x20, 0x75, "MotionGyrometer2D" },
++      { 0x20, 0x76, "MotionGyrometer3D" },
++      { 0x20, 0x77, "MotionMotionDetector" },
++      { 0x20, 0x78, "MotionSpeedometer" },
++      { 0x20, 0x79, "MotionAccelerometer" },
++      { 0x20, 0x7A, "MotionGyrometer" },
++    { 0x20, 0x80, "Orientation" },
++      { 0x20, 0x81, "OrientationCompass1D" },
++      { 0x20, 0x82, "OrientationCompass2D" },
++      { 0x20, 0x83, "OrientationCompass3D" },
++      { 0x20, 0x84, "OrientationInclinometer1D" },
++      { 0x20, 0x85, "OrientationInclinometer2D" },
++      { 0x20, 0x86, "OrientationInclinometer3D" },
++      { 0x20, 0x87, "OrientationDistance1D" },
++      { 0x20, 0x88, "OrientationDistance2D" },
++      { 0x20, 0x89, "OrientationDistance3D" },
++      { 0x20, 0x8A, "OrientationDeviceOrientation" },
++      { 0x20, 0x8B, "OrientationCompass" },
++      { 0x20, 0x8C, "OrientationInclinometer" },
++      { 0x20, 0x8D, "OrientationDistance" },
++    { 0x20, 0x90, "Scanner" },
++      { 0x20, 0x91, "ScannerBarcode" },
++      { 0x20, 0x91, "ScannerRFID" },
++      { 0x20, 0x91, "ScannerNFC" },
++    { 0x20, 0xA0, "Time" },
++      { 0x20, 0xA1, "TimeAlarmTimer" },
++      { 0x20, 0xA2, "TimeRealTimeClock" },
++    { 0x20, 0xE0, "Other" },
++      { 0x20, 0xE1, "OtherCustom" },
++      { 0x20, 0xE2, "OtherGeneric" },
++      { 0x20, 0xE3, "OtherGenericEnumerator" },
+   { 0x84, 0, "Power Device" },
+     { 0x84, 0x02, "PresentStatus" },
+     { 0x84, 0x03, "ChangeStatus" },
 -- 
 1.9.0
