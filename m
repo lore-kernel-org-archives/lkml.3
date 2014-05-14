@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaENTSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:18:25 -0400
+	id S1752653AbaENTSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:18:32 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:35989 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaENTSV (ORCPT
+	with ESMTP id S1752221AbaENTS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:18:21 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-a3-5373c17b943c
+	Wed, 14 May 2014 15:18:26 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-ea-5373c18028dc
 From: Rahul Sharma <rahul.sharma@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         dri-devel@lists.freedesktop.org
@@ -16,35 +16,37 @@ Cc: a.hajda@samsung.com, t.stanislaws@samsung.com, devicetree@vger.kernel.org,
         robh+dt@kernel.org, grant.likely@linaro.org,
         sylvester.nawrocki@gmail.com, joshi@samsung.com,
         Rahul Sharma <rahul.sharma@samsung.com>
-Subject: [PATCH v3 0/3] phy: Add exynos-simple-phy driver
-Date: Thu, 15 May 2014 00:47:20 +0530
-Message-id: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+Subject: [PATCH v3 2/3] drm: exynos: hdmi: use hdmiphy as PHY
+Date: Thu, 15 May 2014 00:47:22 +0530
+Message-id: <1400095043-685-3-git-send-email-rahul.sharma@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42JZI2JSp1t9sDjYoP0Cv8WtdedYLeYfARJX
-	vr5nszjwZwejxfddX9gtehdcZbO48LSHzeJs0xt2i8u75rBZzDi/j8liyqLDrBate4+wW8z7
-	vJPJYl77S1YHPo+ds+6ye2xa1cnmcefaHjaP+93HmTz6tqxi9Dh+YzuTx+dNcgHsUVw2Kak5
-	mWWpRfp2CVwZB36vYSn4IFWxYMsH9gbG2aJdjJwcEgImEqtubmKCsMUkLtxbz9bFyMUhJLCU
-	UWLy3WvMXYwcYEVX3sZDxKczSmz9e5AFwmlnkmjt3MoK0s0moCsx++AzRhBbRCBN4tuBFlaQ
-	ImaB2UwSG1+8ZgNJCAtYSnyb95QZxGYRUJVYNGklC4jNK+AmsfhSA9Q2BYk5k2xAeiUEjrFL
-	/DjWzQRRLyDxbfIhFogaWYlNB5ghrpaUOLjiBssERsEFjAyrGEVTC5ILipPSi4z1ihNzi0vz
-	0vWS83M3MQIj4vS/Z/07GO8esD7EmAw0biKzlGhyPjCi8kriDY3NjCxMTUyNjcwtzUgTVhLn
-	vf8wKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDI9ebqflHd5szBr94YrNt1fFM3iOCUQ7d
-	BlHv/+/5FFyxUJy7oMtwrZP1Do5Db+Ltf71eJ6Z33eixygGfR5VpxtaPIjpMvcsVdIzOqGQV
-	Xas6K/KHd/HbtI/pn6Yf2hVlXz9L9MybZTsaXbdVrn6+b/ZFpyuaqmEmG7TvrXm4r3GtebvX
-	uyfrMpRYijMSDbWYi4oTARsQ+deeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jQd3qg8XBBv8eMFncWneO1WL+ESBx
-	5et7NosDf3YwWnzf9YXdonfBVTaLC0972CzONr1ht7i8aw6bxYzz+5gspiw6zGrRuvcIu8W8
-	zzuZLOa1v2R14PPYOesuu8emVZ1sHneu7WHzuN99nMmjb8sqRo/jN7YzeXzeJBfAHtXAaJOR
-	mpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLSSQlliTilQ
-	KCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePA7zUsBR+kKhZs+cDewDhbtIuRg0NC
-	wETiytv4LkZOIFNM4sK99WxdjFwcQgLTGSW2/j3IAuG0M0m0dm5lBaliE9CVmH3wGSOILSKQ
-	JvHtQAsrSBGzwGwmiY0vXrOBJIQFLCW+zXvKDGKzCKhKLJq0kgXE5hVwk1h8qYEZYrOCxJxJ
-	NhMYuRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI63Z1I7GFc2WBxiFOBgVOLhZZhc
-	HCzEmlhWXJl7iFGCg1lJhDdpL1CINyWxsiq1KD++qDQntfgQYzLQ8onMUqLJ+cBUkFcSb2hs
-	Ym5qbGppYmFiZkmasJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjIwcfI+56l4Kxetmxhza
-	FWWRysYUcjPOZTrL9u+S7NNNK1pfTwr1mqV2qvowe5nfqzk++x3c+7Vm7pBufRQjUdZUWnTI
-	u6pRZj6fqIJhenevME/mz9mdW8/7/AsReuRfct9tn4SP+DH3ySxMLwJXrDj5StXHviGnauVh
-	4cbuhe9XTNcMlrimxFKckWioxVxUnAgASWFOfPsCAAA=
+In-reply-to: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsWyRsSkRrfhYHGwwY6DOha31p1jtZh/BEhc
+	+fqezeLAnx2MFt93fWG36F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLKYsOs1q07j3CbjHv
+	804mi3ntL1kd+Dx2zrrL7rFpVSebx51re9g87ncfZ/Lo27KK0eP4je1MHp83yQWwR3HZpKTm
+	ZJalFunbJXBlrL81gaVguVDFxY3TWBsYt/B3MXJySAiYSEy4/Z0dwhaTuHBvPVsXIxeHkMBS
+	RonHUy6zwRQdmdHKDpGYziixc/I6ZginnUnizqoNjCBVbAK6ErMPPgOzRQTSJL4daGEFKWIW
+	mM0ksfHFa7BRwgK2EttffWcCsVkEVCWmzzvOCmLzCrhJvLz1CqiZA2idgsScSTYgYU4Bd4mG
+	SxuZQWwhoJIVLfNYIS56xC4x5bANxBgBiW+TD7FAtMpKbDrADFEiKXFwxQ2WCYzCCxgZVjGK
+	phYkFxQnpReZ6BUn5haX5qXrJefnbmIERtDpf88m7GC8d8D6EGMy0LiJzFKiyfnACMwriTc0
+	NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYzm1sfeGKO
+	MnnMMH7tXXe+Vjf78xWxpTbXXTRfHLjPfnzlyy3sEV2/JmvvOex2JkOyRST8nPF306nuH1Ou
+	sAQ9X645g71xknKKdtTHv9aXTgSKFRQqK15x/MK1YP0c2/yVjtmtb1qWNUfOYWwTcLG44537
+	kOG92mJuFXkbC+GUnP3Tji/enqjEUpyRaKjFXFScCAD3gwgvtgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoG7DweJggxPXFCxurTvHajH/CJC4
+	8vU9m8WBPzsYLb7v+sJu0bvgKpvFhac9bBZnm96wW1zeNYfNYsb5fUwWUxYdZrVo3XuE3WLe
+	551MFvPaX7I68HnsnHWX3WPTqk42jzvX9rB53O8+zuTRt2UVo8fxG9uZPD5vkgtgj2pgtMlI
+	TUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlpJoSwxpxQo
+	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLH+1gSWguVCFRc3TmNtYNzC38XIySEh
+	YCJxZEYrO4QtJnHh3nq2LkYuDiGB6YwSOyevY4Zw2pkk7qzawAhSxSagKzH74DMwW0QgTeLb
+	gRZWkCJmgdlMEhtfvGYDSQgL2Epsf/WdCcRmEVCVmD7vOCuIzSvgJvHy1iugZg6gdQoScybZ
+	gIQ5BdwlGi5tZAaxhYBKVrTMY53AyLuAkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnCE
+	PpPawbiyweIQowAHoxIPL8Pk4mAh1sSy4srcQ4wSHMxKIrxJe4FCvCmJlVWpRfnxRaU5qcWH
+	GJOBjprILCWanA9MHnkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
+	wSnVwNi6/iH7Rv5DMX4nrpYbf3E7cPfb9rVOQnmV28+l3i1h5JPQei/338WvfG/7RUG7tfKn
+	TdgCnd7GXlNJMbn8X9fZ4NPaO9n3dry+waYkwOjStXi+ROvrpoOz65u9/1v/s+ZnS28yu/4s
+	UVJC9kT41gW/8n5U/2p/GJd+UWcBa6XxsZn75I/OC1diKc5INNRiLipOBADghx/pFAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,91 +54,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rahul Sharma <Rahul.Sharma@samsung.com>
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 
-Hi All,
+The HDMIPHY (physical interface) is controlled by a single
+bit in a power controller's regiter. It was implemented
+as clock. It was a simple but effective hack.
 
-This series has been originally proposed by Tomasz Stanislawski. With
-his permission, I have addressed the following review comments in V3.
+This patch makes HDMI driver to control HDMIPHY via PHY interface.
 
-Changelog:
-v3:
-	* Implement lazy-init of PHYs.
-	* Use MACROs instead of numbers to represent phys.
-	* Use regmap interface to access PMU registers.
+Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Signed-off-by: Rahul Sharma <Rahul.Sharma@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_hdmi.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-It is based on "Next" branch in Kishon Vijay Abraham's tree at
-https://git.kernel.org/cgit/linux/kernel/git/kishon/linux-phy.git/
-
-/* Original Message from Tomasz Stanislawski <t.stanislaws@samsung.com> */
-
-The Samsung SoCs from Exynos family are enhanced with a bunch of devices that
-provide functionality of a physical layer for interfaces like USB, HDMI, SATA,
-etc. They are controlled by a simple interface, often a single bit that enables
-and/or resets the physical layer.
-
-An IP driver should to control such a controller in an abstract manner.
-Therefore, such 'enablers' were implemented as clocks in older versions of
-Linux kernel.  With the dawn of PHY subsystems, PHYs become a natural way of
-exporting the 'enabler' functionality to drivers.  However, there is an
-unexpected consequence. Some of those 1-bit PHYs were implemented as separate
-drivers.  This means that one has to create a struct device, struct phy, its
-phy provider and 100-150 lines of driver code to basically set one bit.
-
-The DP phy driver is a good example:
-https://lkml.org/lkml/2013/7/18/53
-
-And simple-phy RFC (shares only driver code but not other resources):
-https://lkml.org/lkml/2013/10/21/313
-
-To avoid waste of resources I propose to create all such 1-bit phys from Exynos
-SoC using a single device, driver and phy provider.
-
-This patchset contains a proposed solution.
-
-All comment are welcome.
-
-Hopefully in future the functionality introduced by this patch may be merged
-into a larger Power Management Unit (PMU) gluer driver.  On Samsusng SoC , the
-PMU part contains a number of register barely linked to power management (like
-clock gating, clock dividers, CPU resetting, etc.).  It may be tempting to
-create a hybrid driver that export clocks/phys/etc that are controlled by PMU
-unit.
-
-Alternative solutions might be:
-* exporting a regmap to the IP driver and allow the driver to control the PHY layer
-  like in the patch:
-  http://thread.gmane.org/gmane.linux.kernel.samsung-soc/28617/focus=28648
-
-* create a dedicated power domain for hdmiphy
-
-Regards,
-Tomasz Stanislawski
-
-v2:
-	* rename to exynos-simple-phy
-	* fix usage of devm_ioremap()
-	* add documentation for DT bindings
-	* add patches to client drivers
-
-v1: initial version
-
-Tomasz Stanislawski (3):
-  phy: Add exynos-simple-phy driver
-  drm: exynos: hdmi: use hdmiphy as PHY
-  s5p-tv: hdmi: use hdmiphy as PHY
-
- .../devicetree/bindings/phy/samsung-phy.txt        |   56 ++++++
- drivers/gpu/drm/exynos/exynos_hdmi.c               |   11 +-
- drivers/media/platform/s5p-tv/hdmi_drv.c           |   11 +-
- drivers/phy/Kconfig                                |    5 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/exynos-simple-phy.c                    |  189 ++++++++++++++++++++
- include/dt-bindings/phy/exynos-simple-phy.h        |   27 +++
- 7 files changed, 290 insertions(+), 10 deletions(-)
- create mode 100644 drivers/phy/exynos-simple-phy.c
- create mode 100644 include/dt-bindings/phy/exynos-simple-phy.h
-
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 9a6d652..ef1cdd0 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -36,6 +36,7 @@
+ #include <linux/i2c.h>
+ #include <linux/of_gpio.h>
+ #include <linux/hdmi.h>
++#include <linux/phy/phy.h>
+ 
+ #include <drm/exynos_drm.h>
+ 
+@@ -74,8 +75,8 @@ struct hdmi_resources {
+ 	struct clk			*sclk_hdmi;
+ 	struct clk			*sclk_pixel;
+ 	struct clk			*sclk_hdmiphy;
+-	struct clk			*hdmiphy;
+ 	struct clk			*mout_hdmi;
++	struct phy			*hdmiphy;
+ 	struct regulator_bulk_data	*regul_bulk;
+ 	int				regul_count;
+ };
+@@ -1854,7 +1855,7 @@ static void hdmi_poweron(struct exynos_drm_display *display)
+ 	if (regulator_bulk_enable(res->regul_count, res->regul_bulk))
+ 		DRM_DEBUG_KMS("failed to enable regulator bulk\n");
+ 
+-	clk_prepare_enable(res->hdmiphy);
++	phy_power_on(res->hdmiphy);
+ 	clk_prepare_enable(res->hdmi);
+ 	clk_prepare_enable(res->sclk_hdmi);
+ 
+@@ -1881,7 +1882,7 @@ static void hdmi_poweroff(struct exynos_drm_display *display)
+ 
+ 	clk_disable_unprepare(res->sclk_hdmi);
+ 	clk_disable_unprepare(res->hdmi);
+-	clk_disable_unprepare(res->hdmiphy);
++	phy_power_off(res->hdmiphy);
+ 	regulator_bulk_disable(res->regul_count, res->regul_bulk);
+ 
+ 	pm_runtime_put_sync(hdata->dev);
+@@ -1977,9 +1978,9 @@ static int hdmi_resources_init(struct hdmi_context *hdata)
+ 		DRM_ERROR("failed to get clock 'sclk_hdmiphy'\n");
+ 		goto fail;
+ 	}
+-	res->hdmiphy = devm_clk_get(dev, "hdmiphy");
++	res->hdmiphy = devm_phy_get(dev, "hdmiphy");
+ 	if (IS_ERR(res->hdmiphy)) {
+-		DRM_ERROR("failed to get clock 'hdmiphy'\n");
++		DRM_ERROR("failed to get phy 'hdmiphy'\n");
+ 		goto fail;
+ 	}
+ 	res->mout_hdmi = devm_clk_get(dev, "mout_hdmi");
 -- 
 1.7.9.5
 
