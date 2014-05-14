@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaENLQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:16:58 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:58350 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043AbaENLQz (ORCPT
+	id S1755011AbaENLSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:18:54 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:49240 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875AbaENLSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:16:55 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 05/11] drivers: of: add automated assignment of
- reserved regions to client devices
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tomasz Figa <t.figa@samsung.com>, Will Deacon <will.deacon@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Marc <marc.ceeeee@gmail.com>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-In-Reply-To: <1400058938.3395.13.camel@linaro1.home>
-References: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com>
-	<1393594976-16728-6-git-send-email-m.szyprowski@samsung.com>
-	<20140302054043.4F48AC414EF@trevor.secretlab.ca>
-	<1400058938.3395.13.camel@linaro1.home>
-Date: Wed, 14 May 2014 12:16:47 +0100
-Message-Id: <20140514111647.BA6F6C4153D@trevor.secretlab.ca>
+	Wed, 14 May 2014 07:18:52 -0400
+Subject: [PATCH v1.2 5/16] arcmsr: bugfix of abort command return status
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 May 2014 19:18:45 +0800
+Message-ID: <1400066325.6957.31.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 10:15:38 +0100, "Jon Medhurst (Tixy)" <tixy@linaro.org> wrote:
-> On Sun, 2014-03-02 at 13:40 +0800, Grant Likely wrote:
-> > On Fri, 28 Feb 2014 14:42:50 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > > This patch adds code for automated assignment of reserved memory regions
-> > > to struct device. reserved_mem->ops->device_init()/device_cleanup()
-> > > callbacks are called to perform reserved memory driver specific
-> > > initialization and cleanup
-> > > 
-> > > Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
-> > > 
-> > > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > 
-> > Hi Marek,
-> > 
-> > I've not applied this one yet, only because there is still the open
-> > issue of whether or not these functions should be called from drivers or
-> > from core code. I don't actually have any problems with the content of
-> > this patch. Once the user is sorted out I'll merge it.
-> 
-> Has anything more come of these patches? I see some of the series is now
-> in Linux 3.15, but the actual patches to let people use the feature
-> aren't there yet, namely patches 5 though 8.
-> 
-> My personal immediate interest in these is as a mechanism on arm64 to
-> limit CMA to a region of memory that is actually DMA-able devices (e.g.
-> below 4GB for 32-bit devices without an iommu).
-> 
-> For reference, the mail archives for this series is at
-> http://lkml.org/lkml/2014/2/28/237
+From: Ching<ching2048@areca.com.tw>
 
-IIRC, the issue I have with patch 5-8 is that I don't like the driver core
-going off and doing automagical things to attach regions to devices.
-I've not seen any more discussion on this topic since I merged the
-patches I was okay with, but I may have missed something.
+Fix a bug of return status from calling arcmsr_polling_ccbdone.
+The original code may return a FAILED if abort command is SUCCESS.
 
-g.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:43:40.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:44:40.000000000 +0800
+@@ -2482,7 +2482,7 @@ static int arcmsr_polling_hba_ccbdone(st
+ 		}
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
+ 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
++		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
+ 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
+ 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
+ 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
+@@ -2546,7 +2546,7 @@ static int arcmsr_polling_hbb_ccbdone(st
+ 		/* check if command done with no error*/
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
+ 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
++		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
+ 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
+ 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
+ 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
+@@ -2602,7 +2602,7 @@ polling_hbc_ccb_retry:
+ 		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
+ 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);/*frame must be 32 bytes aligned*/
+ 		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-		poll_ccb_done = (pCCB == poll_ccb) ? 1 : 0;
++		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
+ 		/* check ifcommand done with no error*/
+ 		if ((pCCB->acb != acb) || (pCCB->startdone != ARCMSR_CCB_START)) {
+ 			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
+@@ -3204,6 +3204,8 @@ static int arcmsr_abort(struct scsi_cmnd
+ 		(struct AdapterControlBlock *)cmd->device->host->hostdata;
+ 	int i = 0;
+ 	int rtn = FAILED;
++	uint32_t intmask_org;
++
+ 	printk(KERN_NOTICE
+ 		"arcmsr%d: abort device command of scsi id = %d lun = %d \n",
+ 		acb->host->host_no, cmd->device->id, cmd->device->lun);
+@@ -3215,9 +3217,12 @@ static int arcmsr_abort(struct scsi_cmnd
+ 	** we need to handle it as soon as possible and exit
+ 	************************************************
+ 	*/
+-	if (!atomic_read(&acb->ccboutstandingcount))
++	if (!atomic_read(&acb->ccboutstandingcount)) {
++		acb->acb_flags &= ~ACB_F_ABORT;
+ 		return rtn;
++	}
+ 
++	intmask_org = arcmsr_disable_outbound_ints(acb);
+ 	for (i = 0; i < ARCMSR_MAX_FREECCB_NUM; i++) {
+ 		struct CommandControlBlock *ccb = acb->pccb_pool[i];
+ 		if (ccb->startdone == ARCMSR_CCB_START && ccb->pcmd == cmd) {
+@@ -3227,6 +3232,7 @@ static int arcmsr_abort(struct scsi_cmnd
+ 		}
+ 	}
+ 	acb->acb_flags &= ~ACB_F_ABORT;
++	arcmsr_enable_outbound_ints(acb, intmask_org);
+ 	return rtn;
+ }
+ 
+
 
