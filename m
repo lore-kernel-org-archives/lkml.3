@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaENRhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:37:35 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:42192 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaENRhe (ORCPT
+	id S1751933AbaENRjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:39:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43135 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaENRjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:37:34 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 1/2] usb: gadget: net2280: Fix NULL pointer dereference
-Date: Wed, 14 May 2014 19:37:26 +0200
-Message-Id: <1400089046-18245-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.0.0.rc0
+	Wed, 14 May 2014 13:39:32 -0400
+Date: Wed, 14 May 2014 10:39:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] bus/omap_l3: avoid sync initcall for modules
+Message-ID: <20140514173931.GA14003@kroah.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-6-git-send-email-arnd@arndb.de>
+ <20140512222006.GI5668@atomide.com>
+ <177753046.dmVvfiu3Rn@wuerfel>
+ <20140513162731.GD16837@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513162731.GD16837@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When DEBUG is enabled driver->driver.name is accessed, but driver
-can be NULL
+On Tue, May 13, 2014 at 09:27:33AM -0700, Tony Lindgren wrote:
+> * Arnd Bergmann <arnd@arndb.de> [140513 08:13]:
+> > On Monday 12 May 2014 15:20:07 Tony Lindgren wrote:
+> > > 
+> > > How about instead let's add this into include/linux/module.h
+> > > like we have for other initcalls:
+> 
+> I mean include/linux/init.h naturally..
+>  
+> > > #define postcore_initcall(fn)           module_init(fn)
+> > > 
+> > > There may be others missing too from there. BTW, this driver
+> > > might be few of the drivers that actually might need to be
+> > > initialized early for debugging to catch bad access from
+> > > other drivers.
+> > 
+> > There is a comment above those defines saying:
+> > 
+> > /* Don't use these in loadable modules, but some people do... */
+> > 
+> > so I'm not sure if adding more would be appreciated.
+> > 
+> > 	Arnd
+> 
+> Well "some" in that comment is probably an understatement :)
+> 
+> $ git grep _initcall drivers/ | wc -l
+> 737
+> 
+> I did not look what percentage has tristate in the Kconfig,
+> but that might keep some people from making loadable drivers.
+> 
+> Greg, is the following patch something you may want to
+> consider picking up?
 
-[  174.411689] BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-[  174.429043] RIP: 0010:[<ffffffffa0131ca3>]  [<ffffffffa0131ca3>] net2280_stop+0xa3/0x100 [net2280]
-[  174.457910] Call Trace:
-[  174.459503]  [<ffffffffa00dd92a>] usb_gadget_remove_driver+0x5a/0xb0 [udc_core]
-[  174.462693]  [<ffffffffa00ddd84>] usb_del_gadget_udc+0xb4/0x110 [udc_core]
-[  174.464316]  [<ffffffffa012e2bf>] net2280_remove+0x2f/0x1c0 [net2280]
+Sure, is this needed to fix issues in 3.15-final, or is 3.16-rc1 ok?
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/usb/gadget/net2280.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+thanks,
 
-diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-index 43e5e2f..4978e63 100644
---- a/drivers/usb/gadget/net2280.c
-+++ b/drivers/usb/gadget/net2280.c
-@@ -1972,7 +1972,9 @@ static int net2280_stop(struct usb_gadget *_gadget,
- 	device_remove_file (&dev->pdev->dev, &dev_attr_function);
- 	device_remove_file (&dev->pdev->dev, &dev_attr_queues);
- 
--	DEBUG (dev, "unregistered driver '%s'\n", driver->driver.name);
-+	if (driver)
-+		DEBUG(dev, "unregistered driver '%s'\n", driver->driver.name);
-+
- 	return 0;
- }
- 
--- 
-2.0.0.rc0
-
+greg k-h
