@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235AbaENSQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:16:04 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:59594 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaENSQC (ORCPT
+	id S1751222AbaENSQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:16:58 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:9977 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705AbaENSQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:16:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] bus/omap_l3: avoid sync initcall for modules
-Date: Wed, 14 May 2014 20:15:56 +0200
-Message-ID: <5640589.bzCk17dFyc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140514173931.GA14003@kroah.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <20140513162731.GD16837@atomide.com> <20140514173931.GA14003@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ctj3fjGFqS1nvCn+WfHkmPayChVho6SaQsknqY0OKrT
- 0zm1VuL0cY6IMJaFxl2crm8yCKf0T9l1/9V3EqQjHc9vOzFVvJ
- 7pjkCalu2BryzYd8JhM8MlJJUUM/6F7ev28bgcLtds4p3345GA
- 1sk9P56FbUTwJzE6jo5TmZL1VpUwzNAN5iPBCLToNM2P27OYEw
- csQGz55KOWOH+UVs2e12zwALCMRwTwz1D2yAeAdBY/29s0qorB
- KlF7RVhkSaMdMOffvNLu3HPKVtmk2fIofCXMbPQpbj0vqm0sJq
- pyb+qD+JNkQ0icojyEg3+qXMdBPEbMbytWkhaw8A7w6I3DBpdA
- JoWw82MKiJDQSBvr4o3U=
+	Wed, 14 May 2014 14:16:56 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuUNAHGyc1NXQ68k/2dsb2JhbABZgwasaQQBAQEBAQEFAZodgSUXdIJTExwjGIECJBOIRQHRVoVUiHqERwEDjyqKJgGLDYgHgzg7
+Date: Wed, 14 May 2014 20:16:54 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe <joe@perches.com>
+Subject: [PATCH 3/3] FS/EFS: convert printk(KERN_DEBUG to pr_debug
+Message-Id: <20140514201654.b1a1d1ab1dee7bbce485f80b@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 10:39:31 Greg KH wrote:
-> On Tue, May 13, 2014 at 09:27:33AM -0700, Tony Lindgren wrote:
-> > * Arnd Bergmann <arnd@arndb.de> [140513 08:13]:
-> > 
-> > I did not look what percentage has tristate in the Kconfig,
-> > but that might keep some people from making loadable drivers.
-> > 
-> > Greg, is the following patch something you may want to
-> > consider picking up?
-> 
-> Sure, is this needed to fix issues in 3.15-final, or is 3.16-rc1 ok?
+All KERN_DEBUG callsites being under #ifdef DEBUG
+we can safely convert everything to pr_debug without changing
+current behaviour.
+Remove #ifdef DEBUG around pr_debugs only (suggested by Joe Perches)
 
-I don't think anyone cares about it outside of randconfig builds,
-so 3.16-rc1 is ok.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/efs/dir.c   |  7 +++----
+ fs/efs/inode.c | 18 ++++++------------
+ fs/efs/super.c | 18 ++++++++----------
+ 3 files changed, 17 insertions(+), 26 deletions(-)
 
-	Arnd
+diff --git a/fs/efs/dir.c b/fs/efs/dir.c
+index 7f97031..ce63b24 100644
+--- a/fs/efs/dir.c
++++ b/fs/efs/dir.c
+@@ -71,10 +71,9 @@ static int efs_readdir(struct file *file, struct dir_context *ctx)
+ 			inodenum = be32_to_cpu(dirslot->inode);
+ 			namelen  = dirslot->namelen;
+ 			nameptr  = dirslot->name;
+-
+-#ifdef DEBUG
+-			printk(KERN_DEBUG "EFS: readdir(): block %d slot %d/%d: inode %u, name \"%s\", namelen %u\n", block, slot, dirblock->slots-1, inodenum, nameptr, namelen);
+-#endif
++			pr_debug("%s(): block %d slot %d/%d: inode %u, name \"%s\", namelen %u\n",
++				 __func__, block, slot, dirblock->slots-1,
++				 inodenum, nameptr, namelen);
+ 			if (!namelen)
+ 				continue;
+ 			/* found the next entry */
+diff --git a/fs/efs/inode.c b/fs/efs/inode.c
+index 6c9684a..079d203 100644
+--- a/fs/efs/inode.c
++++ b/fs/efs/inode.c
+@@ -138,12 +138,8 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
+ 	}
+ 
+ 	brelse(bh);
+-   
+-#ifdef DEBUG
+-	printk(KERN_DEBUG "EFS: efs_iget(): inode %lu, extents %d, mode %o\n",
+-		inode->i_ino, in->numextents, inode->i_mode);
+-#endif
+-
++	pr_debug("efs_iget(): inode %lu, extents %d, mode %o\n",
++		 inode->i_ino, in->numextents, inode->i_mode);
+ 	switch (inode->i_mode & S_IFMT) {
+ 		case S_IFDIR: 
+ 			inode->i_op = &efs_dir_inode_operations; 
+@@ -239,9 +235,8 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 		return 0;
+ 	}
+ 
+-#ifdef DEBUG
+-	printk(KERN_DEBUG "EFS: map_block(): indirect search for logical block %u\n", block);
+-#endif
++	pr_debug("%s(): indirect search for logical block %u\n",
++		 __func__, block);
+ 	direxts = in->extents[0].cooked.ex_offset;
+ 	indexts = in->numextents;
+ 
+@@ -285,9 +280,8 @@ efs_block_t efs_map_block(struct inode *inode, efs_block_t block) {
+ 				       __func__, iblock);
+ 				return 0;
+ 			}
+-#ifdef DEBUG
+-			printk(KERN_DEBUG "EFS: map_block(): read indirect extent block %d\n", iblock);
+-#endif
++			pr_debug("%s(): read indirect extent block %d\n",
++				 __func__, iblock);
+ 			first = 0;
+ 			lastblock = iblock;
+ 		}
+diff --git a/fs/efs/super.c b/fs/efs/super.c
+index cd1399e..7fca462 100644
+--- a/fs/efs/super.c
++++ b/fs/efs/super.c
+@@ -184,7 +184,7 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
+ 	}
+ 
+ #ifdef DEBUG
+-	printk(KERN_DEBUG "EFS: bf: \"%16s\"\n", vh->vh_bootfile);
++	pr_debug("bf: \"%16s\"\n", vh->vh_bootfile);
+ 
+ 	for(i = 0; i < NVDIR; i++) {
+ 		int	j;
+@@ -196,9 +196,8 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
+ 		name[j] = (char) 0;
+ 
+ 		if (name[0]) {
+-			printk(KERN_DEBUG "EFS: vh: %8s block: 0x%08x size: 0x%08x\n",
+-				name,
+-				(int) be32_to_cpu(vh->vh_vd[i].vd_lbn),
++			pr_debug("vh: %8s block: 0x%08x size: 0x%08x\n",
++				name, (int) be32_to_cpu(vh->vh_vd[i].vd_lbn),
+ 				(int) be32_to_cpu(vh->vh_vd[i].vd_nbytes));
+ 		}
+ 	}
+@@ -211,12 +210,11 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
+ 		}
+ #ifdef DEBUG
+ 		if (be32_to_cpu(vh->vh_pt[i].pt_nblks)) {
+-			printk(KERN_DEBUG "EFS: pt %2d: start: %08d size: %08d type: 0x%02x (%s)\n",
+-				i,
+-				(int) be32_to_cpu(vh->vh_pt[i].pt_firstlbn),
+-				(int) be32_to_cpu(vh->vh_pt[i].pt_nblks),
+-				pt_type,
+-				(pt_entry->pt_name) ? pt_entry->pt_name : "unknown");
++			pr_debug("pt %2d: start: %08d size: %08d type: 0x%02x (%s)\n",
++				 i, (int)be32_to_cpu(vh->vh_pt[i].pt_firstlbn),
++				 (int)be32_to_cpu(vh->vh_pt[i].pt_nblks),
++				 pt_type, (pt_entry->pt_name) ?
++				 pt_entry->pt_name : "unknown");
+ 		}
+ #endif
+ 		if (IS_EFS(pt_type)) {
+-- 
+1.9.1
+
