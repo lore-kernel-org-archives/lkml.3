@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124AbaENLyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:54:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39297 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaENLyP (ORCPT
+	id S1755263AbaENLzV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:55:21 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:46359 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaENLzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:54:15 -0400
-Date: Wed, 14 May 2014 13:54:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
-Message-ID: <20140514115406.GA11096@twins.programming.kicks-ass.net>
-References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
- <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
- <20140514090629.GC30445@twins.programming.kicks-ass.net>
- <20140514113808.GA1278@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8D3PigL67BfDl295"
-Content-Disposition: inline
-In-Reply-To: <20140514113808.GA1278@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 14 May 2014 07:55:18 -0400
+Subject: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after all
+ initialization done
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 May 2014 19:55:09 +0800
+Message-ID: <1400068509.6957.62.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ching<ching2048@areca.com.tw>
 
---8D3PigL67BfDl295
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a new patch after patch v1.1 series.
 
-On Wed, May 14, 2014 at 01:38:14PM +0200, Frederic Weisbecker wrote:
-> > > +bool irq_work_queue_on(struct irq_work *work, int cpu)
-> > > +{
-> > > +	/* Only queue if not already pending */
-> > > +	if (!irq_work_claim(work))
-> > > +		return false;
-> > > +
-> > > +	/* All work should have been flushed before going offline */
-> > > +	WARN_ON_ONCE(cpu_is_offline(cpu));
-> >=20
-> > 	WARN_ON_ONCE(in_nmi());
->=20
-> Well... I think it's actually NMI-safe.
+Fixed calling scsi_scan_host until all initialization are done.
+And fixed error path free allocated resource.
 
-I don't think it is, most apic calls do apic_wait_icr_idle() then the
-apic op, if an NMI happens in between and writes to the APIC, the return
-context will see a !idle icr and fail.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
-This is why arch_irq_work_raise() again idles the icr after sending the
-IPI.
-
-Also, I think, seeing what benh said earlier, its unsafe for other archs
-too.
-
-> > > +	llist_add(&work->llnode, &per_cpu(irq_work_list, cpu));
-> > > +	native_send_call_func_single_ipi(cpu);
-> >=20
-> > At the very leastestest make that:
-> >=20
-> > 	if (llist_add(&work->llnode, &per_cpu(irq_work_list, cpu)))
-> > 		native_send_call_func_single_ipi(cpu);
->=20
-> So yeah the issue is that we may have IRQ_WORK_LAZY in the queue. And
-> if we have only such work in the queue, nobody has raised before us.
->=20
-> So we can't just test with llist_add(). Or if we do, we must then
-> separate raised and lazy list.
-
-Then do the remote irq_work_raised thing. But it really stinks you broke
-this very nice and simple thing.
-
-> Also note that nohz is the only user for now and irq_work_claim() thus
-> prevents from double IPI. Of course if more users come up the issue arise
-> again.
-
-DANGER, half arsed engineering at work, seriously? Just write proper
-code already.
-
-There's no fucking way the next user will check the implementation to
-make sure its 'sane'.
-
-> Maybe I was paranoid but I was worried about the overhead of printk() wak=
-eups
-> on boot if implemented with IPIs.
->=20
-> Of course if I can be proven that it won't bring much damage to use an IP=
-I, I'd
-> be very happy to remove it.
-
-That's the wrong fucking way around, first proof its needed then do
-something about it. As is I think the LAZY thing is horrid.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
+@@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
+ static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
+ static const char *arcmsr_info(struct Scsi_Host *);
+ static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
++static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
+ static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
+ 					  int queue_depth, int reason)
+ {
+@@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
+ 	}
+ 	error = scsi_add_host(host, &pdev->dev);
+ 	if(error){
+-		goto RAID_controller_stop;
++		goto free_ccb_pool;
+ 	}
+ 	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+ 		goto scsi_host_remove;
+ 	arcmsr_iop_init(acb);
+-    	scsi_scan_host(host);
+ 	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+ 	atomic_set(&acb->rq_map_token, 16);
+ 	atomic_set(&acb->ante_token_value, 16);
+@@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
+ 	add_timer(&acb->eternal_timer);
+ 	if(arcmsr_alloc_sysfs_attr(acb))
+ 		goto out_free_sysfs;
++    	scsi_scan_host(host);
+ 	return 0;
+ out_free_sysfs:
+-scsi_host_remove:
+-	scsi_remove_host(host);
+-RAID_controller_stop:
++	del_timer_sync(&acb->eternal_timer);
++ 	flush_work(&acb->arcmsr_do_message_isr_bh);
+ 	arcmsr_stop_adapter_bgrb(acb);
+ 	arcmsr_flush_adapter_cache(acb);
++	arcmsr_free_irq(pdev, acb);
++scsi_host_remove:
++	scsi_remove_host(host);
++free_ccb_pool:
+ 	arcmsr_free_ccb_pool(acb);
+ free_hbb_mu:
+ 	arcmsr_free_mu(acb);
 
 
-
---8D3PigL67BfDl295
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc1leAAoJEHZH4aRLwOS6QlsP/AkbJzFuBVKCpL08evZAsMJP
-CL/bVbbwOjzIX0JpHQjmzkp9NP2c2sRC4sqG1lK8W1NWeX7/Bmfi+4jJK3MH/8a0
-bKKmohNJhs/KURSty5aDeS8voPG4/t87wzKQweL70mfHRZvUQhZdTV77Epc3CnO2
-aNUV5pGG/s0iWz09B8+3t/2hUhOo24Qy0/hIQza5QKtJz9kh5+SZ/ilipnKAx3SO
-rqZ9eHa1346ECrS0d4eUthxKLq0D9Mfw4q4vonqJvCEml3bRwjY4oupp9b0gFDY2
-UKbN0Lt7oVy+/4ohvorFEY/QhBJncE9W2Y8BeBYbd9psYfrPXcrFcHKmq1OXo9wC
-5uhFp1lVPXw+sDs0seNfUxEKtsj7J1td1kZwxbmSB4Z7d2Vnb4ogKhdwiVLG+1As
-WJUYceCmsf44iiHRTn6SgghsXKh6ftkduGOZbUuwl0zQPpXbKi+PJNQ/SxJQ+b/a
-ci5JKrMIENCjvcBC5S7Y3Xle/G7xS8K7mfh/eyLyB1J51SBbkyZH8D+XRDyV1ePK
-224Iac2bbeiKctminI5usE5qoG7Uvcv/riE/35feGD/iJ6+ighrZfNqe7pdlqYtI
-6nbxQAVG++2IG+/N0o/fpWUCGgBiRL16ErgLVM71l1ZIGtdvulJh/XIoMESwxwTo
-qXQQZ9Eu3jHqTe58niu3
-=SknA
------END PGP SIGNATURE-----
-
---8D3PigL67BfDl295--
