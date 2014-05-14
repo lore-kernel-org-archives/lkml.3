@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaENS4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:56:39 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55844 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaENS4f (ORCPT
+	id S1751428AbaENS4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:56:37 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48610 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaENS4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 May 2014 14:56:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Anders Berg <anders.berg@avagotech.com>
-Cc: Olof Johansson <olof@lixom.net>, Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] Add platform support for LSI AXM55xx
-Date: Wed, 14 May 2014 20:56:24 +0200
-Message-ID: <6334605.NlytHCzYVP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <cover.1400072260.git.anders.berg@avagotech.com>
-References: <cover.1400072260.git.anders.berg@avagotech.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+/J5bTA43d2nZFZgwooqfHc/a4NzJooIqwtvSjAAwu+
- dvEPqA6bfPEJjjrOFg7bSha9dzaJjsbUxiIZMZ1Y35Pu5968Rp
- XN/WPMeBbDsQl7VtDrUWJHfgf8TVpLWKFto0eQuWRRHgUSEqgr
- i6P4QvpIp6m8hHUIHNe3yKK7jOORM9CHrU/YaWKMLoGCaK9xbI
- EyhUTrbZAgZa6rMJFX7T4ADh3ncv10PTGDDnAURk3Gwvizg0/t
- fqAZLqW58soZCZtLOxmdV7psf2vmrSIJwIOmYCaT2X7bjgvDQS
- CXzVsFLOL/kMEyr7f8Ji5LAFnk7fWDrxx6nlOKVlTtkS3ERXRe
- yCmZY+0WLnHm0kCRj7os=
+Message-ID: <5373BC5D.7010300@gmail.com>
+Date: Wed, 14 May 2014 20:56:29 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org, kishon@ti.com, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        tj@kernel.org
+Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
+References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com> <17808571.N5ZGjXFEVP@wuerfel>
+In-Reply-To: <17808571.N5ZGjXFEVP@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 20:37:55 Anders Berg wrote:
+On 05/14/2014 08:51 PM, Arnd Bergmann wrote:
+> On Wednesday 14 May 2014 20:42:16 Sebastian Hesselbarth wrote:
+>>>> For the driver, Antoine then would have to squeeze all PHY register
+>>>> mangling in phy-berlin2.c and see how to make ahci-platform aware of
+>>>> individual port nodes (I haven't looked up if it already exists, sorry)
+>>>> and announce only enabled port child nodes, right?
+>>>
+>>> I've been thinking some more about this aspect. I don't actually have
+>>> a strong opinion on whether it's better to use the generic ahci-platform
+>>> driver, or to keep the multi-phy support as a special variant for
+>>> berlin. If we do the latter, it would however be good to define the
+>>> binding in a way that lets us later merge things into the generic phy
+>>> driver in case we get more of the same.
+>>
+>> Hmm, IMHO multi-phy support is orthogonal to ahci-platform, isn't it?
+>> ahci-platform needs to know about the phy property and calls some
+>> helper that deals with the phy-specifier?
+>>
+>> About a generic _phy_ driver, I am not so sure if berlin is the best
+>> template right now 
+>>
+>> So, my call would be:
+>> - make ahci-platform aware of port sub-nodes and phy properties
+>> - have a berlin specific PHY driver
 > 
-> This is version 3 of this series to introduces basic platform support for the LSI
-> AXM5516 SoC.
-> 
-> No major changes since v2. Ready to be applied to the arm-soc tree?
+> I'm not sure if we need sub-nodes per port, it should be enough
+> to have an array of phys, plus a way to match them up with the
+> ports.
 
-I think it's good, but I'm not sure if we should put them all into arm-soc.
-There are no dependencies between the drivers that I can see, so why not
-merge the clock and reset drivers through the individual subsystem maintainers?
+Actually, I'd love to see sub-nodes per port as it will allow to
+disabled unused ports on a per-board basis.
 
-We can take patches 1/3/4/6, and the others if there is a good reason
-not to have the regular maintainers pick them up.
+I have this in mind for a long time for Kirkwood's SATA node already:
+Consider a board where you have the one available SATA plug connected
+to port 1. How would that work out with status = "disabled"/"okay" that
+doesn't allow array of strings obviously?
 
-The hip04 platform series is also adding a multi_v7_lpae_defconfig file.
-it would be good to add axxia to that config and also to the regular
-multi_v7_defconfig, but that can be an add-on patch once we have merged
-hip04.
+Sebastian
 
-	Arnd
