@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaENT1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:27:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441AbaENT1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:27:49 -0400
-Subject: [PATCH] iommu/intel: Exclude devices using RMRRs from IOMMU API
- domains
-From: Alex Williamson <alex.williamson@redhat.com>
-To: iommu@lists.linux-foundation.org
-Cc: chegu_vinod@hp.com, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 13:27:18 -0600
-Message-ID: <20140514192620.7767.43842.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1752632AbaENT2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:28:35 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:57578 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580AbaENT2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 15:28:33 -0400
+Date: Wed, 14 May 2014 21:28:27 +0200
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: usbip: Fix bad fuction definitions in usbip
+Message-ID: <20140514192823.GA5491@ThinkPad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The user of the IOMMU API domain expects to have full control of
-the IOVA space for the domain.  RMRRs are fundamentally incompatible
-with that idea.  We can neither map the RMRR into the IOMMU API
-domain, nor can we guarantee that the device won't continue DMA with
-the area described by the RMRR as part of the new domain.  Therefore
-we must prevent such devices from being used by the IOMMU API.
+Fix bad function definitions in all files from drivers/staging/usbip directory
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
 ---
- drivers/iommu/intel-iommu.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 +-
+ drivers/staging/usbip/userspace/libsrc/vhci_driver.c  | 2 +-
+ drivers/staging/usbip/userspace/src/usbip_port.c      | 2 +-
+ drivers/staging/usbip/userspace/src/usbipd.c          | 4 ++--
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f256ffc..eb77149 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4188,6 +4188,21 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
- 	int addr_width;
- 	u8 bus, devfn;
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+index 05a7443..ac73710 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+@@ -237,7 +237,7 @@ int usbip_names_init(char *f)
+ 	return names_init(f);
+ }
  
-+	/*
-+	 * With IOMMU API domains we don't have the freedom to insert RMRR
-+	 * entries into the domain mapping, the IOMMU API user expects full
-+	 * control of the IOVA space of the device.  We also have no ability
-+	 * to shutdown whatever back channel operations occur through the
-+	 * RMRR.  Therefore our only option is to prevent devices making use
-+	 * of RMRRs from being used by the IOMMU API.  As usual we exempt
-+	 * USB devices since their RMRR support is largely historical.
-+	 */
-+	if (device_has_rmrr(dev) && (!dev_is_pci(dev) ||
-+	    (to_pci_dev(dev)->class >> 8) != PCI_CLASS_SERIAL_USB)) {
-+		dev_warn(dev, "Device is ineligible for IOMMU domain attach due to platform RMRR requirement.  Contact your platform vendor.\n");
-+		return -EPERM;
-+	}
-+
- 	/* normally dev is not mapped */
- 	if (unlikely(domain_context_mapped(dev))) {
- 		struct dmar_domain *old_domain;
+-void usbip_names_free()
++void usbip_names_free(void)
+ {
+ 	names_free();
+ }
+diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+index 8901fcb..ad92047 100644
+--- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
+@@ -260,7 +260,7 @@ err:
+ }
+ 
+ 
+-void usbip_vhci_driver_close()
++void usbip_vhci_driver_close(void)
+ {
+ 	if (!vhci_driver)
+ 		return;
+diff --git a/drivers/staging/usbip/userspace/src/usbip_port.c b/drivers/staging/usbip/userspace/src/usbip_port.c
+index 52aa168..a2e884f 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_port.c
++++ b/drivers/staging/usbip/userspace/src/usbip_port.c
+@@ -16,7 +16,7 @@
+ #include "vhci_driver.h"
+ #include "usbip_common.h"
+ 
+-static int list_imported_devices()
++static int list_imported_devices(void)
+ {
+ 	int i;
+ 	struct usbip_imported_device *idev;
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index b32047a..2f87f2d 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -458,7 +458,7 @@ static void set_signal(void)
+ 
+ static const char *pid_file;
+ 
+-static void write_pid_file()
++static void write_pid_file(void)
+ {
+ 	if (pid_file) {
+ 		dbg("creating pid file %s", pid_file);
+@@ -475,7 +475,7 @@ static void write_pid_file()
+ 	}
+ }
+ 
+-static void remove_pid_file()
++static void remove_pid_file(void)
+ {
+ 	if (pid_file) {
+ 		dbg("removing pid file %s", pid_file);
+-- 
+1.8.3.2
 
