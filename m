@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaENPvu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:51:50 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:56625 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449AbaENPvt (ORCPT
+	id S1756013AbaENPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:52:58 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:47874 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445AbaENPw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:51:49 -0400
-Message-ID: <53739108.40209@ahsoftware.de>
-Date: Wed, 14 May 2014 17:51:36 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 11:52:57 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+In-Reply-To: <20140514112347.3f630565@endymion.delvare>
+References: <20140514112347.3f630565@endymion.delvare>
+From: Mike Waychison <mikew@google.com>
+Date: Wed, 14 May 2014 08:52:36 -0700
+Message-ID: <CAGTjWtAjfzr=7K_0k=MKRXTxiWDSGOOYrzY0tA-7z=BpLVM-gA@mail.gmail.com>
+Subject: Re: Purpose of dmi-sysfs kernel module
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-3-git-send-email-holler@ahsoftware.de> <20140514140534.897F8C4153D@trevor.secretlab.ca>
-In-Reply-To: <20140514140534.897F8C4153D@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 16:05, schrieb Grant Likely:
+Hi Jean,
 
->> +
->> +	if (graph.finished)
->> +		return -EINVAL; /* cycle found */
->> +
->> +	/* of_init_print_order(); */
+On Wed, May 14, 2014 at 2:23 AM, Jean Delvare <jdelvare@suse.de> wrote:
+> Hi Mike, Bjorn,
 >
-> If you wrap of_init_print_order with a #ifdef DEBUG/#else/#endif, then
-> you don't need to comment out the call to of_init_print_order().
+> Sorry for joining the party a little late but I am just discovering the
+> dmi-sysfs kernel module. I have to admit that I am very curious about
+> why it was needed. What does it let you achieve that you couldn't
+> already do with dmidecode [1]?
 
-To explain why I didn't use DEBUG here: DEBUG enables a lot of 
-distracting messages. which is true for CONFIG_DEBUG_DRIVER too. 
-Therefor I often prefer to use just pr_info("AHO: ..."); with which I 
-print only stuff I want (and can easily grep for).
+The downside to using dmidecode is that (at least at the time), it
+involved requiring giving access to /dev/mem to the binary so that it
+could grub around in raw memory looking for the records.  dmi-sysfs
+provides an alternative that allows for kernel-parsed entries to be
+exposed to userland without having to expose /dev/mem and raw IO which
+is insecure.
 
-And as said, the patches I presented are meant for evaluation. I did 
-patches without discussing them before in order to avoid endless 
-discussion which likely never would have found an end and therfor would 
-have prevented a start. So now you already have some to play and test 
-with, without anyone had to discuss stuff before. ;)
-
-Regards,
-
-Alexander Holler
-
+> I read on LWM [2] that you were mostly interested in type 15 records,
+> to gain access to the System Event Log information. Well, "dmidecode -t
+> 15" does exactly that. It may be a bit late now but if anything is
+> missing from dmidecode, I would rather add it there than implement a
+> separate solution.
+>
+> [1] http://www.nongnu.org/dmidecode/
+> [2] http://lwn.net/Articles/429427/
+>
+> Thanks,
+> --
+> Jean Delvare
+> SUSE L3 Support
