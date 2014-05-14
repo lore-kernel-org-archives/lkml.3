@@ -1,70 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266AbaENOB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:01:27 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:42636 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932226AbaENOBW (ORCPT
+	id S932302AbaENOBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:01:37 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:32917 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932273AbaENOBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:01:22 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, kgene.kim@samsung.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        robh+dt@kernel.org, gregkh@linuxfoundation.org, t.figa@samsung.com,
-        balbi@ti.com, kishon@ti.com, jg1.han@samsung.com,
-        Vivek gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v6 0/8] Enable USB 3.0 support on Exynos5 systems
-Date: Wed, 14 May 2014 19:31:02 +0530
-Message-Id: <1400076070-12456-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 14 May 2014 10:01:32 -0400
+Message-ID: <5373772D.9060807@fr.ibm.com>
+Date: Wed, 14 May 2014 16:01:17 +0200
+From: Cedric Le Goater <clg@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>, Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] offb: Fix little-endian support
+References: <1400073709-15012-1-git-send-email-tiwai@suse.de>
+In-Reply-To: <1400073709-15012-1-git-send-email-tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051414-6892-0000-0000-000008C94A8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek gautam <gautam.vivek@samsung.com>
+Hi Iwai-san,
 
-Based on 'for-next' branch of Kgene's linux-samsung tree;
-along with dts patches for USB 2.0 phy[1], and Exynos5800 [2].
-Also based on the latest USB 3.0 DRD phy driver patches posted [3].
+On 05/14/2014 03:21 PM, Takashi Iwai wrote:
+> Although the color palette was corrected for little endian by the
+> commit  [e1edf18b: offb: Add palette hack for little endian], the
+> graphics mode is still shown in psychedelic colors.  
 
-Changes from v5:
- - Added node reference names for new boards.
- - Removed 'samsung,pmu-offset' porperty from nodes, since with latest driver
-   bindings this is not required.
- - Added aliase nodes in Exynos5420 to facilitate latest driver bindings.
- - Added patch to add VBUS regulator for peach-pi board also.
- - Dropped patches removing older usb-phy driver:
-   usb-phy: samsung-usb3: Remove older phy-samsung-usb3 driver
-   ARM: exynos_defconfig: Remove SAMSUNG_USB3PHY config
-   as appeared in V5 version of this series.
-   Will post them separately after the new driver is merged.
+Are you referring to the linux logo colors ? If so, could you please
+try the patch below, it should be a fix.
 
-[1] http://www.spinics.net/lists/linux-samsung-soc/msg30494.html
-[2] http://comments.gmane.org/gmane.linux.kernel.samsung-soc/31133
-[3] https://lkml.org/lkml/2014/5/13/285
+> For fixing this
+> properly, we rather need to correct the RGB offsets depending on
+> endianess.
+> 
+> Since the RGB base offsets are corrected, we don't need the hack for
+> pallette color entries.  This patch reverts that, too.
 
-Vivek Gautam (7):
-  ARM: dts: exynos5420: Enable support for USB 3.0 PHY controller
-  ARM: dts: exynos5420: Enable support for DWC3 controller
-  ARM: dts: exynos5250: Enable support for generic USB DRD phy
-  ARM: dts: exynos5250: Update DWC3 usb controller to use new phy
-    driver
-  ARM: dts: exynos5250-snow: Add Vbus regulator for USB 3.0
-  ARM: dts: exynos5420-peach-pit: Add Vbus regulator for USB 3.0
-  ARM: dts: exynos5420-smdk5420: Add Vbus regulator for USB 3.0
+Are you testing using qemu -vga std -vnc :x ? If so, did you try changing 
+the depth to 8,15,16,32 ?  I think the patch might be breaking big endian 
+too.
 
-Vivek gautam (1):
-  ARM: dts: exynos5800-peach-pi: Add Vbus regulator for USB 3.0
+Now, I am far from being an expert on frame buffers. It would be glad 
+to have some insights on that topic. 
 
- arch/arm/boot/dts/exynos5250-snow.dts      |   22 ++++++++++++
- arch/arm/boot/dts/exynos5250.dtsi          |   20 +++++------
- arch/arm/boot/dts/exynos5420-peach-pit.dts |   46 ++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5420-smdk5420.dts  |   46 ++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5420.dtsi          |   54 ++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts  |   46 ++++++++++++++++++++++++
- 6 files changed, 222 insertions(+), 12 deletions(-)
+Thanks,
 
--- 
-1.7.10.4
+C. 
+
+
+[PATCH] fb: fix logo palette entries for little endian
+
+The offb_cmap_byteswap() routine helps byteswapping the color map
+entries when required. This patch externalizes and renames the helper 
+routine to adjust the pseudo palette of the logo when running on 
+little endian.
+
+Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
+---
+ drivers/video/fbmem.c |    6 ++++--
+ drivers/video/offb.c  |   11 +----------
+ include/linux/fb.h    |    8 ++++++++
+ 3 files changed, 13 insertions(+), 12 deletions(-)
+
+Index: linux.git/drivers/video/fbmem.c
+===================================================================
+--- linux.git.orig/drivers/video/fbmem.c
++++ linux.git/drivers/video/fbmem.c
+@@ -252,7 +252,8 @@ static void  fb_set_logo_truepalette(str
+ 	blueshift  = info->var.blue.offset  - (8 - info->var.blue.length);
+ 
+ 	for ( i = 0; i < logo->clutsize; i++) {
+-		palette[i+32] = (safe_shift((clut[0] & redmask), redshift) |
++		palette[i+32] = fb_cmap_byteswap(info,
++				 safe_shift((clut[0] & redmask), redshift) |
+ 				 safe_shift((clut[1] & greenmask), greenshift) |
+ 				 safe_shift((clut[2] & bluemask), blueshift));
+ 		clut += 3;
+@@ -271,7 +272,8 @@ static void fb_set_logo_directpalette(st
+ 	blueshift = info->var.blue.offset;
+ 
+ 	for (i = 32; i < 32 + logo->clutsize; i++)
+-		palette[i] = i << redshift | i << greenshift | i << blueshift;
++		palette[i] = fb_cmap_byteswap(info, i << redshift |
++					i << greenshift | i << blueshift);
+ }
+ 
+ static void fb_set_logo(struct fb_info *info,
+Index: linux.git/drivers/video/offb.c
+===================================================================
+--- linux.git.orig/drivers/video/offb.c
++++ linux.git/drivers/video/offb.c
+@@ -91,15 +91,6 @@ extern boot_infos_t *boot_infos;
+ #define AVIVO_DC_LUTB_WHITE_OFFSET_GREEN        0x6cd4
+ #define AVIVO_DC_LUTB_WHITE_OFFSET_RED          0x6cd8
+ 
+-#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
+-
+-static inline u32 offb_cmap_byteswap(struct fb_info *info, u32 value)
+-{
+-	u32 bpp = info->var.bits_per_pixel;
+-
+-	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
+-}
+-
+     /*
+      *  Set a single color register. The values supplied are already
+      *  rounded down to the hardware's capabilities (according to the
+@@ -129,7 +120,7 @@ static int offb_setcolreg(u_int regno, u
+ 			mask <<= info->var.transp.offset;
+ 			value |= mask;
+ 		}
+-		pal[regno] = offb_cmap_byteswap(info, value);
++		pal[regno] = fb_cmap_byteswap(info, value);
+ 		return 0;
+ 	}
+ 
+Index: linux.git/include/linux/fb.h
+===================================================================
+--- linux.git.orig/include/linux/fb.h
++++ linux.git/include/linux/fb.h
+@@ -582,6 +582,7 @@ static inline struct apertures_struct *a
+ 
+ #endif
+ 
++#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
+ #define FB_LEFT_POS(p, bpp)          (fb_be_math(p) ? (32 - (bpp)) : 0)
+ #define FB_SHIFT_HIGH(p, val, bits)  (fb_be_math(p) ? (val) >> (bits) : \
+ 						      (val) << (bits))
+@@ -681,6 +682,13 @@ static inline bool fb_be_math(struct fb_
+ #endif /* CONFIG_FB_FOREIGN_ENDIAN */
+ }
+ 
++static inline u32 fb_cmap_byteswap(struct fb_info *info, u32 value)
++{
++	u32 bpp = info->var.bits_per_pixel;
++
++	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
++}
++
+ /* drivers/video/fbsysfs.c */
+ extern struct fb_info *framebuffer_alloc(size_t size, struct device *dev);
+ extern void framebuffer_release(struct fb_info *info);
 
