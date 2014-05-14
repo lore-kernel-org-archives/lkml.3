@@ -1,122 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaENTf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:35:56 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:47863 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaENTfx (ORCPT
+	id S1752231AbaENTfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:35:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41829 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaENTfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 May 2014 15:35:53 -0400
-Message-ID: <5373C589.9080405@gmail.com>
-Date: Wed, 14 May 2014 21:35:37 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+Date: Wed, 14 May 2014 22:35:30 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Pawel Lebioda <pawel.lebioda89@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: usbip: Fix bad fuction definitions in usbip
+Message-ID: <20140514193530.GC8897@mwanda>
+References: <20140514192823.GA5491@ThinkPad>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com,
-        t.figa@samsung.com
-CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
-        arnd@arndb.de, olof@lixom.net, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com, hyunhee.kim@samsung.com,
-        yj44.cho@samsung.com, chanho61.park@samsung.com,
-        sajjan.linux@gmail.com, tushar.behera@linaro.org,
-        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCHv5 4/5] dt-bindings: add documentation for Exynos3250 clock
- controller
-References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <1399986308-23744-5-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1399986308-23744-5-git-send-email-cw00.choi@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514192823.GA5491@ThinkPad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 13.05.2014 15:05, Chanwoo Choi wrote:
-> The Exynos3250 clocks are statically listed and registered using the
-> Samsung specific common clock helper functions. Both device tree based
-> clock lookup and clkdev based clock lookups are supported.
+On Wed, May 14, 2014 at 09:28:27PM +0200, Pawel Lebioda wrote:
+> Fix bad function definitions in all files from drivers/staging/usbip directory
 > 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> ---
->  .../devicetree/bindings/clock/exynos3250-clock.txt | 41 ++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-> new file mode 100644
-> index 0000000..aadc9c5
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-> @@ -0,0 +1,41 @@
-> +* Samsung Exynos3250 Clock Controller
-> +
-> +The Exynos3250 clock controller generates and supplies clock to various
-> +controllers within the Exynos3250 SoC.
-> +
-> +Required Properties:
-> +
-> +- compatible: should be one of the following.
-> +  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
-> +
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
-> +
-> +- #clock-cells: should be 1.
-> +
-> +Each clock is assigned an identifier and client nodes can use this identifier
-> +to specify the clock which they consume.
-> +
-> +All available clocks are defined as preprocessor macros in
-> +dt-bindings/clock/exynos3250.h header and can be used in device
-> +tree sources.
-> +
-> +Example 1: An example of a clock controller node is listed below.
-> +
-> +	cmu: clock-controller@10030000 {
-> +		compatible = "samsung,exynos3250-cmu";
-> +		reg = <0x10030000 0x20000>;
-> +		#clock-cells = <1>;
-> +	};
-> +
-> +Example 2: UART controller node that consumes the clock generated by the clock
-> +	   controller. Refer to the standard clock bindings for information
-> +	   about 'clocks' and 'clock-names' property.
-> +
-> +	serial@13800000 {
-> +		compatible = "samsung,exynos4210-uart";
-> +		reg = <0x13800000 0x100>;
-> +		interrupts = <0 109 0>;
-> +		clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
-> +		clock-names = "uart", "clk_uart_baud0";
-> +	};
-> 
+> Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
 
-Oops, I've forgotten to apply this one. Since it doesn't have any
-dependencies, Kukjin, could you apply it on top of my pull requests with
-my Ack? Thanks in advance.
+This is fine, but next time try to be more specific in the subject and
+also in the changelog.  Put the sparse warning in the changelog.  Say
+that you are adding "void".
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+Btw, the reason for the void is because if it's not void then the
+compiler won't complain if you pass a parameter to it.
 
-Best regards,
-Tomasz
+void frob()
+{
+	printf("foo\n");
+}
+
+int main(void)
+{
+	frob(1, 2, 3);
+
+	return 0;
+}
+
+regards,
+dan carpenter
+
