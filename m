@@ -1,132 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaENK0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 06:26:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45537 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572AbaENK0K (ORCPT
+	id S1754854AbaENK2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:28:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41958 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435AbaENK15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 06:26:10 -0400
-Date: Wed, 14 May 2014 12:26:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Michael wang <wangyun@linux.vnet.ibm.com>,
-        "ktkhai@parallels.com" <ktkhai@parallels.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-Message-ID: <20140514102602.GJ30445@twins.programming.kicks-ass.net>
-References: <20140224121218.GR15586@twins.programming.kicks-ass.net>
- <534610A4.5000302@oracle.com>
- <53464164.5030701@linux.vnet.ibm.com>
- <336561397137116@web27h.yandex.ru>
- <5347FCED.8040706@oracle.com>
- <1442521397229373@web20m.yandex.ru>
- <53711785.5010504@oracle.com>
- <2614131400060552@web30m.yandex.ru>
- <20140514101354.GI30445@twins.programming.kicks-ass.net>
- <2158101400062864@web10h.yandex.ru>
+	Wed, 14 May 2014 06:27:57 -0400
+Date: Wed, 14 May 2014 12:28:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Carlos O'Donell" <carlos@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
+In-Reply-To: <20140514100705.GH30445@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1405141227170.6261@ionos.tec.linutronix.de>
+References: <20140512190438.314125476@linutronix.de> <20140513035404.GA68181@dvhart-mac01.local> <537313FD.4000306@redhat.com> <alpine.DEB.2.02.1405141034320.6261@ionos.tec.linutronix.de> <20140514100705.GH30445@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fis3l7cGi4BLWycj"
-Content-Disposition: inline
-In-Reply-To: <2158101400062864@web10h.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 14 May 2014, Peter Zijlstra wrote:
+> On Wed, May 14, 2014 at 11:53:44AM +0200, Thomas Gleixner wrote:
+> > > What error would we return?
+> > >
+> > > This particular case is a serious error for which we have no good error code
+> > > to return to userspace. It's an implementation defect, a bug, we should probably
+> > > assert instead of pausing.
+> > 
+> > Errm.
+> > 
+> > http://pubs.opengroup.org/onlinepubs/7908799/xsh/pthread_mutex_lock.html
+> > 
+> >  The pthread_mutex_lock() function may fail if:
+> > 
+> >   [EDEADLK]
+> >     The current thread already owns the mutex. 
+> > 
+> > That's a exactly the error code, which the kernel returns when it
+> > detects a deadlock. 
+> > 
+> > And glibc returns EDEADLK at a lot of places already. So in that case
+> > it's not a serious error? Because it's detected by glibc. You can't be
+> > serious about that.
+> > 
+> > So why is a kernel detected deadlock different? Because it detects not
+> > only AA, it detects ABBA and more. But it's still a dead lock. And
+> > while posix spec only talks about AA, it's the very same issue.
+> > 
+> > So why not propagate this to the caller so he gets an alert right away
+> > instead of letting him attach a debugger, and scratch his head and
+> > lookup glibc source to find out why the hell glibc called pause.
+> 
+>   http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_mutex_lock.html
 
---fis3l7cGi4BLWycj
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yuck. I should not have used the first link Gurgle brought up.
+ 
+>   The pthread_mutex_lock() function may fail if:
+> 
+>   [EDEADLK]
+>       A deadlock condition was detected or the current thread already owns the mutex.
+> 
+> Which is explicitly wider than the AA recursion and fully supports the
+> full lock graph traversal we do.
+ 
+Definitely. It's what the kernel does :)
 
-On Wed, May 14, 2014 at 02:21:04PM +0400, Kirill Tkhai wrote:
->=20
->=20
-> 14.05.2014, 14:14, "Peter Zijlstra" <peterz@infradead.org>:
-> > On Wed, May 14, 2014 at 01:42:32PM +0400, Kirill Tkhai wrote:
-> >
-> >> =A0Peter, do we have to queue stop works orderly?
-> >>
-> >> =A0Is there is not a possibility, when two pair of works queued differ=
-ent on
-> >> =A0different cpus?
-> >>
-> >> =A0=A0kernel/stop_machine.c | 10 ++++++++--
-> >> =A0=A01 file changed, 8 insertions(+), 2 deletions(-)
-> >> =A0diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-> >> =A0index b6b67ec..29e221b 100644
-> >> =A0--- a/kernel/stop_machine.c
-> >> =A0+++ b/kernel/stop_machine.c
-> >> =A0@@ -250,8 +250,14 @@ struct irq_cpu_stop_queue_work_info {
-> >> =A0=A0static void irq_cpu_stop_queue_work(void *arg)
-> >> =A0=A0{
-> >> =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0struct irq_cpu_stop_queue_work_info *inf=
-o =3D arg;
-> >> =A0- cpu_stop_queue_work(info->cpu1, info->work1);
-> >> =A0- cpu_stop_queue_work(info->cpu2, info->work2);
-> >> =A0+
-> >> =A0+ if (info->cpu1 < info->cpu2) {
-> >> =A0+ cpu_stop_queue_work(info->cpu1, info->work1);
-> >> =A0+ cpu_stop_queue_work(info->cpu2, info->work2);
-> >> =A0+ } else {
-> >> =A0+ cpu_stop_queue_work(info->cpu2, info->work2);
-> >> =A0+ cpu_stop_queue_work(info->cpu1, info->work1);
-> >> =A0+ }
-> >> =A0=A0}
-> >
-> > I'm not sure, we already send the IPI to the first cpu of the pair, so
-> > supposing we have 4 cpus, and get 4 pairs like:
-> >
-> > 0,1 1,2 2,3 3,0
-> >
-> > That would result in IPIs to 0, 1, 2, and 0 again, and since the IPI
-> > function is serialized I don't immediately see a way for this to
-> > deadlock.
->=20
-> It's about stop_two_cpus(), I have a distrust about other users of stop t=
-ask:
->=20
-> queue_stop_cpus_work() queues work consequentially:
->=20
-> 0 1 2 4
->=20
-> stop_two_cpus() may queue:
->=20
-> 1 0
->=20
-> Looks like, stop thread on 0th and on 1th are waiting for wrong works.
+Thanks,
 
-so we serialize stop_cpus_work() vs stop_two_cpus() with an l/g lock.
-
-Ah, but stop_cpus_work() only holds the global lock over queueing, it
-doesn't wait for completion, that might indeed cause a problem.
-
-Also, since its two different cpus queueing, the ordered queue doesn't
-really matter, you can still interleave the all and two sets and get
-into this state.
-
---fis3l7cGi4BLWycj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc0S6AAoJEHZH4aRLwOS6S0UQAKNMjOZQyCrxelSlHboDqSjm
-b6tUA3ldYIspYAE/d/HmVs0W1DHOhv5SegfQElZNxonpEURsR1SbQuDjB1s/enaR
-xGXpMwSlRL1W+rJWDnF/uBLY6nJNNA/XZ6hDH0UGvgfAS0WGRuDjVgt0ChB3gmVB
-Wv+08YLdYhI77/fBa1P+dz38qIvfvEx2Uby8h/L+BivQz/j12bJFwTi3YJ9efj/q
-nH4UiClVtOE5dtOsft6574fPtHrBYd6lTCTtpYzV5ZQtfTIlBoVw4FNmhg/pNU1p
-a24v0dWMt574TNy07ALUOL+fH1MBk6uu1XPf8cMoUvzXczbjOT6XxBYMyagO2yRe
-iN69NJ5CY5NxkDjDAv5EHEa5NpEY6VuGTCZpZrRFvaBsEwWGIvSYiaO1csd4dwv3
-gYNpyQ0oYZWSCByMjJVI5S1AIxPgGxZ0RXLLuQgofDsmztsQ4l5cw2TAFJWRQVL+
-GblIt58H0hP0bzrW2xbamBFqNcwraGgvRG0/CtEPxaGalw2lMalA311/H+2utdqT
-wfwBAdCVPhjL9OIVZxarv8kYxzAPSzquUgizD1QZ16MrtiXpa5vz4xSzqW1kqOH1
-j69KdHL8lRinNRVZjPobo7jLm+p82bVTLZcPmFX7UCA+y4xuc2kkULqTHr18FKWv
-+5nIgcKJQ22rhF8F4GVx
-=mdIE
------END PGP SIGNATURE-----
-
---fis3l7cGi4BLWycj--
+	tglx
