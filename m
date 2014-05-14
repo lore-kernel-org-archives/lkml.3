@@ -1,117 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaENTqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:46:49 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:59942 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaENTqr (ORCPT
+	id S1752221AbaENTrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:47:00 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:65362 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaENTq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:46:47 -0400
+	Wed, 14 May 2014 15:46:57 -0400
+Message-ID: <5373C828.1010804@samsung.com>
+Date: Thu, 15 May 2014 04:46:48 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <8057197.5nM8JDA8pQ@wuerfel>
-References: <1400094649-11193-1-git-send-email-f.fainelli@gmail.com>
- <1400094649-11193-2-git-send-email-f.fainelli@gmail.com> <8057197.5nM8JDA8pQ@wuerfel>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 14 May 2014 12:46:06 -0700
-Message-ID: <CAGVrzcag3aKiuuQsfZWrAJT+-cpO__kNF3Lc9XXkpswQxzL56A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] bus: add Broadcom GISB arbiter bus timeout/error handler
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Huang Shijie <b32955@freescale.com>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com,
+        t.figa@samsung.com, Mark Rutland <mark.rutland@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, tushar.behera@linaro.org,
+        sajjan.linux@gmail.com, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, sachin.kamat@linaro.org,
+        thomas.abraham@linaro.org, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, marc.zyngier@arm.com,
+        inki.dae@samsung.com, Rob Herring <robh+dt@kernel.org>,
+        ben-linux@fluff.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, hyunhee.kim@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        yj44.cho@samsung.com, kyungmin.park@samsung.com,
+        Kumar Gala <galak@codeaurora.org>, olof@lixom.net,
+        chanho61.park@samsung.com
+Subject: Re: [PATCHv5 4/5] dt-bindings: add documentation for Exynos3250 clock
+ controller
+References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <1399986308-23744-5-git-send-email-cw00.choi@samsung.com> <5373C589.9080405@gmail.com>
+In-Reply-To: <5373C589.9080405@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-14 12:33 GMT-07:00 Arnd Bergmann <arnd@arndb.de>:
-> On Wednesday 14 May 2014 12:10:46 Florian Fainelli wrote:
->> This patch adds support for the Broadcom GISB arbiter bus timeout/error
->> handler. GISB is a proprietary bus used by Broadcom Set Top Box
->> System-on-a-chip devices (BCM7xxx) which allows multiple masters and
->> clients to be interfaced with each other.
+On 05/15/14 04:35, Tomasz Figa wrote:
+> Hi,
+>
+> On 13.05.2014 15:05, Chanwoo Choi wrote:
+>> The Exynos3250 clocks are statically listed and registered using the
+>> Samsung specific common clock helper functions. Both device tree based
+>> clock lookup and clkdev based clock lookups are supported.
 >>
->> The bus arbiter offers support for generating two interrupts towards the
->> host CPU, thus allowing us to "catch" clock gated masters, or masters
->> being volontarily blocked for powersaving purposes, or do general system
->> troubleshooting.
+>> Signed-off-by: Chanwoo Choi<cw00.choi@samsung.com>
+>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+>> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
+>> Cc: Mike Turquette<mturquette@linaro.org>
+>> Cc: Kukjin Kim<kgene.kim@samsung.com>
+>> Cc: Rob Herring<robh+dt@kernel.org>
+>> Cc: Pawel Moll<pawel.moll@arm.com>
+>> Cc: Mark Rutland<mark.rutland@arm.com>
+>> Cc: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>> Cc: Kumar Gala<galak@codeaurora.org>
+>> Cc: Randy Dunlap<rdunlap@infradead.org>
+>> Cc: Tomasz Figa<t.figa@samsung.com>
+>> ---
+>>   .../devicetree/bindings/clock/exynos3250-clock.txt | 41 ++++++++++++++++++++++
+>>   1 file changed, 41 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/clock/exynos3250-clock.txt
 >>
->> We also register a hook with the ARM fault exception handling to allow
->> printing a more informative message than "imprecise external abort at
->> 0x00000000" for instance.
+>> diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>> new file mode 100644
+>> index 0000000..aadc9c5
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>> @@ -0,0 +1,41 @@
+>> +* Samsung Exynos3250 Clock Controller
+>> +
+>> +The Exynos3250 clock controller generates and supplies clock to various
+>> +controllers within the Exynos3250 SoC.
+>> +
+>> +Required Properties:
+>> +
+>> +- compatible: should be one of the following.
+>> +  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
+>> +
+>> +- reg: physical base address of the controller and length of memory mapped
+>> +  region.
+>> +
+>> +- #clock-cells: should be 1.
+>> +
+>> +Each clock is assigned an identifier and client nodes can use this identifier
+>> +to specify the clock which they consume.
+>> +
+>> +All available clocks are defined as preprocessor macros in
+>> +dt-bindings/clock/exynos3250.h header and can be used in device
+>> +tree sources.
+>> +
+>> +Example 1: An example of a clock controller node is listed below.
+>> +
+>> +	cmu: clock-controller@10030000 {
+>> +		compatible = "samsung,exynos3250-cmu";
+>> +		reg =<0x10030000 0x20000>;
+>> +		#clock-cells =<1>;
+>> +	};
+>> +
+>> +Example 2: UART controller node that consumes the clock generated by the clock
+>> +	   controller. Refer to the standard clock bindings for information
+>> +	   about 'clocks' and 'clock-names' property.
+>> +
+>> +	serial@13800000 {
+>> +		compatible = "samsung,exynos4210-uart";
+>> +		reg =<0x13800000 0x100>;
+>> +		interrupts =<0 109 0>;
+>> +		clocks =<&cmu CLK_UART0>,<&cmu CLK_SCLK_UART0>;
+>> +		clock-names = "uart", "clk_uart_baud0";
+>> +	};
 >>
->> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 >
-> Looks pretty good to me.
-
-Cool, thanks!, BTW, which tree should we attempt to get this merged into?
-
+> Oops, I've forgotten to apply this one. Since it doesn't have any
+> dependencies, Kukjin, could you apply it on top of my pull requests with
+> my Ack? Thanks in advance.
 >
->> +static int brcmstb_gisb_arb_decode_addr(struct brcmstb_gisb_arb_device *gdev,
->> +                                     const char *reason)
->> +{
->> +     u32 cap_status;
->> +     unsigned long arb_addr;
->> +     u32 master;
->> +     const char *m_name;
->> +     char m_fmt[11];
->> +
->> +     cap_status = ioread32(gdev->base + ARB_ERR_CAP_STATUS);
->> +
->> +     /* Invalid captured address, bail out */
->> +     if (!(cap_status & ARB_ERR_CAP_STATUS_VALID))
->> +             return 1;
->> +
->> +     /* Read the address and master */
->> +     arb_addr = ioread32(gdev->base + ARB_ERR_CAP_ADDR) & 0xffffffff;
->> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
->> +     arb_addr |= (u64)ioread32(gdev->base + ARB_ERR_CAP_HI_ADDR) << 32;
->> +#endif
+> Acked-by: Tomasz Figa<t.figa@samsung.com>
 >
-> Can you use 'if (IS_ENABLED(CONFIG_PHYS_ADDR_T_64BIT))' here, or does that
-> cause a warning?
+Sure, I will do it on your 4/4 pull-request after pulling it into 
+samsung tree.
 
-No warning is issued, I will use that instead. Thanks!
-
->
->> +static int brcmstb_bus_error_handler(unsigned long addr, unsigned int fsr,
->> +                                  struct pt_regs *regs)
->> +{
->> +     int ret = 0;
->> +     struct brcmstb_gisb_arb_device *gdev;
->> +
->> +     /* iterate over each GISB arb registered handlers */
->> +     list_for_each_entry(gdev, &brcmstb_gisb_arb_device_list, next)
->> +             ret |= brcmstb_gisb_arb_decode_addr(gdev, "bus error");
->> +     /*
->> +      * If it was an imprecise abort, then we need to correct the
->> +      * return address to be _after_ the instruction.
->> +     */
->> +     if (fsr & (1 << 10))
->> +             regs->ARM_pc += 4;
->> +
->> +     return ret;
->> +}
->
-> This will cause the normal abort handler to trigger if the GISB
-> arbiter doesn't know what happened, right?
-
-That's right, one of the very first things that the GISB arbiter
-checks is whether the faulting error is valid or not, if it is not, it
-bails out and so we keep on processing the other exception handlers.
--- 
-Florian
+Thanks,
+Kukjin
