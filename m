@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaENPK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:10:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48737 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455AbaENPJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:09:41 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-rt-users@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] sched/rt: don't try to balance rt_runtime when it is futile
-Date: Wed, 14 May 2014 11:08:35 -0400
-Message-Id: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.2.3
+	id S1756036AbaENPLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:11:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755829AbaENPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:11:04 -0400
+Date: Wed, 14 May 2014 17:10:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] uprobes: more x86 fixes
+Message-ID: <20140514151016.GA530@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of the old commit ac086bc22997a2be24fc40fc8d46522fe7e03d11
-("sched: rt-group: smp balancing") the concept of borrowing per
-cpu rt_runtime from one core to another was introduced.
+Ingo, please pull from
 
-However, this prevents the RT throttling message from ever being
-emitted when someone does a common (but mistaken) attempt at
-using too much CPU in RT context.  Consider the following test:
+  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-  echo "main() {for(;;);}" > full_load.c
-  gcc full_load.c -o full_load
-  taskset -c 1 ./full_load &
-  chrt -r -p 80 `pidof full_load`
+Based on tip:perf/uprobes
 
-When run on x86_64 defconfig, what happens is as follows:
 
--task runs on core1 for 95% of an rt_period as documented in
- the file Documentation/scheduler/sched-rt-group.txt
+Denys found another nasty old bug in uprobes/x86: div, mul, shifts with
+count in CL, and cmpxchg are not handled correctly.
 
--at 95%, the code in balance_runtime sees this threshold and
- calls do_balance_runtime()
+Plus a couple of other minor fixes. Nobody acked the changes in x86/traps,
+hopefully they are simple enough, and I believe that they make sense anyway
+and allow to do more cleanups.
 
--do_balance_runtime sees that core 1 is in need, and does this:
-	---------------
-        if (rt_rq->rt_runtime + diff > rt_period)
-                diff = rt_period - rt_rq->rt_runtime;
-        iter->rt_runtime -= diff;
-        rt_rq->rt_runtime += diff;
-	---------------
- which extends core1's rt_runtime by 5%, making it 100% of rt_period
- by stealing 5% from core0 (or possibly some other core).
+Denys Vlasenko (2):
+      uprobes/x86: Simplify rip-relative handling
+      uprobes/x86: Fix scratch register selection for rip-relative fixups
 
-However, the next time core1's rt_rq enters sched_rt_runtime_exceeded(),
-we hit this near the top of that function:
-	---------------
-        if (runtime >= sched_rt_period(rt_rq))
-                return 0;
-	---------------
-and hence we'll _never_ look at/set any of the throttling checks and
-messages in sched_rt_runtime_exceeded().  Instead, we will happily
-plod along for CONFIG_RCU_CPU_STALL_TIMEOUT seconds, at which point
-the RCU subsystem will get angry and trigger an NMI in response to
-what it rightly sees as a WTF situation.
+Oleg Nesterov (8):
+      uprobes: Add mem_cgroup_charge_anon() into uprobe_write_opcode()
+      x86/traps: Make math_error() static
+      x86/traps: Use SEND_SIG_PRIV instead of force_sig()
+      x86/traps: Introduce do_error_trap()
+      x86/traps: Introduce fill_trap_info(), simplify DO_ERROR_INFO()
+      x86/traps: Shift fill_trap_info() from DO_ERROR_INFO() to do_error_trap()
+      x86/traps: Kill DO_ERROR_INFO()
+      uprobes/x86: Fix the wrong ->si_addr when xol triggers a trap
 
-Granted, there are lots of ways you can do bad things to yourself with
-RT, but in the current zeitgeist of multicore systems with people
-dedicating individual cores to individual tasks, I'd say the above is
-common enough that we should react to it sensibly, and an RCU stall
-really doesn't translate well to an end user vs a simple message that
-says "throttling activated".
-
-One way to get the throttle message instead of the ambiguous and lengthy
-NMI triggered all core backtrace of the RCU stall is to change the
-SCHED_FEAT(RT_RUNTIME_SHARE, true) to false.  One could make a good
-case for this being the default for the out-of-tree preempt-rt series,
-since folks using that are more apt to be manually tuning the system
-and won't want an invisible hand coming in and making changes.
-
-However, in mainline, where it is more likely that there will be
-n+x (x>0) RT tasks on an n core system, we can leave the sharing on,
-and still avoid the RCU stalls by noting that there is no point in
-trying to balance when there are no tasks to migrate, or only a
-single RT task is present.  Inflating the rt_runtime does nothing
-in this case other than defeat sched_rt_runtime_exceeded().
-
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-
-[I'd mentioned a similar use case here: https://lkml.org/lkml/2013/3/6/338
- and tglx asked why they wouldn't see the throttle message; it is only
- now that I had a chance to dig in and figure out why.  Oh, and the patch
- is against linux-next, in case that matters...]
-
- kernel/sched/rt.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index ea4d500..698aac9 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -774,6 +774,15 @@ static int balance_runtime(struct rt_rq *rt_rq)
- 	if (!sched_feat(RT_RUNTIME_SHARE))
- 		return more;
- 
-+	/*
-+	 * Stealing from another core won't help us at all if
-+	 * we have nothing to migrate over there, or only one
-+	 * task that is running up all the rt_time.  In fact it
-+	 * will just inhibit the throttling message in that case.
-+	 */
-+	if (!rt_rq->rt_nr_migratory || rt_rq->rt_nr_total == 1)
-+		return more;
-+
- 	if (rt_rq->rt_time > rt_rq->rt_runtime) {
- 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
- 		more = do_balance_runtime(rt_rq);
--- 
-1.8.2.3
+ arch/x86/include/asm/traps.h   |    1 -
+ arch/x86/include/asm/uprobes.h |    3 -
+ arch/x86/kernel/traps.c        |  110 ++++++++++++---------
+ arch/x86/kernel/uprobes.c      |  213 ++++++++++++++++++++++++++--------------
+ include/linux/uprobes.h        |    4 +
+ kernel/events/uprobes.c        |   33 ++++---
+ 6 files changed, 225 insertions(+), 139 deletions(-)
 
