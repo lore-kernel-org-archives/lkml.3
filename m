@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaENTxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:53:03 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750750AbaENTxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:53:00 -0400
-Message-ID: <5373C996.7000409@nod.at>
-Date: Wed, 14 May 2014 21:52:54 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751684AbaENTyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:54:19 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:35926 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaENTyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 15:54:16 -0400
+Message-ID: <5373C9DA.4050002@gmail.com>
+Date: Wed, 14 May 2014 21:54:02 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 0/4] UserModeLinux: Message logging neatening
-References: <cover.1399678795.git.joe@perches.com>
-In-Reply-To: <cover.1399678795.git.joe@perches.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>, t.figa@samsung.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, tushar.behera@linaro.org,
+        sajjan.linux@gmail.com, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, sachin.kamat@linaro.org,
+        thomas.abraham@linaro.org, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, marc.zyngier@arm.com,
+        inki.dae@samsung.com, Rob Herring <robh+dt@kernel.org>,
+        ben-linux@fluff.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, hyunhee.kim@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        yj44.cho@samsung.com, kyungmin.park@samsung.com,
+        Kumar Gala <galak@codeaurora.org>, olof@lixom.net,
+        chanho61.park@samsung.com
+Subject: Re: [PATCHv5 4/5] dt-bindings: add documentation for Exynos3250 clock
+ controller
+References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <1399986308-23744-5-git-send-email-cw00.choi@samsung.com> <5373C589.9080405@gmail.com> <5373C828.1010804@samsung.com>
+In-Reply-To: <5373C828.1010804@samsung.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.05.2014 01:43, schrieb Joe Perches:
-> Joe Perches (4):
->   UserModeLinux: Convert UM_KERN_<LEVEL> to KERN_<LEVEL>
->   UserModeLinux: Remove unused #defines of UM_KERN_<LEVEL>
->   UserModeLinux: Use a more current logging style
->   UserModeLinux: Convert printks to pr_<level>
-> 
->  arch/um/drivers/chan_kern.c              |  27 +++----
->  arch/um/drivers/chan_user.c              |  47 ++++++------
->  arch/um/drivers/daemon_kern.c            |   8 +-
->  arch/um/drivers/daemon_user.c            |  28 +++----
->  arch/um/drivers/fd.c                     |   9 +--
->  arch/um/drivers/harddog_kern.c           |   4 +-
->  arch/um/drivers/harddog_user.c           |  14 ++--
->  arch/um/drivers/hostaudio_kern.c         |  13 ++--
->  arch/um/drivers/line.c                   |  24 +++---
->  arch/um/drivers/mconsole_kern.c          |  29 +++----
->  arch/um/drivers/mconsole_user.c          |   7 +-
->  arch/um/drivers/mmapper_kern.c           |   7 +-
->  arch/um/drivers/net_kern.c               |  53 +++++--------
->  arch/um/drivers/net_user.c               |  20 ++---
->  arch/um/drivers/pcap_kern.c              |   9 +--
->  arch/um/drivers/pcap_user.c              |  19 +++--
->  arch/um/drivers/port_kern.c              |  23 +++---
->  arch/um/drivers/port_user.c              |   6 +-
->  arch/um/drivers/pty.c                    |   4 +-
->  arch/um/drivers/random.c                 |   3 +-
->  arch/um/drivers/slip_kern.c              |   2 +-
->  arch/um/drivers/slip_user.c              |  29 +++----
->  arch/um/drivers/slirp_kern.c             |   9 +--
->  arch/um/drivers/slirp_user.c             |   9 +--
->  arch/um/drivers/ssl.c                    |  10 +--
->  arch/um/drivers/stdio_console.c          |   9 +--
->  arch/um/drivers/tty.c                    |   3 +-
->  arch/um/drivers/ubd_kern.c               | 117 +++++++++++++----------------
->  arch/um/drivers/ubd_user.c               |   6 +-
->  arch/um/drivers/umcast_kern.c            |  38 +++++-----
->  arch/um/drivers/umcast_user.c            |  35 ++++-----
->  arch/um/drivers/vde_kern.c               |  23 +++---
->  arch/um/drivers/vde_user.c               |  17 ++---
->  arch/um/drivers/xterm.c                  |  26 +++----
->  arch/um/drivers/xterm_kern.c             |   6 +-
->  arch/um/include/asm/pgtable-2level.h     |  12 +--
->  arch/um/include/asm/pgtable-3level.h     |  18 ++---
->  arch/um/include/shared/user.h            |  12 +--
->  arch/um/kernel/exec.c                    |   4 +-
->  arch/um/kernel/exitcode.c                |   3 +-
->  arch/um/kernel/initrd.c                  |  10 +--
->  arch/um/kernel/irq.c                     |  14 ++--
->  arch/um/kernel/physmem.c                 |  16 ++--
->  arch/um/kernel/process.c                 |   2 +-
->  arch/um/kernel/sigio.c                   |   4 +-
->  arch/um/kernel/skas/mmu.c                |   9 +--
->  arch/um/kernel/smp.c                     |  18 ++---
->  arch/um/kernel/sysrq.c                   |  21 +++---
->  arch/um/kernel/time.c                    |   6 +-
->  arch/um/kernel/tlb.c                     |   8 +-
->  arch/um/kernel/trap.c                    |   9 +--
->  arch/um/os-Linux/aio.c                   |  45 +++++------
->  arch/um/os-Linux/drivers/ethertap_kern.c |   8 +-
->  arch/um/os-Linux/drivers/ethertap_user.c |  32 ++++----
->  arch/um/os-Linux/drivers/tuntap_kern.c   |   6 +-
->  arch/um/os-Linux/drivers/tuntap_user.c   |  24 +++---
->  arch/um/os-Linux/file.c                  |  37 ++++-----
->  arch/um/os-Linux/helper.c                |  33 ++++----
->  arch/um/os-Linux/irq.c                   |   8 +-
->  arch/um/os-Linux/process.c               |  31 ++++----
->  arch/um/os-Linux/sigio.c                 |  83 +++++++++-----------
->  arch/um/os-Linux/skas/mem.c              |  23 +++---
->  arch/um/os-Linux/skas/process.c          | 125 ++++++++++++++-----------------
->  arch/um/os-Linux/time.c                  |   3 +-
->  arch/um/os-Linux/tty.c                   |  10 +--
->  arch/um/os-Linux/umid.c                  |  48 ++++++------
->  arch/x86/um/bugs_32.c                    |  14 ++--
->  arch/x86/um/os-Linux/registers.c         |   2 +-
->  68 files changed, 605 insertions(+), 786 deletions(-)
-> 
+On 14.05.2014 21:46, Kukjin Kim wrote:
+> On 05/15/14 04:35, Tomasz Figa wrote:
+>> Hi,
+>>
+>> On 13.05.2014 15:05, Chanwoo Choi wrote:
+>>> The Exynos3250 clocks are statically listed and registered using the
+>>> Samsung specific common clock helper functions. Both device tree based
+>>> clock lookup and clkdev based clock lookups are supported.
+>>>
+>>> Signed-off-by: Chanwoo Choi<cw00.choi@samsung.com>
+>>> Signed-off-by: Tomasz Figa<t.figa@samsung.com>
+>>> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
+>>> Cc: Mike Turquette<mturquette@linaro.org>
+>>> Cc: Kukjin Kim<kgene.kim@samsung.com>
+>>> Cc: Rob Herring<robh+dt@kernel.org>
+>>> Cc: Pawel Moll<pawel.moll@arm.com>
+>>> Cc: Mark Rutland<mark.rutland@arm.com>
+>>> Cc: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>>> Cc: Kumar Gala<galak@codeaurora.org>
+>>> Cc: Randy Dunlap<rdunlap@infradead.org>
+>>> Cc: Tomasz Figa<t.figa@samsung.com>
+>>> ---
+>>>   .../devicetree/bindings/clock/exynos3250-clock.txt | 41
+>>> ++++++++++++++++++++++
+>>>   1 file changed, 41 insertions(+)
+>>>   create mode 100644
+>>> Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>>>
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>>> b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>>> new file mode 100644
+>>> index 0000000..aadc9c5
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+>>> @@ -0,0 +1,41 @@
+>>> +* Samsung Exynos3250 Clock Controller
+>>> +
+>>> +The Exynos3250 clock controller generates and supplies clock to various
+>>> +controllers within the Exynos3250 SoC.
+>>> +
+>>> +Required Properties:
+>>> +
+>>> +- compatible: should be one of the following.
+>>> +  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250
+>>> SoC.
+>>> +
+>>> +- reg: physical base address of the controller and length of memory
+>>> mapped
+>>> +  region.
+>>> +
+>>> +- #clock-cells: should be 1.
+>>> +
+>>> +Each clock is assigned an identifier and client nodes can use this
+>>> identifier
+>>> +to specify the clock which they consume.
+>>> +
+>>> +All available clocks are defined as preprocessor macros in
+>>> +dt-bindings/clock/exynos3250.h header and can be used in device
+>>> +tree sources.
+>>> +
+>>> +Example 1: An example of a clock controller node is listed below.
+>>> +
+>>> +    cmu: clock-controller@10030000 {
+>>> +        compatible = "samsung,exynos3250-cmu";
+>>> +        reg =<0x10030000 0x20000>;
+>>> +        #clock-cells =<1>;
+>>> +    };
+>>> +
+>>> +Example 2: UART controller node that consumes the clock generated by
+>>> the clock
+>>> +       controller. Refer to the standard clock bindings for information
+>>> +       about 'clocks' and 'clock-names' property.
+>>> +
+>>> +    serial@13800000 {
+>>> +        compatible = "samsung,exynos4210-uart";
+>>> +        reg =<0x13800000 0x100>;
+>>> +        interrupts =<0 109 0>;
+>>> +        clocks =<&cmu CLK_UART0>,<&cmu CLK_SCLK_UART0>;
+>>> +        clock-names = "uart", "clk_uart_baud0";
+>>> +    };
+>>>
+>>
+>> Oops, I've forgotten to apply this one. Since it doesn't have any
+>> dependencies, Kukjin, could you apply it on top of my pull requests with
+>> my Ack? Thanks in advance.
+>>
+>> Acked-by: Tomasz Figa<t.figa@samsung.com>
+>>
+> Sure, I will do it on your 4/4 pull-request after pulling it into
+> samsung tree.
 
-Thank you Joe!
-I'll queue your patches for 3.16.
+Thanks!
 
-Thanks,
-//richard
+Best regards,
+Tomasz
