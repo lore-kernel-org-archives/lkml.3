@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaENTdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:33:14 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:60104 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaENTdM (ORCPT
+	id S1751582AbaENTdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:33:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45890 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaENTdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:33:12 -0400
+	Wed, 14 May 2014 15:33:40 -0400
+Date: Wed, 14 May 2014 12:33:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Carbonated Beverage <ramune@psychosnugglebunnies.net>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] 3.14.3 i915 dead display under X11
+Message-ID: <20140514193339.GA18197@kroah.com>
+References: <20140512031029.GA18875@psychosnugglebunnies.net>
+ <20140514204738.60a2f49c@neptune.home>
+ <CAKMK7uFDJym3fKewmivps_894_P_ifQ0TYeBXg5oevP6wrz1zw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53738496.2070800@ahsoftware.de>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
- <1399913280-6915-6-git-send-email-holler@ahsoftware.de> <20140514141300.67206C4153D@trevor.secretlab.ca>
- <53738496.2070800@ahsoftware.de>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Wed, 14 May 2014 20:32:50 +0100
-X-Google-Sender-Auth: hIJS5txnTIyXree8r6sxKLXXjmY
-Message-ID: <CACxGe6tThM_0+Kvo62_AEN5D_5E0GDpwowMZC4Nq=oqAZ57RxA@mail.gmail.com>
-Subject: Re: [RFC PATCH 5/9] dt: deps: register drivers based on the
- initialization order based on DT
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKMK7uFDJym3fKewmivps_894_P_ifQ0TYeBXg5oevP6wrz1zw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 3:58 PM, Alexander Holler <holler@ahsoftware.de> wrote:
-> Am 14.05.2014 16:13, schrieb Grant Likely:
->
->> On Mon, 12 May 2014 18:47:56 +0200, Alexander Holler
->> <holler@ahsoftware.de> wrote:
->>>
->>> The init system currently calls unknown functions with almost unknown
->>> functionality in an almost random order.
->>
->>
->> Correct, we've got a module system. Some would say that is a strength!
->> :-) That said, I don't object to optimizing to the optimal order when
->> possible.
->
->
-> Modules do work after init happened, that isn't what this feature is about.
+On Wed, May 14, 2014 at 09:19:32PM +0200, Daniel Vetter wrote:
+> On Wed, May 14, 2014 at 08:47:38PM +0200, Bruno Prémont wrote:
+> > CCing intel-gfx as otherwise it will probably not get seen by developers.
+> >
+> > On Sun, 11 May 2014 Carbonated Beverage <ramune@psychosnugglebunnies.net> wrote:
+> > > Bisecting from 3.13.6 (good) to 3.14.3 (bad) ended up with...
+> > >
+> > > commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
+> > > Author: Jani Nikula <jani.nikula@intel.com>
+> > > Date:   Thu Nov 14 12:13:41 2013 +0200
+> > >
+> > >     drm/i915: do full backlight setup at enable time
+> > >
+> > >     We should now have all the information we need to do a full
+> > >     initialization of the backlight registers.
+> > >
+> > >     v2: Keep QUIRK_NO_PCH_PWM_ENABLE for now (Imre).
+> > >
+> > >     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+> > >     Reviewed-by: Imre Deak <imre.deak@intel.com>
+> > >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > >
+> > > Which is in 3.12.0????
+> > >
+> > > I'm not sure how that came to be.  Does that look right?  What other
+> > > information would be required to track this down?
+> 
+> We've killed this again in 3.14 since we've hoped the backlight rework in
+> there fixed it. For 3.15 we finally have the right fix - vbt has a bit
+> telling us not to look at the integrated PWM for the panel.
+> 
+> For 3.14 we will (again) resurrect the quirk because the vbt thing is a
+> bit too risky an imo needs a full -rc cycle for testing. But that revert
+> is currently stalled because Greg KH is travelling too much ;-)
+> 
+> Cc'ing him to make sure that patch doesn't miss the next 3.14.x release.
 
-Oops, I meant modular. I wasn't talking about modules either. The
-driver model is designed to match devices with drivers regardless of
-the order that either of them get registered to the system. I think
-that is a strong aspect of the drivercore. What it doesn't have is any
-way of optimizing the probe order, which is at the heart of your
-proposal.
+What specific patch are you wanting to make sure makes it in?  I've been
+avoiding all of the drm patches so far for 3.14.y as it's an easy thing
+to do, but I'll eventually have to start paying attention to them :)
 
->
->
->>
->>> Fixing this is on a short-term basis is a bit tricky.
->>>
->>> In order to register drivers with a deterministic order, a list of all
->>> available in-kernel drivers is needed. Unfortunately such a list doesn't
->>> exist, just a list of initcalls does exist.
->>>
->>> The trick now is to first call special annotated initcalls (I call those
->>> "well done") for platform drivers, but not actualy starting those drivers
->>> by calling their probe function, but just collectiong their meta datas
->>> (struct platform_driver). After all those informations were collected,
->>> available the drivers will be started according to the previously
->>> determined order.
->>
->>
->> Why does the initcall level matter? Why not just let the initcalls
->> happen, capture the calls that register a driver, and then use that list
->> later?
->
->
-> Some initcalls assume that stuff is present when they called probe or
-> register and do further action based on the rc code.
+thanks,
 
-What I mean is that manipulating the initcall level isn't the best way
-to handle it. We've got enough initcalls and there isn't a need to add
-more. Other ways to handle the problem would be to either have a
-variant of the platform_driver_register() that triggers your desired
-behavour, or add a flag to the struct device_driver that tells the
-driver core that it should try to resolve ordering. In both cases the
-module_platform_driver() macro can do the magic bit. Other drivers
-will have to do it manually.
-
-g.
+greg k-h
