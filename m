@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaENV6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:58:09 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:62774 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaENV6B (ORCPT
+	id S1752940AbaENWBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:01:08 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:58487 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118AbaENWBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:58:01 -0400
-From: Alexander Bersenev <bay@hackerdom.ru>
-To: linux-sunxi@googlegroups.com, david@hardeman.nu,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
-        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
-        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
-        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Cc: Alexander Bersenev <bay@hackerdom.ru>
-Subject: [PATCH v7 3/3] ARM: sunxi: Add IR controller support in DT on A20
-Date: Thu, 15 May 2014 03:56:42 +0600
-Message-Id: <1400104602-16431-4-git-send-email-bay@hackerdom.ru>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1400104602-16431-1-git-send-email-bay@hackerdom.ru>
-References: <1400104602-16431-1-git-send-email-bay@hackerdom.ru>
+	Wed, 14 May 2014 18:01:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgpIADHnc1N5LL1sPGdsb2JhbABZgwaDPoUKpCQBAQEBAQEGmh0BgScXAwEBAQE4NYIlAQEFOhwjEAgDDgoJJQ8FJQMHGhOIQNFeFxaFPoh6B4MrgRUEmVCWXSs
+Date: Thu, 15 May 2014 08:00:52 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140514220052.GD5421@dastard>
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
+ <1400018683-5565-2-git-send-email-mguzik@redhat.com>
+ <20140514111449.GB5824@quack.suse.cz>
+ <20140514112619.GA10637@mguzik.redhat.com>
+ <20140514113945.GC5824@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514113945.GC5824@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds IR controller in A20 Device-Tree:
-- Two IR devices found in A20 user manual
-- Pins for two devices
-- One IR device physically found on Cubieboard 2
-- One IR device physically found on Cubietruck
+On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
+> On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
+> > On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
+> > > On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
+> > > > This helps hang troubleshooting efforts when only dmesg is available.
+> > > > 
+> > > > While here remove code duplication with MS_RDONLY case and fix a
+> > > > whitespace nit.
+> > >   I'm somewhat undecided here I have to say. On one hand I don't like
+> > > printing to kernel log when everything is fine and kernel is operating
+> > > normally. On the other hand I've seen quite a few cases where people have
+> > > shot themselves in the foot with filesystem freezing so having some trace
+> > > of this in the log doesn't seem like a completely bad thing either. What do
+> > > other people think?
+> > > 
+> > 
+> > I would like to note that the kernel already prints messages when e.g.
+> > filesystems get mounted.
+>   Yeah, that's a fair point.
 
-Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
-Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
----
- arch/arm/boot/dts/sun7i-a20-cubieboard2.dts |  6 ++++++
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts  |  6 ++++++
- arch/arm/boot/dts/sun7i-a20.dtsi            | 32 +++++++++++++++++++++++++++++
- 3 files changed, 44 insertions(+)
+But filesystems choose to output that info, not the VFS. When you do
+a remount,ro there is no output in syslog, because filesystems don't
+need to dump any output - the state change is reflected in
+/proc/self/mounts. IMO frozen should state should be communicated
+the same way so that it is silent when it just works, and the state
+can easily be determined when something goes wrong.
 
-diff --git a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
-index feeff64..b44d61b 100644
---- a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
-@@ -65,6 +65,12 @@
- 			};
- 		};
- 
-+		ir0: ir@01c21800 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&ir0_pins_a>;
-+			status = "okay";
-+		};
-+
- 		uart0: serial@01c28000 {
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&uart0_pins_a>;
-diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-index e288562..5f5c31d 100644
---- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-@@ -121,6 +121,12 @@
- 			};
- 		};
- 
-+		ir0: ir@01c21800 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&ir0_pins_a>;
-+			status = "okay";
-+		};
-+
- 		uart0: serial@01c28000 {
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&uart0_pins_a>;
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index 0ae2b77..fe1f8ff 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -724,6 +724,20 @@
- 				allwinner,drive = <2>;
- 				allwinner,pull = <0>;
- 			};
-+
-+			ir0_pins_a: ir0@0 {
-+				    allwinner,pins = "PB3","PB4";
-+				    allwinner,function = "ir0";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
-+
-+			ir1_pins_a: ir1@0 {
-+				    allwinner,pins = "PB22","PB23";
-+				    allwinner,function = "ir1";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
- 		};
- 
- 		timer@01c20c00 {
-@@ -749,6 +763,24 @@
- 			interrupts = <0 24 4>;
- 		};
- 
-+		ir0: ir@01c21800 {
-+			compatible = "allwinner,sun7i-a20-ir";
-+			clocks = <&apb0_gates 6>, <&ir0_clk>;
-+			clock-names = "apb", "ir";
-+			interrupts = <0 5 4>;
-+			reg = <0x01c21800 0x40>;
-+			status = "disabled";
-+		};
-+
-+		ir1: ir@01c21c00 {
-+			compatible = "allwinner,sun7i-a20-ir";
-+			clocks = <&apb0_gates 7>, <&ir1_clk>;
-+			clock-names = "apb", "ir";
-+			interrupts = <0 6 4>;
-+			reg = <0x01c21c00 0x40>;
-+			status = "disabled";
-+		};
-+
- 		lradc: lradc@01c22800 {
- 			compatible = "allwinner,sun4i-lradc-keys";
- 			reg = <0x01c22800 0x100>;
+Cheers,
+
+Dave.
 -- 
-1.9.3
-
+Dave Chinner
+david@fromorbit.com
