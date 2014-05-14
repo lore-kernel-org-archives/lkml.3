@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaENGMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 02:12:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43081 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbaENGM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 02:12:29 -0400
-Date: Wed, 14 May 2014 07:12:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 17/19] fs: buffer: Do not use unnecessary atomic
- operations when discarding buffers
-Message-ID: <20140514061222.GW23991@suse.de>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-18-git-send-email-mgorman@suse.de>
- <20140513152900.ea0a58cf4a650fb0b4110e3e@linux-foundation.org>
+	id S1753464AbaENGNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 02:13:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62986 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071AbaENGNP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 02:13:15 -0400
+Message-ID: <53730967.6030403@linaro.org>
+Date: Wed, 14 May 2014 14:12:55 +0800
+From: "kefeng.wang" <kefeng.wang@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140513152900.ea0a58cf4a650fb0b4110e3e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wangkefeng.wang@huawei.com, xuwei5@hisilicon.com
+Subject: Re: [PATCH v6 3/3] ahci: add support for Hisilicon sata
+References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org> <1398416351-30567-4-git-send-email-kefeng.wang@linaro.org> <20140513190427.GA28815@htj.dyndns.org>
+In-Reply-To: <20140513190427.GA28815@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 03:29:00PM -0700, Andrew Morton wrote:
-> On Tue, 13 May 2014 10:45:48 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On 2014-5-14 3:04, Tejun Heo wrote:
+> On Fri, Apr 25, 2014 at 04:59:11PM +0800, Kefeng Wang wrote:
+>> The hip04 SoC of hisilicon has an AHCI compliant SATA controller,
+>> and it is compliant with the ahci 1.3 and sata 3.0 specification.
+>>
+>> There is a wrong bit in HOST_CAP of hip04 sata controller, which
+>> enable unsupported feature of FBS, use AHCI_HFLAG_NO_FBS hflag to
+>> disable it.
+>>
+>> Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
 > 
-> > Discarding buffers uses a bunch of atomic operations when discarding buffers
-> > because ...... I can't think of a reason. Use a cmpxchg loop to clear all the
-> > necessary flags. In most (all?) cases this will be a single atomic operations.
-> > 
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -1485,14 +1485,18 @@ EXPORT_SYMBOL(set_bh_page);
-> >   */
-> >  static void discard_buffer(struct buffer_head * bh)
-> >  {
-> > +	unsigned long b_state, b_state_old;
-> > +
-> >  	lock_buffer(bh);
-> >  	clear_buffer_dirty(bh);
-> >  	bh->b_bdev = NULL;
-> > -	clear_buffer_mapped(bh);
-> > -	clear_buffer_req(bh);
-> > -	clear_buffer_new(bh);
-> > -	clear_buffer_delay(bh);
-> > -	clear_buffer_unwritten(bh);
-> > +	b_state = bh->b_state;
-> > +	for (;;) {
-> > +		b_state_old = cmpxchg(&bh->b_state, b_state, (b_state & ~BUFFER_FLAGS_DISCARD));
-> > +		if (b_state_old == b_state)
-> > +			break;
-> > +		b_state = b_state_old;
-> > +	}
-> >  	unlock_buffer(bh);
-> >  }
-> >  
-> > --- a/include/linux/buffer_head.h
-> > +++ b/include/linux/buffer_head.h
-> > @@ -77,6 +77,11 @@ struct buffer_head {
-> >  	atomic_t b_count;		/* users using this buffer_head */
-> >  };
-> >  
-> > +/* Bits that are cleared during an invalidate */
-> > +#define BUFFER_FLAGS_DISCARD \
-> > +	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
-> > +	 1 << BH_Delay | 1 << BH_Unwritten)
-> > +
+> Doesn't apply to libata/for-3.16.  Please refresh.
+
+Send new patches, rebased onto libata/for-3.16, based on commit: 58eb8cd565af.
+Is this OK, if not, please let me know, thanks.
+
 > 
-> There isn't much point in having this in the header file is there?
+> Thanks.
 > 
 
-No, it's not necessary. I was just keeping it with the definition of the
-flags. Your fix on top looks fine.
-
--- 
-Mel Gorman
-SUSE Labs
