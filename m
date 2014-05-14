@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaENVz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:55:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaENVzV (ORCPT
+	id S1753245AbaENVzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:55:32 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11303 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbaENVz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:55:21 -0400
+	Wed, 14 May 2014 17:55:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX199UTqXz2WLlA1fPcpY45TG
 Date: Wed, 14 May 2014 14:55:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140514145520.f010e4593071cf5a756ddc5b@linux-foundation.org>
-In-Reply-To: <20140514174749.1ec4d37f@canb.auug.org.au>
-References: <20140514174749.1ec4d37f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCHv5 10/10] DTS: ARM: OMAP3-N900: Add modem support
+Message-ID: <20140514215519.GN27426@atomide.com>
+References: <1399739870-13526-1-git-send-email-sre@kernel.org>
+ <1399739870-13526-11-git-send-email-sre@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399739870-13526-11-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 17:47:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+* Sebastian Reichel <sre@kernel.org> [140510 09:40]:
+> Add modem device tree data to Nokia N900's DTS file.
 
-> Hi Andrew,
-> 
-> After merging the akpm-current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> mm/memcontrol.c: In function 'mem_cgroup_write':
-> mm/memcontrol.c:5088:45: error: 'buffer' undeclared (first use in this function)
->    ret = res_counter_memparse_write_strategy(buffer, &val);
->                                              ^
-> mm/memcontrol.c: At top level:
-> /scratch/sfr/next/mm/memcontrol.c:6029:3: error: unknown field 'write_string' specified in initializer
->    .write_string = mem_cgroup_write,
->    ^
-> 
-> Caused by commit a4bf584ed8c2 ("memcg: allow setting low_limit")
-> interacting with commit 451af504df0c ("cgroup: replace
-> cftype->write_string() with cftype->write()") from the cgroup tree.
-> (I love API changes and unnecessary variable renaming :-()
-> 
-> ...
->
-> @@ -6026,7 +6026,7 @@ static struct cftype mem_cgroup_files[] = {
->  	{
->  		.name = "low_limit_in_bytes",
->  		.private = MEMFILE_PRIVATE(_MEM, RES_LOW_LIMIT),
-> -		.write_string = mem_cgroup_write,
-> +		.write = mem_cgroup_write,
->  		.read_u64 = mem_cgroup_read_u64,
->  	},
+Picking this patch too.
 
-Renaming buffer to buf was rather unneeded.
-
-I have 24 patches here against mm/memcontrol.c.  Go gently, please.
+Tony
