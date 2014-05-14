@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaENTSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:18:32 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35989 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaENTS0 (ORCPT
+	id S1753102AbaENTSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:18:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:16363 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaENTS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:18:26 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-ea-5373c18028dc
+	Wed, 14 May 2014 15:18:29 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-ed-5373c1826ffe
 From: Rahul Sharma <rahul.sharma@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         dri-devel@lists.freedesktop.org
@@ -16,37 +16,37 @@ Cc: a.hajda@samsung.com, t.stanislaws@samsung.com, devicetree@vger.kernel.org,
         robh+dt@kernel.org, grant.likely@linaro.org,
         sylvester.nawrocki@gmail.com, joshi@samsung.com,
         Rahul Sharma <rahul.sharma@samsung.com>
-Subject: [PATCH v3 2/3] drm: exynos: hdmi: use hdmiphy as PHY
-Date: Thu, 15 May 2014 00:47:22 +0530
-Message-id: <1400095043-685-3-git-send-email-rahul.sharma@samsung.com>
+Subject: [PATCH v3 3/3] s5p-tv: hdmi: use hdmiphy as PHY
+Date: Thu, 15 May 2014 00:47:23 +0530
+Message-id: <1400095043-685-4-git-send-email-rahul.sharma@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
 References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsWyRsSkRrfhYHGwwY6DOha31p1jtZh/BEhc
-	+fqezeLAnx2MFt93fWG36F1wlc3iwtMeNouzTW/YLS7vmsNmMeP8PiaLKYsOs1q07j3CbjHv
-	804mi3ntL1kd+Dx2zrrL7rFpVSebx51re9g87ncfZ/Lo27KK0eP4je1MHp83yQWwR3HZpKTm
-	ZJalFunbJXBlrL81gaVguVDFxY3TWBsYt/B3MXJySAiYSEy4/Z0dwhaTuHBvPVsXIxeHkMBS
-	RonHUy6zwRQdmdHKDpGYziixc/I6ZginnUnizqoNjCBVbAK6ErMPPgOzRQTSJL4daGEFKWIW
-	mM0ksfHFa7BRwgK2EttffWcCsVkEVCWmzzvOCmLzCrhJvLz1CqiZA2idgsScSTYgYU4Bd4mG
-	SxuZQWwhoJIVLfNYIS56xC4x5bANxBgBiW+TD7FAtMpKbDrADFEiKXFwxQ2WCYzCCxgZVjGK
-	phYkFxQnpReZ6BUn5haX5qXrJefnbmIERtDpf88m7GC8d8D6EGMy0LiJzFKiyfnACMwriTc0
-	NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYzm1sfeGKO
-	MnnMMH7tXXe+Vjf78xWxpTbXXTRfHLjPfnzlyy3sEV2/JmvvOex2JkOyRST8nPF306nuH1Ou
-	sAQ9X645g71xknKKdtTHv9aXTgSKFRQqK15x/MK1YP0c2/yVjtmtb1qWNUfOYWwTcLG44537
-	kOG92mJuFXkbC+GUnP3Tji/enqjEUpyRaKjFXFScCAD3gwgvtgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoG7DweJggxPXFCxurTvHajH/CJC4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkVrfpYHGwQXOvucWtdedYLeYfARJX
+	vr5nszjwZwejxfddX9gtehdcZbO48LSHzeJs0xt2i8u75rBZzDi/j8liyqLDrBate4+wW8z7
+	vJPJYl77S1YHPo+ds+6ye2xa1cnmcefaHjaP+93HmTz6tqxi9Dh+YzuTx+dNcgHsUVw2Kak5
+	mWWpRfp2CVwZDa8WMhb0iFRcmTGLpYHxpUAXIyeHhICJxOkJ7cwQtpjEhXvr2boYuTiEBJYy
+	Sjxp+8MEU3T80HZGiMR0RomFB/6xQzjtTBKT+t6AtbMJ6ErMPviMEcQWEUiT+HaghRWkiFlg
+	NpPExhev2UASwgIWEuu+dII1sAioSvS8WQTWwCvgJvHv63WWLkYOoHUKEnMm2YCEOQXcJRou
+	bQQrFwIqWdEyD2ymhMA9domXX34zQswRkPg2+RBUr6zEpgNQ70hKHFxxg2UCo/ACRoZVjKKp
+	BckFxUnpRSZ6xYm5xaV56XrJ+bmbGIExdPrfswk7GO8dsD7EmAw0biKzlGhyPjAG80riDY3N
+	jCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBccUfzYk31Xtz
+	AjeIsrtHzZlbvnCJ0sc4g1fnnqWLRW5ZefXmBXl3kXWlyWtP7udqPHJkGn9H6iQzueauXwdv
+	lnq4LVsTfYPrRvtLnkWbpyr2TtI92vDxwpJyk1dPDEstDxbaXrawahaOdi5+6sq/gOdZ2cx1
+	kQ1vczXuRpyQ+sw6x/F+RmGSqxJLcUaioRZzUXEiACUOHhS3AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoG7TweJggz1XtS1urTvHajH/CJC4
 	8vU9m8WBPzsYLb7v+sJu0bvgKpvFhac9bBZnm96wW1zeNYfNYsb5fUwWUxYdZrVo3XuE3WLe
 	551MFvPaX7I68HnsnHWX3WPTqk42jzvX9rB53O8+zuTRt2UVo8fxG9uZPD5vkgtgj2pgtMlI
 	TUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlpJoSwxpxQo
-	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLH+1gSWguVCFRc3TmNtYNzC38XIySEh
-	YCJxZEYrO4QtJnHh3nq2LkYuDiGB6YwSOyevY4Zw2pkk7qzawAhSxSagKzH74DMwW0QgTeLb
-	gRZWkCJmgdlMEhtfvGYDSQgL2Epsf/WdCcRmEVCVmD7vOCuIzSvgJvHy1iugZg6gdQoScybZ
-	gIQ5BdwlGi5tZAaxhYBKVrTMY53AyLuAkWEVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnCE
-	PpPawbiyweIQowAHoxIPL8Pk4mAh1sSy4srcQ4wSHMxKIrxJe4FCvCmJlVWpRfnxRaU5qcWH
-	GJOBjprILCWanA9MHnkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
-	wSnVwNi6/iH7Rv5DMX4nrpYbf3E7cPfb9rVOQnmV28+l3i1h5JPQei/338WvfG/7RUG7tfKn
-	TdgCnd7GXlNJMbn8X9fZ4NPaO9n3dry+waYkwOjStXi+ROvrpoOz65u9/1v/s+ZnS28yu/4s
-	UVJC9kT41gW/8n5U/2p/GJd+UWcBa6XxsZn75I/OC1diKc5INNRiLipOBADghx/pFAMAAA==
+	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmNHwaiFjQY9IxZUZs1gaGF8KdDFyckgI
+	mEgcP7SdEcIWk7hwbz1bFyMXh5DAdEaJhQf+sUM47UwSk/reMINUsQnoSsw++AysQ0QgTeLb
+	gRZWkCJmgdlMEhtfvGYDSQgLWEis+9IJ1sAioCrR82YRWAOvgJvEv6/XWboYOYDWKUjMmWQD
+	EuYUcJdouLQRrFwIqGRFyzzWCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER+gz
+	qR2MKxssDjEKcDAq8fAyTC4OFmJNLCuuzD3EKMHBrCTCm7QXKMSbklhZlVqUH19UmpNafIgx
+	GeioicxSosn5wOSRVxJvaGxibmpsamliYWJmSZqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTByc
+	Ug2M0XYOs/7znEtjkd500f9zQUO4sVVohubR5rCDhs7JHxwW7fgV7/1tWWtAu9SUf0ZLneX4
+	OH/dSy97dmvT3u3be2ukGQ3Wnck6xPGEI2RBwfOPPoU/XllrXSuafdas7/i6ppaS/d12umxG
+	5mkT/wjO9Zg9Z1rFQa3aTe4MgfO29pxVP3pry10XJZbijERDLeai4kQAnDL4OhQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,66 +60,71 @@ The HDMIPHY (physical interface) is controlled by a single
 bit in a power controller's regiter. It was implemented
 as clock. It was a simple but effective hack.
 
-This patch makes HDMI driver to control HDMIPHY via PHY interface.
+This patch makes S5P-HDMI driver to control HDMIPHY via PHY interface.
 
 Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 Signed-off-by: Rahul Sharma <Rahul.Sharma@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_hdmi.c |   11 ++++++-----
+ drivers/media/platform/s5p-tv/hdmi_drv.c |   11 ++++++-----
  1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 9a6d652..ef1cdd0 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -36,6 +36,7 @@
- #include <linux/i2c.h>
- #include <linux/of_gpio.h>
- #include <linux/hdmi.h>
+diff --git a/drivers/media/platform/s5p-tv/hdmi_drv.c b/drivers/media/platform/s5p-tv/hdmi_drv.c
+index 534722c..8013e52 100644
+--- a/drivers/media/platform/s5p-tv/hdmi_drv.c
++++ b/drivers/media/platform/s5p-tv/hdmi_drv.c
+@@ -32,6 +32,7 @@
+ #include <linux/clk.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/v4l2-dv-timings.h>
 +#include <linux/phy/phy.h>
  
- #include <drm/exynos_drm.h>
- 
-@@ -74,8 +75,8 @@ struct hdmi_resources {
- 	struct clk			*sclk_hdmi;
- 	struct clk			*sclk_pixel;
- 	struct clk			*sclk_hdmiphy;
--	struct clk			*hdmiphy;
- 	struct clk			*mout_hdmi;
-+	struct phy			*hdmiphy;
- 	struct regulator_bulk_data	*regul_bulk;
- 	int				regul_count;
+ #include <media/s5p_hdmi.h>
+ #include <media/v4l2-common.h>
+@@ -66,7 +67,7 @@ struct hdmi_resources {
+ 	struct clk *sclk_hdmi;
+ 	struct clk *sclk_pixel;
+ 	struct clk *sclk_hdmiphy;
+-	struct clk *hdmiphy;
++	struct phy *hdmiphy;
+ 	struct regulator_bulk_data *regul_bulk;
+ 	int regul_count;
  };
-@@ -1854,7 +1855,7 @@ static void hdmi_poweron(struct exynos_drm_display *display)
- 	if (regulator_bulk_enable(res->regul_count, res->regul_bulk))
- 		DRM_DEBUG_KMS("failed to enable regulator bulk\n");
- 
--	clk_prepare_enable(res->hdmiphy);
+@@ -586,7 +587,7 @@ static int hdmi_resource_poweron(struct hdmi_resources *res)
+ 	if (ret < 0)
+ 		return ret;
+ 	/* power-on hdmi physical interface */
+-	clk_enable(res->hdmiphy);
 +	phy_power_on(res->hdmiphy);
- 	clk_prepare_enable(res->hdmi);
- 	clk_prepare_enable(res->sclk_hdmi);
- 
-@@ -1881,7 +1882,7 @@ static void hdmi_poweroff(struct exynos_drm_display *display)
- 
- 	clk_disable_unprepare(res->sclk_hdmi);
- 	clk_disable_unprepare(res->hdmi);
--	clk_disable_unprepare(res->hdmiphy);
+ 	/* use VPP as parent clock; HDMIPHY is not working yet */
+ 	clk_set_parent(res->sclk_hdmi, res->sclk_pixel);
+ 	/* turn clocks on */
+@@ -600,7 +601,7 @@ static void hdmi_resource_poweroff(struct hdmi_resources *res)
+ 	/* turn clocks off */
+ 	clk_disable(res->sclk_hdmi);
+ 	/* power-off hdmiphy */
+-	clk_disable(res->hdmiphy);
 +	phy_power_off(res->hdmiphy);
+ 	/* turn HDMI power off */
  	regulator_bulk_disable(res->regul_count, res->regul_bulk);
- 
- 	pm_runtime_put_sync(hdata->dev);
-@@ -1977,9 +1978,9 @@ static int hdmi_resources_init(struct hdmi_context *hdata)
- 		DRM_ERROR("failed to get clock 'sclk_hdmiphy'\n");
+ }
+@@ -784,7 +785,7 @@ static void hdmi_resources_cleanup(struct hdmi_device *hdev)
+ 	/* kfree is NULL-safe */
+ 	kfree(res->regul_bulk);
+ 	if (!IS_ERR(res->hdmiphy))
+-		clk_put(res->hdmiphy);
++		phy_put(res->hdmiphy);
+ 	if (!IS_ERR(res->sclk_hdmiphy))
+ 		clk_put(res->sclk_hdmiphy);
+ 	if (!IS_ERR(res->sclk_pixel))
+@@ -835,7 +836,7 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
+ 		dev_err(dev, "failed to get clock 'sclk_hdmiphy'\n");
  		goto fail;
  	}
--	res->hdmiphy = devm_clk_get(dev, "hdmiphy");
-+	res->hdmiphy = devm_phy_get(dev, "hdmiphy");
+-	res->hdmiphy = clk_get(dev, "hdmiphy");
++	res->hdmiphy = phy_get(dev, "hdmiphy");
  	if (IS_ERR(res->hdmiphy)) {
--		DRM_ERROR("failed to get clock 'hdmiphy'\n");
-+		DRM_ERROR("failed to get phy 'hdmiphy'\n");
+ 		dev_err(dev, "failed to get clock 'hdmiphy'\n");
  		goto fail;
- 	}
- 	res->mout_hdmi = devm_clk_get(dev, "mout_hdmi");
 -- 
 1.7.9.5
 
