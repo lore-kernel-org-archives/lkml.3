@@ -1,137 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaENHyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:54:02 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60910 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698AbaENHx7 (ORCPT
+	id S1752831AbaENHzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:55:19 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44318 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750781AbaENHzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:53:59 -0400
+	Wed, 14 May 2014 03:55:15 -0400
+Date: Wed, 14 May 2014 09:50:17 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v6 3/3] ARM: sunxi: Add IR controller support in DT on A20
+Message-ID: <20140514075017.GH29258@lukather>
+References: <1400006342-2968-1-git-send-email-bay@hackerdom.ru>
+ <1400006342-2968-4-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-In-Reply-To: <20140513204924.5943.24086@quantum>
-References: <1399982253-21079-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1399982253-21079-2-git-send-email-gabriel.fernandez@linaro.org>
-	<20140513122054.GA2419@e106331-lin.cambridge.arm.com>
-	<5372363B.4080608@gmail.com>
-	<20140513204924.5943.24086@quantum>
-Date: Wed, 14 May 2014 09:53:58 +0200
-Message-ID: <CAG374jAgMbLvw8Qm2Eg6R9vVXL7gTv4Pqy7oE0hxw2zTPFHOOw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: of: helper for determining flags properties
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4LwthZj+AV2mq5CX"
+Content-Disposition: inline
+In-Reply-To: <1400006342-2968-4-git-send-email-bay@hackerdom.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 13 May 2014 22:49, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Sebastian Hesselbarth (2014-05-13 08:11:55)
->> On 05/13/2014 02:20 PM, Mark Rutland wrote:
->> > On Tue, May 13, 2014 at 12:57:32PM +0100, Gabriel FERNANDEZ wrote:
->> >> The patch provides a helper to get flags properties of
->> >> a clock node.
->> >>
->> >> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->> >> ---
->> >>   drivers/clk/clk.c            | 11 +++++++++++
->> >>   include/linux/clk-provider.h |  6 ++++++
->> >>   2 files changed, 17 insertions(+)
->> >>
->> >> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> >> index 4d56220..cae8985 100644
->> >> --- a/drivers/clk/clk.c
->> >> +++ b/drivers/clk/clk.c
->> >> @@ -2528,6 +2528,17 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
->> >>   }
->> >>   EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
->> >>
->> >> +unsigned long of_clk_get_flags(struct device_node *np)
->> >> +{
->> >> +    unsigned long flags = 0;
->> >> +
->> >> +    if (of_property_read_bool(np, "set-rate-parent"))
->> >> +            flags |= CLK_SET_RATE_PARENT;
->> >
->> > NAK.
->> >
->> > This is _not_ a hardware property. This flag describes internals of the
->> > Linux clock framework, and is thus not suitable for DT.
->>
->> Mark,
->>
->> while I agree above property is not a hardware property, it is at least
->> some kind of use-case property. If not by DT, we will have to allow some
->> way to describe master-slave relationships between clocks in a driver
->> independent way.
->
-> I agree with Mark.
->
-> Generally this stuff belongs in a clock driver. Of course there are the
-> integration issues you pointed out. More on that below.
->
-> As an aside, CLK_SET_RATE_PARENT is a headache, since propagation of the
-> operation up to the parent clock really should be the default behavior
-> for .set_rate (and in fact this is the case for the new-ish
-> .determine_rate op). Some history on those decisions can be found at [1]
-> and [2].
->
+--4LwthZj+AV2mq5CX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, May 14, 2014 at 12:39:02AM +0600, Alexander Bersenev wrote:
+> This patch adds IR controller in A20 Device-Tree:
+> - Two IR devices found in A20 user manual
+> - Pins for two devices
+> - One IR device physically found on Cubieboard 2
+> - One IR device physically found on Cubietruck
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+> ---
+>  arch/arm/boot/dts/sun7i-a20-cubieboard2.dts |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts  |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20.dtsi            | 31 +++++++++++++++++++++++=
+++++++
+>  3 files changed, 43 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts b/arch/arm/boot/=
+dts/sun7i-a20-cubieboard2.dts
+> index feeff64..2564e8c 100644
+> --- a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+> +++ b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+> @@ -164,6 +164,12 @@
+>  				reg =3D <1>;
+>  			};
+>  		};
+> +
+> +		ir0: ir@01c21800 {
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&ir0_pins_a>;
+> +			status =3D "okay";
+> +		};
+>  	};
+> =20
+>  	leds {
+> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/d=
+ts/sun7i-a20-cubietruck.dts
+> index e288562..e375e89 100644
+> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> @@ -232,6 +232,12 @@
+>  				reg =3D <1>;
+>  			};
+>  		};
+> +
+> +		ir0: ir@01c21800 {
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&ir0_pins_a>;
+> +			status =3D "okay";
+> +		};
+>  	};
+> =20
+>  	leds {
 
-My issue is exactly the same as Marc, it's for solve some case with
-PCM and HDMI clocks.
+Please make these two changes a separate patch.
 
->>
->> > You've also failed to document the property.
->> >
->> > What are you trying to achieve here, and why do you think this is the
->> > best way of achieving that?
->>
->> I cannot tell from the commit msgs, but consider clk-si5351 which is a
->> driver for an external programmable clock with N PLLs and M outputs. Now
->> connect a video clock consumer and an audio clock consumer to two
->> different outputs and those to one PLL (as you want audio clock derived
->> from video clock, typical HDMI scenario).
->>
->> Now, there should be a way to tell the generic driver which outputs are
->> allowed to change the PLLs rate and which don't. Otherwise, the clock
->> chip would be pretty useless as e.g. your audio clock consumer will
->> overwrite the rate the video clock consumer has chosen.
->
-> This is really a job for the "coordinated clock rate changes" that are
-> currently in development. These specify clock sub-tree snapshots of
-> parent and rate configurations that are predefined. These combinations
-> can be specified in DT. That helps a lot with clock configurations that
-> change per board, or for cases where many combinations of parents and
-> dividers can yield the same output rate, but only a subset of those were
-> validated by the silicon validation team or had proper timing closure so
-> we don't want to rely on the "walk up the tree" algorithm.
->
-> Regards,
-> Mike
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index 0ae2b77..40ded74 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -724,6 +724,19 @@
+>  				allwinner,drive =3D <2>;
+>  				allwinner,pull =3D <0>;
+>  			};
+> +
+> +			ir0_pins_a: ir0@0 {
+> +				    allwinner,pins =3D "PB3","PB4";
+> +				    allwinner,function =3D "ir0";
+> +				    allwinner,drive =3D <0>;
+> +				    allwinner,pull =3D <0>;
+> +			};
 
-Ok i think this work will be the best solutions for my issue.
+Extra line
 
-Where i can find some threads about that ?
+> +			ir1_pins_a: ir1@0 {
+> +				    allwinner,pins =3D "PB22","PB23";
+> +				    allwinner,function =3D "ir1";
+> +				    allwinner,drive =3D <0>;
+> +				    allwinner,pull =3D <0>;
+> +			};
+>  		};
 
-Thanks a lot.
+Do you use ir1_pins_a at all?
 
-Best Regards.
+I also prefer whenever such additions are in a patch of their own.
 
-Gabriel.
+>  		timer@01c20c00 {
+> @@ -937,5 +950,23 @@
+>  			#interrupt-cells =3D <3>;
+>  			interrupts =3D <1 9 0xf04>;
+>  		};
+> +
+> +		ir0: ir@01c21800 {
+> +			compatible =3D "allwinner,sun7i-a20-ir";
+> +			clocks =3D <&apb0_gates 6>, <&ir0_clk>;
+> +			clock-names =3D "apb", "ir";
+> +			interrupts =3D <0 5 4>;
+> +			reg =3D <0x01c21800 0x40>;
+> +			status =3D "disabled";
+> +		};
+> +
+> +		ir1: ir@01c21c00 {
+> +			compatible =3D "allwinner,sun7i-a20-ir";
+> +			clocks =3D <&apb0_gates 7>, <&ir1_clk>;
+> +			clock-names =3D "apb", "ir";
+> +			interrupts =3D <0 6 4>;
+> +			reg =3D <0x01C21c00 0x40>;
+
+You're mixing upper and lower case letters here, please make it lower
+case.
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--4LwthZj+AV2mq5CX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTcyA4AAoJEBx+YmzsjxAg2F4QALlYjQJBlnJFHqVS4hlcB8o+
+f1RTfqtm0cxd6TXQZSzo+GavdD83WTbN/4vRAGfvA6p8gQD4pr8sYwlMdhFKLkiI
+qNJuKVAS6ISkT8AfSOO4dJi4oaU0BMGUYIL3DBUxGNjf+7iMLwVKwimQ9ogkL75V
+I/ybY48t2ojJWrK5bm9YDDT/Zh2uewtKdtL0hFE7q6s8wEckBluWykscXLlPU1ID
+KDCP27RkWT0MTYTgxAoWK4CpSHmCeXA9/4cFEG5WDh2IeoxOcbbQ6QLasOF0o+AY
+KGrQHYUT4IFYHFJWPhdHOsgBz28O0IC+SJs7CbFt8KfiAzEBGEbQbv5eOkvJCmbU
+732RPsLhq3tEkIJUZRbnwT7T/vnAfhmlfjlhEDo8Mkb/T5crU7az5PfX9SqJh9hT
+Xzo47favlpsXVWBn7k2sGcLsm8BqaLjovn9HwnlXxZ6iPP+aFrah3MRoViawy+j1
+qH6fc9JXtHxD1DYEMiLm7NkT9VA2njsmqIgm7lVvcENdx9Hg25ggpnIUtJ0SSuSG
+H1T0HLaooCoGcHwPksBOwnzQiCTzFjkRbqT4+HU0llzcJCshHEKuebNEI4Xw6B4r
+Dthw3tAI0dAEvxbWLwHOJn+zV4bZ8JEE1iTpymWPXOWeLm8jKxNewWB9OxKbLFVJ
+qPUK/8eDeVj3Tc8HtYSy
+=G1BZ
+-----END PGP SIGNATURE-----
+
+--4LwthZj+AV2mq5CX--
