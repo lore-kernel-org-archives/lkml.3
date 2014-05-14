@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaENSwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:52:00 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:50476 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaENSv6 (ORCPT
+	id S1750916AbaENSwy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:52:54 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44880 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaENSwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:51:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org,
-        Antoine =?ISO-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-kernel@vger.kernel.org, kishon@ti.com, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
-        tj@kernel.org
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-Date: Wed, 14 May 2014 20:51:44 +0200
-Message-ID: <17808571.N5ZGjXFEVP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5373B908.5090904@gmail.com>
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com>
+	Wed, 14 May 2014 14:52:53 -0400
+X-Originating-IP: 173.246.103.110
+Date: Wed, 14 May 2014 11:52:39 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in
+ tree_plugin.h and used in tree.c
+Message-ID: <20140514185239.GA4475@jtriplet-mobl1>
+References: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140514154150.GA1873@thin>
+ <20140514155706.GG4570@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TGDYTpXy860fII+wvxROpYG9tKjvy/dc49y0VVpolRy
- 044UzoltxYxwmVLBcf+eGsmhGEA1rFXO9W2iJzwNPyU/SfCCaV
- 3f4OggYHQURgsGdXP4ALlMvxU8Mg3kqixf5CikwEUioBvBABE+
- 1SY9PXgYExGjd2q0XIxb/+Jt3PANEpyGMtXz4WhUzN0KSaC/KL
- z95DuKd6ECkUmkVxFBaYW4IOh9k97DxxGg2zgFjtN6fHHQEps5
- g/+2juRb+MegHuAyJhOGh+t+sqL2Tt1eOWkWVEWSYzE6o/IAXk
- zQgbpPksO81TmcATOiZOKOZxYLv74wGlATeCp2UPiXxlHo7+Sd
- ZTtkkon69FWA0eXBiYYY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514155706.GG4570@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 20:42:16 Sebastian Hesselbarth wrote:
-> >> For the driver, Antoine then would have to squeeze all PHY register
-> >> mangling in phy-berlin2.c and see how to make ahci-platform aware of
-> >> individual port nodes (I haven't looked up if it already exists, sorry)
-> >> and announce only enabled port child nodes, right?
+On Wed, May 14, 2014 at 08:57:06AM -0700, Paul E. McKenney wrote:
+> On Wed, May 14, 2014 at 08:41:50AM -0700, Josh Triplett wrote:
+> > On Tue, May 13, 2014 at 05:30:59PM -0700, Paul E. McKenney wrote:
+> > > From: Uma Sharma <uma.sharma523@gmail.com>
+> > > 
+> > > The variable and struct both having the name "rcu_state" confuses
+> > > sparse in some situations, so this commit changes the variable to
+> > > "rcu_state_p" in order to avoid this confusion.  This also makes
+> > > things easier for human readers.
 > > 
-> > I've been thinking some more about this aspect. I don't actually have
-> > a strong opinion on whether it's better to use the generic ahci-platform
-> > driver, or to keep the multi-phy support as a special variant for
-> > berlin. If we do the latter, it would however be good to define the
-> > binding in a way that lets us later merge things into the generic phy
-> > driver in case we get more of the same.
+> > Human readers aside, how does Sparse get confused?  Let's fix that.
 > 
-> Hmm, IMHO multi-phy support is orthogonal to ahci-platform, isn't it?
-> ahci-platform needs to know about the phy property and calls some
-> helper that deals with the phy-specifier?
+> OK.  The issue appears to be that we have a variable with the same
+> name as a struct, as in:
 > 
-> About a generic _phy_ driver, I am not so sure if berlin is the best
-> template right now 
-> 
-> So, my call would be:
-> - make ahci-platform aware of port sub-nodes and phy properties
-> - have a berlin specific PHY driver
+> struct rcu_state *rcu_state;
 
-I'm not sure if we need sub-nodes per port, it should be enough
-to have an array of phys, plus a way to match them up with the
-ports.
+Which is completely legal C, and Sparse should have no issue with it.
 
-	Arnd
+> > Personally, I don't think the _p makes things particularly easier for
+> > human readers, but it doesn't make things *harder* for anyone other than
+> > those used to reading the existing code, so, *shrug*.
+> 
+> It does make it a bit easier for me when grepping through the source,
+> given the large number of "struct rcu_state" strings in there.  And
+> yes, I should be using some more modern tools than "grep" and "cscope"!
+> But I am not the only throwback.  ;-)
+
+Count me in as someone using "grep" as well (usually via "git grep").
+
+- Josh Triplett
