@@ -1,78 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaENLAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:00:30 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54193 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315AbaENLA3 (ORCPT
+	id S1754659AbaENLEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:04:37 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:50822 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaENLEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:00:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-Date: Wed, 14 May 2014 13:00:21 +0200
-Message-ID: <8468354.y2kUZdOz9e@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdW5HSVyXpz9HFcrDDYq=zOFrBr6d8jOd8i_FMkXsEpr2Q@mail.gmail.com>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <8399002.IIyBoyEHox@wuerfel> <CAMuHMdW5HSVyXpz9HFcrDDYq=zOFrBr6d8jOd8i_FMkXsEpr2Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:MrBl8n8ppPhyRmu4x6k6KTi2D3mYTQwniBQS3T0UxFu
- rhHse2Hc5iRTYQu/xhCrIzo/E8OCb1sN9H7luSNcHM3jDdHc4S
- 8Ln1K9WYJzRGyv+XQgXAb/351Cl/9VZHcKts98ABM/9Rx7IDdM
- aoG2CVTz5fjGmy5yrt6Enat5LdzkvZH4t3/Hr9x1JG8L4aQx+V
- b7jY09eNLR18PpwCTL67E7ZI0lDDcMVJLRRSV1Pi63COvo/g/i
- Tq9IXXktpxUGqjlcrw3YC+8SoMUNamXvKE5uC87k/PzX4uFGCu
- wLFYiPh0WOjnu9Z8Ys5sDI3d/cOyD/lndX0EmobkVTSoiPjKWP
- tvIC3a9pUIhiGJEArz/U=
+	Wed, 14 May 2014 07:04:35 -0400
+Subject: [PATCH v1.2 1/16] arcmsr: Revise interrupt service routine relate
+ function to fix command timeout
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 May 2014 19:04:27 +0800
+Message-ID: <1400065467.6957.20.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 May 2014 22:35:08 Geert Uytterhoeven wrote:
-> 
-> On Tue, May 13, 2014 at 9:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > I think we have three categories:
-> 
-> Thanks for the list!
-> 
-> > a) interfaces that uses relative time_t/timespec/timeval:
-> > b) interfaces that don't make sense for times in the past:
-> 
-> > c) interfaces that require absolute times:
-> >    - stat/lstat/fstatat/
-> >    - utime/utimes/futimesat
-> >
-> > These absolutely have to use something better than time_t
-> > both in user space and in the kernel so we can deal with
-> > old files. A lot of file systems need to be fixed as well so
-> > we can actually store the times, regardless of whether we
-> > are running a 32 or 64 bit kernel.
-> 
-> So these are the ones we have to worry about.
-> It looks like they all involve I/O? Apart from the case of using block data
-> from the buffer cache, the 64-bit operations should disappear in the
-> actual I/O noise, right?
+From: Ching<ching2048@areca.com.tw>
 
-Right. Also there have been proposals for a better 'stat' replacement
-for years, which would solve half of the interface problem for the
-file system interfaces.
+Rewrite interrupt service routine relate function to fix command timeout on controller very heavy loading.
 
-However, we also need to find a solution for category b), I only put
-them into a different category above because we can treat them
-differently in the kernel. For instance, we could use ktime_t for
-the kernel code in category b) and a new struct timespec64 for
-the times in struct inode.
-On the user interface side, using timespec64 would be a reasonable
-choice for both categories, because we already have two implementations
-of all those syscalls in order to handle 32-on-64 compat tasks,
-and we could use the same set of syscall implementations for time64-on-32.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
-	Arnd
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-02-06 17:47:43.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
+@@ -51,7 +51,7 @@ struct device_attribute;
+ #else
+ 	#define ARCMSR_MAX_FREECCB_NUM	320
+ #endif
+-#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 2010/08/05"
++#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
+ #define ARCMSR_SCSI_INITIATOR_ID						255
+ #define ARCMSR_MAX_XFER_SECTORS							512
+ #define ARCMSR_MAX_XFER_SECTORS_B						4096
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-03 17:29:03.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 15:58:34.000000000 +0800
+@@ -1441,14 +1441,15 @@ static void arcmsr_hba_doorbell_isr(stru
+ 	uint32_t outbound_doorbell;
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell);
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
+-	}
+-
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
+-	}
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK
++		| ARCMSR_OUTBOUND_IOP331_DATA_READ_OK));
+ }
+ static void arcmsr_hbc_doorbell_isr(struct AdapterControlBlock *pACB)
+ {
+@@ -1462,17 +1463,19 @@ static void arcmsr_hbc_doorbell_isr(stru
+ 	*******************************************************************
+ 	*/
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell_clear);/*clear interrupt*/
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE) {
+-		arcmsr_hbc_message_isr(pACB);    /* messenger of "driver to iop commands" */
+-	}
+-	return;
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
++		readl(&reg->outbound_doorbell_clear);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbc_message_isr(pACB);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK
++		| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));
+ }
+ static void arcmsr_hba_postqueue_isr(struct AdapterControlBlock *acb)
+ {
+@@ -1521,21 +1524,22 @@ static void arcmsr_hbc_postqueue_isr(str
+ 	/* areca cdb command done */
+ 	/* Use correct offset and size for syncing */
+ 
+-	while (readl(&phbcmu->host_int_status) &
+-	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR){
+-	/* check if command done with no error*/
+-	flag_ccb = readl(&phbcmu->outbound_queueport_low);
+-	ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);/*frame must be 32 bytes aligned*/
+-	arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);
+-	ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-	error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
+-	/* check if command done with no error */
+-	arcmsr_drain_donequeue(acb, ccb, error);
+-	if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
+-		writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING, &phbcmu->inbound_doorbell);
+-		break;
+-	}
+-	throttling++;
++	while ((flag_ccb = readl(&phbcmu->outbound_queueport_low)) != 0xFFFFFFFF) {
++		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
++		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset
++			+ ccb_cdb_phy);
++		ccb = container_of(arcmsr_cdb, struct CommandControlBlock,
++			arcmsr_cdb);
++		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
++			? true : false;
++		/* check if command done with no error */
++		arcmsr_drain_donequeue(acb, ccb, error);
++		throttling++;
++		if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
++			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,
++				&phbcmu->inbound_doorbell);
++			throttling = 0;
++		}
+ 	}
+ }
+ /*
+@@ -1584,21 +1588,22 @@ static int arcmsr_handle_hba_isr(struct 
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_intstatus = readl(&reg->outbound_intstatus) &
+ 		acb->outbound_int_enable;
+-	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))	{
+-		return 1;
+-	}
+-	writel(outbound_intstatus, &reg->outbound_intstatus);
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)	{
+-		arcmsr_hba_doorbell_isr(acb);
+-	}
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT) {
+-		arcmsr_hba_postqueue_isr(acb);
+-	}
+-	if(outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT) 	{
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hba_message_isr(acb);
+-	}
+-	return 0;
++	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))
++		return IRQ_NONE;
++	do {
++		writel(outbound_intstatus, &reg->outbound_intstatus);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)
++			arcmsr_hba_doorbell_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT)
++			arcmsr_hba_postqueue_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT)
++			arcmsr_hba_message_isr(acb);
++		outbound_intstatus = readl(&reg->outbound_intstatus) &
++			acb->outbound_int_enable;
++	} while (outbound_intstatus & (ARCMSR_MU_OUTBOUND_DOORBELL_INT
++		| ARCMSR_MU_OUTBOUND_POSTQUEUE_INT
++		| ARCMSR_MU_OUTBOUND_MESSAGE0_INT));
++	return IRQ_HANDLED;
+ }
+ 
+ static int arcmsr_handle_hbb_isr(struct AdapterControlBlock *acb)
+@@ -1608,27 +1613,25 @@ static int arcmsr_handle_hbb_isr(struct 
+ 	outbound_doorbell = readl(reg->iop2drv_doorbell) &
+ 				acb->outbound_int_enable;
+ 	if (!outbound_doorbell)
+-		return 1;
+-
+-	writel(~outbound_doorbell, reg->iop2drv_doorbell);
+-	/*in case the last action of doorbell interrupt clearance is cached,
+-	this action can push HW to write down the clear bit*/
+-	readl(reg->iop2drv_doorbell);
+-	writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE) {
+-		arcmsr_hbb_postqueue_isr(acb);
+-	}
+-	if(outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE) {
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hbb_message_isr(acb);
+-	}
+-	return 0;
++		return IRQ_NONE;
++	do {
++		writel(~outbound_doorbell, reg->iop2drv_doorbell);
++		writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE)
++			arcmsr_hbb_postqueue_isr(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbb_message_isr(acb);
++		outbound_doorbell = readl(reg->iop2drv_doorbell) &
++			acb->outbound_int_enable;
++	} while (outbound_doorbell & (ARCMSR_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_IOP2DRV_DATA_READ_OK
++		| ARCMSR_IOP2DRV_CDB_DONE
++		| ARCMSR_IOP2DRV_MESSAGE_CMD_DONE));
++	return IRQ_HANDLED;
+ }
+ 
+ static int arcmsr_handle_hbc_isr(struct AdapterControlBlock *pACB)
+@@ -1640,44 +1643,37 @@ static int arcmsr_handle_hbc_isr(struct 
+ 	**   check outbound intstatus
+ 	*********************************************
+ 	*/
+-	host_interrupt_status = readl(&phbcmu->host_int_status);
+-	if (!host_interrupt_status) {
+-		/*it must be share irq*/
+-		return 1;
+-	}
+-	/* MU ioctl transfer doorbell interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR) {
+-		arcmsr_hbc_doorbell_isr(pACB);   /* messenger of "ioctl message read write" */
+-	}
+-	/* MU post queue interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) {
+-		arcmsr_hbc_postqueue_isr(pACB);  /* messenger of "scsi commands" */
+-	}
+-	return 0;
++	host_interrupt_status = readl(&phbcmu->host_int_status) &
++		(ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR);
++	if (!host_interrupt_status)
++		return IRQ_NONE;
++	do {
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR)
++			arcmsr_hbc_doorbell_isr(pACB);
++		/* MU post queue interrupts*/
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR)
++			arcmsr_hbc_postqueue_isr(pACB);
++		host_interrupt_status = readl(&phbcmu->host_int_status);
++	} while (host_interrupt_status & (ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR));
++	return IRQ_HANDLED;
+ }
+ static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A: {
+-		if (arcmsr_handle_hba_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_A:
++		return arcmsr_handle_hba_isr(acb);
+ 		break;
+-
+-	case ACB_ADAPTER_TYPE_B: {
+-		if (arcmsr_handle_hbb_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_B:
++		return arcmsr_handle_hbb_isr(acb);
+ 		break;
+-	 case ACB_ADAPTER_TYPE_C: {
+-		if (arcmsr_handle_hbc_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_C:
++		return arcmsr_handle_hbc_isr(acb);
++		break;
++	default:
++		return IRQ_NONE;
+ 	}
+-	return IRQ_HANDLED;
+ }
+ 
+ static void arcmsr_iop_parking(struct AdapterControlBlock *acb)
+
+
