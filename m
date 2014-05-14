@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371AbaENRCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:02:45 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:48178 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450AbaENRCn (ORCPT
+	id S1756311AbaENREK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:04:10 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:38256 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703AbaENREI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:02:43 -0400
-Date: Wed, 14 May 2014 13:02:38 -0400
+	Wed, 14 May 2014 13:04:08 -0400
+Date: Wed, 14 May 2014 13:04:04 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [REGRESSION] funny sched_domain build failure during resume
-Message-ID: <20140514170238.GB15690@htj.dyndns.org>
-References: <20140509160455.GA4486@htj.dyndns.org>
- <20140514140034.GM30445@twins.programming.kicks-ass.net>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: use css->refcnt for cgroup
+ reference counting
+Message-ID: <20140514170404.GC15690@htj.dyndns.org>
+References: <1399670015-23463-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140514140034.GM30445@twins.programming.kicks-ass.net>
+In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 04:00:34PM +0200, Peter Zijlstra wrote:
-> Does something like the below help any? I noticed those things (cpudl
-> and cpupri) had [NR_CPUS] arrays, which is always 'fun'.
+On Fri, May 09, 2014 at 05:13:26PM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> The below is a mostly no thought involved conversion of cpudl which
-> boots, I'll also do cpupri and then actually stare at the algorithms to
-> see if I didn't make any obvious fails.
+> Currently, cgroup and css (cgroup_subsys_state) are separately
+> reference counted.  cgroup->refcnt is an atomic_t and css->refcnt is a
+> percpu_ref.  css is becoming the primary structural block and used
+> widely in various operaitons.  cgroup already has a css embedded in it
+> (cgroup->dummy_css) to use as its proxy in such operations; however,
+> there still are quite a few differences between cgroup and css
+> handling limitng how cgroup->dummy_css can be used.
+> 
+> This patchset makes cgroup use the embedded css's refcnt for reference
+> counting.  This closes one of the gaps between an cgroup embedded css,
+> which is renamed to cgroup->self early in the patchset, and a normal
+> css and will allow more unified handling of cgroups and csses.  In
+> addition, this makes cgroup refcnting use percpu_ref too, which is a
+> lot more scalable than an atomic_t.
+> 
+> Ultimately, it'd make things far simpler to assign a proper
+> cgroup_subsys to the cgroup embedded csses and handle them the same as
+> other csses; however, we can't yet do it thanks to multiple
+> hierarchies as we end up with multiple csses of the same subsystem for
+> the same task, but in the very long term, if multiple hierarchies can
+> be removed, that's where it's headed.
+> 
+> This patchset contains the following nine patches.
+> 
+>  0001-cgroup-use-restart_syscall-for-mount-retries.patch
+>  0002-cgroup-rename-cgroup-dummy_css-to-self-and-move-it-t.patch
+>  0003-cgroup-separate-out-cgroup_has_live_children-from-cg.patch
+>  0004-cgroup-move-check_for_release-parent-call-to-the-end.patch
+>  0005-cgroup-move-cgroup-sibling-unlinking-to-cgroup_put.patch
+>  0006-cgroup-remove-cgroup_destory_css_killed.patch
+>  0007-cgroup-bounce-css-release-through-css-destroy_work.patch
+>  0008-cgroup-enable-refcnting-for-root-csses.patch
+>  0009-cgroup-use-cgroup-self.refcnt-for-cgroup-refcnting.patch
 
-Yeah, should avoid large allocation on reasonably sized machines and I
-don't think 2k CPU machines suspend regularly.  Prolly good / safe
-enough for -stable port?  It'd be still nice to avoid allocations if
-possible during online tho given that the operation happens while mm
-is mostly crippled.
+Applied to cgroup/for-3.16.
 
 Thanks.
 
