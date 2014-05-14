@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaENWvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:51:39 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:64703 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaENWvi (ORCPT
+	id S1753658AbaENWwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:52:21 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:51586 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaENWwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:51:38 -0400
+	Wed, 14 May 2014 18:52:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140514212347.083a57f9@endymion.delvare>
-References: <20140514112347.3f630565@endymion.delvare> <CAGTjWtAjfzr=7K_0k=MKRXTxiWDSGOOYrzY0tA-7z=BpLVM-gA@mail.gmail.com>
- <20140514212347.083a57f9@endymion.delvare>
-From: Mike Waychison <mikew@google.com>
-Date: Wed, 14 May 2014 15:51:17 -0700
-Message-ID: <CAGTjWtAJEP4o3AFVD2=YN9A0p3REeSTS9APqzjkzxpq6yrmntA@mail.gmail.com>
-Subject: Re: Purpose of dmi-sysfs kernel module
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
+References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+ <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+ <5373DBE4.6030907@oracle.com> <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 May 2014 15:51:59 -0700
+Message-ID: <CALCETrW2=xk+YMjH9AGMn7H1tQZb6XL5hrgNcttKS=ruyt44fA@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-On Wed, May 14, 2014 at 12:23 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> Hi Mike,
+On Wed, May 14, 2014 at 2:31 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 14 May 2014 17:11:00 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 >
-> On Wed, 14 May 2014 08:52:36 -0700, Mike Waychison wrote:
->> On Wed, May 14, 2014 at 2:23 AM, Jean Delvare <jdelvare@suse.de> wrote:
->> > Sorry for joining the party a little late but I am just discovering the
->> > dmi-sysfs kernel module. I have to admit that I am very curious about
->> > why it was needed. What does it let you achieve that you couldn't
->> > already do with dmidecode [1]?
+>> > In my linux-next all that code got deleted by Andy's "x86, vdso:
+>> > Reimplement vdso.so preparation in build-time C" anyway.  What kernel
+>> > were you looking at?
 >>
->> The downside to using dmidecode is that (at least at the time), it
->> involved requiring giving access to /dev/mem to the binary so that it
->> could grub around in raw memory looking for the records.
+>> Deleted? It appears in today's -next. arch/x86/vdso/vma.c:124 .
+>>
+>> I don't see Andy's patch removing that code either.
 >
-> This is still the case indeed.
+> ah, OK, it got moved from arch/x86/vdso/vdso32-setup.c into
+> arch/x86/vdso/vma.c.
 >
->> dmi-sysfs
->> provides an alternative that allows for kernel-parsed entries to be
->> exposed to userland without having to expose /dev/mem and raw IO which
->> is insecure.
+> Maybe you managed to take a fault against the symbol area between the
+> _install_special_mapping() and the remap_pfn_range() call, but mmap_sem
+> should prevent that.
 >
-> Thanks for the explanation. But if access to /dev/mem was your only
-> concern, your solution seems somewhat overkill. You could have just
-> exposed the raw SMBIOS entry point and DMI table through sysfs, pretty
-> much like ACPI does, and leave the rest to dmidecode (or libsmbios.)
-> That would have avoided reimplementing part of dmidecode and creating
-> yet another interface to DMI data.
+> Or the remap_pfn_range() call never happened.  Should map_vdso() be
+> running _install_special_mapping() at all if
+> image->sym_vvar_page==NULL?
 
-I tried to make dmi-sysfs be as dumb as possible, which is why the
-code doesn't try very hard to actually interpret the individual
-entries, and instead only exposes them as "raw" files.  The only
-"specialized" type (that actually decodes the entry in kernel-land) is
-type 15, as this entry provides a level of indirection to get at the
-system log (which is either elsewhere in raw /dev/mem memory, or only
-accessible behind IO ports).  Again, in this case, only the raw system
-event log is exposed and the kernel makes no attempt to parse this
-log, it only exposes the raw read-only bytes.
+You're almost right, but that was enough to point me in the right direction :)
 
-> I'm not maintaining dmi-sysfs, I'm not even using it so far, so I don't
-> really care, but to be honest I am quite surprised that it was accepted
-> into the kernel.
+The mapping is still needed, since there are two pages.  qemu -no-hpet
+will trigger this, but the nohpet kernel option will not.  The latter
+is arguably a bug in the nohpet option.
 
-Well, it solves some real problems for us while locking down userland
-access to /dev/mem and iopl.
+Fix coming.
 
-I have had several folks ask me in the past as to why dmidecode
-doesn't work when these facilities are removed from userland, and
-dmi-sysfs has proven to be a workable alternative for most.  That
-said, dmidecode is the de facto method people use for getting at this
-data, and I have no intention on replacing it -- rather, I was hoping
-that at some point dmidecode could be updated to understand how to
-read the raw sysfs file in lieu of requiring superuser privileges, but
-I haven't had the opportunity or need to make this happen myself.
-
-Mike Waychison
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
