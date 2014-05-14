@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaENSOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:14:30 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:62885 "EHLO
+	id S1751235AbaENSQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:16:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:59594 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaENSO2 (ORCPT
+	with ESMTP id S1750910AbaENSQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:14:28 -0400
+	Wed, 14 May 2014 14:16:02 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Baruch Siach <baruch@tkos.co.il>,
-        Wan ZongShun <mcuos.com@gmail.org>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c/nuc900: fix ancient build error
-Date: Wed, 14 May 2014 20:14:23 +0200
-Message-ID: <4944869.eRrWyMmW4d@wuerfel>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] bus/omap_l3: avoid sync initcall for modules
+Date: Wed, 14 May 2014 20:15:56 +0200
+Message-ID: <5640589.bzCk17dFyc@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140514162725.GG12911@katana>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <1399560990-1402858-11-git-send-email-arnd@arndb.de> <20140514162725.GG12911@katana>
+In-Reply-To: <20140514173931.GA14003@kroah.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <20140513162731.GD16837@atomide.com> <20140514173931.GA14003@kroah.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:SMIV/0trS+5RyKB1ttqW/f4aqwG0IGPZ2t1hmDqGVMC
- aAr36+AjIAhNFWdyXeVMCzb8btfazxln0HDC1+o52ufvBDT8Ov
- rFaPFvPCbp/rhUHIf4mSVOCrL5ct/YZsjt4R55dwxYSHyWFKbo
- KOejX2HOelqkYMGdO5uRauAHk6JEBqr3c50WkGV1RsnT/O+rzQ
- /K3NhJDjswbzHdI1dkj0B8DO8pLTjc0sc4QVYhfbKFz3kGZeqS
- +trfyp5219nCtxXpZ7bJcorWt1/BVf+M93w3AZw2MGX+XHzcjv
- 32UzGpzIzyOjdKQf2hBcntWJYL3tYfsXvxxDO6T+3Drvry2pfC
- Abbg5Mw8mOjNgbOR2VUM=
+X-Provags-ID: V02:K0:ctj3fjGFqS1nvCn+WfHkmPayChVho6SaQsknqY0OKrT
+ 0zm1VuL0cY6IMJaFxl2crm8yCKf0T9l1/9V3EqQjHc9vOzFVvJ
+ 7pjkCalu2BryzYd8JhM8MlJJUUM/6F7ev28bgcLtds4p3345GA
+ 1sk9P56FbUTwJzE6jo5TmZL1VpUwzNAN5iPBCLToNM2P27OYEw
+ csQGz55KOWOH+UVs2e12zwALCMRwTwz1D2yAeAdBY/29s0qorB
+ KlF7RVhkSaMdMOffvNLu3HPKVtmk2fIofCXMbPQpbj0vqm0sJq
+ pyb+qD+JNkQ0icojyEg3+qXMdBPEbMbytWkhaw8A7w6I3DBpdA
+ JoWw82MKiJDQSBvr4o3U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 May 2014 18:27:25 Wolfram Sang wrote:
-> On Thu, May 08, 2014 at 04:56:22PM +0200, Arnd Bergmann wrote:
-> > As far as I can tell, this driver must have produced this error
-> > for as long as it has been merged into the mainline kernel, but
-> > it was never part of the normal build tests:
+On Wednesday 14 May 2014 10:39:31 Greg KH wrote:
+> On Tue, May 13, 2014 at 09:27:33AM -0700, Tony Lindgren wrote:
+> > * Arnd Bergmann <arnd@arndb.de> [140513 08:13]:
 > > 
-> > drivers/i2c/busses/i2c-nuc900.c: In function 'nuc900_i2c_probe':
-> > drivers/i2c/busses/i2c-nuc900.c:601:17: error: request for member 'apbfreq' in something not a structure or union
-> >   ret = (i2c->clk.apbfreq)/(pdata->bus_freq * 5) - 1;
-> >                  ^
+> > I did not look what percentage has tristate in the Kconfig,
+> > but that might keep some people from making loadable drivers.
 > > 
-> > This is an attempt to get the driver to build and possibly
-> > work correctly, although I do wonder whether we should just
-> > remove it, as it has clearly never worked.
+> > Greg, is the following patch something you may want to
+> > consider picking up?
 > 
-> I'd go for removing. For this platform, the last patch which was not a
-> generic cleanup seems to be from late 2011?
+> Sure, is this needed to fix issues in 3.15-final, or is 3.16-rc1 ok?
 
-Ah, you mean removing the entire platform? I guess we could do that
-as well, but I was really thinking of just removing the i2c driver.
-
-For the moment, I'd leave this up to Wan ZongShun. He has in the past
-at least replied to emails about the platform, even though there hasn't
-been any new development.
+I don't think anyone cares about it outside of randconfig builds,
+so 3.16-rc1 is ok.
 
 	Arnd
