@@ -1,124 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357AbaENRJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:09:53 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:31443 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbaENRJt (ORCPT
+	id S932150AbaENRKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:10:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44734 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939AbaENRKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:09:49 -0400
-Date: Thu, 15 May 2014 19:00:35 +0200
-From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-To: Dave Hansen <dave@sr71.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Shay Goikhman <shay.goikhman@huawei.com>,
-        Paul Mundt <paul.mundt@huawei.com>,
-        Carlos Villavieja <villavieja@hps.utexas.edu>,
-        Nacho Navarro <nacho.navarro@bsc.es>,
-        "Avi Mendelson" <avi.mendelson@tce.technion.ac.il>,
-        Yoav Etsion <yetsion@tce.technion.ac.il>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linux-arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] x86, hugetlb: add missing TLB page invalidation for
- hugetlb_cow()
-Message-ID: <20140515170035.GA15779@server-36.huawei.corp>
-References: <20140514092948.GA17391@server-36.huawei.corp>
- <5372A067.9010808@sr71.net>
+	Wed, 14 May 2014 13:10:23 -0400
+Message-ID: <5373A34B.1010008@oracle.com>
+Date: Wed, 14 May 2014 13:09:31 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5372A067.9010808@sr71.net>
-X-Originating-IP: [10.220.139.36]
-X-CFilter-Loop: Reflected
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>
+Subject: Re: perf: use after free in perf_remove_from_context
+References: <5370EBE9.6@oracle.com> <20140514162943.GR30445@twins.programming.kicks-ass.net> <53739A9A.5010703@oracle.com> <20140514163535.GS30445@twins.programming.kicks-ass.net> <53739BF2.1030100@oracle.com> <20140514165205.GU30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140514165205.GU30445@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5"
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 03:44:55PM -0700, Dave Hansen wrote:
-> On 05/14/2014 02:29 AM, Anthony Iliopoulos wrote:
-> > The invalidation is required in order to maintain proper semantics
-> > under CoW conditions. In scenarios where a process clones several
-> > threads, a thread operating on a core whose DTLB entry for a
-> > particular hugepage has not been invalidated, will be reading from
-> > the hugepage that belongs to the forked child process, even after
-> > hugetlb_cow().
-> > 
-> > The thread will not see the updated page as long as the stale DTLB
-> > entry remains cached, the thread attempts to write into the page,
-> > the child process exits, or the thread gets migrated to a different
-> > processor.
-> 
-> No to be too nitpicky, but this applies to ITLB too, right?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Quite true, this does apply to ITLB too. I suppose there might be cases
-like self-modifying code that touches the private text pages, or some
-JIT compiler writing on mmap-ed executable regions that would observe
-the same behavior under similar conditions.
+On 05/14/2014 12:52 PM, Peter Zijlstra wrote:
+> On Wed, May 14, 2014 at 12:38:10PM -0400, Sasha Levin wrote:
+>> ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xc=
+lock_nanosleep -xuselib -xumount -xmount -m --quiet --dangerous -C 400 -l=
+ off
+>>
+>> Note that I run it as root in a disposable VM. Running that as root on=
+ your
+>> machine will likely kill it.
+>=20
+> Right, so i'll start with !root running. That said, I seem to get an
+> endless stream of double free or corrupt msgs:
+>=20
+> trinity$ ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsser=
+vctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet  -C 400 -l of=
+f
+>=20
+> ...
+>=20
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+35af60 ***
+> [main] Random reseed: 3671679404
+> [main] Random reseed: 67838733
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+35ef60 ***
+> [main] Random reseed: 943044433
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+2bb210 ***
+> [main] Random reseed: 3627649145
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+39dbe0 ***
+> [main] Random reseed: 935036390
+> [main] Random reseed: 3922349807
+> [main] Random reseed: 835563887
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+323890 ***
+> [main] Random reseed: 974945617
+> *** Error in `./trinity': double free or corruption (top): 0x0000000001=
+308190 ***
+> [main] Random reseed: 2912296953
+> [main] Random reseed: 681900861
+>=20
+>=20
+> Is this 'expected' behaviour?
 
-> I believe this bug came all the way back from:
-> 
-> > commit 1e8f889b10d8d2223105719e36ce45688fedbd59
-> > Author: David Gibson <david@gibson.dropbear.id.au>
-> > Date:   Fri Jan 6 00:10:44 2006 -0800
-> > 
-> >     [PATCH] Hugetlb: Copy on Write support
-> 
-> It was probably the first time that we ever changed an _existing_
-> hugetlbfs pte, and that patch probably just missed the TLB flush because
-> none of the other pte-setting hugetlb.c code needed TLB flushes.
+I've talked about it with Dave a while ago, he said it happens because th=
+e threads that
+do all the testing sometimes corrupt themselves which result in that erro=
+r. It shouldn't
+be harmful as the thread will just get killed and a fresh one will be sta=
+rted in it's
+place.
 
-This seems to be the case, I assume that our internal use case was
-also probably the first that needed to rely on proper semantics under
-a multithreaded CoW scenario with hugetlb pages, so this came into
-the surface.
+Since then I set MALLOC_CHECK_=3D0 to avoid seeing that in my logs.
 
-I have actually also wondered about another related thing:
-even when we actually do invalidate the page, there may still be a
-race between a thread on a core that reads the page in some tight
-loop (e.g. on a spinlock), and the page fault handler running on
-a different core, at the point where the pte is set. Since we
-invalidate the page via the TLB shootdowns *before* we update
-the pte (this is true for all do_wp_page(), do_huge_pmd_wp_page()
-as well as hugetlb_cow()), there may be some tiny window where the
-thread might re-read the page before the pte is set.
+So yes, it's probably a good thing you're seeing that.
 
-I have dismissed this case, since I assume that there are many more
-cycles spent in servicing the TLB invalidation IPI, walking the pgtable
-plus other related overhead (e.g. sched) than in updating the pte/pmd
-so I am not sure how possible it would be to hit this condition.
 
-I am also hesitant to simply submit a patch that reverses the order
-of flushing and setting the pte, due to the following commit:
+Thanks,
+Sasha
 
-    commit 4ce072f1faf29d24df4600f53db8cdd62d400a8f
-    Author: Siddha, Suresh B <suresh.b.siddha@intel.com>
-    Date:   Fri Sep 29 01:58:42 2006 -0700
 
-    [PATCH] mm: fix a race condition under SMC + COW
+--j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> The bogus x86 version of huge_ptep_clear_flush() came from the s390
-> guys, so double-shame on IBM! :P
-> 
-> > commit 8fe627ec5b7c47b1654dff50536d9709863295a3
-> > Author: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-> > Date:   Mon Apr 28 02:13:28 2008 -0700
-> > 
-> >     hugetlbfs: add missing TLB flush to hugetlb_cow()
-> 
-> This is probably an opportunity for all the other architecture
-> maintainers to make sure that they have proper copies of
-> huge_ptep_clear_flush().
-> 
-> I went through the hugetlb code on x86 and couldn't find another TLB
-> flush that fixes this issue, and I believe this is correct, so:
-> 
-> Acked-by: Dave Hansen <dave.hansen@intel.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Many thanks for confirming, and for your prompt response.
+iQIcBAEBAgAGBQJTc6NUAAoJEN6mb/eXdyzcplYP/RCMM8uioeoQXcddSV2CaPXk
+Z6iW77ef/+fhsChd0UPEXr9BUUuwuK4O2N92HS1v6jhob5NUUJxV+EacSpGeXjCt
+EsVxpV37hwrF49aA+8WFczA/7x6bKtVWCpWssHNHspELaAag91iZ0YUXAFgLRApF
+YYmBKEV7H3WjfrA9Tq74fOEb/XthoBZHzr9K0N3KIrnFrn7z8nvzOjOWG+vv0BHA
+9Y7gGlMOWJYwqJLbYkcO7Sryc4Qru6eRrP0UkM9IeoLvGjxf6vA2+y+nyskgqqEK
+KHtIPc4p32wbLU9hWImuRQ1xwY8Ft1vVlNWmlPh8EShTpURw5+99sg4jT7C1oGvR
+LITALZHOtHL8osh/dTEoY1EYRez710YGMcdLw26xeE/AqwQeu1gWbCpoE9yTWxKb
+f1sE0HvJKYGviDuYyqRUV8DAMbwYG6KNelZ8r+trZDmNmMgpEMwhlEktuHQrrURh
+1tHFJrzMy832pUHQ/oZOS8SxxZZWAmbIlWPCX8brlmn/t964Za4OrDIBfZQ1OKgC
+siilK3XApsQBWITtCiNDRQGhqHd/b+ClOS1yRDsscExtl0y6Ei3KZE54796bu4NZ
+LOLMNagDrsSttT6AP8gfdVdrd9DZVueHJm9kvdWWNmTdkh7c5UjEDBsenLqJMiN6
+woLr6k2YaIkY8yKYK0YD
+=LB9H
+-----END PGP SIGNATURE-----
 
-Regards,
-Anthony
+--j39oWk5B5K1nQHLH1pH1lTC7sQeqVCtB5--
