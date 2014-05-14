@@ -1,90 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaENGEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 02:04:47 -0400
-Received: from smtp.newterm.pl ([79.187.237.18]:42572 "EHLO apollo.newterm.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaENGEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 02:04:45 -0400
-Date: Wed, 14 May 2014 08:04:32 +0200
-From: Darek Marcinkiewicz <reksio@newterm.pl>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] driver/net/ethernet/ec_bhf.c: fix sparse warnings
-Message-ID: <20140514060431.GA5641@newterm.pl>
+	id S1752643AbaENGG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 02:06:57 -0400
+Received: from mail-yk0-f194.google.com ([209.85.160.194]:40124 "EHLO
+	mail-yk0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaENGG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 02:06:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 14 May 2014 07:06:55 +0100
+Message-ID: <CANmCOHvM9WpDdhOCqcUdxNoSGeFYoxG2X5PG4NpQFGMZc5GwSQ@mail.gmail.com>
+Subject: WE NEED YOUR PRODUCT.
+From: Linus Anthony <linusa081@gmail.com>
+To: LINUS.ANTHONY40@YAHOO.COM
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse was reporting quite a few warnings for the driver.
-Those get fixed by this patch.
+Good Day,
 
-Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
----
- drivers/net/ethernet/ec_bhf.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+We Are interested in your product and to do business with you.or your
+company let us know if you can handle this supplying as order of
+company's  your product is need here ,contact me on Your sincerely,
 
-diff --git a/drivers/net/ethernet/ec_bhf.c b/drivers/net/ethernet/ec_bhf.c
-index 4884205..056b44b 100644
---- a/drivers/net/ethernet/ec_bhf.c
-+++ b/drivers/net/ethernet/ec_bhf.c
-@@ -134,17 +134,17 @@ struct ec_bhf_priv {
- 
- 	struct pci_dev *dev;
- 
--	void * __iomem io;
--	void * __iomem dma_io;
-+	void __iomem *io;
-+	void __iomem *dma_io;
- 
- 	struct hrtimer hrtimer;
- 
- 	int tx_dma_chan;
- 	int rx_dma_chan;
--	void * __iomem ec_io;
--	void * __iomem fifo_io;
--	void * __iomem mii_io;
--	void * __iomem mac_io;
-+	void __iomem *ec_io;
-+	void __iomem *fifo_io;
-+	void __iomem *mii_io;
-+	void __iomem *mac_io;
- 
- 	struct bhf_dma rx_buf;
- 	struct rx_desc *rx_descs;
-@@ -297,7 +297,7 @@ static int ec_bhf_setup_offsets(struct ec_bhf_priv *priv)
- {
- 	struct device *dev = PRIV_TO_DEV(priv);
- 	unsigned block_count, i;
--	void * __iomem ec_info;
-+	void __iomem *ec_info;
- 
- 	dev_dbg(dev, "Info block:\n");
- 	dev_dbg(dev, "Type of function: %x\n", (unsigned)ioread16(priv->io));
-@@ -569,8 +569,8 @@ static int ec_bhf_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
- 	struct net_device *net_dev;
- 	struct ec_bhf_priv *priv;
--	void * __iomem dma_io;
--	void * __iomem io;
-+	void __iomem *dma_io;
-+	void __iomem *io;
- 	int err = 0;
- 
- 	err = pci_enable_device(dev);
-@@ -615,7 +615,7 @@ static int ec_bhf_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	}
- 
- 	net_dev = alloc_etherdev(sizeof(struct ec_bhf_priv));
--	if (net_dev == 0) {
-+	if (net_dev == NULL) {
- 		err = -ENOMEM;
- 		goto err_unmap_dma_io;
- 	}
--- 
-1.7.10.4
+PAYMENT TERMS:The terms of payment is 80% advance payment via (T/T) by
+ telegraphic transfer confirmed in your account before shipment and
+20% will pay after you have receiver your payment /supply.after you
+have received  the 80% in your Bank.
 
+Delivery date: 20 to 30 days after receipt your 80% advance payment
+
+Mr.LINUS ANTHONY.
+(Committee Agent)
