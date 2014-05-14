@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaENUXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:23:05 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:32902 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaENUXB (ORCPT
+	id S1752938AbaENUXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:23:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46615 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739AbaENUXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:23:01 -0400
-Date: Wed, 14 May 2014 22:22:42 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 23/27] sparc: Use common bits from generic tlb.h
-Message-ID: <20140514202242.GA3167@ravnborg.org>
-References: <1400093999-18703-1-git-send-email-richard@nod.at>
- <1400093999-18703-24-git-send-email-richard@nod.at>
- <20140514195555.GA2801@ravnborg.org>
- <5373CC59.8070702@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5373CC59.8070702@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 May 2014 16:23:14 -0400
+Date: Wed, 14 May 2014 13:23:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+Message-Id: <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+In-Reply-To: <53739201.6080604@oracle.com>
+References: <53739201.6080604@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 10:04:41PM +0200, Richard Weinberger wrote:
-> Am 14.05.2014 21:55, schrieb Sam Ravnborg:
-> > On Wed, May 14, 2014 at 08:59:55PM +0200, Richard Weinberger wrote:
-> >> It is no longer needed to define them on our own.
-> >>
-> >> Cc: "David S. Miller" <davem@davemloft.net>
-> >> Cc: Richard Weinberger <richard@nod.at>
-> >> Cc: sparclinux@vger.kernel.org
-> >> Cc: linux-kernel@vger.kernel.org
-> >> Signed-off-by: Richard Weinberger <richard@nod.at>
-> >> ---
-> >>  arch/sparc/include/asm/tlb_32.h | 8 --------
-> >>  arch/sparc/include/asm/tlb_64.h | 3 ---
-> >>  2 files changed, 11 deletions(-)
-> >>
-> >> diff --git a/arch/sparc/include/asm/tlb_32.h b/arch/sparc/include/asm/tlb_32.h
-> >> index 6d02d1c..60641a1 100644
-> >> --- a/arch/sparc/include/asm/tlb_32.h
-> >> +++ b/arch/sparc/include/asm/tlb_32.h
-> >> @@ -11,14 +11,6 @@ do {								\
-> >>  	flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
-> >>  } while (0)
-> >>  
-> >> -#define __tlb_remove_tlb_entry(tlb, pte, address) \
-> >> -	do { } while (0)
-> >> -
-> >> -#define tlb_flush(tlb) \
-> >> -do {								\
-> >> -	flush_tlb_mm((tlb)->mm);				\
-> >> -} while (0)
-> >> -
-> >>  #include <asm-generic/tlb.h>
-> >>  
-> >>  #endif /* _SPARC_TLB_H */
-> > 
-> > This part looks OK.
-> > 
-> >> diff --git a/arch/sparc/include/asm/tlb_64.h b/arch/sparc/include/asm/tlb_64.h
-> >> index 190e189..36fdcec 100644
-> >> --- a/arch/sparc/include/asm/tlb_64.h
-> >> +++ b/arch/sparc/include/asm/tlb_64.h
-> >> @@ -22,9 +22,6 @@ extern void smp_flush_tlb_mm(struct mm_struct *mm);
-> >>  extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
-> >>  extern void flush_tlb_pending(void);
-> >>  
-> >> -#define tlb_start_vma(tlb, vma) do { } while (0)
-> >> -#define tlb_end_vma(tlb, vma)	do { } while (0)
-> >> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
-> >>  #define tlb_flush(tlb)	flush_tlb_pending()
-> >>  
-> >>  #include <asm-generic/tlb.h>
-> > 
-> > This does not fly for sparc64.
-> > __pte_free_tlb is a static inline in pgalloc_64.h so no
-> > define exist to teach tlb.h that an arch override exist.
-> 
-> Okay, we need a #define __pte_free_tlb __pte_free_tlb.
-> 
-> > Likewise for __pmd_free_tlb
-> 
-> __pmd_free_tlb is already a macro so the generic tlb.h should handle it correctly.
-> 
-> #define __pmd_free_tlb(tlb, pmd, addr)                \
->         pgtable_free_tlb(tlb, pmd, false)
-> 
-> I'd move both __pmd_free_tlb and __pte_free_tlb into tlb.h such that the include order
-> of tlb.h vs pgalloc.h does not matter.
-> Are you fine with that?
-Yes, as long as sparc64 continue to build it makes good sense
-to define these in the same file as done by most other architectures.
+On Wed, 14 May 2014 11:55:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-	Sam
+> Hi all,
 > 
-> Thanks,
-> //richard
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
+> 
+> [ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
+> [ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
+> [ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1634.972913] Dumping ftrace buffer:
+> [ 1634.975493]    (ftrace buffer empty)
+> [ 1634.977470] Modules linked in:
+> [ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
+> [ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
+> [ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
+
+Somebody's gone and broken the x86 oops output.  It used to say
+"special_mapping_fault+0x30/0x120" but the offset info has now
+disappeared.  That was useful for guesstimating whereabouts in the
+function it died.
+
+The line number isn't very useful as it's not possible (or at least,
+not convenient) for others to reliably reproduce your kernel.
+
+<scrabbles with git for a while>
+
+: static int special_mapping_fault(struct vm_area_struct *vma,
+: 				struct vm_fault *vmf)
+: {
+: 	pgoff_t pgoff;
+: 	struct page **pages;
+: 
+: 	/*
+: 	 * special mappings have no vm_file, and in that case, the mm
+: 	 * uses vm_pgoff internally. So we have to subtract it from here.
+: 	 * We are allowed to do this because we are the mm; do not copy
+: 	 * this code into drivers!
+: 	 */
+: 	pgoff = vmf->pgoff - vma->vm_pgoff;
+: 
+: 	for (pages = vma->vm_private_data; pgoff && *pages; ++pages)
+: 		pgoff--;
+: 
+: 	if (*pages) {
+: 		struct page *page = *pages;
+: 		get_page(page);
+: 		vmf->page = page;
+: 		return 0;
+: 	}
+: 
+: 	return VM_FAULT_SIGBUS;
+: }
+
+OK so it might be the "if (*pages)".  So vma->vm_private_data was NULL
+and pgoff was zero.  As usual, I can't imagine what race would cause
+that :(
+
