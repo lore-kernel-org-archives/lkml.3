@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaENO1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:27:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52050 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857AbaENO1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:27:13 -0400
-Message-ID: <53737D34.5040307@ti.com>
-Date: Wed, 14 May 2014 09:27:00 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752598AbaENO1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:27:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44482 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaENO1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 10:27:50 -0400
+Date: Wed, 14 May 2014 16:28:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
+In-Reply-To: <20140514135509.GL30445@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1405141626490.6261@ionos.tec.linutronix.de>
+References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com> <1400019956-25511-2-git-send-email-fweisbec@gmail.com> <20140514090629.GC30445@twins.programming.kicks-ass.net> <20140514113808.GA1278@localhost.localdomain> <20140514115406.GA11096@twins.programming.kicks-ass.net>
+ <20140514121122.GC1278@localhost.localdomain> <20140514124150.GB11096@twins.programming.kicks-ass.net> <20140514135116.GD1278@localhost.localdomain> <20140514135509.GL30445@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Chander Kashyap <chander.kashyap@linaro.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
-References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>	<CAGo_u6qTZ-yq26+K5nHut92d=-9nrCHKDNK9EMLK5kGMQc+dOw@mail.gmail.com>	<CANuQgHGehqDD8-SKTfEKMEZmT5KwofFL8bhYqge0uNm6kpPgUQ@mail.gmail.com> <CAKohponfdoPG7H4h-5s+V7CwB_SgnyqqUm9aa6G-K_cX3DOcfA@mail.gmail.com>
-In-Reply-To: <CAKohponfdoPG7H4h-5s+V7CwB_SgnyqqUm9aa6G-K_cX3DOcfA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 06:08 AM, Viresh Kumar wrote:
-> On 14 May 2014 15:01, Chander Kashyap <chander.kashyap@linaro.org> wrote:
->>> say we do at this point:
->>> if (new_opp->rate == opp->rate) {
->>>   dev_err(dev, "%s: attempt to add duplicate OPP entry (rate=%ld)\n",
->>> __func__, new_opp->rate)
->>>    kfree(new_opp);
->>>     return -EINVAL;
->>> }
->>
->> Yes this is more cleaner.
->> But instead of dev_err,  we should use dev_warn and secondly
-> 
-> Correct
-> 
->> return 0 rather than EINVAL, as there are independent users for this function
-> 
-> Why? We should actually use EEXIST here instead of EINVAL though..
-> 
-Yep -EEXIST is the right return value here. As Viresh indicated,
-reporting back 0 when the requested operation actually was not
-performed is wrong. Caller is supposed to know when it makes an error
-- hiding it is not correct.
+On Wed, 14 May 2014, Peter Zijlstra wrote:
 
--- 
-Regards,
-Nishanth Menon
+> On Wed, May 14, 2014 at 03:51:19PM +0200, Frederic Weisbecker wrote:
+> > > Anyway, if it turns out to really be needed, the split list doesn't
+> > > sound bad.
+> > 
+> > Either that or we can remove LAZY stuff and wait to see if people complain :)
+> 
+> How big do we need tested? I'm fairly sure RHT has some medium silly
+> boxes to run things on.
+
+Poke Davidlohr and pretend it's a futex optimization.
+
+He has access to a 160 way for futex tests :)
+
+Thanks,
+
+	tglx
+
+ 
