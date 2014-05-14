@@ -1,127 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaENK0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 06:26:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41927 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570AbaENK0J (ORCPT
+	id S1754750AbaENK0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:26:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45537 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572AbaENK0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 06:26:09 -0400
-Date: Wed, 14 May 2014 12:26:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Carlos O'Donell" <carlos@redhat.com>
-cc: Darren Hart <dvhart@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
-In-Reply-To: <53731608.3010803@redhat.com>
-Message-ID: <alpine.DEB.2.02.1405141155260.6261@ionos.tec.linutronix.de>
-References: <20140512190438.314125476@linutronix.de> <20140513035404.GA68181@dvhart-mac01.local> <alpine.DEB.2.02.1405131100510.6261@ionos.tec.linutronix.de> <53731608.3010803@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 14 May 2014 06:26:10 -0400
+Date: Wed, 14 May 2014 12:26:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Michael wang <wangyun@linux.vnet.ibm.com>,
+        "ktkhai@parallels.com" <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: hang in migrate_swap
+Message-ID: <20140514102602.GJ30445@twins.programming.kicks-ass.net>
+References: <20140224121218.GR15586@twins.programming.kicks-ass.net>
+ <534610A4.5000302@oracle.com>
+ <53464164.5030701@linux.vnet.ibm.com>
+ <336561397137116@web27h.yandex.ru>
+ <5347FCED.8040706@oracle.com>
+ <1442521397229373@web20m.yandex.ru>
+ <53711785.5010504@oracle.com>
+ <2614131400060552@web30m.yandex.ru>
+ <20140514101354.GI30445@twins.programming.kicks-ass.net>
+ <2158101400062864@web10h.yandex.ru>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fis3l7cGi4BLWycj"
+Content-Disposition: inline
+In-Reply-To: <2158101400062864@web10h.yandex.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, Carlos O'Donell wrote:
-> On 05/13/2014 05:08 AM, Thomas Gleixner wrote:
-> > So anything else than ESRCH and EDEADLK is ignored and then the thing
-> > happily returns 0 at the end. Unlock is the same:
-> 
-> The code is valid so long as you expect only ESRCH and EDEADLK
-> to be the only errors the kernel returns.
 
-Brilliant assumption, really. So we rather return 0 to the user than
-having a catch for that case?
+--fis3l7cGi4BLWycj
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You know that this is how a large portion of security holes are
-created, right?
+On Wed, May 14, 2014 at 02:21:04PM +0400, Kirill Tkhai wrote:
+>=20
+>=20
+> 14.05.2014, 14:14, "Peter Zijlstra" <peterz@infradead.org>:
+> > On Wed, May 14, 2014 at 01:42:32PM +0400, Kirill Tkhai wrote:
+> >
+> >> =A0Peter, do we have to queue stop works orderly?
+> >>
+> >> =A0Is there is not a possibility, when two pair of works queued differ=
+ent on
+> >> =A0different cpus?
+> >>
+> >> =A0=A0kernel/stop_machine.c | 10 ++++++++--
+> >> =A0=A01 file changed, 8 insertions(+), 2 deletions(-)
+> >> =A0diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> >> =A0index b6b67ec..29e221b 100644
+> >> =A0--- a/kernel/stop_machine.c
+> >> =A0+++ b/kernel/stop_machine.c
+> >> =A0@@ -250,8 +250,14 @@ struct irq_cpu_stop_queue_work_info {
+> >> =A0=A0static void irq_cpu_stop_queue_work(void *arg)
+> >> =A0=A0{
+> >> =A0=A0=A0=A0=A0=A0=A0=A0=A0=A0struct irq_cpu_stop_queue_work_info *inf=
+o =3D arg;
+> >> =A0- cpu_stop_queue_work(info->cpu1, info->work1);
+> >> =A0- cpu_stop_queue_work(info->cpu2, info->work2);
+> >> =A0+
+> >> =A0+ if (info->cpu1 < info->cpu2) {
+> >> =A0+ cpu_stop_queue_work(info->cpu1, info->work1);
+> >> =A0+ cpu_stop_queue_work(info->cpu2, info->work2);
+> >> =A0+ } else {
+> >> =A0+ cpu_stop_queue_work(info->cpu2, info->work2);
+> >> =A0+ cpu_stop_queue_work(info->cpu1, info->work1);
+> >> =A0+ }
+> >> =A0=A0}
+> >
+> > I'm not sure, we already send the IPI to the first cpu of the pair, so
+> > supposing we have 4 cpus, and get 4 pairs like:
+> >
+> > 0,1 1,2 2,3 3,0
+> >
+> > That would result in IPIs to 0, 1, 2, and 0 again, and since the IPI
+> > function is serialized I don't immediately see a way for this to
+> > deadlock.
+>=20
+> It's about stop_two_cpus(), I have a distrust about other users of stop t=
+ask:
+>=20
+> queue_stop_cpus_work() queues work consequentially:
+>=20
+> 0 1 2 4
+>=20
+> stop_two_cpus() may queue:
+>=20
+> 1 0
+>=20
+> Looks like, stop thread on 0th and on 1th are waiting for wrong works.
 
-> What other error codes are returned and under what conditions?
- 
-   -ENOMEM  Kernel can't allocate state.
+so we serialize stop_cpus_work() vs stop_two_cpus() with an l/g lock.
 
-   -EFAULT  Accessing the user space futex failed. Might be a mapping
-    	    zapped by a different thread or no valid access (e.g. RO
-    	    mapping)
+Ah, but stop_cpus_work() only holds the global lock over queueing, it
+doesn't wait for completion, that might indeed cause a problem.
 
-   -EPERM   No permission to attach yourself to a futex owned by someone
-   	    else or to unlock it.
+Also, since its two different cpus queueing, the ordered queue doesn't
+really matter, you can still interleave the all and two sets and get
+into this state.
 
-   -EINVAL  Inconsistant state detected.
+--fis3l7cGi4BLWycj
+Content-Type: application/pgp-signature
 
-   -ETIMEDOUT
-	    timed op timed out	
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-   -EWOULDBLOCK
+iQIcBAEBAgAGBQJTc0S6AAoJEHZH4aRLwOS6S0UQAKNMjOZQyCrxelSlHboDqSjm
+b6tUA3ldYIspYAE/d/HmVs0W1DHOhv5SegfQElZNxonpEURsR1SbQuDjB1s/enaR
+xGXpMwSlRL1W+rJWDnF/uBLY6nJNNA/XZ6hDH0UGvgfAS0WGRuDjVgt0ChB3gmVB
+Wv+08YLdYhI77/fBa1P+dz38qIvfvEx2Uby8h/L+BivQz/j12bJFwTi3YJ9efj/q
+nH4UiClVtOE5dtOsft6574fPtHrBYd6lTCTtpYzV5ZQtfTIlBoVw4FNmhg/pNU1p
+a24v0dWMt574TNy07ALUOL+fH1MBk6uu1XPf8cMoUvzXczbjOT6XxBYMyagO2yRe
+iN69NJ5CY5NxkDjDAv5EHEa5NpEY6VuGTCZpZrRFvaBsEwWGIvSYiaO1csd4dwv3
+gYNpyQ0oYZWSCByMjJVI5S1AIxPgGxZ0RXLLuQgofDsmztsQ4l5cw2TAFJWRQVL+
+GblIt58H0hP0bzrW2xbamBFqNcwraGgvRG0/CtEPxaGalw2lMalA311/H+2utdqT
+wfwBAdCVPhjL9OIVZxarv8kYxzAPSzquUgizD1QZ16MrtiXpa5vz4xSzqW1kqOH1
+j69KdHL8lRinNRVZjPobo7jLm+p82bVTLZcPmFX7UCA+y4xuc2kkULqTHr18FKWv
++5nIgcKJQ22rhF8F4GVx
+=mdIE
+-----END PGP SIGNATURE-----
 
-	   For non PI indicates that the caller raced against another
-	   thread.
-
-	   For PI also returned if trylock fails.
-
-   -ESRCH  Owner died
-
-   -EAGAIN Owner is about to die, but has not yet finished the cleanup	   
-
-> Are those other errors actionable by the user?
-
-Define actionable. Most of them are in my opinion.
-
-Some of them like -EWOULDBLOCK for non PI or -EAGAIN are for glibc
-internal consumption.
-
-> Since anything other than the agreed upon set of error returns is a failure
-> in the coordinated implementation between glibc and the kernel.
-
-Well. Back then when we implemented pi and robust futex support this
-was done hand in hand with glibc folks and they knew about ALL the
-error codes we return. I'm quite sure that we did not add any new one
-since then, but I really can't be bothered to look.
-
-> > 	{
-> > 	  int robust = mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP;
-> > 	  int private = (robust
-> > 			 ? PTHREAD_ROBUST_MUTEX_PSHARED (mutex)
-> > 			 : PTHREAD_MUTEX_PSHARED (mutex));
-> > 	  INTERNAL_SYSCALL_DECL (__err);
-> > 	  INTERNAL_SYSCALL (futex, __err, 2, &mutex->__data.__lock,
-> > 			    __lll_private_flag (FUTEX_UNLOCK_PI, private));
-> > 	}
-> 
-> Isn't the the same issue as before? This code presumes that because the
-> atomic operation completed successfully that the kernel state is OK.
-> Assuming otherwise slows down the fast path in the unlock just to check
-> for kernel bugs. Is the returned error in any way actionable by the user?
-
-We return EPERM, EFAULT and EINVAL on unlock.
-
-   EPERM    Tells you that the user space / kernel state is
-	    inconsistent, because kernel thinks the owner is not current.
-   	    
-   EINVAL   That would be a glibc bug calling unlock pi for a non futex,
-   	    which has non pi waiters in the kernel.
-
-	    That one was explicitely there from the very beginning.
-
-And as I demonstrated in the other mail, it's easy to corrupt state
-w/o glibc even being able to notice. So you better handle that
-gracefully instead of making utterly stupid assumptions.
-
-Thanks,
-
-	tglx
+--fis3l7cGi4BLWycj--
