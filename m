@@ -1,138 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaENOZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:25:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33307 "EHLO mx1.redhat.com"
+	id S1754463AbaENO0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:26:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042AbaENOZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:25:28 -0400
-Date: Wed, 14 May 2014 10:25:25 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-pm@vger.kernel.org
-Subject: [PATCH 2/2] speedstep: clean up interrupt disabling
-In-Reply-To: <alpine.LRH.2.02.1405141012040.11670@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1405141024520.11670@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1405141012040.11670@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751253AbaENO0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 10:26:38 -0400
+Date: Wed, 14 May 2014 16:25:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+	waitqueue lookups in unlock_page fastpath
+Message-ID: <20140514142534.GA31018@redhat.com>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140513152719.GF18164@linux.vnet.ibm.com> <20140513154435.GG2485@laptop.programming.kicks-ass.net> <20140513161418.GH18164@linux.vnet.ibm.com> <20140513185742.GD12123@redhat.com> <20140513202448.GR18164@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513202448.GR18164@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up interrupt disabling in speedstep-smi and
-speedstep-lib. It doesn't fix any bug.
+On 05/13, Paul E. McKenney wrote:
+>
+> On Tue, May 13, 2014 at 08:57:42PM +0200, Oleg Nesterov wrote:
+> > On 05/13, Paul E. McKenney wrote:
+> > >
+> > > On Tue, May 13, 2014 at 05:44:35PM +0200, Peter Zijlstra wrote:
+> > > >
+> > > > Ah, yes, so I'll defer to Oleg and Linus to explain that one. As per the
+> > > > name: smp_mb__before_spinlock() should of course imply a full barrier.
+> > >
+> > > How about if I queue a name change to smp_wmb__before_spinlock()?
+> >
+> > I agree, this is more accurate, simply because it describes what it
+> > actually does.
+> >
+> > But just in case, as for try_to_wake_up() it does not actually need
+> > wmb() between "CONDITION = T" and "task->state = RUNNING". It would
+> > be fine if these 2 STORE's are re-ordered, we can rely on rq->lock.
+> >
+> > What it actually needs is a barrier between "CONDITION = T" and
+> > "task->state & state" check. But since we do not have a store-load
+> > barrier, wmb() was added to ensure that "CONDITION = T" can't leak
+> > into the critical section.
+> >
+> > But it seems that set_tlb_flush_pending() already assumes that it
+> > acts as wmb(), so probably smp_wmb__before_spinlock() is fine.
+>
+> Except that when I go to make the change, I find the following in
+> the documentation:
+>
+>      Memory operations issued before the ACQUIRE may be completed after
+>      the ACQUIRE operation has completed.  An smp_mb__before_spinlock(),
+>      combined with a following ACQUIRE, orders prior loads against
+>      subsequent loads and stores and also orders prior stores against
+>      subsequent stores.  Note that this is weaker than smp_mb()!  The
+>      smp_mb__before_spinlock() primitive is free on many architectures.
+>
+> Which means that either the documentation is wrong or the implementation
+> is.  Yes, smp_wmb() has the semantics called out above on many platforms,
+> but not on Alpha or ARM.
 
-speedstep_get_freqs in speedstep-lib may be called from speedstep-smi or
-speedstep-ich. When it is called from speedstep-ich, it needs to calculate
-transition latency. When it is called from speedstep-smi, transition
-latency doesn't have to be calculated.
+Well, I think the documentation is wrong in any case. "prior loads
+against subsequent loads" is not true. And it doesn't document that
+the initial goal was "prior stores against the subsequent loads".
+"prior stores against the subsequent stores" is obviously true for
+the default implementation, but this is the "side effect" because
+it uses wmb().
 
-The function speedstep_set_state in speedstep-smi needs to enable
-interrupts. Previously it enabled interrupts even if it was called with
-disabled interrupts, but it is dirty.
 
-This patch changes speedstep_get_freqs so that it disables interrupts only
-when it is called from speedstep-ich and when it is measuring the
-transition latency. This avoids much of the code dirtiness.
+The only intent of wmb() added by 04e2f174 "Add memory barrier semantics
+to wake_up() & co" (afaics at least) was: make sure that ttwu() does not
+read p->state before the preceding stores are completed.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+e0acd0a68e "sched: fix the theoretical signal_wake_up() vs schedule()
+race" added the new helper for documentation, to explain that the
+default implementation abuses wmb() to achieve the serialization above.
 
----
- drivers/cpufreq/speedstep-lib.c |   13 ++++++-------
- drivers/cpufreq/speedstep-smi.c |   11 ++++-------
- 2 files changed, 10 insertions(+), 14 deletions(-)
+> So, as you say, set_tlb_flush_pending() only relies on smp_wmb().
 
-Index: linux-3.14-rc1/drivers/cpufreq/speedstep-lib.c
-===================================================================
---- linux-3.14-rc1.orig/drivers/cpufreq/speedstep-lib.c	2014-02-03 19:06:21.000000000 +0100
-+++ linux-3.14-rc1/drivers/cpufreq/speedstep-lib.c	2014-02-03 19:06:26.000000000 +0100
-@@ -400,9 +400,6 @@ unsigned int speedstep_get_freqs(enum sp
- 
- 	pr_debug("previous speed is %u\n", prev_speed);
- 
--	preempt_disable();
--	local_irq_save(flags);
--
- 	/* switch to low state */
- 	set_state(SPEEDSTEP_LOW);
- 	*low_speed = speedstep_get_frequency(processor);
-@@ -414,15 +411,19 @@ unsigned int speedstep_get_freqs(enum sp
- 	pr_debug("low speed is %u\n", *low_speed);
- 
- 	/* start latency measurement */
--	if (transition_latency)
-+	if (transition_latency) {
-+		local_irq_save(flags);
- 		do_gettimeofday(&tv1);
-+	}
- 
- 	/* switch to high state */
- 	set_state(SPEEDSTEP_HIGH);
- 
- 	/* end latency measurement */
--	if (transition_latency)
-+	if (transition_latency) {
- 		do_gettimeofday(&tv2);
-+		local_irq_restore(flags);
-+	}
- 
- 	*high_speed = speedstep_get_frequency(processor);
- 	if (!*high_speed) {
-@@ -464,8 +465,6 @@ unsigned int speedstep_get_freqs(enum sp
- 	}
- 
- out:
--	local_irq_restore(flags);
--	preempt_enable();
- 
- 	return ret;
- }
-Index: linux-3.14-rc1/drivers/cpufreq/speedstep-smi.c
-===================================================================
---- linux-3.14-rc1.orig/drivers/cpufreq/speedstep-smi.c	2014-02-03 19:06:21.000000000 +0100
-+++ linux-3.14-rc1/drivers/cpufreq/speedstep-smi.c	2014-02-03 19:06:26.000000000 +0100
-@@ -148,16 +148,16 @@ static int speedstep_smi_get_freqs(unsig
- static void speedstep_set_state(unsigned int state)
- {
- 	unsigned int result = 0, command, new_state, dummy;
--	unsigned long flags;
- 	unsigned int function = SET_SPEEDSTEP_STATE;
- 	unsigned int retry = 0;
- 
- 	if (state > 0x1)
- 		return;
- 
--	/* Disable IRQs */
-+	WARN_ON_ONCE(irqs_disabled());
-+
-+	/* Disable preemption so that other processes don't run */
- 	preempt_disable();
--	local_irq_save(flags);
- 
- 	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
- 
-@@ -177,9 +177,7 @@ static void speedstep_set_state(unsigned
- 			 */
- 			pr_debug("retry %u, previous result %u, waiting...\n",
- 					retry, result);
--			local_irq_enable();
- 			mdelay(retry * 50);
--			local_irq_disable();
- 		}
- 		retry++;
- 		__asm__ __volatile__(
-@@ -194,8 +192,7 @@ static void speedstep_set_state(unsigned
- 			);
- 	} while ((new_state != state) && (retry <= SMI_TRIES));
- 
--	/* enable IRQs */
--	local_irq_restore(flags);
-+	/* enable preemption */
- 	preempt_enable();
- 
- 	if (new_state == state)
+The comment says ;) and this means that even if we suddenly have a new
+load_store() barrier (which could work for ttwu/schedule) we can no
+longer change smp_mb__before_spinlock() to use it.
+
+> The comment in try_to_wake_up() seems to be assuming a full memory
+> barrier.  The comment in __schedule() also seems to be relying on
+> a full memory barrier (prior write against subsequent read).  Yow!
+
+Well yes, but see above. Again, we need load_store() before reading
+p->state, which we do not have. wmb() before spin_lock() can be used
+instead.
+
+But, try_to_wake_up() and __schedule() do not need a full barrier in
+a sense that if we are going to wake this task up (or just clear its
+->state), then "CONDITION = T" can be delayed till spin_unlock().
+
+We do not care if that tasks misses CONDITION in this case, it will
+call schedule() which will take the same lock. But if we are not going
+to wake it up, we need to ensure that the task can't miss CONDITION.
+
+IOW, this all is simply about
+
+	CONDITION = T;			current->state = TASK_XXX;
+					mb();
+
+	if (p->state)			if (!CONDITION)
+		wake_it_up();			schedule();
+
+race.
+
+Oleg.
 
