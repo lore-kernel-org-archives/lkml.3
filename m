@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaENUxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:53:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33884 "EHLO mx2.suse.de"
+	id S1752313AbaENUx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:53:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33895 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172AbaENUxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:53:45 -0400
-Message-ID: <5373D7D6.2000708@suse.cz>
-Date: Wed, 14 May 2014 22:53:42 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751172AbaENUx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 16:53:56 -0400
+Date: Wed, 14 May 2014 21:53:51 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookups in unlock_page fastpath
+Message-ID: <20140514205351.GC23991@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-20-git-send-email-mgorman@suse.de>
+ <20140513125313.GR23991@suse.de>
+ <20140513141748.GD2485@laptop.programming.kicks-ass.net>
+ <20140514161152.GA2615@redhat.com>
+ <20140514192945.GA10830@redhat.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v2 1/5] firmware: Simplify directory creation
-References: <1399639944-20551-1-git-send-email-mmarek@suse.cz> <1399639944-20551-2-git-send-email-mmarek@suse.cz> <20140509165158.GA9486@ravnborg.org>
-In-Reply-To: <20140509165158.GA9486@ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140514192945.GA10830@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 9.5.2014 18:51, Sam Ravnborg napsal(a):
-> On Fri, May 09, 2014 at 02:52:20PM +0200, Michal Marek wrote:
->> When building the firmware blobs, use a simple loop to create
->> directories in $(objtree), like in Makefile.build. This simplifies the
->> rules and also makes it possible to set $(objtree) to '.' later. Before
->> this change, a dependency on $(objtree)/<dir> would be satisfied by
->> <dir> in $(srctree).
->>
->> When installing the firmware blobs, call mkdir like in Makefile.modinst.
->>
->> Cc: David Woodhouse <dwmw2@infradead.org>
->> Cc: Sam Ravnborg <sam@ravnborg.org>
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> Looks good!
-> This time I spent a little time to actually look through the code - and it
-> end up being much simpler than before.
+On Wed, May 14, 2014 at 09:29:45PM +0200, Oleg Nesterov wrote:
+> On 05/14, Oleg Nesterov wrote:
+> >
+> > The subsequent discussion was "off-topic", and it seems that the patch
+> > itself needs a bit more discussion,
+> >
+> > On 05/13, Peter Zijlstra wrote:
+> > >
+> > > On Tue, May 13, 2014 at 01:53:13PM +0100, Mel Gorman wrote:
+> > > > On Tue, May 13, 2014 at 10:45:50AM +0100, Mel Gorman wrote:
+> > > > >  void unlock_page(struct page *page)
+> > > > >  {
+> > > > > +	wait_queue_head_t *wqh = clear_page_waiters(page);
+> > > > > +
+> > > > >  	VM_BUG_ON_PAGE(!PageLocked(page), page);
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * No additional barrier needed due to clear_bit_unlock barriering all updates
+> > > > > +	 * before waking waiters
+> > > > > +	 */
+> > > > >  	clear_bit_unlock(PG_locked, &page->flags);
+> > > > > -	smp_mb__after_clear_bit();
+> > > > > -	wake_up_page(page, PG_locked);
+> > > >
+> > > > This is wrong.
+> >
+> > Yes,
+> >
+> > > > The smp_mb__after_clear_bit() is still required to ensure
+> > > > that the cleared bit is visible before the wakeup on all architectures.
+> >
+> > But note that "the cleared bit is visible before the wakeup" is confusing.
+> > I mean, we do not need mb() before __wake_up(). We need it only because
+> > __wake_up_bit() checks waitqueue_active().
 > 
-> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> OOPS. Sorry Mel, I wrote this looking at the chunk above.  But when I found
+> the whole patch http://marc.info/?l=linux-mm&m=139997442008267 I see that
+> it removes waitqueue_active(), so this can be correct. I do not really know,
+> so far I can't say I fully understand this PageWaiters() trick.
+> 
 
-Thanks. I merged the whole series to kbuild.git#kbuild.
+The intent is to use a page bit to determine if looking up the waitqueue is
+worthwhile. However, it is currently race-prone and while barriers can be
+used to reduce the race, I did not see how it could be eliminated without
+using a lock which would defeat the purpose.
 
-Michal
+> Hmm. But at least prepare_to_wait_exclusive() doesn't look right ;)
+> 
+> If nothing else, this needs abort_exclusive_wait() if killed.
 
+Yes, I'll fix that.
+
+> And while
+> "exclusive" is probably fine for __lock_page.*(), I am not sure that
+> __wait_on_page_locked_*() should be exclusive.
+> 
+
+Indeed it shouldn't. Exclusive waits should only be if the lock is being
+acquired. Thanks for pointing that out.
+
+-- 
+Mel Gorman
+SUSE Labs
