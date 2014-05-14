@@ -1,160 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaENCwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 22:52:20 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:56342 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783AbaENCwS (ORCPT
+	id S1753385AbaENCx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 22:53:57 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:8717 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaENCxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 22:52:18 -0400
+	Tue, 13 May 2014 22:53:55 -0400
+Message-ID: <5372DABB.4040908@huawei.com>
+Date: Wed, 14 May 2014 10:53:47 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140513171452.GB10210@red-moon>
-References: <1399278444-8312-3-git-send-email-chander.kashyap@linaro.org>
-	<1399282040-8995-1-git-send-email-chander.kashyap@linaro.org>
-	<1399282040-8995-6-git-send-email-chander.kashyap@linaro.org>
-	<20140509153206.GB5040@e102568-lin.cambridge.arm.com>
-	<CANuQgHG9tGzi2rSOwREAxVu4BQoprDg9om62AybgW5v31fpbTQ@mail.gmail.com>
-	<20140513171452.GB10210@red-moon>
-Date: Wed, 14 May 2014 08:22:17 +0530
-Message-ID: <CANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
-Subject: Re: [Patch v4 5/5] mcpm: exynos: populate suspend and powered_up callbacks
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Chander Kashyap <k.chander@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] cgroup: use restart_syscall() for mount retries
+References: <1399670015-23463-1-git-send-email-tj@kernel.org> <1399670015-23463-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1399670015-23463-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo,
+On 2014/5/10 5:13, Tejun Heo wrote:
+> cgroup_mount() uses dumb delay-and-retry logic to wait for cgroup_root
+> which is being destroyed.  The retry currently loops inside
+> cgroup_mount() proper.  This patch makes it return with
+> restart_syscall() instead so that retry travels out to userland
+> boundary.
+> 
+> This slightly simplifies the logic and more importantly makes the
+> retry logic behave better when the wait for some reason becomes
+> lengthy or infinite by allowing the operation to be suspended or
+> terminated from userland.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  kernel/cgroup.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 3083c5a..2755f33 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1681,7 +1681,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+>  	ret = parse_cgroupfs_options(data, &opts);
+>  	if (ret)
+>  		goto out_unlock;
+> -retry:
+> +
+>  	/* look for a matching existing root */
+>  	if (!opts.subsys_mask && !opts.none && !opts.name) {
+>  		cgrp_dfl_root_visible = true;
+> @@ -1740,8 +1740,7 @@ retry:
+>  		if (!atomic_inc_not_zero(&root->cgrp.refcnt)) {
+>  			mutex_unlock(&cgroup_mutex);
+>  			msleep(10);
+> -			mutex_lock(&cgroup_mutex);
+> -			goto retry;
+> +			return ERR_PTR(restart_syscall());
 
-On 13 May 2014 22:44, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com> wrote:
-> On Tue, May 13, 2014 at 12:43:31PM +0100, Chander Kashyap wrote:
->
-> [...]
->
->> >> +static void exynos_suspend(u64 residency)
->> >> +{
->> >> +     unsigned int mpidr, cpunr;
->> >> +
->> >> +     mpidr = read_cpuid_mpidr();
->> >> +     cpunr = exynos_pmu_cpunr(mpidr);
->> >
->> > If I were to be picky, I would compute these values only if they
->> > are needed, ie move the computation after exynos_power_down().
->>
->> Yes thats make sense. I will realign it.
->>
->> >
->> > There is another quite horrible issue here. We know this code works
->> > because the processors A15/A7 hit the caches with C bit in SCTLR cleared.
->> >
->> > On processors where this is not true, this sequence would explode
->> > if power down fails (in case core is gated but L2 is still powered on,
->> > the stack is stuck in L2) since it is going to read stack data that is
->> > in L2 but can't be read.
->> >
->> > It is not related to this sequence only, but it is an issue in general
->> > and wanted to mention that on the lists for public awareness.
->> >
->>
->> Can you please elaborate. I didn't understand.
->
-> It is not related to this patch only. This function carries out writes to the
-> stack (which might end up in eg L2) and then disables the C bit in SCTLR
-> through MCPM.
->
-> A15 and A7 processors hit the cache with the C bit clear in the SCTLR
-> so the processor still "hits" the stack values if the power down fails.
-> On processors where caches are not hit with the C bit clear (eg A9) this code
-> would fail since the stack values that sit in the caches cannot be read with
-> the C bit clear in SCTLR until the SCTLR is restored, so it will have to
-> be implemented in assembly with no stack usage (or better, no cacheable data
-> usage).
->
-> So, all I am saying is, to avoid copy'n'paste havoc and to avoid running
-> this code on Exynos platforms where it must not be run as-is, please add
-> a comment along the line:
->
-> "This function requires the stack data to be visible through power down
-> and can only be executed on processors like A15 and A7 that hit the cache
-> with the C bit clear in the SCTLR register."
->
-> Please let me know if that's clear.
+We leak memory allocated in parse_cgroupfs_options().
 
-It all clear now.
-Thanks a lot.
-
->
-> Lorenzo
->
->>
->> > The gist of what I am saying is, please add a comment to that extent,
->> > here and it should be added in exynos_power_down() too.
->> >
->> >> +     __raw_writel(virt_to_phys(mcpm_entry_point), ns_sram_base_addr + 0x1c);
->> >
->> > No magic numbers please (0x1c). You can add a macro/wrapper, as TC2 does.
->>
->> Yes i will remove it.
->>
->> >
->> >> +     exynos_power_down();
->> >> +
->> >> +     /*
->> >> +      * Execution reaches here only if cpu did not power down.
->> >> +      * Hence roll back the changes done in exynos_power_down function.
->> >> +     */
->> >> +     exynos_cpu_powerup(cpunr);
->> >
->> > Please be aware that if this function returns MCPM will soft reboot, and
->> > the CPUidle driver will have no way to detect a state entry failure.
->> >
->> > I am just flagging this up, since fixing this behaviour is not easy, and
->> > honestly, since power down failure should be the exception not the rule,
->> > the idle stats should not be affected much.
->> >
->> > I think this is the proper way of implementing the sequence but please
->> > all keep in mind what I wrote above.
->> >
->> > Lorenzo
->> >
->> >> +}
->> >> +
->> >>  static const struct mcpm_platform_ops exynos_power_ops = {
->> >>       .power_up               = exynos_power_up,
->> >>       .power_down             = exynos_power_down,
->> >>       .power_down_finish      = exynos_power_down_finish,
->> >> +     .suspend                = exynos_suspend,
->> >> +     .powered_up             = exynos_powered_up,
->> >>  };
->> >>
->> >>  static void __init exynos_mcpm_usage_count_init(void)
->> >> --
->> >> 1.7.9.5
->> >>
->> >>
->> >
->>
->>
->>
->> --
->> with warm regards,
->> Chander Kashyap
->>
->
-
-
-
--- 
-with warm regards,
-Chander Kashyap
