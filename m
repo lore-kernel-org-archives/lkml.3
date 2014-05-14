@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930AbaEMJkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 05:40:39 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:60894 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760106AbaEMJ25 (ORCPT
+	id S932987AbaEMJlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 05:41:20 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53753 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932570AbaEMJlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 05:28:57 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Jan Kara <jack@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 079/182] reiserfs: fix race in readdir
-Date: Tue, 13 May 2014 11:27:11 +0200
-Message-Id: <bbecbad0dc5029824fca336179fc7cf0fb45d996.1399973152.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-References: <7aa1bde8f6143b2db33e6567a8c3a4debaa246f4.1399973152.git.jslaby@suse.cz>
-In-Reply-To: <cover.1399973152.git.jslaby@suse.cz>
-References: <cover.1399973152.git.jslaby@suse.cz>
+	Tue, 13 May 2014 05:41:08 -0400
+Date: Wed, 14 May 2014 11:29:48 +0200
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Dave Hansen <dave@sr71.net>, Shay Goikhman <shay.goikhman@huawei.com>,
+        Paul Mundt <paul.mundt@huawei.com>,
+        "Carlos Villavieja" <villavieja@hps.utexas.edu>,
+        Nacho Navarro <nacho.navarro@bsc.es>,
+        Avi Mendelson <avi.mendelson@tce.technion.ac.il>,
+        Yoav Etsion <yetsion@tce.technion.ac.il>
+Subject: [PATCH] x86, hugetlb: add missing TLB page invalidation for
+ hugetlb_cow()
+Message-ID: <20140514092948.GA17391@server-36.huawei.corp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-Originating-IP: [10.220.139.36]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
 
-===============
-
-commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
-
-jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
-
-The -ENOENT is due to readdir calling dir_emit on the same entry twice.
-
-If the dir_emit callback sleeps and the tree is changed underneath us,
-we won't be able to trust deh_offset(deh) anymore. We need to save
-next_pos before we might sleep so we can find the next entry.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
 ---
- fs/reiserfs/dir.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/hugetlb.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/reiserfs/dir.c b/fs/reiserfs/dir.c
-index 1fd2051109a3..af677353a3f5 100644
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -125,6 +125,7 @@ int reiserfs_readdir_inode(struct inode *inode, struct dir_context *ctx)
- 				int d_reclen;
- 				char *d_name;
- 				ino_t d_ino;
-+				loff_t cur_pos = deh_offset(deh);
- 
- 				if (!de_visible(deh))
- 					/* it is hidden entry */
-@@ -196,8 +197,9 @@ int reiserfs_readdir_inode(struct inode *inode, struct dir_context *ctx)
- 				if (local_buf != small_buf) {
- 					kfree(local_buf);
- 				}
--				// next entry should be looked for with such offset
--				next_pos = deh_offset(deh) + 1;
-+
-+				/* deh_offset(deh) may be invalid now. */
-+				next_pos = cur_pos + 1;
- 
- 				if (item_moved(&tmp_ih, &path_to_entry)) {
- 					set_cpu_key_k_offset(&pos_key,
--- 
-1.9.3
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index a809121..68c0539 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -52,6 +52,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
 
+ static inline int huge_pte_none(pte_t pte)
+--
+1.8.1.2
