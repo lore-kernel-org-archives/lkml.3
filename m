@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaENM7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:59:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43458 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523AbaENM7F (ORCPT
+	id S1755758AbaENM7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:59:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46494 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755603AbaENM7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:59:05 -0400
-Date: Wed, 14 May 2014 14:59:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
-In-Reply-To: <5371B2D9.8060405@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1405141448210.6261@ionos.tec.linutronix.de>
-References: <20140512190438.314125476@linutronix.de> <20140512201700.999660035@linutronix.de> <5371B2D9.8060405@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 14 May 2014 08:59:41 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: kishon@ti.com, hdegoede@redhat.com
+Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] Documentation: dt: Add new compatible for the A31 USB Phy
+Date: Wed, 14 May 2014 14:58:57 +0200
+Message-Id: <1400072337-30687-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Lai Jiangshan wrote:
+Document the freshly introduced compatible for the USB phy in use in the
+Allwinner A31 SoC.
 
-> Hi, Thomas,
-> 
-> I think this patch is just a workaround, it is not the proper fix.
-> you need a updated deadlock-check mechanism:
-> 
-> - (old) skip the check when top_waiter != task_top_pi_waiter(task)
-> + (new) skip the check when top_waiter->prio > task->prio
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ .../devicetree/bindings/phy/sun4i-usb-phy.txt      | 23 ++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
-I don't think that helps. 
+diff --git a/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt b/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
+index a82361b62015..16528b9eb561 100644
+--- a/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
++++ b/Documentation/devicetree/bindings/phy/sun4i-usb-phy.txt
+@@ -2,15 +2,26 @@ Allwinner sun4i USB PHY
+ -----------------------
  
-> >  	/*
-> > +	 * Deadlock check for the following scenario:
-> > +	 *
-> > +	 * T holds lock L and has waiters
-> > +	 * T locks L again, but does not end up as it's own top waiter
-> 
-> ABBA problem (TA TB TC TD are of the same priority)
-> 
-> TA holds lock LA, and try to lock LB which TC already has waited on
-> TB holds lock LB, and try to lock LA which TD already has waited on
-> 
-> I think this check can't detect it IIUC.
-
-Right it doesn't.
+ Required properties:
+-- compatible : should be one of "allwinner,sun4i-a10-usb-phy",
+-  "allwinner,sun5i-a13-usb-phy" or "allwinner,sun7i-a20-usb-phy"
++- compatible : should be one of
++  * allwinner,sun4i-a10-usb-phy
++  * allwinner,sun5i-a13-usb-phy
++  * allwinner,sun6i-a31-usb-phy
++  * allwinner,sun7i-a20-usb-phy
+ - reg : a list of offset + length pairs
+-- reg-names : "phy_ctrl", "pmu1" and for sun4i or sun7i "pmu2"
++- reg-names :
++  * "phy_ctrl"
++  * "pmu1"
++  * "pmu2" for sun4i, sun6i or sun7i
+ - #phy-cells : from the generic phy bindings, must be 1
+-- clocks : phandle + clock specifier for the phy clock
+-- clock-names : "usb_phy"
++- clocks : phandle + clock specifier for the phy clocks
++- clock-names :
++  * "usb_phy" for sun4i, sun5i or sun7i
++  * "usb0_phy", "usb1_phy" and "usb2_phy" for sun6i
+ - resets : a list of phandle + reset specifier pairs
+-- reset-names : "usb0_reset", "usb1_reset" and for sun4i or sun7i "usb2_reset"
++- reset-names :
++  * "usb0_reset"
++  * "usb1_reset"
++  * "usb2_reset" for sun4i, sun6i or sun7i
  
-> 	/*
-> 	 * Drop out, when the task has no waiters. Note,
-> 	 * top_waiter can be NULL, when we are in the deboosting
-> 	 * mode!
-> 	 */
-> 	if (top_waiter && (!task_has_pi_waiters(task) ||
-> 			   top_waiter != task_top_pi_waiter(task)))
-> 		goto out_unlock_pi;
-
-So the issue here is, that we break out of the chain walk even if
-deadlock detection is enabled.
-
-The break out is correct for the boost case w/o deadlock detection, so
-we won't do any pointless work.
-
-For the deadlock detection case, we need to continue. But we should
-store, that we are not the top_waiter so we can avoid the requeue
-business when walking the chain.
-
-Thanks,
-
-	tglx
-
-
-
+ Example:
+ 	usbphy: phy@0x01c13400 {
+-- 
+1.9.3
 
