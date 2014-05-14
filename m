@@ -1,121 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaENUCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:02:05 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:63898 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaENUCD (ORCPT
+	id S1752237AbaENUDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:03:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47699 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaENUDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:02:03 -0400
-Message-ID: <5373CBAD.2010505@gmail.com>
-Date: Wed, 14 May 2014 22:01:49 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Rahul Sharma <rahul.sharma@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, dri-devel@lists.freedesktop.org
-CC: a.hajda@samsung.com, t.stanislaws@samsung.com, devicetree@vger.kernel.org,
-        kgene.kim@samsung.com, kishon@ti.com, kyungmin.park@samsung.com,
-        robh+dt@kernel.org, grant.likely@linaro.org,
-        sylvester.nawrocki@gmail.com, joshi@samsung.com
-Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
-References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com> <1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
-In-Reply-To: <1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 16:03:13 -0400
+Message-Id: <20140514200104.670614672@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Wed, 14 May 2014 20:03:27 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [patch 2/2] rtmutex: Avoid pointless requeueing in the deadlock
+ detection chain walk
+References: <20140514195705.618583609@linutronix.de>
+Content-Disposition: inline; filename=rtmutex-avoid-pointless-requeueing.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rahul, Tomasz,
+In case the dead lock detector is enabled we follow the lock chain to
+the end in rt_mutex_adjust_prio_chain, even if we could stop earlier
+due to the priority/waiter constellation.
 
-On 14.05.2014 21:17, Rahul Sharma wrote:
-> From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> 
-> Add exynos-simple-phy driver to support a single register
-> PHY interfaces present on Exynos4 SoC.
-> 
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Rahul Sharma <Rahul.Sharma@samsung.com>
-> 
-> ---
->  .../devicetree/bindings/phy/samsung-phy.txt        |   56 ++++++
->  drivers/phy/Kconfig                                |    5 +
->  drivers/phy/Makefile                               |    1 +
->  drivers/phy/exynos-simple-phy.c                    |  189 ++++++++++++++++++++
->  include/dt-bindings/phy/exynos-simple-phy.h        |   27 +++
->  5 files changed, 278 insertions(+)
->  create mode 100644 drivers/phy/exynos-simple-phy.c
->  create mode 100644 include/dt-bindings/phy/exynos-simple-phy.h
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> index 2049261..12ad9cf 100644
-> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-> @@ -161,3 +161,59 @@ Example:
->  		usbdrdphy0 = &usb3_phy0;
->  		usbdrdphy1 = &usb3_phy1;
->  	};
-> +
-> +Samsung S5P/EXYNOS SoC series SIMPLE PHY
-> +-------------------------------------------------
-> +
-> +Required properties:
-> +- compatible : should be one of the listed compatibles:
-> +	- "samsung,exynos4210-simple-phy"
-> +	- "samsung,exynos4412-simple-phy"
-> +	- "samsung,exynos5250-simple-phy"
-> +	- "samsung,exynos5420-simple-phy"
-> +- samsung,pmureg-phandle - handle to syscon to control PMU registers
-> +- #phy-cells : from the generic phy bindings, must be 1;
-> +
-> +For "samsung,exynos4210-simple-phy" compatible PHYs the second cell in
-> +the PHY specifier identifies the PHY and the supported phys for exynos4210
-> +are:
-> +  HDMI_PHY,
-> +  DAC_PHY,
-> +  ADC_PHY,
-> +  PCIE_PHY,
-> +  SATA_PHY.
-> +
-> +For "samsung,exynos4412-simple-phy" compatible PHYs the second cell in
-> +the PHY specifier identifies the PHY and the supported phys for exynos4412
-> +are:
-> +  HDMI_PHY,
-> +  ADC_PHY.
-> +
-> +For "samsung,exynos5250-simple-phy" compatible PHYs the second cell in
-> +the PHY specifier identifies the PHY and the supported phys for exynos5250
-> +are:
-> +  HDMI_PHY,
-> +  ADC_PHY,
-> +  SATA_PHY.
-> +
-> +For "samsung,exynos5420-simple-phy" compatible PHYs the second cell in
-> +the PHY specifier identifies the PHY and the supported phys for exynos5420
-> +are:
-> +  HDMI_PHY,
-> +  ADC_PHY.
-> +
-> +Example:
-> +Simple PHY provider node:
-> +
-> +	simplephys: simple-phys@10040000 {
-> +		compatible = "samsung,exynos5250-simple-phy";
+But once we are not longer the top priority waiter in a certain step
+or the task holding the lock has already the same priority then there
+is no point in dequeing and enqueing along the lock chain as there is
+no change at all.
 
-Missing reg property or unnecessary @unit-address suffix in node name.
+So stop the queueing at this point.
 
-> +		samsung,pmu-syscon = <&pmu_system_controller>;
-> +		#phy-cells = <1>;
-> +	};
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/locking/rtmutex.c |   47 +++++++++++++++++++++++++++++------------------
+ 1 file changed, 29 insertions(+), 18 deletions(-)
 
-In general, the idea is quite good, but I think this should rather bind
-to the main PMU node, since this is just a part of the PMU, not another
-device in the system. This also means that the PMU node itself should be
-the PHY provider.
+Index: linux-2.6/kernel/locking/rtmutex.c
+===================================================================
+--- linux-2.6.orig/kernel/locking/rtmutex.c
++++ linux-2.6/kernel/locking/rtmutex.c
+@@ -284,10 +284,11 @@ static int rt_mutex_adjust_prio_chain(st
+ 				      struct rt_mutex_waiter *orig_waiter,
+ 				      struct task_struct *top_task)
+ {
+-	struct rt_mutex *lock;
+ 	struct rt_mutex_waiter *waiter, *top_waiter = orig_waiter;
+ 	int detect_deadlock, ret = 0, depth = 0;
++	struct rt_mutex *lock;
+ 	unsigned long flags;
++	int requeue = 1;
+ 
+ 	detect_deadlock = debug_rt_mutex_detect_deadlock(orig_waiter,
+ 							 deadlock_detect);
+@@ -350,6 +351,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 		if (top_waiter != task_top_pi_waiter(task)) {
+ 			if (!detect_deadlock)
+ 				goto out_unlock_pi;
++			requeue = 0;
+ 		}
+ 	}
+ 
+@@ -360,6 +362,7 @@ static int rt_mutex_adjust_prio_chain(st
+ 	if (waiter->prio == task->prio) {
+ 		if (!detect_deadlock)
+ 			goto out_unlock_pi;
++		requeue = 0;
+ 	}
+ 
+ 	lock = waiter->lock;
+@@ -379,19 +382,25 @@ static int rt_mutex_adjust_prio_chain(st
+ 
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 
+-	/* Requeue the waiter */
+-	rt_mutex_dequeue(lock, waiter);
+-	waiter->prio = task->prio;
+-	rt_mutex_enqueue(lock, waiter);
++	if (requeue) {
++		/* Requeue the waiter */
++		rt_mutex_dequeue(lock, waiter);
++		waiter->prio = task->prio;
++		rt_mutex_enqueue(lock, waiter);
++	}
+ 
+ 	/* Release the task */
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	/*
++	 * We must abort the chain walk if there is no lock owner even
++	 * in the dead lock detection case, as we have nothing to
++	 * follow here.
++	 */
+ 	if (!rt_mutex_owner(lock)) {
+ 		/*
+ 		 * If the requeue above changed the top waiter, then we need
+ 		 * to wake the new top waiter up to try to get the lock.
+ 		 */
+-
+ 		if (top_waiter != rt_mutex_top_waiter(lock))
+ 			wake_up_process(rt_mutex_top_waiter(lock)->task);
+ 		raw_spin_unlock(&lock->wait_lock);
+@@ -404,18 +413,20 @@ static int rt_mutex_adjust_prio_chain(st
+ 	get_task_struct(task);
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 
+-	if (waiter == rt_mutex_top_waiter(lock)) {
+-		/* Boost the owner */
+-		rt_mutex_dequeue_pi(task, top_waiter);
+-		rt_mutex_enqueue_pi(task, waiter);
+-		__rt_mutex_adjust_prio(task);
+-
+-	} else if (top_waiter == waiter) {
+-		/* Deboost the owner */
+-		rt_mutex_dequeue_pi(task, waiter);
+-		waiter = rt_mutex_top_waiter(lock);
+-		rt_mutex_enqueue_pi(task, waiter);
+-		__rt_mutex_adjust_prio(task);
++	if (requeue) {
++		if (waiter == rt_mutex_top_waiter(lock)) {
++			/* Boost the owner */
++			rt_mutex_dequeue_pi(task, top_waiter);
++			rt_mutex_enqueue_pi(task, waiter);
++			__rt_mutex_adjust_prio(task);
++
++		} else if (top_waiter == waiter) {
++			/* Deboost the owner */
++			rt_mutex_dequeue_pi(task, waiter);
++			waiter = rt_mutex_top_waiter(lock);
++			rt_mutex_enqueue_pi(task, waiter);
++			__rt_mutex_adjust_prio(task);
++		}
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
 
-Otherwise looks good.
 
-Best regards,
-Tomasz
