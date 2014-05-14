@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaENKRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 06:17:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47994 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251AbaENKRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 06:17:06 -0400
-Message-ID: <5373429F.70807@suse.cz>
-Date: Wed, 14 May 2014 12:17:03 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754304AbaENKRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:17:21 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:51950 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205AbaENKRQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 06:17:16 -0400
 MIME-Version: 1.0
-To: Alexis Berlemont <alexis.berlemont@gmail.com>,
-        linux-kernel@vger.kernel.org
-CC: Jiri Olsa <jolsa@redhat.com>, acme@ghostprotocols.net, dsahern@gmail.com,
-        mingo@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        linux-kbuild@vger.kernel.org, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/34] kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable
- for conf tool
-References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com> <1400018609-20486-3-git-send-email-alexis.berlemont@gmail.com>
-In-Reply-To: <1400018609-20486-3-git-send-email-alexis.berlemont@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140511100502.1491.qmail@ns.horizon.com>
+References: <20140511100211.1334.qmail@ns.horizon.com>
+	<20140511100502.1491.qmail@ns.horizon.com>
+Date: Wed, 14 May 2014 12:17:15 +0200
+Message-ID: <CAPDyKFo9xZ-z6eM0zG2A+=Bwj0EVyGxm=m28Lh9cHPSB+8qq1w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] drivers/mmc/host/mmc_spi.c: Use get/put_unaligned_be32
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: George Spelvin <linux@horizon.com>
+Cc: Pavel Machek <pavel@ucw.cz>, arik@wizery.com, david.gnedt@davizone.at,
+        eliad@wizery.com, jan.nikitenko@gmail.com,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, John Linville <linville@tuxdriver.com>,
+        luca@coelho.fi, Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-14 00:02, Alexis Berlemont wrote:
-> From: Jiri Olsa <jolsa@redhat.com>
-> 
-> Introducing KCONFIG_AUTOCONFIGDEP variable for conf tool
-> allowing to specify custom auto.conf.cmd file.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: Stephane Eranian <eranian@google.com>
+On 11 May 2014 12:05, George Spelvin <linux@horizon.com> wrote:
+> Very minor source and binary size reduction.
+>
+> Signed-off-by: George Spelvin <linux@horizon.com>
 > ---
->  scripts/kconfig/confdata.c | 11 ++++++++++-
->  scripts/kconfig/lkc.h      |  1 +
->  2 files changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> index f88d90f..7afb2a7 100644
-> --- a/scripts/kconfig/confdata.c
-> +++ b/scripts/kconfig/confdata.c
-> @@ -75,6 +75,14 @@ const char *conf_get_autoconfig_name(void)
->  	return name ? name : "include/config/auto.conf";
->  }
->  
-> +const char *conf_get_autoconfigdep_name(void)
-> +{
-> +	char *name = getenv("KCONFIG_AUTOCONFIGDEP");
-> +
-> +	return name ? name : "include/config/auto.conf.cmd";
-> +}
+> I spotted this while making the previous crc7 change.
+>
+> This looks simple enough, but I don't actually have one of these devices to test.
+> At least one other careful desk-check is solicited.
 
-In both the kernel and perf usage case, the name of the dep file will be
-$KCONFIG_AUTOCONFIG.dep. buildroot does not seem to use it at all. So
-I'd just append the .cmd suffix here instead of introducing another knob.
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Michal
+Feel free to take this through the wireless tree as well. I assumes
+it's that same patchset as the other spi related fixes?
+
+Kind regards
+Ulf Hansson
+
+>
+>  drivers/mmc/host/mmc_spi.c | 18 ++++++------------
+>  1 file changed, 6 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+> index 338e2202ea..cc8d4a6099 100644
+> --- a/drivers/mmc/host/mmc_spi.c
+> +++ b/drivers/mmc/host/mmc_spi.c
+> @@ -448,7 +448,6 @@ mmc_spi_command_send(struct mmc_spi_host *host,
+>  {
+>         struct scratch          *data = host->data;
+>         u8                      *cp = data->status;
+> -       u32                     arg = cmd->arg;
+>         int                     status;
+>         struct spi_transfer     *t;
+>
+> @@ -465,14 +464,12 @@ mmc_spi_command_send(struct mmc_spi_host *host,
+>          * We init the whole buffer to all-ones, which is what we need
+>          * to write while we're reading (later) response data.
+>          */
+> -       memset(cp++, 0xff, sizeof(data->status));
+> +       memset(cp, 0xff, sizeof(data->status));
+>
+> -       *cp++ = 0x40 | cmd->opcode;
+> -       *cp++ = (u8)(arg >> 24);
+> -       *cp++ = (u8)(arg >> 16);
+> -       *cp++ = (u8)(arg >> 8);
+> -       *cp++ = (u8)arg;
+> -       *cp++ = crc7_be(0, &data->status[1], 5) | 0x01;
+> +       cp[1] = 0x40 | cmd->opcode;
+> +       put_unaligned_be32(cmd->arg, cp+2);
+> +       cp[6] = crc7_be(0, cp+1, 5) | 0x01;
+> +       cp += 7;
+>
+>         /* Then, read up to 13 bytes (while writing all-ones):
+>          *  - N(CR) (== 1..8) bytes of all-ones
+> @@ -711,10 +708,7 @@ mmc_spi_writeblock(struct mmc_spi_host *host, struct spi_transfer *t,
+>          * so we have to cope with this situation and check the response
+>          * bit-by-bit. Arggh!!!
+>          */
+> -       pattern  = scratch->status[0] << 24;
+> -       pattern |= scratch->status[1] << 16;
+> -       pattern |= scratch->status[2] << 8;
+> -       pattern |= scratch->status[3];
+> +       pattern = get_unaligned_be32(scratch->status);
+>
+>         /* First 3 bit of pattern are undefined */
+>         pattern |= 0xE0000000;
+> --
+> 1.9.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
