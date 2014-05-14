@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaENMxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:53:12 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:35381
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551AbaENMxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:53:06 -0400
-Date: Wed, 14 May 2014 14:53:05 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@cmpxchg.org, Aristeu Rozanski <aris@redhat.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [PATCH 13/14] device_cgroup: use css_has_online_children()
- instead of has_children()
-Message-ID: <20140514125305.GB30376@mail.hallyn.com>
-References: <1399671091-23867-1-git-send-email-tj@kernel.org>
- <1399671091-23867-14-git-send-email-tj@kernel.org>
+	id S1755606AbaENMx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:53:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755380AbaENMxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 08:53:55 -0400
+Message-ID: <5373675B.5030102@redhat.com>
+Date: Wed, 14 May 2014 14:53:47 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399671091-23867-14-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ching <ching2048@areca.com.tw>, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, agordeev@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after
+ all initialization done
+References: <1400068509.6957.62.camel@localhost>
+In-Reply-To: <1400068509.6957.62.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> devcgroup_update_access() wants to know whether there are child
-> cgroups which are online and visible to userland and has_children()
-> may return false positive.  Replace it with css_has_online_children().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Aristeu Rozanski <aris@redhat.com>
-> Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
+On 05/14/2014 01:55 PM, ching wrote:
+> From: Ching<ching2048@areca.com.tw>
+>
+> This is a new patch after patch v1.1 series.
+>
+> Fixed calling scsi_scan_host until all initialization are done.
+> And fixed error path free allocated resource.
+>
+> Signed-off-by: Ching<ching2048@areca.com.tw>
 > ---
->  security/device_cgroup.c | 19 ++-----------------
->  1 file changed, 2 insertions(+), 17 deletions(-)
-> 
-> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-> index 75b4b18..22de334 100644
-> --- a/security/device_cgroup.c
-> +++ b/security/device_cgroup.c
-> @@ -475,21 +475,6 @@ static int propagate_exception(struct dev_cgroup *devcg_root,
->  	return rc;
->  }
->  
-> -static inline bool has_children(struct dev_cgroup *devcgroup)
-> -{
-> -	bool ret;
-> -
-> -	/*
-> -	 * FIXME: There may be lingering offline csses and this function
-> -	 * may return %true when there isn't any userland-visible child
-> -	 * which is incorrect for our purposes.
-> -	 */
-> -	rcu_read_lock();
-> -	ret = css_next_child(NULL, &devcgroup->css);
-> -	rcu_read_unlock();
-> -	return ret;
-> -}
-> -
->  /*
->   * Modify the exception list using allow/deny rules.
->   * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-> @@ -522,7 +507,7 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
->  	case 'a':
->  		switch (filetype) {
->  		case DEVCG_ALLOW:
-> -			if (has_children(devcgroup))
-> +			if (css_has_online_children(&devcgroup->css))
->  				return -EINVAL;
->  
->  			if (!may_allow_all(parent))
-> @@ -538,7 +523,7 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
->  				return rc;
->  			break;
->  		case DEVCG_DENY:
-> -			if (has_children(devcgroup))
-> +			if (css_has_online_children(&devcgroup->css))
->  				return -EINVAL;
->  
->  			dev_exception_clean(devcgroup);
-> -- 
-> 1.9.0
-> 
+>
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
+> @@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
+>  static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
+>  static const char *arcmsr_info(struct Scsi_Host *);
+>  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
+> +static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
+>  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
+>  					  int queue_depth, int reason)
+>  {
+> @@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
+>  	}
+>  	error = scsi_add_host(host, &pdev->dev);
+>  	if(error){
+> -		goto RAID_controller_stop;
+> +		goto free_ccb_pool;
+>  	}
+>  	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+>  		goto scsi_host_remove;
+>  	arcmsr_iop_init(acb);
+> -    	scsi_scan_host(host);
+>  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+>  	atomic_set(&acb->rq_map_token, 16);
+>  	atomic_set(&acb->ante_token_value, 16);
+> @@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
+>  	add_timer(&acb->eternal_timer);
+>  	if(arcmsr_alloc_sysfs_attr(acb))
+>  		goto out_free_sysfs;
+> +    	scsi_scan_host(host);
+>  	return 0;
+>  out_free_sysfs:
+> -scsi_host_remove:
+> -	scsi_remove_host(host);
+> -RAID_controller_stop:
+> +	del_timer_sync(&acb->eternal_timer);
+> + 	flush_work(&acb->arcmsr_do_message_isr_bh);
+
+In your driver you use both flush_work(struct work_struct *) and flush_scheduled_work(),
+the second form is used used to flush the shared workqueue. 
+That said (and I think you use just one queue) you should decide which one is correct.
+In my previous mail I have asked about flush_work because i have it seen elsewhere in
+your code, now I've noticed the use of schedule_work and that means that you are using the global wq.
+ 
+
+>  	arcmsr_stop_adapter_bgrb(acb);
+>  	arcmsr_flush_adapter_cache(acb);
+> +	arcmsr_free_irq(pdev, acb);
+> +scsi_host_remove:
+> +	scsi_remove_host(host);
+> +free_ccb_pool:
+>  	arcmsr_free_ccb_pool(acb);
+>  free_hbb_mu:
+>  	arcmsr_free_mu(acb);
+>
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
