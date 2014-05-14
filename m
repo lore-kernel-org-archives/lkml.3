@@ -1,60 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbaENFsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:48:12 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48339 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaENFsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:48:09 -0400
-Message-ID: <53730326.6000400@linux.vnet.ibm.com>
-Date: Wed, 14 May 2014 11:16:14 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752804AbaENFuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:50:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45216 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267AbaENFt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 01:49:59 -0400
+Message-ID: <537303C3.8040503@ti.com>
+Date: Wed, 14 May 2014 11:18:51 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Pedro Alves <palves@redhat.com>
-CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
-        oleg@redhat.com
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com>
-In-Reply-To: <537252C0.6090005@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, <stern@rowland.harvard.edu>,
+        <hdegoede@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Boris Brezillon <boris@free-electrons.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <kevin.z.m.zh@gmail.com>, <sunny@allwinnertech.com>,
+        <shuge@allwinnertech.com>, <zhuzhenhua@allwinnertech.com>,
+        <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH RESEND v4 3/8] phy: sunxi: Rework phy initialization
+References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com> <1399995862-17788-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1399995862-17788-4-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051405-5140-0000-0000-0000051D2862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 10:43 PM, Pedro Alves wrote:
-> On 05/05/14 08:54, Anshuman Khandual wrote:
->> This patch enables get and set of transactional memory related register
->> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
->> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
->> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
->> ELF core note types added previously in this regard.
->>
->> 	(1) NT_PPC_TM_SPR
->> 	(2) NT_PPC_TM_CGPR
->> 	(3) NT_PPC_TM_CFPR
->> 	(4) NT_PPC_TM_CVMX
+Hi,
+
+On Tuesday 13 May 2014 09:14 PM, Maxime Ripard wrote:
+> Move the phy initialization and variables declaration to the loop itself, since
+> it is where it really belongs. Also remove all the temporary variables, we can
+> use the structure members directly.
 > 
-> Sorry that I couldn't tell this from the code, but, what does the
-> kernel return when the ptracer requests these registers and the
-> program is not in a transaction?  Specifically I'm wondering whether
-> this follows the same semantics as the s390 port.
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+
+let me know if I have to queue this and the next patch in my PHY tree.
+
+Cheers
+Kishon
+
+> ---
+>  drivers/phy/phy-sun4i-usb.c | 42 ++++++++++++++++++------------------------
+>  1 file changed, 18 insertions(+), 24 deletions(-)
 > 
-
-Right now, it still returns the saved state of the registers from thread
-struct. I had assumed that the user must know the state of the transaction
-before initiating the ptrace request. I guess its better to check for
-the transaction status before processing the request. In case if TM is not
-active on that thread, we should return -EINVAL.
-
-I am not familiar with the s390 side of code. But if we look at the
-s390_tdb_get function it checks for (regs->int_code & 0x200) before
-processing the request. Not sure what 0x200 signifies though.
-
+> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+> index e6e6c4ba7145..66a87d50512b 100644
+> --- a/drivers/phy/phy-sun4i-usb.c
+> +++ b/drivers/phy/phy-sun4i-usb.c
+> @@ -224,13 +224,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>  	struct sun4i_usb_phy_data *data;
+>  	struct device *dev = &pdev->dev;
+>  	struct device_node *np = dev->of_node;
+> -	void __iomem *pmu = NULL;
+>  	struct phy_provider *phy_provider;
+> -	struct reset_control *reset;
+> -	struct regulator *vbus;
+>  	struct resource *res;
+> -	struct phy *phy;
+> -	char name[16];
+>  	int i;
+>  
+>  	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+> @@ -262,42 +257,41 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>  
+>  	/* Skip 0, 0 is the phy for otg which is not yet supported. */
+>  	for (i = 1; i < data->num_phys; i++) {
+> +		struct sun4i_usb_phy *phy = data->phys + i;
+> +		char name[16];
+> +
+>  		snprintf(name, sizeof(name), "usb%d_vbus", i);
+> -		vbus = devm_regulator_get_optional(dev, name);
+> -		if (IS_ERR(vbus)) {
+> -			if (PTR_ERR(vbus) == -EPROBE_DEFER)
+> +		phy->vbus = devm_regulator_get_optional(dev, name);
+> +		if (IS_ERR(phy->vbus)) {
+> +			if (PTR_ERR(phy->vbus) == -EPROBE_DEFER)
+>  				return -EPROBE_DEFER;
+> -			vbus = NULL;
+> +			phy->vbus = NULL;
+>  		}
+>  
+>  		snprintf(name, sizeof(name), "usb%d_reset", i);
+> -		reset = devm_reset_control_get(dev, name);
+> -		if (IS_ERR(reset)) {
+> +		phy->reset = devm_reset_control_get(dev, name);
+> +		if (IS_ERR(phy->reset)) {
+>  			dev_err(dev, "failed to get reset %s\n", name);
+> -			return PTR_ERR(reset);
+> +			return PTR_ERR(phy->reset);
+>  		}
+>  
+>  		if (i) { /* No pmu for usbc0 */
+>  			snprintf(name, sizeof(name), "pmu%d", i);
+>  			res = platform_get_resource_byname(pdev,
+>  							IORESOURCE_MEM, name);
+> -			pmu = devm_ioremap_resource(dev, res);
+> -			if (IS_ERR(pmu))
+> -				return PTR_ERR(pmu);
+> +			phy->pmu = devm_ioremap_resource(dev, res);
+> +			if (IS_ERR(phy->pmu))
+> +				return PTR_ERR(phy->pmu);
+>  		}
+>  
+> -		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
+> -		if (IS_ERR(phy)) {
+> +		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
+> +		if (IS_ERR(phy->phy)) {
+>  			dev_err(dev, "failed to create PHY %d\n", i);
+> -			return PTR_ERR(phy);
+> +			return PTR_ERR(phy->phy);
+>  		}
+>  
+> -		data->phys[i].phy = phy;
+> -		data->phys[i].pmu = pmu;
+> -		data->phys[i].vbus = vbus;
+> -		data->phys[i].reset = reset;
+> -		data->phys[i].index = i;
+> -		phy_set_drvdata(phy, &data->phys[i]);
+> +		phy->index = i;
+> +		phy_set_drvdata(phy->phy, &data->phys[i]);
+>  	}
+>  
+>  	dev_set_drvdata(dev, data);
+> 
