@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaENLZP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:25:15 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:64142 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057AbaENLZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:25:12 -0400
-Subject: [PATCH v1.2 8/16] arcmsr: remove calling
- arcmsr_hbb_enable_driver_mode
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 May 2014 19:25:00 +0800
-Message-ID: <1400066700.6957.37.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S932155AbaENL0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:26:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755094AbaENL0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 07:26:33 -0400
+Date: Wed, 14 May 2014 13:26:21 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140514112619.GA10637@mguzik.redhat.com>
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
+ <1400018683-5565-2-git-send-email-mguzik@redhat.com>
+ <20140514111449.GB5824@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140514111449.GB5824@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
+> On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
+> > This helps hang troubleshooting efforts when only dmesg is available.
+> > 
+> > While here remove code duplication with MS_RDONLY case and fix a
+> > whitespace nit.
+>   I'm somewhat undecided here I have to say. On one hand I don't like
+> printing to kernel log when everything is fine and kernel is operating
+> normally. On the other hand I've seen quite a few cases where people have
+> shot themselves in the foot with filesystem freezing so having some trace
+> of this in the log doesn't seem like a completely bad thing either. What do
+> other people think?
+> 
 
-Removing call arcmsr_hbb_enable_driver_mode by in-line code.
+I would like to note that the kernel already prints messages when e.g.
+filesystems get mounted.
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+And yes, situations where I/O is frozen and hung task detector comes into
+play happen more often than you may think. I can hide these behind a
+sysctl if this helps.
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:46:14.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:46:46.000000000 +0800
-@@ -879,17 +879,6 @@ static uint8_t arcmsr_abort_allcmd(struc
- 	return rtnval;
- }
- 
--static bool arcmsr_hbb_enable_driver_mode(struct AdapterControlBlock *pacb)
--{
--	struct MessageUnit_B *reg = pacb->pmuB;
--	writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
--	if (!arcmsr_hbb_wait_msgint_ready(pacb)) {
--		printk(KERN_ERR "arcmsr%d: can't set driver mode. \n", pacb->host->host_no);
--		return false;
--	}
--    	return true;
--}
--
- static void arcmsr_pci_unmap_dma(struct CommandControlBlock *ccb)
- {
- 	struct scsi_cmnd *pcmd = ccb->pcmd;
-@@ -2687,7 +2676,12 @@ static int arcmsr_iop_confirm(struct Ada
- 			timeout \n",acb->host->host_no);
- 			return 1;
- 		}
--		arcmsr_hbb_enable_driver_mode(acb);
-+		writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
-+		if (!arcmsr_hbb_wait_msgint_ready(acb)) {
-+			pr_err("arcmsr%d: can't set driver mode.\n",
-+				acb->host->host_no);
-+			return 1;
-+		}
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
+Finally, somewhat related to the first mail, my preferred message format
+(which I was somewhat reluctant to propose earlier) would be:
 
+VFS (%s): Filesystem frozen by %s:%d
 
+with device, process and pid respectively.
+
+-- 
+Mateusz Guzik
