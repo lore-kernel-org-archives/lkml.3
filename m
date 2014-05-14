@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaENPsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:48:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32865 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaENPsQ (ORCPT
+	id S1754481AbaENPtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:49:01 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:50655 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbaENPs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:48:16 -0400
-Message-ID: <53739030.3040308@infradead.org>
-Date: Wed, 14 May 2014 08:48:00 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 14 May 2014 11:48:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+Date: Wed, 14 May 2014 17:48:33 +0200
+Message-ID: <6143833.A3bOpIVfCF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.02.1405141628130.6261@ionos.tec.linutronix.de>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <6811994.pqkAjrM8xH@wuerfel> <alpine.DEB.2.02.1405141628130.6261@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in tree_plugin.h
- and used in tree.c
-References: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com> <20140514154150.GA1873@thin>
-In-Reply-To: <20140514154150.GA1873@thin>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:jLCGAIXed8U6t8SyP6c6yzYTaQ7tY3JoaY3v3lA86w1
+ cGnwIn4IFA5Y+oTqsFa+vFsv5LzIeC3lwW3O+KtcC0dGWF+33Z
+ cge3sNVDqti6X68WReMeUU63xltSyBNNq8w7MJoDRVP1BrpWX7
+ tfNsAMfV97hIKjCknPlElNX2RfVBTT+LizPb/D5+avCZ+UjN3f
+ ILTldVp4znlpLWfO5mSwQMXSpPCYM78KeQmTdCtlw3QZjJ7Xfa
+ AjQcK01EJeauqiMP85SmtbpxqgqVhK3WKq8O2iycYPB0XDDdEq
+ DmmVcjX07MSxgR50HW9RCRzOoGsgdboFVEQJ4YzCS9QSNa6gA1
+ zYWBmGZLIj7a9i2df9I0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 08:41 AM, Josh Triplett wrote:
-> On Tue, May 13, 2014 at 05:30:59PM -0700, Paul E. McKenney wrote:
->> From: Uma Sharma <uma.sharma523@gmail.com>
->>
->> The variable and struct both having the name "rcu_state" confuses
->> sparse in some situations, so this commit changes the variable to
->> "rcu_state_p" in order to avoid this confusion.  This also makes
->> things easier for human readers.
+On Wednesday 14 May 2014 16:46:29 Thomas Gleixner wrote:
+> On Wed, 14 May 2014, Arnd Bergmann wrote:
 > 
-> Human readers aside, how does Sparse get confused?  Let's fix that.
+> > On Wednesday 14 May 2014 14:21:48 Thomas Gleixner wrote:
+> > > 
+> > > So in the 32-on-64 case we'll have two compat variants:
+> > > 
+> > > SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+> > >                 struct timespec __user *, utime, u32 __user *, uaddr2,
+> > >                 u32, val3)
+> > > 
+> > > COMPAT_SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+> > >                 struct compat_timespec __user *, utime, u32 __user *, uaddr2,
+> > >                 u32, val3)
+> > > 
+> > > COMPAT_SYSCALL_DEFINE6(futex64, u32 __user *, uaddr, int, op, u32, val,
+> > >                 struct timespec64 __user *, utime, u32 __user *, uaddr2,
+> > >                 u32, val3)
+> > > 
+> > > The native 64bit futex64 syscall is mapped to futex.
+> > 
+> > I was actually hoping that we could map the compat futex64 to futex
+> > as well here, since 64-bit timespec and compat timespec64 would be
+> > the same structure.
+> 
+> Right, that might work with this one, but not for anything which has a
+> pointer to a timespec and some other argument based on long.
 
-ack that.  Has it been reported on linux-sparse mailing list?
+We'd have to look at each one individually of course, but out of this
+list, I think it will work for most:
 
-> Personally, I don't think the _p makes things particularly easier for
-> human readers, but it doesn't make things *harder* for anyone other than
-> those used to reading the existing code, so, *shrug*.
+   - getitimer/setitimer
+   - timer_settime/timer_gettime
+   - gettimeofday/settimeofday
+   - adjtimex
+   - clock_gettime/clock_settime/clock_adjtime
+   - time/stime
+   - sysv ipc (msg, sem, shm)
+   - fstatat (or the statx replacement once we get to that)
+   - futimesat
 
+but not these ioctls:
 
--- 
-~Randy
+   - socket time stamps
+   - audio time stamps
+   - v4l time stamps
+   - input event time stamps
+
+> > > I'm curious, whether quite some code, like high frequency timestamps
+> > > wouldn't be better of with a strict 64 bit nanosecond granular time
+> > > represenation.
+> > 
+> > At least in the kernel, I think ktime_t is already the right type
+> > to use on both 64-bit and 32-bit architectures as it can be slow to
+> > extract the seconds portion of 64-bit nanoseconds on a 32-bit machine.
+> 
+> On some of them yes. On i386 the u64 nsec ktime_t variant is way more
+> efficient.
+
+Ah, interesting. Do we have actual data for other architectures? If
+it's much better on x86 and never much worse anywhere else, that
+alone may be a reason to migrate the timestamp interfaces.
+
+	Arnd
