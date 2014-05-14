@@ -1,85 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388AbaENRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:19:29 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:51538 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756319AbaENRT2 (ORCPT
+	id S932202AbaENRUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:20:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39210 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199AbaENRUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:19:28 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiMNAFqlc1NXQ68k/2dsb2JhbABZgwasbQEBAQEBAQUBmh0BgSIXdIIlAQEEAScTHCMFCwgDGC45HgYTiDkMAdE4F4VUiHoHhEABA5lQAYsNiAeDODs
-Date: Wed, 14 May 2014 19:19:16 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] FS/EFS: convert printk to pr_foo()
-Message-Id: <20140514191916.36180c6b06c196bab08692bb@skynet.be>
-In-Reply-To: <1400087627.30384.2.camel@joe-AO725>
-References: <20140514190837.74607436b964eaf155e1665a@skynet.be>
-	<1400087627.30384.2.camel@joe-AO725>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 13:20:33 -0400
+Date: Wed, 14 May 2014 19:20:27 +0200
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+To: dan.carpenter@oracle.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: usbip: missing a blank lines after declarations
+Message-ID: <20140514172023.GA2663@ThinkPad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 10:13:47 -0700
-Joe Perches <joe@perches.com> wrote:
+Fix "Missing a blank line after declaration" style problems
+for all files in drivers/staging/usbip.
 
-> On Wed, 2014-05-14 at 19:08 +0200, Fabian Frederick wrote:
-> > Convert all except KERN_DEBUG
-> 
-> trivial note:
-> 
-> > diff --git a/fs/efs/file.c b/fs/efs/file.c
-> > index 1ccb364..a75c710 100644
-> > --- a/fs/efs/file.c
-> > +++ b/fs/efs/file.c
-> > @@ -22,7 +22,7 @@ int efs_get_block(struct inode *inode, sector_t iblock,
-> >  		/*
-> >  		 * i have no idea why this happens as often as it does
-> >  		 */
-> > -		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-> > +		pr_warn("EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-> >  			block,
-> >  			inode->i_blocks,
-> >  			inode->i_size);
-> []
-> > @@ -48,10 +48,8 @@ int efs_bmap(struct inode *inode, efs_block_t block) {
-> >  		/*
-> >  		 * i have no idea why this happens as often as it does
-> >  		 */
-> > -		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-> > -			block,
-> > -			inode->i_blocks,
-> > -			inode->i_size);
-> > +		pr_warn("EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-> > +			block, inode->i_blocks, inode->i_size);
-> >  #endif
-> 
-> Please use the same form for both blocks,
-> arguments on a single line.
-> 
-> []
-> 
-> > @@ -130,7 +130,7 @@ struct inode *efs_iget(struct super_block *super, unsigned long ino)
-> >  	for(i = 0; i < EFS_DIRECTEXTENTS; i++) {
-> >  		extent_copy(&(efs_inode->di_u.di_extents[i]), &(in->extents[i]));
-> >  		if (i < in->numextents && in->extents[i].cooked.ex_magic != 0) {
-> > -			printk(KERN_WARNING "EFS: extent %d has bad magic number in inode %lu\n", i, inode->i_ino);
-> > +			pr_warn("EFS: extent %d has bad magic number in inode %lu\n", i, inode->i_ino);
-> 
-> Might as well wrap to 80 cols here.
-This is fixed later when fmt is removed (if it's still > 80 cols).
+Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
+---
+ drivers/staging/usbip/stub_dev.c                      | 1 +
+ drivers/staging/usbip/stub_tx.c                       | 1 +
+ drivers/staging/usbip/usbip_common.h                  | 2 ++
+ drivers/staging/usbip/userspace/libsrc/usbip_common.c | 2 +-
+ drivers/staging/usbip/userspace/src/usbip_attach.c    | 1 +
+ drivers/staging/usbip/userspace/src/usbipd.c          | 6 +++++-
+ drivers/staging/usbip/vhci_hcd.c                      | 2 ++
+ 7 files changed, 13 insertions(+), 2 deletions(-)
 
-> 
-> 
-
-
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index de692d7..51d0c71 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -99,6 +99,7 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
+ 
+ 	if (sockfd != -1) {
+ 		int err;
++
+ 		dev_info(dev, "stub up\n");
+ 
+ 		spin_lock_irq(&sdev->ud.lock);
+diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
+index 1622563..38fe551 100644
+--- a/drivers/staging/usbip/stub_tx.c
++++ b/drivers/staging/usbip/stub_tx.c
+@@ -218,6 +218,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
+ 			 */
+ 
+ 			int i;
++
+ 			for (i = 0; i < urb->number_of_packets; i++) {
+ 				iov[iovnum].iov_base = urb->transfer_buffer +
+ 					urb->iso_frame_desc[i].offset;
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index f555d83..4da3866 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -321,12 +321,14 @@ int usbip_event_happened(struct usbip_device *ud);
+ static inline int interface_to_busnum(struct usb_interface *interface)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
++
+ 	return udev->bus->busnum;
+ }
+ 
+ static inline int interface_to_devnum(struct usb_interface *interface)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
++
+ 	return udev->devnum;
+ }
+ 
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+index 238bf5b..05a7443 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_common.c
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_common.c
+@@ -75,6 +75,7 @@ const char *usbip_speed_string(int num)
+ void dump_usb_interface(struct usbip_usb_interface *uinf)
+ {
+ 	char buff[100];
++
+ 	usbip_names_get_class(buff, sizeof(buff),
+ 			uinf->bInterfaceClass,
+ 			uinf->bInterfaceSubClass,
+@@ -86,7 +87,6 @@ void dump_usb_device(struct usbip_usb_device *udev)
+ {
+ 	char buff[100];
+ 
+-
+ 	dbg("%-20s = %s", "path",  udev->path);
+ 	dbg("%-20s = %s", "busid", udev->busid);
+ 
+diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/drivers/staging/usbip/userspace/src/usbip_attach.c
+index 716a79e..d58a14d 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_attach.c
++++ b/drivers/staging/usbip/userspace/src/usbip_attach.c
+@@ -56,6 +56,7 @@ static int record_connection(char *host, char *port, char *busid, int rhport)
+ 		/* if VHCI_STATE_PATH exists, then it better be a directory */
+ 		if (errno == EEXIST) {
+ 			struct stat s;
++
+ 			ret = stat(VHCI_STATE_PATH, &s);
+ 			if (ret < 0)
+ 				return -1;
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index 2cae4ce..b32047a 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -372,6 +372,7 @@ static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[],
+ 
+ 	for (ai = ai_head; ai && nsockfd < maxsockfd; ai = ai->ai_next) {
+ 		int sock;
++
+ 		addrinfo_to_text(ai, ai_buf, ai_buf_size);
+ 		dbg("opening %s", ai_buf);
+ 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+@@ -461,7 +462,9 @@ static void write_pid_file()
+ {
+ 	if (pid_file) {
+ 		dbg("creating pid file %s", pid_file);
+-		FILE *fp = fopen(pid_file, "w");
++		FILE *fp;
++
++		fp = fopen(pid_file, "w");
+ 		if (!fp) {
+ 			err("pid_file: %s: %d (%s)",
+ 			    pid_file, errno, strerror(errno));
+@@ -602,6 +605,7 @@ int main(int argc, char *argv[])
+ 	int daemonize = 0;
+ 	int ipv4 = 0, ipv6 = 0;
+ 	int opt, rc = -1;
++
+ 	pid_file = NULL;
+ 
+ 	usbip_use_stderr = 1;
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 70e1755..0007d30 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -635,6 +635,7 @@ static int vhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 
+ 	{
+ 		int ret = 0;
++
+ 		ret = usb_hcd_check_unlink_urb(hcd, urb, status);
+ 		if (ret) {
+ 			spin_unlock(&the_controller->lock);
+@@ -885,6 +886,7 @@ static int vhci_start(struct usb_hcd *hcd)
+ 
+ 	for (rhport = 0; rhport < VHCI_NPORTS; rhport++) {
+ 		struct vhci_device *vdev = &vhci->vdev[rhport];
++
+ 		vhci_device_init(vdev);
+ 		vdev->rhport = rhport;
+ 	}
 -- 
-Fabian Frederick <fabf@skynet.be>
+1.8.3.2
