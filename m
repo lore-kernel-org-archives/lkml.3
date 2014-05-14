@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbaENLOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:14:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49361 "EHLO mx2.suse.de"
+	id S932116AbaENLPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:15:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981AbaENLOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:14:51 -0400
-Date: Wed, 14 May 2014 13:14:49 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140514111449.GB5824@quack.suse.cz>
-References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
- <1400018683-5565-2-git-send-email-mguzik@redhat.com>
+	id S1754877AbaENLPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 07:15:30 -0400
+Message-ID: <53735044.5030008@redhat.com>
+Date: Wed, 14 May 2014 12:15:16 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400018683-5565-2-git-send-email-mguzik@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Pedro Alves <palves@redhat.com>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
+        oleg@redhat.com
+Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
+ memory register sets
+References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com> <53730326.6000400@linux.vnet.ibm.com>
+In-Reply-To: <53730326.6000400@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
-> This helps hang troubleshooting efforts when only dmesg is available.
+On 05/14/14 06:46, Anshuman Khandual wrote:
+> On 05/13/2014 10:43 PM, Pedro Alves wrote:
+>> On 05/05/14 08:54, Anshuman Khandual wrote:
+>>> This patch enables get and set of transactional memory related register
+>>> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
+>>> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
+>>> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
+>>> ELF core note types added previously in this regard.
+>>>
+>>> 	(1) NT_PPC_TM_SPR
+>>> 	(2) NT_PPC_TM_CGPR
+>>> 	(3) NT_PPC_TM_CFPR
+>>> 	(4) NT_PPC_TM_CVMX
+>>
+>> Sorry that I couldn't tell this from the code, but, what does the
+>> kernel return when the ptracer requests these registers and the
+>> program is not in a transaction?  Specifically I'm wondering whether
+>> this follows the same semantics as the s390 port.
+>>
 > 
-> While here remove code duplication with MS_RDONLY case and fix a
-> whitespace nit.
-  I'm somewhat undecided here I have to say. On one hand I don't like
-printing to kernel log when everything is fine and kernel is operating
-normally. On the other hand I've seen quite a few cases where people have
-shot themselves in the foot with filesystem freezing so having some trace
-of this in the log doesn't seem like a completely bad thing either. What do
-other people think?
+> Right now, it still returns the saved state of the registers from thread
+> struct. I had assumed that the user must know the state of the transaction
+> before initiating the ptrace request. I guess its better to check for
+> the transaction status before processing the request. In case if TM is not
+> active on that thread, we should return -EINVAL.
 
-								Honza
-> Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Josef Bacik <jbacik@fb.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> Cc: Eric Sandeen <esandeen@redhat.com>
-> Cc: Joe Perches <joe@perches.com>
-> ---
-> since v1:
-> 	fix copy-pasto which found its way into the patch
-> 	restore curly brackets in MS_RDONLY case
->  fs/super.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+I think s390 returns ENODATA in that case.
+
+ https://sourceware.org/ml/gdb-patches/2013-06/msg00273.html
+
+We'll want some way to tell whether the system actually
+supports this.  That could be ENODATA vs something-else (EINVAL
+or perhaps better EIO for "request is invalid").
+
+s390 actually screwed that, though it got away because
+there's a bit in HWCAP to signal transactions support.  See:
+
+ https://sourceware.org/ml/gdb-patches/2013-11/msg00080.html
+
+Are you adding something to HWCAP too?
+
 > 
-> diff --git a/fs/super.c b/fs/super.c
-> index 017e10a..4dd7356 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -1291,9 +1291,7 @@ int freeze_super(struct super_block *sb)
->  
->  	if (sb->s_flags & MS_RDONLY) {
->  		/* Nothing to do really... */
-> -		sb->s_writers.frozen = SB_FREEZE_COMPLETE;
-> -		up_write(&sb->s_umount);
-> -		return 0;
-> +		goto out;
->  	}
->  
->  	/* From now on, no new normal writers can start */
-> @@ -1335,8 +1333,10 @@ int freeze_super(struct super_block *sb)
->  	 * This is just for debugging purposes so that fs can warn if it
->  	 * sees write activity when frozen is set to SB_FREEZE_COMPLETE.
->  	 */
-> +out:
->  	sb->s_writers.frozen = SB_FREEZE_COMPLETE;
->  	up_write(&sb->s_umount);
-> +	pr_info("VFS:Filesystem %s frozen\n", sb->s_id);
->  	return 0;
->  }
->  EXPORT_SYMBOL(freeze_super);
-> @@ -1374,7 +1374,7 @@ out:
->  	smp_wmb();
->  	wake_up(&sb->s_writers.wait_unfrozen);
->  	deactivate_locked_super(sb);
-> -
-> +	pr_info("VFS:Filesystem %s thawed\n", sb->s_id);
->  	return 0;
->  }
->  EXPORT_SYMBOL(thaw_super);
-> -- 
-> 1.8.3.1
-> 
+> I am not familiar with the s390 side of code. But if we look at the
+> s390_tdb_get function it checks for (regs->int_code & 0x200) before
+> processing the request. Not sure what 0x200 signifies though.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Pedro Alves
+
