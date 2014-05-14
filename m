@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaEOIfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:35:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55779 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaEOIfk (ORCPT
+	id S1752481AbaEOIgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:36:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53038 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752399AbaEOIgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:35:40 -0400
-Date: Thu, 15 May 2014 10:35:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-Message-ID: <20140515083531.GE30445@twins.programming.kicks-ass.net>
-References: <537192D3.5030907@linux.vnet.ibm.com>
- <20140513094737.GU30445@twins.programming.kicks-ass.net>
- <53721FD4.6060300@redhat.com>
- <20140513142328.GE2485@laptop.programming.kicks-ass.net>
- <53731D12.7040804@linux.vnet.ibm.com>
- <20140514094426.GF30445@twins.programming.kicks-ass.net>
- <5374387E.4080802@linux.vnet.ibm.com>
+	Thu, 15 May 2014 04:36:07 -0400
+Date: Wed, 14 May 2014 15:02:03 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: kishon@ti.com, hdegoede@redhat.com
+Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH RESEND v4 1/8] clk: sunxi: Implement A31 USB clock
+Message-ID: <20140514130203.GL29258@lukather>
+References: <1400072167-29631-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1400072167-29631-2-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lhOtAiCshckiypUO"
+	protocol="application/pgp-signature"; boundary="dp9QYJgVRVEW2bsm"
 Content-Disposition: inline
-In-Reply-To: <5374387E.4080802@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1400072167-29631-2-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lhOtAiCshckiypUO
+--dp9QYJgVRVEW2bsm
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 15, 2014 at 11:46:06AM +0800, Michael wang wrote:
-> But for the dbench, stress combination, that's not spin-wasted, dbench
-> throughput do dropped, how could we explain that one?
+On Wed, May 14, 2014 at 02:56:00PM +0200, Maxime Ripard wrote:
+> The A31 USB clock slightly differ from its older counterparts, mostly bec=
+ause
+> it has a different gate for each PHY, while the older one had a single ga=
+te for
+> all the phy.
+>=20
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-I've no clue what dbench does.. At this point you'll have to
-expose/trace the per-task runtime accounting for these tasks and ideally
-also the things the cgroup code does with them to see if it still makes
-sense.
+Sorry for this one... PEBKAC...
 
---lhOtAiCshckiypUO
-Content-Type: application/pgp-signature
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--dp9QYJgVRVEW2bsm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTdHxTAAoJEHZH4aRLwOS6JEoP+wfamA2596u6SFCEv0GmuxeV
-cwRY+AqgPcu06xo8le6cUiiy5JwcHn04YaCSHZ+M2i5olamP7EPDu0yLT9PkretC
-gTr8+l1rbqFhIhU9rS04O3/qJJoMu1aGYyHiX/+TXlhTjNFl/cuhIc4YsQ5eI/T8
-15YMOc8GOeZUxPFCCiXHszyqIKR57PPMDTj2QSiwu7+Un1TYbjjvwTykRwdIZ9JJ
-dpjbEd06aGvvdY7HvvUqc2Tv9K1iduJ0ttS4SH7HvzQx7oID03SVAx0VO2V1z5iu
-YuRSUnQTj7JabnPNCAlr2Mj0cIM8IhmXmtzuHyvYMS2ukiaxKfVvWWyULW85/qhW
-yj05Nwm9N05PdPh/Jld8TujDmbm6/UuDb9CNKixGCfxjS5wpDHksYSRD0X2C4N6b
-UnUQ9CDJkuBcTMCc3B1pm+rxsI+EDoGaEjQfzeA26eABrWbvGj2I8wlykv0xTuJ+
-6/+kRU+0HcSTRoQ2NgKoHC7RXIATX8gLw+iASKddo2VDOceNO3rGzgWSGogl3c+i
-MG2ppvEgYplkz/bgxHH/XAOGS5KO9X3a0o/uQ9rtW6XMwIXCdqWtVOuICh1qO17+
-qX6T4M0nKJ90VUGzpMOqhDOm0siCdtLRtkniMfUxvTB3+AVE8DTj6/95xSiLJX+O
-W7cz8tWWQJT2ov6HFdw8
-=VrUS
+iQIcBAEBAgAGBQJTc2lLAAoJEBx+YmzsjxAgS1kP/R8uxKV919PfhdjUbQ1ncpzT
+yS/aGABSKgk1zrpW89G02TMGy23sam/jK3T5XpJXFqh09G+fA+su8SydveF9hkVC
+VunUtdCyzwJoSDw+MEJ9gBZd4PotaYnsGtyYP+zkT0YwLvs2bqfyrCGtuNe5oD5l
+f6fnSAaSWAbEfAiL0tgd6kmZRww5qiMg00iLSizvIsU2ijJ5QjIG6HVHneB64pee
+Tge57mMMbJlBqAOzo0pNxgyEOhf8QKSzxJbHLfiMCS5koXG2OmFk0Fhr9C2JBJqs
+cX2FuUyS70A6PlSQKMR7KfhmQ1BzcM8FxJzc7XntEF9uv5pC05bzL9tq8gSn44SH
+oc6XDSbToFNockC8LQKvwM8Lk0I9pxMq45xbT8F69M1DI4lFbuS3LgEum1rGrbp3
+7zVmIC+ajzMASDNYyg+hBY03t1aAVFXvU3jZYzd4d2jYEUZLfh4K13Fv1+gcGwaP
+C1HvBO1U0vZDOxPpfbSND5H9uzNERYoGEA9U/MwdbAGmcJeoz6mYYLCzeMC51bVs
+XKTOhssYd7B4bXGUdc5wwCb6pH2zzFfG25JWomXYnqnHwDiGpCyY249Kb82vUEzP
+mnbZEtscEBPZCK6U2GvV19Tk+Pl7Q6rdSAAlfA4FYuWj0mv9uOYwLeBPiuGAHmzU
+sSg5qVvF0pNUBkkvjC5j
+=9EKP
 -----END PGP SIGNATURE-----
 
---lhOtAiCshckiypUO--
+--dp9QYJgVRVEW2bsm--
