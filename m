@@ -1,69 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbaENREK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 13:04:10 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:38256 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703AbaENREI (ORCPT
+	id S932156AbaENRET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 13:04:19 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:37622 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317AbaENREP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 13:04:08 -0400
-Date: Wed, 14 May 2014 13:04:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: use css->refcnt for cgroup
- reference counting
-Message-ID: <20140514170404.GC15690@htj.dyndns.org>
-References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+	Wed, 14 May 2014 13:04:15 -0400
+Message-ID: <5373A200.6080301@fr.ibm.com>
+Date: Wed, 14 May 2014 19:04:00 +0200
+From: Cedric Le Goater <clg@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399670015-23463-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Dinar Valeev <dvaleev@suse.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] offb: Fix little-endian support
+References: <1400073709-15012-1-git-send-email-tiwai@suse.de> <5373772D.9060807@fr.ibm.com> <s5hha4sh20d.wl%tiwai@suse.de>
+In-Reply-To: <s5hha4sh20d.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051417-6892-0000-0000-000008C9E6BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 09, 2014 at 05:13:26PM -0400, Tejun Heo wrote:
-> Hello,
+On 05/14/2014 04:24 PM, Takashi Iwai wrote:
+> At Wed, 14 May 2014 16:01:17 +0200,
+> Cedric Le Goater wrote:
+>>
+>> Hi Iwai-san,
+>>
+>> On 05/14/2014 03:21 PM, Takashi Iwai wrote:
+>>> Although the color palette was corrected for little endian by the
+>>> commit  [e1edf18b: offb: Add palette hack for little endian], the
+>>> graphics mode is still shown in psychedelic colors.  
+>>
+>> Are you referring to the linux logo colors ? If so, could you please
+>> try the patch below, it should be a fix.
 > 
-> Currently, cgroup and css (cgroup_subsys_state) are separately
-> reference counted.  cgroup->refcnt is an atomic_t and css->refcnt is a
-> percpu_ref.  css is becoming the primary structural block and used
-> widely in various operaitons.  cgroup already has a css embedded in it
-> (cgroup->dummy_css) to use as its proxy in such operations; however,
-> there still are quite a few differences between cgroup and css
-> handling limitng how cgroup->dummy_css can be used.
+> Not only penguin logo but the whole X graphics got strange colors,
+> too, according to the bug report.  I put the original reporter/tester
+> (Dinar Valeev) to Cc.
+> I'm merely a person who tries to fix this mess ;)
 > 
-> This patchset makes cgroup use the embedded css's refcnt for reference
-> counting.  This closes one of the gaps between an cgroup embedded css,
-> which is renamed to cgroup->self early in the patchset, and a normal
-> css and will allow more unified handling of cgroups and csses.  In
-> addition, this makes cgroup refcnting use percpu_ref too, which is a
-> lot more scalable than an atomic_t.
-> 
-> Ultimately, it'd make things far simpler to assign a proper
-> cgroup_subsys to the cgroup embedded csses and handle them the same as
-> other csses; however, we can't yet do it thanks to multiple
-> hierarchies as we end up with multiple csses of the same subsystem for
-> the same task, but in the very long term, if multiple hierarchies can
-> be removed, that's where it's headed.
-> 
-> This patchset contains the following nine patches.
-> 
->  0001-cgroup-use-restart_syscall-for-mount-retries.patch
->  0002-cgroup-rename-cgroup-dummy_css-to-self-and-move-it-t.patch
->  0003-cgroup-separate-out-cgroup_has_live_children-from-cg.patch
->  0004-cgroup-move-check_for_release-parent-call-to-the-end.patch
->  0005-cgroup-move-cgroup-sibling-unlinking-to-cgroup_put.patch
->  0006-cgroup-remove-cgroup_destory_css_killed.patch
->  0007-cgroup-bounce-css-release-through-css-destroy_work.patch
->  0008-cgroup-enable-refcnting-for-root-csses.patch
->  0009-cgroup-use-cgroup-self.refcnt-for-cgroup-refcnting.patch
+> BTW, did you try to run X on fbdev?
 
-Applied to cgroup/for-3.16.
+Not at the time, I was working on the console only, BE and LE. 
+I just tried fbdev and indeed this is a psychedelic mess :)
 
-Thanks.
+Your fix has also issues on BE and console and the patch of mine 
+below is of no use for fbdev. Damn, this is a nightmare.
 
--- 
-tejun
+C. 
+
+>>> For fixing this
+>>> properly, we rather need to correct the RGB offsets depending on
+>>> endianess.
+>>>
+>>> Since the RGB base offsets are corrected, we don't need the hack for
+>>> pallette color entries.  This patch reverts that, too.
+>>
+>> Are you testing using qemu -vga std -vnc :x ? If so, did you try changing 
+>> the depth to 8,15,16,32 ?
+> 
+> Yes, it was with qemu -vga std -vnc :x.
+> About different color depths, Dinar can test / clarify better, I
+> suppose.
+> 
+>>  I think the patch might be breaking big endian 
+>> too.
+> 
+> Big endian should work as is because my patch uses the original
+> offsets when fb_be_math() is true.  It corrects the RGB offsets if
+> !fb_be_math().
+>
+> But, I'm also entirely not sure whether this is 100% correct, either.
+> Namely, if the RGB offsets were correct for some little endian
+> machines with offb, my patch would break it, of course.  But, then
+> your previous fix must have already broken it as well, so I took the
+> same fb_be_math() check.
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
+>> Now, I am far from being an expert on frame buffers. It would be glad 
+>> to have some insights on that topic. 
+>>
+>> Thanks,
+>>
+>> C. 
+>>
+>>
+>> [PATCH] fb: fix logo palette entries for little endian
+>>
+>> The offb_cmap_byteswap() routine helps byteswapping the color map
+>> entries when required. This patch externalizes and renames the helper 
+>> routine to adjust the pseudo palette of the logo when running on 
+>> little endian.
+>>
+>> Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
+>> ---
+>>  drivers/video/fbmem.c |    6 ++++--
+>>  drivers/video/offb.c  |   11 +----------
+>>  include/linux/fb.h    |    8 ++++++++
+>>  3 files changed, 13 insertions(+), 12 deletions(-)
+>>
+>> Index: linux.git/drivers/video/fbmem.c
+>> ===================================================================
+>> --- linux.git.orig/drivers/video/fbmem.c
+>> +++ linux.git/drivers/video/fbmem.c
+>> @@ -252,7 +252,8 @@ static void  fb_set_logo_truepalette(str
+>>  	blueshift  = info->var.blue.offset  - (8 - info->var.blue.length);
+>>  
+>>  	for ( i = 0; i < logo->clutsize; i++) {
+>> -		palette[i+32] = (safe_shift((clut[0] & redmask), redshift) |
+>> +		palette[i+32] = fb_cmap_byteswap(info,
+>> +				 safe_shift((clut[0] & redmask), redshift) |
+>>  				 safe_shift((clut[1] & greenmask), greenshift) |
+>>  				 safe_shift((clut[2] & bluemask), blueshift));
+>>  		clut += 3;
+>> @@ -271,7 +272,8 @@ static void fb_set_logo_directpalette(st
+>>  	blueshift = info->var.blue.offset;
+>>  
+>>  	for (i = 32; i < 32 + logo->clutsize; i++)
+>> -		palette[i] = i << redshift | i << greenshift | i << blueshift;
+>> +		palette[i] = fb_cmap_byteswap(info, i << redshift |
+>> +					i << greenshift | i << blueshift);
+>>  }
+>>  
+>>  static void fb_set_logo(struct fb_info *info,
+>> Index: linux.git/drivers/video/offb.c
+>> ===================================================================
+>> --- linux.git.orig/drivers/video/offb.c
+>> +++ linux.git/drivers/video/offb.c
+>> @@ -91,15 +91,6 @@ extern boot_infos_t *boot_infos;
+>>  #define AVIVO_DC_LUTB_WHITE_OFFSET_GREEN        0x6cd4
+>>  #define AVIVO_DC_LUTB_WHITE_OFFSET_RED          0x6cd8
+>>  
+>> -#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
+>> -
+>> -static inline u32 offb_cmap_byteswap(struct fb_info *info, u32 value)
+>> -{
+>> -	u32 bpp = info->var.bits_per_pixel;
+>> -
+>> -	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
+>> -}
+>> -
+>>      /*
+>>       *  Set a single color register. The values supplied are already
+>>       *  rounded down to the hardware's capabilities (according to the
+>> @@ -129,7 +120,7 @@ static int offb_setcolreg(u_int regno, u
+>>  			mask <<= info->var.transp.offset;
+>>  			value |= mask;
+>>  		}
+>> -		pal[regno] = offb_cmap_byteswap(info, value);
+>> +		pal[regno] = fb_cmap_byteswap(info, value);
+>>  		return 0;
+>>  	}
+>>  
+>> Index: linux.git/include/linux/fb.h
+>> ===================================================================
+>> --- linux.git.orig/include/linux/fb.h
+>> +++ linux.git/include/linux/fb.h
+>> @@ -582,6 +582,7 @@ static inline struct apertures_struct *a
+>>  
+>>  #endif
+>>  
+>> +#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
+>>  #define FB_LEFT_POS(p, bpp)          (fb_be_math(p) ? (32 - (bpp)) : 0)
+>>  #define FB_SHIFT_HIGH(p, val, bits)  (fb_be_math(p) ? (val) >> (bits) : \
+>>  						      (val) << (bits))
+>> @@ -681,6 +682,13 @@ static inline bool fb_be_math(struct fb_
+>>  #endif /* CONFIG_FB_FOREIGN_ENDIAN */
+>>  }
+>>  
+>> +static inline u32 fb_cmap_byteswap(struct fb_info *info, u32 value)
+>> +{
+>> +	u32 bpp = info->var.bits_per_pixel;
+>> +
+>> +	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
+>> +}
+>> +
+>>  /* drivers/video/fbsysfs.c */
+>>  extern struct fb_info *framebuffer_alloc(size_t size, struct device *dev);
+>>  extern void framebuffer_release(struct fb_info *info);
+>>
+> 
+
