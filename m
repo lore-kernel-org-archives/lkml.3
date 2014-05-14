@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaENSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:39:26 -0400
-Received: from exprod7og102.obsmtp.com ([64.18.2.157]:55528 "EHLO
-	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaENSim (ORCPT
+	id S1751850AbaENSjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:39:46 -0400
+Received: from exprod7og111.obsmtp.com ([64.18.2.175]:42210 "EHLO
+	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaENSik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:38:42 -0400
+	Wed, 14 May 2014 14:38:40 -0400
 From: Anders Berg <anders.berg@avagotech.com>
 To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Anders Berg <anders.berg@lsi.com>
-Subject: [PATCH v3 4/6] ARM: axxia: Adding defconfig for AXM55xx
-Date: Wed, 14 May 2014 20:37:59 +0200
-Message-Id: <90c2e69bf5d99a98aa5fc7b063455bc681e2e320.1400072260.git.anders.berg@avagotech.com>
+Subject: [PATCH v3 3/6] ARM: dts: Device tree for AXM55xx.
+Date: Wed, 14 May 2014 20:37:58 +0200
+Message-Id: <db23233009e0a59bca0f40e8515a015ae4c85e3c.1400072260.git.anders.berg@avagotech.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <cover.1400072260.git.anders.berg@avagotech.com>
 References: <cover.1400072260.git.anders.berg@avagotech.com>
@@ -27,269 +27,611 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anders Berg <anders.berg@lsi.com>
 
-Add a defconfig file for the LSI Axxia family of devices (CONFIG_ARCH_AXXIA).
+Add device tree for the Amarillo validation board with an AXM5516 SoC.
 
 Signed-off-by: Anders Berg <anders.berg@lsi.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/configs/axm55xx_defconfig | 248 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 248 insertions(+)
- create mode 100644 arch/arm/configs/axm55xx_defconfig
+ arch/arm/boot/dts/Makefile             |   1 +
+ arch/arm/boot/dts/axm5516-amarillo.dts |  51 ++++++
+ arch/arm/boot/dts/axm5516-cpus.dtsi    | 204 ++++++++++++++++++++++
+ arch/arm/boot/dts/axm55xx.dtsi         | 306 +++++++++++++++++++++++++++++++++
+ 4 files changed, 562 insertions(+)
+ create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
+ create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
+ create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
 
-diff --git a/arch/arm/configs/axm55xx_defconfig b/arch/arm/configs/axm55xx_defconfig
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index fbebf73..9672ca3 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -50,6 +50,7 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d35ek.dtb
+ dtb-$(CONFIG_ARCH_AT91)	+= sama5d36ek.dtb
+ 
+ dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
++dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+ dtb-$(CONFIG_ARCH_BCM_5301X) += bcm4708-netgear-r6250.dtb
+ dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb \
+diff --git a/arch/arm/boot/dts/axm5516-amarillo.dts b/arch/arm/boot/dts/axm5516-amarillo.dts
 new file mode 100644
-index 0000000..d3260d7
+index 0000000..a9d6047
 --- /dev/null
-+++ b/arch/arm/configs/axm55xx_defconfig
-@@ -0,0 +1,248 @@
-+CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_TASKSTATS=y
-+CONFIG_TASK_DELAY_ACCT=y
-+CONFIG_TASK_XACCT=y
-+CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=16
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_IPC_NS is not set
-+# CONFIG_PID_NS is not set
-+# CONFIG_NET_NS is not set
-+CONFIG_SCHED_AUTOGROUP=y
-+CONFIG_RELAY=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_EMBEDDED=y
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_PROFILING=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_IOSCHED_DEADLINE is not set
-+CONFIG_ARCH_AXXIA=y
-+CONFIG_GPIO_PCA953X=y
-+CONFIG_ARM_LPAE=y
-+CONFIG_ARM_THUMBEE=y
-+CONFIG_ARM_ERRATA_430973=y
-+CONFIG_ARM_ERRATA_643719=y
-+CONFIG_ARM_ERRATA_720789=y
-+CONFIG_ARM_ERRATA_754322=y
-+CONFIG_ARM_ERRATA_754327=y
-+CONFIG_ARM_ERRATA_764369=y
-+CONFIG_ARM_ERRATA_775420=y
-+CONFIG_ARM_ERRATA_798181=y
-+CONFIG_PCI=y
-+CONFIG_PCI_MSI=y
-+CONFIG_PCIE_AXXIA=y
-+CONFIG_SMP=y
-+CONFIG_NR_CPUS=16
-+CONFIG_HOTPLUG_CPU=y
-+CONFIG_PREEMPT=y
-+CONFIG_AEABI=y
-+CONFIG_OABI_COMPAT=y
-+CONFIG_HIGHMEM=y
-+CONFIG_KSM=y
-+CONFIG_ZBOOT_ROM_TEXT=0x0
-+CONFIG_ZBOOT_ROM_BSS=0x0
-+CONFIG_ARM_APPENDED_DTB=y
-+CONFIG_ARM_ATAG_DTB_COMPAT=y
-+CONFIG_VFP=y
-+CONFIG_NEON=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+CONFIG_BINFMT_MISC=y
-+# CONFIG_SUSPEND is not set
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_XFRM_USER=y
-+CONFIG_XFRM_SUB_POLICY=y
-+CONFIG_XFRM_MIGRATE=y
-+CONFIG_XFRM_STATISTICS=y
-+CONFIG_NET_KEY=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_IP_PNP_BOOTP=y
-+CONFIG_INET_AH=y
-+CONFIG_INET_ESP=y
-+CONFIG_INET_IPCOMP=y
-+# CONFIG_INET_LRO is not set
-+# CONFIG_IPV6 is not set
-+CONFIG_NETWORK_PHY_TIMESTAMPING=y
-+CONFIG_BRIDGE=y
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+CONFIG_MTD=y
-+CONFIG_MTD_CMDLINE_PARTS=y
-+CONFIG_MTD_AFS_PARTS=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_CFI_INTELEXT=y
-+CONFIG_MTD_CFI_AMDSTD=y
-+CONFIG_MTD_CFI_STAA=y
-+CONFIG_MTD_PHYSMAP=y
-+CONFIG_MTD_PHYSMAP_OF=y
-+CONFIG_MTD_M25P80=y
-+CONFIG_PROC_DEVICETREE=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_EEPROM_AT24=y
-+CONFIG_EEPROM_AT25=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_CHR_DEV_SG=y
-+CONFIG_ATA=y
-+CONFIG_PATA_PLATFORM=y
-+CONFIG_PATA_OF_PLATFORM=y
-+CONFIG_MD=y
-+CONFIG_BLK_DEV_DM=y
-+CONFIG_DM_UEVENT=y
-+CONFIG_NETDEVICES=y
-+CONFIG_TUN=y
-+CONFIG_VETH=y
-+CONFIG_VIRTIO_NET=y
-+# CONFIG_NET_CADENCE is not set
-+# CONFIG_NET_VENDOR_BROADCOM is not set
-+# CONFIG_NET_VENDOR_CIRRUS is not set
-+# CONFIG_NET_VENDOR_FARADAY is not set
-+# CONFIG_NET_VENDOR_INTEL is not set
-+# CONFIG_NET_VENDOR_MARVELL is not set
-+# CONFIG_NET_VENDOR_MICREL is not set
-+# CONFIG_NET_VENDOR_NATSEMI is not set
-+# CONFIG_NET_VENDOR_SEEQ is not set
-+# CONFIG_NET_VENDOR_SMSC is not set
-+# CONFIG_NET_VENDOR_STMICRO is not set
-+# CONFIG_NET_VENDOR_VIA is not set
-+# CONFIG_NET_VENDOR_WIZNET is not set
-+CONFIG_BROADCOM_PHY=y
-+# CONFIG_WLAN is not set
-+# CONFIG_MOUSE_PS2_ALPS is not set
-+# CONFIG_MOUSE_PS2_LOGIPS2PP is not set
-+# CONFIG_MOUSE_PS2_SYNAPTICS is not set
-+# CONFIG_MOUSE_PS2_TRACKPOINT is not set
-+# CONFIG_SERIO_SERPORT is not set
-+CONFIG_SERIO_AMBAKMI=y
-+CONFIG_LEGACY_PTY_COUNT=16
-+CONFIG_SERIAL_AMBA_PL011=y
-+CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-+CONFIG_VIRTIO_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_I2C=y
-+CONFIG_I2C_CHARDEV=y
-+CONFIG_I2C_MUX=y
-+CONFIG_I2C_AXXIA=y
-+CONFIG_SPI=y
-+CONFIG_SPI_PL022=y
-+CONFIG_DP83640_PHY=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_PL061=y
-+CONFIG_POWER_SUPPLY=y
-+CONFIG_POWER_RESET=y
-+CONFIG_POWER_RESET_AXXIA=y
-+CONFIG_SENSORS_ADT7475=y
-+CONFIG_SENSORS_JC42=y
-+CONFIG_SENSORS_LM75=y
-+CONFIG_PMBUS=y
-+CONFIG_SENSORS_LTC2978=y
-+CONFIG_WATCHDOG=y
-+CONFIG_ARM_SP805_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_ARMCLCD=y
-+CONFIG_FRAMEBUFFER_CONSOLE=y
-+CONFIG_LOGO=y
-+# CONFIG_LOGO_LINUX_MONO is not set
-+# CONFIG_LOGO_LINUX_VGA16 is not set
-+CONFIG_HID_A4TECH=y
-+CONFIG_HID_APPLE=y
-+CONFIG_HID_BELKIN=y
-+CONFIG_HID_CHERRY=y
-+CONFIG_HID_CHICONY=y
-+CONFIG_HID_CYPRESS=y
-+CONFIG_HID_DRAGONRISE=y
-+CONFIG_HID_EZKEY=y
-+CONFIG_HID_KYE=y
-+CONFIG_HID_GYRATION=y
-+CONFIG_HID_TWINHAN=y
-+CONFIG_HID_KENSINGTON=y
-+CONFIG_HID_LOGITECH=y
-+CONFIG_HID_MICROSOFT=y
-+CONFIG_HID_MONTEREY=y
-+CONFIG_HID_NTRIG=y
-+CONFIG_HID_ORTEK=y
-+CONFIG_HID_PANTHERLORD=y
-+CONFIG_HID_PETALYNX=y
-+CONFIG_HID_SAMSUNG=y
-+CONFIG_HID_SUNPLUS=y
-+CONFIG_HID_GREENASIA=y
-+CONFIG_HID_SMARTJOYPLUS=y
-+CONFIG_HID_TOPSEED=y
-+CONFIG_HID_THRUSTMASTER=y
-+CONFIG_HID_ZEROPLUS=y
-+CONFIG_USB=y
-+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-+CONFIG_USB_EHCI_HCD=y
-+# CONFIG_USB_EHCI_TT_NEWSCHED is not set
-+CONFIG_USB_EHCI_HCD_AXXIA=y
-+CONFIG_USB_STORAGE=y
-+CONFIG_MMC=y
-+CONFIG_MMC_ARMMMCI=y
-+CONFIG_DMADEVICES=y
-+CONFIG_PL330_DMA=y
-+CONFIG_VIRT_DRIVERS=y
-+CONFIG_VIRTIO_MMIO=y
-+CONFIG_MAILBOX=y
-+CONFIG_PL320_MBOX=y
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT3_FS=y
-+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-+CONFIG_EXT4_FS=y
-+CONFIG_AUTOFS4_FS=y
-+CONFIG_FUSE_FS=y
-+CONFIG_CUSE=y
-+CONFIG_FSCACHE=y
-+CONFIG_FSCACHE_STATS=y
-+CONFIG_FSCACHE_HISTOGRAM=y
-+CONFIG_FSCACHE_DEBUG=y
-+CONFIG_FSCACHE_OBJECT_LIST=y
-+CONFIG_CACHEFILES=y
-+CONFIG_CACHEFILES_HISTOGRAM=y
-+CONFIG_ISO9660_FS=y
-+CONFIG_UDF_FS=y
-+CONFIG_MSDOS_FS=y
-+CONFIG_VFAT_FS=y
-+CONFIG_NTFS_FS=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_CRAMFS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V4=y
-+CONFIG_ROOT_NFS=y
-+CONFIG_NFS_FSCACHE=y
-+CONFIG_SUNRPC_DEBUG=y
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_ISO8859_1=y
-+CONFIG_PRINTK_TIME=y
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_FS=y
-+CONFIG_MAGIC_SYSRQ=y
-+# CONFIG_SCHED_DEBUG is not set
-+CONFIG_RCU_CPU_STALL_TIMEOUT=60
-+# CONFIG_FTRACE is not set
-+CONFIG_DEBUG_USER=y
-+CONFIG_CRYPTO_GCM=y
-+CONFIG_CRYPTO_XCBC=y
-+CONFIG_CRYPTO_SHA256=y
-+# CONFIG_CRYPTO_ANSI_CPRNG is not set
-+CONFIG_VIRTUALIZATION=y
-+CONFIG_KVM=y
++++ b/arch/arm/boot/dts/axm5516-amarillo.dts
+@@ -0,0 +1,51 @@
++/*
++ * arch/arm/boot/dts/axm5516-amarillo.dts
++ *
++ * Copyright (C) 2013 LSI
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++/dts-v1/;
++
++/memreserve/ 0x00000000 0x00400000;
++
++#include "axm55xx.dtsi"
++#include "axm5516-cpus.dtsi"
++
++/ {
++	model = "Amarillo AXM5516";
++	compatible = "lsi,axm5516-amarillo", "lsi,axm5516";
++
++	memory {
++		device_type = "memory";
++		reg = <0 0x00000000 0x02 0x00000000>;
++	};
++};
++
++&serial0 {
++	status = "okay";
++};
++
++&serial1 {
++	status = "okay";
++};
++
++&serial2 {
++	status = "okay";
++};
++
++&serial3 {
++	status = "okay";
++};
++
++&gpio0 {
++	status = "okay";
++};
++
++&gpio1 {
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/axm5516-cpus.dtsi b/arch/arm/boot/dts/axm5516-cpus.dtsi
+new file mode 100644
+index 0000000..b85f360
+--- /dev/null
++++ b/arch/arm/boot/dts/axm5516-cpus.dtsi
+@@ -0,0 +1,204 @@
++/*
++ * arch/arm/boot/dts/axm5516-cpus.dtsi
++ *
++ * Copyright (C) 2013 LSI
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++/ {
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu-map {
++			cluster0 {
++				core0 {
++					cpu = <&CPU0>;
++				};
++				core1 {
++					cpu = <&CPU1>;
++				};
++				core2 {
++					cpu = <&CPU2>;
++				};
++				core3 {
++					cpu = <&CPU3>;
++				};
++			};
++			cluster1 {
++				core0 {
++					cpu = <&CPU4>;
++				};
++				core1 {
++					cpu = <&CPU5>;
++				};
++				core2 {
++					cpu = <&CPU6>;
++				};
++				core3 {
++					cpu = <&CPU7>;
++				};
++			};
++			cluster2 {
++				core0 {
++					cpu = <&CPU8>;
++				};
++				core1 {
++					cpu = <&CPU9>;
++				};
++				core2 {
++					cpu = <&CPU10>;
++				};
++				core3 {
++					cpu = <&CPU11>;
++				};
++			};
++			cluster3 {
++				core0 {
++					cpu = <&CPU12>;
++				};
++				core1 {
++					cpu = <&CPU13>;
++				};
++				core2 {
++					cpu = <&CPU14>;
++				};
++				core3 {
++					cpu = <&CPU15>;
++				};
++			};
++		};
++
++		CPU0: cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x00>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU1: cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x01>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU2: cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x02>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU3: cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x03>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU4: cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x100>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU5: cpu@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x101>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU6: cpu@102 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x102>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU7: cpu@103 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x103>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU8: cpu@200 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x200>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU9: cpu@201 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x201>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU10: cpu@202 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x202>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU11: cpu@203 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x203>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU12: cpu@300 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x300>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU13: cpu@301 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x301>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU14: cpu@302 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x302>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++
++		CPU15: cpu@303 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0x303>;
++			clock-frequency= <1400000000>;
++			cpu-release-addr = <0>; // Fixed by the boot loader
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/axm55xx.dtsi b/arch/arm/boot/dts/axm55xx.dtsi
+new file mode 100644
+index 0000000..5d63887
+--- /dev/null
++++ b/arch/arm/boot/dts/axm55xx.dtsi
+@@ -0,0 +1,306 @@
++/*
++ * arch/arm/boot/dts/axm55xx.dtsi
++ *
++ * Copyright (C) 2013 LSI
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++#include "skeleton64.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++
++	aliases {
++		serial0	  = &serial0;
++		serial1   = &serial1;
++		serial2	  = &serial2;
++		serial3	  = &serial3;
++		timer	  = &timer0;
++	};
++
++	clocks {
++		compatible = "simple-bus";
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		/* Reference clocks */
++
++		clk_ref0: clk_ref0 {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <125000000>;
++		};
++
++		clk_ref1: clk_ref1 {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <125000000>;
++		};
++
++		clk_ref2: clk_ref2 {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <125000000>;
++		};
++
++		/* PLLs */
++
++		clk_fab_pll: clk_fab_pll@2010021800 {
++			compatible = "lsi,axxia-pll-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref0>;
++			clock-output-names = "clk_fab_pll";
++			reg = <0x20 0x10021800 0 0x2c>;
++		};
++
++		clk_cpu_pll: clk_cpu_pll@2010022000 {
++			compatible = "lsi,axxia-pll-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref0>;
++			clock-output-names = "clk_cpu_pll";
++			reg = <0x20 0x10022000 0 0x2c>;
++		};
++
++		clk_sys_pll: clk_sys_pll@2010022800 {
++			compatible = "lsi,axxia-pll-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref0>;
++			clock-output-names = "clk_sys_pll";
++			reg = <0x20 0x10022800 0 0x2c>;
++		};
++
++		clk_sm0_pll: sm0_pll@2010023000 {
++			compatible = "lsi,axxia-pll-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref2>;
++			clock-output-names = "clk_sm0_pll";
++			reg = <0x20 0x10023000 0 0x2c>;
++		};
++
++		clk_sm1_pll: sm1_pll@2010023800 {
++			compatible = "lsi,axxia-pll-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref1>;
++			clock-output-names = "clk_sm1_pll";
++			reg = <0x20 0x10023800 0 0x2c>;
++		};
++
++		/* CPU clock */
++
++		clk_cpu_div: cpu {
++			compatible = "lsi,axxia-div-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_cpu_pll>;
++			clock-output-names = "clk_cpu_div";
++			reg = <0x20 0x10030008 0 0x4>;
++			lsi,bit-shift = <0>;
++			lsi,bit-width = <4>;
++		};
++
++		clk_cpu: clk_cpu0@2010030000 {
++			compatible = "lsi,axxia-mux-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref0>,
++			         <&clk_cpu_pll>,
++				 <&clk_cpu_div>,
++				 <&clk_cpu_div>;
++			clock-output-names = "clk_cpu";
++			reg = <0x20 0x10030000 0 0x4>;
++			lsi,bit-shift = <0>;
++			lsi,bit-width = <2>;
++		};
++
++		/* Peripheral clock */
++
++		clk_per_div: peripheral {
++			compatible = "lsi,axxia-div-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_sm1_pll>;
++			clock-output-names = "clk_per_div";
++			reg = <0x20 0x1003000c 0 0x4>;
++			lsi,bit-shift = <12>;
++			lsi,bit-width = <4>;
++		};
++
++		clk_per: clk_per@2010030004 {
++			compatible = "lsi,axxia-mux-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref1>, <&clk_per_div>;
++			clock-output-names = "clk_per";
++			reg = <0x20 0x10030004 0 0x4>;
++			lsi,bit-shift = <6>;
++			lsi,bit-width = <1>;
++		};
++
++		/* MMC clock */
++
++		clk_mmc_div: emmc {
++			compatible = "lsi,axxia-div-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_sm1_pll>;
++			clock-output-names = "clk_mmc_div";
++			reg = <0x20 0x1003000c 0 0x4>;
++			lsi,bit-shift = <16>;
++			lsi,bit-width = <4>;
++		};
++
++		clk_mmc: clk_mmc@2010030004 {
++			compatible = "lsi,axxia-mux-clock";
++			#clock-cells = <0>;
++			clocks = <&clk_ref1>, <&clk_mmc_div>;
++			clock-output-names = "clk_mmc";
++			reg = <0x20 0x10030004 0 0x4>;
++			lsi,bit-shift = <9>;
++			lsi,bit-width = <1>;
++		};
++
++	};
++
++	gic: interrupt-controller@2001001000 {
++		compatible = "arm,cortex-a15-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <0>;
++		interrupt-controller;
++		reg = <0x20 0x01001000 0 0x1000>,
++		      <0x20 0x01002000 0 0x1000>,
++		      <0x20 0x01004000 0 0x2000>,
++		      <0x20 0x01006000 0 0x2000>;
++		interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) |
++				IRQ_TYPE_LEVEL_HIGH)>;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts =
++			<GIC_PPI 13
++				(GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			<GIC_PPI 14
++				(GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			<GIC_PPI 11
++				(GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
++			<GIC_PPI 10
++				(GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
++	};
++
++
++	pmu {
++		compatible = "arm,cortex-a15-pmu";
++		interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
++	};
++
++	soc {
++		compatible = "simple-bus";
++		device_type = "soc";
++		#address-cells = <2>;
++		#size-cells = <2>;
++		interrupt-parent = <&gic>;
++		ranges;
++
++		syscon: syscon@2010030000 {
++			compatible = "lsi,axxia-syscon", "syscon";
++			reg = <0x20 0x10030000 0 0x2000>;
++		};
++
++		amba {
++			compatible = "arm,amba-bus";
++			#address-cells = <2>;
++			#size-cells = <2>;
++			ranges;
++
++			serial0: uart@2010080000 {
++				compatible = "arm,pl011", "arm,primecell";
++				reg = <0x20 0x10080000 0 0x1000>;
++				interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++
++			serial1: uart@2010081000 {
++				compatible = "arm,pl011", "arm,primecell";
++				reg = <0x20 0x10081000 0 0x1000>;
++				interrupts = <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++
++			serial2: uart@2010082000 {
++				compatible = "arm,pl011", "arm,primecell";
++				reg = <0x20 0x10082000 0 0x1000>;
++				interrupts = <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++
++			serial3: uart@2010083000 {
++				compatible = "arm,pl011", "arm,primecell";
++				reg = <0x20 0x10083000 0 0x1000>;
++				interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++
++			timer0: timer@2010091000 {
++				compatible = "arm,sp804", "arm,primecell";
++				reg = <0x20 0x10091000 0 0x1000>;
++				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "okay";
++			};
++
++			gpio0: gpio@2010092000 {
++				#gpio-cells = <2>;
++				compatible = "arm,pl061", "arm,primecell";
++				gpio-controller;
++				reg = <0x20 0x10092000 0x00 0x1000>;
++				interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++
++			gpio1: gpio@2010093000 {
++				#gpio-cells = <2>;
++				compatible = "arm,pl061", "arm,primecell";
++				gpio-controller;
++				reg = <0x20 0x10093000 0x00 0x1000>;
++				interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clk_per>;
++				clock-names = "apb_pclk";
++				status = "disabled";
++			};
++		};
++	};
++};
++
++/*
++  Local Variables:
++  mode: C
++  End:
++*/
 -- 
 1.8.3.2
 
