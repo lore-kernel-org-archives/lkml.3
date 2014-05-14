@@ -1,325 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaENJkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:40:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752075AbaENJkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:40:15 -0400
-Date: Wed, 14 May 2014 11:40:12 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm v2] memcg: cleanup kmem cache creation/destruction
- functions naming
-Message-ID: <20140514094012.GA15756@dhcp22.suse.cz>
-References: <20140507124533.GF9489@dhcp22.suse.cz>
- <1399993551-13298-1-git-send-email-vdavydov@parallels.com>
+	id S1753934AbaENJmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:42:44 -0400
+Received: from forward5m.mail.yandex.net ([37.140.138.5]:35975 "EHLO
+	forward5m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaENJmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:42:38 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Michael wang <wangyun@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ktkhai@parallels.com" <ktkhai@parallels.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <53711785.5010504@oracle.com>
+References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <534610A4.5000302@oracle.com> <53464164.5030701@linux.vnet.ibm.com> <336561397137116@web27h.yandex.ru> <5347FCED.8040706@oracle.com> <1442521397229373@web20m.yandex.ru> <53711785.5010504@oracle.com>
+Subject: Re: sched: hang in migrate_swap
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399993551-13298-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-Id: <2614131400060552@web30m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 14 May 2014 13:42:32 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-05-14 19:05:51, Vladimir Davydov wrote:
-> Current names are rather inconsistent. Let's try to improve them.
-> 
-> Brief change log:
-> 
-> ** old name **                          ** new name **
-> 
-> kmem_cache_create_memcg                 memcg_create_kmem_cache
-> memcg_kmem_create_cache                 memcg_regsiter_cache
-> memcg_kmem_destroy_cache                memcg_unregister_cache
-> 
-> kmem_cache_destroy_memcg_children       memcg_cleanup_cache_params
-> mem_cgroup_destroy_all_caches           memcg_unregister_all_caches
-> 
-> create_work                             memcg_register_cache_work
-> memcg_create_cache_work_func            memcg_register_cache_func
-> memcg_create_cache_enqueue              memcg_schedule_register_cache
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+12.05.2014, 22:49, "Sasha Levin" <sasha.levin@oracle.com>:
+> On 04/11/2014 11:16 AM, Kirill Tkhai wrote:
+>
+>> š11.04.2014, 18:33, "Sasha Levin" <sasha.levin@oracle.com>:
+>>>> šOn 04/10/2014 09:38 AM, Kirill Tkhai wrote:
+>>>>>> šš10.04.2014, 11:00, "Michael wang" <wangyun@linux.vnet.ibm.com>:
+>>>>>>>>>> ššOn 04/10/2014 11:31 AM, Sasha Levin wrote:
+>>>>>>>>>> šš[snip]
+>>>>>>>>>>>>>> šššI'd like to re-open this issue. It seems that something broke and I'm
+>>>>>>>>>>>>>> šššnow seeing the same issues that have gone away 2 months with this patch
+>>>>>>>>>>>>>> šššagain.
+>>>>>>>>>> ššA new mechanism has been designed to move the priority checking inside
+>>>>>>>>>> ššidle_balance(), including Kirill who is the designer ;-)
+>>>>>> ššNot sure, it's connected with my patch. But looks like, we forgot
+>>>>>> ššexactly stop class. Maybe this will help?
+>>>>>>
+>>>>>> šš[PATCH] sched: Checking for stop task appearance when balancing happens
+>>>>>>
+>>>>>> ššJust do it, like we do for other higher priority classes...
+>>>>>>
+>>>>>> ššSigned-off-by: Kirill Tkhai <tkhai@yandex.ru>
+>>>> šI've been running with this patch for the last two days and the hang
+>>>> šseems to be gone.
+>>>>
+>>>> šI'll leave it running on the weekend and will update again on Monday.
+>> šThanks for testing.
+>>
+>> šSorry for I killed your linuxes by this lost need_resched().
+>
+> So I'm going to revive this thread again:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Thanks!
+Sadly, kernel parameter "softlockup_panic" prevents stack dumping on other cpus..
 
-> ---
->  include/linux/memcontrol.h |    2 +-
->  include/linux/slab.h       |    2 +-
->  mm/memcontrol.c            |   60 +++++++++++++++++++++-----------------------
->  mm/slab_common.c           |   12 ++++-----
->  4 files changed, 36 insertions(+), 40 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index aa429de275cc..c3a53cbb88eb 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -514,7 +514,7 @@ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
->  int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order);
->  void __memcg_uncharge_slab(struct kmem_cache *cachep, int order);
->  
-> -int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
-> +int __memcg_cleanup_cache_params(struct kmem_cache *s);
->  
->  /**
->   * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 86e5b26fbdab..1d9abb7d22a0 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -116,7 +116,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
->  			unsigned long,
->  			void (*)(void *));
->  #ifdef CONFIG_MEMCG_KMEM
-> -struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *,
-> +struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *,
->  					   struct kmem_cache *,
->  					   const char *);
->  #endif
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f5ea266f4d9a..b12a05049f2a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3127,8 +3127,8 @@ void memcg_free_cache_params(struct kmem_cache *s)
->  	kfree(s->memcg_params);
->  }
->  
-> -static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
-> -				    struct kmem_cache *root_cache)
-> +static void memcg_register_cache(struct mem_cgroup *memcg,
-> +				 struct kmem_cache *root_cache)
->  {
->  	static char memcg_name_buf[NAME_MAX + 1]; /* protected by
->  						     memcg_slab_mutex */
-> @@ -3148,7 +3148,7 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
->  		return;
->  
->  	cgroup_name(memcg->css.cgroup, memcg_name_buf, NAME_MAX + 1);
-> -	cachep = kmem_cache_create_memcg(memcg, root_cache, memcg_name_buf);
-> +	cachep = memcg_create_kmem_cache(memcg, root_cache, memcg_name_buf);
->  	/*
->  	 * If we could not create a memcg cache, do not complain, because
->  	 * that's not critical at all as we can always proceed with the root
-> @@ -3170,7 +3170,7 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
->  	root_cache->memcg_params->memcg_caches[id] = cachep;
->  }
->  
-> -static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
-> +static void memcg_unregister_cache(struct kmem_cache *cachep)
->  {
->  	struct kmem_cache *root_cache;
->  	struct mem_cgroup *memcg;
-> @@ -3223,7 +3223,7 @@ static inline void memcg_resume_kmem_account(void)
->  	current->memcg_kmem_skip_account--;
->  }
->  
-> -int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-> +int __memcg_cleanup_cache_params(struct kmem_cache *s)
->  {
->  	struct kmem_cache *c;
->  	int i, failed = 0;
-> @@ -3234,7 +3234,7 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  		if (!c)
->  			continue;
->  
-> -		memcg_kmem_destroy_cache(c);
-> +		memcg_unregister_cache(c);
->  
->  		if (cache_from_memcg_idx(s, i))
->  			failed++;
-> @@ -3243,7 +3243,7 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  	return failed;
->  }
->  
-> -static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
-> +static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
->  {
->  	struct kmem_cache *cachep;
->  	struct memcg_cache_params *params, *tmp;
-> @@ -3256,25 +3256,26 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->  		cachep = memcg_params_to_cache(params);
->  		kmem_cache_shrink(cachep);
->  		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
-> -			memcg_kmem_destroy_cache(cachep);
-> +			memcg_unregister_cache(cachep);
->  	}
->  	mutex_unlock(&memcg_slab_mutex);
->  }
->  
-> -struct create_work {
-> +struct memcg_register_cache_work {
->  	struct mem_cgroup *memcg;
->  	struct kmem_cache *cachep;
->  	struct work_struct work;
->  };
->  
-> -static void memcg_create_cache_work_func(struct work_struct *w)
-> +static void memcg_register_cache_func(struct work_struct *w)
->  {
-> -	struct create_work *cw = container_of(w, struct create_work, work);
-> +	struct memcg_register_cache_work *cw =
-> +		container_of(w, struct memcg_register_cache_work, work);
->  	struct mem_cgroup *memcg = cw->memcg;
->  	struct kmem_cache *cachep = cw->cachep;
->  
->  	mutex_lock(&memcg_slab_mutex);
-> -	memcg_kmem_create_cache(memcg, cachep);
-> +	memcg_register_cache(memcg, cachep);
->  	mutex_unlock(&memcg_slab_mutex);
->  
->  	css_put(&memcg->css);
-> @@ -3284,12 +3285,12 @@ static void memcg_create_cache_work_func(struct work_struct *w)
->  /*
->   * Enqueue the creation of a per-memcg kmem_cache.
->   */
-> -static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-> -					 struct kmem_cache *cachep)
-> +static void __memcg_schedule_register_cache(struct mem_cgroup *memcg,
-> +					    struct kmem_cache *cachep)
->  {
-> -	struct create_work *cw;
-> +	struct memcg_register_cache_work *cw;
->  
-> -	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
-> +	cw = kmalloc(sizeof(*cw), GFP_NOWAIT);
->  	if (cw == NULL) {
->  		css_put(&memcg->css);
->  		return;
-> @@ -3298,17 +3299,17 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
->  	cw->memcg = memcg;
->  	cw->cachep = cachep;
->  
-> -	INIT_WORK(&cw->work, memcg_create_cache_work_func);
-> +	INIT_WORK(&cw->work, memcg_register_cache_func);
->  	schedule_work(&cw->work);
->  }
->  
-> -static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-> -				       struct kmem_cache *cachep)
-> +static void memcg_schedule_register_cache(struct mem_cgroup *memcg,
-> +					  struct kmem_cache *cachep)
->  {
->  	/*
->  	 * We need to stop accounting when we kmalloc, because if the
->  	 * corresponding kmalloc cache is not yet created, the first allocation
-> -	 * in __memcg_create_cache_enqueue will recurse.
-> +	 * in __memcg_schedule_register_cache will recurse.
->  	 *
->  	 * However, it is better to enclose the whole function. Depending on
->  	 * the debugging options enabled, INIT_WORK(), for instance, can
-> @@ -3317,7 +3318,7 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
->  	 * the safest choice is to do it like this, wrapping the whole function.
->  	 */
->  	memcg_stop_kmem_account();
-> -	__memcg_create_cache_enqueue(memcg, cachep);
-> +	__memcg_schedule_register_cache(memcg, cachep);
->  	memcg_resume_kmem_account();
->  }
->  
-> @@ -3388,16 +3389,11 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
->  	 *
->  	 * However, there are some clashes that can arrive from locking.
->  	 * For instance, because we acquire the slab_mutex while doing
-> -	 * kmem_cache_dup, this means no further allocation could happen
-> -	 * with the slab_mutex held.
-> -	 *
-> -	 * Also, because cache creation issue get_online_cpus(), this
-> -	 * creates a lock chain: memcg_slab_mutex -> cpu_hotplug_mutex,
-> -	 * that ends up reversed during cpu hotplug. (cpuset allocates
-> -	 * a bunch of GFP_KERNEL memory during cpuup). Due to all that,
-> -	 * better to defer everything.
-> +	 * memcg_create_kmem_cache, this means no further allocation
-> +	 * could happen with the slab_mutex held. So it's better to
-> +	 * defer everything.
->  	 */
-> -	memcg_create_cache_enqueue(memcg, cachep);
-> +	memcg_schedule_register_cache(memcg, cachep);
->  	return cachep;
->  out:
->  	rcu_read_unlock();
-> @@ -3521,7 +3517,7 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
->  	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
->  }
->  #else
-> -static inline void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
-> +static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
->  {
->  }
->  #endif /* CONFIG_MEMCG_KMEM */
-> @@ -6399,7 +6395,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  	css_for_each_descendant_post(iter, css)
->  		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
->  
-> -	mem_cgroup_destroy_all_caches(memcg);
-> +	memcg_unregister_all_caches(memcg);
->  	vmpressure_cleanup(&memcg->vmpressure);
->  }
->  
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 32175617cb75..48fafb61f35e 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -261,7 +261,7 @@ EXPORT_SYMBOL(kmem_cache_create);
->  
->  #ifdef CONFIG_MEMCG_KMEM
->  /*
-> - * kmem_cache_create_memcg - Create a cache for a memory cgroup.
-> + * memcg_create_kmem_cache - Create a cache for a memory cgroup.
->   * @memcg: The memory cgroup the new cache is for.
->   * @root_cache: The parent of the new cache.
->   * @memcg_name: The name of the memory cgroup (used for naming the new cache).
-> @@ -270,7 +270,7 @@ EXPORT_SYMBOL(kmem_cache_create);
->   * requests going from @memcg to @root_cache. The new cache inherits properties
->   * from its parent.
->   */
-> -struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
-> +struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->  					   struct kmem_cache *root_cache,
->  					   const char *memcg_name)
->  {
-> @@ -305,7 +305,7 @@ out_unlock:
->  	return s;
->  }
->  
-> -static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-> +static int memcg_cleanup_cache_params(struct kmem_cache *s)
->  {
->  	int rc;
->  
-> @@ -314,13 +314,13 @@ static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  		return 0;
->  
->  	mutex_unlock(&slab_mutex);
-> -	rc = __kmem_cache_destroy_memcg_children(s);
-> +	rc = __memcg_cleanup_cache_params(s);
->  	mutex_lock(&slab_mutex);
->  
->  	return rc;
->  }
->  #else
-> -static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-> +static int memcg_cleanup_cache_params(struct kmem_cache *s)
->  {
->  	return 0;
->  }
-> @@ -343,7 +343,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
->  	if (s->refcount)
->  		goto out_unlock;
->  
-> -	if (kmem_cache_destroy_memcg_children(s) != 0)
-> +	if (memcg_cleanup_cache_params(s) != 0)
->  		goto out_unlock;
->  
->  	list_del(&s->list);
-> -- 
-> 1.7.10.4
-> 
+Just as an idea.
 
--- 
-Michal Hocko
-SUSE Labs
+Peter, do we have to queue stop works orderly?
+
+Is there is not a possibility, when two pair of works queued different on
+different cpus?
+
+
+ kernel/stop_machine.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index b6b67ec..29e221b 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -250,8 +250,14 @@ struct irq_cpu_stop_queue_work_info {
+ static void irq_cpu_stop_queue_work(void *arg)
+ {
+ 	struct irq_cpu_stop_queue_work_info *info = arg;
+-	cpu_stop_queue_work(info->cpu1, info->work1);
+-	cpu_stop_queue_work(info->cpu2, info->work2);
++
++	if (info->cpu1 < info->cpu2) {
++		cpu_stop_queue_work(info->cpu1, info->work1);
++		cpu_stop_queue_work(info->cpu2, info->work2);
++	} else {
++		cpu_stop_queue_work(info->cpu2, info->work2);
++		cpu_stop_queue_work(info->cpu1, info->work1);
++	}
+ }
+ 
+ /**
+
+
+> [ 3912.086567] NMI watchdog: BUG: soft lockup - CPU#4 stuck for 22s! [migration/4:194]
+> [ 3912.089060] Modules linked in:
+> [ 3912.090438] irq event stamp: 585772
+> [ 3912.090605] hardirqs last enabled at (585771): restore_args (arch/x86/kernel/entry_64.S:1033)
+> [ 3912.090605] hardirqs last disabled at (585772): trace_apic_timer_interrupt (arch/x86/kernel/entry_64.S:1225)
+> [ 3912.090605] softirqs last enabled at (585770): __do_softirq (arch/x86/include/asm/preempt.h:22 kernel/softirq.c:296)
+> [ 3912.090605] softirqs last disabled at (585763): irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
+> [ 3912.090605] CPU: 4 PID: 194 Comm: migration/4 Tainted: G šššššššW šššš3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+> [ 3912.090605] task: ffff8801445a8000 ti: ffff880144596000 task.ti: ffff880144596000
+> [ 3912.090605] RIP: multi_cpu_stop (kernel/stop_machine.c:210)
+> [ 3912.090605] RSP: 0000:ffff880144597cc8 šEFLAGS: 00000293
+> [ 3912.090605] RAX: 0000000000000001 RBX: ffffffffa458d3fb RCX: 0000000000000034
+> [ 3912.090605] RDX: ffff8801445a8000 RSI: 0000000000000034 RDI: 0000000020000000
+> [ 3912.090605] RBP: ffff880144597d08 R08: 0000000000000001 R09: 0000000000000000
+> [ 3912.090605] R10: ffffffffa4638060 R11: 0000000000000001 R12: ffff880144597c38
+> [ 3912.090605] R13: 0000000000000001 R14: ffff880144596000 R15: ffff8801445a8000
+> [ 3912.090605] FS: š0000000000000000(0000) GS:ffff880144c00000(0000) knlGS:0000000000000000
+> [ 3912.090605] CS: š0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 3912.090605] CR2: 000000000258aff8 CR3: 000000002602c000 CR4: 00000000000006a0
+> [ 3912.090605] DR0: 00000000006df000 DR1: 00000000006df000 DR2: 0000000000000000
+> [ 3912.090605] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 3912.090605] Stack:
+> [ 3912.090605] šffff880144597ce8 0000000000000286 ffff880144597ce8 ffff88015666fa40
+> [ 3912.090605] šffff880144dd0a00 ffff88015666fa18 ffffffffa1227180 ffff880144dd0a50
+> [ 3912.090605] šffff880144597dd8 ffffffffa1226e42 ffff880144597d28 ffffffffa11c4aae
+> [ 3912.090605] Call Trace:
+> [ 3912.090605] ? queue_stop_cpus_work (kernel/stop_machine.c:171)
+> [ 3912.090605] cpu_stopper_thread (kernel/stop_machine.c:498)
+> [ 3912.090605] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 3912.090605] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+> [ 3912.090605] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 3912.090605] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 3912.090605] smpboot_thread_fn (kernel/smpboot.c:160)
+> [ 3912.090605] ? __smpboot_create_thread (kernel/smpboot.c:105)
+> [ 3912.090605] kthread (kernel/kthread.c:210)
+> [ 3912.090605] ? complete (kernel/sched/completion.c:35)
+> [ 3912.090605] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 3912.090605] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [ 3912.090605] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 3912.090605] Code: 09 06 0f 1f 80 00 00 00 00 4d 0f a3 65 00 45 19 e4 45 85 e4 41 0f 95 c6 e8 bc 10 90 00 41 89 c4 45 31 ed 31 c0 0f 1f 40 00 f3 90 <45> 84 f6 75 11 44 8b 7b 20 41 39 c7 75 20 eb 67 66 0f 1f 44 00
+> [ 3912.090605] Kernel panic - not syncing: softlockup: hung tasks
+> [ 3912.090605] CPU: 4 PID: 194 Comm: migration/4 Tainted: G šššššššW šššš3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+> [ 3912.090605] šffff8801445a8000 ffff880144c03dd8 ffffffffa453e1ec 0000000000000001
+> [ 3912.090605] šffffffffa56e9ed0 ffff880144c03e58 ffffffffa452fd6a 0000000000000001
+> [ 3912.090605] š0000000000000008 ffff880144c03e68 ffff880144c03e08 0000000000000001
+> [ 3912.090605] Call Trace:
+> [ 3912.090605] <IRQ> dump_stack (lib/dump_stack.c:52)
+> [ 3912.090605] panic (kernel/panic.c:119)
+> [ 3912.090605] ? _raw_spin_unlock_irqrestore (include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+> [ 3912.090605] watchdog_timer_fn (kernel/watchdog.c:372)
+> [ 3912.090605] __run_hrtimer (kernel/hrtimer.c:1268 (discriminator 2))
+> [ 3912.090605] ? queue_stop_cpus_work (include/linux/cpumask.h:108 include/linux/cpumask.h:174 kernel/stop_machine.c:375)
+> [ 3912.090605] ? watchdog (kernel/hung_task.c:191 kernel/hung_task.c:232)
+> [ 3912.090605] hrtimer_interrupt (kernel/hrtimer.c:1915)
+> [ 3912.090605] ? queue_stop_cpus_work (include/linux/cpumask.h:108 include/linux/cpumask.h:174 kernel/stop_machine.c:375)
+> [ 3912.090605] ? queue_stop_cpus_work (include/linux/cpumask.h:108 include/linux/cpumask.h:174 kernel/stop_machine.c:375)
+> [ 3912.090605] local_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:921)
+> [ 3912.090605] smp_trace_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:964 include/linux/jump_label.h:105 arch/x86/include/asm/trace/irq_vectors.h:45 arch/x86/kernel/apic/apic.c:965)
+> [ 3912.090605] trace_apic_timer_interrupt (arch/x86/kernel/entry_64.S:1225)
+> [ 3912.090605] <EOI> ? retint_restore_args (arch/x86/kernel/entry_64.S:1033)
+> [ 3912.090605] ? multi_cpu_stop (kernel/stop_machine.c:210)
+> [ 3912.090605] ? multi_cpu_stop (include/linux/bitmap.h:280 include/linux/cpumask.h:461 kernel/stop_machine.c:189)
+> [ 3912.090605] ? queue_stop_cpus_work (kernel/stop_machine.c:171)
+> [ 3912.090605] cpu_stopper_thread (kernel/stop_machine.c:498)
+> [ 3912.090605] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 3912.090605] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+> [ 3912.090605] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 3912.090605] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 3912.090605] smpboot_thread_fn (kernel/smpboot.c:160)
+> [ 3912.090605] ? __smpboot_create_thread (kernel/smpboot.c:105)
+> [ 3912.090605] kthread (kernel/kthread.c:210)
+> [ 3912.090605] ? complete (kernel/sched/completion.c:35)
+> [ 3912.090605] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 3912.090605] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [ 3912.090605] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 3912.090605] Dumping ftrace buffer:
+> [ 3912.090605] ššš(ftrace buffer empty)
+>
+> Nothing else is printed past this point.
+>
+> Thanks,
+> Sasha
