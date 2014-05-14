@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaENPlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:41:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42203 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561AbaENPlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:41:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1053,1389772800"; 
-   d="scan'208";a="531849170"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] drm: Missed clflushopt in drm_clflush_virt_range
-Date: Wed, 14 May 2014 09:41:12 -0600
-Message-Id: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
+	id S1755961AbaENPmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:42:10 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:44578 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682AbaENPmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:42:08 -0400
+X-Originating-IP: 50.43.32.211
+Date: Wed, 14 May 2014 08:41:50 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in
+ tree_plugin.h and used in tree.c
+Message-ID: <20140514154150.GA1873@thin>
+References: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this commit:
+On Tue, May 13, 2014 at 05:30:59PM -0700, Paul E. McKenney wrote:
+> From: Uma Sharma <uma.sharma523@gmail.com>
+> 
+> The variable and struct both having the name "rcu_state" confuses
+> sparse in some situations, so this commit changes the variable to
+> "rcu_state_p" in order to avoid this confusion.  This also makes
+> things easier for human readers.
 
-2a0788dc9bc4 x86: Use clflushopt in drm_clflush_virt_range
+Human readers aside, how does Sparse get confused?  Let's fix that.
 
-If clflushopt is available on the system, we use it instead of clflush
-in drm_clflush_virt_range.  There were two calls to clflush in this
-function, but only one was changed to clflushopt.  This patch changes
-the other clflush call to clflushopt.
+Personally, I don't think the _p makes things particularly easier for
+human readers, but it doesn't make things *harder* for anyone other than
+those used to reading the existing code, so, *shrug*.
 
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-Reported-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Cc: H Peter Anvin <h.peter.anvin@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-
----
- drivers/gpu/drm/drm_cache.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/drm_cache.c b/drivers/gpu/drm/drm_cache.c
-index 534cb89..041b73b 100644
---- a/drivers/gpu/drm/drm_cache.c
-+++ b/drivers/gpu/drm/drm_cache.c
-@@ -138,7 +138,7 @@ drm_clflush_virt_range(char *addr, unsigned long length)
- 		char *end = addr + length;
- 		mb();
- 		for (; addr < end; addr += boot_cpu_data.x86_clflush_size)
--			clflush(addr);
-+			clflushopt(addr);
- 		clflushopt(end - 1);
- 		mb();
- 		return;
--- 
-1.9.0
-
+- Josh Triplett
