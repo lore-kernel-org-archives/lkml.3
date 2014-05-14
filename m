@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaENToI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:44:08 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:62362 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaENToE (ORCPT
+	id S1751881AbaENTqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:46:49 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:59942 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaENTqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:44:04 -0400
-Message-ID: <5372E1C6.5070109@gmail.com>
-Date: Wed, 14 May 2014 05:23:50 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 15:46:47 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>
-Subject: Re: [PATCH 1/3] sched: Make sched_setattr() correctly return -EFBIG
-References: <536CEAEE.4010609@gmail.com> <536CEC17.9070903@gmail.com>
-In-Reply-To: <536CEC17.9070903@gmail.com>
+In-Reply-To: <8057197.5nM8JDA8pQ@wuerfel>
+References: <1400094649-11193-1-git-send-email-f.fainelli@gmail.com>
+ <1400094649-11193-2-git-send-email-f.fainelli@gmail.com> <8057197.5nM8JDA8pQ@wuerfel>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 14 May 2014 12:46:06 -0700
+Message-ID: <CAGVrzcag3aKiuuQsfZWrAJT+-cpO__kNF3Lc9XXkpswQxzL56A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] bus: add Broadcom GISB arbiter bus timeout/error handler
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Huang Shijie <b32955@freescale.com>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+2014-05-14 12:33 GMT-07:00 Arnd Bergmann <arnd@arndb.de>:
+> On Wednesday 14 May 2014 12:10:46 Florian Fainelli wrote:
+>> This patch adds support for the Broadcom GISB arbiter bus timeout/error
+>> handler. GISB is a proprietary bus used by Broadcom Set Top Box
+>> System-on-a-chip devices (BCM7xxx) which allows multiple masters and
+>> clients to be interfaced with each other.
+>>
+>> The bus arbiter offers support for generating two interrupts towards the
+>> host CPU, thus allowing us to "catch" clock gated masters, or masters
+>> being volontarily blocked for powersaving purposes, or do general system
+>> troubleshooting.
+>>
+>> We also register a hook with the ARM fault exception handling to allow
+>> printing a more informative message than "imprecise external abort at
+>> 0x00000000" for instance.
+>>
+>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+>
+> Looks pretty good to me.
 
-In the title of this patch, EFBIG should have been E2BIG. Shall
-I resubmit a corrected version?
+Cool, thanks!, BTW, which tree should we attempt to get this merged into?
 
-Cheers,
+>
+>> +static int brcmstb_gisb_arb_decode_addr(struct brcmstb_gisb_arb_device *gdev,
+>> +                                     const char *reason)
+>> +{
+>> +     u32 cap_status;
+>> +     unsigned long arb_addr;
+>> +     u32 master;
+>> +     const char *m_name;
+>> +     char m_fmt[11];
+>> +
+>> +     cap_status = ioread32(gdev->base + ARB_ERR_CAP_STATUS);
+>> +
+>> +     /* Invalid captured address, bail out */
+>> +     if (!(cap_status & ARB_ERR_CAP_STATUS_VALID))
+>> +             return 1;
+>> +
+>> +     /* Read the address and master */
+>> +     arb_addr = ioread32(gdev->base + ARB_ERR_CAP_ADDR) & 0xffffffff;
+>> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
+>> +     arb_addr |= (u64)ioread32(gdev->base + ARB_ERR_CAP_HI_ADDR) << 32;
+>> +#endif
+>
+> Can you use 'if (IS_ENABLED(CONFIG_PHYS_ADDR_T_64BIT))' here, or does that
+> cause a warning?
 
-Michael
+No warning is issued, I will use that instead. Thanks!
 
-On 05/09/2014 04:54 PM, Michael Kerrisk (man-pages) wrote:
-> From: Michael Kerrisk <mtk.manpages@gmail.com>
-> 
-> The documented[1] behavior of sched_attr() in your proposed man page text is:
-> 
->     sched_attr::size must be set to the size of the structure, as in
->     sizeof(struct sched_attr), if the provided structure is smaller
->     than the kernel structure, any additional fields are assumed
->     '0'. If the provided structure is larger than the kernel structure,
->     the kernel verifies all additional fields are '0' if not the
->     syscall will fail with -E2BIG.
-> 
-> As currently implemented, sched_copy_attr() returns -EFBIG for
-> for this case, but the logic in sys_sched_setattr() converts that
-> error to -EFAULT. This patch fixes the behavior.
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel/1615615/focus=1697760
-> 
-> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
-> ---
->  kernel/sched/core.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..6c9ce28 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3650,8 +3650,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
->  	if (!uattr || pid < 0 || flags)
->  		return -EINVAL;
->  
-> -	if (sched_copy_attr(uattr, &attr))
-> -		return -EFAULT;
-> +	retval = sched_copy_attr(uattr, &attr);
-> +	if (retval)
-> +		return retval;
->  
->  	rcu_read_lock();
->  	retval = -ESRCH;
-> 
+>
+>> +static int brcmstb_bus_error_handler(unsigned long addr, unsigned int fsr,
+>> +                                  struct pt_regs *regs)
+>> +{
+>> +     int ret = 0;
+>> +     struct brcmstb_gisb_arb_device *gdev;
+>> +
+>> +     /* iterate over each GISB arb registered handlers */
+>> +     list_for_each_entry(gdev, &brcmstb_gisb_arb_device_list, next)
+>> +             ret |= brcmstb_gisb_arb_decode_addr(gdev, "bus error");
+>> +     /*
+>> +      * If it was an imprecise abort, then we need to correct the
+>> +      * return address to be _after_ the instruction.
+>> +     */
+>> +     if (fsr & (1 << 10))
+>> +             regs->ARM_pc += 4;
+>> +
+>> +     return ret;
+>> +}
+>
+> This will cause the normal abort handler to trigger if the GISB
+> arbiter doesn't know what happened, right?
 
-
+That's right, one of the very first things that the GISB arbiter
+checks is whether the faulting error is valid or not, if it is not, it
+bails out and so we keep on processing the other exception handlers.
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Florian
