@@ -1,118 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915AbaENQSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:18:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43672 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaENQSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:18:07 -0400
-Date: Wed, 14 May 2014 18:17:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
- waitqueue lookups in unlock_page fastpath
-Message-ID: <20140514161755.GQ30445@twins.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140514161152.GA2615@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XO56YmfyBH8vAq+5"
-Content-Disposition: inline
-In-Reply-To: <20140514161152.GA2615@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1756213AbaENQSm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:18:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39679 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755426AbaENQSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:18:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1053,1389772800"; 
+   d="scan'208";a="511613824"
+User-Agent: Microsoft-MacOutlook/14.4.1.140326
+Date: Wed, 14 May 2014 09:18:54 -0700
+Subject: Re: futex(2) man page update help request
+From: Darren Hart <dvhart@linux.intel.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>
+CC: "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Message-ID: <CF98E3EF.90564%dvhart@linux.intel.com>
+Thread-Topic: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com>
+In-Reply-To: <537346E5.4050407@gmail.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/14/14, 3:35, "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+wrote:
 
---XO56YmfyBH8vAq+5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>[So, some futex recent discussions remind me I should make this request]
+>
+>Hello all (especially those in the To:, namely Thomas, Darren, Ingo,
+>Jakub),
+>
+>The futex man pages:
+>http://man7.org/linux/man-pages/man2/futex.2.html
+>http://man7.org/linux/man-pages/man7/futex.7.html
+>are currently in a sorry state. I'm by no means convinced that all of the
+>futex operations described there are explained fully and correctly. And
+>probably not all error cases for each operation are properly documented.
+>I'd be very happy if some folk could review those pages and send me
+>corrections (Git: 
+>http://git.kernel.org/pub/scm/docs/man-pages/man-pages).
+>
+>But worse, a number of futex operations remain undocumented in futex(2)
+>(see the list below).
+>
+>I am aware of Documentation/pi-futex.txt and
+>Documentation/futex-requeue-pi.txt. However, both of those documents
+>are rather thin on details / explain what certain FUTEX_* operations are
+>used for rather than what they do / focus on the implementation, rather
+>than the semantics.
+>
+>What I would like is that the futex(2) page documenta each one of
+>these operations with a focus on the semantics in a way that might be
+>useful to writers of library functions or those who simply wish to
+>better understand (from a user-space perspective) what futexes are
+>and how they are used. However, I don't have the knowledge to do
+>this well in any reasonable time.
+>
+>Would the folk in the To: list (or anyone else who is knowledgeable)
+>be willing to write patches
+>(Git: http://git.kernel.org/pub/scm/docs/man-pages/man-pages )
+>or just supply me with some raw text that documents these currently
+>undocumented futex operations, in the manner suggested?
 
-On Wed, May 14, 2014 at 06:11:52PM +0200, Oleg Nesterov wrote:
-> The subsequent discussion was "off-topic", and it seems that the patch
-> itself needs a bit more discussion,
->=20
-> On 05/13, Peter Zijlstra wrote:
-> >
-> > On Tue, May 13, 2014 at 01:53:13PM +0100, Mel Gorman wrote:
-> > > On Tue, May 13, 2014 at 10:45:50AM +0100, Mel Gorman wrote:
-> > > >  void unlock_page(struct page *page)
-> > > >  {
-> > > > +	wait_queue_head_t *wqh =3D clear_page_waiters(page);
-> > > > +
-> > > >  	VM_BUG_ON_PAGE(!PageLocked(page), page);
-> > > > +
-> > > > +	/*
-> > > > +	 * No additional barrier needed due to clear_bit_unlock barrierin=
-g all updates
-> > > > +	 * before waking waiters
-> > > > +	 */
-> > > >  	clear_bit_unlock(PG_locked, &page->flags);
-> > > > -	smp_mb__after_clear_bit();
-> > > > -	wake_up_page(page, PG_locked);
-> > >
-> > > This is wrong.
->=20
-> Yes,
->=20
-> > > The smp_mb__after_clear_bit() is still required to ensure
-> > > that the cleared bit is visible before the wakeup on all architecture=
-s.
->=20
-> But note that "the cleared bit is visible before the wakeup" is confusing.
-> I mean, we do not need mb() before __wake_up(). We need it only because
-> __wake_up_bit() checks waitqueue_active().
->=20
->=20
-> And at least
->=20
-> 	fs/cachefiles/namei.c:cachefiles_delete_object()
-> 	fs/block_dev.c:blkdev_get()
-> 	kernel/signal.c:task_clear_jobctl_trapping()
-> 	security/keys/gc.c:key_garbage_collector()
->=20
-> look obviously wrong.
->=20
-> I would be happy to send the fix, but do I need to split it per-file?
-> Given that it is trivial, perhaps I can send a single patch?
+Yes, I'll be glad to help.
 
-Since its all the same issue a single patch would be fine I think.
+However, unless I'm sorely mistaken, the larger problem is that glibc
+removed the futex() call entirely, so these man pages don't describe
+something users even have access to anymore. I had to revert to calling
+the syscalls directly in the futextest test suite because of this:
 
---XO56YmfyBH8vAq+5
-Content-Type: application/pgp-signature
+http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inclu
+de/futextest.h#n67
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTc5czAAoJEHZH4aRLwOS6ZNwQAIIP5UclJ7JtAJvlgXqPdn3F
-wwpO6YGrqyI/DimRhomNJg6uByMx0LeH+mo7AlkYLhhwm20szkT67aKhjlXmKk04
-SphhBEY9np6rs6fjsX5VwUwQjvui3BOKJsaswwyQ3FiarmSGx8XPIiAZ8hhD+QmF
-hGaO++ObOjTTPJBE8r09e8YGMUY2tNqfov9H/+11XzVuuMLRWn6sSFtNAgD5GGjt
-aeUYTvldd5stk6VVFQYYUg7wyg3P3lYbcy6K9CZ8QdCJvq5FwkKSUboyn04p82rS
-disrgPW+vdA/ROjxWxeDV7SbL9OkvfnLwS2AMy3z0wI9iuengy07l4ybCHSF9uhz
-tZ0MYSbzSBP/eaGiGPFfHTcMKexOdatnTh5Y3lgwY7ZcZYLi7hjaD4cwzDpY7Bk6
-vO1fMxgtYB5wsq9cSaId0zm8JMBCIgdGPacZKxIHBRR1ZXJlkA/76WM2rJxLB0Oh
-3Le9zOr7RexZ120X8MpCrRaWhHKVdEXZZfY+1GoSLThLaEnC7tVo09iii0DrgJ9x
-OD+naESuFYphAIToqtd4nSVrlrFXAGi8WcPvNiqj3iVTITX/KapV+0CvWJLWFErP
-IKFKulnMlj4pSQXY5l3mgoM2bnJ+yAyQPEL553yXKkrAQoWwSDK/zGDleZMiQIv8
-DoH+F+EmTyRPw9R0ZEPs
-=mi+k
------END PGP SIGNATURE-----
+Which basically defines:
 
---XO56YmfyBH8vAq+5--
+#define futex(uaddr, op, val, timeout, uaddr2, val3, opflags) \
+        syscall(SYS_futex, uaddr, op | opflags, val, timeout, uaddr2, val3)
+
+
+Adding Carlos for his perspective.
+
+If I'm wrong, or we can restore the futex() call, great. If not... Should
+we keep the man-pages and document it as syscall(SYS_futex, ..., op, ...) ?
+
+Thanks,
+
+Darren
+
+>
+>The operations for which documentation is currently missing are:
+>
+>2.6.14 adds FUTEX_WAKE_OP
+>    commit 4732efbeb997189d9f9b04708dc26bf8613ed721
+>    Author: Jakub Jelinek <jakub@redhat.com>
+>    Date:   Tue Sep 6 15:16:25 2005 -0700
+>    See also https://bugzilla.kernel.org/show_bug.cgi?id=14303
+>
+>2.6.18 adds priority inheritance support:
+>FUTEX_LOCK_PI, FUTEX_UNLOCK_PI, and FUTEX_TRYLOCK_PI.
+>    commit c87e2837be82df479a6bae9f155c43516d2feebc
+>    Author: Ingo Molnar <mingo@elte.hu>
+>    Date:   Tue Jun 27 02:54:58 2006 -0700
+>
+>    commit e2970f2fb6950183a34e8545faa093eb49d186e1
+>    Author: Ingo Molnar <mingo@elte.hu>
+>    Date:   Tue Jun 27 02:54:47 2006 -0700
+>
+>    See Documentation/pi-futex.txt
+>
+>2.6.25 adds FUTEX_WAKE_BITSET, FUTEX_WAIT_BITSET
+>    commit cd689985cf49f6ff5c8eddc48d98b9d581d9475d
+>    Author: Thomas Gleixner <tglx@linutronix.de>
+>    Date:   Fri Feb 1 17:45:14 2008 +0100
+>
+>2.6.31 adds FUTEX_WAIT_REQUEUE_PI, FUTEX_CMP_REQUEUE_PI
+>    commit 52400ba946759af28442dee6265c5c0180ac7122
+>    Author: Darren Hart <dvhltc@us.ibm.com>
+>    Date:   Fri Apr 3 13:40:49 2009 -0700
+>
+>    commit ba9c22f2c01cf5c88beed5a6b9e07d42e10bd358
+>    Author: Darren Hart <dvhltc@us.ibm.com>
+>    Date:   Mon Apr 20 22:22:22 2009 -0700
+>
+>    See Documentation/futex-requeue-pi.txt
+>
+>Thanks,
+>
+>Michael
+>
+>
+>-- 
+>Michael Kerrisk
+>Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+>Linux/UNIX System Programming Training: http://man7.org/training/
+>
+
+
+-- 
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
+
+
