@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaENO6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:58:53 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42721 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132AbaENO6r (ORCPT
+	id S932262AbaENO6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:58:51 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:49499 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157AbaENO6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:58:47 -0400
-Subject: [RFC PATCH v1 14/16] drm/radeon: use rcu waits in some ioctls
-To: airlied@linux.ie
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Date: Wed, 14 May 2014 16:58:45 +0200
-Message-ID: <20140514145845.21163.15680.stgit@patser>
-In-Reply-To: <20140514145134.21163.32350.stgit@patser>
-References: <20140514145134.21163.32350.stgit@patser>
-User-Agent: StGit/0.15
+	Wed, 14 May 2014 10:58:48 -0400
+Message-ID: <53738496.2070800@ahsoftware.de>
+Date: Wed, 14 May 2014 16:58:30 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 5/9] dt: deps: register drivers based on the initialization
+ order based on DT
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-6-git-send-email-holler@ahsoftware.de> <20140514141300.67206C4153D@trevor.secretlab.ca>
+In-Reply-To: <20140514141300.67206C4153D@trevor.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
----
- drivers/gpu/drm/radeon/radeon_gem.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+Am 14.05.2014 16:13, schrieb Grant Likely:
+> On Mon, 12 May 2014 18:47:56 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+>> The init system currently calls unknown functions with almost unknown
+>> functionality in an almost random order.
+>
+> Correct, we've got a module system. Some would say that is a strength!
+> :-) That said, I don't object to optimizing to the optimal order when
+> possible.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
-index d09650c1d720..7ba883843668 100644
---- a/drivers/gpu/drm/radeon/radeon_gem.c
-+++ b/drivers/gpu/drm/radeon/radeon_gem.c
-@@ -107,9 +107,12 @@ static int radeon_gem_set_domain(struct drm_gem_object *gobj,
- 	}
- 	if (domain == RADEON_GEM_DOMAIN_CPU) {
- 		/* Asking for cpu access wait for object idle */
--		r = radeon_bo_wait(robj, NULL, false);
--		if (r) {
--			printk(KERN_ERR "Failed to wait for object !\n");
-+		r = reservation_object_wait_timeout_rcu(robj->tbo.resv, true, true, 30 * HZ);
-+		if (!r)
-+			r = -EBUSY;
-+
-+		if (r < 0 && r != -EINTR) {
-+			printk(KERN_ERR "Failed to wait for object: %i\n", r);
- 			return r;
- 		}
- 	}
-@@ -357,14 +360,20 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
- 	struct drm_radeon_gem_wait_idle *args = data;
- 	struct drm_gem_object *gobj;
- 	struct radeon_bo *robj;
--	int r;
-+	int r = 0;
-+	long ret;
- 
- 	gobj = drm_gem_object_lookup(dev, filp, args->handle);
- 	if (gobj == NULL) {
- 		return -ENOENT;
- 	}
- 	robj = gem_to_radeon_bo(gobj);
--	r = radeon_bo_wait(robj, NULL, false);
-+	ret = reservation_object_wait_timeout_rcu(robj->tbo.resv, true, true, 30 * HZ);
-+	if (ret == 0)
-+		r = -EBUSY;
-+	else if (ret < 0)
-+		r = ret;
-+
- 	/* callback hw specific functions if any */
- 	if (rdev->asic->ioctl_wait_idle)
- 		robj->rdev->asic->ioctl_wait_idle(rdev, robj);
+Modules do work after init happened, that isn't what this feature is about.
 
+>
+>> Fixing this is on a short-term basis is a bit tricky.
+>>
+>> In order to register drivers with a deterministic order, a list of all
+>> available in-kernel drivers is needed. Unfortunately such a list doesn't
+>> exist, just a list of initcalls does exist.
+>>
+>> The trick now is to first call special annotated initcalls (I call those
+>> "well done") for platform drivers, but not actualy starting those drivers
+>> by calling their probe function, but just collectiong their meta datas
+>> (struct platform_driver). After all those informations were collected,
+>> available the drivers will be started according to the previously
+>> determined order.
+>
+> Why does the initcall level matter? Why not just let the initcalls
+> happen, capture the calls that register a driver, and then use that list
+> later?
+
+Some initcalls assume that stuff is present when they called probe or 
+register and do further action based on the rc code.
+
+>> The long range target to fix the problem should be to include a list (array)
+>> of struct platform_driver in the kernel for all in-kernel platform drivers,
+>> instead of just initcalls. This will be easy if all platform drivers have
+>> become "well done".
+>
+> How will that list be constructed? How will it account for multiple
+> platforms, each requiring a different init order?
+
+The list could be build just like the list of initcalls, but containing 
+structs platform instead of function pointers.
+
+The order is in now way part of this list, after all that's what this 
+feature is about. The order is determined by metadatas in the DT, to get 
+rid of a lot of otherwise necessary hardcoded stuff to fix the order in 
+drivers.
+
+Regards,
+
+Alexander Holler
