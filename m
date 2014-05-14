@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaENVf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:35:59 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:54752 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaENVfZ (ORCPT
+	id S1752773AbaENVfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:35:23 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:59857 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522AbaENVfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:35:25 -0400
+	Wed, 14 May 2014 17:35:19 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Serge Hallyn <serge.hallyn@canonical.com>,
         lxc-devel@lists.linuxcontainers.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [RFC PATCH 10/11] loop: Assign devices to current_user_ns()
-Date: Wed, 14 May 2014 16:34:58 -0500
-Message-Id: <1400103299-144589-11-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 06/11] drivers/char/mem.c: Make null/zero/full/random/urandom available to user namespaces
+Date: Wed, 14 May 2014 16:34:54 -0500
+Message-Id: <1400103299-144589-7-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
 References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
@@ -25,66 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-control is now global to user namespaces, meaning that any
-namespace can use LOOP_CTL_GET_FREE to request a loop device. The
-namespace won't necessarily be able to use the device, however.
-
-Update loop to search only for devices matching current_user_ns()
-when finding free devices, and to set the device's owning
-namespace to current_user_ns() when a new device is added. This
-will cause the devices to appear in that namespace's devtmpfs
-super block, where it can be used.
-
-This should generally be safe, since only the namespace used to
-request the device should see it in devtmpfs, avoiding accidental
-use by another namespace. Only a user priveleged enough to mknod
-will be able to access the same device, and such access is
-unlikely to be accidental.
-
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/block/loop.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/char/mem.c | 28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index f0e41a372c24..66bd938bcc1c 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -75,6 +75,8 @@
- #include <linux/sysfs.h>
- #include <linux/miscdevice.h>
- #include <linux/falloc.h>
-+#include <linux/notifier.h>
-+#include <linux/user_namespace.h>
- #include "loop.h"
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 917403fe10da..edd71ebf5025 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -811,21 +811,22 @@ static const struct memdev {
+ 	umode_t mode;
+ 	const struct file_operations *fops;
+ 	struct backing_dev_info *dev_info;
++	bool global;
+ } devlist[] = {
+-	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi },
++	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi, false },
+ #ifdef CONFIG_DEVKMEM
+-	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi },
++	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi, false },
+ #endif
+-	 [3] = { "null", 0666, &null_fops, NULL },
++	 [3] = { "null", 0666, &null_fops, NULL, true },
+ #ifdef CONFIG_DEVPORT
+-	 [4] = { "port", 0, &port_fops, NULL },
++	 [4] = { "port", 0, &port_fops, NULL, false },
+ #endif
+-	 [5] = { "zero", 0666, &zero_fops, &zero_bdi },
+-	 [7] = { "full", 0666, &full_fops, NULL },
+-	 [8] = { "random", 0666, &random_fops, NULL },
+-	 [9] = { "urandom", 0666, &urandom_fops, NULL },
++	 [5] = { "zero", 0666, &zero_fops, &zero_bdi, true },
++	 [7] = { "full", 0666, &full_fops, NULL, true },
++	 [8] = { "random", 0666, &random_fops, NULL, true },
++	 [9] = { "urandom", 0666, &urandom_fops, NULL, true },
+ #ifdef CONFIG_PRINTK
+-	[11] = { "kmsg", 0644, &kmsg_fops, NULL },
++	[11] = { "kmsg", 0644, &kmsg_fops, NULL, false },
+ #endif
+ };
  
- #include <asm/uaccess.h>
-@@ -1674,6 +1676,7 @@ static int loop_add(struct loop_device **l, int i)
- 	disk->private_data	= lo;
- 	disk->queue		= lo->lo_queue;
- 	sprintf(disk->disk_name, "loop%d", i);
-+	dev_set_ns(disk_to_dev(disk), current_user_ns());
- 	add_disk(disk);
- 	*l = lo;
- 	return lo->lo_number;
-@@ -1690,6 +1693,7 @@ out:
+@@ -897,8 +898,13 @@ static int __init chr_dev_init(void)
+ 		if ((minor == DEVPORT_MINOR) && !arch_has_dev_port())
+ 			continue;
  
- static void loop_remove(struct loop_device *lo)
- {
-+	dev_set_ns(disk_to_dev(lo->lo_disk), &init_user_ns);
- 	del_gendisk(lo->lo_disk);
- 	blk_cleanup_queue(lo->lo_queue);
- 	put_disk(lo->lo_disk);
-@@ -1701,7 +1705,8 @@ static int find_free_cb(int id, void *ptr, void *data)
- 	struct loop_device *lo = ptr;
- 	struct loop_device **l = data;
- 
--	if (lo->lo_state == Lo_unbound) {
-+	if (lo->lo_state == Lo_unbound &&
-+	    disk_to_dev(lo->lo_disk)->ns == current_user_ns()) {
- 		*l = lo;
- 		return 1;
+-		device_create(mem_class, NULL, MKDEV(MEM_MAJOR, minor),
+-			      NULL, devlist[minor].name);
++		if (devlist[minor].global)
++			device_create_global(mem_class, NULL,
++					     MKDEV(MEM_MAJOR, minor), NULL,
++					     devlist[minor].name);
++		else
++			device_create(mem_class, NULL, MKDEV(MEM_MAJOR, minor),
++				      NULL, devlist[minor].name);
  	}
+ 
+ 	return tty_init();
 -- 
 1.9.1
 
