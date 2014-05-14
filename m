@@ -1,139 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaENLKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:10:42 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:49221 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064AbaENLKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:10:40 -0400
-Subject: [PATCH v1.2 3/16] arcmsr: adding code to support system hibernation
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 May 2014 19:10:33 +0800
-Message-ID: <1400065833.6957.26.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1755101AbaENLKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:10:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49188 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754723AbaENLKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 07:10:51 -0400
+Date: Wed, 14 May 2014 13:10:48 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Josef Bacik <jbacik@fb.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>
+Subject: Re: [PATCH V2 1/2] fs: include device name in error messages about
+ freezing
+Message-ID: <20140514111048.GA5824@quack.suse.cz>
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+On Wed 14-05-14 00:04:42, Mateusz Guzik wrote:
+> While here use pr_err instead of printk(KERN_ERR...)
+  The patch looks good. Just one nit below:
 
-Adding code to support system hibernation.
+> Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+> Cc: linux-fsdevel@vger.kernel.org
+> Cc: Josef Bacik <jbacik@fb.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> Cc: Eric Sandeen <esandeen@redhat.com>
+> ---
+>  fs/super.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/super.c b/fs/super.c
+> index 48377f7..017e10a 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -1323,8 +1323,7 @@ int freeze_super(struct super_block *sb)
+>  	if (sb->s_op->freeze_fs) {
+>  		ret = sb->s_op->freeze_fs(sb);
+>  		if (ret) {
+> -			printk(KERN_ERR
+> -				"VFS:Filesystem freeze failed\n");
+> +			pr_err("VFS:Filesystem %s freeze failed\n", sb->s_id);
+  I'd somewhat prefer to have the format like:
+VFS (device %s): Filesystem freeze failed\n
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+  That should easy to programatically parse if necessary and also more
+consistent with how filesystems report errors. Now VFS itself doesn't have
+any unified style but still...
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:42:40.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:26:42.000000000 +0800
-@@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
- static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- static int arcmsr_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *id);
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
-+static int arcmsr_resume(struct pci_dev *pdev);
- static void arcmsr_remove(struct pci_dev *pdev);
- static void arcmsr_shutdown(struct pci_dev *pdev);
- static void arcmsr_iop_init(struct AdapterControlBlock *acb);
- static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
- static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
-+static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
-+	u32 intmask_org);
- static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
-@@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
- 	.id_table			= arcmsr_device_id_table,
- 	.probe			= arcmsr_probe,
- 	.remove			= arcmsr_remove,
-+	.suspend		= arcmsr_suspend,
-+	.resume			= arcmsr_resume,
- 	.shutdown		= arcmsr_shutdown,
- };
- /*
-@@ -776,6 +782,77 @@ static void arcmsr_free_irq(struct pci_d
- 		free_irq(pdev->irq, acb);
- }
- 
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	uint32_t intmask_org;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	intmask_org = arcmsr_disable_outbound_ints(acb);
-+	arcmsr_free_irq(pdev, acb);
-+	del_timer_sync(&acb->eternal_timer);
-+	flush_scheduled_work();
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+	arcmsr_enable_outbound_ints(acb, intmask_org);
-+	pci_set_drvdata(pdev, host);
-+	pci_save_state(pdev);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+	return 0;
-+}
-+
-+static int arcmsr_resume(struct pci_dev *pdev)
-+{
-+	int error;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
-+	pci_restore_state(pdev);
-+	if (pci_enable_device(pdev)) {
-+		pr_warn("%s: pci_enable_device error\n", __func__);
-+		return -ENODEV;
-+	}
-+	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-+	if (error) {
-+		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+		if (error) {
-+			pr_warn("scsi%d: No suitable DMA mask available\n",
-+			       host->host_no);
-+			goto controller_unregister;
-+		}
-+	}
-+	pci_set_master(pdev);
-+	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
-+		goto controller_stop;
-+	arcmsr_iop_init(acb);
-+	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-+	atomic_set(&acb->rq_map_token, 16);
-+	atomic_set(&acb->ante_token_value, 16);
-+	acb->fw_flag = FW_NORMAL;
-+	init_timer(&acb->eternal_timer);
-+	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
-+	acb->eternal_timer.data = (unsigned long) acb;
-+	acb->eternal_timer.function = &arcmsr_request_device_map;
-+	add_timer(&acb->eternal_timer);
-+	return 0;
-+controller_stop:
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+controller_unregister:
-+	scsi_remove_host(host);
-+	arcmsr_free_ccb_pool(acb);
-+	arcmsr_unmap_pciregion(acb);
-+	pci_release_regions(pdev);
-+	scsi_host_put(host);
-+	pci_disable_device(pdev);
-+	return -ENODEV;
-+}
-+
- static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
- {
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+								Honza
 
-
+>  			sb->s_writers.frozen = SB_UNFROZEN;
+>  			smp_wmb();
+>  			wake_up(&sb->s_writers.wait_unfrozen);
+> @@ -1364,8 +1363,7 @@ int thaw_super(struct super_block *sb)
+>  	if (sb->s_op->unfreeze_fs) {
+>  		error = sb->s_op->unfreeze_fs(sb);
+>  		if (error) {
+> -			printk(KERN_ERR
+> -				"VFS:Filesystem thaw failed\n");
+> +			pr_err("VFS:Filesystem %s thaw failed\n", sb->s_id);
+>  			up_write(&sb->s_umount);
+>  			return error;
+>  		}
+> -- 
+> 1.8.3.1
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
