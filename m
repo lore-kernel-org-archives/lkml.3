@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980AbaENMfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:35:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46081 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751070AbaENMfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:35:04 -0400
-Date: Wed, 14 May 2014 14:30:55 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        hdegoede@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH RESEND v4 4/8] phy: usb: sunxi: Introduce Allwinner A31
- USB PHY support
-Message-ID: <20140514123055.GJ29258@lukather>
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399995862-17788-5-git-send-email-maxime.ripard@free-electrons.com>
- <53732BC9.3020507@ti.com>
+	id S1755488AbaENMjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:39:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51511 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751476AbaENMjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 08:39:24 -0400
+Date: Wed, 14 May 2014 14:39:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Pavel Machek <pavel@ucw.cz>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc: regression in suspend
+In-Reply-To: <20140513214155.GA5087@amd.pavel.ucw.cz>
+Message-ID: <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
+References: <20140513160926.GA3621@amd.pavel.ucw.cz> <20140513163734.GA4602@amd.pavel.ucw.cz> <20140513214155.GA5087@amd.pavel.ucw.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7Ke/meiCZutM6I/"
-Content-Disposition: inline
-In-Reply-To: <53732BC9.3020507@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 13 May 2014, Pavel Machek wrote:
 
---C7Ke/meiCZutM6I/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > There seems to be regression in 3.15 w.r.t. suspend to ram and suspend
+> > > to disk.
+> > > 
+> > > Resume sometiems works, but often, system is half-usable, with "what
+> > > do you want to do suspend/hibernate" dialog staying on screen.
+> > > 
+> > > I did echo disk > /sys/power/state, and echo never returned to the
+> > > shell prompt. (X was not really working, either.)
+> > > 
+> > > It is still there on 3.15.0-rc3+. I'll update to rc5 now.
+> > 
+> > 3.15.0-rc5+ seems to behave a bit better. Lets see if it reappears.
+> 
+> It did. 
 
-Hi,
+So it might in the end of the day the same thing as I have reported in 
 
-On Wed, May 14, 2014 at 02:09:37PM +0530, Kishon Vijay Abraham I wrote:
-> > @@ -305,6 +315,7 @@ static int sun4i_usb_phy_probe(struct platform_devi=
-ce *pdev)
-> >  static const struct of_device_id sun4i_usb_phy_of_match[] =3D {
-> >  	{ .compatible =3D "allwinner,sun4i-a10-usb-phy" },
-> >  	{ .compatible =3D "allwinner,sun5i-a13-usb-phy" },
-> > +	{ .compatible =3D "allwinner,sun6i-a31-usb-phy" },
->=20
-> Do you have Documentation for this comptible binding? Would be good to me=
-ntion
-> that in the commit log.
+	https://bugs.freedesktop.org/show_bug.cgi?id=76554
 
-Ah right. I forgot.
+which is not 100% reproducible either (although with newer kernels it's 
+*much* more reproducible for me than with older).
 
-I'm sending you a followup patch.
+> It worked few times on -rc5, but then I rebooted and problem 
+> re-appeared.
 
-Thanks!
-Maxime
+If you could capture dmesg of the resume where X fails to resume properly 
+to see whether you have i915 ring initialization errors there as well?
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-- 
+Jiri Kosina
+SUSE Labs
 
---C7Ke/meiCZutM6I/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTc2H/AAoJEBx+YmzsjxAgrBcP/RK3ockFWJFyzRyGpk3nsjR4
-QwYlSRzebcLqbB23el7+uIwzLsNpNaMRGeanL2ug677wwk2XLoIpTYTELnODzMxF
-zRd6ZFovL0oJufaSZMS+0LSfCBLKUysOag6e4IKCGJaATip2dkkiPZ2digWGhc1n
-521QwcofZMNobQUwH11VFIV8S4ablWpQUmL6msWBUFkfcfBohV2ioUTpVk7KEO+z
-OpXbdTYNQ4h6GyUxrJGi7+6wX3OsnO6zwV6y9HJHZ9auaVI4/XzT3wd2/tQmw4v2
-a/l9uRfwlfA8FJWG6NXn/qp/5FYnTV3JGh8mhVRydQKyxQC92Id0U5f99lY13Jxg
-bYt+QnH//DIKlMKS+QWVRtQECdgFvl6ChUKdsi/qzajugqswa9gUesgjEqBDyQ2v
-FjI6NsC9J+F/dwszBeJJTaRxLbp+LQyRNKSXQkqaTEDBchn3iYO6KZfbMCXLsyqZ
-0J06sYpAZ9NoSr8bhXof/TuLgLJ/eZMAalWrBDh1vwGbb+Y2tdSwShsDS/fvISrD
-B6bbnMAzE+ueJBHDuV5QF9NloGYnM/VZpzwlzyUdCqM6xlaT4vSK0YHd37im18in
-CFYVIbmtbVeIOPQoYSIIXANRERGAYHjA7cQPvhyBuZyYfGLnjFtg8lmjFbXtL9Au
-gi9mJobrLEFlPg7Vhx/t
-=pg+/
------END PGP SIGNATURE-----
-
---C7Ke/meiCZutM6I/--
