@@ -1,57 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaENCOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 May 2014 22:14:31 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50132 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaENCO1 (ORCPT
+	id S1753473AbaENCP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 May 2014 22:15:59 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46069 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbaENCP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 May 2014 22:14:27 -0400
+	Tue, 13 May 2014 22:15:57 -0400
+Message-ID: <5372D1D9.4070503@gmail.com>
+Date: Tue, 13 May 2014 20:15:53 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Tue, 13 May 2014 21:14:06 -0500
-Message-ID: <CA+BWVUShz2_Xd8EBWE+igjYk6Bc+K=LbjCr6EH7hNhvVodka6A@mail.gmail.com>
-Subject: HID Sensor support for True/Magnetic North usage attributes
-To: jic23@kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Alexis Berlemont <alexis.berlemont@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: jolsa@redhat.com, acme@ghostprotocols.net, mingo@kernel.org
+Subject: Re: [PATCH 00/34] perf and kconfig / kbuild
+References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear IIO/HID maintainers,
+On 5/13/14, 4:02 PM, Alexis Berlemont wrote:
+> Hello,
+>
+> A few months ago, I tried to make a proposal to introduce Kconfig in
+> perf's generation procedure.
+> (cf. https://lkml.org/lkml/2013/12/20/511)
+>
+> I started from David Ahern's work; I was not aware that Jiri Olsa
+> pushed further the idea and proposed an alternative which integrated
+> kbuild too.
+>
+> So, here is another proposal based on Jiri Olsa work (from April 2013).
+> * Most of the NO_* and HAVE_* makefile variables were removed on
+>    behalf of Kconfig's ones (CONFIG_*); perf source code was modified
+>    accordingly;
+> * These changes make the glue files tools/perf/config/Makefile.fix-* useless
+> * The build test cases now relies on generated configuration files (in
+>    tools/perf/tests/configs);
+>
 
-I have a device, Surface Pro, that has the hid-sensor-hub and many
-sensors attached. With the help of Srinivas I was able to get them all
-working except for the magnometer. It uses the hid-magn-3d driver as
-it should but it does not contain an axis (X, Y, Z) usage attributes.
-Instead it only has a True North usage attribute. I see two solutions
-to this problem and was inquiring which one would work best?
+Thanks for picking this up. I skimmed through all of the patches and 
+conceptually looks good. I doubt I will have time for a detailed review 
+any time soon.
 
-1) Modify the hid-magn-3d driver to handle True North attribute. I
-realize there might not be many devices that have this so not sure if
-appropriate. I think this could be done; by passing a variable amount
-of IIO Channels when setting up the hid-magn-3d driver, depending on
-how many axis and/or if it find True/Magnetic North usage attribute.
+Looks like they apply to Linus' top of tree but with a few errors -- see 
+below. You should always run checkpatch.pl before sending out:
 
-2) Create a whole new driver that handles True/Magnetic North. This
-would not work on my device as it is set to Compass 3D Usage
-Attribute. This could be resolved by adding another quirk for the
-Surface to ensure it used the new driver.
+Applying: kbuild: Introduce KBUILD_AUTOCONF variable for auto.conf include
+Applying: kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable for conf tool
+Applying: perf tools: Kbuild builtin source related fixies
+Applying: perf tools: Kbuild source related fixies
+Applying: perf tools: Add kbuild support into Makefile.kbuild
+Applying: perf kbuild: fix recursive invocation of config/features-checks
+Applying: perf kbuild: store in config-detected missing variables 
+(libdir, ...)
+Applying: perf kbuild: remove useless #ifdef directives
+Applying: perf kbuild: fix a link issue if BUILTIN_TRACE is disabled
+Applying: perf kbuild: add missing files and missing flags in Kbuild files
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:30: trailing 
+whitespace.
+CFLAGS_Context.o += -Wno-redundant-decls -Wno-strict-prototypes
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:137: trailing 
+whitespace.
+CFLAGS_trace-event-perl.o   += -Wno-redundant-decls -Wno-strict-prototypes
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:138: trailing 
+whitespace.
+CFLAGS_trace-event-perl.o   += -Wno-unused-parameter -Wno-shadow -Wno-undef
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:143: trailing 
+whitespace.
+CFLAGS_trace-event-python.o += -Wno-redundant-decls -Wno-strict-prototypes
+warning: 4 lines applied after fixing whitespace errors.
+Applying: perf kbuild: update kbuild files according to last changes
+Applying: perf kbuild: remove legacy slang-related build variables
+Applying: perf kbuild: remove legacy libaudit-related build variables
+Applying: perf kbuild: remove legacy libgtk2-related build variables
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:204: trailing 
+whitespace.
+#else
+warning: 1 line applied after fixing whitespace errors.
+Applying: perf kbuild: remove legacy libperl-related build variables
+Applying: perf kbuild: remove legacy timerfd-related build variable
+Applying: perf kbuild: remove legacy demangle-related build variables
+Applying: perf kbuild: remove legacy on_exit-related build variable
+Applying: perf kbuild: remove legacy backtrace-related build variable
+Applying: perf kbuild: remove legacy numa-related build variable
+Applying: perf kbuild: remove legacy bionic-related build variable
+Applying: perf kbuild: remove legacy libelf-related build variables (1st 
+part)
+Applying: perf kbuild: remove legacy libelf-related build variables (2nd 
+part)
+Applying: perf kbuild: remove legacy libdwarf-related build variables
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:342: trailing 
+whitespace.
+       endif # CONFIG_LIBDWARF_UNWIND
+warning: 1 line applied after fixing whitespace errors.
+Applying: perf kbuild: remove legacy libunwind-related build variables
+Applying: perf kbuild: remove legacy libpython-related build variable
+Applying: perf kbuild: add generated Kconfig build-test cases
+Applying: perf kbuild: fix installation of traceevent plugins
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:74: trailing 
+whitespace.
+make_pure           :=
+warning: 1 line applied after fixing whitespace errors.
+Applying: perf kbuild: fix tarpkg target in tests/make
+Applying: perf kbuild: update Kbuild files with new and removed sources
+Applying: perf kbuild: update build test configurations
+/Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:773: trailing 
+whitespace.
 
-For both options I think we'd need a new IIO_MOD_NORTH for the
-iio_chan_spec, as the current ones don't really apply. I like the
-first solution as it could allow for handling of devices with only one
-or two axis present. I do realize if the hid-mangn-3d driver was
-changed it's name would not make sense anymore and the pattern I'm
-notcing is a driver for each HID Usage.
+warning: 1 line applied after fixing whitespace errors.
+Applying: perf kbuild: relocate the configs generating script
+Applying: perf kbuild: minor changes
+Applying: perf kbuild: remove Makefile.perf
 
-Here's a link to the hid report description with some labels for my device:
-Bug 73321 Comment 7
-https://bugzilla.kernel.org/show_bug.cgi?id=73321#c7
+David
 
-I'd be willing to work on this. Just wanted to know what would work best
-
-Thank You,
-Reyad Attiyat
