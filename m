@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750916AbaENSwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:52:54 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44880 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaENSwx (ORCPT
+	id S1751691AbaENS4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:56:39 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:55844 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaENS4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:52:53 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 14 May 2014 11:52:39 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in
- tree_plugin.h and used in tree.c
-Message-ID: <20140514185239.GA4475@jtriplet-mobl1>
-References: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140514154150.GA1873@thin>
- <20140514155706.GG4570@linux.vnet.ibm.com>
+	Wed, 14 May 2014 14:56:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Anders Berg <anders.berg@avagotech.com>
+Cc: Olof Johansson <olof@lixom.net>, Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] Add platform support for LSI AXM55xx
+Date: Wed, 14 May 2014 20:56:24 +0200
+Message-ID: <6334605.NlytHCzYVP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1400072260.git.anders.berg@avagotech.com>
+References: <cover.1400072260.git.anders.berg@avagotech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514155706.GG4570@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+/J5bTA43d2nZFZgwooqfHc/a4NzJooIqwtvSjAAwu+
+ dvEPqA6bfPEJjjrOFg7bSha9dzaJjsbUxiIZMZ1Y35Pu5968Rp
+ XN/WPMeBbDsQl7VtDrUWJHfgf8TVpLWKFto0eQuWRRHgUSEqgr
+ i6P4QvpIp6m8hHUIHNe3yKK7jOORM9CHrU/YaWKMLoGCaK9xbI
+ EyhUTrbZAgZa6rMJFX7T4ADh3ncv10PTGDDnAURk3Gwvizg0/t
+ fqAZLqW58soZCZtLOxmdV7psf2vmrSIJwIOmYCaT2X7bjgvDQS
+ CXzVsFLOL/kMEyr7f8Ji5LAFnk7fWDrxx6nlOKVlTtkS3ERXRe
+ yCmZY+0WLnHm0kCRj7os=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 08:57:06AM -0700, Paul E. McKenney wrote:
-> On Wed, May 14, 2014 at 08:41:50AM -0700, Josh Triplett wrote:
-> > On Tue, May 13, 2014 at 05:30:59PM -0700, Paul E. McKenney wrote:
-> > > From: Uma Sharma <uma.sharma523@gmail.com>
-> > > 
-> > > The variable and struct both having the name "rcu_state" confuses
-> > > sparse in some situations, so this commit changes the variable to
-> > > "rcu_state_p" in order to avoid this confusion.  This also makes
-> > > things easier for human readers.
-> > 
-> > Human readers aside, how does Sparse get confused?  Let's fix that.
+On Wednesday 14 May 2014 20:37:55 Anders Berg wrote:
 > 
-> OK.  The issue appears to be that we have a variable with the same
-> name as a struct, as in:
+> This is version 3 of this series to introduces basic platform support for the LSI
+> AXM5516 SoC.
 > 
-> struct rcu_state *rcu_state;
+> No major changes since v2. Ready to be applied to the arm-soc tree?
 
-Which is completely legal C, and Sparse should have no issue with it.
+I think it's good, but I'm not sure if we should put them all into arm-soc.
+There are no dependencies between the drivers that I can see, so why not
+merge the clock and reset drivers through the individual subsystem maintainers?
 
-> > Personally, I don't think the _p makes things particularly easier for
-> > human readers, but it doesn't make things *harder* for anyone other than
-> > those used to reading the existing code, so, *shrug*.
-> 
-> It does make it a bit easier for me when grepping through the source,
-> given the large number of "struct rcu_state" strings in there.  And
-> yes, I should be using some more modern tools than "grep" and "cscope"!
-> But I am not the only throwback.  ;-)
+We can take patches 1/3/4/6, and the others if there is a good reason
+not to have the regular maintainers pick them up.
 
-Count me in as someone using "grep" as well (usually via "git grep").
+The hip04 platform series is also adding a multi_v7_lpae_defconfig file.
+it would be good to add axxia to that config and also to the regular
+multi_v7_defconfig, but that can be an add-on patch once we have merged
+hip04.
 
-- Josh Triplett
+	Arnd
