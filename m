@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075AbaENQCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:02:47 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50505 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaENQCp (ORCPT
+	id S1755866AbaENQFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:05:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280AbaENQFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:02:45 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH RESEND 2/2] cpufreq: imx6q: Remove unused include
-Date: Wed, 14 May 2014 18:02:24 +0200
-Message-Id: <1400083344-20042-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.0.0.rc0
-In-Reply-To: <1400083344-20042-1-git-send-email-p.zabel@pengutronix.de>
-References: <1400083344-20042-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 14 May 2014 12:05:22 -0400
+Date: Wed, 14 May 2014 18:05:20 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH RESEND v4 0/8] Add Allwinner A31 USB support
+Message-ID: <20140514160520.GA4679@kroah.com>
+References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140514123419.GK29258@lukather>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514123419.GK29258@lukather>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to include delay.h.
+On Wed, May 14, 2014 at 02:34:19PM +0200, Maxime Ripard wrote:
+> On Tue, May 13, 2014 at 05:44:14PM +0200, Maxime Ripard wrote:
+> > Hi everyone,
+> > 
+> > This patchset adds support for the USB controllers found in the
+> > Allwinner A31.
+> > 
+> > While the design is similar to the earlier Allwinner SoCs that are
+> > already supported, a few details here and there change, like the fact
+> > that the PHYs now have one clock per phy, while it used to be only one
+> > for all the PHYs.
+> > 
+> > Resent adding Alan Stern's Acked-by and puting Greg KH in the
+> > recipients this time...
+> 
+> Applied patches 2, 7 and 8.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/cpufreq/imx6q-cpufreq.c | 1 -
- 1 file changed, 1 deletion(-)
+Feel free to apply patches 5 and 6 to your tree, as your branch needs
+these, with my:
 
-diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
-index 92a82ec..af366c2 100644
---- a/drivers/cpufreq/imx6q-cpufreq.c
-+++ b/drivers/cpufreq/imx6q-cpufreq.c
-@@ -9,7 +9,6 @@
- #include <linux/clk.h>
- #include <linux/cpu.h>
- #include <linux/cpufreq.h>
--#include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/of.h>
--- 
-2.0.0.rc0
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+Or, if you want me to take them, just let me know and I will.
+
+thanks,
+
+greg k-h
