@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaENM4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:56:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46442 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751070AbaENM4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:56:30 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: kishon@ti.com, hdegoede@redhat.com
-Cc: Boris Brezillon <boris@free-electrons.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND v4 1/8] clk: sunxi: Implement A31 USB clock
-Date: Wed, 14 May 2014 14:56:00 +0200
-Message-Id: <1400072167-29631-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1400072167-29631-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1400072167-29631-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1755444AbaENM6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:58:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60424 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754688AbaENM6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 08:58:22 -0400
+Message-ID: <53736854.7090101@ti.com>
+Date: Wed, 14 May 2014 15:57:56 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>
+CC: <balajitk@ti.com>
+Subject: Re: [PATCH 01/17] phy: phy-omap-pipe3: Add support for PCIe PHY
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <1399383244-14556-2-git-send-email-kishon@ti.com>
+In-Reply-To: <1399383244-14556-2-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 USB clock slightly differ from its older counterparts, mostly because
-it has a different gate for each PHY, while the older one had a single gate for
-all the phy.
+On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
+> PCIe PHY uses an external pll instead of the internal pll used by SATA
+> and USB3. So added support in pipe3 PHY to use external pll.
+> 
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
----
- drivers/clk/sunxi/clk-sunxi.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Reviewed-by: Roger Quadros <rogerq@ti.com>
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index bd7dc733c1ca..d9bab75f128b 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -972,6 +972,11 @@ static const struct gates_data sun5i_a13_usb_gates_data __initconst = {
- 	.reset_mask = 0x03,
- };
- 
-+static const struct gates_data sun6i_a31_usb_gates_data __initconst = {
-+	.mask = { BIT(18) | BIT(17) | BIT(16) | BIT(10) | BIT(9) | BIT(8) },
-+	.reset_mask = BIT(2) | BIT(1) | BIT(0),
-+};
-+
- static void __init sunxi_gates_clk_setup(struct device_node *node,
- 					 struct gates_data *data)
- {
-@@ -1267,6 +1272,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
- 	{.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
- 	{.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
- 	{}
- };
- 
--- 
-1.9.3
-
+--
+cheers,
+-roger
