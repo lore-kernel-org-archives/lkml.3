@@ -1,140 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaENWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:21:29 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42120 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaENWV1 (ORCPT
+	id S1752700AbaENWWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:22:20 -0400
+Received: from exprod7og111.obsmtp.com ([64.18.2.175]:41473 "EHLO
+	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaENWWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:21:27 -0400
-Date: Wed, 14 May 2014 15:21:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, mtk.manpages@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>, mathieu.desnoyers@efficios.com
-Subject: Re: futex(2) man page update help request
-Message-ID: <20140514222120.GS4570@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <537346E5.4050407@gmail.com>
- <CF98E3EF.90564%dvhart@linux.intel.com>
- <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
- <1400100977.3865.30.camel@buesod1.americas.hpqcorp.net>
- <CF99279F.907FC%dvhart@linux.intel.com>
+	Wed, 14 May 2014 18:22:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CF99279F.907FC%dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051422-1344-0000-0000-0000018E14EA
+In-Reply-To: <20140514200845.19795.80794@quantum>
+References: <cover.1400072260.git.anders.berg@avagotech.com>
+	<a83c5e1272d7a3242701504f238789592c2ec80f.1400072260.git.anders.berg@avagotech.com>
+	<20140514200845.19795.80794@quantum>
+Date: Thu, 15 May 2014 00:22:16 +0200
+Message-ID: <CAE0=X_3WA5ZzEE1NespeScmnMkr9oxNMc1=+X86i5NpSffiUnA@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] clk: Add clock driver for AXM55xx SoC
+From: Anders Berg <anders.berg@avagotech.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Anders Berg <anders.berg@lsi.com>, Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 02:03:13PM -0700, Darren Hart wrote:
-> On 5/14/14, 13:56, "Davidlohr Bueso" <davidlohr@hp.com> wrote:
-> 
-> >On Wed, 2014-05-14 at 21:03 +0200, Michael Kerrisk (man-pages) wrote:
-> >> Hi Darren,
-> >> 
-> >> On Wed, May 14, 2014 at 6:18 PM, Darren Hart <dvhart@linux.intel.com>
-> >>wrote:
-> >> > On 5/14/14, 3:35, "Michael Kerrisk (man-pages)"
-> >><mtk.manpages@gmail.com>
-> >> > wrote:
-> >> >
-> >> >>[So, some futex recent discussions remind me I should make this
-> >>request]
-> >> >>
-> >> >>Hello all (especially those in the To:, namely Thomas, Darren, Ingo,
-> >> >>Jakub),
-> >> >>
-> >> >>The futex man pages:
-> >> >>http://man7.org/linux/man-pages/man2/futex.2.html
-> >> >>http://man7.org/linux/man-pages/man7/futex.7.html
-> >> >>are currently in a sorry state. I'm by no means convinced that all of
-> >>the
-> >> >>futex operations described there are explained fully and correctly.
-> >>And
-> >> >>probably not all error cases for each operation are properly
-> >>documented.
-> >> >>I'd be very happy if some folk could review those pages and send me
-> >> >>corrections (Git:
-> >> >>http://git.kernel.org/pub/scm/docs/man-pages/man-pages).
-> >> >>
-> >> >>But worse, a number of futex operations remain undocumented in
-> >>futex(2)
-> >> >>(see the list below).
-> >> >>
-> >> >>I am aware of Documentation/pi-futex.txt and
-> >> >>Documentation/futex-requeue-pi.txt. However, both of those documents
-> >> >>are rather thin on details / explain what certain FUTEX_* operations
-> >>are
-> >> >>used for rather than what they do / focus on the implementation,
-> >>rather
-> >> >>than the semantics.
-> >> >>
-> >> >>What I would like is that the futex(2) page documenta each one of
-> >> >>these operations with a focus on the semantics in a way that might be
-> >> >>useful to writers of library functions or those who simply wish to
-> >> >>better understand (from a user-space perspective) what futexes are
-> >> >>and how they are used. However, I don't have the knowledge to do
-> >> >>this well in any reasonable time.
-> >> >>
-> >> >>Would the folk in the To: list (or anyone else who is knowledgeable)
-> >> >>be willing to write patches
-> >> >>(Git: http://git.kernel.org/pub/scm/docs/man-pages/man-pages )
-> >> >>or just supply me with some raw text that documents these currently
-> >> >>undocumented futex operations, in the manner suggested?
-> >> >
-> >> > Yes, I'll be glad to help.
-> >> 
-> >> Thanks!
-> >> 
-> >> > However, unless I'm sorely mistaken, the larger problem is that glibc
-> >> > removed the futex() call entirely, so these man pages don't describe
-> >> 
-> >> I don't think futex() ever was in glibc--that's by design, and
-> >> completely understandable: no user-space application would want to
-> >> directly use futex().
-> >
-> >That's actually not quite true. There are plenty of software efforts out
-> >there that use futex calls directly to implement userspace serialization
-> >mechanisms as an alternative to the bulky sysv semaphores. I worked
-> >closely with an in-memory DB project that makes heavy use of them. Not
-> >everyone can simply rely on pthreads.
-> 
-> Userspace RCU from Mattieu Desnoyers / Efficios uses it as well - or did.
+On Wed, May 14, 2014 at 10:08 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Anders Berg (2014-05-14 11:37:57)
+>> +Example:
+>> +
+>> +       clk_ref0: clk_ref0 {
+>> +               compatible = "fixed-clock";
+>> +               #clock-cells = <0>;
+>> +               clock-frequency = <125000000>;
+>> +       };
+>
+> Hi Anders,
+>
+> The driver looks good. As for the DT binding, I am starting to request
+> that bindings for new hardware move away from the one-clock-per-node
+> method. I am not forcing anyone with stable bindings to migrate that
+> way, but it tends to make maintenance easier in the long run (e.g.
+> setting per-clock flags, etc).
+>
+> Your clk_ref0 example looks good, assuming that it is an off-chip clock
+> that feeds into the rest of the clock generator.
+>
+>> +
+>> +       clk_cpu_pll: clk_cpu_pll@2010022000 {
+>> +               compatible = "lsi,axxia-pll-clock";
+>> +               #clock-cells = <0>;
+>> +               clocks = <&clk_ref0>;
+>> +               clock-output-names = "clk_cpu_pll";
+>> +               reg = <0x20 0x10022000 0 0x2c>;
+>> +       };
+>
+> I assume the rest of your clocks are part of a clock generator IP block
+> inside of your chip. Have you looked at the QCOM binding? It is my
+> favorite binding these days. Here are some highlights:
+>
+[...]
+>
+> Using this type of binding you only need to declare your clock generator
+> IP node in dts, and then define a mapping in the DT include chroot. Then
+> you can define your per-clock data inside of your clock driver instead
+> of putting all of the details inside of DT.
+>
+> If you have a strong reason to do it the way that you originally posted
+> then let me know.
+>
 
-It still does.  ;-)
+No strong reason... I just happened to pick the keystone-clocks.dtsi
+as an example when I wrote this. But I can rework this according to
+your suggestions. I'll post it as a separate patch (thus dropping the
+clk patch from this series). Ok?
 
-							Thanx, Paul
-
-> >> (BTW, I mispoke in my earlier mail when I said I
-> >> wanted documentation suitable for "writers of library functions" -- I
-> >> meant suitable for "writers of *C library*".)
-> >
-> >While kind of beyond the scope of documentation like manpages, I would
-> >very much welcome this! The internet is full of
-> >misleading/false/stupid/incomplete references to futexes and how to use
-> >them. Having a best practises helps the kernel directly avoiding users
-> >from misusing them.
-> 
-> Agreed.
-> 
-> -- 
-> Darren Hart					Open Source Technology Center
-> darren.hart@intel.com				            Intel Corporation
-> 
-> 
-> 
-
+Thanks,
+Anders
