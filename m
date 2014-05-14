@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaENJHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:07:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679AbaENJHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:07:38 -0400
-Date: Wed, 14 May 2014 17:09:06 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: kaslr to avoid setup_data regions
-Message-ID: <20140514090906.GI2039@darkstar.nay.redhat.com>
-References: <20140514080201.GA18922@dhcp-16-198.nay.redhat.com>
- <20140514081325.GA8992@mguzik.redhat.com>
- <20140514082300.GH2039@darkstar.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514082300.GH2039@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754131AbaENJIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:08:01 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:54997 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753772AbaENJHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:07:40 -0400
+Message-ID: <1400058458.31197.7.camel@x220>
+Subject: Re: [PATCH] [RESEND] ARM: remove last use of CONFIG_CPU_ARM710
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Date: Wed, 14 May 2014 11:07:38 +0200
+In-Reply-To: <1400057295.224008432@f65.i.mail.ru>
+References: <1364507176.1345.45.camel@x61.thuisdomein>
+	 <1400055865.31197.4.camel@x220> <1400057295.224008432@f65.i.mail.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 May 2014 09:07:38.0982 (UTC) FILETIME=[F45E4060:01CF6F53]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/14 at 04:23pm, Dave Young wrote:
-> On 05/14/14 at 10:13am, Mateusz Guzik wrote:
-> > On Wed, May 14, 2014 at 04:02:01PM +0800, Dave Young wrote:
-> > > X86 will pass setup_data region while necessary, these regions could be
-> > > overwitten by kernel due to kaslr.
-> > > 
-> > > Thus iterate and add setup regions to mem_avoid[] in this patch.
-> > > Set max mem avoid entries 32, hopefully it will be enough.
-> > > 
-> > > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > > ---
-> > >  arch/x86/boot/compressed/aslr.c |   30 ++++++++++++++++++++++++++++--
-> > >  1 file changed, 28 insertions(+), 2 deletions(-)
-> > > 
-> > > Index: linux-2.6/arch/x86/boot/compressed/aslr.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/arch/x86/boot/compressed/aslr.c
-> > > +++ linux-2.6/arch/x86/boot/compressed/aslr.c
-> > > @@ -110,8 +110,9 @@ struct mem_vector {
-> > >  	unsigned long size;
-> > >  };
-> > >  
-> > > -#define MEM_AVOID_MAX 5
-> > > +#define MEM_AVOID_MAX 32
-> > >  static struct mem_vector mem_avoid[MEM_AVOID_MAX];
-> > > +static int mem_avoid_nr;
-> > >  
-> > >  static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
-> > >  {
-> > > @@ -135,6 +136,28 @@ static bool mem_overlaps(struct mem_vect
-> > >  	return true;
-> > >  }
-> > >  
-> > > +static void mem_avoid_setup_data(void)
-> > > +{
-> > > +	struct setup_data *data;
-> > > +	u64 pa_data;
-> > > +
-> > > +	if (mem_avoid_nr >= MEM_AVOID_MAX) {
-> > > +		debug_putstr("KASLR: too many setup_data ranges.\n");
-> > > +		return;
-> > > +	}
-> > > +
-> > > +	pa_data = real_mode->hdr.setup_data;
-> > > +	while (pa_data) {
-> > > +		data = (struct setup_data *)pa_data;
-> > > +		if (pa_data < CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
-> > > +			mem_avoid[mem_avoid_nr].start = pa_data;
-> > > +			mem_avoid[mem_avoid_nr].size = sizeof(*data) + data->len;
-> > > +			mem_avoid_nr++;
-> > > +		}
-> > > +		pa_data = data->next;
-> > > +	}
-> > > +}
-> > > +
-> > 
-> > I have no idea if this real_mode->hdr.setup_data examination is correct,
-> > so not commenting on that.
-
-Probably should return early when pa_data > 4G because of 4G early mapping.
-Not sure for 32bit though. I'm not familar with the detail of x86 early boot.
-Help will be appreciate. 
-
-> > 
-> > What prevents the loop from overflowing the table?
+On Wed, 2014-05-14 at 12:48 +0400, Alexander Shiyan wrote:
+> Russell usually apply such patches via the tracker.
 > 
-> Ooooops, the checking should be in the loop instead of our of it.
-> Will repost. Thanks for catching.
-> 
-> Dave
+> http://www.arm.linux.org.uk/developer/patches/
+
+And that page tells me
+    Please note: this is not a patch review system;
+    please submit all patches to the linux-arm-kernel mailing
+    list for community review prior to submission here.
+
+I've not been notified that my patch was added to that tracker, so it is
+appropriate to resend.
+
+
+Paul Bolle
+
