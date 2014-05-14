@@ -1,56 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaENGm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 02:42:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40149 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaENGmZ (ORCPT
+	id S1751655AbaENGoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 02:44:30 -0400
+Received: from mout.gmx.net ([212.227.17.21]:55925 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741AbaENGo3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 02:42:25 -0400
-Date: Wed, 14 May 2014 08:42:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 1/3] rtmutex: Add missing deadlock check
-In-Reply-To: <20140513184430.5f2e12f8@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1405140840140.6261@ionos.tec.linutronix.de>
-References: <20140512190438.314125476@linutronix.de> <20140512201700.999660035@linutronix.de> <5371B2D9.8060405@cn.fujitsu.com> <20140513084815.GB2485@laptop.programming.kicks-ass.net> <alpine.DEB.2.02.1405132117110.6261@ionos.tec.linutronix.de>
- <20140513162041.3405b668@gandalf.local.home> <20140513203619.GV18164@linux.vnet.ibm.com> <alpine.DEB.2.02.1405132301530.6261@ionos.tec.linutronix.de> <20140513220009.GW18164@linux.vnet.ibm.com> <20140513184430.5f2e12f8@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 14 May 2014 02:44:29 -0400
+Date: Wed, 14 May 2014 08:44:14 +0200
+From: Andreas Werner <wernerandy@gmx.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, khali@linux-fr.org, andreas.werner@men.de
+Subject: Re: Question: hwmon: Adding addtitional sysfs entries
+Message-ID: <20140514064414.GA3592@thinkpad.fritz.box>
+References: <20140510132238.GA28364@awedesk.fritz.box>
+ <536E1C4D.9030206@roeck-us.net>
+ <20140510160217.GA775@awedesk.fritz.box>
+ <536E4698.5030106@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <536E4698.5030106@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:dcGNvrndjzcTgCWNrb6qS2mQzQhIAfjv5tG8Cwvw+QKlAMeXF7Y
+ a8/jgaLLRacKHeREqYzi0uAo2Z+ZZUU5ez2YxTYdGQITyhX6ae1ffOyhQaDnXOW4yB0GntD
+ XBWnFxXX/iydYXjFBXpC/s11zdQlhCTCUGwMbEfRni8W8jVM3GEBf1v0e2obQEjAB5/z7Ey
+ OqxsWBxmzq3B7LP9ANLjA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Steven Rostedt wrote:
-
-> On Tue, 13 May 2014 15:00:09 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Sat, May 10, 2014 at 08:32:40AM -0700, Guenter Roeck wrote:
+> On 05/10/2014 09:02 AM, Andreas Werner wrote:
+> >On Sat, May 10, 2014 at 05:32:13AM -0700, Guenter Roeck wrote:
+> >>On 05/10/2014 06:22 AM, Andreas Werner wrote:
+> >>>Hi,
+> >>>i am currently working on an implemenation of my Board Management Controller (BMC).
+> >>>
+> >>>This Controller is a MCR assembled on almost all of our Compact PCI or Compact PCI Serial
+> >>>Cards as well as on some other CPU Boards.
+> >>>
+> >>>The BMC includes LED´s, Watchdog, Voltage Monitoring and some other features.
+> >>>I have already implemented an MFD driver, LED and Watchdog driver.
+> >>>
+> >>>Currently i am working on the hwmon implemenation. This includes for the first step the
+> >>>voltage monitoring.
+> >>>
+> >>>The BMC has some other feature which are not supported by any of the subsystem.
+> >>>  - Errorcounter (Board status)
+> >>>  - Power Failure status
+> >>>  - Operating ours
+> >>
+> >>Guess you mean hours here.
+> >
+> >Yes sorry my mistake.
+> >
+> >>
+> >>>  - Do software reset, do cold reset
+> >>>  - Set power modes
+> >>>  - Backplate Geographical Address
+> >>>
+> >>>These are all informations related to the Board where the BMC is assembled to.
+> >>>I think all those features could be part of the hwmon implementation.
+> >>>
+> >>Why ?
+> >
+> >As all of the settings are CPU board related i thought it will be an good idea
+> >to put as much settings as possible to a group to one subsystem.
+> >This would be easier for the User Application.
+> >
+> Bad argument, even for the users. A user would not normally expect to find
+> the above information in unrelated subsystems such as hwmon. Keep in mind that
+> the Linux kernel is supposed to be useful for more than the application developers
+> in your company, and think about it - assume you would have to implement an
+> application which runs on more than one hardware, and attributes like the above
+> would be spread throughout the system. It would be all but impossible to write
+> generic applications, so you would want to avoid adding anything non-standard
+> as much as you can. And if you have to implement something non-standard, at least
+> implement it where people at least have a chance to find it.
+>
+Ok, you are right :-)
+ 
+> >>
+> >>>Is it possible to add "custom" sysfs entries in my hwmon driver to support all these features?
+> >>>Does lm-sensor ingore those custom features or is it a problem for lm-sensors?
+> >>>
+> >>>What is the normal way to add those features?
+> >>>
+> >>
+> >>The hwmon subsystem isn't really the correct location for this functionality.
+> >>Power management should be done with a regulator driver (possibly power).
+> >>The other attributes and functionality would better fit into the mfd core
+> >>driver.
+> >>
+> >
+> >MFD Core sounds good. That is also perfect for the User App.
+> >
+> >>You might want to tie the reset functions into the system reset functionality.
+> >
+> >I do not understand this. Is there another subsystem or something like that
+> >were I can put the Reset stuff to?
+> >
+> Assuming you are talking about system reset, there is a function named machine_restart()
+> to accomplish that. This is architecture and, in many cases, machine specific functionality.
+> For example, many arm architectures have a different means to reset the system, and there
+> is a separate function pointer named arm_pm_restart to tie into that functionality.
 > 
->  
-> > Good points -- I was indeed thinking about stress testing instead of
-> > algorithmic testing.
+> Many restart functions are implemented in the drivers/power/reset directory, which may be
+> a good location for yours.
 > 
-> But doesn't lockdep use algorithmic tests too?
+Just for explanation and to avoid missunderstanding. The reset functionality of the BMC
+is to send a I2C command from the Host to the BMC, and the BMC does the reset or power down.
 
-Kinda, but only for the deadlock detection.
+There is also a functionality where you can send a command the Controller and he will press
+the "power button" which cause an ACPI event to shutdown the PC if configured.
 
-I'm not sure if we want to inflict PI correctness and set_scheduler()
-interaction to lockdep.
+Thanks for the /drivers/power informations there is really nice code in there where I can
+pick up some stuff to implement functions like that.
 
-Thanks,
+> >
+> >I guess the hwmon subsys is the right place for the voltage monitoring (3,3V, 5V etc) isn´t it?
+> >
+> Yes, that is what it is for.
 
-	tglx
+Thanks, works fine. Nice integration in lm_sensors thats what I love in Linux :-)
+> 
+> Guenter
+> 
+Regards
+Andy
