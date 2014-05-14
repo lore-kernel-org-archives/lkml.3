@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaENF1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:27:48 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:52911 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaENF1r (ORCPT
+	id S1751376AbaENFh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:37:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59880 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaENFh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:27:47 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON parsing
-References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
-	<1399935074-25167-9-git-send-email-andi@firstfloor.org>
-Date: Wed, 14 May 2014 14:27:45 +0900
-In-Reply-To: <1399935074-25167-9-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Mon, 12 May 2014 15:51:13 -0700")
-Message-ID: <87vbt9kjzi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 14 May 2014 01:37:57 -0400
+Message-ID: <53730130.3000300@ti.com>
+Date: Wed, 14 May 2014 11:07:52 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Bin Liu <binmlist@gmail.com>
+CC: Daniel Mack <zonque@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
+References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>	<5371EA01.3080307@gmail.com>	<537208A9.4020507@ti.com>	<53720E0F.3070008@gmail.com>	<537216AC.4090401@ti.com>	<53721ABF.8060705@gmail.com>	<53721D24.4090704@ti.com> <CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
+In-Reply-To: <CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 May 2014 15:51:13 -0700, Andi Kleen wrote:
+On 5/14/2014 12:07 AM, Bin Liu wrote:
+> Hi,
+>
+> On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com> wrote:
+>> Hi Daniel,
+>>
+>>
+>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
+>>> Hi George,
+>>>
+>>> On 05/13/2014 02:57 PM, George Cherian wrote:
+>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
+>>>> reg.
+>>>> can you try with the following patch.
+>>>>
+>>>> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+>>>> index 1ae6681..1160cd1 100644
+>>>> --- a/drivers/usb/musb/musb_dsps.c
+>>>> +++ b/drivers/usb/musb/musb_dsps.c
+>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
+>>>>           * logic enabled.
+>>>>           */
+>>>>          val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
+>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
+>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
+>>>>                  glue->sw_babble_enabled = true;
+>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
+>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
+>>>> +       }
+>>>>          ret = dsps_musb_dbg_init(musb, glue);
+>>>>          if (ret)
+>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
+>>> without the patch: a full glue reset is conducted. Do I get you right
+>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
+>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
+>>>
+>> Basically, there are 2 types of babble conditions.
+>> 1) Transient babble condition - which could be recovered from without an IP
+>> reset .
+>> 2) Babble condition - which could be recovered from only by doing an IP
+>> reset.
+>>
+>> Looks like you are always hitting case 2 (Most times am also hitting the
+>> same).
+>> Case 1 is really hard to reproduce. I don't have a reliable method as of now
+>> to
+>> reproduce this case consistently.
+>>
+>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
+>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
+>>> (a_wait_bcon)
+>>> [   19.685815] usb 1-1: USB disconnect, device number 3
+>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
+>>> 44
+>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
+>>>
+>>>
+>>> I don't quite follow, especially as I lack documentation of the IP core.
+>>> How do you test babble errors, is there any way to force them to happen
+>>> reliably?
+>>
+>> There is no 100% reliable method to force it to happen. Following is
+> I have a way to force babble happen reliably - shorting DP or DM to
+> VBUS. I opened the far-end plug of the USB cable, so I can easily
+> short DP or DM to VBUS.
+Good to know that you have a reliable way to test babble condition.
+Can you please do a quick test on 3.15.0-rc4 with the series applied?
+In case of any assistance please do let me know.
+> But the interesting thing is that with TI 3.2 kernel, shorting DP or
+> DM to VBUS causes MISC register to be 0x4, but the result is
+> completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
+>
+> So in the 3.2 kernel, the babble handing resets the controller, but
+> the 3.12.10 does not.
+>
+> Regards,
+> -Bin.
+>
+>> my setup ,
+>> I have a HUB with 4 devices connected , which gives me a Babble interrupt
+>> on both connects and disconnects ( Not always though).
+>>
+>>> Anyway, the full glue layer solves this rare condition quite well for
+>>> me. Is there any downside of this?
+>>>
+>>>
+>>> Daniel
+>>>
+>>
+>> --
+>> -George
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-[SNIP]
-> +int test__aliases(void)
 
-Just a nitpick.  Please use a more descriptive name for the testcase
-like test__event_aliases().
+-- 
+-George
 
-> +{
-> +	int err;
-> +
-> +	/* Download JSON files */
-> +	/* XXX assumes perf is installed */
-> +	/* For now user must manually download */
-> +	if (0 && system("perf download > /dev/null") < 0) {
-> +		/* Don't error out for this for now */
-> +		fprintf(stderr, "perf download failed\n");
-> +	}
-> +
-> +	evlist = perf_evlist__new();
-> +	if (evlist == NULL)
-> +		return -ENOMEM;
-> +
-> +	err = pmu_iterate_events(test_event);
-> +	fprintf(stderr, " Parsed %d events :", num_events);
-> +	if (failed > 0)
-> +		fprintf(stderr, " %d events failed", num_events);
-
-s/num_events/failed/ ?
-
-And this kind of detailed information is usually printed when -v option
-is given via pr_debug().
-
-Thanks,
-Namhyung
-
-
-> +	perf_evlist__delete(evlist);
-> +	return err;
-> +}
