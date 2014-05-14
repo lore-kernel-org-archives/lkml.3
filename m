@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaENIGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:06:11 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51150 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaENIEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:04:24 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: daniel.lezcano@linaro.org, lorenzo.pieralisi@arm.com, rjw@rjwysocki.net,
-        kgene.kim@samsung.com, Chander Kashyap <chander.kashyap@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH v5 2/6] arm: exynos: add generic function to calculate cpu number
-Date: Wed, 14 May 2014 13:33:53 +0530
-Message-Id: <1400054637-21505-3-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
-References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
- <1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
+	id S1753700AbaENIIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:08:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747AbaENIIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:08:01 -0400
+Date: Wed, 14 May 2014 16:09:26 +0800
+From: Dave Young <dyoung@redhat.com>
+To: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kaslr to avoid setup_data regions
+Message-ID: <20140514080926.GF2039@darkstar.nay.redhat.com>
+References: <20140514074940.GA18774@dhcp-16-198.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514074940.GA18774@dhcp-16-198.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of cpu power registers in pmu is based on cpu number
-offsets. This function calculate the same. This is essentially
-required in case of multi-cluster SoC's e.g Exynos5420.
+On 05/14/14 at 03:49pm, Dave Young wrote:
+> X86 will pass setup_data region while necessary, these regions could be
+> overwitten by kernel due to kaslr.
+> 
+> Thus iterate and add setup regions to mem_avoid[] in this patch.
+> Set max mem avoid entries 32, hopefully it will be enough.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/boot/compressed/aslr.c |   28 +++++++++++++++++++++++++++-
+>  1 file changed, 27 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/arch/x86/boot/compressed/aslr.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/boot/compressed/aslr.c
+> +++ linux-2.6/arch/x86/boot/compressed/aslr.c
+> @@ -110,8 +110,9 @@ struct mem_vector {
+>  	unsigned long size;
+>  };
+>  
+> -#define MEM_AVOID_MAX 5
+> +#define MEM_AVOID_MAX 32
+>  static struct mem_vector mem_avoid[MEM_AVOID_MAX];
+> +static int mem_avoid_nr;
+>  
+>  static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
+>  {
+> @@ -135,6 +136,28 @@ static bool mem_overlaps(struct mem_vect
+>  	return true;
+>  }
+>  
+> +static void mem_avoid_setup_data(void)
+> +{
+> +	struct setup_data *data;
+> +	u64 pa_data;
+> +
+> +	if (mem_avoid_nr >= MEM_AVOID_MAX) {
+> +		debug_putstr("KASLR: too many setup_data ranges.\n");
+> +		return;
+> +	}
+> +
+> +	pa_data = real_mode->hdr.setup_data;
+> +	while (pa_data) {
+> +		data = (struct setup_data *)pa_data;
+> +		if (pa_data < CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
+> +			mem_avoid[mem_avoid_nr].start = pa_data;
+> +			mem_avoid[mem_avoid_nr].size = sizeof(*data) + data->len;
+> +			mem_avoid_nr++;
+> +		}
+> +		pa_data = data->next;
+> +	}
+> +}
+> +
+>  static void mem_avoid_init(unsigned long input, unsigned long input_size,
+>  			   unsigned long output, unsigned long output_size)
+>  {
+> @@ -177,6 +200,9 @@ static void mem_avoid_init(unsigned long
+>  	/* Avoid stack memory. */
+>  	mem_avoid[4].start = (unsigned long)free_mem_end_ptr;
+>  	mem_avoid[4].size = BOOT_STACK_SIZE;
+> +	mem_avoid_nr = 5;
+> +
+> +	mem_avoid_setup_data();
+>  }
+>  
+>  /* Does this memory vector overlap a known avoided area? */
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
----
- arch/arm/mach-exynos/regs-pmu.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+Please ignore this one, sent the right version as V2. The difference is V2
+updated to iterate mem_avoid_nr instead of MEM_AVOID_MAX.
 
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 4179f6a..485aefd 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -325,4 +325,13 @@
- 
- #define EXYNOS5420_SWRESET_KFC_SEL				0x3
- 
-+#include <asm/cputype.h>
-+#define MAX_CPUS_IN_CLUSTER	4
-+
-+static inline unsigned int exynos_pmu_cpunr(unsigned int mpidr)
-+{
-+	return ((MPIDR_AFFINITY_LEVEL(mpidr, 1) * MAX_CPUS_IN_CLUSTER)
-+		 + MPIDR_AFFINITY_LEVEL(mpidr, 0));
-+}
-+
- #endif /* __ASM_ARCH_REGS_PMU_H */
--- 
-1.7.9.5
-
+Thanks
+Dave
