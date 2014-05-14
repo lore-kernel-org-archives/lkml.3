@@ -1,95 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaENLSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:18:54 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:49240 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaENLSw (ORCPT
+	id S1755100AbaENLTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:19:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39146 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253AbaENLSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:18:52 -0400
-Subject: [PATCH v1.2 5/16] arcmsr: bugfix of abort command return status
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 May 2014 19:18:45 +0800
-Message-ID: <1400066325.6957.31.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 07:18:53 -0400
+Date: Wed, 14 May 2014 14:18:33 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: fixed warning shown by checkpatch tool on
+ cb_das16_cs.c file
+Message-ID: <20140514111833.GE22735@mwanda>
+References: <1399736789-9898-1-git-send-email-ravi23ganiga@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399736789-9898-1-git-send-email-ravi23ganiga@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+On Sat, May 10, 2014 at 09:16:29PM +0530, Raghavendra Ganiga wrote:
+> This is a patch to fix
+> the warnings shown
+> by checkpatch tool on file
+> cb_das16_cs.c file
 
-Fix a bug of return status from calling arcmsr_polling_ccbdone.
-The original code may return a FAILED if abort command is SUCCESS.
+Emails should be line wrapped at 72 characters.  30 is too small.
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+Subject prefix should be:  [patch] Staging: comedi:  ...
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:43:40.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:44:40.000000000 +0800
-@@ -2482,7 +2482,7 @@ static int arcmsr_polling_hba_ccbdone(st
- 		}
- 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
- 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
--		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
-+		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
- 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
- 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
- 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
-@@ -2546,7 +2546,7 @@ static int arcmsr_polling_hbb_ccbdone(st
- 		/* check if command done with no error*/
- 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + (flag_ccb << 5));
- 		ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
--		poll_ccb_done = (ccb == poll_ccb) ? 1:0;
-+		poll_ccb_done |= (ccb == poll_ccb) ? 1 : 0;
- 		if ((ccb->acb != acb) || (ccb->startdone != ARCMSR_CCB_START)) {
- 			if ((ccb->startdone == ARCMSR_CCB_ABORTED) || (ccb == poll_ccb)) {
- 				printk(KERN_NOTICE "arcmsr%d: scsi id = %d lun = %d ccb = '0x%p'"
-@@ -2602,7 +2602,7 @@ polling_hbc_ccb_retry:
- 		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
- 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);/*frame must be 32 bytes aligned*/
- 		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
--		poll_ccb_done = (pCCB == poll_ccb) ? 1 : 0;
-+		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
- 		/* check ifcommand done with no error*/
- 		if ((pCCB->acb != acb) || (pCCB->startdone != ARCMSR_CCB_START)) {
- 			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
-@@ -3204,6 +3204,8 @@ static int arcmsr_abort(struct scsi_cmnd
- 		(struct AdapterControlBlock *)cmd->device->host->hostdata;
- 	int i = 0;
- 	int rtn = FAILED;
-+	uint32_t intmask_org;
-+
- 	printk(KERN_NOTICE
- 		"arcmsr%d: abort device command of scsi id = %d lun = %d \n",
- 		acb->host->host_no, cmd->device->id, cmd->device->lun);
-@@ -3215,9 +3217,12 @@ static int arcmsr_abort(struct scsi_cmnd
- 	** we need to handle it as soon as possible and exit
- 	************************************************
- 	*/
--	if (!atomic_read(&acb->ccboutstandingcount))
-+	if (!atomic_read(&acb->ccboutstandingcount)) {
-+		acb->acb_flags &= ~ACB_F_ABORT;
- 		return rtn;
-+	}
- 
-+	intmask_org = arcmsr_disable_outbound_ints(acb);
- 	for (i = 0; i < ARCMSR_MAX_FREECCB_NUM; i++) {
- 		struct CommandControlBlock *ccb = acb->pccb_pool[i];
- 		if (ccb->startdone == ARCMSR_CCB_START && ccb->pcmd == cmd) {
-@@ -3227,6 +3232,7 @@ static int arcmsr_abort(struct scsi_cmnd
- 		}
- 	}
- 	acb->acb_flags &= ~ACB_F_ABORT;
-+	arcmsr_enable_outbound_ints(acb, intmask_org);
- 	return rtn;
- }
- 
-
+regards,
+dan carpenter
 
