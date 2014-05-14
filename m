@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaEOHNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:13:40 -0400
+	id S1754430AbaEOHNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:13:54 -0400
 Received: from mga11.intel.com ([192.55.52.93]:63024 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273AbaEOHNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:13:37 -0400
+	id S1754287AbaEOHNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 03:13:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
-   d="scan'208";a="539394434"
+   d="scan'208";a="532250876"
 From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org
 Cc: linux-kernel@vger.kernel.org, bin.yang@intel.com,
         lejun.zhu@linux.intel.com
-Subject: [PATCH 1/4] mfd: intel_soc_pmic: Core driver
-Date: Wed, 14 May 2014 22:59:35 +0800
-Message-Id: <1400079578-32329-2-git-send-email-lejun.zhu@linux.intel.com>
+Subject: [PATCH 2/4] mfd: intel_soc_pmic: I2C interface
+Date: Wed, 14 May 2014 22:59:36 +0800
+Message-Id: <1400079578-32329-3-git-send-email-lejun.zhu@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
 References: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
@@ -23,28 +23,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the common code for the intel_soc_pmic MFD driver,
-such as read/write register and set up IRQ.
+The Intel SoC PMIC devices are connected to the CPU via the I2C
+interface. This patch provides support of the related I2C operations.
 
 Signed-off-by: Yang, Bin <bin.yang@intel.com>
 Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
 ---
- drivers/mfd/intel_soc_pmic_core.c  | 543 +++++++++++++++++++++++++++++++++++++
- drivers/mfd/intel_soc_pmic_core.h  |  83 ++++++
- include/linux/mfd/intel_soc_pmic.h |  29 ++
- 3 files changed, 655 insertions(+)
- create mode 100644 drivers/mfd/intel_soc_pmic_core.c
- create mode 100644 drivers/mfd/intel_soc_pmic_core.h
- create mode 100644 include/linux/mfd/intel_soc_pmic.h
+ drivers/mfd/intel_soc_pmic_i2c.c | 158 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 158 insertions(+)
+ create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
 
-diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+diff --git a/drivers/mfd/intel_soc_pmic_i2c.c b/drivers/mfd/intel_soc_pmic_i2c.c
 new file mode 100644
-index 0000000..bd4e248
+index 0000000..1d403f0
 --- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_core.c
-@@ -0,0 +1,543 @@
++++ b/drivers/mfd/intel_soc_pmic_i2c.c
+@@ -0,0 +1,158 @@
 +/*
-+ * intel_soc_pmic_core.c - Intel SoC PMIC Core Functions
++ * intel_soc_pmic_i2c.c - Intel SoC PMIC MFD Driver
 + *
 + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
 + *
@@ -63,653 +59,144 @@ index 0000000..bd4e248
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/delay.h>
-+#include <linux/mutex.h>
 +#include <linux/mfd/core.h>
 +#include <linux/err.h>
++#include <linux/i2c.h>
 +#include <linux/irq.h>
 +#include <linux/interrupt.h>
 +#include <linux/workqueue.h>
 +#include <linux/acpi.h>
 +#include <linux/version.h>
-+#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
 +#include <linux/mfd/intel_soc_pmic.h>
 +#include "intel_soc_pmic_core.h"
 +
-+struct cell_dev_pdata {
-+	struct list_head	list;
-+	const char		*name;
-+	void			*data;
-+	int			len;
-+};
-+static LIST_HEAD(pdata_list);
++static struct i2c_client *pmic_i2c_client;
++static struct intel_soc_pmic *pmic_i2c;
 +
-+static struct intel_soc_pmic *pmic;
-+static DEFINE_MUTEX(pmic_lock);	/* protecting pmic and its IO access */
-+static int cache_offset = -1;
-+static int cache_read_val;
-+static int cache_write_val;
-+static int cache_write_pending;
-+static int cache_flags;
-+
-+struct device *intel_soc_pmic_dev(void)
++static int pmic_i2c_readb(int reg)
 +{
-+	return pmic->dev;
++	return i2c_smbus_read_byte_data(pmic_i2c_client, reg);
 +}
 +
-+/*
-+ * Read from a PMIC register
-+ */
-+int intel_soc_pmic_readb(int reg)
++static int pmic_i2c_writeb(int reg, u8 val)
 +{
-+	int ret;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = pmic->readb(reg);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
++	return i2c_smbus_write_byte_data(pmic_i2c_client, reg, val);
 +}
-+EXPORT_SYMBOL(intel_soc_pmic_readb);
 +
-+/*
-+ * Write to a PMIC register
-+ */
-+int intel_soc_pmic_writeb(int reg, u8 val)
++static void pmic_shutdown(struct i2c_client *client)
 +{
-+	int ret;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = pmic->writeb(reg, val);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
++	disable_irq(pmic_i2c_client->irq);
++	return;
 +}
-+EXPORT_SYMBOL(intel_soc_pmic_writeb);
 +
-+/*
-+ * Set 1 bit in a PMIC register
-+ */
-+int intel_soc_pmic_setb(int reg, u8 mask)
++static int pmic_suspend(struct device *dev)
 +{
-+	int ret;
-+	int val;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic) {
-+		ret = -EIO;
-+	} else {
-+		val = pmic->readb(reg);
-+		val |= mask;
-+		ret = pmic->writeb(reg, val);
-+	}
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(intel_soc_pmic_setb);
-+
-+/*
-+ * Clear 1 bit in a PMIC register
-+ */
-+int intel_soc_pmic_clearb(int reg, u8 mask)
-+{
-+	int ret;
-+	int val;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic) {
-+		ret = -EIO;
-+	} else {
-+		val = pmic->readb(reg);
-+		val &= ~mask;
-+		ret = pmic->writeb(reg, val);
-+	}
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(intel_soc_pmic_clearb);
-+
-+/*
-+ * Set and clear multiple bits of a PMIC register
-+ */
-+int intel_soc_pmic_update(int reg, u8 val, u8 mask)
-+{
-+	int ret;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = pmic->readb(reg);
-+
-+	if (ret < 0)
-+		goto err;
-+
-+	val &= mask;
-+	ret &= ~mask;
-+	ret |= val;
-+	ret = pmic->writeb(reg, ret);
-+
-+err:
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(intel_soc_pmic_update);
-+
-+/*
-+ * Set platform_data of the child devices. Needs to be called before
-+ * the MFD device is added.
-+ */
-+int intel_soc_pmic_set_pdata(const char *name, void *data, int len)
-+{
-+	struct cell_dev_pdata *pdata;
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		pr_err("intel_pmic: can't set pdata!\n");
-+		return -ENOMEM;
-+	}
-+
-+	pdata->name = name;
-+	pdata->data = data;
-+	pdata->len = len;
-+
-+	list_add_tail(&pdata->list, &pdata_list);
-+
++	disable_irq(pmic_i2c_client->irq);
 +	return 0;
 +}
-+EXPORT_SYMBOL(intel_soc_pmic_set_pdata);
 +
-+static void __pmic_regmap_flush(void)
++static int pmic_resume(struct device *dev)
 +{
-+	if (cache_write_pending)
-+		pmic->writeb(cache_offset, cache_write_val);
-+	cache_offset = -1;
-+	cache_write_pending = 0;
++	enable_irq(pmic_i2c_client->irq);
++	return 0;
 +}
 +
-+static void pmic_regmap_flush(void)
-+{
-+	mutex_lock(&pmic_lock);
-+
-+	if (pmic)
-+		__pmic_regmap_flush();
-+
-+	mutex_unlock(&pmic_lock);
-+}
-+
-+static int pmic_regmap_write(struct intel_pmic_regmap *map, int val)
-+{
-+	int ret = 0;
-+
-+	if (!IS_PMIC_REG_VALID(map))
-+		return -ENXIO;
-+
-+	if (IS_PMIC_REG_INV(map))
-+		val = ~val;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic) {
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+
-+	if (cache_offset == map->offset) {
-+		if (cache_flags != map->flags) {
-+			dev_err(pmic->dev, "Same reg with diff flags\n");
-+			__pmic_regmap_flush();
-+		}
-+	}
-+
-+	if (cache_offset != map->offset) {
-+		__pmic_regmap_flush();
-+		if (IS_PMIC_REG_WO(map) || IS_PMIC_REG_W1C(map)) {
-+			cache_write_val = 0;
-+			cache_read_val = pmic->readb(map->offset);
-+		} else {
-+			cache_read_val = pmic->readb(map->offset);
-+			cache_write_val = cache_read_val;
-+		}
-+		if (cache_read_val < 0) {
-+			dev_err(pmic->dev, "Register access error\n");
-+			ret = -EIO;
-+			goto err;
-+		}
-+		cache_offset = map->offset;
-+		cache_flags = map->flags;
-+	}
-+
-+	val = ((val & map->mask) << map->shift);
-+	cache_write_val &= ~(map->mask << map->shift);
-+	cache_write_val |= val;
-+	cache_write_pending = 1;
-+
-+	if (!IS_PMIC_REG_WO(map) && !IS_PMIC_REG_W1C(map))
-+		cache_read_val = cache_write_val;
-+
-+err:
-+	dev_dbg(pmic->dev, "offset=%x, shift=%x, mask=%x, flags=%x\n",
-+		map->offset, map->shift, map->mask, map->flags);
-+	dev_dbg(pmic->dev, "cache_read=%x, cache_write=%x, ret=%x\n",
-+		cache_read_val, cache_write_val, ret);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+
-+static int pmic_regmap_read(struct intel_pmic_regmap *map)
-+{
-+	int ret = 0;
-+
-+	if (!IS_PMIC_REG_VALID(map))
-+		return -ENXIO;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic) {
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+
-+	if (cache_offset == map->offset) {
-+		if (cache_flags != map->flags) {
-+			dev_err(pmic->dev, "Same reg with diff flags\n");
-+			__pmic_regmap_flush();
-+		}
-+	}
-+
-+	if (cache_offset != map->offset) {
-+		__pmic_regmap_flush();
-+		if (IS_PMIC_REG_WO(map) || IS_PMIC_REG_W1C(map)) {
-+			cache_write_val = 0;
-+			cache_read_val = pmic->readb(map->offset);
-+		} else {
-+			cache_read_val = pmic->readb(map->offset);
-+			cache_write_val = cache_read_val;
-+		}
-+		if (cache_read_val < 0) {
-+			dev_err(pmic->dev, "Register access error\n");
-+			ret = -EIO;
-+			goto err;
-+		}
-+		cache_offset = map->offset;
-+		cache_flags = map->flags;
-+	}
-+
-+	if (IS_PMIC_REG_INV(map))
-+		ret = ~cache_read_val;
-+	else
-+		ret = cache_read_val;
-+
-+	ret = (ret >> map->shift) & map->mask;
-+	if (!IS_PMIC_REG_WO(map) && !IS_PMIC_REG_W1C(map))
-+		cache_write_val = cache_read_val;
-+
-+err:
-+	dev_dbg(pmic->dev, "offset=%x, shift=%x, mask=%x, flags=%x\n",
-+		map->offset, map->shift, map->mask, map->flags);
-+	dev_dbg(pmic->dev, "cache_read=%x, cache_write=%x, ret=%x\n",
-+		cache_read_val, cache_write_val, ret);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+
-+static void pmic_irq_enable(struct irq_data *data)
-+{
-+	clear_bit(PMIC_IRQ_MASK_BIT(data->irq - pmic->irq_base),
-+		  &PMIC_IRQ_MASK(pmic, data->irq - pmic->irq_base));
-+	pmic->irq_need_update = 1;
-+}
-+
-+static void pmic_irq_disable(struct irq_data *data)
-+{
-+	set_bit(PMIC_IRQ_MASK_BIT(data->irq - pmic->irq_base),
-+		&PMIC_IRQ_MASK(pmic, data->irq - pmic->irq_base));
-+	pmic->irq_need_update = 1;
-+}
-+
-+static void pmic_irq_sync_unlock(struct irq_data *data)
-+{
-+	int val, irq_offset;
-+	if (pmic->irq_need_update) {
-+		irq_offset = data->irq - pmic->irq_base;
-+		val = !!test_bit(PMIC_IRQ_MASK_BIT(irq_offset),
-+				 &PMIC_IRQ_MASK(pmic, irq_offset));
-+		pmic_regmap_write(&pmic->irq_regmap[irq_offset].mask, val);
-+		pmic->irq_need_update = 0;
-+		pmic_regmap_flush();
-+	}
-+	mutex_unlock(&pmic->irq_lock);
-+}
-+
-+static void pmic_irq_lock(struct irq_data *data)
-+{
-+	mutex_lock(&pmic->irq_lock);
-+}
-+
-+static irqreturn_t pmic_irq_isr(int irq, void *data)
-+{
-+	return IRQ_WAKE_THREAD;
-+}
-+
-+static irqreturn_t pmic_irq_thread(int irq, void *data)
-+{
-+	int i;
-+
-+	mutex_lock(&pmic->irq_lock);
-+
-+	for (i = 0; i < pmic->irq_num; i++) {
-+		if (test_bit(PMIC_IRQ_MASK_BIT(i), &PMIC_IRQ_MASK(pmic, i)))
-+			continue;
-+
-+		if (pmic_regmap_read(&pmic->irq_regmap[i].status)) {
-+			pmic_regmap_write(&pmic->irq_regmap[i].ack, 1);
-+			handle_nested_irq(pmic->irq_base + i);
-+		}
-+	}
-+
-+	pmic_regmap_flush();
-+
-+	mutex_unlock(&pmic->irq_lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irq_chip pmic_irq_chip = {
-+	.name			= "intel_soc_pmic",
-+	.irq_bus_lock		= pmic_irq_lock,
-+	.irq_bus_sync_unlock	= pmic_irq_sync_unlock,
-+	.irq_disable		= pmic_irq_disable,
-+	.irq_enable		= pmic_irq_enable,
++static const struct dev_pm_ops pmic_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(pmic_suspend, pmic_resume)
 +};
 +
-+static int pmic_irq_init(void)
++static int pmic_i2c_lookup_gpio(struct device *dev, int acpi_index)
 +{
-+	int cur_irq;
-+	int ret;
-+	int i;
++	struct gpio_desc *desc;
++	int gpio;
 +
-+	for (i = 0; i < pmic->irq_num; i++) {
-+		pmic_regmap_write(&pmic->irq_regmap[i].mask, 1);
-+		set_bit(PMIC_IRQ_MASK_BIT(i), &PMIC_IRQ_MASK(pmic, i));
-+	}
++	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
 +
-+	for (i = 0; i < pmic->irq_num; i++)
-+		pmic_regmap_write(&pmic->irq_regmap[i].ack, 1);
++	gpio = desc_to_gpio(desc);
 +
-+	pmic_regmap_flush();
++	gpiod_put(desc);
 +
-+	pmic->irq_base = irq_alloc_descs(-1, 0, pmic->irq_num, 0);
-+	if (pmic->irq_base < 0) {
-+		dev_warn(pmic->dev, "Failed to allocate IRQs: %d\n",
-+			 pmic->irq_base);
-+		pmic->irq_base = 0;
-+		ret = -EINVAL;
-+		goto out;
-+	} else {
-+		dev_dbg(pmic->dev, "PMIC IRQ Base:%d\n", pmic->irq_base);
-+	}
-+
-+	for (cur_irq = pmic->irq_base;
-+	     cur_irq < pmic->irq_num + pmic->irq_base;
-+	     cur_irq++) {
-+		irq_set_chip_data(cur_irq, pmic);
-+		irq_set_chip_and_handler(cur_irq, &pmic_irq_chip,
-+					 handle_edge_irq);
-+		irq_set_nested_thread(cur_irq, 1);
-+		irq_set_noprobe(cur_irq);
-+	}
-+
-+	if (gpio_is_valid(pmic->pmic_int_gpio)) {
-+		ret = gpio_request_one(pmic->pmic_int_gpio,
-+				       GPIOF_DIR_IN, "PMIC Interupt");
-+		if (ret) {
-+			dev_err(pmic->dev, "Request PMIC_INT gpio error\n");
-+			goto out_free_desc;
-+		}
-+
-+		pmic->irq = gpio_to_irq(pmic->pmic_int_gpio);
-+	}
-+
-+	ret = request_threaded_irq(pmic->irq, pmic_irq_isr, pmic_irq_thread,
-+				   pmic->irq_flags, "intel_soc_pmic", pmic);
-+	if (ret != 0) {
-+		dev_err(pmic->dev, "Failed to request IRQ %d: %d\n",
-+			pmic->irq, ret);
-+		goto out_free_gpio;
-+	}
-+
-+	ret = enable_irq_wake(pmic->irq);
-+	if (ret != 0)
-+		dev_warn(pmic->dev, "Can't enable IRQ as wake source: %d\n",
-+			 ret);
-+
-+	return 0;
-+
-+out_free_gpio:
-+	if (gpio_is_valid(pmic->pmic_int_gpio)) {
-+		gpio_free(pmic->pmic_int_gpio);
-+		pmic->irq = 0;
-+	}
-+out_free_desc:
-+	irq_free_descs(pmic->irq_base, pmic->irq_num);
-+out:
-+	return ret;
++	return gpio;
 +}
 +
-+int intel_pmic_add(struct intel_soc_pmic *chip)
++static int pmic_i2c_probe(struct i2c_client *i2c,
++			  const struct i2c_device_id *id)
 +{
-+	int i, ret;
-+	struct cell_dev_pdata *pdata;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (pmic != NULL) {
-+		mutex_unlock(&pmic_lock);
++	if (pmic_i2c_client != NULL || pmic_i2c != NULL)
 +		return -EBUSY;
-+	}
 +
-+	pmic = chip;
++	pmic_i2c	= (struct intel_soc_pmic *)id->driver_data;
++	pmic_i2c_client	= i2c;
++	pmic_i2c->dev	= &i2c->dev;
++	pmic_i2c->irq	= i2c->irq;
++	pmic_i2c->pmic_int_gpio = pmic_i2c_lookup_gpio(pmic_i2c->dev, 0);
++	pmic_i2c->readb	= pmic_i2c_readb;
++	pmic_i2c->writeb = pmic_i2c_writeb;
 +
-+	mutex_unlock(&pmic_lock);
++	return intel_pmic_add(pmic_i2c);
++}
 +
-+	mutex_init(&chip->irq_lock);
++static int pmic_i2c_remove(struct i2c_client *i2c)
++{
++	int ret = intel_pmic_remove(pmic_i2c);
 +
-+	if (chip->init) {
-+		ret = chip->init();
-+		if (ret != 0)
-+			goto err;
-+	}
++	pmic_i2c_client = NULL;
++	pmic_i2c = NULL;
 +
-+	ret = pmic_irq_init();
-+	if (ret != 0)
-+		goto err;
-+
-+	for (i = 0; chip->cell_dev[i].name != NULL; i++) {
-+		list_for_each_entry(pdata, &pdata_list, list) {
-+			if (!strcmp(pdata->name, chip->cell_dev[i].name)) {
-+				chip->cell_dev[i].platform_data = pdata->data;
-+				chip->cell_dev[i].pdata_size = pdata->len;
-+			}
-+		}
-+	}
-+
-+	return mfd_add_devices(chip->dev, -1, chip->cell_dev, i,
-+			       NULL, chip->irq_base, NULL);
-+
-+err:
-+	mutex_lock(&pmic_lock);
-+	if (pmic == chip)
-+		pmic = NULL;
-+	mutex_unlock(&pmic_lock);
 +	return ret;
 +}
 +
-+int intel_pmic_remove(struct intel_soc_pmic *chip)
++static const struct i2c_device_id pmic_i2c_id[] = {
++	{ "crystal_cove", (kernel_ulong_t)&crystal_cove_pmic},
++	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
++	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
++
++static struct acpi_device_id pmic_acpi_match[] = {
++	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
++	{ },
++};
++MODULE_DEVICE_TABLE(acpi, pmic_acpi_match);
++
++static struct i2c_driver pmic_i2c_driver = {
++	.driver = {
++		.name = "intel_soc_pmic_i2c",
++		.owner = THIS_MODULE,
++		.pm = &pmic_pm_ops,
++		.acpi_match_table = ACPI_PTR(pmic_acpi_match),
++	},
++	.probe = pmic_i2c_probe,
++	.remove = pmic_i2c_remove,
++	.id_table = pmic_i2c_id,
++	.shutdown = pmic_shutdown,
++};
++
++static int __init pmic_i2c_init(void)
 +{
-+	mutex_lock(&pmic_lock);
++	int ret;
 +
-+	if (pmic != chip) {
-+		mutex_unlock(&pmic_lock);
-+		return -ENODEV;
-+	}
++	ret = i2c_add_driver(&pmic_i2c_driver);
++	if (ret != 0)
++		pr_err("Failed to register pmic I2C driver: %d\n", ret);
 +
-+	pmic = NULL;
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	mfd_remove_devices(chip->dev);
-+
-+	return 0;
++	return ret;
 +}
++subsys_initcall(pmic_i2c_init);
 +
++static void __exit pmic_i2c_exit(void)
++{
++	i2c_del_driver(&pmic_i2c_driver);
++}
++module_exit(pmic_i2c_exit);
++
++MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com");
-diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
-new file mode 100644
-index 0000000..a6cb051
---- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_core.h
-@@ -0,0 +1,83 @@
-+/*
-+ * intel_soc_pmic_core.h - Intel SoC PMIC MFD Driver
-+ *
-+ * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Yang, Bin <bin.yang@intel.com>
-+ */
-+
-+#ifndef __INTEL_SOC_PMIC_CORE_H__
-+#define __INTEL_SOC_PMIC_CORE_H__
-+
-+#define INTEL_PMIC_IRQ_MAX	128
-+#define INTEL_PMIC_REG_NULL	{-1,}
-+
-+#define INTEL_PMIC_REG_INV	BIT(0) /*value revert*/
-+#define INTEL_PMIC_REG_WO	BIT(1) /*write only*/
-+#define INTEL_PMIC_REG_RO	BIT(2) /*read only*/
-+#define INTEL_PMIC_REG_W1C	BIT(3) /*write 1 clear*/
-+#define INTEL_PMIC_REG_RC	BIT(4) /*read clear*/
-+#define IS_PMIC_REG_INV(_map)	(_map->flags & INTEL_PMIC_REG_INV)
-+#define IS_PMIC_REG_WO(_map)	(_map->flags & INTEL_PMIC_REG_WO)
-+#define IS_PMIC_REG_RO(_map)	(_map->flags & INTEL_PMIC_REG_RO)
-+#define IS_PMIC_REG_W1C(_map)	(_map->flags & INTEL_PMIC_REG_W1C)
-+#define IS_PMIC_REG_RC(_map)	(_map->flags & INTEL_PMIC_REG_RC)
-+#define IS_PMIC_REG_VALID(_map) \
-+	((_map->mask != 0) && (_map->offset >= 0))
-+
-+#define PMIC_IRQREG_MASK	0
-+#define PMIC_IRQREG_STATUS	1
-+#define PMIC_IRQREG_ACK		2
-+
-+#define PMIC_IRQ_MASK_NBITS	32
-+#define PMIC_IRQ_MASK_LEN	(INTEL_PMIC_IRQ_MAX / PMIC_IRQ_MASK_NBITS)
-+#define PMIC_IRQ_MASK(pmic, offset)	\
-+	(pmic->irq_mask[(offset) / PMIC_IRQ_MASK_NBITS])
-+#define PMIC_IRQ_MASK_BIT(offset)	((offset) % PMIC_IRQ_MASK_NBITS)
-+
-+struct intel_pmic_regmap {
-+	int				offset;
-+	int				shift;
-+	int				mask;
-+	int				flags;
-+};
-+
-+struct intel_pmic_irqregmap {
-+	struct intel_pmic_regmap	mask;
-+	struct intel_pmic_regmap	status;
-+	struct intel_pmic_regmap	ack;
-+};
-+
-+struct intel_soc_pmic {
-+	const char			*label;
-+	struct device			*dev;
-+	struct mutex			irq_lock; /* irq_bus_lock */
-+	int				irq_need_update;
-+	int				irq;
-+	unsigned long			irq_flags;
-+	int				irq_num;
-+	int				irq_base;
-+	unsigned long			irq_mask[PMIC_IRQ_MASK_LEN];
-+	int				pmic_int_gpio;
-+	int				(*init)(void);
-+	int				(*readb)(int);
-+	int				(*writeb)(int, u8);
-+	struct intel_pmic_irqregmap	*irq_regmap;
-+	struct mfd_cell			*cell_dev;
-+};
-+
-+int intel_pmic_add(struct intel_soc_pmic *chip);
-+int intel_pmic_remove(struct intel_soc_pmic *chip);
-+
-+extern struct intel_soc_pmic crystal_cove_pmic;
-+
-+#endif	/* __INTEL_SOC_PMIC_CORE_H__ */
-diff --git a/include/linux/mfd/intel_soc_pmic.h b/include/linux/mfd/intel_soc_pmic.h
-new file mode 100644
-index 0000000..88c28d9
---- /dev/null
-+++ b/include/linux/mfd/intel_soc_pmic.h
-@@ -0,0 +1,29 @@
-+/*
-+ * intel_soc_pmic.h - Intel SoC PMIC Driver
-+ *
-+ * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Yang, Bin <bin.yang@intel.com>
-+ */
-+
-+#ifndef __INTEL_SOC_PMIC_H__
-+#define __INTEL_SOC_PMIC_H__
-+
-+int intel_soc_pmic_readb(int reg);
-+int intel_soc_pmic_writeb(int reg, u8 val);
-+int intel_soc_pmic_setb(int reg, u8 mask);
-+int intel_soc_pmic_clearb(int reg, u8 mask);
-+int intel_soc_pmic_update(int reg, u8 val, u8 mask);
-+int intel_soc_pmic_set_pdata(const char *name, void *data, int len);
-+struct device *intel_soc_pmic_dev(void);
-+
-+#endif	/* __INTEL_SOC_PMIC_H__ */
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
 -- 
 1.8.3.2
 
