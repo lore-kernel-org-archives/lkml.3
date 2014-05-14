@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaENJQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:16:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50216 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaENJQY (ORCPT
+	id S1754033AbaENJRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:17:39 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:60354 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaENJRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:16:24 -0400
-Message-ID: <1400058953.13056.2.camel@paszta.hi.pengutronix.de>
-Subject: Re: [STLinux Kernel] [PATCH v4 2/7] driver: reset: sti: add keyscan
- for stih415
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
-        kernel@stlinux.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Date: Wed, 14 May 2014 11:15:53 +0200
-In-Reply-To: <53732EAB.1050709@st.com>
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-	 <1397228856-9218-3-git-send-email-gabriel.fernandez@linaro.org>
-	 <53732EAB.1050709@st.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 14 May 2014 05:17:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RESEND] ARM: remove last use of CONFIG_CPU_ARM710
+Date: Wed, 14 May 2014 11:17:24 +0200
+Message-ID: <8309592.drxAj71PnZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400055865.31197.4.camel@x220>
+References: <1364507176.1345.45.camel@x61.thuisdomein> <1400055865.31197.4.camel@x220>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:l/jyxt1OMd5otKj1vol/a+tXEGNLawOWFX95SYWHke1
+ Qi2ki2s60rVMXjcFs+sSRouG6o4SpqB6bgt+Aci3so3yqonWa7
+ epSer3b+wDt4votTKlJF/k5q7itpxp3YrP30V8qTC2+zDZ7rIa
+ lOdiqQgh0qDEu8Q8hCqbG5kdojOa72x6fklYMowH5rEwLAl3km
+ UqS0lzKXxpdxgz2V9GCjx9cw7i2hPQQIMJf/N5E0hH7/hySfD8
+ vCbI8xa9dFLPx5GNqLOQ5QrE0tTtJBT6RSJQKfg6eTdd7CZ0oU
+ 3wzDSJLYMEOKf9JcElTmVrPvQR0DdZOS6H7A+Se7UO6mzEBtXy
+ p3oaQxm0ebM5qfYMIg88=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
-
-Am Mittwoch, den 14.05.2014, 10:51 +0200 schrieb Maxime Coquelin:
-> Hi Philipp,
+On Wednesday 14 May 2014 10:24:25 Paul Bolle wrote:
+> Support for ARM710 CPUs was removed in v3.5. Now remove the last code
+> depending on its Kconfig macro.
 > 
-> 	I am preparing the arm_soc pull request for STi platforms.
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> First submitted in March 2103. Still untested. Please note that
+> cpu_arm7_data_abort was also removed in v3.5.
 > 
-> 	In this series, there are DT patches depending on this reset patch 
-> (same for patch 3).
-> 
-> 	Can I queue theses two reset patches in my pull request for arm_soc to 
-> avoid compilation breakage?
 
-Yes, please do. For both of them, feel free to add my
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+'git grep -i arm710' tells me that there is also some arm710
+specific code in  arch/arm/mm/proc-arm720.S that we may want to
+remove along with this.
 
-best regards
-Philipp
+The DT binding should probably remain untouched though, I think it's
+correct to document the string.
 
+	Arnd
