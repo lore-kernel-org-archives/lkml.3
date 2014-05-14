@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaENGPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 02:15:10 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:36494 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010AbaENGPE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 02:15:04 -0400
-From: Kefeng Wang <kefeng.wang@linaro.org>
-To: tj@kernel.org
-Cc: hdegoede@redhat.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
-        xuwei5@hisilicon.com, kefeng.wang@linaro.org
-Subject: [PATCH v7 3/3] ahci: add support for Hisilicon sata
-Date: Wed, 14 May 2014 14:13:42 +0800
-Message-Id: <1400048022-15795-4-git-send-email-kefeng.wang@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400048022-15795-1-git-send-email-kefeng.wang@linaro.org>
-References: <1400048022-15795-1-git-send-email-kefeng.wang@linaro.org>
+	id S1751116AbaENGcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 02:32:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43331 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716AbaENGcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 02:32:14 -0400
+Date: Wed, 14 May 2014 07:32:07 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 05/19] mm: page_alloc: Calculate classzone_idx once from
+ the zonelist ref
+Message-ID: <20140514063207.GX23991@suse.de>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-6-git-send-email-mgorman@suse.de>
+ <20140513152556.d14e3eaff8949a7010c02686@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140513152556.d14e3eaff8949a7010c02686@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hip04 SoC of hisilicon has an AHCI compliant SATA controller,
-and it is compliant with the ahci 1.3 and sata 3.0 specification.
+On Tue, May 13, 2014 at 03:25:56PM -0700, Andrew Morton wrote:
+> On Tue, 13 May 2014 10:45:36 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > There is no need to calculate zone_idx(preferred_zone) multiple times
+> > or use the pgdat to figure it out.
+> > 
+> 
+> This one falls afoul of pending mm/next changes in non-trivial ways.
 
-There is a wrong bit in HOST_CAP of hip04 sata controller, which
-enable unsupported feature of FBS, use AHCI_HFLAG_NO_FBS hflag to
-disable it.
+No problem, I can rework this patch on top of mmotm. Thanks.
 
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
----
- .../devicetree/bindings/ata/ahci-platform.txt      |    1 +
- drivers/ata/ahci_platform.c                        |    9 ++++++++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index d6b07e8..c96d8dc 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -8,6 +8,7 @@ Required properties:
-   - "allwinner,sun4i-a10-ahci"
-   - "fsl,imx53-ahci"
-   - "fsl,imx6q-ahci"
-+  - "hisilicon,hisi-ahci"
-   - "ibm,476gtr-ahci"
-   - "marvell,armada-380-ahci"
-   - "snps,dwc-ahci"
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index a476a1f..ebe505c 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/pm.h>
- #include <linux/device.h>
-+#include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/libata.h>
- #include <linux/ahci_platform.h>
-@@ -33,6 +34,7 @@ static int ahci_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
- 	struct ahci_host_priv *hpriv;
-+	unsigned long hflags = 0;
- 	int rc;
- 
- 	hpriv = ahci_platform_get_resources(pdev);
-@@ -55,7 +57,11 @@ static int ahci_probe(struct platform_device *pdev)
- 			goto disable_resources;
- 	}
- 
--	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info, 0, 0, 0);
-+	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
-+		hflags |= AHCI_HFLAG_NO_FBS;
-+
-+	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
-+				     hflags, 0, 0);
- 	if (rc)
- 		goto pdata_exit;
- 
-@@ -76,6 +82,7 @@ static const struct of_device_id ahci_of_match[] = {
- 	{ .compatible = "snps,exynos5440-ahci", },
- 	{ .compatible = "ibm,476gtr-ahci", },
- 	{ .compatible = "snps,dwc-ahci", },
-+	{ .compatible = "hisilicon,hisi-ahci", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
