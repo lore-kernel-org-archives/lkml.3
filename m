@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaENIxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:53:10 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:57892 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752756AbaENIxH (ORCPT
+	id S1754110AbaENIz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:55:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17772 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033AbaENIzW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:53:07 -0400
-Message-ID: <53732EAB.1050709@st.com>
-Date: Wed, 14 May 2014 10:51:55 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 May 2014 04:55:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1050,1389772800"; 
+   d="scan'208";a="538787448"
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] pwm: lpss: remove dependency on clk framework
+Thread-Topic: [PATCH] pwm: lpss: remove dependency on clk framework
+Thread-Index: AQHPa2HlssGmNDZgIEys6Mqka80XEps/rNfA//+WU4CAAIbk0A==
+Date: Wed, 14 May 2014 08:54:51 +0000
+Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0B004E18@PGSMSX108.gar.corp.intel.com>
+References: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <604BF5F4C5D71041942BC7E84ED659EA0B004D2D@PGSMSX108.gar.corp.intel.com>
+ <20140514083929.GA12238@xps8300>
+In-Reply-To: <20140514083929.GA12238@xps8300>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        olof Johansson <olof@lixom.net>
-Cc: <devicetree@vger.kernel.org>, <kernel@stlinux.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        <linux-input@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [STLinux Kernel] [PATCH v4 2/7] driver: reset: sti: add keyscan
- for stih415
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org> <1397228856-9218-3-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1397228856-9218-3-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-14_02:2014-05-13,2014-05-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+> 
+> Hi,
+> 
+> On Wed, May 14, 2014 at 07:00:59AM +0000, Chew, Chiau Ee wrote:
+> > Heikki,
+> > For ACPI mode, the clock rate information for PWM is being setup in the
+> acpi_lpss.c layer.
+> > Thus, only PCI mode depends on the driver_data to pass in the clock rate
+> information.
+> 
+> The goal with this patch is actually to free acpi_lpss.c from delivering the clock
+> for this driver.
+> 
+> The LPSS PWM does not get it's clock from the LPSS 100Mhz source clock,
+> which means we have to have the rate of it's clock hard-coded.
+> Since it's already hard coded also in this driver for PCI mode in any case, it
+> makes no sense to also have it there.
+> 
+> So this patch will allow us to cleanup acpi_lpss.c. We can now remove the
+> confusing "shared clock" structure where the hard coded rates are held. This
+> device is the only one that would need it.
+> 
 
-	I am preparing the arm_soc pull request for STi platforms.
+Oh ya...you are right. Sorry about that. I have mixed up the context with other I/O components.
 
-	In this series, there are DT patches depending on this reset patch 
-(same for patch 3).
+Reviewed-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-	Can I queue theses two reset patches in my pull request for arm_soc to 
-avoid compilation breakage?
-
-Best regards,
-Maxime
-
-On 04/11/2014 05:07 PM, Gabriel FERNANDEZ wrote:
-> Add keyscan reset on stih415 reset controller.
->
-> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> ---
->   drivers/reset/sti/reset-stih415.c                     | 1 +
->   include/dt-bindings/reset-controller/stih415-resets.h | 1 +
->   2 files changed, 2 insertions(+)
->
-> diff --git a/drivers/reset/sti/reset-stih415.c b/drivers/reset/sti/reset-stih415.c
-> index e6f6c41..c93fd26 100644
-> --- a/drivers/reset/sti/reset-stih415.c
-> +++ b/drivers/reset/sti/reset-stih415.c
-> @@ -73,6 +73,7 @@ static const struct syscfg_reset_channel_data stih415_softresets[] = {
->   	[STIH415_USB0_SOFTRESET] = STIH415_SRST_REAR(SYSCFG_376, 9),
->   	[STIH415_USB1_SOFTRESET] = STIH415_SRST_REAR(SYSCFG_376, 10),
->   	[STIH415_USB2_SOFTRESET] = STIH415_SRST_REAR(SYSCFG_376, 11),
-> +	[STIH415_KEYSCAN_SOFTRESET] = STIH415_SRST_LPM(LPM_SYSCFG_1, 8),
->   };
->
->   static struct syscfg_reset_controller_data stih415_powerdown_controller = {
-> diff --git a/include/dt-bindings/reset-controller/stih415-resets.h b/include/dt-bindings/reset-controller/stih415-resets.h
-> index c2f8a66..c2329fe 100644
-> --- a/include/dt-bindings/reset-controller/stih415-resets.h
-> +++ b/include/dt-bindings/reset-controller/stih415-resets.h
-> @@ -22,5 +22,6 @@
->   #define STIH415_USB0_SOFTRESET		3
->   #define STIH415_USB1_SOFTRESET		4
->   #define STIH415_USB2_SOFTRESET		5
-> +#define STIH415_KEYSCAN_SOFTRESET	6
->
->   #endif /* _DT_BINDINGS_RESET_CONTROLLER_STIH415 */
->
+> 
+> Thanks,
+> 
+> --
+> heikki
