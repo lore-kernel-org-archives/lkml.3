@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaENPLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:11:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829AbaENPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:11:04 -0400
-Date: Wed, 14 May 2014 17:10:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: more x86 fixes
-Message-ID: <20140514151016.GA530@redhat.com>
+	id S1756050AbaENPLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:11:46 -0400
+Received: from host171.canaca.com ([67.55.55.225]:56897 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702AbaENPLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:11:44 -0400
+Message-ID: <ceda9d065796952132cc6ff971c0537b.squirrel@mungewell.org>
+In-Reply-To: <1818063.tFLKhAd1oy@sigyn>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+    <1398524543-15012-2-git-send-email-madcatxster@devoid-pointer.net>
+    <20140514063806.GC13621@core.coreip.homeip.net>
+    <1818063.tFLKhAd1oy@sigyn>
+Date: Wed, 14 May 2014 11:11:40 -0400
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: simon@mungewell.org
+To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+> If we ever come across a really memoryless device it should not be
+> particularly difficult to add another callback to ff-memless-next which
+> would emulate conditional effects with constant force.
 
-Based on tip:perf/uprobes
+It should be noted that some (/many?) applications/games already use the
+CF with position feedback to emulate behaviour such as springs. The feed
+back loop is simply not fast enough to do emulation of friction/inertia.
+
+I don't believe that the FF layer in the kernel should be 'tricked out'
+with lots of emulation features.
+
+As a game designer (ok... tinkerer) it's a bit of a pain that devices lie
+about what they can really do - ie. gamepads claiming periodic ability
+when all they are doing is faking it with rumble.
+
+Simon.
 
 
-Denys found another nasty old bug in uprobes/x86: div, mul, shifts with
-count in CL, and cmpxchg are not handled correctly.
-
-Plus a couple of other minor fixes. Nobody acked the changes in x86/traps,
-hopefully they are simple enough, and I believe that they make sense anyway
-and allow to do more cleanups.
-
-Denys Vlasenko (2):
-      uprobes/x86: Simplify rip-relative handling
-      uprobes/x86: Fix scratch register selection for rip-relative fixups
-
-Oleg Nesterov (8):
-      uprobes: Add mem_cgroup_charge_anon() into uprobe_write_opcode()
-      x86/traps: Make math_error() static
-      x86/traps: Use SEND_SIG_PRIV instead of force_sig()
-      x86/traps: Introduce do_error_trap()
-      x86/traps: Introduce fill_trap_info(), simplify DO_ERROR_INFO()
-      x86/traps: Shift fill_trap_info() from DO_ERROR_INFO() to do_error_trap()
-      x86/traps: Kill DO_ERROR_INFO()
-      uprobes/x86: Fix the wrong ->si_addr when xol triggers a trap
-
- arch/x86/include/asm/traps.h   |    1 -
- arch/x86/include/asm/uprobes.h |    3 -
- arch/x86/kernel/traps.c        |  110 ++++++++++++---------
- arch/x86/kernel/uprobes.c      |  213 ++++++++++++++++++++++++++--------------
- include/linux/uprobes.h        |    4 +
- kernel/events/uprobes.c        |   33 ++++---
- 6 files changed, 225 insertions(+), 139 deletions(-)
 
