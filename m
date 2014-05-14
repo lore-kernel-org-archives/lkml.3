@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaENIUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:20:50 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39282 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaENIUq (ORCPT
+	id S1753294AbaENIUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:20:55 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49698 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaENIUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:20:46 -0400
-Subject: [PATCH -tip v11 0/7] kprobes: NOKPROBE_SYMBOL for modules,
- and scalbility efforts
+	Wed, 14 May 2014 04:20:51 -0400
+Subject: [PATCH -tip v11 1/7] kprobes: Support blacklist functions in module
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 May 2014 17:20:34 +0900
-Message-ID: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        mingo@redhat.com, Rob Landley <rob@landley.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
+Date: Wed, 14 May 2014 17:20:42 +0900
+Message-ID: <20140514082042.5791.91935.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,158 +30,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Here is the version 11 of NOKPROBE_SYMBOL/scalability series.
-This fixes some issues.
-
-Blacklist for kmodule
-=====================
-Since most of the NOKPROBE_SYMBOL series are merged, this just adds
-kernel module support of NOKPROBE_SYMBOL. If kprobes user module
-has kprobes handlers and local functions which is only called from
-the handlers, it should be marked as NOKPROBE_SYMBOL. Such symbols
-are automatically added to kprobe blacklist.
-
-Scalability effort
-==================
-This series fixes not only the kernel crashable "qualitative" bugs
-but also "quantitative" issue with massive multiple kprobes. Thus
-we can now do a stress test, putting kprobes on all (non-blacklisted)
-kernel functions and enabling all of them.
-To set kprobes on all kernel functions, run the below script.
-  ----
-  #!/bin/sh
-  TRACE_DIR=/sys/kernel/debug/tracing/
-  echo > $TRACE_DIR/kprobe_events
-  grep -iw t /proc/kallsyms | tr -d . | \
-    awk 'BEGIN{i=0};{print("p:"$3"_"i, "0x"$1); i++}' | \
-    while read l; do echo $l >> $TRACE_DIR/kprobe_events ; done
-  ----
-Since it doesn't check the blacklist at all, you'll see many write
-errors, but no problem :).
-
-Note that a kind of performance issue is still in the kprobe-tracer
-if you trace all functions. Since a few ftrace functions are called
-inside the kprobe tracer even if we shut off the tracing (tracing_on
-= 0), enabling kprobe-events on the functions will cause a bad
-performance impact (it is safe, but you'll see the system slowdown
-and no event recorded because it is just ignored).
-To find those functions, you can use the third column of
-(debugfs)/tracing/kprobe_profile as below, which tells you the number
-of miss-hit(ignored) for each events. If you find that some events
-which have small number in 2nd column and large number in 3rd column,
-those may course the slowdown.
-  ----
-  # sort -rnk 3 (debugfs)/tracing/kprobe_profile | head
-  ftrace_cmp_recs_4907                               264950231     33648874543
-  ring_buffer_lock_reserve_5087                              0      4802719935
-  trace_buffer_lock_reserve_5199                             0      4385319303
-  trace_event_buffer_lock_reserve_5200                       0      4379968153
-  ftrace_location_range_4918                          18944015      2407616669
-  bsearch_17098                                       18979815      2407579741
-  ftrace_location_4972                                18927061      2406723128
-  ftrace_int3_handler_1211                            18926980      2406303531
-  poke_int3_handler_199                               18448012      1403516611
-  inat_get_opcode_attribute_16941                            0        12715314
-  ----
-
-I'd recommend you to enable events on such functions after all other
-events enabled. Then its performance impact becomes minimum.
-
-To enable kprobes on all kernel functions, run the below script.
-  ----
-  #!/bin/sh
-  TRACE_DIR=/sys/kernel/debug/tracing
-  echo "Disable tracing to remove tracing overhead"
-  echo 0 > $TRACE_DIR/tracing_on
-
-  BADS="ftrace_cmp_recs ring_buffer_lock_reserve trace_buffer_lock_reserve trace_event_buffer_lock_reserve ftrace_location_range bsearch ftrace_location ftrace_int3_handler poke_int3_handler inat_get_opcode_attribute"
-HIDES=
-  for i in $BADS; do HIDES=$HIDES" --hide=$i*"; done
-
-  SDATE=`date +%s`
-  echo "Enabling trace events: start at $SDATE"
-
-  cd $TRACE_DIR/events/kprobes/
-  for i in `ls $HIDES` ; do echo 1 > $i/enable; done
-  for j in $BADS; do for i in `ls -d $j*`;do echo 1 > $i/enable; done; done
-
-  EDATE=`date +%s`
-  TIME=`expr $EDATE - $SDATE`
-  echo "Elapsed time: $TIME"
-  ---- 
-Note: Perhaps, using systemtap doesn't need to consider above bad
-symbols since it has own logic not to probe itself.
-
-Result
-======
-These were also enabled after all other events are enabled.
-And it took 2254 sec(without any intervals) for enabling 37222 probes.
-And at that point, the perf top showed below result:
-  ----
-  Samples: 10K of event 'cycles', Event count (approx.): 270565996
-  +  16.39%  [kernel]                       [k] native_load_idt
-  +  11.17%  [kernel]                       [k] int3
-  -   7.91%  [kernel]                       [k] 0x00007fffa018e8e0
-   - 0xffffffffa018d8e0
-        59.09% trace_event_buffer_lock_reserve
-           kprobe_trace_func
-           kprobe_dispatcher
-      + 40.45% trace_event_buffer_lock_reserve
-  ----
-0x00007fffa018e8e0 may be the trampoline buffer of an optimized
-probe on trace_event_buffer_lock_reserve. native_load_idt and int3
-are also called from normal kprobes.
-This means, at least my environment, kprobes now passed the
-stress test, and even if we put probes on all available functions
-it just slows down about 50%.
-
-Changes from v10:
- - [6/7] Use ACCESS_ONCE and barrier() to ensure acquiring cached
-         kprobe right before checking cache-update.
- - [6/7] Retry cache read if th cache is updated.
- - [6/7] Update cache index when invalidate entry.
- - [6/7] Update comment of kpcache_invalidate(). 
- - [7/7] Update comment of the flag according to Steven's comment.
+To blacklist the functions in a module (e.g. user-defined
+kprobe handler and the functions invoked from it), expand
+blacklist support for modules.
+With this change, users can use NOKPROBE_SYMBOL() macro in
+their own modules.
 
 Changes from v9:
- - [1/7] Remove unneeded #include <linux/kprobes.h> from module.h
- - [6/7] Add a comment for kpcache_invalidate().
- - [6/7] Remove CONFIG_KPROBE_CACHE accoding to Ingo's suggestion.
+ - Remove unneeded #include <linux/kprobes.h> from module.h
 
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Rob Landley <rob@landley.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 ---
+ Documentation/kprobes.txt |    8 ++++++
+ include/linux/module.h    |    4 +++
+ kernel/kprobes.c          |   63 ++++++++++++++++++++++++++++++++++++++-------
+ kernel/module.c           |    6 ++++
+ 4 files changed, 71 insertions(+), 10 deletions(-)
 
-Masami Hiramatsu (7):
-      kprobes: Support blacklist functions in module
-      kprobes: Use NOKPROBE_SYMBOL() in sample modules
-      kprobes/x86: Use kprobe_blacklist for .kprobes.text and .entry.text
-      kprobes/x86: Remove unneeded preempt_disable/enable in interrupt handlers
-      kprobes: Enlarge hash table to 512 entries
-      kprobes: Introduce kprobe cache to reduce cache misshits
-      ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
-
-
- Documentation/kprobes.txt           |    8 +
- arch/x86/kernel/kprobes/core.c      |   37 +---
- arch/x86/kernel/kprobes/ftrace.c    |    2 
- include/linux/ftrace.h              |    3 
- include/linux/kprobes.h             |    2 
- include/linux/module.h              |    4 
- kernel/kprobes.c                    |  288 +++++++++++++++++++++++++++++------
- kernel/module.c                     |    6 +
- kernel/trace/ftrace.c               |    3 
- samples/kprobes/jprobe_example.c    |    1 
- samples/kprobes/kprobe_example.c    |    3 
- samples/kprobes/kretprobe_example.c |    2 
- 12 files changed, 283 insertions(+), 76 deletions(-)
-
---
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+index 4bbeca8..2845956 100644
+--- a/Documentation/kprobes.txt
++++ b/Documentation/kprobes.txt
+@@ -512,6 +512,14 @@ int enable_jprobe(struct jprobe *jp);
+ Enables *probe which has been disabled by disable_*probe(). You must specify
+ the probe which has been registered.
+ 
++4.9 NOKPROBE_SYMBOL()
++
++#include <linux/kprobes.h>
++NOKPROBE_SYMBOL(FUNCTION);
++
++Protects given FUNCTION from other kprobes. This is useful for handler
++functions and functions called from the handlers.
++
+ 5. Kprobes Features and Limitations
+ 
+ Kprobes allows multiple probes at the same address.  Currently,
+diff --git a/include/linux/module.h b/include/linux/module.h
+index f520a76..2a95e5a 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -357,6 +357,10 @@ struct module {
+ 	unsigned int num_ftrace_callsites;
+ 	unsigned long *ftrace_callsites;
+ #endif
++#ifdef CONFIG_KPROBES
++	unsigned int num_kprobe_blacklist;
++	unsigned long  *kprobe_blacklist;
++#endif
+ 
+ #ifdef CONFIG_MODULE_UNLOAD
+ 	/* What modules depend on me? */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3214289..8319048 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -88,6 +88,7 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ 
+ /* Blacklist -- list of struct kprobe_blacklist_entry */
+ static LIST_HEAD(kprobe_blacklist);
++static DEFINE_MUTEX(kprobe_blacklist_mutex);
+ 
+ #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
+ /*
+@@ -1331,22 +1332,27 @@ bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+ 	       addr < (unsigned long)__kprobes_text_end;
+ }
+ 
+-static bool within_kprobe_blacklist(unsigned long addr)
++static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ {
+ 	struct kprobe_blacklist_entry *ent;
+ 
++	list_for_each_entry(ent, &kprobe_blacklist, list) {
++		if (addr >= ent->start_addr && addr < ent->end_addr)
++			return ent;
++	}
++
++	return NULL;
++}
++
++static bool within_kprobe_blacklist(unsigned long addr)
++{
+ 	if (arch_within_kprobe_blacklist(addr))
+ 		return true;
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
+ 	 * fail any probe registration in the prohibited area
+ 	 */
+-	list_for_each_entry(ent, &kprobe_blacklist, list) {
+-		if (addr >= ent->start_addr && addr < ent->end_addr)
+-			return true;
+-	}
+-
+-	return false;
++	return !!find_blacklist_entry(addr);
+ }
+ 
+ /*
+@@ -1432,6 +1438,7 @@ static int check_kprobe_address_safe(struct kprobe *p,
+ #endif
+ 	}
+ 
++	mutex_lock(&kprobe_blacklist_mutex);
+ 	jump_label_lock();
+ 	preempt_disable();
+ 
+@@ -1469,6 +1476,7 @@ static int check_kprobe_address_safe(struct kprobe *p,
+ out:
+ 	preempt_enable();
+ 	jump_label_unlock();
++	mutex_unlock(&kprobe_blacklist_mutex);
+ 
+ 	return ret;
+ }
+@@ -2032,13 +2040,13 @@ NOKPROBE_SYMBOL(dump_kprobe);
+  * since a kprobe need not necessarily be at the beginning
+  * of a function.
+  */
+-static int __init populate_kprobe_blacklist(unsigned long *start,
+-					     unsigned long *end)
++static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ {
+ 	unsigned long *iter;
+ 	struct kprobe_blacklist_entry *ent;
+ 	unsigned long offset = 0, size = 0;
+ 
++	mutex_lock(&kprobe_blacklist_mutex);
+ 	for (iter = start; iter < end; iter++) {
+ 		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+ 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+@@ -2053,9 +2061,28 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+ 		INIT_LIST_HEAD(&ent->list);
+ 		list_add_tail(&ent->list, &kprobe_blacklist);
+ 	}
++	mutex_unlock(&kprobe_blacklist_mutex);
++
+ 	return 0;
+ }
+ 
++/* Shrink the blacklist */
++static void shrink_kprobe_blacklist(unsigned long *start, unsigned long *end)
++{
++	struct kprobe_blacklist_entry *ent;
++	unsigned long *iter;
++
++	mutex_lock(&kprobe_blacklist_mutex);
++	for (iter = start; iter < end; iter++) {
++		ent = find_blacklist_entry(*iter);
++		if (!ent)
++			continue;
++		list_del(&ent->list);
++		kfree(ent);
++	}
++	mutex_unlock(&kprobe_blacklist_mutex);
++}
++
+ /* Module notifier call back, checking kprobes on the module */
+ static int kprobes_module_callback(struct notifier_block *nb,
+ 				   unsigned long val, void *data)
+@@ -2066,6 +2093,16 @@ static int kprobes_module_callback(struct notifier_block *nb,
+ 	unsigned int i;
+ 	int checkcore = (val == MODULE_STATE_GOING);
+ 
++	/* Add/remove module blacklist */
++	if (val == MODULE_STATE_COMING)
++		populate_kprobe_blacklist(mod->kprobe_blacklist,
++					  mod->kprobe_blacklist +
++					  mod->num_kprobe_blacklist);
++	else if (val == MODULE_STATE_GOING)
++		shrink_kprobe_blacklist(mod->kprobe_blacklist,
++					mod->kprobe_blacklist +
++					mod->num_kprobe_blacklist);
++
+ 	if (val != MODULE_STATE_GOING && val != MODULE_STATE_LIVE)
+ 		return NOTIFY_DONE;
+ 
+@@ -2252,6 +2289,7 @@ static const struct file_operations debugfs_kprobes_operations = {
+ /* kprobes/blacklist -- shows which functions can not be probed */
+ static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
+ {
++	mutex_lock(&kprobe_blacklist_mutex);
+ 	return seq_list_start(&kprobe_blacklist, *pos);
+ }
+ 
+@@ -2260,6 +2298,11 @@ static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
+ 	return seq_list_next(v, &kprobe_blacklist, pos);
+ }
+ 
++static void kprobe_blacklist_seq_stop(struct seq_file *m, void *v)
++{
++	mutex_unlock(&kprobe_blacklist_mutex);
++}
++
+ static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
+ {
+ 	struct kprobe_blacklist_entry *ent =
+@@ -2273,7 +2316,7 @@ static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
+ static const struct seq_operations kprobe_blacklist_seq_ops = {
+ 	.start = kprobe_blacklist_seq_start,
+ 	.next  = kprobe_blacklist_seq_next,
+-	.stop  = kprobe_seq_stop,	/* Reuse void function */
++	.stop  = kprobe_blacklist_seq_stop,
+ 	.show  = kprobe_blacklist_seq_show,
+ };
+ 
+diff --git a/kernel/module.c b/kernel/module.c
+index 079c461..618ac21 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -58,6 +58,7 @@
+ #include <linux/percpu.h>
+ #include <linux/kmemleak.h>
+ #include <linux/jump_label.h>
++#include <linux/kprobes.h>
+ #include <linux/pfn.h>
+ #include <linux/bsearch.h>
+ #include <linux/fips.h>
+@@ -2769,6 +2770,11 @@ static int find_module_sections(struct module *mod, struct load_info *info)
+ 					     sizeof(*mod->ftrace_callsites),
+ 					     &mod->num_ftrace_callsites);
+ #endif
++#ifdef CONFIG_KPROBES
++	mod->kprobe_blacklist = section_objs(info, "_kprobe_blacklist",
++					     sizeof(*mod->kprobe_blacklist),
++					     &mod->num_kprobe_blacklist);
++#endif
+ 
+ 	mod->extable = section_objs(info, "__ex_table",
+ 				    sizeof(*mod->extable), &mod->num_exentries);
 
 
