@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaENPxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:53:47 -0400
-Received: from sauhun.de ([89.238.76.85]:40862 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753583AbaENPxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:53:46 -0400
-Date: Wed, 14 May 2014 17:53:41 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Du, Wenkai" <wenkai.du@intel.com>
-Cc: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] i2c-designware: Mask all interrupts during i2c
- controller enable
-Message-ID: <20140514155341.GB12911@katana>
-References: <7286EAF50D3F4E4AADE7FEECEBF8B5A547FF93E0@ORSMSX110.amr.corp.intel.com>
+	id S1755049AbaENPzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:55:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32830 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaENPzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:55:54 -0400
+Message-ID: <53739201.6080604@oracle.com>
+Date: Wed, 14 May 2014 11:55:45 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A547FF93E0@ORSMSX110.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: mm: NULL ptr deref handling mmaping of special mappings
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-On Thu, Apr 10, 2014 at 11:03:19PM +0000, Du, Wenkai wrote:
-> Hi all,
->=20
-> Updated problem descriptions from Mika's feedback and new test data:=20
->=20
-> There have been "i2c_designware 80860F41:00: controller timed out" errors
-> on a number of Baytrail platforms. The issue is caused by incorrect value=
- in
-> Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled=
-=2E=20
-> This causes call to __i2c_dw_enable() to immediately start the transfer w=
-hich
-> leads to timeout. There are 3 failure modes observed:
->=20
-> 1. Failure in S0 to S3 resume path
->=20
-> The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start=
-=20
-> the first transaction after resuming from system sleep, TX_EMPTY interrup=
-t=20
-> is already unmasked because of the hardware default.
->=20
-> 2. Failure in normal operational path
->=20
-> This failure happens rarely and is hard to reproduce. Debug trace showed =
-that
-> DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant=20
-> TX_EMPTY was unmasked.
->=20
-> 2. Failure in S3 to S0 suspend path
->=20
-> This failure also happens rarely and is hard to reproduce. Adding debug t=
-race
-> that read DW_IC_INTR_MASK made this failure not reproducible. But from IS=
-R=20
-> call trace we could conclude TX_EMPTY was unmasked when problem occurred.
->=20
->=20
-> The patch masks all interrupts before the controller is enabled to resolv=
-e the
-> faulty DW_IC_INTR_MASK conditions.
->=20
-> Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+[ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
+[ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
+[ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1634.972913] Dumping ftrace buffer:
+[ 1634.975493]    (ftrace buffer empty)
+[ 1634.977470] Modules linked in:
+[ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
+[ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
+[ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
+[ 1634.977513] RSP: 0018:ffff88033351faf8  EFLAGS: 00010202
+[ 1634.977513] RAX: 0000000000000000 RBX: ffff88033351fbb0 RCX: 0000000000000028
+[ 1634.977513] RDX: 0000000000000001 RSI: ffff88033351fb38 RDI: ffff88006d28b600
+[ 1634.977513] RBP: ffff88033351fb18 R08: ffff88033351fbb0 R09: 0000000000000000
+[ 1634.977513] R10: ffff88001bcca690 R11: 0000000000000000 R12: ffff88001bcca690
+[ 1634.977513] R13: ffff880000000748 R14: 0000000000000028 R15: ffff88006d28b600
+[ 1634.977513] FS:  00007f79da4b8700(0000) GS:ffff8801b4c00000(0000) knlGS:0000000000000000
+[ 1634.977513] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1634.977513] CR2: 0000000000000000 CR3: 00000003334fb000 CR4: 00000000000006a0
+[ 1634.977513] Stack:
+[ 1634.977513]  ffff88033351fb08 00000000000005d1 00000000000005d1 ffff88033351fbb0
+[ 1634.977513]  ffff88033351fb78 ffffffffac2b83a9 ffff88033351fc28 ffffffffac1cb679
+[ 1634.977513]  0000000000000028 00000007f79da4e9 00007f79da4e9000 0000000000000000
+[ 1634.977513] Call Trace:
+[ 1634.977513] __do_fault (mm/memory.c:2703)
+[ 1634.977513] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+[ 1634.977513] do_read_fault.isra.40 (mm/memory.c:2883)
+[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
+[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
+[ 1634.977513] ? __mem_cgroup_count_vm_event (include/linux/rcupdate.h:391 include/linux/rcupdate.h:893 mm/memcontrol.c:1302)
+[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
+[ 1634.977513] __handle_mm_fault (mm/memory.c:3021 mm/memory.c:3182 mm/memory.c:3306)
+[ 1634.977513] ? __const_udelay (arch/x86/lib/delay.c:126)
+[ 1634.977513] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+[ 1634.977513] handle_mm_fault (mm/memory.c:3329)
+[ 1634.977513] __do_page_fault (arch/x86/mm/fault.c:1224)
+[ 1634.977513] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[ 1634.977513] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[ 1634.977513] ? sched_clock_local (kernel/sched/clock.c:214)
+[ 1634.977513] ? get_parent_ip (kernel/sched/core.c:2519)
+[ 1634.977513] ? context_tracking_user_exit (kernel/context_tracking.c:182)
+[ 1634.977513] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 1634.977513] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+[ 1634.977513] do_page_fault (arch/x86/mm/fault.c:1277 include/linux/jump_label.h:105 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1278)
+[ 1634.977513] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+[ 1634.977513] async_page_fault (arch/x86/kernel/entry_64.S:1552)
+[ 1634.977513] ? copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:153)
+[ 1634.977513] ? SyS_add_key (security/keys/keyctl.c:109 security/keys/keyctl.c:62)
+[ 1634.977513] tracesys (arch/x86/kernel/entry_64.S:746)
+[ 1634.977513] Code: 1f 40 00 66 66 66 66 90 55 48 89 e5 53 48 83 ec 18 48 8b 56 08 48 8b 87 a8 00 00 00 48 2b 97 98 00 00 00 74 1e 66 0f 1f 44 00 00 <48> 83 38 00 74 62 48 83 c0 08 48 83 ea 01 75 f0 0f 1f 84 00 00
+[ 1634.977513] RIP special_mapping_fault (mm/mmap.c:2961)
+[ 1634.977513]  RSP <ffff88033351faf8>
+[ 1634.977513] CR2: 0000000000000000
 
-Fixed the commit message and improved the comment to:
-	/* enforce disabled interrupts (due to HW issues) */"
 
-Applied to for-current, thanks!
-
-
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc5GFAAoJEBQN5MwUoCm2p+YP/1cc1fFM7NIC6itbZOgCv1YY
-qLaDsPK1KubCDls98cL6OEXVR7UCEF1QvnQW1KiW79r8jyooG4vaXhNhSbI+nCD+
-GNlR0uSdCSVDfw2X/vaAl7GQDOIwqZfMRhi2miNP28py9LsV/OH1QajzWnfcq4ir
-5E7uWA1cBKnE7CoAnHY2g9qj5geCTWeXrYQiCYmI0C8wszpwe8QOffvXnlGZWwa7
-GUBhORwjrYKOb5EXPye/S7IAkN8AVV6Q4/hX9me01G38rIomCSOp3u4h/TDwgiFF
-E0RRnyfGC8xk24a8tS8kINtlhwI9YIpHsQi5fEbGtephsNFwQEFYTaln9EkbhKEq
-eLk0oneqFgM2Gpk+aUufcjiZe1UlDXYLAjqTNWzQmXGqVKZJCH90iCyohJREKCqn
-RMr/qRwnIJTrZO6pzJSPnqGuq9JOB/dNM4A+oXwbpoc1d4etgCf4M82dq+QPJsId
-krbywNaYHKIGxvrAWe+8xHQNoshLwK4/oXfLVLqsuwQAntM/k0lO3GWuU6DYDWht
-ASXM8cel1XcwxADFS4B4ejRzOydYX/DW4Vhxk7q4metv1i6bYBWUqireyUsF0Oyl
-mAMhaCaw5RwqSnpXKaxEY2pRswrYFY0EoEGuSFuESKhbh0b6AsU2eOg7lFJhJd5X
-27wP/AENDPRCHDEKfB9r
-=gSO5
------END PGP SIGNATURE-----
-
---FkmkrVfFsRoUs1wW--
+Thanks,
+Sasha
