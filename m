@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaENWdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:33:23 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:35813 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059AbaENWdR (ORCPT
+	id S1754046AbaENWdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:33:14 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:42012 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbaENWdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:33:17 -0400
+	Wed, 14 May 2014 18:33:10 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Mike Turquette <mturquette@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -18,9 +18,9 @@ Cc: Michal Simek <michal.simek@xilinx.com>,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         cpufreq@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [RFC PATCH 5/5] net: macb: Use clk_round_rate_nearest() API
-Date: Wed, 14 May 2014 15:30:55 -0700
-Message-Id: <1400106655-22465-6-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
+Date: Wed, 14 May 2014 15:30:52 -0700
+Message-Id: <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.9.3.1.ga73a6ad
 In-Reply-To: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -31,31 +31,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current way of rounding clock frequencies always rounds down and
-doesn't allow deviations above the requested frequency. For the Ethernet
-case though, it is more important to minimize deviations than not
-exceeding the requested frequency.
+Introduce a new API function to round a rate to the closest possible
+rate the HW clock can generate.
+In contrast to 'clk_round_rate()' which works similar, but always returns
+a frequency <= its input rate.
+
+The code comes from Uwe and was copied from this LKML thread:
+https://lkml.org/lkml/2013/3/21/115
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
 
----
- drivers/net/ethernet/cadence/macb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clk/clk.c   | 26 ++++++++++++++++++++++++--
+ include/linux/clk.h | 14 ++++++++++++--
+ 2 files changed, 36 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index e9daa072ebb4..4fdbfcbc38bc 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -223,7 +223,7 @@ static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
- 		return;
- 	}
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index dff0373f53c1..b715f5a9826c 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1011,8 +1011,9 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
+  * @rate: the rate which is to be rounded
+  *
+  * Takes in a rate as input and rounds it to a rate that the clk can actually
+- * use which is then returned.  If clk doesn't support round_rate operation
+- * then the parent rate is returned.
++ * use and does not exceed the requested frequency, which is then returned.
++ * If clk doesn't support round_rate operation then the parent rate
++ * is returned.
+  */
+ long clk_round_rate(struct clk *clk, unsigned long rate)
+ {
+@@ -1027,6 +1028,27 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
+ EXPORT_SYMBOL_GPL(clk_round_rate);
  
--	rate_rounded = clk_round_rate(clk, rate);
-+	rate_rounded = clk_round_rate_nearest(clk, rate);
- 	if (rate_rounded < 0)
- 		return;
+ /**
++ * clk_round_rate_nearest - round the given rate for a clk
++ * @clk: the clk for which we are rounding a rate
++ * @rate: the rate which is to be rounded
++ *
++ * Takes in a rate as input and rounds it to the closest rate that the clk
++ * can actually use which is then returned. If clk doesn't support
++ * round_rate operation then the parent rate is returned.
++ */
++long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
++{
++	long lower_limit = clk_round_rate(clk, rate);
++	long upper_limit = clk_round_rate(clk, rate + (rate - lower_limit));
++
++	if (rate - lower_limit < upper_limit - rate)
++		return lower_limit;
++	else
++		return upper_limit;
++}
++EXPORT_SYMBOL_GPL(clk_round_rate_nearest);
++
++/**
+  * __clk_notify - call clk notifier chain
+  * @clk: struct clk * that is changing rate
+  * @msg: clk notifier type (see include/linux/clk.h)
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index fb5e097d8f72..2f83bf030ac6 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -255,15 +255,25 @@ void devm_clk_put(struct device *dev, struct clk *clk);
  
+ 
+ /**
+- * clk_round_rate - adjust a rate to the exact rate a clock can provide
++ * clk_round_rate - round a rate to the exact rate a clock can provide not
++ *		    exceeding @rate
+  * @clk: clock source
+  * @rate: desired clock rate in Hz
+  *
+- * Returns rounded clock rate in Hz, or negative errno.
++ * Returns rounded clock rate in Hz, or parent rate
+  */
+ long clk_round_rate(struct clk *clk, unsigned long rate);
+ 
+ /**
++ * clk_round_rate_nearest - round a rate to the exact rate a clock can provide
++ * @clk: the clk for which we are rounding a rate
++ * @rate: the rate which is to be rounded
++ *
++ * Returns rounded clock rate in Hz, or parent rate
++ */
++long clk_round_rate_nearest(struct clk *clk, unsigned long rate);
++
++/**
+  * clk_set_rate - set the clock rate for a clock source
+  * @clk: clock source
+  * @rate: desired clock rate in Hz
 -- 
 1.9.3.1.ga73a6ad
 
