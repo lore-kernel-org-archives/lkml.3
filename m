@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaENQQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:16:43 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:42659 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605AbaENQQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756073AbaENQQk (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 May 2014 12:16:40 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Wed, 14 May 2014 18:16:16 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: thierry.reding@gmail.com, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        marcel@ziswiler.com
-Subject: Re: [PATCH 2/2] ARM: tegra: initial add of Colibri T30
-Message-ID: <107aeb48982529858267cb85c792b35e@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:47015 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754434AbaENQQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:16:39 -0400
+Date: Wed, 14 May 2014 11:16:36 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH RFC 1/3] slub: keep full slabs on list for per memcg
+ caches
+In-Reply-To: <bc70b480221f7765926c8b4d63c55fb42e85baaf.1399982635.git.vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.10.1405141114040.16512@gentwo.org>
+References: <cover.1399982635.git.vdavydov@parallels.com> <bc70b480221f7765926c8b4d63c55fb42e85baaf.1399982635.git.vdavydov@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-05-13 21:49, schrieb Stephen Warren:
-> On 05/13/2014 11:27 AM, stefan@agner.ch wrote:
->> +	/* SPI1: Colibri SSP */
->> +	spi@7000d400 {
->> +		status = "okay";
->> +		spi-max-frequency = <25000000>;
->> +		can0: can@0 {
->> +			compatible = "microchip,mcp2515";
->> +			reg = <0>;
->> +			clocks = <&clk16m>;
->> +			interrupt-parent = <&gpio>;
->> +			interrupts = <TEGRA_GPIO(S, 0) GPIO_ACTIVE_LOW>;
->> +			spi-max-frequency = <10000000>;
-> 
-> So this chip doesn't get confused by a faster clock frequency when its
-> chip-select line isn't asserted? I would have expected spi-max-frequency
-> for the bus to be the minimum value that any device on the bus would
-> tolerate.
+On Tue, 13 May 2014, Vladimir Davydov wrote:
 
-And from the other mail:
-> I'm not convinced about this. The clock signal still reaches all the
-> chips, and hence still reaches some logic inside those chips. If the
-> setup/hold timings aren't met (for internal parts of the chip's SPI
-> state machine), then presumably all bets are off re: performance of the
-> chip, irrespective of whether the CS line happens to gate how much of
-> the chip actually does anything.
+> Currently full slabs are only kept on per-node lists for debugging, but
+> we need this feature to reparent per memcg caches, so let's enable it
+> for them too.
 
-SPI is by default not a multi-master Bus, hence the slaves only have to
-listen when the CS is asserted. I talked with our hardware expert, and
-he told me that he would expect that the whole input stage (input
-driver) is in reset/off logic when the CS line is not asserted. IMHO,
-this makes sense, this would also save power. At least he would expect
-that the communication state machine is resetted on CS assertion, so
-that it doesn't matter what happend before. 
+That will significantly impact the fastpaths for alloc and free.
 
-Wikipedia also states something similar. 
+Also a pretty significant change the logic of the fastpaths since they
+were not designed to handle the full lists. In debug mode all operations
+were only performed by the slow paths and only the slow paths so far
+supported tracking full slabs.
 
-But, since SPI is no real standard, devices which work differently and
-claim to communicate through SPI could exist :-)
+> @@ -2587,6 +2610,9 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>
+>  			} else { /* Needs to be taken off a list */
+>
+> +				if (kmem_cache_has_cpu_partial(s) && !prior)
+> +					new.frozen = 1;
+> +
+>  	                        n = get_node(s, page_to_nid(page));
 
-I have had not seen issues with this device when using faster clocks for
-other devices on the same bus.
+Make this code conditional?
 
->> +	panel: panel {
->> +		compatible = "edt,et057090dhu", "simple-panel";
-> 
-> The panel-simple driver doesn't seem to know about that EDT panel. How
-> will it work out the display timings?
+>  				/*
+>  				 * Speculatively acquire the list_lock.
+> @@ -2606,6 +2632,12 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+>  		object, new.counters,
+>  		"__slab_free"));
+>
+> +	if (unlikely(n) && new.frozen && !was_frozen) {
+> +		remove_full(s, n, page);
+> +		spin_unlock_irqrestore(&n->list_lock, flags);
+> +		n = NULL;
+> +	}
+> +
+>  	if (likely(!n)) {
 
-I will send a patch adding our two default panels.
+Here too.
 
-Will send a second revision soon.
