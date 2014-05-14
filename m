@@ -1,133 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaENJop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:44:45 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53536 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330AbaENJoi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:44:38 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "'Tomasz Stanislawski'" <t.stanislaws@samsung.com>
-Subject: Re: [RFC PATCH 0/3] Aggressively allocate the pages on cma reserved memory
-In-Reply-To: <20140513022603.GF23803@js1304-P5Q-DELUXE>
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <536CCC78.6050806@samsung.com> <20140513022603.GF23803@js1304-P5Q-DELUXE>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 14 May 2014 15:14:30 +0530
-Message-ID: <8738gcae4h.fsf@linux.vnet.ibm.com>
+	id S1754157AbaENJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:45:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47252 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747AbaENJpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:45:53 -0400
+Date: Wed, 14 May 2014 11:45:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-ID: <20140514094550.GB15756@dhcp22.suse.cz>
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+ <20140513143953.0b91925ee1e81580a4025a2e@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051409-9574-0000-0000-00000D93926A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513143953.0b91925ee1e81580a4025a2e@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Tue 13-05-14 14:39:53, Andrew Morton wrote:
+> On Tue, 13 May 2014 17:29:16 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > force_empty has been introduced primarily to drop memory before it gets
+> > reparented on the group removal. This alone doesn't sound fully
+> > justified because reparented pages which are not in use can be reclaimed
+> > also later when there is a memory pressure on the parent level.
+> > 
+> > Mark the knob CFTYPE_INSANE which tells the cgroup core that it
+> > shouldn't create the knob with the experimental sane_behavior. Other
+> > users will get informed about the deprecation and asked to tell us more
+> > because I do not expect most users will use sane_behavior cgroups mode
+> > very soon.
+> > Anyway I expect that most users will be simply cgroup remove handlers
+> > which do that since ever without having any good reason for it.
+> > 
+> > If somebody really cares because reparented pages, which would be
+> > dropped otherwise, push out more important ones then we should fix the
+> > reparenting code and put pages to the tail.
+> > 
+> > ...
+> >
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -4793,6 +4793,10 @@ static int mem_cgroup_force_empty_write(struct cgroup_subsys_state *css,
+> >  
+> >  	if (mem_cgroup_is_root(memcg))
+> >  		return -EINVAL;
+> > +	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
+> > +			current->comm, task_pid_nr(current));
+> > +	pr_cont(" Let us know if you know if it needed in your usecase at");
+> > +	pr_cont(" linux-mm@kvack.org\n");
+> >  	return mem_cgroup_force_empty(memcg);
+> >  }
+> >  
+> 
+> Do we really want to spam the poor user each and every time they use
+> this?  Using pr_info_once() is kinder and gentler?
 
-> On Fri, May 09, 2014 at 02:39:20PM +0200, Marek Szyprowski wrote:
->> Hello,
->> 
->> On 2014-05-08 02:32, Joonsoo Kim wrote:
->> >This series tries to improve CMA.
->> >
->> >CMA is introduced to provide physically contiguous pages at runtime
->> >without reserving memory area. But, current implementation works like as
->> >reserving memory approach, because allocation on cma reserved region only
->> >occurs as fallback of migrate_movable allocation. We can allocate from it
->> >when there is no movable page. In that situation, kswapd would be invoked
->> >easily since unmovable and reclaimable allocation consider
->> >(free pages - free CMA pages) as free memory on the system and free memory
->> >may be lower than high watermark in that case. If kswapd start to reclaim
->> >memory, then fallback allocation doesn't occur much.
->> >
->> >In my experiment, I found that if system memory has 1024 MB memory and
->> >has 512 MB reserved memory for CMA, kswapd is mostly invoked around
->> >the 512MB free memory boundary. And invoked kswapd tries to make free
->> >memory until (free pages - free CMA pages) is higher than high watermark,
->> >so free memory on meminfo is moving around 512MB boundary consistently.
->> >
->> >To fix this problem, we should allocate the pages on cma reserved memory
->> >more aggressively and intelligenetly. Patch 2 implements the solution.
->> >Patch 1 is the simple optimization which remove useless re-trial and patch 3
->> >is for removing useless alloc flag, so these are not important.
->> >See patch 2 for more detailed description.
->> >
->> >This patchset is based on v3.15-rc4.
->> 
->> Thanks for posting those patches. It basically reminds me the
->> following discussion:
->> http://thread.gmane.org/gmane.linux.kernel/1391989/focus=1399524
->> 
->> Your approach is basically the same. I hope that your patches can be
->> improved
->> in such a way that they will be accepted by mm maintainers. I only
->> wonder if the
->> third patch is really necessary. Without it kswapd wakeup might be
->> still avoided
->> in some cases.
->
-> Hello,
->
-> Oh... I didn't know that patch and discussion, because I have no interest
-> on CMA at that time. Your approach looks similar to #1
-> approach of mine and could have same problem of #1 approach which I mentioned
-> in patch 2/3. Please refer that patch description. :)
+We do not catch all potential callers but it is true that some
+configurations might have thousands of cgroups and the notify_on_release
+handler will spam the log.
 
-IIUC that patch also interleave right ?
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: memcg-deprecate-memoryforce_empty-knob-fix
+> 
+> - s/pr_info/pr_info_once/
+> - fix garbled printk text
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-+#ifdef CONFIG_CMA
-+	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
-+	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
-+
-+	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
-+	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
-+		migratetype = MIGRATE_CMA;
-+#endif /* CONFIG_CMA */
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-That doesn't always prefer CMA region. It would be nice to
-understand why grouping in pageblock_nr_pages is beneficial. Also in
-your patch you decrement nr_try_cma for every 'order' allocation. Why ?
+> ---
+> 
+>  Documentation/cgroups/memory.txt |    2 +-
+>  mm/memcontrol.c                  |    8 ++++----
+>  2 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff -puN Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix Documentation/cgroups/memory.txt
+> --- a/Documentation/cgroups/memory.txt~memcg-deprecate-memoryforce_empty-knob-fix
+> +++ a/Documentation/cgroups/memory.txt
+> @@ -482,7 +482,7 @@ About use_hierarchy, see Section 6.
+>    memory.kmem.usage_in_bytes == memory.usage_in_bytes.
+>  
+>    Please note that this knob is considered deprecated and will be removed
+> -  in future.
+> +  in the future.
+>  
+>    About use_hierarchy, see Section 6.
+>  
+> diff -puN mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix mm/memcontrol.c
+> --- a/mm/memcontrol.c~memcg-deprecate-memoryforce_empty-knob-fix
+> +++ a/mm/memcontrol.c
+> @@ -4799,10 +4799,10 @@ static int mem_cgroup_force_empty_write(
+>  
+>  	if (mem_cgroup_is_root(memcg))
+>  		return -EINVAL;
+> -	pr_info("%s (%d): memory.force_empty is deprecated and will be removed.",
+> -			current->comm, task_pid_nr(current));
+> -	pr_cont(" Let us know if you know if it needed in your usecase at");
+> -	pr_cont(" linux-mm@kvack.org\n");
+> +	pr_info_once("%s (%d): memory.force_empty is deprecated and will be "
+> +		     "removed.  Let us know if it is needed in your usecase at "
+> +		     "linux-mm@kvack.org\n",
+> +		     current->comm, task_pid_nr(current));
+>  	return mem_cgroup_force_empty(memcg);
+>  }
+>  
+> _
+> 
 
-+	if (zone->nr_try_cma) {
-+		/* Okay. Now, we can try to allocate the page from cma region */
-+		zone->nr_try_cma--;
-+		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
-+
-+		/* CMA pages can vanish through CMA allocation */
-+		if (unlikely(!page && order == 0))
-+			zone->nr_try_cma = 0;
-+
-+		return page;
-+	}
-
-
-If we fail above MIGRATE_CMA alloc should we return failure ? Why
-not try MOVABLE allocation on failure (ie fallthrough the code path) ?
-
-> And, there is different purpose between this and yours. This patch is
-> intended to better use of CMA pages and so get maximum performance.
-> Just to not trigger oom, it can be possible to put this logic on reclaim path.
-> But that is sub-optimal to get higher performance, because it needs
-> migration in some cases.
->
-> If second patch works as intended, there are just a few of cma free pages
-> when we are toward on the watermark. So benefit of third patch would
-> be marginal and we can remove ALLOC_CMA.
->
-> Thanks.
->
-
--aneesh
-
+-- 
+Michal Hocko
+SUSE Labs
