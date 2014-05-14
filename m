@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaENNZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:25:36 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:59584 "EHLO
+	id S932233AbaENN1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:27:44 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34507 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755739AbaENNZb (ORCPT
+	by vger.kernel.org with ESMTP id S1755816AbaENNZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:25:31 -0400
+	Wed, 14 May 2014 09:25:34 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
         Maxime Coquelin <maxime.coquelin@st.com>,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v2 02/10] ARM: STi: DT: STiH416: Remove unused CLK_S_ICN_REG_0 fixed clock
-Date: Wed, 14 May 2014 15:24:10 +0200
-Message-Id: <1400073858-28912-3-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 03/10] ARM: STi: DT: STiH416: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
+Date: Wed, 14 May 2014 15:24:11 +0200
+Message-Id: <1400073858-28912-4-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -32,35 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLK_S_ICN_REG_0 clock is no longer used.
+CLK_S_GMAC0_PHY &  CLK_S_ETH1_PH clocks are no longer used.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih416-clock.dtsi | 11 -----------
- 1 file changed, 11 deletions(-)
+ arch/arm/boot/dts/stih416-clock.dtsi | 14 --------------
+ 1 file changed, 14 deletions(-)
 
 diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
-index 9d16600..4bb6633 100644
+index 4bb6633..d7a3b88 100644
 --- a/arch/arm/boot/dts/stih416-clock.dtsi
 +++ b/arch/arm/boot/dts/stih416-clock.dtsi
-@@ -34,17 +34,6 @@
+@@ -34,20 +34,6 @@
  			clock-frequency = <600000000>;
  		};
  
--		/*
--		 * Bootloader initialized system infrastructure clock for
--		 * serial devices.
--		 */
--		CLK_S_ICN_REG_0: clockgenA0@4 {
+-		CLK_S_GMAC0_PHY: clockgenA1@7 {
 -			#clock-cells = <0>;
 -			compatible = "fixed-clock";
--			clock-frequency = <100000000>;
--			clock-output-names = "CLK_S_ICN_REG_0";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLK_S_GMAC0_PHY";
 -		};
 -
- 		CLK_S_GMAC0_PHY: clockgenA1@7 {
- 			#clock-cells = <0>;
- 			compatible = "fixed-clock";
+-		CLK_S_ETH1_PHY: clockgenA0@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLK_S_ETH1_PHY";
+-		};
+-
+ 		/*
+ 		 * ClockGenAs on SASG2
+ 		 */
 -- 
 1.9.1
 
