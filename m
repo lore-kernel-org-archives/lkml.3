@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaENItR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:49:17 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:36448 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751747AbaENItO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:49:14 -0400
-Message-ID: <53732DAE.5010204@st.com>
-Date: Wed, 14 May 2014 10:47:42 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753690AbaENIt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:49:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33255 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753559AbaENItx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:49:53 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <arnd@arndb.de>, <tony@atomide.com>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <kishon@ti.com>
+Subject: [PATCH] bus: ocp2scp: SYNC2 value should be changed to 0x6
+Date: Wed, 14 May 2014 14:19:33 +0530
+Message-ID: <1400057373-2871-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: <devicetree@vger.kernel.org>, <kernel@stlinux.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        <linux-input@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [STLinux Kernel] [PATCH v4 0/7] Add ST Keyscan driver
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-14_02:2014-05-13,2014-05-14,1970-01-01 signatures=0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gabi,
+Read path of OCP2SCP is not working properly due to low reset value
+of SYNC2 parameter in OCP2SCP. So changed the SYNC2 value to 0x6.
 
-For the reset and DT patches:
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/bus/omap-ocp2scp.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
+index 5511f98..0a974b2 100644
+--- a/drivers/bus/omap-ocp2scp.c
++++ b/drivers/bus/omap-ocp2scp.c
+@@ -16,6 +16,7 @@
+  *
+  */
+ 
++#include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/err.h>
+@@ -23,6 +24,9 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ 
++#define	OCP2SCP_TIMING	0x18
++#define	SYNC2_MASK	0xf
++
+ static int ocp2scp_remove_devices(struct device *dev, void *c)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -35,6 +39,9 @@ static int ocp2scp_remove_devices(struct device *dev, void *c)
+ static int omap_ocp2scp_probe(struct platform_device *pdev)
+ {
+ 	int ret;
++	u32 reg;
++	void __iomem *regs;
++	struct resource *res;
+ 	struct device_node *np = pdev->dev.of_node;
+ 
+ 	if (np) {
+@@ -46,8 +53,24 @@ static int omap_ocp2scp_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(regs))
++		return PTR_ERR(regs);
++
+ 	pm_runtime_enable(&pdev->dev);
+ 
++	/*
++	 * Read path of OCP2SCP is not working properly due to low reset value
++	 * of SYNC2 parameter in OCP2SCP. Suggested reset value is 0x6.
++	 */
++	pm_runtime_get_sync(&pdev->dev);
++	reg = readl(regs + OCP2SCP_TIMING);
++	reg &= ~(SYNC2_MASK);
++	reg |= 0x6;
++	writel(reg, regs + OCP2SCP_TIMING);
++	pm_runtime_put_sync(&pdev->dev);
++
+ 	return 0;
+ 
+ err0:
+-- 
+1.7.9.5
 
-Regards,
-Maxime
-
-On 04/11/2014 05:07 PM, Gabriel FERNANDEZ wrote:
->
-> Changes in v4:
-> - add reset controller management
-> - rename 'st,debounce_us' into 'st,debounce-us' in dt binding
->
-> Changes in v3: (bad manipulation)
->
-> Changes in v2:
-> - use standard format for matrix keymap
-> - suppress __exit mark for keyscan_remove()
-> - Call to keyscan_stop() shoudl go into keyscan_close() implementation
-> - use of SIMPLE_DEV_PM_OPS()
-> - rename compatibility name into "st,sti-keyscan"
-> - suppress platform data management
-> - omit vendor information
-> - cosmetic change and renaming
->
-> The goal of this series is to add ST Keyscan support to ST SoCs.
-> The DT definition is added for STiH415 and STiH416 SoCs on
-> B2000 board.
->
->
-> Gabriel Fernandez (7):
->    drivers: input: keyboard: st-keyscan: add keyscan driver
->    driver: reset: sti: add keyscan for stih415
->    driver: reset: sti: add keyscan for stih416
->    ARM: STi: DT: add keyscan for stih415
->    ARM: STi: DT: add keyscan for stih416
->    ARM: STi: DT: add keyscan for stih41x-b2000
->    ARM: multi_v7_defconfig: add ST Keyscan driver
->
->   .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
->   arch/arm/boot/dts/stih415-pinctrl.dtsi             |  16 ++
->   arch/arm/boot/dts/stih415.dtsi                     |  12 +
->   arch/arm/boot/dts/stih416-pinctrl.dtsi             |  16 ++
->   arch/arm/boot/dts/stih416.dtsi                     |  12 +
->   arch/arm/boot/dts/stih41x-b2000.dtsi               |  23 ++
->   arch/arm/configs/multi_v7_defconfig                |   1 +
->   drivers/input/keyboard/Kconfig                     |  12 +
->   drivers/input/keyboard/Makefile                    |   1 +
->   drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
->   drivers/reset/sti/reset-stih415.c                  |   1 +
->   drivers/reset/sti/reset-stih416.c                  |   1 +
->   .../dt-bindings/reset-controller/stih415-resets.h  |   1 +
->   .../dt-bindings/reset-controller/stih416-resets.h  |   1 +
->   14 files changed, 417 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
->   create mode 100644 drivers/input/keyboard/st-keyscan.c
->
