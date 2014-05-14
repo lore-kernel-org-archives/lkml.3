@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaENVzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:55:32 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11303 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaENVz3 (ORCPT
+	id S1753394AbaENVzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:55:46 -0400
+Received: from mail-out1.informatik.tu-muenchen.de ([131.159.0.8]:40580 "EHLO
+	smtp1.informatik.tu-muenchen.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753053AbaENVzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:55:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX199UTqXz2WLlA1fPcpY45TG
-Date: Wed, 14 May 2014 14:55:20 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCHv5 10/10] DTS: ARM: OMAP3-N900: Add modem support
-Message-ID: <20140514215519.GN27426@atomide.com>
-References: <1399739870-13526-1-git-send-email-sre@kernel.org>
- <1399739870-13526-11-git-send-email-sre@kernel.org>
+	Wed, 14 May 2014 17:55:44 -0400
+Message-ID: <5373E658.2040701@sec.in.tum.de>
+Date: Wed, 14 May 2014 23:55:36 +0200
+From: Julian Kirsch <kirschju@sec.in.tum.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399739870-13526-11-git-send-email-sre@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Christian Grothoff <christian@grothoff.org>
+Subject: Collecting data to demonstrate TCP ISN-based port knocking
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@kernel.org> [140510 09:40]:
-> Add modem device tree data to Nokia N900's DTS file.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Picking this patch too.
+Hi list,
 
-Tony
+some of you might remember the proposal of a patch which implements a
+variant of port-knocking that can be used to check the authenticity of
+arbitrary TCP connections and even can do integrity checking of TCP
+payload data by using a pre-shared key [0]. This patch, as well as a
+research paper describing its inner workings are available on
+gnunet.org under the name "Knock" [1].
+
+As Knock uses two fields in the TCP header in order to hide
+information and we explicitly want to be compatible with machines
+sitting in typical home networks, we need to make sure that this
+information doesn't get corrupted by the majority of NAT boxes out
+there. The lack of hard data on this also was one of the objections
+when the patch was submitted last time. We thus created a program
+which tests if Knock could work in your environment. It would be
+greatly appreciated if some of you were able to execute the program on
+their machines in order to help us to get an estimation of if Knock
+one day could be used in a large scale.
+
+You can find sources, binaries and a more elaborate description here:
+https://gnunet.org/knock_nat_tester
+
+
+Best,
+Julian Kirsch
+
+- ---
+[0] https://lkml.org/lkml/2013/12/10/1155
+[1] https://gnunet.org/knock
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJTc+ZUAAoJENwkOWttRRA4iicH/RLvNrlI0SCkHp25RZ1e5/8B
+aBO/voua2a0Xw+F1E+60VKAv0Mm9arS1kpySkNuH+GEc2iVau6TmM7wDdZ5V7DaZ
+nGpEnx6cS5mVx01qvalWtTUq2XwoVYz9x5mvaZkIt41DjsFxO/EqAyXudwCILRpJ
+QMidYhpinjzfq1MgWIyOCLGmFzbUthIEtk/og9dHr8bg1r1bS8CQaQ42js7baa2n
+nujp529LMHx+eHZ/f0owkmx5ssoJtpHsgVQr/kTBmAuJwELlOiToMWMCa9uCBbuB
+KKjLcrQogX1OjeFPwE7r0hjckn7rQbu1f5GUIGvPV0kYlfUtmknTJ1kHW4FXJxA=
+=pW9x
+-----END PGP SIGNATURE-----
