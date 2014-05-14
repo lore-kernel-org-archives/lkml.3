@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaENTDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:03:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13019 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683AbaENTDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:03:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1053,1389772800"; 
-   d="scan'208";a="540453821"
-From: "Luck, Tony" <tony.luck@intel.com>
-Subject: [RFC] Unnecessary work and noise from mce code in suspend/resume path
-To: linux-kernel@vger.kernel.org
-Cc: Borislav Petkov <bp@alien8.de>, Chen Gong <gong.chen@linux.jf.intel.com>,
-        Aiden Park <aiden.park@intel.com>
-Date: Wed, 14 May 2014 12:02:32 -0700
-Message-Id: <5373bdc83257044f09@agluck-desk.sc.intel.com>
+	id S1752905AbaENTD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:03:56 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62424 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaENTCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 15:02:05 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org
+Cc: Richard Weinberger <richard@nod.at>, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Tony Lu <zlu@tilera.com>
+Subject: [PATCH 24/27] tile: Use generic tlb.h
+Date: Wed, 14 May 2014 20:59:56 +0200
+Message-Id: <1400093999-18703-25-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1400093999-18703-1-git-send-email-richard@nod.at>
+References: <1400093999-18703-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we suspend a laptop we offline all but one processor. But
-the mce code registers on a notify chain so it can clean up
-some sysfs entries. Part of that code calls device_unregister()
-which will fire kobject_uevent() which might wake up some user
-code that is watching for such things.
+As everything we need is now in generic tlb.h
+we can drop our own one.
 
-Patch below from Aiden Park works around the issue by avoiding 
-the device_unregister()/device_register() by just keeping track
-of the original device registrations.
-
-1) Is there a better way to avoid the kobject_uevent()?
-2) What user code actually uses all these sysfs files?
-   Some test code in mcelog(8) uses:
-        /sys/devices/system/machinecheck/machinecheck0/trigger
-   Some code in mce-test package adjusts
-        /sys/devices/system/machinecheck/machinecheck0/tolerant
-   But neither of these make use of all the per-cpu instances
-   created/destroyed on every suspend/resume (or logical processor
-   offline).  Should we just move these out of per-cpu directories
-   and scrap this whole block of code?
-3) checkpatch isn't happy about use of NR_CPUS I suspect the
-   usage here warrants for_each_possible_cpu()
-
--Tony Luck
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Tony Lu <zlu@tilera.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
+ arch/tile/include/asm/Kbuild |  1 +
+ arch/tile/include/asm/tlb.h  | 25 -------------------------
+ 2 files changed, 1 insertion(+), 25 deletions(-)
+ delete mode 100644 arch/tile/include/asm/tlb.h
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-old mode 100644
-new mode 100755
-index 68317c80de7f..e49302f24ce5
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -113,6 +113,8 @@ static DEFINE_PER_CPU(struct work_struct, mce_work);
- 
- static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
- 
-+static struct device *mce_devices[NR_CPUS];
-+
- /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-  * MCE errors in a human-readable form.
-@@ -2060,7 +2062,18 @@ static int mce_syscore_suspend(void)
- 
- static void mce_syscore_shutdown(void)
- {
-+	int i = 0;
-+	struct device *dev;
-+
- 	mce_disable_error_reporting();
-+
-+	for (i = 0; i < NR_CPUS; i++) {
-+		dev = mce_devices[i];
-+		if (dev) {
-+			device_unregister(dev);
-+			mce_devices[i] = NULL;
-+		}
-+	}
- }
- 
- /*
-@@ -2272,23 +2285,27 @@ static void mce_device_release(struct device *dev)
- static int mce_device_create(unsigned int cpu)
- {
- 	struct device *dev;
--	int err;
-+	int err = 0;
- 	int i, j;
- 
- 	if (!mce_available(&boot_cpu_data))
- 		return -EIO;
- 
--	dev = kzalloc(sizeof *dev, GFP_KERNEL);
--	if (!dev)
--		return -ENOMEM;
--	dev->id  = cpu;
--	dev->bus = &mce_subsys;
--	dev->release = &mce_device_release;
-+	dev = mce_devices[cpu];
-+	if (!dev) {
-+		dev = kzalloc(sizeof *dev, GFP_KERNEL);
-+		if (!dev)
-+			return -ENOMEM;
-+		dev->id  = cpu;
-+		dev->bus = &mce_subsys;
-+		dev->release = &mce_device_release;
- 
--	err = device_register(dev);
--	if (err) {
--		put_device(dev);
--		return err;
-+		err = device_register(dev);
-+		if (err) {
-+			put_device(dev);
-+			return err;
-+		}
-+		mce_devices[cpu] = dev;
- 	}
- 
- 	for (i = 0; mce_device_attrs[i]; i++) {
-@@ -2313,6 +2330,7 @@ error:
- 		device_remove_file(dev, mce_device_attrs[i]);
- 
- 	device_unregister(dev);
-+	mce_devices[cpu] = NULL;
- 
- 	return err;
- }
-@@ -2331,7 +2349,6 @@ static void mce_device_remove(unsigned int cpu)
- 	for (i = 0; i < mca_cfg.banks; i++)
- 		device_remove_file(dev, &mce_banks[i].attr);
- 
--	device_unregister(dev);
- 	cpumask_clear_cpu(cpu, mce_device_initialized);
- 	per_cpu(mce_device, cpu) = NULL;
- }
-@@ -2450,6 +2467,7 @@ static __init int mcheck_init_device(void)
- 
- 	cpu_notifier_register_begin();
- 	for_each_online_cpu(i) {
-+		mce_devices[i] = NULL;
- 		err = mce_device_create(i);
- 		if (err) {
- 			cpu_notifier_register_done();
+diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+index 0aa5675..a4fabe4 100644
+--- a/arch/tile/include/asm/Kbuild
++++ b/arch/tile/include/asm/Kbuild
+@@ -38,6 +38,7 @@ generic-y += sockios.h
+ generic-y += statfs.h
+ generic-y += termbits.h
+ generic-y += termios.h
++generic-y += tlb.h
+ generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += xor.h
+diff --git a/arch/tile/include/asm/tlb.h b/arch/tile/include/asm/tlb.h
+deleted file mode 100644
+index 4a891a1..0000000
+--- a/arch/tile/include/asm/tlb.h
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright 2010 Tilera Corporation. All Rights Reserved.
+- *
+- *   This program is free software; you can redistribute it and/or
+- *   modify it under the terms of the GNU General Public License
+- *   as published by the Free Software Foundation, version 2.
+- *
+- *   This program is distributed in the hope that it will be useful, but
+- *   WITHOUT ANY WARRANTY; without even the implied warranty of
+- *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+- *   NON INFRINGEMENT.  See the GNU General Public License for
+- *   more details.
+- */
+-
+-#ifndef _ASM_TILE_TLB_H
+-#define _ASM_TILE_TLB_H
+-
+-#define tlb_start_vma(tlb, vma) do { } while (0)
+-#define tlb_end_vma(tlb, vma) do { } while (0)
+-#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+-#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
+-
+-#include <asm-generic/tlb.h>
+-
+-#endif /* _ASM_TILE_TLB_H */
+-- 
+1.8.4.2
+
