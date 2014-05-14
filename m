@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaENXSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:18:18 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24817 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783AbaENXSQ (ORCPT
+	id S1754122AbaENXS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:18:27 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:47286 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaENXSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:18:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX196DOfA60qZTeodsGOEBJBj
-Date: Wed, 14 May 2014 16:18:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: nsekhar@ti.com, joelf@ti.com, linux@arm.linux.org.uk, vinod.koul@intel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, bcousson@baylibre.com
-Subject: Re: [PATCH v2 5/5] ARM: dts: am4372: Remove obsolete properties from
- edma node
-Message-ID: <20140514231807.GD13427@atomide.com>
-References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com>
- <1399977032-26469-6-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 14 May 2014 19:18:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399977032-26469-6-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140514161630.d604884474d13a4432360b0f@linux-foundation.org>
+References: <e1640272803e7711d9a43d9454dbdae57ba22eed.1400108299.git.luto@amacapital.net>
+ <20140514161630.d604884474d13a4432360b0f@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 May 2014 16:18:01 -0700
+Message-ID: <CALCETrVEGs4_71su4PKhuJ+SRW0ecp6BkKzq6KOb1+bdCxgfTQ@mail.gmail.com>
+Subject: Re: [PATCH 3.15] x86,vdso: Fix an OOPS accessing the hpet mapping w/o
+ an hpet
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: X86 ML <x86@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [140513 03:31]:
-> dma-channels, ti,edma-regions and ti,edma-slots no longer needed in DT since
-> the the same information is available in the IP's CCCFG register.
+On Wed, May 14, 2014 at 4:16 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 14 May 2014 16:01:22 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
+>
+>> The access should fail, but it shouldn't oops.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>
+>> The oops can be triggered in qemu using -no-hpet (but not nohpet) by
+>> running a 32-bit program and reading a couple of pages before the vdso.
+>
+> This sentence is the best part of the changelog!  People often do this
+> - they put all the good stuff after the ^---.  I always move it into
+> the changelog.
+>
+> So how old is this bug?
 
-This too:
+New in 3.15.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+>
+>> --- a/arch/x86/vdso/vdso32-setup.c
+>> +++ b/arch/x86/vdso/vdso32-setup.c
+>> @@ -147,6 +147,8 @@ int __init sysenter_setup(void)
+>>       return 0;
+>>  }
+>>
+>> +static struct page *no_pages[] = {NULL};
+>
+> nit: this could be local to arch_setup_additional_pages().
+
+Will do.
+
+>
+>>  /* Setup a VMA at program startup for the vsyscall page */
+>>  int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+>>  {
+>> @@ -192,7 +194,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+>>                       addr -  VDSO_OFFSET(VDSO_PREV_PAGES),
+>>                       VDSO_OFFSET(VDSO_PREV_PAGES),
+>>                       VM_READ,
+>> -                     NULL);
+>> +                     no_pages);
+>>
+>>       if (IS_ERR(vma)) {
+>>               ret = PTR_ERR(vma);
+>
+
+--Andy
