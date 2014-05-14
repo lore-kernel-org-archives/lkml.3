@@ -1,91 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaENOeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:34:19 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:37818 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaENOeR (ORCPT
+	id S1754730AbaENOec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:34:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61518 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062AbaENOe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 10:34:17 -0400
-Date: Wed, 14 May 2014 16:32:11 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Marcel Ziswiler <marcel@ziswiler.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, stefan@agner.ch,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: tegra: initial add of Colibri T30
-Message-ID: <20140514143209.GB8612@ulmo>
-References: <cover.1400001937.git.stefan@agner.ch>
- <d45ec5351ce8ef03256061bdc4b0ba673bd40c66.1400001937.git.stefan@agner.ch>
- <53727738.4080901@wwwdotorg.org>
- <537319CE.7020101@ziswiler.com>
+	Wed, 14 May 2014 10:34:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
-Content-Disposition: inline
-In-Reply-To: <537319CE.7020101@ziswiler.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53730130.3000300@ti.com>
+References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
+	<5371EA01.3080307@gmail.com>
+	<537208A9.4020507@ti.com>
+	<53720E0F.3070008@gmail.com>
+	<537216AC.4090401@ti.com>
+	<53721ABF.8060705@gmail.com>
+	<53721D24.4090704@ti.com>
+	<CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
+	<53730130.3000300@ti.com>
+Date: Wed, 14 May 2014 09:34:25 -0500
+Message-ID: <CADYTM3YH2TJpS0z-Pb=rQPVV5ETHwfYMOOv=BohNB7UmahC9Rw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
+From: Bin Liu <binmlist@gmail.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+George,
 
---NMuMz9nt05w80d4+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 14, 2014 at 12:37 AM, George Cherian <george.cherian@ti.com> wrote:
+> On 5/14/2014 12:07 AM, Bin Liu wrote:
+>>
+>> Hi,
+>>
+>> On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com>
+>> wrote:
+>>>
+>>> Hi Daniel,
+>>>
+>>>
+>>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
+>>>>
+>>>> Hi George,
+>>>>
+>>>> On 05/13/2014 02:57 PM, George Cherian wrote:
+>>>>>
+>>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
+>>>>> reg.
+>>>>> can you try with the following patch.
+>>>>>
+>>>>> diff --git a/drivers/usb/musb/musb_dsps.c
+>>>>> b/drivers/usb/musb/musb_dsps.c
+>>>>> index 1ae6681..1160cd1 100644
+>>>>> --- a/drivers/usb/musb/musb_dsps.c
+>>>>> +++ b/drivers/usb/musb/musb_dsps.c
+>>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
+>>>>>           * logic enabled.
+>>>>>           */
+>>>>>          val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
+>>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
+>>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
+>>>>>                  glue->sw_babble_enabled = true;
+>>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
+>>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
+>>>>> +       }
+>>>>>          ret = dsps_musb_dbg_init(musb, glue);
+>>>>>          if (ret)
+>>>>
+>>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
+>>>> without the patch: a full glue reset is conducted. Do I get you right
+>>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
+>>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
+>>>>
+>>> Basically, there are 2 types of babble conditions.
+>>> 1) Transient babble condition - which could be recovered from without an
+>>> IP
+>>> reset .
+>>> 2) Babble condition - which could be recovered from only by doing an IP
+>>> reset.
+>>>
+>>> Looks like you are always hitting case 2 (Most times am also hitting the
+>>> same).
+>>> Case 1 is really hard to reproduce. I don't have a reliable method as of
+>>> now
+>>> to
+>>> reproduce this case consistently.
+>>>
+>>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
+>>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
+>>>> (a_wait_bcon)
+>>>> [   19.685815] usb 1-1: USB disconnect, device number 3
+>>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
+>>>> 44
+>>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
+>>>>
+>>>>
+>>>> I don't quite follow, especially as I lack documentation of the IP core.
+>>>> How do you test babble errors, is there any way to force them to happen
+>>>> reliably?
+>>>
+>>>
+>>> There is no 100% reliable method to force it to happen. Following is
+>>
+>> I have a way to force babble happen reliably - shorting DP or DM to
+>> VBUS. I opened the far-end plug of the USB cable, so I can easily
+>> short DP or DM to VBUS.
+>
+> Good to know that you have a reliable way to test babble condition.
+> Can you please do a quick test on 3.15.0-rc4 with the series applied?
+> In case of any assistance please do let me know.
 
-On Wed, May 14, 2014 at 09:22:54AM +0200, Marcel Ziswiler wrote:
-> On 05/13/2014 09:49 PM, Stephen Warren wrote:
-> >On 05/13/2014 11:27 AM, stefan@agner.ch wrote:
-[...]
-> >>+	panel: panel {
-> >>+		compatible =3D "edt,et057090dhu", "simple-panel";
-> >
-> >The panel-simple driver doesn't seem to know about that EDT panel. How
-> >will it work out the display timings?
->=20
-> Good question and me and Stefan actually even talked about that yesterday=
-=2E I
-> am actually using KMS right now as follows:
->=20
-> video=3DHDMI-A-1:1280x720-16@60 video=3DLVDS-1:640x480-16@60'
->=20
-> So the panel node is purely used to hook up the back light part right now.
->=20
-> From our point of view for our completely generic module approach where e=
-ach
-> customer potentially hooks up his own display make/model it would be
-> desirable to have some way of defining such timings directly through the
-> device tree.
+Sure, but could you please re-send those patches to my corporate email
+so that I can apply them from Thunderbird?
 
-Every customer design would presumably get its own device tree file, so
-they could easily follow the current conventions and update the
-panel-simple driver with the proper compatible value and display timings
-and then simply make the panel device node compatible with that.
+I read these linux-usb emails in Gmail, and  am not aware of any easy
+way to extract patches from Gmail.
 
-Thierry
+BTY, I tested with TI 3.12.10 kernel, in which I guess the babble
+handling is similar to this patch set. With TI3.12.10, MISC is always
+0x64, so MUSB never restarts.
 
---NMuMz9nt05w80d4+
-Content-Type: application/pgp-signature
+Thanks,
+-Bin.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTc35pAAoJEN0jrNd/PrOhVC4P/0szEjvrRSwwtRVnMyX5ccJe
-zHTS9fTBhAOZlHxafqVIaUPpUGkhmTfm1lf58YIxEvSpTsHEdP7EVbDGZgxxGd0k
-HVY1QMWZtNUCbxvpCMYNVOUivLYYnBv/vkLIhtf+SyyO590YhndC6L4GvskyY0Ov
-K+tUhPyMtICCEnRd9XYNy9hqTHbO1JQJHiNTx1SkER0ykt7ZuEN3xlrQwXaahCda
-2NA+fLBdZlCrHsqyQcq+Gx3ogn6o4C11H0Od6oza+KnKtzuExTEim4OL2c7n0efN
-X2y3GDQ06Xoe4zgJZcSG8CzjkHnQxmiNHqnVIdoCHBQq8CfPGoS+teWM9Xnc866h
-cXcsPgbTRrpbm7EJgv3zWKJAASV2zWmG7eFEQb5X059XCiBbgcD2HIaVLjIW/4Lm
-VUX8wFnUdK61MlB85gYODKCu27tO2ePeIe08r4Os9lf6N0THYX87kTYdJKN0HLoR
-5Bj32sDItpt7vJZHfeHnOnC8y8h9TuhiI9l+uDoJJk+rUA10OtOqa+gDllOzf+X5
-eYl6WsRKoiWxOhqEU8YP7ffoKefsqbhC1TDmLD0Fek+yD2sWmXS4ZBYoU6bndiPg
-L+Q0kXbL5UnarYQOczUEAzNlqBA049d4vLYszUYZAiZjWgqdTCxmSw2t94qwG0v8
-mogdXBfkRflWWVmRcV8Z
-=+bbS
------END PGP SIGNATURE-----
-
---NMuMz9nt05w80d4+--
+>
+>> But the interesting thing is that with TI 3.2 kernel, shorting DP or
+>> DM to VBUS causes MISC register to be 0x4, but the result is
+>> completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
+>>
+>> So in the 3.2 kernel, the babble handing resets the controller, but
+>> the 3.12.10 does not.
+>>
+>> Regards,
+>> -Bin.
+>>
+>>> my setup ,
+>>> I have a HUB with 4 devices connected , which gives me a Babble interrupt
+>>> on both connects and disconnects ( Not always though).
+>>>
+>>>> Anyway, the full glue layer solves this rare condition quite well for
+>>>> me. Is there any downside of this?
+>>>>
+>>>>
+>>>> Daniel
+>>>>
+>>>
+>>> --
+>>> -George
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>>
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> -George
+>
