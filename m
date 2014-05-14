@@ -1,129 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153AbaENVdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:33:20 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:61134 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaENVdS (ORCPT
+	id S1753375AbaENVdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:33:41 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:35873 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaENVdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:33:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <8399002.IIyBoyEHox@wuerfel>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
-	<6202090.0OtAjefIFT@wuerfel>
-	<CAMuHMdVxc3XRanpboWPumvQKbg-qdRBHQvYXwjTKX4CrxXPeAw@mail.gmail.com>
-	<8399002.IIyBoyEHox@wuerfel>
-Date: Wed, 14 May 2014 14:33:18 -0700
-X-Google-Sender-Auth: ndmBPpkOe1MrXEUcWk5IQQ3j5mc
-Message-ID: <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-From: John Stultz <john.stultz@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 14 May 2014 17:33:39 -0400
+From: Masaru Nomura <massa.nomura@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: lustre: socklnd: Remove unnecessary () from return statement
+Date: Wed, 14 May 2014 22:33:37 +0100
+Message-Id: <1400103217-13413-1-git-send-email-massa.nomura@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 13 May 2014 20:24:59 Geert Uytterhoeven wrote:
->> On Tue, May 13, 2014 at 8:10 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > Using 64-bit time_t on x32 is fine, because it's fast to operate
->> > in user space with 64-bit registers, and the kernel is 64-bit
->> > anyway. Inside of the kernel, we may get into trouble using
->> > a 64-bit time_t on 32-bit architectures because of the overhead
->> > in 64-bit math, e.g. all the timekeeping code that is based on
->> > timespec or some code paths in file systems and network code where
->> > we actually require division of time_t values.
->>
->> While going over time_t uses, have you found a pattern for use cases
->> involving division of time_t values in filesystem and networking code?
->
-> In ipv4, we have multiple places doing this:
->
->         icmp_param.data.times[1] = htonl((tv.tv_sec % 86400) * MSEC_PER_SEC +
->                                          tv.tv_nsec / NSEC_PER_MSEC);
->
-> to calculate the miliseconds since midnight. For file systems, I
-> found that FAT uses seconds/minutes/hours/days/month/year representation,
-> which is a lot of divides, but that can probably be optimized and
-> we need to handle years beyond 2038 anyway.
+Remove unnecessary brackets from return statements in socklnd.c
+to meet kernel coding style.
 
-We can do some tricks for internal optimizations here if these are
-critical.  I'd be more concerned about userland divisions where moving
-to a 64bit time_t would cause performance issues that we cannot help
-optimize.
+Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
+---
+ .../staging/lustre/lnet/klnds/socklnd/socklnd.c    |   42 ++++++++++----------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+index 21d36ee..b42d283 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+@@ -58,10 +58,10 @@ ksocknal_ip2iface(lnet_ni_t *ni, __u32 ip)
+ 		iface = &net->ksnn_interfaces[i];
+ 
+ 		if (iface->ksni_ipaddr == ip)
+-			return (iface);
++			return iface;
+ 	}
+ 
+-	return (NULL);
++	return NULL;
+ }
+ 
+ ksock_route_t *
+@@ -71,7 +71,7 @@ ksocknal_create_route (__u32 ipaddr, int port)
+ 
+ 	LIBCFS_ALLOC (route, sizeof (*route));
+ 	if (route == NULL)
+-		return (NULL);
++		return NULL;
+ 
+ 	atomic_set (&route->ksnr_refcount, 1);
+ 	route->ksnr_peer = NULL;
+@@ -85,7 +85,7 @@ ksocknal_create_route (__u32 ipaddr, int port)
+ 	route->ksnr_conn_count = 0;
+ 	route->ksnr_share_count = 0;
+ 
+-	return (route);
++	return route;
+ }
+ 
+ void
+@@ -197,9 +197,9 @@ ksocknal_find_peer_locked (lnet_ni_t *ni, lnet_process_id_t id)
+ 		CDEBUG(D_NET, "got peer [%p] -> %s (%d)\n",
+ 		       peer, libcfs_id2str(id),
+ 		       atomic_read(&peer->ksnp_refcount));
+-		return (peer);
++		return peer;
+ 	}
+-	return (NULL);
++	return NULL;
+ }
+ 
+ ksock_peer_t *
+@@ -213,7 +213,7 @@ ksocknal_find_peer (lnet_ni_t *ni, lnet_process_id_t id)
+ 		ksocknal_peer_addref(peer);
+ 	read_unlock(&ksocknal_data.ksnd_global_lock);
+ 
+-	return (peer);
++	return peer;
+ }
+ 
+ void
+@@ -318,7 +318,7 @@ ksocknal_get_peer_info (lnet_ni_t *ni, int index,
+ 	}
+  out:
+ 	read_unlock(&ksocknal_data.ksnd_global_lock);
+-	return (rc);
++	return rc;
+ }
+ 
+ void
+@@ -506,7 +506,7 @@ ksocknal_add_peer (lnet_ni_t *ni, lnet_process_id_t id, __u32 ipaddr, int port)
+ 
+ 	write_unlock_bh(&ksocknal_data.ksnd_global_lock);
+ 
+-	return (0);
++	return 0;
+ }
+ 
+ void
+@@ -620,7 +620,7 @@ ksocknal_del_peer (lnet_ni_t *ni, lnet_process_id_t id, __u32 ip)
+ 
+ 	ksocknal_txlist_done(ni, &zombies, 1);
+ 
+-	return (rc);
++	return rc;
+ }
+ 
+ ksock_conn_t *
+@@ -652,13 +652,13 @@ ksocknal_get_conn_by_idx (lnet_ni_t *ni, int index)
+ 				ksocknal_conn_addref(conn);
+ 				read_unlock(&ksocknal_data. \
+ 						 ksnd_global_lock);
+-				return (conn);
++				return conn;
+ 			}
+ 		}
+ 	}
+ 
+ 	read_unlock(&ksocknal_data.ksnd_global_lock);
+-	return (NULL);
++	return NULL;
+ }
+ 
+ ksock_sched_t *
+@@ -709,7 +709,7 @@ ksocknal_local_ipvec (lnet_ni_t *ni, __u32 *ipaddrs)
+ 	}
+ 
+ 	read_unlock(&ksocknal_data.ksnd_global_lock);
+-	return (nip);
++	return nip;
+ }
+ 
+ int
+@@ -741,7 +741,7 @@ ksocknal_match_peerip (ksock_interface_t *iface, __u32 *ips, int nips)
+ 	}
+ 
+ 	LASSERT (best >= 0);
+-	return (best);
++	return best;
+ }
+ 
+ int
+@@ -847,7 +847,7 @@ ksocknal_select_ips(ksock_peer_t *peer, __u32 *peerips, int n_peerips)
+ 
+ 	write_unlock_bh(global_lock);
+ 
+-	return (n_ips);
++	return n_ips;
+ }
+ 
+ void
+@@ -1709,7 +1709,7 @@ ksocknal_close_peer_conns_locked (ksock_peer_t *peer, __u32 ipaddr, int why)
+ 		}
+ 	}
+ 
+-	return (count);
++	return count;
+ }
+ 
+ int
+@@ -1725,7 +1725,7 @@ ksocknal_close_conn_and_siblings (ksock_conn_t *conn, int why)
+ 
+ 	write_unlock_bh(&ksocknal_data.ksnd_global_lock);
+ 
+-	return (count);
++	return count;
+ }
+ 
+ int
+@@ -1766,7 +1766,7 @@ ksocknal_close_matching_conns (lnet_process_id_t id, __u32 ipaddr)
+ 
+ 	/* wildcards always succeed */
+ 	if (id.nid == LNET_NID_ANY || id.pid == LNET_PID_ANY || ipaddr == 0)
+-		return (0);
++		return 0;
+ 
+ 	if (count == 0)
+ 		return -ENOENT;
+@@ -1937,7 +1937,7 @@ ksocknal_push (lnet_ni_t *ni, lnet_process_id_t id)
+ 
+ 	}
+ 
+-	return (rc);
++	return rc;
+ }
+ 
+ int
+@@ -1999,7 +1999,7 @@ ksocknal_add_interface(lnet_ni_t *ni, __u32 ipaddress, __u32 netmask)
+ 
+ 	write_unlock_bh(&ksocknal_data.ksnd_global_lock);
+ 
+-	return (rc);
++	return rc;
+ }
+ 
+ void
+@@ -2088,7 +2088,7 @@ ksocknal_del_interface(lnet_ni_t *ni, __u32 ipaddress)
+ 
+ 	write_unlock_bh(&ksocknal_data.ksnd_global_lock);
+ 
+-	return (rc);
++	return rc;
+ }
+ 
+ int
+-- 
+1.7.9.5
 
->> > We clearly have to change that code in some for to deal with y2038,
->> > but 64-bit time_t may not be the best option. A lot of the
->> > in-kernel code can probably use ktime_t, which we can change
->> > to a different representation (e.g. 34 bit seconds) if needed,
->> > and all the code that is only interested in relative time
->> > (e.g. nanosleep) doesn't have to change at all.
->>
->> Yeah. 32-bit uptimes should be good enough for everyone (don't quote
->> me on that), so adding a 64-bit offset when there's a need for absolute
->> time should be OK.
->
-> I think we have three categories:
->
-> a) interfaces that uses relative time_t/timespec/timeval:
->    - nanosleep
->    - select/pselect/poll/ppoll/epoll
->    - getrusage
->    - sched_rr_get_interval
->    - sigtimedwait
->    - clock_nanosleep
->    - alarm
->    - siginfo (rusage)
->
->   These can stay compatible, but we'd have to use a different
->   type if we change time_t.
-
-
-So as a correction, at least clock_nanosleep can specify sleep times
-using absolute time.
-
-
-> b) interfaces that don't make sense for times in the past:
->    - getitimer/setitimer
->    - timer_settime/timer_gettime
->    - gettimeofday/settimeofday
->    - adjtimex
->    - clock_gettime/clock_settime/clock_adjtime
->    - time/stime
->    - socket time stamps
->    - audio time stamps
->    - v4l time stamps
->    - input event time stamps
->    - sysv ipc (msg, sem, shm)
->
->    Here, we are relatively free to change the start of the
->    epoch in the kernel but convert to something else on the
->    user space boundary. One possibility is to scale them to
->    boot time and use ktime_t in the kernel.
-
-I'm not sure I'm totally following this... Are you suggesting we keep
-32bit time internally w/ some different offset but then pass to
-userland a 64bit time_t?  Or are you suggesting we change the abi to
-move the epoch?
-
-I think I'm with hpa in his recent mail in that the internal
-representation is an optimization detail, and the bigger question is
-do we use a  64bit time_t for future systems (possibly w/ a major ABI
-break - with compat interface for existing 32bit applications), or do
-we try to rev interfaces function by function to provide 2038 safe
-versions which applications will have to be modified to use?
-
-Me, I'm a fan of moving time_t to 64bits, since it makes "porting"
-applications to a 2038 safe ABI easier.
-
-thanks
--john
