@@ -1,43 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaENLWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:22:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63137 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308AbaENLWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:22:17 -0400
-Message-ID: <537351DD.4010402@redhat.com>
-Date: Wed, 14 May 2014 12:22:05 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Michael Neuling <mikey@neuling.org>
-CC: Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, avagin@openvz.org,
-        michael@ellerman.id.au, oleg@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com>	<1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com>	<537252C0.6090005@redhat.com>	<53730326.6000400@linux.vnet.ibm.com>	<53735044.5030008@redhat.com> <CAEjGV6y8-zOtOgxcg-6viNQh-RuzQCAy8JvJ+m-dc7XQnAkJmA@mail.gmail.com>
-In-Reply-To: <CAEjGV6y8-zOtOgxcg-6viNQh-RuzQCAy8JvJ+m-dc7XQnAkJmA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932181AbaENLW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:22:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50218 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308AbaENLWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 07:22:55 -0400
+Subject: [PATCH v1.2 7/16] arcmsr: revise message_isr_bh_fn to delete
+ duplicate code
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 May 2014 19:22:43 +0800
+Message-ID: <1400066563.6957.35.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/14 12:18, Michael Neuling wrote:
-> 
->> s390 actually screwed that, though it got away because
->> there's a bit in HWCAP to signal transactions support.  See:
->>
->>  https://sourceware.org/ml/gdb-patches/2013-11/msg00080.html
->>
->> Are you adding something to HWCAP too?
-> 
-> Yes but it's in HWCAP2
+From: Ching<ching2048@areca.com.tw>
 
-That's fine.
+Revise message_isr_bh_fn to remove the duplicate code for each adapter type.
 
--- 
-Pedro Alves
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:45:20.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-07 18:46:14.000000000 +0800
+@@ -511,120 +511,65 @@ static int arcmsr_alloc_ccb_pool(struct 
+ 
+ static void arcmsr_message_isr_bh_fn(struct work_struct *work) 
+ {
+-	struct AdapterControlBlock *acb = container_of(work,struct AdapterControlBlock, arcmsr_do_message_isr_bh);
+-	switch (acb->adapter_type) {
+-		case ACB_ADAPTER_TYPE_A: {
++	struct AdapterControlBlock *acb = container_of(work,
++		struct AdapterControlBlock, arcmsr_do_message_isr_bh);
++	char *acb_dev_map = (char *)acb->device_map;
++	uint32_t __iomem *signature = NULL;
++	char __iomem *devicemap = NULL;
++	int target, lun;
++	struct scsi_device *psdev;
++	char diff, temp;
+ 
+-			struct MessageUnit_A __iomem *reg  = acb->pmuA;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*) (&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*) (&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
+-			break;
++	switch (acb->adapter_type) {
++	case ACB_ADAPTER_TYPE_A: {
++		struct MessageUnit_A __iomem *reg  = acb->pmuA;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
+-
+-		case ACB_ADAPTER_TYPE_B: {
+-			struct MessageUnit_B *reg  = acb->pmuB;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*)(&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*)(&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
++	case ACB_ADAPTER_TYPE_B: {
++		struct MessageUnit_B *reg  = acb->pmuB;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
++	case ACB_ADAPTER_TYPE_C: {
++		struct MessageUnit_C __iomem *reg  = acb->pmuC;
++		signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+ 		break;
+-		case ACB_ADAPTER_TYPE_C: {
+-			struct MessageUnit_C *reg  = acb->pmuC;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for (target = 0; target < ARCMSR_MAX_TARGETID - 1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp = *acb_dev_map;
+-						for (lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if ((temp & 0x01) == 1 && (diff & 0x01) == 1) {
+-								scsi_add_device(acb->host, 0, target, lun);
+-							} else if ((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
++		}
++	}
++	atomic_inc(&acb->rq_map_token);
++	if (readl(signature) != ARCMSR_SIGNATURE_GET_CONFIG)
++		return;
++	for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
++		target++) {
++		temp = readb(devicemap);
++		diff = (*acb_dev_map) ^ temp;
++		if (diff != 0) {
++			*acb_dev_map = temp;
++			for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
++				lun++) {
++				if ((diff & 0x01) == 1 &&
++					(temp & 0x01) == 1) {
++					scsi_add_device(acb->host,
++						0, target, lun);
++				} else if ((diff & 0x01) == 1
++					&& (temp & 0x01) == 0) {
++					psdev = scsi_device_lookup(acb->host,
++						0, target, lun);
++					if (psdev != NULL) {
++						scsi_remove_device(psdev);
++						scsi_device_put(psdev);
+ 					}
+-					devicemap++;
+-					acb_dev_map++;
+ 				}
++				temp >>= 1;
++				diff >>= 1;
+ 			}
+ 		}
++		devicemap++;
++		acb_dev_map++;
+ 	}
+ }
+ 
+
 
