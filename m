@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaENNmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:42:32 -0400
-Received: from new2-smtp.messagingengine.com ([66.111.4.224]:59243 "EHLO
-	new2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751380AbaENNmb (ORCPT
+	id S932240AbaENNoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:44:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46575 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516AbaENNog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 09:42:31 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 May 2014 09:42:31 EDT
-Message-Id: <1400074523.15916.117311749.3590532D@webmail.messagingengine.com>
-X-Sasl-Enc: vJgMovh8q/E+0Be5IXsNKNGcLGcZpLWCBh1NzoaXBvmX 1400074523
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
+	Wed, 14 May 2014 09:44:36 -0400
+Date: Wed, 14 May 2014 16:44:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] usb: phy: msm: devm_ioremap() doesn't return ERR_PTRs
+Message-ID: <20140514134409.GE16836@mwanda>
+References: <20140514125524.GB14571@mwanda>
+ <53736EA4.8040203@cogentembedded.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-0867fb17
-In-Reply-To: <alpine.DEB.2.02.1405140233210.16893@dtop>
-References: <alpine.DEB.2.02.1405140233210.16893@dtop>
-Subject: Re: Multitude of dst obsolescense race conditions
-Date: Wed, 14 May 2014 06:35:23 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53736EA4.8040203@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014, at 2:57, dormando wrote:
-> Given a machine with frequently changing routes (ie; a router with an
-> active internet BGP table and multiple interfaces), there're at least
-> several places where obsolete dst's are handled improperly. If I pause
-> the
-> route changes, the crashes appear to stop. This first one has a crash
-> utility we've made, so I was able to more quickly find a patch and test
-> it. The others take time to reproduce.
+On Wed, May 14, 2014 at 05:24:52PM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> I'm testing against 3.10.39, but I think if these were fixed they'd be
-> backported to stable? I've also had recent 3.12's running that have
-> crashed in the same spots. Anyway correct me if I'm wrong...
+> On 14-05-2014 16:55, Dan Carpenter wrote:
+> 
+> >devm_ioremap() returns a NULL on error so the IS_ERR() check needs to be
+> >updated.
+> 
+> >Fixes: 6b99c68ec1f9 ('usb: phy: msm: Migrate to Managed Device Resource allocation')
+> >Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> >diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> >index c522c4f..bd32257 100644
+> >--- a/drivers/usb/phy/phy-msm-usb.c
+> >+++ b/drivers/usb/phy/phy-msm-usb.c
+> >@@ -1587,8 +1587,8 @@ static int msm_otg_probe(struct platform_device *pdev)
+> >
+> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> 
+>    Hm, 'res' can be NULL too, why this isn't checked?
 
-Just a hunch:
-You use macvlan? Could you somehow try without?
-Maybe... some ref overflow? (You could add some testing code in dst_hold
-with atomic_inc_return and WARN_ON).
+Yeah.  You're right.  The correct idiom is to use devm_ioremap_resource()
+like Fabio says, since it has checking built in.  Also the original code
+was missing a call to a request_mem_region function here but so that's
+buggy.
 
-dst_release already contains such a check, so I am not sure at all if
-that could happen.
+Ivan, I am so cross with you right now...   *Grumble*.
 
-Bye,
+v2 coming up.
 
-  Hannes
+regards,
+dan carpenter
+
