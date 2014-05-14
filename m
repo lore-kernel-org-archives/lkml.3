@@ -1,153 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaENFKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:10:49 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:57821 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaENFKo (ORCPT
+	id S1751947AbaENFR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:17:59 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42861 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaENFR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:10:44 -0400
-Date: Tue, 13 May 2014 22:09:25 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Herrmann <dh.herrmann@gmail.com>
-cc: Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kristian Hogsberg <krh@bitplanet.net>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
-In-Reply-To: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
-Message-ID: <alpine.LSU.2.11.1405132118330.4401@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 14 May 2014 01:17:57 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        eranian@google.com, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 5/9] perf, tools: Add perf download to download event files v2
+References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
+	<1399935074-25167-6-git-send-email-andi@firstfloor.org>
+Date: Wed, 14 May 2014 14:17:55 +0900
+In-Reply-To: <1399935074-25167-6-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Mon, 12 May 2014 15:51:10 -0700")
+Message-ID: <87zjilkkfw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014, David Herrmann wrote:
-> 
-> This is v2 of the File-Sealing and memfd_create() patches. You can find v1 with
-> a longer introduction at gmane:
->   http://thread.gmane.org/gmane.comp.video.dri.devel/102241
-> An LWN article about memfd+sealing is available, too:
->   https://lwn.net/Articles/593918/
+On Mon, 12 May 2014 15:51:10 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add a downloader to automatically download the right
+> files from a download site.
+>
+> This is implemented as a script calling wget, similar to
+> perf archive. The perf driver automatically calls the right
+> binary. The downloader is extensible, but currently only
+> implements an Intel event download.  It would be straightforward
+> to add other sites too for other vendors.
+>
+> The downloaded event files are put into ~/.cache/pmu-events, where the
+> builtin event parser in util/* can find them automatically.
+>
+> Cc: Use ~/.cache
 
-Sorry it's taken so long: at last I managed to set aside a few hours at
-the weekend, to read through your memfd+sealing work and let it sink in.
+???
 
-Good stuff.  I've a page of notes which I shall respond with, either
-later in the week or at the weekend; but they're pretty much trivia, or
-notes to myself, beside the async I/O issue raised by Tony Battersby.
 
-I thought I'd better not wait longer to give warning that I do take
-that issue seriously.
+[SNIP]
+> @@ -0,0 +1,52 @@
+> +#!/bin/bash
+> +# download event files for current cpu for perf
+> +
+> +WGETOPT=${WGETOPT:---no-verbose --timeout 5}
 
-> 
-> Shortlog of changes since v1:
->  - Dropped the "exclusive reference" idea
->    Now sealing is a one-shot operation. Once a given seal is set, you cannot
->    remove this seal again, ever. This allows us to drop all the ref-count
->    checking and simplifies the code a lot. We also no longer have all the races
->    we have to test for.
->  - The i_writecount fix is now upstream (slightly different, by Al Viro) so I
->    dropped it from the series.
->  - Change SHMEM_* prefix to F_* to avoid any API-association to shmem.
->  - Sealing is disabled on all files by default (even though we still haven't
->    found any DoS attack). You need to pass MFD_ALLOW_SEALING to memfd_create()
->    to get an object that supports the sealing API.
->  - Changed F_SET_SEALS to F_ADD_SEALS. This better reflects the API. You can
->    never remove seals, you can only add seals. Note that the semantics also
->    changed slightly: You can now _always_ call F_ADD_SEALS to add _more_ seals.
->    However, a new seal was added which "seals sealing" (F_SEAL_SEAL). So once
->    F_SEAL_SEAL is set, F_ADD_SEAL is no longer allowed.
->    This feature was requested by the glib developers.
->  - memfd_create() names are now limited to NAME_MAX instead of 256 hardcoded.
->  - Rewrote the test suite
-> 
-> The biggest change in v2 is the removal of the "exclusive reference" idea. It
-> was a nice optimization, but the implementation was ugly and racy regarding
-> file-table changes. Linus didn't like it either so we decided to drop it
-> entirely. Sealing is a one-shot operation now. A sealed file can never be
-> unsealed, even if you're the only holder.
-> 
-> I also addressed most of the concerns regarding API naming and semantics. I got
-> feedback from glib, EFL, wayland, kdbus, ostree, audio developers and we
-> discussed many possible use-cases (and also cases that don't make sense). So I
-> think we're in a very good state right now.
-> 
-> People requested to make this interface more generic. I renamed the API to
-> reflect that, but I didn't change the implementation. Thing is, seals cannot be
-> removed, ever. Therefore, semantics for sealing on non-volatile storage are
-> undefined. We don't write them to disc and it is unclear whether a sealed file
-> can be unlinked/removed again. There're more issues with this and no-one came up
-> with a use-case, hence I didn't bother implementing it.
-> There's also an ongoing discussion about an AIO race, but this also affects
-> other inode-protections like S_IMMUTABLE/etc. So I don't think we should tie
-> the fix to this series.
+Could you please extend this script to support curl also?  It seems the
+wget is not installed by default on my system.
 
-I disagree on that.
+> +
+> +set -e
+> +
+> +if [ "$1" == "" ] ; then
+> +	S=$(awk '
+> +/^vendor/     		{ V=$3 }
+> +/^model/ && $2 == ":" 	{ M=$3 }
+> +/^cpu family/ 		{ F = $4 }
 
-Whatever the bugs or limitations with S_IMMUTABLE, ETXTBSY etc,
-we have lived with those without complaint for many years.
+Inconsistency in using whitespace..
 
-You now propose an entirely new kind of guarantee, but that guarantee
-is broken by the possibility of outstanding async I/O to a page of the
-sealed object.
+Thanks,
+Namhyung
 
-I don't see how we can add the new feature while knowing it broken.  We
-have to devise a solution, but I haven't thought of a good solution yet.
 
-Checking page counts in a GB file prior to sealing does not appeal at
-all: we'd be lucky ever to find them all accounted for.  Adding overhead
-to get_user_pages_fast() won't appeal to its adherents, and I'm not even
-convinced that GUP is the only way in here.
-
-Any ideas?
-
-> Another discussion was about preventing /proc/self/fd/. But again, no-one could
-> tell me _why_, so I didn't bother. On the contrary, I even provided several
-> use-cases that make use of /proc/self/fd/ to get read-only FDs to pass around.
-> 
-> If anyone wants to test this, please use 3.15-rc1 as base. The i_writecount
-> fixes are required for this series.
-> 
-> Comments welcome!
-> David
-> 
-> David Herrmann (3):
->   shm: add sealing API
->   shm: add memfd_create() syscall
->   selftests: add memfd_create() + sealing tests
-> 
->  arch/x86/syscalls/syscall_32.tbl           |   1 +
->  arch/x86/syscalls/syscall_64.tbl           |   1 +
->  fs/fcntl.c                                 |   5 +
->  include/linux/shmem_fs.h                   |  20 +
->  include/linux/syscalls.h                   |   1 +
->  include/uapi/linux/fcntl.h                 |  15 +
->  include/uapi/linux/memfd.h                 |  10 +
->  kernel/sys_ni.c                            |   1 +
->  mm/shmem.c                                 | 236 +++++++-
->  tools/testing/selftests/Makefile           |   1 +
->  tools/testing/selftests/memfd/.gitignore   |   2 +
->  tools/testing/selftests/memfd/Makefile     |  29 +
->  tools/testing/selftests/memfd/memfd_test.c | 944 +++++++++++++++++++++++++++++
->  13 files changed, 1263 insertions(+), 3 deletions(-)
->  create mode 100644 include/uapi/linux/memfd.h
->  create mode 100644 tools/testing/selftests/memfd/.gitignore
->  create mode 100644 tools/testing/selftests/memfd/Makefile
->  create mode 100644 tools/testing/selftests/memfd/memfd_test.c
-> 
-> -- 
-> 1.9.2
+> +END	      { printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
+> +else
+> +	S="$1"
+> +fi
+> +V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
+> +
+> +CACHEDIR=${XDG_CACHE_HOME:-~/.cache}
+> +[ ! -d $CACHEDIR/pmu-events ] && mkdir -p $CACHEDIR/pmu-events
+> +cd $CACHEDIR/pmu-events
+> +
+> +case "$V" in
+> +GenuineIntel)
+> +	echo "Downloading models file"
+> +	URLBASE=${URLBASE:-https://download.01.org/perfmon}
+> +	MAPFILE=${MAPFILE:-mapfile.csv}
+> +	echo "Downloading readme.txt"
+> +	wget -N $WGETOPT $URLBASE/readme.txt
+> +	;;
+> +
+> +# Add more CPU vendors here
+> +
+> +*)
+> +	echo "Unsupported CPU vendor $V"
+> +	exit 1
+> +	;;
+> +esac
+> +
+> +wget -N $WGETOPT $URLBASE/$MAPFILE
+> +
+> +echo "Downloading events file"
+> +awk -v urlbase=$URLBASE -v cpu="$S" -F, \
+> +	'$1 == cpu && $4 == "core" { print urlbase $3; exit 0 }' \
+> +	$MAPFILE > url$$
+> +if [ -s url$$ ] ; then
+> +	wget $WGETOPT -q -i url$$ -O $S-core.json
+> +else
+> +	echo "CPU $S not found"
+> +fi
+> +rm -f url$$
+> +
