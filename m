@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaENKnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 06:43:23 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:58293 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaENKnV convert rfc822-to-8bit (ORCPT
+	id S1754761AbaENKod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:44:33 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51848 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaENKo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 06:43:21 -0400
+	Wed, 14 May 2014 06:44:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <53733DC8.1020608@linaro.org>
-References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
-	<1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
-	<53733DC8.1020608@linaro.org>
-Date: Wed, 14 May 2014 16:13:21 +0530
-Message-ID: <CANuQgHErThcauKun624kibia70wDa2Tyhj0kDwpWV92zpUrJ0w@mail.gmail.com>
-Subject: Re: [PATCH v5 0/6] add cpuidle support for Exynos5420
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>
+In-Reply-To: <5372E76C.8050908@zytor.com>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	<1399971749-4004-1-git-send-email-lftan@altera.com>
+	<CAAG0J9-ieBNfyRa6kf22TNd_3mg57GYuGHagQ-pPLY41iM3Zyg@mail.gmail.com>
+	<CAFiDJ5-ez-Brqr8q3=XbODzLtFFU=e4qS12bCPo=5FE1JTNr+A@mail.gmail.com>
+	<5371EAEB.5030100@imgtec.com>
+	<CAFiDJ58w31gm_z3Y1Q6ZREQPW4F6uVB+vy3X1r_3kLgaEE3O1w@mail.gmail.com>
+	<5371F25E.6020805@imgtec.com>
+	<5372E76C.8050908@zytor.com>
+Date: Wed, 14 May 2014 12:44:28 +0200
+X-Google-Sender-Auth: -tohnuihDIFaS2_9ATn-Xxgfx5c
+Message-ID: <CAMuHMdUpy=xpQ3wJ0RahYJ+Bkwf3EL5KPWvmOqs_vQG5cXGwGg@mail.gmail.com>
+Subject: Re: [PATCH 01/25] asm-generic: Change time_t and clock_t to 64 bit
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: James Hogan <james.hogan@imgtec.com>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 14 May 2014 15:26, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> On 05/14/2014 10:03 AM, Chander Kashyap wrote:
+On Wed, May 14, 2014 at 5:47 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/13/2014 03:22 AM, James Hogan wrote:
+>>> When we export this posix_types.h file for user software, they need to
+>>> define this config, eg: CONFIG_32BIT_TIME to use 32 bit time. Is this
+>>> what we want to do?
 >>
->> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
->>
->> This patchset adds cpuidle support for Exynos5420 SoC based on
->> generic big.little cpuidle driver.
+>> Yeh, good point, that won't work.
 >
+> How about:
 >
-> Hi Chander,
+> #include <asm-generic/types/time32.h>
 >
-> just a side question. I am not succeeding to have both cluster A7/A15 with
-> the upstream kernel.
->
-> How can I test your driver ?
+> The asm-generic/types/ directory can be used for all kinds of type
+> templates, like int-ll64.h and the (now removed) former int-l64.h.
 
-Hmm on octa can be tested only for 4 cores. as cci is disabled.
+That should more or less work. But better call it time-l.h, as time_t
+should be 64-bit on 64-bit architectures. Else 32/64-bit architectures
+still need an #ifdef.
 
->
-> Did I miss something ?
->
-> Thanks
->   -- Daniel
->
->
->> Tested on SMDK5420.
->>
->> This patch set depends on:
->>         1. [PATCH 0/5] MCPM backend for Exynos5420
->>            http://www.spinics.net/lists/arm-kernel/msg331100.html
->> Changelog is in respective patches.
->> Chander Kashyap (5):
->>    driver: cpuidle-big-little: add of_device_id structure
->>    arm: exynos: add generic function to calculate cpu number
->>    cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
->>      driver
->>    driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
->>    exynos: cpuidle: do not allow cpuidle registration for Exynos5420
->>    mcpm: exynos: populate suspend and powered_up callbacks
->>
->>   arch/arm/mach-exynos/cpuidle.c       |    3 +++
->>   arch/arm/mach-exynos/mcpm-exynos.c   |   36
->> ++++++++++++++++++++++++++++++++++
->>   arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
->>   drivers/cpuidle/Kconfig.arm          |    2 +-
->>   drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
->>   5 files changed, 60 insertions(+), 2 deletions(-)
->>
->
->
-> --
->  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
->
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
->
+Will time_t stay "long" (and not become "long long") on 64-bit?
 
+Gr{oetje,eeting}s,
 
+                        Geert
 
--- 
-with warm regards,
-Chander Kashyap
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
