@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaENIz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:55:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17772 "EHLO mga01.intel.com"
+	id S1753565AbaENJBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:01:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46242 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033AbaENIzW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:55:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1050,1389772800"; 
-   d="scan'208";a="538787448"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] pwm: lpss: remove dependency on clk framework
-Thread-Topic: [PATCH] pwm: lpss: remove dependency on clk framework
-Thread-Index: AQHPa2HlssGmNDZgIEys6Mqka80XEps/rNfA//+WU4CAAIbk0A==
-Date: Wed, 14 May 2014 08:54:51 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0B004E18@PGSMSX108.gar.corp.intel.com>
-References: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
- <604BF5F4C5D71041942BC7E84ED659EA0B004D2D@PGSMSX108.gar.corp.intel.com>
- <20140514083929.GA12238@xps8300>
-In-Reply-To: <20140514083929.GA12238@xps8300>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752815AbaENJBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 05:01:16 -0400
+Message-ID: <537330D6.7040802@suse.cz>
+Date: Wed, 14 May 2014 11:01:10 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rik van Riel <riel@redhat.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 2/2] mm/page_alloc: DEBUG_VM checks for free_list placement
+ of CMA and RESERVE pages
+References: <533D8015.1000106@suse.cz> <1396539618-31362-1-git-send-email-vbabka@suse.cz> <1396539618-31362-2-git-send-email-vbabka@suse.cz> <53616F39.2070001@oracle.com> <53638ADA.5040200@suse.cz> <5367A1E5.2020903@oracle.com> <5367B356.1030403@suse.cz> <5372E766.9040005@oracle.com> <alpine.LSU.2.11.1405132216560.4875@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1405132216560.4875@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Hi,
-> 
-> On Wed, May 14, 2014 at 07:00:59AM +0000, Chew, Chiau Ee wrote:
-> > Heikki,
-> > For ACPI mode, the clock rate information for PWM is being setup in the
-> acpi_lpss.c layer.
-> > Thus, only PCI mode depends on the driver_data to pass in the clock rate
-> information.
-> 
-> The goal with this patch is actually to free acpi_lpss.c from delivering the clock
-> for this driver.
-> 
-> The LPSS PWM does not get it's clock from the LPSS 100Mhz source clock,
-> which means we have to have the rate of it's clock hard-coded.
-> Since it's already hard coded also in this driver for PCI mode in any case, it
-> makes no sense to also have it there.
-> 
-> So this patch will allow us to cleanup acpi_lpss.c. We can now remove the
-> confusing "shared clock" structure where the hard coded rates are held. This
-> device is the only one that would need it.
-> 
+On 05/14/2014 07:19 AM, Hugh Dickins wrote:
+> On Tue, 13 May 2014, Sasha Levin wrote:
+>> On 05/05/2014 11:50 AM, Vlastimil Babka wrote:
+>>> So in the end this VM_DEBUG check probably cannot work anymore for MIGRATE_RESERVE, only for CMA. I'm not sure if it's worth keeping it only for CMA, what are the CMA guys' opinions on that?
+>>
+>> The way I understood it is that this patch is wrong, but it's still
+>> alive in -mm. Should it still be there?
+>
+> I agree that it should be dropped.  I did not follow the discussion,
+> but mmotm soon gives me BUG at mm/page_alloc.c:1242 under swapping load.
 
-Oh ya...you are right. Sorry about that. I have mixed up the context with other I/O components.
+Yes, I have already asked for dropping, and updating message of PATCH 
+1/2 at http://marc.info/?l=linux-mm&m=139947475413079&w=2
 
-Reviewed-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Vlastimil
 
-> 
-> Thanks,
-> 
-> --
-> heikki
+> Hugh
+>
+
