@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaENHYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 03:24:33 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:50404 "EHLO extserv.mm-sol.com"
+	id S1752233AbaENHbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 03:31:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:41474 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057AbaENHYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 03:24:32 -0400
-Message-ID: <1400052224.8431.11.camel@iivanov-dev>
-Subject: Re: [PATCH v2] usb: phy: msm: reset controller is mandatory now
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 14 May 2014 10:23:44 +0300
-In-Reply-To: <4319810.IibMxJ0Qvk@wuerfel>
-References: <4319810.IibMxJ0Qvk@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751789AbaENHbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 03:31:01 -0400
+Date: Wed, 14 May 2014 17:30:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140514173052.3ec80d90@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/x8CcuEJdLbLWVk4nF0o+zEA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-13 at 21:46 +0200, Arnd Bergmann wrote:
-> Commit a27345434134 "usb: phy: msm: Use reset framework for LINK
-> and PHY resets" introduced a mandatory call to reset_control_get
-> into the msm usb phy driver, which means we have to add a Kconfig
-> dependency on the API to avoid this build error:
-> 
-> phy/phy-msm-usb.c: In function 'msm_otg_read_dt':
-> phy/phy-msm-usb.c:1461:2: error: implicit declaration of function 'devm_reset_control_get' [-Werror=implicit-function-declaration]
->   motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
->   ^
-> 
-> Since the usb-ehci-msm driver currently selects the OTG driver,
-> we could still get a broken dependency here. To solve that,
-> this patch also removes the 'select', which turns out to be
-> unnecessary.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+--Sig_/x8CcuEJdLbLWVk4nF0o+zEA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thank you.
+Hi Andrew,
 
-Reviewed-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+After merging the akpm-current tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+In file included from arch/powerpc/mm/numa.c:23:0:
+include/linux/cpuset.h: In function 'cpusets_enabled':
+include/linux/cpuset.h:21:2: error: implicit declaration of function 'stati=
+c_key_false' [-Werror=3Dimplicit-function-declaration]
+  return static_key_false(&cpusets_enabled_key);
+  ^
+include/linux/cpuset.h: In function 'nr_cpusets':
+include/linux/cpuset.h:27:2: error: implicit declaration of function 'stati=
+c_key_count' [-Werror=3Dimplicit-function-declaration]
+  return static_key_count(&cpusets_enabled_key) + 1;
+  ^
+include/linux/cpuset.h: In function 'cpuset_inc':
+include/linux/cpuset.h:32:2: error: implicit declaration of function 'stati=
+c_key_slow_inc' [-Werror=3Dimplicit-function-declaration]
+  static_key_slow_inc(&cpusets_enabled_key);
+  ^
+include/linux/cpuset.h: In function 'cpuset_dec':
+include/linux/cpuset.h:37:2: error: implicit declaration of function 'stati=
+c_key_slow_dec' [-Werror=3Dimplicit-function-declaration]
+  static_key_slow_dec(&cpusets_enabled_key);
+  ^
+
+And lots more - you get the idea.
+
+Caused by commit 95d217015fd3 ("mm: page_alloc: use jump labels to
+avoid checking number_of_cpusets").  See Rule 1 in
+Documentation/SubmitChecklist :-(
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/x8CcuEJdLbLWVk4nF0o+zEA
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTcxuxAAoJEMDTa8Ir7ZwVzM4P/279CoPb46QCJIXyDl6M/fSl
+IGVL1JeerzZqJArwIciv4NCQgY3nRRKR2m/TeEqRjIMovaSExhVbn1qNhpSTC+nJ
+SzOJW4oHuTOb6cA1ryBSTY0s7jnWzIElr/8HYgKogHjPwB8bL8w1VtGMHg0s2TOI
+/sFb43f6PexBmvFeiOddCQ5WHSiX5jQFpO7gNgNtm//ZU2vFahBss5M95UseH5GU
+qCWvhcocGVImbf23gvHVa9R/epfe8oUsLZzEy818TlTpjl4Tzf44oSyoVMPEpYch
+omxxEGT1k8yf1q9S9KovCTvwZ6eNH/tb5kPYj1jDd16VymBo2dS7v0O+Y13H0xOU
+7/3VWHKMTnCpj0/4sjJ81P57rYjwJU7xd1HprsU64X9rl3TCENnDstg+AVydiHzY
+DbhGFzuMj1IEjnzkYdP6tEzWDTq8MC6FnaEt8qk6EiHmu3tzMbaDZj2J8BXKpXM6
+9XCZQKkRt67GA8+4MRen7VQ24RXdRJ66lrs17nyjIpByITYMjjURxLpgFRD6HwC6
+6KehvvnKRJ4/sixIU6FjQimzBF+8KvluFiY1tEJiYJEpiEYZBABSRp4/F+mMwKGc
+DgWeDhI7BpWEcUODcifgi9MSkgXdeQWLXHr60H0LgN3lWC6R+DrfiLS9nCrhwQhQ
+egF/p+shTjrGAwav2BYz
+=L5im
+-----END PGP SIGNATURE-----
+
+--Sig_/x8CcuEJdLbLWVk4nF0o+zEA--
