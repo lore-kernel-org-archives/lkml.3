@@ -1,292 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaENUHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:07:08 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:56117 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaENUHE (ORCPT
+	id S1752530AbaENUH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:07:29 -0400
+Received: from smtprelay0137.hostedemail.com ([216.40.44.137]:42211 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751156AbaENUHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:07:04 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
-To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-In-Reply-To: <53738261.4000000@ahsoftware.de>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
-	<1399913280-6915-3-git-send-email-holler@ahsoftware.de>
-	<20140514140534.897F8C4153D@trevor.secretlab.ca>
-	<53738261.4000000@ahsoftware.de>
-Date: Wed, 14 May 2014 21:06:45 +0100
-Message-Id: <20140514200645.15984C4095B@trevor.secretlab.ca>
+	Wed, 14 May 2014 16:07:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2538:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:7652:8957:9025:9040:10004:10400:10848:11026:11232:11473:11638:11658:11914:12043:12050:12295:12296:12517:12519:12679:12740:13071:13161:13229:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: paint78_637b26222644
+X-Filterd-Recvd-Size: 2968
+Message-ID: <1400098041.30384.22.camel@joe-AO725>
+Subject: Re: [PATCH 0/4] UserModeLinux: Message logging neatening
+From: Joe Perches <joe@perches.com>
+To: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+        user-mode-linux-devel@lists.sourceforge.net
+Date: Wed, 14 May 2014 13:07:21 -0700
+In-Reply-To: <5373C996.7000409@nod.at>
+References: <cover.1399678795.git.joe@perches.com> <5373C996.7000409@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
-> Am 14.05.2014 16:05, schrieb Grant Likely:
-> > On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
-> >> Use the properties named 'dependencies' in binary device tree blobs to build
-> >> a dependency based initialization order for platform devices and drivers.
-> >>
-> >> This is done by building a directed acyclic graph using an adjacency list
-> >> and doing a topological sort to retrieve the order in which devices/drivers
-> >> should be created/initialized.
-> >>
-> >> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> >
-> > Hi Alexander,
-> >
-> > Thanks for looking at this. It is a difficult problem. I've made
-> > comments below, but first I've got some general comments...
-> >
-> > First, I'm going to be very cautious about this. It is a complicated
-> > piece of code making the device initialization process a lot more
-> > complicated than it already is. I'm the first one to admit that deferred
-> > probe handles the problem in quite a naive manner, but it is simple,
-> > correct (when drivers support deferred probe) and easy to audit. This
-> > series digs deep into the registration order of *both* devices and
-> > drivers which gives me the heebee jeebees.
-> 
-> Sure, but the approach I present is deterministic. The deferred stuff, 
-> while it's simple and works, is imho just a workaround. Besides that 
-> this series isn't about pro or cons of the deferred probe, the deferred 
-> probes I have seen where just the reason why I had a look at what 
-> happens. To conclude, I like the deferred probe because it fixes 
-> problems, but trying to do things right is much better. And there are 
-> already many workarounds trying fix the initialization order (e.g. 
-> drivers which classify themself as a subsys), so starting do it right 
-> makes imho sense.
-> 
-> So, I'm sorry if you see this feature as an attack on the deferred probe 
-> stuff, it isn't meant as such, no offense here or there.
+On Wed, 2014-05-14 at 21:52 +0200, Richard Weinberger wrote:
+> Am 10.05.2014 01:43, schrieb Joe Perches:
+> > Joe Perches (4):
+> >   UserModeLinux: Convert UM_KERN_<LEVEL> to KERN_<LEVEL>
+> >   UserModeLinux: Remove unused #defines of UM_KERN_<LEVEL>
+> >   UserModeLinux: Use a more current logging style
+> >   UserModeLinux: Convert printks to pr_<level>
 
-Hahaha, calm down. I'm not upset nor do I see it as an attack on
-deferred probe.... Okay, maybe I do, but I've been asking people to
-attack deferred probe for years! It works, but it is by no means optimized.
+> Thank you Joe!
+> I'll queue your patches for 3.16.
 
-> > Personally, I think the parts of this patch that manipulate the device registration
-> > order is entirely the wrong way to handle it. If anything, I would say
-> > continue to register the devices, even if the dependencies are unmet.
-> 
-> That would just be a removal of 2 lines. I've no problem with that. ;)
-> 
-> > Instead, I would focus on the driver core (drivers/base) to catch
-> > device probe attempts when a known dependency is not met, remember it,
-> > and perform the probe after the other driver shows up. That is also
-> > going to be a complicated bit of code, but it works for every kind of
-> > device, not just platform_devices, and has far less impact on the
-> > platform setup code.
-> >
-> > BTW, this has to be able to work at the level of struct device instead
-> > of struct platform_device. There are far more kinds of devices than just
-> > platform_device, and they all have the same problem.
-> 
-> Changing to care for devices instead of just drivers is easy to do.
-> 
-> > Also, may I suggest that the more pieces that you can break this series
-> > up into, the greater chance you'll have of getting a smaller subset
-> > merged earlier if it can be proven to be useful on its own.
-> 
-> Hmm, I don't really care if that will be merged. I have no motivation to 
-> fight with Linux kernel maintainers and I don't know if I will spend the 
-> necessary time to do so.
+(adding Geert to cc's)
 
-The people you need to convince are Rob, Greg, and me, and you've got my
-attention. If I'm convinced, then I can probably convince Greg also.
-You've got an interesting approach, and I hope you won't give up on it.
+Hi Richard.
 
-> >> +#ifdef CONFIG_OF_DEPENDENCIES
-> >> +		if (!of_init_build_order(NULL, NULL))
-> >> +			of_init_create_devices(NULL, NULL);
-> >> +		else
-> >> +			of_init_free_order();
-> >
-> > What happens when of_init_build_order() fails? Does the whole system
-> > fall over?
-> 
-> Yes. The only reason it can fail is when there is a cycle, and dtc 
-> checks (and fails) for that when building the blob (dtb).
-> 
-> >
-> >> +#else
-> >>   		of_platform_populate(NULL, of_default_bus_match_table,
-> >>   					NULL, NULL);
-> >>   #endif
-> >> +	}
-> >> +#endif
-> >> +
-> >>   	return 0;
-> >>   }
-> >>   arch_initcall(customize_machine);
-> >> @@ -914,7 +924,13 @@ void __init setup_arch(char **cmdline_p)
-> >>   		arm_pm_restart = mdesc->restart;
-> >>
-> >>   	unflatten_device_tree();
-> >> -
-> >> +#ifdef CONFIG_OF_DEPENDENCIES
-> >> +	/*
-> >> +	 * No alloc used in of_init_build_order(), therefor it would work
-> >> +	 * already here too.
-> >> +	 */
-> >> +	/* of_init_build_order(NULL, NULL); */
-> >> +#endif
-> >
-> > Stale hunk left in patch?
-> 
-> See here: https://lkml.org/lkml/2014/5/14/102
-> 
-> This are NOT patches meant for final merging!
+Please queue only patches 1 and 2.
 
-Understood. No malice is intended. That's just the normal stuff that
-comes up in review.
+Patches 3 and 4 are currently defective.
+These need a bit of rework to compile appropriately.
 
-> > I would suggest splitting the core graph support into a separate patch
-> > to keep things smaller and to keep the behaviour changes separate from
-> > the support function additions.
-> 
-> Could be done.
-> 
-> >
-> >> +
-> >> +
-> >> +/* Copied from drivers/of/base.c (because it's lockless). */
-> >
-> > Copying isn't a good idea. The function will need to be made accessible
-> > to other files in the drivers/of directory.
-> 
-> See above.
-> 
-> 
-> >> +int __init of_init_build_order(struct device_node *root,
-> >> +			const struct of_device_id *matches)
-> >> +{
-> >> +	struct device_node *child;
-> >> +	int rc = 0;
-> >> +
-> >> +	root = root ? of_node_get(root) : of_find_node_by_path("/");
-> >> +	if (unlikely(!root))
-> >> +		return -EINVAL;
-> >> +
-> >> +	calc_max_phandle();
-> >> +	order.old_max_phandle = order.max_phandle;
-> >> +
-> >> +	for_each_child_of_node(root, child) {
-> >> +		rc = add_deps(root, child, matches);
-> >> +		if (unlikely(rc))
-> >> +			break;
-> >> +	}
-> >> +
-> >> +	of_node_put(root);
-> >> +	topological_sort();
-> >
-> > Can the sort be performed incrementally? The DT is a dynamic structure
-> > on some platforms. Search for OF_RECONFIG_. There is work in progress to
-> > add overlay support to the device tree so that batches of new nodes can
-> > be added to the tree after userspace has started. The dependency code
-> > will need to handle that situation gracefully.
-> 
-> The stuff I present is only about what happens before userspace starts 
-> and is all gone away when userspace start. I know about the overlay 
-> support (e.g. for bbb-capes), but I don't care. So there is no need to 
-> think about what happens if such happens.
+I'll do what Al suggested below one day soon.
 
-ok. As long as there is no impact, then I don't have an issue.
+from: https://lkml.org/lkml/2012/9/29/106
 
-> 
-> > I don't like that of_init_create_devices() has a completely different
-> > calling convention from of_platform_populate(). of_platform_populate()
-> > is passed a match table for devices that are to act as buses (which
-> > means register the children also). This function is passed a blacklist
-> > instead which is a completely different semantic.
-> 
-> Acting on buses is a workaround.
-
-Can you elaborate on what you mean? The of_platform_populate() semantics
-are quite specific because they are the filter for which devices are
-going to be platform_devices.
-
-> 
-> >
-> > That means it cannot be used by device drivers that register their own
-> > children and it has to make a lot of assumptions about what should and
-> > should not be registered as platform_devices.
-> >
-> > How does the dependency code decide which devices can be
-> > platform_devices? It's not clear to me from what I've read so far.
-> 
-> Dependencies currently are only considered on stuff which has a 
-> "compatibility" property, thus drivers. I wanted to get the drivers 
-> loaded in order, not really caring for devices. Let me quote from 
-> (outdated) ldd3:
-> 
-> "For the most part, the Linux device model code takes care of all these 
-> considerations without imposing itself upon driver authors. It sits 
-> mostly in the background; direct interaction with the device model is 
-> generally handled by bus-level logic and various other kernel 
-> subsystems. As a result, many driver authors can ignore the device model 
-> entirely, and trust it to take care of itself."
-> 
-> So do I. ;)
-
-of_platform_populate() currently makes the decision for
-platform_devices. Other busses do the same for their own child devices.
-In this case after calculating the dependency information we would want
-to make it available to all bus types so that they to can take advantage
-of dependency information.
-
-> 
-> >
-> >> +
-> >> +	for (i = 0; i < order.count; ++i) {
-> >> +		struct device_node *node = order.order[i];
-> >> +		uint32_t parent_ph = order.parent_by_phandle[node->phandle];
-> >> +
-> >> +		if (unlikely(blacklist &&
-> >> +				of_match_node(blacklist, node))) {
-> >> +			of_node_put(node);
-> >> +			continue;
-> >> +		}
-> >> +		if (unlikely(parent_ph &&
-> >> +			!order.device_by_phandle[parent_ph])) {
-> >> +			/* init of parent failed */
-> >> +			of_node_put(node);
-> >> +			continue;
-> >> +		}
-> >> +		dev = of_dependencies_device_create(node, lookup,
-> >> +			order.device_by_phandle[parent_ph]);
-> >> +		if (dev)
-> >> +			order.device_by_phandle[node->phandle] = &dev->dev;
-> >> +		of_node_put(node);
-> >> +	}
-> >> +	/* remove_new_phandles(); */
-> >> +}
-> >
-> > I could use some help understanding what is being done here. It looks
-> > like it is going through and only registering devices that have a
-> > dependency parent already created, or don't have a parent at all. Am I
-> > correct?
-> 
-> Yes, that part assumes that if a parent is present, the parent is needed 
-> and it doesn't make sense to create a device if the parent already 
-> failed. That are those two lines I mentioned above.
-
-Ah, so it is just the normal node's parent, not a dependency link. okay.
-
-> > It looks like this patch alone will break the kernel because it depends
-> > also on the functionality in patch 5. The patches would need to be
-> > reordered to handle that situation.
-> 
-> I currently don't care if this feature breaks something. Therefor it is 
-> marked in big letters as experimental. But I already see you don't want 
-> it and you see it all as an offense.
-
-I'm sorry you feel that way. I actually have quite the opposite opinion.
-I'm asking the questions and pushing back to a) make sure I understand
-what you're doing, and b) figure out wether it can be brought into a
-state where it can be merged.
-
-g.
+On Sat, Sep 29, 2012 at 10:43 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sat, Sep 29, 2012 at 10:27:44PM +0200, Geert Uytterhoeven wrote:
+>> On Sat, Sep 29, 2012 at 10:10 PM, Joe Perches <joe@perches.com> wrote:
+>> >> @@ -88,7 +88,7 @@ static int do_aio(aio_context_t ctx, enum aio_type type, int fd, char *buf,
+>> >>               iocbp->aio_nbytes = sizeof(c);
+>> >>               break;
+>> >>       default:
+>> >> -             printk(UM_KERN_ERR "Bogus op in do_aio - %d\n", type);
+>> >> +             printk(KERN_ERR "Bogus op in do_aio - %d\n", type);
+>> >
+>> > Maybe a follow-on patch to convert these to pr_<level>?
+>>
+>> That requires adding pr_<level> to arch/um/include/shared/user.h first.
+>> Or to avoid duplication, extracting the pr_<level> definitions from
+>> include/linux/printk.h to a new header file, and preincluding that one for
+>> the user part of UML, too.
+>
+> Yecchhh....  Just how many of those pre-includes do you want to add?
+> Seriously, if we get enough of those, it might make more sense to take
+> them into a separate directory and add it to search paths, including
+> that for userland objects of uml.  If not, I'd rather copy them to
+> include/generated in arch/um/Makefile and explicitly #include <generated/foo.h>
+> them from user.h.  It's trivially doable and as long as we have relatively
+> few of those guys it's less PITA...
 
