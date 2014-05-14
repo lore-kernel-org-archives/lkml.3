@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaENJvG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:51:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35767 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839AbaENJvA (ORCPT
+	id S1754063AbaENJxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 05:53:38 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:34052 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaENJxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:51:00 -0400
-Date: Wed, 14 May 2014 12:50:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Ben Myers <bpm@sgi.com>
-Subject: Re: [ 137/143] xfs: underflow bug in xfs_attrlist_by_handle()
-Message-ID: <20140514095020.GC16836@mwanda>
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
- <20140512003206.396224510@1wt.eu>
- <20140513110812.GA4006@hercules>
+	Wed, 14 May 2014 05:53:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140513110812.GA4006@hercules>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1399457217-22846-1-git-send-email-ludovic.desroches@atmel.com>
+References: <1399457217-22846-1-git-send-email-ludovic.desroches@atmel.com>
+Date: Wed, 14 May 2014 11:53:35 +0200
+Message-ID: <CAPDyKFqeunnWmguTH89byNc5Yy+CBY4avMeeon3ZSfNMmGJa9Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] mmc: add slot argument to mmc_of_parse
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:08:12PM +0100, Luis Henriques wrote:
-> > diff --git a/fs/xfs/linux-2.6/xfs_ioctl32.c b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > index bad485a..782d03d 100644
-> > --- a/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > +++ b/fs/xfs/linux-2.6/xfs_ioctl32.c
-> > @@ -361,8 +361,8 @@ xfs_compat_attrlist_by_handle(
-> >  	if (copy_from_user(&al_hreq, arg,
-> >  			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
-> >  		return -XFS_ERROR(EFAULT);
-> > -	if (al_hreq.buflen > XATTR_LIST_MAX)
-> > -		return -XFS_ERROR(EINVAL);
-> 
-> Am I missing something or was the above return statement deleted by
-> mistake?
-> 
-> Cheers,
+On 7 May 2014 12:06, Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> Some hosts manage several slots. In these case information such as the bus
+> width, chip detect and others are into the slot node. So we have to parse
+> child nodes. If not NULL, slot node will be used instead of the device
+> node.
+>
+> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> ---
+>
+> Hi,
+>
+> Since this patch is only a RFC, I have not yet updated drivers using this
+> function.
+>
+> I would like to use mmc_of_parse to reduce code duplication. My issue is that
+> atmel mci is a bit different from others mci host since it can provide
+> several slots, so it allocates several mmc hosts. By the way, it is not the
+> only one.
+>
+> When calling mmc_alloc_host, host->parent is set to &pdev->dev. mmc_of_parse
+> uses host->parent->of_node but in my case settings are in the slot nodes so in
+> the child nodes. That's why I would like to have a way to tell which node I
+> want to use.
+
+Seems reasonable, thanks for working on this!
+
+>
+>
+> Regards
+>
+> Ludovic
+>
+>
+>
+>  drivers/mmc/core/host.c |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index fdea825..ed6cea5 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -300,13 +300,15 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
+>  /**
+>   *     mmc_of_parse() - parse host's device-tree node
+>   *     @host: host whose node should be parsed.
+> + *     @slot: some devices provide several slots so the node to parse
+> + *     is not the host one.
+>   *
+>   * To keep the rest of the MMC subsystem unaware of whether DT has been
+>   * used to to instantiate and configure this host instance or not, we
+>   * parse the properties and set respective generic mmc-host flags and
+>   * parameters.
+>   */
+> -int mmc_of_parse(struct mmc_host *host)
+> +int mmc_of_parse(struct mmc_host *host, struct device_node *slot)
+>  {
+>         struct device_node *np;
+>         u32 bus_width;
+> @@ -317,7 +319,10 @@ int mmc_of_parse(struct mmc_host *host)
+>         if (!host->parent || !host->parent->of_node)
+>                 return 0;
+>
+> -       np = host->parent->of_node;
+> +       if (slot)
+> +               np = slot;
+> +       else
+> +               np = host->parent->of_node;
+>
+>         /* "bus-width" is translated to MMC_CAP_*_BIT_DATA flags */
+>         if (of_property_read_u32(np, "bus-width", &bus_width) < 0) {
 > --
-> Luís
+> 1.7.9.5
+>
 
-Good eye.  I have created a Smatch check to look for these bugs.
+How about adding a new API, __mmc_of_parse((struct mmc_host *host,
+struct device_node *slot)
+Then let the old API mmc_of_parse() remain as is, but let it call the
+new API with slot == NULL.
 
-regards,
-dan carpenter
+Atmel can then use the new API, but the other drivers can remain as is.
 
+Kind regards
+Ulf Hansson
