@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaENO4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:56:10 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:44584 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaENO4E (ORCPT
+	id S1755846AbaENO4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:56:08 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:54986 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaENO4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 May 2014 10:56:04 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
@@ -17,9 +17,9 @@ Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
         Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3/4] serial: kgdb_nmi: Switch from tasklets to real timers
-Date: Wed, 14 May 2014 15:55:34 +0100
-Message-Id: <1400079335-32125-4-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 4/4] serial: kgdb_nmi: Improve console integration with KDB I/O
+Date: Wed, 14 May 2014 15:55:35 +0100
+Message-Id: <1400079335-32125-5-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1400079335-32125-1-git-send-email-daniel.thompson@linaro.org>
 References: <1400079335-32125-1-git-send-email-daniel.thompson@linaro.org>
@@ -27,101 +27,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kgdb_nmi uses tasklets on the assumption they will not be scheduled
-until the next timer tick. This assumption is invalid and can lead to
-live lock, continually servicing the kgdb_nmi tasklet. This is fixed
-by using the timer API instead.
+kgdb_nmi_tty_enabled is used for two unrelated purposes, namely to
+suppress normal TTY input handling and to suppress console output
+(although it has no effect at all on TTY output). A much better way to
+handle muting the console is to not have to mute it in the first place!
+That's what this patch does.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- drivers/tty/serial/kgdb_nmi.c | 30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+ drivers/tty/serial/kgdb_nmi.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
-index d51b2a1..20d21d0 100644
+index 20d21d0..cfadf29 100644
 --- a/drivers/tty/serial/kgdb_nmi.c
 +++ b/drivers/tty/serial/kgdb_nmi.c
-@@ -80,24 +80,10 @@ static struct console kgdb_nmi_console = {
+@@ -44,13 +44,22 @@ MODULE_PARM_DESC(magic, "magic sequence to enter NMI debugger (default $3#33)");
  
- struct kgdb_nmi_tty_priv {
- 	struct tty_port port;
--	struct tasklet_struct tlet;
-+	struct timer_list timer;
- 	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
- };
+ static bool kgdb_nmi_tty_enabled;
  
--/*
-- * Our debugging console is polled in a tasklet, so we'll check for input
-- * every tick. In HZ-less mode, we should program the next tick.  We have
-- * to use the lowlevel stuff as no locks should be grabbed.
-- */
--#ifdef CONFIG_HIGH_RES_TIMERS
--static void kgdb_tty_poke(void)
--{
--	tick_program_event(ktime_get(), 0);
--}
--#else
--static inline void kgdb_tty_poke(void) {}
--#endif
--
- static struct tty_port *kgdb_nmi_port;
- 
- static void kgdb_tty_recv(int ch)
-@@ -108,14 +94,13 @@ static void kgdb_tty_recv(int ch)
- 	if (!kgdb_nmi_port || ch < 0)
- 		return;
- 	/*
--	 * Can't use port->tty->driver_data as tty might be not there. Tasklet
-+	 * Can't use port->tty->driver_data as tty might be not there. Timer
- 	 * will check for tty and will get the ref, but here we don't have to
- 	 * do that, and actually, we can't: we're in NMI context, no locks are
- 	 * possible.
- 	 */
- 	priv = container_of(kgdb_nmi_port, struct kgdb_nmi_tty_priv, port);
- 	kfifo_in(&priv->fifo, &c, 1);
--	kgdb_tty_poke();
- }
- 
- static int kgdb_nmi_poll_one_knock(void)
-@@ -199,7 +184,8 @@ static void kgdb_nmi_tty_receiver(unsigned long data)
- 	struct kgdb_nmi_tty_priv *priv = (void *)data;
- 	char ch;
- 
--	tasklet_schedule(&priv->tlet);
-+	priv->timer.expires = jiffies + (HZ/100);
-+	add_timer(&priv->timer);
- 
- 	if (likely(!kgdb_nmi_tty_enabled || !kfifo_len(&priv->fifo)))
- 		return;
-@@ -215,7 +201,9 @@ static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
- 	    container_of(port, struct kgdb_nmi_tty_priv, port);
- 
- 	kgdb_nmi_port = port;
--	tasklet_schedule(&priv->tlet);
-+	priv->timer.expires = jiffies + (HZ/100);
-+	add_timer(&priv->timer);
++static int kgdb_nmi_console_setup(struct console *co, char *options)
++{
++	/* The NMI console uses the dbg_io_ops to issue console messages. To
++	 * avoid duplicate messages during kdb sessions we must inform kdb's
++	 * I/O utilities that messages sent to the console will automatically
++	 * be displayed on the dbg_io.
++	 */
++	dbg_io_ops->is_console = true;
 +
- 	return 0;
++	return 0;
++}
++
+ static void kgdb_nmi_console_write(struct console *co, const char *s, uint c)
+ {
+ 	int i;
+ 
+-	if (!kgdb_nmi_tty_enabled || atomic_read(&kgdb_active) >= 0)
+-		return;
+-
+ 	for (i = 0; i < c; i++)
+ 		dbg_io_ops->write_char(s[i]);
  }
+@@ -65,6 +74,7 @@ static struct tty_driver *kgdb_nmi_console_device(struct console *co, int *idx)
  
-@@ -224,7 +212,7 @@ static void kgdb_nmi_tty_shutdown(struct tty_port *port)
- 	struct kgdb_nmi_tty_priv *priv =
- 	    container_of(port, struct kgdb_nmi_tty_priv, port);
- 
--	tasklet_kill(&priv->tlet);
-+	del_timer(&priv->timer);
- 	kgdb_nmi_port = NULL;
- }
- 
-@@ -243,7 +231,7 @@ static int kgdb_nmi_tty_install(struct tty_driver *drv, struct tty_struct *tty)
- 		return -ENOMEM;
- 
- 	INIT_KFIFO(priv->fifo);
--	tasklet_init(&priv->tlet, kgdb_nmi_tty_receiver, (unsigned long)priv);
-+	setup_timer(&priv->timer, kgdb_nmi_tty_receiver, (unsigned long)priv);
- 	tty_port_init(&priv->port);
- 	priv->port.ops = &kgdb_nmi_tty_port_ops;
- 	tty->driver_data = priv;
+ static struct console kgdb_nmi_console = {
+ 	.name	= "ttyNMI",
++	.setup  = kgdb_nmi_console_setup,
+ 	.write	= kgdb_nmi_console_write,
+ 	.device	= kgdb_nmi_console_device,
+ 	.flags	= CON_PRINTBUFFER | CON_ANYTIME | CON_ENABLED,
 -- 
 1.9.0
 
