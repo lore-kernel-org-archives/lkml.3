@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbaENVfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:35:14 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:56547 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaENVfL (ORCPT
+	id S1753183AbaENVf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:35:27 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42351 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522AbaENVfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:35:11 -0400
+	Wed, 14 May 2014 17:35:23 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Serge Hallyn <serge.hallyn@canonical.com>,
         lxc-devel@lists.linuxcontainers.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [RFC PATCH 01/11] driver core: Assign owning user namespace to devices
-Date: Wed, 14 May 2014 16:34:49 -0500
-Message-Id: <1400103299-144589-2-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 09/11] misc: Make loop-control available to all user namespaces
+Date: Wed, 14 May 2014 16:34:57 -0500
+Message-Id: <1400103299-144589-10-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
 References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
@@ -25,101 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a member to struct device named ns to indicate the user
-namespace which "owns" a device, which would generally indicate
-that root in that namespace is priveleged toward the device. It
-will also be used for future devtmpfs to determine which
-namespace's mount the device will appear in. This defaults to
-init_user_ns. An ns_global flag is also added to struct device,
-which indicates the device should appear in all devtmpfs mounts.
-
-Also adds a helper interface, dev_set_ns(), for changing the
-namespace which a device has been assigned to.
+Add a ns_global field to struct miscdevice to allow indicating
+that the created struct device should be global to all user
+namespaces, and set this flag for loop-control.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/base/core.c    |  3 +++
- include/linux/device.h | 13 +++++++++++++
- 2 files changed, 16 insertions(+)
+ drivers/block/loop.c       |  1 +
+ drivers/char/misc.c        | 11 +++++++++--
+ include/linux/miscdevice.h |  1 +
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad1696b..1da05f1319fa 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -26,6 +26,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/netdevice.h>
- #include <linux/sysfs.h>
-+#include <linux/user_namespace.h>
- 
- #include "base.h"
- #include "power/power.h"
-@@ -661,6 +662,7 @@ void device_initialize(struct device *dev)
- 	INIT_LIST_HEAD(&dev->devres_head);
- 	device_pm_init(dev);
- 	set_dev_node(dev, -1);
-+	dev->ns = get_user_ns(&init_user_ns);
- }
- EXPORT_SYMBOL_GPL(device_initialize);
- 
-@@ -1211,6 +1213,7 @@ void device_del(struct device *dev)
- 	 */
- 	if (platform_notify_remove)
- 		platform_notify_remove(dev);
-+	put_user_ns(dev->ns);
- 	kobject_uevent(&dev->kobj, KOBJ_REMOVE);
- 	cleanup_device_parent(dev);
- 	kobject_del(&dev->kobj);
-diff --git a/include/linux/device.h b/include/linux/device.h
-index d1d1c055b48e..41a4ba33b13b 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -27,6 +27,7 @@
- #include <linux/ratelimit.h>
- #include <linux/uidgid.h>
- #include <linux/gfp.h>
-+#include <linux/user_namespace.h>
- #include <asm/device.h>
- 
- struct device;
-@@ -704,9 +705,12 @@ struct acpi_dev_node {
-  * 		gone away. This should be set by the allocator of the
-  * 		device (i.e. the bus driver that discovered the device).
-  * @iommu_group: IOMMU group the device belongs to.
-+ * @ns:		User namespace which "owns" this device.
-  *
-  * @offline_disabled: If set, the device is permanently online.
-  * @offline:	Set after successful invocation of bus type's .offline().
-+ * @ns_global:	Set to make device appear in devtmpfs for all user
-+ *		namespaces.
-  *
-  * At the lowest level, every device in a Linux system is represented by an
-  * instance of struct device. The device structure contains the information
-@@ -780,8 +784,11 @@ struct device {
- 	void	(*release)(struct device *dev);
- 	struct iommu_group	*iommu_group;
- 
-+	struct user_namespace	*ns;
-+
- 	bool			offline_disabled:1;
- 	bool			offline:1;
-+	bool			ns_global:1;
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index f70a230a2945..f0e41a372c24 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1813,6 +1813,7 @@ static struct miscdevice loop_misc = {
+ 	.minor		= LOOP_CTRL_MINOR,
+ 	.name		= "loop-control",
+ 	.fops		= &loop_ctl_fops,
++	.ns_global	= true,
  };
  
- static inline struct device *kobj_to_dev(struct kobject *kobj)
-@@ -804,6 +811,12 @@ static inline const char *dev_name(const struct device *dev)
- extern __printf(2, 3)
- int dev_set_name(struct device *dev, const char *name, ...);
+ MODULE_ALIAS_MISCDEV(LOOP_CTRL_MINOR);
+diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+index ffa97d261cf3..5940ebd98023 100644
+--- a/drivers/char/misc.c
++++ b/drivers/char/misc.c
+@@ -205,8 +205,15 @@ int misc_register(struct miscdevice * misc)
  
-+static inline void dev_set_ns(struct device *dev, struct user_namespace *ns)
-+{
-+	put_user_ns(dev->ns);
-+	dev->ns = get_user_ns(ns);
-+}
+ 	dev = MKDEV(MISC_MAJOR, misc->minor);
+ 
+-	misc->this_device = device_create(misc_class, misc->parent, dev,
+-					  misc, "%s", misc->name);
++	if (misc->ns_global)
++		misc->this_device = device_create_global(misc_class,
++							 misc->parent, dev,
++							 misc, "%s",
++							 misc->name);
++	else
++		misc->this_device = device_create(misc_class, misc->parent, dev,
++						  misc, "%s", misc->name);
 +
- #ifdef CONFIG_NUMA
- static inline int dev_to_node(struct device *dev)
- {
+ 	if (IS_ERR(misc->this_device)) {
+ 		int i = DYNAMIC_MINORS - misc->minor - 1;
+ 		if (i < DYNAMIC_MINORS && i >= 0)
+diff --git a/include/linux/miscdevice.h b/include/linux/miscdevice.h
+index 51e26f3cd3b3..a85782339fe2 100644
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -62,6 +62,7 @@ struct miscdevice  {
+ 	struct device *this_device;
+ 	const char *nodename;
+ 	umode_t mode;
++	bool ns_global;
+ };
+ 
+ extern int misc_register(struct miscdevice * misc);
 -- 
 1.9.1
 
