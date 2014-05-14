@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaENUAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:00:19 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:36408 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750705AbaENUAR (ORCPT
+	id S1751776AbaENUCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:02:05 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:63898 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaENUCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:00:17 -0400
-Date: Wed, 14 May 2014 16:00:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH v3] tracing: Add __bitmask() macro to trace events
- to cpumasks and other bitmasks
-Message-ID: <20140514160015.74c84dc3@gandalf.local.home>
-In-Reply-To: <20140514194241.GA3883@e102654-lin.cambridge.arm.com>
-References: <1399377998-14870-1-git-send-email-javi.merino@arm.com>
-	<1399377998-14870-6-git-send-email-javi.merino@arm.com>
-	<20140506132238.22e136d1@gandalf.local.home>
-	<484888063.12149.1399403794855.JavaMail.zimbra@efficios.com>
-	<20140506231238.246c7d3e@gandalf.local.home>
-	<20140514142324.GA10024@e102654-lin.cambridge.arm.com>
-	<20140514113623.171f2a39@gandalf.local.home>
-	<20140514155053.GB3052@e102654-lin.cambridge.arm.com>
-	<20140514142500.020e9896@gandalf.local.home>
-	<20140514194241.GA3883@e102654-lin.cambridge.arm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 14 May 2014 16:02:03 -0400
+Message-ID: <5373CBAD.2010505@gmail.com>
+Date: Wed, 14 May 2014 22:01:49 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Rahul Sharma <rahul.sharma@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dri-devel@lists.freedesktop.org
+CC: a.hajda@samsung.com, t.stanislaws@samsung.com, devicetree@vger.kernel.org,
+        kgene.kim@samsung.com, kishon@ti.com, kyungmin.park@samsung.com,
+        robh+dt@kernel.org, grant.likely@linaro.org,
+        sylvester.nawrocki@gmail.com, joshi@samsung.com
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com> <1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+In-Reply-To: <1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014 20:42:41 +0100
-Javi Merino <javi.merino@arm.com> wrote:
+Hi Rahul, Tomasz,
 
-> On Wed, May 14, 2014 at 07:25:00PM +0100, Steven Rostedt wrote:
-> > Updated version.
-> > 
-> > You can test it with the attached trace-cmd patch. I tested it against
-> > big and little endian machines (each reading their own and the other
-> > machine's trace.dat file). I did not test against 32bit, but it should
-> > still work. I will test it before I commit it to traceevent library.
-> > 
-> > Can you review this and try it out?
+On 14.05.2014 21:17, Rahul Sharma wrote:
+> From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 > 
-> I've tested it in a 32-bit system.  It generates the data and it's
-> able to read its own trace.dat fine.  However, If I read the
-> trace.dat on a 64-bit machine I get a random character at the
-> end of the mask:
+> Add exynos-simple-phy driver to support a single register
+> PHY interfaces present on Exynos4 SoC.
 > 
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> Signed-off-by: Rahul Sharma <Rahul.Sharma@samsung.com>
+> 
+> ---
+>  .../devicetree/bindings/phy/samsung-phy.txt        |   56 ++++++
+>  drivers/phy/Kconfig                                |    5 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/exynos-simple-phy.c                    |  189 ++++++++++++++++++++
+>  include/dt-bindings/phy/exynos-simple-phy.h        |   27 +++
+>  5 files changed, 278 insertions(+)
+>  create mode 100644 drivers/phy/exynos-simple-phy.c
+>  create mode 100644 include/dt-bindings/phy/exynos-simple-phy.h
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> index 2049261..12ad9cf 100644
+> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> @@ -161,3 +161,59 @@ Example:
+>  		usbdrdphy0 = &usb3_phy0;
+>  		usbdrdphy1 = &usb3_phy1;
+>  	};
+> +
+> +Samsung S5P/EXYNOS SoC series SIMPLE PHY
+> +-------------------------------------------------
+> +
+> +Required properties:
+> +- compatible : should be one of the listed compatibles:
+> +	- "samsung,exynos4210-simple-phy"
+> +	- "samsung,exynos4412-simple-phy"
+> +	- "samsung,exynos5250-simple-phy"
+> +	- "samsung,exynos5420-simple-phy"
+> +- samsung,pmureg-phandle - handle to syscon to control PMU registers
+> +- #phy-cells : from the generic phy bindings, must be 1;
+> +
+> +For "samsung,exynos4210-simple-phy" compatible PHYs the second cell in
+> +the PHY specifier identifies the PHY and the supported phys for exynos4210
+> +are:
+> +  HDMI_PHY,
+> +  DAC_PHY,
+> +  ADC_PHY,
+> +  PCIE_PHY,
+> +  SATA_PHY.
+> +
+> +For "samsung,exynos4412-simple-phy" compatible PHYs the second cell in
+> +the PHY specifier identifies the PHY and the supported phys for exynos4412
+> +are:
+> +  HDMI_PHY,
+> +  ADC_PHY.
+> +
+> +For "samsung,exynos5250-simple-phy" compatible PHYs the second cell in
+> +the PHY specifier identifies the PHY and the supported phys for exynos5250
+> +are:
+> +  HDMI_PHY,
+> +  ADC_PHY,
+> +  SATA_PHY.
+> +
+> +For "samsung,exynos5420-simple-phy" compatible PHYs the second cell in
+> +the PHY specifier identifies the PHY and the supported phys for exynos5420
+> +are:
+> +  HDMI_PHY,
+> +  ADC_PHY.
+> +
+> +Example:
+> +Simple PHY provider node:
+> +
+> +	simplephys: simple-phys@10040000 {
+> +		compatible = "samsung,exynos5250-simple-phy";
 
-Can you send me your trace.dat file privately. Also, please compress it
-with either gzip, bzip or xz.
+Missing reg property or unnecessary @unit-address suffix in node name.
 
-Thanks!
+> +		samsung,pmu-syscon = <&pmu_system_controller>;
+> +		#phy-cells = <1>;
+> +	};
 
--- Steve
+In general, the idea is quite good, but I think this should rather bind
+to the main PMU node, since this is just a part of the PMU, not another
+device in the system. This also means that the PMU node itself should be
+the PHY provider.
 
+Otherwise looks good.
+
+Best regards,
+Tomasz
