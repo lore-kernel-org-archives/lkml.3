@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaENTNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:13:01 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:56207 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaENTLS (ORCPT
+	id S1751638AbaENTAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:00:47 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaENTAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:11:18 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: marc.ceeeee@gmail.com, computersforpeace@gmail.com, gregory.0xf0@gmail.com,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Huang Shijie <b32955@freescale.com>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-Subject: [PATCH 0/3] bus: add Broadcom GISB bus arbiter timeout/error handler
-Date: Wed, 14 May 2014 12:10:45 -0700
-Message-Id: <1400094649-11193-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 14 May 2014 15:00:46 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Consolidate tlb.h
+Date: Wed, 14 May 2014 20:59:32 +0200
+Message-Id: <1400093999-18703-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+While staring at an UML TLB bug I've noticed that most archs
+copy and pasted stuff from each others tlb.h.
+This patch series combines common stuff into the generic tlb.h.
 
-This patch adds support for the Broadcom GISB bus arbiter timeout/error handler.
-GISB is a custom and proprietary bus used in the Broadcom Set Top Box devices
-exclusively. The bus arbiter offers the possibly to decode faulting masters as
-well as masters that are timing out on the bus.
+[PATCH 01/27] arm64: Override defaults from generic/tlb.h
+[PATCH 02/27] powerpc: Override defaults from generic/tlb.h
+[PATCH 03/27] generic/tlb.h: Move common defines into generic tlb.h
+[PATCH 04/27] alpha: Use generic tlb.h
+[PATCH 05/27] arc: Use common bits from generic tlb.h
+[PATCH 06/27] avr32: Use common bits from generic tlb.h
+[PATCH 07/27] blackfin: Use generic tlb.h
+[PATCH 08/27] c6x: Use generic tlb.h
+[PATCH 09/27] cris: Use common bits from generic tlb.h
+[PATCH 10/27] frv: Use common bits from generic tlb.h
+[PATCH 11/27] hexagon: Use common bits from generic tlb.h
+[PATCH 12/27] m32r: Use generic tlb.h
+[PATCH 13/27] m68k: Use common bits from generic tlb.h
+[PATCH 14/27] metag: Use common bits from generic tlb.h
+[PATCH 15/27] microblaze: Use generic tlb.h
+[PATCH 16/27] mips: Use common bits from generic tlb.h
+[PATCH 17/27] mn10300: Use generic tlb.h
+[PATCH 18/27] openrisc: Use generic tlb.h
+[PATCH 19/27] parisc: Use common bits from generic tlb.h
+[PATCH 20/27] powerpc: Use common bits from generic tlb.h
+[PATCH 21/27] score: Use generic tlb.h
+[PATCH 22/27] sh: Use common bits from generic tlb.h
+[PATCH 23/27] sparc: Use common bits from generic tlb.h
+[PATCH 24/27] tile: Use generic tlb.h
+[PATCH 25/27] unicore32: Use common bits from generic tlb.h
+[PATCH 26/27] x86: Use common bits from generic tlb.h
+[PATCH 27/27] xtensa: Use common bits from generic tlb.h
 
-Florian Fainelli (3):
-  bus: add Broadcom GISB arbiter bus timeout/error handler
-  Documentation: devicetree: add Broadcom GISB arbiter bindings
-  Documentation: sysfs: add Broadcom GISB arbiter sysfs properties
+ arch/alpha/include/asm/Kbuild      |  1 +
+ arch/alpha/include/asm/tlb.h       | 15 ---------------
+ arch/arc/include/asm/tlb.h         |  6 +-----
+ arch/arm64/include/asm/tlb.h       |  7 +++++++
+ arch/avr32/include/asm/tlb.h       |  7 -------
+ arch/blackfin/include/asm/Kbuild   |  1 +
+ arch/blackfin/include/asm/tlb.h    | 22 ---------------------
+ arch/c6x/include/asm/Kbuild        |  1 +
+ arch/c6x/include/asm/tlb.h         |  8 --------
+ arch/cris/include/asm/tlb.h        | 11 -----------
+ arch/frv/include/asm/tlb.h         | 12 ------------
+ arch/hexagon/include/asm/Kbuild    |  1 +
+ arch/hexagon/include/asm/tlb.h     | 39 --------------------------------------
+ arch/m32r/include/asm/Kbuild       |  1 +
+ arch/m32r/include/asm/tlb.h        | 20 -------------------
+ arch/m68k/include/asm/tlb.h        | 18 +++++-------------
+ arch/metag/include/asm/tlb.h       | 10 ----------
+ arch/microblaze/include/asm/Kbuild |  1 +
+ arch/microblaze/include/asm/tlb.h  | 25 ------------------------
+ arch/mips/include/asm/tlb.h        |  7 -------
+ arch/mn10300/include/asm/Kbuild    |  1 +
+ arch/mn10300/include/asm/pgalloc.h |  2 ++
+ arch/mn10300/include/asm/tlb.h     | 34 ---------------------------------
+ arch/openrisc/include/asm/Kbuild   |  1 +
+ arch/openrisc/include/asm/tlb.h    | 34 ---------------------------------
+ arch/parisc/include/asm/tlb.h      |  6 ------
+ arch/powerpc/include/asm/pgalloc.h |  1 -
+ arch/powerpc/include/asm/tlb.h     |  7 ++++---
+ arch/score/include/asm/Kbuild      |  1 +
+ arch/score/include/asm/irq.h       |  1 +
+ arch/score/include/asm/tlb.h       | 17 -----------------
+ arch/sh/include/asm/tlb.h          |  5 -----
+ arch/sparc/include/asm/tlb_32.h    |  8 --------
+ arch/sparc/include/asm/tlb_64.h    |  3 ---
+ arch/tile/include/asm/Kbuild       |  1 +
+ arch/tile/include/asm/tlb.h        | 25 ------------------------
+ arch/unicore32/include/asm/tlb.h   |  5 -----
+ arch/x86/include/asm/tlb.h         |  4 ----
+ arch/xtensa/include/asm/tlb.h      | 16 +---------------
+ include/asm-generic/tlb.h          | 24 +++++++++++++++++++++++
+ 40 files changed, 55 insertions(+), 354 deletions(-)
 
- .../ABI/testing/sysfs-platform-brcmstb-gisb-arb    |   8 +
- .../devicetree/bindings/bus/brcm,gisb-arb.txt      |  30 +++
- drivers/bus/Kconfig                                |  11 +-
- drivers/bus/Makefile                               |   1 +
- drivers/bus/brcmstb_gisb.c                         | 289 +++++++++++++++++++++
- 5 files changed, 338 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb
- create mode 100644 Documentation/devicetree/bindings/bus/brcm,gisb-arb.txt
- create mode 100644 drivers/bus/brcmstb_gisb.c
+All patches are also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git tlb-generic-cleanup
 
--- 
-1.9.1
-
+Thanks,
+//richard
