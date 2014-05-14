@@ -1,170 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaENVKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:10:23 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:63967 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751173AbaENVKW (ORCPT
+	id S1753089AbaENVLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:11:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19971 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaENVLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:10:22 -0400
-Message-ID: <1400101765.9826.6.camel@x220>
-Subject: [PATCH] arm: msm: remove board file for the HTC Sapphire device
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 23:09:25 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Wed, 14 May 2014 17:11:10 -0400
+Message-ID: <5373DBE4.6030907@oracle.com>
+Date: Wed, 14 May 2014 17:11:00 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+References: <53739201.6080604@oracle.com>	<20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>	<5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+In-Reply-To: <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 May 2014 21:09:26.0150 (UTC) FILETIME=[C973AA60:01CF6FB8]
-X-RcptDomain: vger.kernel.org
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 614ad9814850 ("arm: msm: add board file for the HTC Sapphire
-device") added just board-sapphire.c. It did not add board-sapphire.h,
-Makefile changes or Kconfig changes.
+On 05/14/2014 05:03 PM, Andrew Morton wrote:
+> On Wed, 14 May 2014 16:41:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+> 
+>> On 05/14/2014 04:23 PM, Andrew Morton wrote:
+>>> On Wed, 14 May 2014 11:55:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>
+>>>> Hi all,
+>>>>
+>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>>> kernel I've stumbled on the following spew:
+>>>>
+>>>> [ 1634.969408] BUG: unable to handle kernel NULL pointer dereference at           (null)
+>>>> [ 1634.970538] IP: special_mapping_fault (mm/mmap.c:2961)
+>>>> [ 1634.971420] PGD 3334fc067 PUD 3334cf067 PMD 0
+>>>> [ 1634.972081] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>>> [ 1634.972913] Dumping ftrace buffer:
+>>>> [ 1634.975493]    (ftrace buffer empty)
+>>>> [ 1634.977470] Modules linked in:
+>>>> [ 1634.977513] CPU: 6 PID: 29578 Comm: trinity-c269 Not tainted 3.15.0-rc5-next-20140513-sasha-00020-gebce144-dirty #461
+>>>> [ 1634.977513] task: ffff880333158000 ti: ffff88033351e000 task.ti: ffff88033351e000
+>>>> [ 1634.977513] RIP: special_mapping_fault (mm/mmap.c:2961)
+>>>
+>>> Somebody's gone and broken the x86 oops output.  It used to say
+>>> "special_mapping_fault+0x30/0x120" but the offset info has now
+>>> disappeared.  That was useful for guesstimating whereabouts in the
+>>> function it died.
+>>
+>> I'm the one who "broke" the oops output, but I thought I'm helping people
+>> read that output instead of making it harder...
+>>
+>> What happened before is that due to my rather complex .config, the offsets
+>> didn't make sense to anyone who didn't build the kernel with my .config,
+>> so I had to repeatedly send it out to folks who attempted to get basic
+>> things like line numbers.
+>>
+>>> The line number isn't very useful as it's not possible (or at least,
+>>> not convenient) for others to reliably reproduce your kernel.
+>>
+>> I don't understand that part. I'm usually stating in the beginning of my
+>> mails that I run my testing on the latest -next kernel.
+> 
+> Your "latest next kernel" apparently differes from mine ;( It would be
+> useful if you could just quote the +/-5 lines, perhaps?
 
-Four years have passed and this file is still dangling. Remove it.
+Oh, I see what happened. I have the remap_file_pages() get_file/fput fix
+merged in which modified line count.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Also untested.
+Yup, I'll start quoting the line themselves as well.
 
- arch/arm/mach-msm/board-sapphire.c | 117 -------------------------------------
- 1 file changed, 117 deletions(-)
- delete mode 100644 arch/arm/mach-msm/board-sapphire.c
+>> And indeed if
+>> you look at today's -next, that line number would point to:
+>>
+>>         for (pages = vma->vm_private_data; pgoff && *pages; ++pages) <=== HERE
+>>                 pgoff--;
+>>
+>> So I'm not sure how replacing the offset with line numbers is making things
+>> worse? previously offsets were useless for people who tried to debug these
+>> spews so that's why I switched it to line numbers in the first place.
+>>
+>>> <scrabbles with git for a while>
+>>>
+>>> : static int special_mapping_fault(struct vm_area_struct *vma,
+>>> : 				struct vm_fault *vmf)
+>>> : {
+>>> : 	pgoff_t pgoff;
+>>> : 	struct page **pages;
+>>> : 
+>>> : 	/*
+>>> : 	 * special mappings have no vm_file, and in that case, the mm
+>>> : 	 * uses vm_pgoff internally. So we have to subtract it from here.
+>>> : 	 * We are allowed to do this because we are the mm; do not copy
+>>> : 	 * this code into drivers!
+>>> : 	 */
+>>> : 	pgoff = vmf->pgoff - vma->vm_pgoff;
+>>> : 
+>>> : 	for (pages = vma->vm_private_data; pgoff && *pages; ++pages)
+>>> : 		pgoff--;
+>>> : 
+>>> : 	if (*pages) {
+>>> : 		struct page *page = *pages;
+>>> : 		get_page(page);
+>>> : 		vmf->page = page;
+>>> : 		return 0;
+>>> : 	}
+>>> : 
+>>> : 	return VM_FAULT_SIGBUS;
+>>> : }
+>>>
+>>> OK so it might be the "if (*pages)".  So vma->vm_private_data was NULL
+>>> and pgoff was zero.  As usual, I can't imagine what race would cause
+>>> that :(
+>>
+>> Yup, it's the *pages part in the 'for' loop above that. I did find the
+>> following in the vdso code:
+>>
+>>         vma = _install_special_mapping(mm,
+>>                                        addr + image->size,
+>>                                        image->sym_end_mapping - image->size,
+>>                                        VM_READ,
+>>                                        NULL);
+>>
+>> Which installs a mapping with a NULL ptr for pages (if I understand that
+>> correctly), but that code has been there for a while now.
+> 
+> Well that's weird.  I don't see anything which permits that.  Maybe
+> nobody faulted against that address before?
+> 
+> It's unclear what that code's actually doing and nobody bothered
+> commenting it of course.  Maybe it's installing a guard page?
+> 
+> In my linux-next all that code got deleted by Andy's "x86, vdso:
+> Reimplement vdso.so preparation in build-time C" anyway.  What kernel
+> were you looking at?
 
-diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
-deleted file mode 100644
-index 327605174d63..000000000000
---- a/arch/arm/mach-msm/board-sapphire.c
-+++ /dev/null
-@@ -1,117 +0,0 @@
--/* linux/arch/arm/mach-msm/board-sapphire.c
-- * Copyright (C) 2007-2009 HTC Corporation.
-- * Author: Thomas Tsai <thomas_tsai@htc.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
--*/
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/input.h>
--#include <linux/interrupt.h>
--#include <linux/irq.h>
--#include <linux/device.h>
--
--#include <linux/delay.h>
--
--#include <mach/hardware.h>
--#include <asm/mach-types.h>
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--#include <asm/mach/flash.h>
--#include <mach/vreg.h>
--
--#include <asm/io.h>
--#include <asm/delay.h>
--#include <asm/setup.h>
--
--#include <linux/mtd/nand.h>
--#include <linux/mtd/partitions.h>
--
--#include "gpio_chip.h"
--#include "board-sapphire.h"
--#include "proc_comm.h"
--#include "devices.h"
--#include "common.h"
--
--void msm_init_irq(void);
--void msm_init_gpio(void);
--
--static struct platform_device *devices[] __initdata = {
--	&msm_device_smd,
--	&msm_device_dmov,
--	&msm_device_nand,
--	&msm_device_uart1,
--	&msm_device_uart3,
--};
--
--void msm_timer_init(void);
--
--static void __init sapphire_init_irq(void)
--{
--	msm_init_irq();
--}
--
--static void __init sapphire_init(void)
--{
--	platform_add_devices(devices, ARRAY_SIZE(devices));
--}
--
--static struct map_desc sapphire_io_desc[] __initdata = {
--	{
--		.virtual = SAPPHIRE_CPLD_BASE,
--		.pfn     = __phys_to_pfn(SAPPHIRE_CPLD_START),
--		.length  = SAPPHIRE_CPLD_SIZE,
--		.type    = MT_DEVICE_NONSHARED
--	}
--};
--
--static void __init sapphire_fixup(struct tag *tags, char **cmdline,
--				  struct meminfo *mi)
--{
--	int smi_sz = parse_tag_smi((const struct tag *)tags);
--
--	mi->nr_banks = 1;
--	mi->bank[0].start = PHYS_OFFSET;
--	mi->bank[0].node = PHYS_TO_NID(PHYS_OFFSET);
--	if (smi_sz == 32) {
--		mi->bank[0].size = (84*1024*1024);
--	} else if (smi_sz == 64) {
--		mi->bank[0].size = (101*1024*1024);
--	} else {
--		/* Give a default value when not get smi size */
--		smi_sz = 64;
--		mi->bank[0].size = (101*1024*1024);
--	}
--}
--
--static void __init sapphire_map_io(void)
--{
--	msm_map_common_io();
--	iotable_init(sapphire_io_desc, ARRAY_SIZE(sapphire_io_desc));
--	msm_clock_init();
--}
--
--static void __init sapphire_init_late(void)
--{
--	smd_debugfs_init();
--}
--
--MACHINE_START(SAPPHIRE, "sapphire")
--/* Maintainer: Brian Swetland <swetland@google.com> */
--	.atag_offset    = 0x100,
--	.fixup          = sapphire_fixup,
--	.map_io         = sapphire_map_io,
--	.init_irq       = sapphire_init_irq,
--	.init_machine   = sapphire_init,
--	.init_late      = sapphire_init_late,
--	.init_time	= msm_timer_init,
--MACHINE_END
--- 
-1.9.0
+Deleted? It appears in today's -next. arch/x86/vdso/vma.c:124 .
+
+I don't see Andy's patch removing that code either.
+
+I'm running next-20140514...
 
 
-
+Thanks,
+Sasha
