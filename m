@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751090AbaENFpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:45:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54271 "EHLO comal.ext.ti.com"
+	id S1753533AbaENFpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:45:47 -0400
+Received: from 1wt.eu ([62.212.114.60]:35116 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189AbaENFp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:45:29 -0400
-Message-ID: <537302CD.7000701@ti.com>
-Date: Wed, 14 May 2014 11:14:45 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jingoo Han <jg1.han@samsung.com>,
-        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <rogerq@ti.com>, <balajitk@ti.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Marek Vasut'" <marex@denx.de>
-Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for
- configuring the iATU
-References: <1399383244-14556-1-git-send-email-kishon@ti.com> <53721D7F.9070200@ti.com> <202752041.rgamje4etj@wuerfel> <4528185.oZbgyuuFKX@wuerfel>
-In-Reply-To: <4528185.oZbgyuuFKX@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751835AbaENFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 01:45:43 -0400
+Date: Wed, 14 May 2014 07:45:35 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: Re: [ 080/143] net: rework recvmsg handler msg_name and msg_namelen logic
+Message-ID: <20140514054535.GA1562@1wt.eu>
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.962853843@1wt.eu> <20140513124425.GB4006@hercules>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513124425.GB4006@hercules>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Arnd,
+Hi Luis,
 
-On Tuesday 13 May 2014 07:04 PM, Arnd Bergmann wrote:
-> On Tuesday 13 May 2014 15:27:46 Arnd Bergmann wrote:
->> On Tuesday 13 May 2014 18:56:23 Kishon Vijay Abraham I wrote:
->>>> If you have a case where the outbound translation is a 256MB (i.e. 28bit)
->>>> section of the CPU address space, that could be represented as
->>>>
->>>>       ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
->>>>
->>>> or 
->>>>
->>>>       ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
->>>>
->>>> depending on whether you want the BARs to be programmed using a low
->>>> address 0x0-0x0fffffff or an address matching the window
->>>> 0xb0000000-0xbfffffff.
->>>
->>> The problem is, for configuring the window starting at 0xb0000000, the ATU
->>> should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
->>>
->>
->> Then use the first of the two?
->>
+On Tue, May 13, 2014 at 01:44:25PM +0100, Luis Henriques wrote:
+> On Mon, May 12, 2014 at 02:33:20AM +0200, Willy Tarreau wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> > 
+> > [ Upstream commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c ]
+> > 
 > 
-> To clarify: using <0x82000000 0 0  0xb0000000  0 0x10000000> will give you 
-> a mem_offset of 0xb0000000, which should work just fine for this case.
+> <snip>
 > 
-> What I don't understand is why the ATU cares about whether the outbound
-> address is 0x0000000 or 0xb0000000 if it just decodes the lower 28 bit
-> anyway. Did you mean that we have to program the BARs using low addresses
-> regardless of what is programmed in the ATU? That would make more sense,
-> and it also matches what I suggested.
+> > diff --git a/net/rxrpc/ar-recvmsg.c b/net/rxrpc/ar-recvmsg.c
+> > index a39bf97..f779fc3 100644
+> > --- a/net/rxrpc/ar-recvmsg.c
+> > +++ b/net/rxrpc/ar-recvmsg.c
+> > @@ -142,10 +142,12 @@ int rxrpc_recvmsg(struct kiocb *iocb, struct socket *sock,
+> >  
+> >  		/* copy the peer address and timestamp */
+> >  		if (!continue_call) {
+> > -			if (msg->msg_name && msg->msg_namelen > 0)
+> > +			if (msg->msg_name) {
+> > +				size_t len =
+> > +					sizeof(call->conn->trans->peer->srx);
+> >  				memcpy(msg->msg_name,
+> > -				       &call->conn->trans->peer->srx,
+> > -				       sizeof(call->conn->trans->peer->srx));
+> > +				       &call->conn->trans->peer->srx, len);
+>   +                                    msg->msg_namelen = len;
+> 
+> This statement^^^ is missing in this backport.
+> 
+> Also missing in this patch are the changes to the following functions:
+> 
+> - pppoe_recvmsg()
+>   In file drivers/net/pppoe.c instead of drivers/net/ppp/pppoe.c
+> 
+> - pppol2tp_recvmsg()
+>   In file drivers/net/pppol2tp.c instead of net/l2tp/l2tp_ppp.c
+> 
+> For reference, I'm attaching the backport we have used in our Ubuntu
+> kernel.  (Note that we added some extra information to the commit
+> message to include the CVE number and a link to the CVE bug.)
 
-No, It's not like it decodes only the lower 28bits. The BARs is programmed with
-32 bit value.
+Just a quick note to let you know that your patch applied well, and
+that the diff between the two correctly reports the parts you pointed
+above. So I'm taking it instead.
 
-My pcie dt node has
- ranges = <0x00000800 0 0x20001000 0x20001000 0 0x00002000  /* CONFIG */
-           0x81000000 0 0          0x20003000 0 0x00010000  /* IO */
-           0x82000000 0 0x20013000 0x20013000 0 0xffed000>; /* MEM */
+Thanks!
+Willy
 
-Consider MEM address space..
-
-Here both PCI address and CPU address is 0x20013000. So when there is a write
-to cpu addr 0x20013000 [writel(virt_addr(0x20013000)], we want it to be
-translated to PCI addr 0x20013000. So in 'ATU', we would expect *base* to be
-programmed to *0x20013000* and target to be programmed to *0x20013000*. But
-that's not the case for DRA7xx. For DRA7xx *base* should be programmed to
-*0x0013000* and target should be programmed to *0x20013000*.
-
-Thanks
-Kishon
