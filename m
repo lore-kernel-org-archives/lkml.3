@@ -1,180 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620AbaENPtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:49:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48085 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755426AbaENPte (ORCPT
+	id S1755899AbaENPub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:50:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:32886 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755772AbaENPu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:49:34 -0400
-Date: Wed, 14 May 2014 17:49:29 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
-        tj@kernel.org, sebastian.hesselbarth@gmail.com
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-Message-ID: <20140514154929.GA8016@kwain>
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com>
- <16480004.aaDhzlOZgi@wuerfel>
- <20140514145002.GA18392@kwain>
- <31922167.uMVzxsQNIT@wuerfel>
+	Wed, 14 May 2014 11:50:29 -0400
+Message-ID: <537390BE.3010307@infradead.org>
+Date: Wed, 14 May 2014 08:50:22 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <31922167.uMVzxsQNIT@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 0/4] Clean up DMA API docs and dma_addr_t usage
+References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140514102307.GD6026@8bytes.org>
+In-Reply-To: <20140514102307.GD6026@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 05:31:24PM +0200, Arnd Bergmann wrote:
-> On Wednesday 14 May 2014 16:50:02 Antoine Ténart wrote:
-> > On Wed, May 14, 2014 at 03:02:34PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 14 May 2014 11:48:57 Antoine Ténart wrote:
-> > > > +static int phy_berlin_sata_power_on(struct phy *phy)
-> > > > +{
-> > > > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
-> > > > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
-> > > > +       u32 regval;
-> > > > +
-> > > > +       spin_lock(&priv->lock);
-> > > > +
-> > > > +       /* Power up PHY */
-> > > > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
-> > > > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > > > +       regval &= ~(desc->val);
-> > > > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > > > +
-> > > > +       /* Configure MBus */
-> > > > +       writel(MBUS_SIZE_CONTROL, priv->base + HOST_VSA_ADDR);
-> > > > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > > > +       regval |= MBUS_WRITE_REQUEST_SIZE_128 | MBUS_READ_REQUEST_SIZE_128;
-> > > > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > > > +
-> > > > +       spin_unlock(&priv->lock);
-> > > > +
-> > > > +       return 0;
-> > > > +}
-> > > > +
-> > > > +static int phy_berlin_sata_power_off(struct phy *phy)
-> > > > +{
-> > > > +       struct phy_berlin_desc *desc = phy_get_drvdata(phy);
-> > > > +       struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
-> > > > +       u32 regval;
-> > > > +
-> > > > +       spin_lock(&priv->lock);
-> > > > +
-> > > > +       /* Power down PHY */
-> > > > +       writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
-> > > > +       regval = readl(priv->base + HOST_VSA_DATA);
-> > > > +       regval |= desc->val;
-> > > > +       writel(regval, priv->base + HOST_VSA_DATA);
-> > > > +
-> > > > +       spin_unlock(&priv->lock);
-> > > > +
-> > > > +       return 0;
-> > > 
-> > > I don't get this part: you have a reference to the phy here,
-> > > but then you go poking the phy registers from the SATA driver
-> > > rather than calling a PHY API function.
-> > 
-> > The v1 only introduced an AHCI driver. I somewhat agree the PHY
-> > operations done in the AHCI driver could be in there.
-> > 
-> > I can move the initialization done in the AHCI driver here, but I'll
-> > still need the driver: the Berlin AHCI needs to call the framework
-> > generic functions with a custom mask and has custom pm_ops. So I'll
-> > end up with a nearly empty AHCI driver, not able to control the port
-> > parameters.
-> > 
-> > Or I can put all this in the AHCI driver, but then we'll need to
-> > describe the PHYs there (to be able to enable each PHY independently)
-> > and add bindings to the SATA ones.
-> > 
-> > What do you think? I prefer the first solution, but we'll have SATA
-> > port related configuration in the PHY and a very tiny AHCI driver
-> > because I can't really use the default behaviour of the ahci_platform.
+On 05/14/2014 03:23 AM, Joerg Roedel wrote:
+> On Thu, May 08, 2014 at 02:48:47PM -0600, Bjorn Helgaas wrote:
+>> Maybe the third time's a charm :)
+>>
+>> This cleans up some DMA-API documentation and makes a minor no-op change to
+>> the dma_declare_coherent_memory() prototype.
+>>
+>> Changes from v2:
+>>   - Added description of CPU virtual/physical and bus addresses in
+>>     DMA-API-HOWTO
+>>   - Added comments to sh/PCI (Dreamcast) update
+>>   - Dropped IOMMU interface dma_addr_t changes
+>>
+>> I didn't add Arnd's and Greg's acks to patch 1 because of all the new
+>> address description text I added.
+>>
+>> ---
+>>
+>> Bjorn Helgaas (4):
+>>       DMA-API: Clarify physical/bus address distinction
+>>       DMA-API: Change dma_declare_coherent_memory() CPU address to phys_addr_t
+>>       sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+>>       iommu/exynos: Remove unnecessary "&" from function pointers
 > 
-> I just noticed I quoted the wrong driver with my comment, but I think
-> you got what I meant.
-> 
-> Why do you need a custom mask? Is that something you could pass
-> as the argument in the phy descriptor using #phy-cells=<1>?
+> Applied patches 1-3 to my core branch and patch 4 to the arm/exynos
+> branch. Patch 3 doesn't really belong into my tree, please let me know
+> if there are any objections against it being there and I'll drop it.
 
-I meant a custom mask in the AHCI driver, when calling the
-ahci_platform_init_host() function. Otherwise we'll have problems on the
-BG2Q DMP (it only has one PHY available, and not initializing it is not
-enough).
-
-> 
-> > > > +                * By default the PHY node is used to request and match a PHY.
-> > > > +                * We describe one PHY per sub-node here. Use the right node.
-> > > > +                */
-> > > > +               phy->dev.of_node = child;
-> > > > +
-> > > > +               priv->phys[phy_id].phy = phy;
-> > > > +               priv->phys[phy_id].val = desc[phy_id].val;
-> > > > +               priv->phys[phy_id].index = phy_id;
-> > > > +               phy_set_drvdata(phy, &priv->phys[phy_id]);
-> > > 
-> > > And here, you set a driver specific value into a structure used by the
-> > > PHY.
-> > 
-> > Values in priv->phys[] are related to the PHYs. phy_set_drvdata() allows
-> > to store PHY related data, which is what I'm doing there. Nearly all PHY
-> > drivers are doing this.
-> > 
-> > Or am I missing something?
-> 
-> This part is really ok, I got confused when I replied to the wrong email.
-> Sorry about this.
-> 
-> > > Both of these are layering violations. You should either use the PHY
-> > > interfaces correctly so the SATA driver doesn't have to know about the
-> > > specific, or not use a PHY device node at all and do everything in
-> > > the SATA front-end.
-> > 
-> > To be sure: you mean using the PHY init() interface in the AHCI driver?
-> 
-> If this PHY is specific to the ahci-berlin hardware and not shared with
-> anything else, you don't really need to split out a phy driver. That
-> would somewhat simplify what you ahve here.
-
-I don't have lots of info about that, but we set the PHY to
-PHY_MODE_SATA in the AHCI driver. So I guess there are other modes.
-
-Maybe Jisheng can help us with this?
-
-> 
-> The alternative is to make it as generic as you can. If you can manage
-> to move all the phy code into phy-berlin-sata driver, it should be
-> possible to just extend the ahci-platform driver resume function to
-> reinitialize the phy if there is one.
-
-It is possible to move all the PHY code the phy-berlin-sata. Then I'll
-need to hack a bit the AHCI framework so it can handle more than one
-PHY. But as I said, I'll still need to set a custom mask, and adding a
-quirk to the AHCI platform or framework does not seem to be a very good
-idea, imho.
-
-Or I can add a computed mask to the ahci-platform driver, like I did in
-the Berlin one, but I don't know what would be the consequences. For
-each PHY I have:
-
-+	mask |= 1 << i;
-
-
-Antoine
+I was thinking that either Bjorn or I should merge patches 1 and 2.
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+~Randy
