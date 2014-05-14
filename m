@@ -1,72 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbaENVke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:40:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48383 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaENVkd (ORCPT
+	id S1752399AbaENVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:42:58 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:38903 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaENVm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:40:33 -0400
-Date: Wed, 14 May 2014 14:40:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, peterz@infradead.org,
-        mingo@kernel.org
-Subject: Re: [PATCH 2/2] mm: replace remap_file_pages() syscall with
- emulation
-Message-Id: <20140514144031.3086562833b35c1842a74b9d@linux-foundation.org>
-In-Reply-To: <20140514211748.GA15970@node.dhcp.inet.fi>
-References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1399552888-11024-3-git-send-email-kirill.shutemov@linux.intel.com>
-	<20140508145729.3d82d2c989cfc483c94eb324@linux-foundation.org>
-	<5370E4B4.1060802@oracle.com>
-	<20140512170514.GA28227@node.dhcp.inet.fi>
-	<5373D781.7020109@oracle.com>
-	<20140514211748.GA15970@node.dhcp.inet.fi>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 17:42:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.11.1405131922580.980@knanqh.ubzr>
+References: <CAD=FV=UEGJGHrdcXgs3EZ_wFXT8GnNeCOMt7CgdiiUzBzZ5Y0A@mail.gmail.com>
+	<alpine.LFD.2.11.1405081149190.980@knanqh.ubzr>
+	<CAD=FV=VtcLOh51LCmafzRMdqtDrwKXCqK6gE6V7OOOUe4gjwbA@mail.gmail.com>
+	<alpine.LFD.2.11.1405081329010.980@knanqh.ubzr>
+	<20140508192209.GH3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405081600260.980@knanqh.ubzr>
+	<20140508205223.GI3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405082058130.980@knanqh.ubzr>
+	<20140509091824.GL3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405091245070.980@knanqh.ubzr>
+	<20140509182245.GM3693@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1405091640090.980@knanqh.ubzr>
+	<CAD=FV=UJK1nSPjH-au-KtbnOZk2nC7usLD8L9neMedj6WHUp8g@mail.gmail.com>
+	<CAD=FV=XM2URyJjV9gaE=mrp7LAEGtvi9wQGhGJi3_HYp_XzYWg@mail.gmail.com>
+	<5372998F.6020502@wwwdotorg.org>
+	<alpine.LFD.2.11.1405131908260.980@knanqh.ubzr>
+	<alpine.LFD.2.11.1405131922580.980@knanqh.ubzr>
+Date: Wed, 14 May 2014 14:42:55 -0700
+X-Google-Sender-Auth: oIEsm9IyIdXVFVZvGjMhS9px3XA
+Message-ID: <CAD=FV=U+Uxd9d726-1mBY=MmL1bKfGQosvLmvttJavf3y4VftQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Don't ever downscale loops_per_jiffy in SMP systems#
+From: Doug Anderson <dianders@chromium.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Riley <davidriley@chromium.org>,
+        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014 00:17:48 +0300 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+Hi,
 
-> On Wed, May 14, 2014 at 04:52:17PM -0400, Sasha Levin wrote:
-> > On 05/12/2014 01:05 PM, Kirill A. Shutemov wrote:
-> > > Taking into account your employment, is it possible to check how the RDBMS
-> > > (old but it still supported 32-bit versions) would react on -ENOSYS here?
-> > 
-> > Alrighty, I got an answer:
-> > 
-> > 1. remap_file_pages() only works when the "VLM" feature of the db is enabled,
-> > so those databases can work just fine without it, but be limited to 3-4GB of
-> > memory. This is not needed at all on 64bit machines.
-> 
-> Okay. And it seems user need to enable it manually with option
-> USE_INDIRECT_DATA_BUFFERS=TRUE.
-> 
-> http://docs.oracle.com/cd/B28359_01/server.111/b32009/appi_vlm.htm
-> 
-> > 2. As of OL7 (kernel 3.8), there will not be a 32bit kernel build. I'm still
-> > waiting for an answer whether there will do a 32bit DB build for a 64bit kernel,
-> > but that never happened before and seems unlikely.
-> > 
-> > 3. They're basically saying that by the time upstream releases a kernel without
-> > remap_file_pages() no one will need it here.
-> > 
-> > To sum it up, they're fine with removing remap_file_pages().
-> 
-> Andrew, Linus, what will we do here: live with emulation or just kill the
-> syscall? Or may be kill the syscall after few releases with emulation?
+On Tue, May 13, 2014 at 4:29 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Tue, 13 May 2014, Nicolas Pitre wrote:
+>
+>> On Tue, 13 May 2014, Stephen Warren wrote:
+>>
+>> > On 05/13/2014 03:50 PM, Doug Anderson wrote:
+>> > ...
+>> > > ...but then I found the true problem shows up when we transition
+>> > > between very low frequencies on exynos, like between 200MHz and
+>> > > 300MHz.  While transitioning between frequencies the system
+>> > > temporarily bumps over to the "switcher" PLL running at 800MHz while
+>> > > waiting for the main PLL to stabilize.  No CPUFREQ notification is
+>> > > sent for that.  That means there's a period of time when we're running
+>> > > at 800MHz but loops_per_jiffy is calibrated at between 200MHz and
+>> > > 300MHz.
+>> > >
+>> > >
+>> > > I'm welcome to any suggestions for how to address this.  It sorta
+>> > > feels like it would be a common thing to have a temporary PLL during
+>> > > the transition, ...
+>> >
+>> > We definitely do that on Tegra for some cpufreq transitions.
+>>
+>> Ouch...  If this is a common strategy to use a third frequency during a
+>> transition phase, especially if that frequency is way off (800MHz vs
+>> 200-300MHz) then it is something the cpufreq layer must capture and
+>> advertise.
+>
+> Of course if only the loops_per_jiffy scaling does care about frequency
+> changes these days, and if in those cases udelay() can instead be moved
+> to a timer source on those hick-up prone platforms, then all this is
+> fairly theoretical and may not be worth pursuing.
 
-Well we can put the printk in there initially to gather more
-information.
+Yup, I think I'm going to abandon this.  If anyone ever runs into this
+problem later and can't use a bloody timer, hopefully they'll stumble
+on this thread and at least end up with a good starting point.
 
-If it appears necessary then we can include the emulation, but retain
-the "this-is-going-away" printk then remove the emulation later on.
+For the record, the fix I made locally (which actually worked) was:
 
+1. Add a new "temp" field to cpufreq_freqs:
+
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -133,6 +133,7 @@ struct cpufreq_freqs {
+        unsigned int cpu;       /* cpu nr */
+        unsigned int old;
+        unsigned int new;
++       unsigned int temp;
+        u8 flags;               /* flags of cpufreq_driver, see below. */
+ };
+
+...depending on whether all users of this structure zero-initialize it
+(I didn't check) you might also need to add a flag to say whether the
+temp field is actually valid.
+
+
+2. Set the "temp" to the switching PLL frequency in the cpufreq driver.
+
+
+3. Change the ARM cpufreq_callback() to take the temp freq into account:
+
++       if (val == CPUFREQ_PRECHANGE) {
++               old_freq = freq->old;
++               new_freq = max(freq->new, freq->temp);
++       } else if (val == CPUFREQ_POSTCHANGE) {
++               old_freq = max(freq->old, freq->temp);
++               new_freq = freq->new;
++       }
+
+...then use old_freq and new_freq in the place of freq->old and freq->new
+
+
+
+-Doug
