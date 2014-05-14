@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaENWjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 18:39:44 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:35726 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaENWjm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 18:39:42 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1753937AbaENWkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 18:40:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751874AbaENWkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 18:40:37 -0400
+Message-ID: <5373F0D6.4090600@redhat.com>
+Date: Wed, 14 May 2014 17:40:22 -0500
+From: Eric Sandeen <esandeen@redhat.com>
+Reply-To: sandeen@redhat.com
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Lee Jones" <lee.jones@linaro.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <53731BB3.4060504@free-electrons.com>
-Cc: "Chen-Yu Tsai" <wens@csie.org>,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
-        "Philipp Zabel" <p.zabel@pengutronix.de>,
-        "Shuge" <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        "Hans de Goede" <hdegoede@redhat.com>,
-        "Randy Dunlap" <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399633911-7094-6-git-send-email-boris.brezillon@free-electrons.com>
- <20140514005119.16152.19787@quantum> <53731BB3.4060504@free-electrons.com>
-Message-ID: <20140514223935.19795.36960@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v3 5/7] clk: sunxi: add PRCM (Power/Reset/Clock Management) clks
- support
-Date: Wed, 14 May 2014 15:39:35 -0700
+To: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>
+CC: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing filesystems
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com> <1400018683-5565-2-git-send-email-mguzik@redhat.com> <20140514111449.GB5824@quack.suse.cz> <20140514112619.GA10637@mguzik.redhat.com> <20140514113945.GC5824@quack.suse.cz> <20140514220052.GD5421@dastard> <20140514223745.GF5421@dastard>
+In-Reply-To: <20140514223745.GF5421@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Boris BREZILLON (2014-05-14 00:30:59)
-> Hello Mike,
+On 5/14/14, 5:37 PM, Dave Chinner wrote:
+> On Thu, May 15, 2014 at 08:00:52AM +1000, Dave Chinner wrote:
+>> On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
+>>> On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
+>>>> On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
+>>>>> On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
+>>>>>> This helps hang troubleshooting efforts when only dmesg is available.
+>>>>>>
+>>>>>> While here remove code duplication with MS_RDONLY case and fix a
+>>>>>> whitespace nit.
+>>>>>   I'm somewhat undecided here I have to say. On one hand I don't like
+>>>>> printing to kernel log when everything is fine and kernel is operating
+>>>>> normally. On the other hand I've seen quite a few cases where people have
+>>>>> shot themselves in the foot with filesystem freezing so having some trace
+>>>>> of this in the log doesn't seem like a completely bad thing either. What do
+>>>>> other people think?
+>>>>>
+>>>>
+>>>> I would like to note that the kernel already prints messages when e.g.
+>>>> filesystems get mounted.
+>>>   Yeah, that's a fair point.
+>>
+>> But filesystems choose to output that info, not the VFS. When you do
+>> a remount,ro there is no output in syslog, because filesystems don't
+>> need to dump any output - the state change is reflected in
+>> /proc/self/mounts. IMO frozen should state should be communicated
+>> the same way so that it is silent when it just works, and the state
+>> can easily be determined when something goes wrong.
 > 
-> On 14/05/2014 02:51, Mike Turquette wrote:
-> > Quoting Boris BREZILLON (2014-05-09 04:11:49)
-> >> +struct clk_ops ar100_ops = {
-> >> +       .recalc_rate = ar100_recalc_rate,
-> >> +       .determine_rate = ar100_determine_rate,
-> >> +       .set_parent = ar100_set_parent,
-> >> +       .get_parent = ar100_get_parent,
-> >> +       .set_rate = ar100_set_rate,
-> >> +};
-> > I might be having a brain fart, but is there a valid case for having
-> > both a .recalc_rate and a .determine_rate? I believe that the former
-> > will never be used and the latter will always be used by the clock
-> > framework core.
+> Say, like this:
 > 
-> I think you're mistaking recalc_rate for round_rate.
-> AFAIK, recalc_rate is mandatory for a clk that implement either
-> round_rate or determine_rate.
+> $ grep /mnt/test /proc/mounts
+> /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> $ sudo xfs_freeze -f /mnt/test
+> $ grep /mnt/test /proc/mounts
+> /dev/vda /mnt/test xfs rw,frozen,relatime,attr2,inode64,noquota 0 0
+> $ sudo xfs_freeze -u /mnt/test
+> $ grep /mnt/test /proc/mounts
+> /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> $
 
-I *was* having a brain fart. You're right of course. Too many .r*_rate()
-callbacks...
+I'm not totally convinced that including a non-mount option in what
+has always (?) been a list of mount options is a great idea.
 
-Thanks,
-Mike
+(Granted, some options there are defaults, and weren't actually specified
+as a mount option, but if they had been, they'd have been accepted).
 
-> 
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> -- 
-> Boris Brezillon, Free Electrons
-> Embedded Linux and Kernel engineering
-> http://free-electrons.com
-> 
+Maybe add a "mount -o remount,frozen" handler ?  ;)
+
+-Eric
