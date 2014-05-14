@@ -1,42 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258AbaENPDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:03:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40206 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748AbaENPC6 (ORCPT
+	id S1755229AbaENPE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:04:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55233 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaENPE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:02:58 -0400
-Date: Wed, 14 May 2014 17:02:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "[Chander Kashyap" <chander.kashyap@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        len.brown@intel.com, gregkh@linuxfoundation.org,
-        viresh.kumar@linaro.org, Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
-Message-ID: <20140514150255.GA8330@amd.pavel.ucw.cz>
-References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	Wed, 14 May 2014 11:04:56 -0400
+Message-ID: <537385EA.2070302@ti.com>
+Date: Wed, 14 May 2014 20:34:10 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <rogerq@ti.com>, <balajitk@ti.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for
+ configuring the iATU
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <4528185.oZbgyuuFKX@wuerfel> <537302CD.7000701@ti.com> <5281007.CFRjW0Yeu2@wuerfel>
+In-Reply-To: <5281007.CFRjW0Yeu2@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Arnd,
 
-> From: Chander Kashyap <k.chander@samsung.com>
+On Wednesday 14 May 2014 06:15 PM, Arnd Bergmann wrote:
+> On Wednesday 14 May 2014 11:14:45 Kishon Vijay Abraham I wrote:
+>> hi Arnd,
+>>
+>> On Tuesday 13 May 2014 07:04 PM, Arnd Bergmann wrote:
+>>> On Tuesday 13 May 2014 15:27:46 Arnd Bergmann wrote:
+>>>> On Tuesday 13 May 2014 18:56:23 Kishon Vijay Abraham I wrote:
+>>>>>> If you have a case where the outbound translation is a 256MB (i.e. 28bit)
+>>>>>> section of the CPU address space, that could be represented as
+>>>>>>
+>>>>>>       ranges = <0x82000000 0 0  0xb0000000  0 0x10000000>;
+>>>>>>
+>>>>>> or 
+>>>>>>
+>>>>>>       ranges = <0x82000000 0 0xb0000000  0xb0000000  0 0x10000000>;
+>>>>>>
+>>>>>> depending on whether you want the BARs to be programmed using a low
+>>>>>> address 0x0-0x0fffffff or an address matching the window
+>>>>>> 0xb0000000-0xbfffffff.
+>>>>>
+>>>>> The problem is, for configuring the window starting at 0xb0000000, the ATU
+>>>>> should be programmed 0x0000000 (the cpu address for it will be 0xb0000000 though).
+>>>>>
+>>>>
+>>>> Then use the first of the two?
+>>>>
+>>>
+>>> To clarify: using <0x82000000 0 0  0xb0000000  0 0x10000000> will give you 
+>>> a mem_offset of 0xb0000000, which should work just fine for this case.
+>>>
+>>> What I don't understand is why the ATU cares about whether the outbound
+>>> address is 0x0000000 or 0xb0000000 if it just decodes the lower 28 bit
+>>> anyway. Did you mean that we have to program the BARs using low addresses
+>>> regardless of what is programmed in the ATU? That would make more sense,
+>>> and it also matches what I suggested.
+>>
+>> No, It's not like it decodes only the lower 28bits. The BARs is programmed with
+>> 32 bit value.
+>>
+>> My pcie dt node has
+>>  ranges = <0x00000800 0 0x20001000 0x20001000 0 0x00002000  /* CONFIG */
+>>            0x81000000 0 0          0x20003000 0 0x00010000  /* IO */
+>>            0x82000000 0 0x20013000 0x20013000 0 0xffed000>; /* MEM */
+>>
+>> Consider MEM address space..
+>>
+>> Here both PCI address and CPU address is 0x20013000. So when there is a write
+>> to cpu addr 0x20013000 [writel(virt_addr(0x20013000)], we want it to be
+>> translated to PCI addr 0x20013000. So in 'ATU', we would expect *base* to be
+>> programmed to *0x20013000* and target to be programmed to *0x20013000*. But
+>> that's not the case for DRA7xx. For DRA7xx *base* should be programmed to
+>> *0x0013000* and target should be programmed to *0x20013000*.
 > 
-> It may be possible to unregister and re-register the cpufreq driver.
-> One such example is arm big-little IKS cpufreq driver. While
-> re-registering the driver, same OPPs may get added again.
+> Ok, got it, thanks for your patience.
+> 
+> I think this would best be modeled as a separate bus node that contains the
+> restriction, like this:
+> 
+> / {
+> 	#address-cells = <1>; // or <2> if you support > 4GB address space
+> 	#size-cells = <1>;
+> 
+> 	soc {
+> 		#address-cells <1>;
+> 		#size-cells = <1>;
+> 		ranges;
+> 		dma-ranges;
+> 
+> 		... // all normal devices
+> 
+> 		axi@20000000 {
+> 			#size-cells = <1>;
+> 			#address-cells = <1>;
+> 			dma-ranges; // can access all 4GB outbound
+> 			ranges = <0 0x20000000 0x10000000>; // 28-bit bus
+> 
+> 			pci@0 {
+> 				reg = <0x0    0x1000>, // internal regs
+> 				      <0x1000 0x2000>; // config space
+> 				dma-ranges; // 32-bit outbound
+> 				ranges = <0x81000000 0 0           0x3000 0 0x00010000  /* IO */
+> 					  0x82000000 0 0x20013000 0x13000 0 0xffed000>; /* MEM */
+> 			};
+> 		};
+> 	};
+> };
 
-Hmm. Would it be better to actually delete stale OPPs?
+Nice :-)
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks
+Kishon
