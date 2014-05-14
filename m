@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaENMLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 08:11:36 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:51049 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaENMLf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 08:11:35 -0400
-Date: Wed, 14 May 2014 14:11:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/3] irq_work: Implement remote queueing
-Message-ID: <20140514121122.GC1278@localhost.localdomain>
-References: <1400019956-25511-1-git-send-email-fweisbec@gmail.com>
- <1400019956-25511-2-git-send-email-fweisbec@gmail.com>
- <20140514090629.GC30445@twins.programming.kicks-ass.net>
- <20140514113808.GA1278@localhost.localdomain>
- <20140514115406.GA11096@twins.programming.kicks-ass.net>
+	id S1755136AbaENMTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 08:19:45 -0400
+Received: from mail.mycable.de ([46.4.59.52]:45841 "EHLO mail.mycable.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752485AbaENMTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 08:19:43 -0400
+X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 May 2014 08:19:42 EDT
+Message-ID: <53735D88.5090108@mycable.de>
+Date: Wed, 14 May 2014 14:11:52 +0200
+From: Michael Stickel <ms@mycable.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514115406.GA11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Guenter Roeck <linux@roeck-us.net>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com> <1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com> <20140514100856.5198DC4153D@trevor.secretlab.ca>
+In-Reply-To: <20140514100856.5198DC4153D@trevor.secretlab.ca>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 01:54:06PM +0200, Peter Zijlstra wrote:
-> On Wed, May 14, 2014 at 01:38:14PM +0200, Frederic Weisbecker wrote:
-> > > > +bool irq_work_queue_on(struct irq_work *work, int cpu)
-> > > > +{
-> > > > +	/* Only queue if not already pending */
-> > > > +	if (!irq_work_claim(work))
-> > > > +		return false;
-> > > > +
-> > > > +	/* All work should have been flushed before going offline */
-> > > > +	WARN_ON_ONCE(cpu_is_offline(cpu));
-> > > 
-> > > 	WARN_ON_ONCE(in_nmi());
-> > 
-> > Well... I think it's actually NMI-safe.
-> 
-> I don't think it is, most apic calls do apic_wait_icr_idle() then the
-> apic op, if an NMI happens in between and writes to the APIC, the return
-> context will see a !idle icr and fail.
-> 
-> This is why arch_irq_work_raise() again idles the icr after sending the
-> IPI.
-> 
-> Also, I think, seeing what benh said earlier, its unsafe for other archs
-> too.
+Hi Grant,
 
-Ah I don't know much these archs details, so I concede it.
+Am 14.05.2014 12:08, schrieb Grant Likely:
+> More generally I am concerned about whether or not overlays
+> will introduce corner cases that can never be handled correctly,
+> particularly in how multiple overlays will get handled. I want to see
+> very clear rules on what happens when multiple overlays are applied, and
+> then removed again. Is it possible to remove overlays out of order? If
+> so, what are the conditions that would not be allowed?
 
-> 
-> > > > +	llist_add(&work->llnode, &per_cpu(irq_work_list, cpu));
-> > > > +	native_send_call_func_single_ipi(cpu);
-> > > 
-> > > At the very leastestest make that:
-> > > 
-> > > 	if (llist_add(&work->llnode, &per_cpu(irq_work_list, cpu)))
-> > > 		native_send_call_func_single_ipi(cpu);
-> > 
-> > So yeah the issue is that we may have IRQ_WORK_LAZY in the queue. And
-> > if we have only such work in the queue, nobody has raised before us.
-> > 
-> > So we can't just test with llist_add(). Or if we do, we must then
-> > separate raised and lazy list.
-> 
-> Then do the remote irq_work_raised thing. But it really stinks you broke
-> this very nice and simple thing.
+Yes, it is possible that an overlay depends on another.
 
-I tried not to break boot with printk overhead. That said I've considered having
-a very simple "tick work" that can rely on irq work when the tick is stopped
-and use it for printk. That would restore the initial simplicity.
+The problem is not, that an overlay is removed other overlays depend on,
+but that nodes of an overlay may depend on the to-be-removed overlay and
+the resulting devicetree can become inconsistent.
 
-> 
-> > Also note that nohz is the only user for now and irq_work_claim() thus
-> > prevents from double IPI. Of course if more users come up the issue arise
-> > again.
-> 
-> DANGER, half arsed engineering at work, seriously? Just write proper
-> code already.
-> 
-> There's no fucking way the next user will check the implementation to
-> make sure its 'sane'.
 
-Are you competing with tglx on grumpiness? You guys are free to treat us
-like shit but don't be surprised if one day you'll be alone in kernel/*
+I have an SPI Bus with two slaves. The second slave is used only on one
+of our boards. That is why we split the overlays the following way:
 
-> 
-> > Maybe I was paranoid but I was worried about the overhead of printk() wakeups
-> > on boot if implemented with IPIs.
-> > 
-> > Of course if I can be proven that it won't bring much damage to use an IPI, I'd
-> > be very happy to remove it.
-> 
-> That's the wrong fucking way around, first proof its needed then do
-> something about it. As is I think the LAZY thing is horrid.
+xxxx_spi1.dts:
+  Pinmux for SPI-Bus and activation of spi-controller.
+  Pinmux for CS0 and definition of first slave.
+
+xxxx_spi1_cs1:
+  Pinmux for CS1 and definition of second slave.
+
+When the overlay for the bus is removed, the overlays for the second
+slave does not make any sense anymore.
+
+It is even worse in a scenario we have with a test board.
+One of the slaves is an spi-io-controller with a few bitbanging i2c
+masters. In an extreme case, each component is defined in a separate
+overlay and only the overlay with the master is removed. I know, that
+this is completely sick. The devices are removed cleanly because of the
+device dependency.
+
+Michael
+
