@@ -1,287 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaENL1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:27:24 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:33521 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955AbaENL0e (ORCPT
+	id S932212AbaENL1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:27:50 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:50275 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168AbaENL1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:26:34 -0400
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-To: thierry.reding@gmail.com, michal.simek@xilinx.com
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        grant.likely@linaro.org, linux-pwm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bart Tanghe <bart.tanghe@thomasmore.be>
-Subject: [rfc]pwm: add xilinx pwm driver 
-Date: Wed, 14 May 2014 13:26:13 +0200
-Message-Id: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 14 May 2014 07:27:49 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-b8-53735331d24c
+Message-id: <53735330.9090408@samsung.com>
+Date: Wed, 14 May 2014 13:27:44 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] clk: Fix slab corruption in clk_unregister()
+References: <1397863783-10728-1-git-send-email-sboyd@codeaurora.org>
+ <1397863783-10728-3-git-send-email-sboyd@codeaurora.org>
+In-reply-to: <1397863783-10728-3-git-send-email-sboyd@codeaurora.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xy7qGwcXBBjdPWFj0/Km0ONv0ht1i
+	0+NrrBaXd81hs3g64SKbxY8z3SwObB6X+3qZPO5c28PmsXlJvcfur02MHn1bVjF6fN4kF8AW
+	xWWTkpqTWZZapG+XwJXxZU07S8Ec1YprX1ezNjCel+ti5OSQEDCR2PzxNROELSZx4d56ti5G
+	Lg4hgaWMEttnn2eFcD4xSiy+eYQRpIpXQEvi/qYDbCA2i4CqxKyfN1hBbDYBQ4neo31ANRwc
+	ogIREo8vCEGUC0r8mHyPBcQWEVCX+L7jJNgCZoGDjBL3/q4DmyMs4CrxbMousDlCAvUS079e
+	BWvgBIpf2bSGHcRmFtCR2N86jQ3ClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKppckFxUnp
+	uYZ6xYm5xaV56XrJ+bmbGCEh/mUH4+JjVocYBTgYlXh4f6wqChZiTSwrrsw9xCjBwawkwsto
+	URwsxJuSWFmVWpQfX1Sak1p8iJGJg1OqgbGj8Lq3wTvhq/Ov9Uzc+L7rB4fR1YPGPZfrnM9/
+	Ky/mfWF30ZOjm2nKlEU+Vj9eeDSeC/7cEBNyNeb3021CzxPKJGu8PsQbP7OpUlhhl/JxGdui
+	4wuvX1/E1rsi02hOcVTb5c5H+tnXYx8kHogKjZbrWJ17PbCEdTl7AGPWbt0lCl6BVU2n7ymx
+	FGckGmoxFxUnAgBn5TBwTwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	add Xilinx PWM support - axi timer hardware block 
+On 19/04/14 01:29, Stephen Boyd wrote:
+> When a clock is unregsitered, we iterate over the list of
+> children and reparent them to NULL (i.e. orphan list). While
+> iterating the list, we should use the safe iterators because the
+> children list for this clock is changing when we reparent the
+> children to NULL. Failure to iterate safely can lead to slab
+> corruption like this:
+> 
+> =============================================================================
+> BUG kmalloc-128 (Not tainted): Poison overwritten
+> -----------------------------------------------------------------------------
+> 
+> Disabling lock debugging due to kernel taint
+> INFO: 0xed0c4900-0xed0c4903. First byte 0x0 instead of 0x6b
+> INFO: Allocated in clk_register+0x20/0x1bc age=297 cpu=2 pid=70
+>  __slab_alloc.isra.39.constprop.42+0x410/0x454
+>  kmem_cache_alloc_trace+0x200/0x24c
+>  clk_register+0x20/0x1bc
+>  devm_clk_register+0x34/0x68
+>  0xbf0000f0
+>  platform_drv_probe+0x18/0x48
+>  driver_probe_device+0x94/0x360
+>  __driver_attach+0x94/0x98
+>  bus_for_each_dev+0x54/0x88
+>  bus_add_driver+0xe8/0x204
+>  driver_register+0x78/0xf4
+>  do_one_initcall+0xc4/0x17c
+>  load_module+0x19ac/0x2294
+>  SyS_init_module+0xa4/0x110
+>  ret_fast_syscall+0x0/0x48
+> INFO: Freed in clk_unregister+0xd4/0x140 age=23 cpu=2 pid=73
+>  __slab_free+0x38/0x41c
+>  clk_unregister+0xd4/0x140
+>  release_nodes+0x164/0x1d8
+>  __device_release_driver+0x60/0xb0
+>  driver_detach+0xb4/0xb8
+>  bus_remove_driver+0x5c/0xc4
+>  SyS_delete_module+0x148/0x1d8
+>  ret_fast_syscall+0x0/0x48
+> INFO: Slab 0xeec50b90 objects=25 used=0 fp=0xed0c5400 flags=0x4080
+> INFO: Object 0xed0c48c0 @offset=2240 fp=0xed0c4a00
+> 
+> Bytes b4 ed0c48b0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
+> Object ed0c48c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c48d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c48e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c48f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c4900: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+> Object ed0c4910: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c4920: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ed0c4930: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+> Redzone ed0c4940: bb bb bb bb                                      ....
+> Padding ed0c49e8: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
+> Padding ed0c49f8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> CPU: 3 PID: 75 Comm: mdev Tainted: G    B         3.14.0-11033-g2054ba5ca781 #35
+> [<c0014be0>] (unwind_backtrace) from [<c0012240>] (show_stack+0x10/0x14)
+> [<c0012240>] (show_stack) from [<c04b74a0>] (dump_stack+0x70/0xbc)
+> [<c04b74a0>] (dump_stack) from [<c00f7a78>] (check_bytes_and_report+0xbc/0x100)
+> [<c00f7a78>] (check_bytes_and_report) from [<c00f7c48>] (check_object+0x18c/0x218)
+> [<c00f7c48>] (check_object) from [<c00f7efc>] (__free_slab+0x104/0x144)
+> [<c00f7efc>] (__free_slab) from [<c04b6668>] (__slab_free+0x3dc/0x41c)
+> [<c04b6668>] (__slab_free) from [<c014c008>] (load_elf_binary+0x88/0x12b4)
+> [<c014c008>] (load_elf_binary) from [<c0105a44>] (search_binary_handler+0x78/0x18c)
+> [<c0105a44>] (search_binary_handler) from [<c0106fc0>] (do_execve+0x490/0x5dc)
+> [<c0106fc0>] (do_execve) from [<c0036b8c>] (____call_usermodehelper+0x134/0x168)
+> [<c0036b8c>] (____call_usermodehelper) from [<c000f048>] (ret_from_fork+0x14/0x2c)
+> FIX kmalloc-128: Restoring 0xed0c4900-0xed0c4903=0x6b
+> 
+> Fixes: fcb0ee6a3d33 (clk: Implement clk_unregister)
+> Cc: Jiada Wang <jiada_wang@mentor.com>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
-new file mode 100644
-index 0000000..cb48926
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
-@@ -0,0 +1,20 @@
-+Xilinx PWM controller
-+
-+Required properties:
-+- compatible: should be "xlnx,pwm-xlnx"
-+- add a clock source to the description
-+
-+Examples:
-+
-+		axi_timer_0: timer@42800000 {
-+			clock-frequency = <100000000>;
-+			clocks = <&clkc 15>;
-+			compatible = "xlnx,xlnx-pwm";
-+			reg = <0x42800000 0x10000>;
-+			xlnx,count-width = <0x20>;
-+			xlnx,gen0-assert = <0x1>;
-+			xlnx,gen1-assert = <0x1>;
-+			xlnx,one-timer-only = <0x0>;
-+			xlnx,trig0-assert = <0x1>;
-+			xlnx,trig1-assert = <0x1>;
-+		} ;
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index eece329..1d59b02 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -233,4 +233,17 @@ config PWM_VT8500
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-vt8500.
- 
-+config PWM_XLNX
-+	tristate "Xilinx PWM support"
-+	help
-+	  Generic PWM framework driver for xilinx axi timer.
-+
-+	  This driver implements the pwm channel of a xilinx axi timer hardware
-+	  block.
-+	  The hardware block has to be configured with generate output signal
-+	  of timer 1 and timer 2 active high.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-xlnx.
-+
- endif
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 8b754e4..e0c5f59 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -21,3 +21,4 @@ obj-$(CONFIG_PWM_TIPWMSS)	+= pwm-tipwmss.o
- obj-$(CONFIG_PWM_TWL)		+= pwm-twl.o
- obj-$(CONFIG_PWM_TWL_LED)	+= pwm-twl-led.o
- obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-+obj-$(CONFIG_PWM_XLNX)		+= pwm-xlnx.o
-diff --git a/drivers/pwm/pwm-xlnx.c b/drivers/pwm/pwm-xlnx.c
-new file mode 100644
-index 0000000..9c1be71
---- /dev/null
-+++ b/drivers/pwm/pwm-xlnx.c
-@@ -0,0 +1,197 @@
-+/*
-+ * pwm-xlnx driver
-+ * Tested on zedboard - axi timer v2.00a
-+ *
-+ * Copyright (C) 2014 Thomas more
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+/*mmio regiser mapping*/
-+
-+#define OFFSET		0x10
-+#define DUTY		0x14
-+#define PERIOD		0x04
-+
-+/* configure the counters as 32 bit counters */
-+
-+#define PWM_CONF	0x00000206
-+#define PWM_ENABLE	0x00000080
-+
-+#define DRIVER_AUTHOR "Bart Tanghe <bart.tanghe@thomasmore.be>"
-+#define DRIVER_DESC "A Xilinx pwm driver"
-+
-+struct xlnx_pwm_chip {
-+	struct pwm_chip chip;
-+	struct device *dev;
-+	int scaler;
-+	void __iomem *mmio_base;
-+};
-+
-+static inline struct xlnx_pwm_chip *to_xlnx_pwm_chip(
-+					struct pwm_chip *chip){
-+
-+	return container_of(chip, struct xlnx_pwm_chip, chip);
-+}
-+
-+static int xlnx_pwm_config(struct pwm_chip *chip,
-+			      struct pwm_device *pwm,
-+			      int duty_ns, int period_ns){
-+
-+	struct xlnx_pwm_chip *pc;
-+
-+	pc = container_of(chip, struct xlnx_pwm_chip, chip);
-+
-+	iowrite32(duty_ns/pc->scaler - 2, pc->mmio_base + DUTY);
-+	iowrite32(period_ns/pc->scaler - 2, pc->mmio_base + PERIOD);
-+
-+	return 0;
-+}
-+
-+static int xlnx_pwm_enable(struct pwm_chip *chip,
-+			      struct pwm_device *pwm){
-+
-+	struct xlnx_pwm_chip *pc;
-+
-+	pc = container_of(chip, struct xlnx_pwm_chip, chip);
-+
-+	iowrite32(ioread32(pc->mmio_base) | PWM_ENABLE, pc->mmio_base);
-+	iowrite32(ioread32(pc->mmio_base + OFFSET) | PWM_ENABLE,
-+						pc->mmio_base + OFFSET);
-+	return 0;
-+}
-+
-+static void xlnx_pwm_disable(struct pwm_chip *chip,
-+				struct pwm_device *pwm)
-+{
-+	struct xlnx_pwm_chip *pc;
-+
-+	pc = to_xlnx_pwm_chip(chip);
-+
-+	iowrite32(ioread32(pc->mmio_base) & ~PWM_ENABLE, pc->mmio_base);
-+	iowrite32(ioread32(pc->mmio_base + OFFSET) & ~PWM_ENABLE,
-+						pc->mmio_base + OFFSET);
-+}
-+
-+static int xlnx_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				enum pwm_polarity polarity)
-+{
-+	struct xlnx_pwm_chip *pc;
-+
-+	pc = to_xlnx_pwm_chip(chip);
-+
-+	/* no implementation of polarity function
-+	   the axi timer hw block doesn't support this
-+	*/
-+
-+	return 0;
-+}
-+
-+static const struct pwm_ops xlnx_pwm_ops = {
-+	.config = xlnx_pwm_config,
-+	.enable = xlnx_pwm_enable,
-+	.disable = xlnx_pwm_disable,
-+	.set_polarity = xlnx_set_polarity,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int xlnx_pwm_probe(struct platform_device *pdev)
-+{
-+	struct xlnx_pwm_chip *pwm;
-+
-+	int ret;
-+	struct resource *r;
-+	u32 start, end;
-+	struct clk *clk;
-+
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	pwm->dev = &pdev->dev;
-+
-+	clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "could not find clk: %ld\n", PTR_ERR(clk));
-+		devm_kfree(&pdev->dev, pwm);
-+		return PTR_ERR(clk);
-+	}
-+
-+	pwm->scaler = (int)1000000000/clk_get_rate(clk);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(pwm->mmio_base)) {
-+		devm_kfree(&pdev->dev, pwm);
-+		return PTR_ERR(pwm->mmio_base);
-+	}
-+
-+	start = r->start;
-+	end = r->end;
-+
-+	pwm->chip.dev = &pdev->dev;
-+	pwm->chip.ops = &xlnx_pwm_ops;
-+	pwm->chip.base = (int)&pdev->id;
-+	pwm->chip.npwm = 1;
-+
-+	ret = pwmchip_add(&pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		devm_kfree(&pdev->dev, pwm);
-+		return -1;
-+	}
-+
-+	/*set the pwm0 configuration*/
-+	iowrite32(PWM_CONF, pwm->mmio_base);
-+	iowrite32(PWM_CONF, pwm->mmio_base + OFFSET);
-+
-+	platform_set_drvdata(pdev, pwm);
-+
-+	return 0;
-+}
-+
-+static int xlnx_pwm_remove(struct platform_device *pdev)
-+{
-+
-+	struct xlnx_pwm_chip *pc;
-+	pc  = platform_get_drvdata(pdev);
-+
-+	if (WARN_ON(!pc))
-+		return -ENODEV;
-+
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static const struct of_device_id xlnx_pwm_of_match[] = {
-+	{ .compatible = "xlnx,pwm-xlnx", },
-+	{ /* sentinel */ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, xlnx_pwm_of_match);
-+
-+static struct platform_driver xlnx_pwm_driver = {
-+	.driver = {
-+		.name = "pwm-xlnx",
-+		.owner = THIS_MODULE,
-+		.of_match_table = xlnx_pwm_of_match,
-+	},
-+	.probe = xlnx_pwm_probe,
-+	.remove = xlnx_pwm_remove,
-+};
-+module_platform_driver(xlnx_pwm_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+> ---
+>  drivers/clk/clk.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index f71093bf83ab..7cf2c093cc54 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2140,9 +2140,10 @@ void clk_unregister(struct clk *clk)
+>  
+>  	if (!hlist_empty(&clk->children)) {
+>  		struct clk *child;
+> +		struct hlist_node *t;
+>  
+>  		/* Reparent all children to the orphan list. */
+> -		hlist_for_each_entry(child, &clk->children, child_node)
+> +		hlist_for_each_entry_safe(child, t, &clk->children, child_node)
+>  			clk_set_parent(child, NULL);
+>  	}
+>  
+> 
+
+
+-- 
+Sylwester Nawrocki
+Samsung R&D Institute Poland
