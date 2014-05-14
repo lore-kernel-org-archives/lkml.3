@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaENXuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 19:50:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48947 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaENXuQ (ORCPT
+	id S1751485AbaENXyB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 19:54:01 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:59414 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaENXyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 19:50:16 -0400
-Date: Thu, 15 May 2014 01:50:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Anvin <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 15/32] tile: Implement irq_alloc/free_hwirq() for
- migration
-In-Reply-To: <5373AC00.7090507@tilera.com>
-Message-ID: <alpine.DEB.2.02.1405150148120.6261@ionos.tec.linutronix.de>
-References: <20140507153622.703412101@linutronix.de> <20140507154336.947853241@linutronix.de> <5373AC00.7090507@tilera.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 14 May 2014 19:54:00 -0400
+From: Masaru Nomura <massa.nomura@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Masaru Nomura <massa.nomura@gmail.com>
+Subject: [PATCH] staging: lustre: socklnd: Add a required space
+Date: Thu, 15 May 2014 00:53:38 +0100
+Message-Id: <1400111618-7409-1-git-send-email-massa.nomura@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, Chris Metcalf wrote:
-> On 5/7/2014 11:44 AM, Thomas Gleixner wrote:
-> > We want to convert the drivers over to the new interface and finally
-> > tile to sparse irqs. Implement irq_alloc/free_hwirq() for step by step
-> > migration.
-> > 
-> > 
-> > +void irq_free_hwirq(unsigned int irq)
-> > +{
-> > +	destroy_irq();
-> > +}
-> 
-> Should be destroy_irq(irq).
+Added a required space before open brace and parenthsis
+in socklnd.c to meet kernel coding style.
 
-Yep. I caught that already when I exposed the series step by step to
-a compiler.
+Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
+---
+ .../staging/lustre/lnet/klnds/socklnd/socklnd.c    |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+index 21d36ee..adcd688 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+@@ -1571,7 +1571,7 @@ ksocknal_terminate_conn (ksock_conn_t *conn)
+ 	conn->ksnc_tx_ready = 1;
+ 
+ 	if (!conn->ksnc_tx_scheduled &&
+-	    !list_empty(&conn->ksnc_tx_queue)){
++	    !list_empty(&conn->ksnc_tx_queue)) {
+ 		list_add_tail (&conn->ksnc_tx_list,
+ 			       &sched->kss_tx_conns);
+ 		conn->ksnc_tx_scheduled = 1;
+@@ -2098,7 +2098,7 @@ ksocknal_ctl(lnet_ni_t *ni, unsigned int cmd, void *arg)
+ 	struct libcfs_ioctl_data *data = arg;
+ 	int rc;
+ 
+-	switch(cmd) {
++	switch (cmd) {
+ 	case IOC_LIBCFS_GET_INTERFACE: {
+ 		ksock_net_t       *net = ni->ni_data;
+ 		ksock_interface_t *iface;
+-- 
+1.7.9.5
 
-	tglx
