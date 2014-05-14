@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaENFpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:45:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:35116 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835AbaENFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:45:43 -0400
-Date: Wed, 14 May 2014 07:45:35 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: Re: [ 080/143] net: rework recvmsg handler msg_name and msg_namelen logic
-Message-ID: <20140514054535.GA1562@1wt.eu>
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.962853843@1wt.eu> <20140513124425.GB4006@hercules>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140513124425.GB4006@hercules>
-User-Agent: Mutt/1.4.2.3i
+	id S1752431AbaENFsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:48:12 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48339 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaENFsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 01:48:09 -0400
+Message-ID: <53730326.6000400@linux.vnet.ibm.com>
+Date: Wed, 14 May 2014 11:16:14 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Pedro Alves <palves@redhat.com>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
+        oleg@redhat.com
+Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
+ memory register sets
+References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com>
+In-Reply-To: <537252C0.6090005@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051405-5140-0000-0000-0000051D2862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+On 05/13/2014 10:43 PM, Pedro Alves wrote:
+> On 05/05/14 08:54, Anshuman Khandual wrote:
+>> This patch enables get and set of transactional memory related register
+>> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
+>> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
+>> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
+>> ELF core note types added previously in this regard.
+>>
+>> 	(1) NT_PPC_TM_SPR
+>> 	(2) NT_PPC_TM_CGPR
+>> 	(3) NT_PPC_TM_CFPR
+>> 	(4) NT_PPC_TM_CVMX
+> 
+> Sorry that I couldn't tell this from the code, but, what does the
+> kernel return when the ptracer requests these registers and the
+> program is not in a transaction?  Specifically I'm wondering whether
+> this follows the same semantics as the s390 port.
+> 
 
-On Tue, May 13, 2014 at 01:44:25PM +0100, Luis Henriques wrote:
-> On Mon, May 12, 2014 at 02:33:20AM +0200, Willy Tarreau wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> > 
-> > [ Upstream commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c ]
-> > 
-> 
-> <snip>
-> 
-> > diff --git a/net/rxrpc/ar-recvmsg.c b/net/rxrpc/ar-recvmsg.c
-> > index a39bf97..f779fc3 100644
-> > --- a/net/rxrpc/ar-recvmsg.c
-> > +++ b/net/rxrpc/ar-recvmsg.c
-> > @@ -142,10 +142,12 @@ int rxrpc_recvmsg(struct kiocb *iocb, struct socket *sock,
-> >  
-> >  		/* copy the peer address and timestamp */
-> >  		if (!continue_call) {
-> > -			if (msg->msg_name && msg->msg_namelen > 0)
-> > +			if (msg->msg_name) {
-> > +				size_t len =
-> > +					sizeof(call->conn->trans->peer->srx);
-> >  				memcpy(msg->msg_name,
-> > -				       &call->conn->trans->peer->srx,
-> > -				       sizeof(call->conn->trans->peer->srx));
-> > +				       &call->conn->trans->peer->srx, len);
->   +                                    msg->msg_namelen = len;
-> 
-> This statement^^^ is missing in this backport.
-> 
-> Also missing in this patch are the changes to the following functions:
-> 
-> - pppoe_recvmsg()
->   In file drivers/net/pppoe.c instead of drivers/net/ppp/pppoe.c
-> 
-> - pppol2tp_recvmsg()
->   In file drivers/net/pppol2tp.c instead of net/l2tp/l2tp_ppp.c
-> 
-> For reference, I'm attaching the backport we have used in our Ubuntu
-> kernel.  (Note that we added some extra information to the commit
-> message to include the CVE number and a link to the CVE bug.)
+Right now, it still returns the saved state of the registers from thread
+struct. I had assumed that the user must know the state of the transaction
+before initiating the ptrace request. I guess its better to check for
+the transaction status before processing the request. In case if TM is not
+active on that thread, we should return -EINVAL.
 
-Just a quick note to let you know that your patch applied well, and
-that the diff between the two correctly reports the parts you pointed
-above. So I'm taking it instead.
-
-Thanks!
-Willy
+I am not familiar with the s390 side of code. But if we look at the
+s390_tdb_get function it checks for (regs->int_code & 0x200) before
+processing the request. Not sure what 0x200 signifies though.
 
