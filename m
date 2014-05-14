@@ -1,106 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125AbaENQwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 12:52:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352AbaENQwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 12:52:10 -0400
-Date: Wed, 14 May 2014 18:51:24 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v10 03/19] qspinlock: Add pending bit
-Message-ID: <20140514165121.GA21370@potion.redhat.com>
-References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com>
- <1399474907-22206-4-git-send-email-Waiman.Long@hp.com>
- <20140512152208.GA12309@potion.brq.redhat.com>
- <537276B4.10209@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537276B4.10209@hp.com>
+	id S1756255AbaENQyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 12:54:24 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:43679 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754280AbaENQyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 12:54:23 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuUNAHafc1NXQ68k/2dsb2JhbABZgwasaQQBAQEBAQEFAZodgSMXdIJTExwjGIECJBOIRQHRPIVUiHqERwEDjyqKJgGLDYgHgzg7
+Date: Wed, 14 May 2014 18:54:17 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>,
+        Christine Caulfield <ccaulfie@redhat.com>
+Subject: [PATCH 1/1] fs/dlm/debug_fs.c: replace seq_printf by seq_puts
+Message-Id: <20140514185417.a79fd0b576b2bba988280c65@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-13 15:47-0400, Waiman Long:
-> On 05/12/2014 11:22 AM, Radim Krčmář wrote:
-> >I think there is an unwanted scenario on virtual machines:
-> >1) VCPU sets the pending bit and start spinning.
-> >2) Pending VCPU gets descheduled.
-> >     - we have PLE and lock holder isn't running [1]
-> >     - the hypervisor randomly preempts us
-> >3) Lock holder unlocks while pending VCPU is waiting in queue.
-> >4) Subsequent lockers will see free lock with set pending bit and will
-> >    loop in trylock's 'for (;;)'
-> >     - the worst-case is lock starving [2]
-> >     - PLE can save us from wasting whole timeslice
-> >
-> >Retry threshold is the easiest solution, regardless of its ugliness [4].
-> 
-> Yes, that can be a real issue. Some sort of retry threshold, as you said,
-> should be able to handle it.
-> 
-> BTW, the relevant patch should be 16/19 where the PV spinlock stuff should
-> be discussed. This patch is perfectly fine.
+Replace seq_printf where possible.
+This patch also fixes the following checkpatch warning
+"unnecessary whitespace before a quoted newline"
 
-Ouch, my apology to Peter didn't make it ... Agreed, I should have split
-the comment under patches
- [06/19] (part quoted above; does not depend on PV),
- [16/19] (part quoted below) and
- [17/19] (general doubts).
+Cc: Christine Caulfield <ccaulfie@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/dlm/debug_fs.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-> >Another minor design flaw is that formerly first VCPU gets appended to
-> >the tail when it decides to queue;
-> >is the performance gain worth it?
-> >
-> >Thanks.
-> 
-> Yes, the performance gain is worth it. The primary goal is to be not worse
-> than ticket spinlock in light load situation which is the most common case.
-> This feature is need to achieve that.
+diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
+index b969dee..8d77ba7 100644
+--- a/fs/dlm/debug_fs.c
++++ b/fs/dlm/debug_fs.c
+@@ -68,7 +68,7 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 	if (lkb->lkb_wait_type)
+ 		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+ 
+-	return seq_printf(s, "\n");
++	return seq_puts(s, "\n");
+ }
+ 
+ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+@@ -92,31 +92,31 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 	}
+ 
+ 	if (res->res_nodeid > 0)
+-		rv = seq_printf(s, "\"  \nLocal Copy, Master is node %d\n",
++		rv = seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+ 				res->res_nodeid);
+ 	else if (res->res_nodeid == 0)
+-		rv = seq_printf(s, "\"  \nMaster Copy\n");
++		rv = seq_puts(s, "\"\nMaster Copy\n");
+ 	else if (res->res_nodeid == -1)
+-		rv = seq_printf(s, "\"  \nLooking up master (lkid %x)\n",
++		rv = seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+ 			   	res->res_first_lkid);
+ 	else
+-		rv = seq_printf(s, "\"  \nInvalid master %d\n",
++		rv = seq_printf(s, "\"\nInvalid master %d\n",
+ 				res->res_nodeid);
+ 	if (rv)
+ 		goto out;
+ 
+ 	/* Print the LVB: */
+ 	if (res->res_lvbptr) {
+-		seq_printf(s, "LVB: ");
++		seq_puts(s, "LVB: ");
+ 		for (i = 0; i < lvblen; i++) {
+ 			if (i == lvblen / 2)
+-				seq_printf(s, "\n     ");
++				seq_puts(s, "\n     ");
+ 			seq_printf(s, "%02x ",
+ 				   (unsigned char) res->res_lvbptr[i]);
+ 		}
+ 		if (rsb_flag(res, RSB_VALNOTVALID))
+-			seq_printf(s, " (INVALID)");
+-		rv = seq_printf(s, "\n");
++			seq_puts(s, " (INVALID)");
++		rv = seq_puts(s, "\n");
+ 		if (rv)
+ 			goto out;
+ 	}
+@@ -133,21 +133,21 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 	}
+ 
+ 	/* Print the locks attached to this resource */
+-	seq_printf(s, "Granted Queue\n");
++	seq_puts(s, "Granted Queue\n");
+ 	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
+ 		rv = print_format1_lock(s, lkb, res);
+ 		if (rv)
+ 			goto out;
+ 	}
+ 
+-	seq_printf(s, "Conversion Queue\n");
++	seq_puts(s, "Conversion Queue\n");
+ 	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
+ 		rv = print_format1_lock(s, lkb, res);
+ 		if (rv)
+ 			goto out;
+ 	}
+ 
+-	seq_printf(s, "Waiting Queue\n");
++	seq_puts(s, "Waiting Queue\n");
+ 	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
+ 		rv = print_format1_lock(s, lkb, res);
+ 		if (rv)
+@@ -157,13 +157,13 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 	if (list_empty(&res->res_lookup))
+ 		goto out;
+ 
+-	seq_printf(s, "Lookup Queue\n");
++	seq_puts(s, "Lookup Queue\n");
+ 	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
+ 		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
+ 				print_lockmode(lkb->lkb_rqmode));
+ 		if (lkb->lkb_wait_type)
+ 			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+-		rv = seq_printf(s, "\n");
++		rv = seq_puts(s, "\n");
+ 	}
+  out:
+ 	unlock_rsb(res);
+@@ -300,7 +300,7 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_printf(s, "\n");
++	rv = seq_puts(s, "\n");
+ 	if (rv)
+ 		goto out;
+ 
+@@ -311,7 +311,7 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 
+ 	for (i = 0; i < lvblen; i++)
+ 		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
+-	rv = seq_printf(s, "\n");
++	rv = seq_puts(s, "\n");
+ 	if (rv)
+ 		goto out;
+ 
+@@ -377,7 +377,7 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_printf(s, "\n");
++	rv = seq_puts(s, "\n");
+  out:
+ 	unlock_rsb(r);
+ 	return rv;
+-- 
+1.9.1
 
-Ok.
-I've seen merit in pvqspinlock even with slightly slower first-waiter,
-so I would have happily sacrificed those horrible branches.
-(I prefer elegant to optimized code, but I can see why we want to be
- strictly better than ticketlock.)
-Peter mentioned that we are focusing on bare-metal patches, so I'll
-withold my other paravirt rants until they are polished.
-
-And to forcefully bring this thread a little bit on-topic:
-
-Pending-bit is effectively a lock in a lock, so I was wondering why
-don't we use more pending bits; advantages are the same, just diminished
-by the probability of having an ideally contended lock:
- - waiter won't be blocked on RAM access if critical section (or more)
-   ends sooner
- - some unlucky cacheline is not forgotten
- - faster unlock (no need for tail operations)
-(- ?)
-disadvantages are magnified:
- - increased complexity
- - intense cacheline sharing
-   (I thought that this is the main disadvantage of ticketlock.)
-(- ?)
-
-One bit still improved performance, is it the best we got?
-
-Thanks.
