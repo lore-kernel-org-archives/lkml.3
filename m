@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaENIML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:12:11 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:57545 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752012AbaENIMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:12:09 -0400
-Message-ID: <1400055127.31197.1.camel@x220>
-Subject: [PATCH] ARM: remove check for CONFIG_DEBUG_LL_SER3
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 10:12:07 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 May 2014 08:12:07.0996 (UTC) FILETIME=[32F21FC0:01CF6F4C]
-X-RcptDomain: vger.kernel.org
+	id S1752143AbaENINh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:13:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145AbaENINe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:13:34 -0400
+Date: Wed, 14 May 2014 10:13:26 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86: kaslr to avoid setup_data regions
+Message-ID: <20140514081325.GA8992@mguzik.redhat.com>
+References: <20140514080201.GA18922@dhcp-16-198.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140514080201.GA18922@dhcp-16-198.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A check for CONFIG_DEBUG_LL_SER3 was added in v2.5.43. But the related
-symbol DEBUG_LL_SER3 was already removed in v2.5.8. This check has
-always evaluated to false. Remove it.
+On Wed, May 14, 2014 at 04:02:01PM +0800, Dave Young wrote:
+> X86 will pass setup_data region while necessary, these regions could be
+> overwitten by kernel due to kaslr.
+> 
+> Thus iterate and add setup regions to mem_avoid[] in this patch.
+> Set max mem avoid entries 32, hopefully it will be enough.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/boot/compressed/aslr.c |   30 ++++++++++++++++++++++++++++--
+>  1 file changed, 28 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/boot/compressed/aslr.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/boot/compressed/aslr.c
+> +++ linux-2.6/arch/x86/boot/compressed/aslr.c
+> @@ -110,8 +110,9 @@ struct mem_vector {
+>  	unsigned long size;
+>  };
+>  
+> -#define MEM_AVOID_MAX 5
+> +#define MEM_AVOID_MAX 32
+>  static struct mem_vector mem_avoid[MEM_AVOID_MAX];
+> +static int mem_avoid_nr;
+>  
+>  static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
+>  {
+> @@ -135,6 +136,28 @@ static bool mem_overlaps(struct mem_vect
+>  	return true;
+>  }
+>  
+> +static void mem_avoid_setup_data(void)
+> +{
+> +	struct setup_data *data;
+> +	u64 pa_data;
+> +
+> +	if (mem_avoid_nr >= MEM_AVOID_MAX) {
+> +		debug_putstr("KASLR: too many setup_data ranges.\n");
+> +		return;
+> +	}
+> +
+> +	pa_data = real_mode->hdr.setup_data;
+> +	while (pa_data) {
+> +		data = (struct setup_data *)pa_data;
+> +		if (pa_data < CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
+> +			mem_avoid[mem_avoid_nr].start = pa_data;
+> +			mem_avoid[mem_avoid_nr].size = sizeof(*data) + data->len;
+> +			mem_avoid_nr++;
+> +		}
+> +		pa_data = data->next;
+> +	}
+> +}
+> +
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+I have no idea if this real_mode->hdr.setup_data examination is correct,
+so not commenting on that.
 
- arch/arm/boot/compressed/head.S | 4 ----
- 1 file changed, 4 deletions(-)
+What prevents the loop from overflowing the table?
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 066b03480b63..c16e8bf31e0b 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -54,11 +54,7 @@
- #if defined(CONFIG_ARCH_SA1100)
- 		.macro	loadsp, rb, tmp
- 		mov	\rb, #0x80000000	@ physical base address
--#ifdef CONFIG_DEBUG_LL_SER3
--		add	\rb, \rb, #0x00050000	@ Ser3
--#else
- 		add	\rb, \rb, #0x00010000	@ Ser1
--#endif
- 		.endm
- #elif defined(CONFIG_ARCH_S3C24XX)
- 		.macro loadsp, rb, tmp
+Additinally reaching the limit should at least result in a big fat warning.
+
 -- 
-1.9.0
-
+Mateusz Guzik
