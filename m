@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191AbaENSH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:07:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52987 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaENSHz (ORCPT
+	id S1751256AbaENSIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:08:07 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:23592 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751220AbaENSIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:07:55 -0400
-Date: Wed, 14 May 2014 14:07:53 -0400 (EDT)
-Message-Id: <20140514.140753.222006976691406699.davem@davemloft.net>
-To: zyjzyj2000@gmail.com
-Cc: eric.dumazet@gmail.com, Yue.Tao@windriver.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: icmp: account for ICMP out errors because of socket limit
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <53703DC0.2070204@gmail.com>
-References: <53703DC0.2070204@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 14 May 2014 14:08:05 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq02ABewc1NXQ68k/2dsb2JhbABZgwaBYQFfqigEAQEBAQEBBQGaHYElF3SCZhwjGIECJIhYAdFThVSIeoRHAQOZUAGTFIM4Ow
+Date: Wed, 14 May 2014 20:08:03 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe <joe@perches.com>
+Subject: [PATCH V2 0/3] EFS Logging clean-up
+Message-Id: <20140514200803.6a13de68b359695148d574c7@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 May 2014 11:07:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: zhuyj <zyjzyj2000@gmail.com>
-Date: Mon, 12 May 2014 11:19:28 +0800
+This small patchset converts EFS to current logging functions.
+I hope things will be more clear with a generic 3 steps conversion.
+Note that pr_debug conversion in this case is straightforward.
 
-> Hi, Eric && David
-> 
->  ____           ______________
-> |    |         |              |
-> | PC |<------->| MIPS 32 core |
-> |____|         |______________|
-> 
-> When ping from a PC to a board (MIPS 32 core), because of socket
-> limit,
-> ping echo will fail. But ICMP_MIB_OUTERRORS counter is not
-> incremented.
-> In this case, "netstat -s" can not report these errors.
-> 
-> This patch will fix this problem. Now it is in the attachment. Please
-> check it.
+V2: Remove ifdef debug around pr_debug
 
-The only time icmp_xmit_lock() can fail is if we try to generate an ICMP
-response to a failure to send another ICMP packet.
+Fabian Frederick (3):
+  FS/EFS: convert printk to pr_foo()
+  FS/EFS: add pr_fmt / use __func__
+  FS/EFS: convert printk(KERN_DEBUG to pr_debug
 
-It is an entirely different situation from Eric's other patch which
-you've mentioned in this thread, and I do not think this case warrants
-a statistic bump at all.
+ fs/efs/dir.c   | 18 ++++++++++--------
+ fs/efs/efs.h   |  6 ++++++
+ fs/efs/file.c  | 14 +++++---------
+ fs/efs/inode.c | 42 ++++++++++++++++++++----------------------
+ fs/efs/namei.c |  8 +++++---
+ fs/efs/super.c | 42 ++++++++++++++++++++----------------------
+ 6 files changed, 66 insertions(+), 64 deletions(-)
+
+-- 
+1.9.1
