@@ -1,234 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaENURa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:17:30 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:37180 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaENUPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:15:36 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Jisheng Zhang <jszhang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 04/10] clk: berlin: add driver for BG2x simple PLLs
-Date: Wed, 14 May 2014 22:15:15 +0200
-Message-Id: <1400098522-14770-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1400098522-14770-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1400098522-14770-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753104AbaENURh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:17:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38737 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558AbaENURf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 16:17:35 -0400
+Date: Wed, 14 May 2014 21:29:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 19/19] mm: filemap: Avoid unnecessary barries and
+	waitqueue lookups in unlock_page fastpath
+Message-ID: <20140514192945.GA10830@redhat.com>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140514161152.GA2615@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514161152.GA2615@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On 05/14, Oleg Nesterov wrote:
+>
+> The subsequent discussion was "off-topic", and it seems that the patch
+> itself needs a bit more discussion,
+>
+> On 05/13, Peter Zijlstra wrote:
+> >
+> > On Tue, May 13, 2014 at 01:53:13PM +0100, Mel Gorman wrote:
+> > > On Tue, May 13, 2014 at 10:45:50AM +0100, Mel Gorman wrote:
+> > > >  void unlock_page(struct page *page)
+> > > >  {
+> > > > +	wait_queue_head_t *wqh = clear_page_waiters(page);
+> > > > +
+> > > >  	VM_BUG_ON_PAGE(!PageLocked(page), page);
+> > > > +
+> > > > +	/*
+> > > > +	 * No additional barrier needed due to clear_bit_unlock barriering all updates
+> > > > +	 * before waking waiters
+> > > > +	 */
+> > > >  	clear_bit_unlock(PG_locked, &page->flags);
+> > > > -	smp_mb__after_clear_bit();
+> > > > -	wake_up_page(page, PG_locked);
+> > >
+> > > This is wrong.
+>
+> Yes,
+>
+> > > The smp_mb__after_clear_bit() is still required to ensure
+> > > that the cleared bit is visible before the wakeup on all architectures.
+>
+> But note that "the cleared bit is visible before the wakeup" is confusing.
+> I mean, we do not need mb() before __wake_up(). We need it only because
+> __wake_up_bit() checks waitqueue_active().
 
-This is a clock driver for the simple PLLs found on Berlin SoCs.
-With repect to PLL registers and features, BG2/BG2CD and BG2Q are
-slightly different, e.g. different allowed VCO dividers and bit
-shifts.
+OOPS. Sorry Mel, I wrote this looking at the chunk above.  But when I found
+the whole patch http://marc.info/?l=linux-mm&m=139997442008267 I see that
+it removes waitqueue_active(), so this can be correct. I do not really know,
+so far I can't say I fully understand this PageWaiters() trick.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-v1->v2:
-- dropped usage of postponed of_clk_create_name()       
+Hmm. But at least prepare_to_wait_exclusive() doesn't look right ;)
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jisheng Zhang <jszhang@marvell.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clk/berlin/Makefile      |   2 +-
- drivers/clk/berlin/berlin2-pll.c | 168 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 169 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/berlin/berlin2-pll.c
+If nothing else, this needs abort_exclusive_wait() if killed. And while
+"exclusive" is probably fine for __lock_page.*(), I am not sure that
+__wait_on_page_locked_*() should be exclusive.
 
-diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
-index 5905733fc7c7..9d3490e9782f 100644
---- a/drivers/clk/berlin/Makefile
-+++ b/drivers/clk/berlin/Makefile
-@@ -1 +1 @@
--obj-y += berlin2-avpll.o
-+obj-y += berlin2-avpll.o berlin2-pll.o
-diff --git a/drivers/clk/berlin/berlin2-pll.c b/drivers/clk/berlin/berlin2-pll.c
-new file mode 100644
-index 000000000000..f8ef8989ead2
---- /dev/null
-+++ b/drivers/clk/berlin/berlin2-pll.c
-@@ -0,0 +1,168 @@
-+/*
-+ * Copyright (c) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <asm/div64.h>
-+
-+struct berlin2_pll_map {
-+	const u8 vcodiv[16];
-+	u8 mult;
-+	u8 fbdiv_shift;
-+	u8 rfdiv_shift;
-+	u8 divsel_shift;
-+};
-+
-+struct berlin2_pll {
-+	struct clk_hw hw;
-+	void __iomem *base;
-+	struct berlin2_pll_map map;
-+};
-+
-+#define to_berlin2_pll(hw) container_of(hw, struct berlin2_pll, hw)
-+
-+#define SPLL_CTRL0	0x00
-+#define SPLL_CTRL1	0x04
-+#define SPLL_CTRL2	0x08
-+#define SPLL_CTRL3	0x0c
-+#define SPLL_CTRL4	0x10
-+
-+#define FBDIV_MASK	0x1ff
-+#define RFDIV_MASK	0x1f
-+#define DIVSEL_MASK	0xf
-+
-+/*
-+ * The output frequency formula for the pll is:
-+ * clkout = fbdiv / refdiv * parent / vcodiv
-+ */
-+static unsigned long
-+berlin2_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
-+{
-+	struct berlin2_pll *pll = to_berlin2_pll(hw);
-+	struct berlin2_pll_map *map = &pll->map;
-+	u32 val, fbdiv, rfdiv, vcodivsel, vcodiv;
-+	u64 rate = parent_rate;
-+
-+	val = readl_relaxed(pll->base + SPLL_CTRL0);
-+	fbdiv = (val >> map->fbdiv_shift) & FBDIV_MASK;
-+	rfdiv = (val >> map->rfdiv_shift) & RFDIV_MASK;
-+	if (rfdiv == 0) {
-+		pr_warn("%s has zero rfdiv\n", __clk_get_name(hw->clk));
-+		rfdiv = 1;
-+	}
-+
-+	val = readl_relaxed(pll->base + SPLL_CTRL1);
-+	vcodivsel = (val >> map->divsel_shift) & DIVSEL_MASK;
-+	vcodiv = map->vcodiv[vcodivsel];
-+	if (vcodiv == 0) {
-+		pr_warn("%s has zero vcodiv (index %d)\n",
-+			__clk_get_name(hw->clk), vcodivsel);
-+		vcodiv = 1;
-+	}
-+
-+	rate *= fbdiv * map->mult;
-+	do_div(rate, rfdiv * vcodiv);
-+
-+	return (unsigned long)rate;
-+}
-+
-+static const struct clk_ops berlin2_pll_ops = {
-+	.recalc_rate	= berlin2_pll_recalc_rate,
-+};
-+
-+static struct clk * __init
-+berlin2_pll_register(const struct berlin2_pll_map *map,
-+		     void __iomem *base, const char *name,
-+		     const char *parent_name, unsigned long flags)
-+{
-+	struct clk_init_data init;
-+	struct berlin2_pll *pll;
-+
-+	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
-+	if (!pll)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* copy pll_map to allow __initconst */
-+	memcpy(&pll->map, map, sizeof(*map));
-+	pll->base = base;
-+	pll->hw.init = &init;
-+	init.name = name;
-+	init.ops = &berlin2_pll_ops;
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+	init.flags = flags;
-+
-+	return clk_register(NULL, &pll->hw);
-+}
-+
-+static const struct berlin2_pll_map bg2_pll_map __initconst = {
-+	.vcodiv		= {10, 15, 20, 25, 30, 40, 50, 60, 80},
-+	.mult		= 10,
-+	.fbdiv_shift	= 6,
-+	.rfdiv_shift	= 1,
-+	.divsel_shift	= 7,
-+};
-+
-+static const struct berlin2_pll_map bg2q_pll_map __initconst = {
-+	.vcodiv		= {1, 0, 2, 0, 3, 4, 0, 6, 8},
-+	.mult		= 1,
-+	.fbdiv_shift	= 7,
-+	.rfdiv_shift	= 2,
-+	.divsel_shift	= 9,
-+};
-+
-+static const struct of_device_id pll_matches[] __initconst = {
-+	{ .compatible = "marvell,berlin2-pll", .data = &bg2_pll_map },
-+	{ .compatible = "marvell,berlin2q-pll", .data = &bg2q_pll_map },
-+	{ }
-+};
-+
-+static void __init berlin2_pll_of_setup(struct device_node *np)
-+{
-+	const struct of_device_id *match = of_match_node(pll_matches, np);
-+	const struct berlin2_pll_map *map = match->data;
-+	void __iomem *base;
-+	struct clk *refclk;
-+	struct clk *pll;
-+
-+	base = of_iomap(np, 0);
-+	if (!base) {
-+		pr_err("%s: Unable to map pll register\n", np->full_name);
-+		return;
-+	}
-+
-+	refclk = of_clk_get(np, 0);
-+	if (IS_ERR(refclk)) {
-+		pr_err("%s: Missing reference clock\n", np->full_name);
-+		iounmap(base);
-+		return;
-+	}
-+
-+	pll = berlin2_pll_register(map, base, np->name,
-+				   __clk_get_name(refclk), 0);
-+	if (!IS_ERR(pll))
-+		of_clk_add_provider(np, of_clk_src_simple_get, pll);
-+
-+	clk_put(refclk);
-+}
-+CLK_OF_DECLARE(berlin2_pll, "marvell,berlin2-pll", berlin2_pll_of_setup);
-+CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2q-pll", berlin2_pll_of_setup);
--- 
-1.9.1
+Oleg.
 
