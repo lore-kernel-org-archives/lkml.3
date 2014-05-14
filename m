@@ -1,111 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaENVIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:08:05 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:34630 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757AbaENVID (ORCPT
+	id S1752393AbaENVKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:10:23 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:63967 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751173AbaENVKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:08:03 -0400
-Date: Wed, 14 May 2014 17:07:44 -0400 (EDT)
-From: Jon Maxwell <jmaxwell@redhat.com>
-To: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Cc: Jon Maxwell <jmaxwell37@gmail.com>, stephen@networkplumber.org,
-        davem@davemloft.net, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jpirko@redhat.com
-Message-ID: <2052318198.6465872.1400101664337.JavaMail.zimbra@redhat.com>
-In-Reply-To: <5372BA1E.8000402@lab.ntt.co.jp>
-References: <1399967708-7283-1-git-send-email-jmaxwell@redhat.com> <5372BA1E.8000402@lab.ntt.co.jp>
-Subject: Re: [PATCH net] bridge: notify user space of fdb port change
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 14 May 2014 17:10:22 -0400
+Message-ID: <1400101765.9826.6.camel@x220>
+Subject: [PATCH] arm: msm: remove board file for the HTC Sapphire device
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 May 2014 23:09:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: bridge: notify user space of fdb port change
-Thread-Index: ET1+bksZ6Aw4NpCSgb3RmxDTqPgR6A==
+X-OriginalArrivalTime: 14 May 2014 21:09:26.0150 (UTC) FILETIME=[C973AA60:01CF6FB8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 614ad9814850 ("arm: msm: add board file for the HTC Sapphire
+device") added just board-sapphire.c. It did not add board-sapphire.h,
+Makefile changes or Kconfig changes.
+
+Four years have passed and this file is still dangling. Remove it.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Also untested.
+
+ arch/arm/mach-msm/board-sapphire.c | 117 -------------------------------------
+ 1 file changed, 117 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/board-sapphire.c
+
+diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
+deleted file mode 100644
+index 327605174d63..000000000000
+--- a/arch/arm/mach-msm/board-sapphire.c
++++ /dev/null
+@@ -1,117 +0,0 @@
+-/* linux/arch/arm/mach-msm/board-sapphire.c
+- * Copyright (C) 2007-2009 HTC Corporation.
+- * Author: Thomas Tsai <thomas_tsai@htc.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+-*/
+-#include <linux/gpio.h>
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/input.h>
+-#include <linux/interrupt.h>
+-#include <linux/irq.h>
+-#include <linux/device.h>
+-
+-#include <linux/delay.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/mach-types.h>
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/flash.h>
+-#include <mach/vreg.h>
+-
+-#include <asm/io.h>
+-#include <asm/delay.h>
+-#include <asm/setup.h>
+-
+-#include <linux/mtd/nand.h>
+-#include <linux/mtd/partitions.h>
+-
+-#include "gpio_chip.h"
+-#include "board-sapphire.h"
+-#include "proc_comm.h"
+-#include "devices.h"
+-#include "common.h"
+-
+-void msm_init_irq(void);
+-void msm_init_gpio(void);
+-
+-static struct platform_device *devices[] __initdata = {
+-	&msm_device_smd,
+-	&msm_device_dmov,
+-	&msm_device_nand,
+-	&msm_device_uart1,
+-	&msm_device_uart3,
+-};
+-
+-void msm_timer_init(void);
+-
+-static void __init sapphire_init_irq(void)
+-{
+-	msm_init_irq();
+-}
+-
+-static void __init sapphire_init(void)
+-{
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
+-}
+-
+-static struct map_desc sapphire_io_desc[] __initdata = {
+-	{
+-		.virtual = SAPPHIRE_CPLD_BASE,
+-		.pfn     = __phys_to_pfn(SAPPHIRE_CPLD_START),
+-		.length  = SAPPHIRE_CPLD_SIZE,
+-		.type    = MT_DEVICE_NONSHARED
+-	}
+-};
+-
+-static void __init sapphire_fixup(struct tag *tags, char **cmdline,
+-				  struct meminfo *mi)
+-{
+-	int smi_sz = parse_tag_smi((const struct tag *)tags);
+-
+-	mi->nr_banks = 1;
+-	mi->bank[0].start = PHYS_OFFSET;
+-	mi->bank[0].node = PHYS_TO_NID(PHYS_OFFSET);
+-	if (smi_sz == 32) {
+-		mi->bank[0].size = (84*1024*1024);
+-	} else if (smi_sz == 64) {
+-		mi->bank[0].size = (101*1024*1024);
+-	} else {
+-		/* Give a default value when not get smi size */
+-		smi_sz = 64;
+-		mi->bank[0].size = (101*1024*1024);
+-	}
+-}
+-
+-static void __init sapphire_map_io(void)
+-{
+-	msm_map_common_io();
+-	iotable_init(sapphire_io_desc, ARRAY_SIZE(sapphire_io_desc));
+-	msm_clock_init();
+-}
+-
+-static void __init sapphire_init_late(void)
+-{
+-	smd_debugfs_init();
+-}
+-
+-MACHINE_START(SAPPHIRE, "sapphire")
+-/* Maintainer: Brian Swetland <swetland@google.com> */
+-	.atag_offset    = 0x100,
+-	.fixup          = sapphire_fixup,
+-	.map_io         = sapphire_map_io,
+-	.init_irq       = sapphire_init_irq,
+-	.init_machine   = sapphire_init,
+-	.init_late      = sapphire_init_late,
+-	.init_time	= msm_timer_init,
+-MACHINE_END
+-- 
+1.9.0
 
 
------ Original Message -----
-> From: "Toshiaki Makita" <makita.toshiaki@lab.ntt.co.jp>
-> To: "Jon Maxwell" <jmaxwell37@gmail.com>, stephen@networkplumber.org
-> Cc: davem@davemloft.net, vyasevic@redhat.com, bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-> linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com
-> Sent: Wednesday, May 14, 2014 10:34:38 AM
-> Subject: Re: [PATCH net] bridge: notify user space of fdb port change
-> 
-> (2014/05/13 16:55), Jon Maxwell wrote:
-> > From: Jon Maxwell <jmaxwell37@gmail.com>
-> > 
-> > There has been a number incidents recently where customers running KVM have
-> > reported that VM hosts on different Hypervisors are unreachable. Based on
-> > pcap traces we found that the bridge was broadcasting the ARP request out
-> > onto the network. However some NICs have an inbuilt switch which on
-> > occasions
-> > were broadcasting the VMs ARP request back through the physical NIC on the
-> > Hypervisor. This resulted in the bridge changing ports and incorrectly
-> > learning
-> > that the VMs mac address was external. As a result the ARP reply was
-> > directed
-> > back onto the external network and VM never updated it's ARP cache. This
-> > patch
-> > will notify the bridge command to identify such port toggling.
-> > 
-> > Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
-> > ---
-> >  net/bridge/br_fdb.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> > index 9203d5a..37742e2 100644
-> > --- a/net/bridge/br_fdb.c
-> > +++ b/net/bridge/br_fdb.c
-> > @@ -507,6 +507,8 @@ void br_fdb_update(struct net_bridge *br, struct
-> > net_bridge_port *source,
-> >  					source->dev->name);
-> >  		} else {
-> >  			/* fastpath: update of existing entry */
-> > +			if (source->port_no != fdb->dst->port_no)
-> 
-> It seems that we don't need to fetch port_no and it is enough to compare
-> source and fdb->dst.
 
-It may save a few instructions but I have not tested it.
-
-> 
-> > +				fdb_notify(br, fdb, RTM_NEWNEIGH);
-> >  			fdb->dst = source;
-> >  			fdb->updated = jiffies;
-> >  			if (unlikely(added_by_user))
-> > 
-> 
-> This notifies fdb entry before updating existing entry. Is this on purpose?
-> I think we should notify the updated fdb entry.
-> Similar code fdb_add_entry() does after updating it.
-
-It was not on purpose but for this particular case there will be burst of notifies 
-so it probably does not matter. However I agree it should be after the update.
-I will do that along with adding the unlikely() conditional and resubmit.
-
-> 
-> Also, isn't it better to move update of dst into "if" block?
-
-I would prefer to leave this portion as alone and only use the if 
-statement for the notify.
-
-> 
-> 	if (source != fdb->dst) {
-> 		fdb->dst = source;
-> 		modified = true;
-> 	}
-> 	...
-> 	if (modified) ...
-> 
-> Thanks,
-> Toshiaki Makita
-> 
