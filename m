@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaENFuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 01:50:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45216 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267AbaENFt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 01:49:59 -0400
-Message-ID: <537303C3.8040503@ti.com>
-Date: Wed, 14 May 2014 11:18:51 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753613AbaENFuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 01:50:52 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50776 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbaENFuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 01:50:50 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        eranian@google.com, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        fweisbec@gmail.com
+Subject: Re: [PATCH 9/9] perf, tools, record: Always allow to overide default period v2
+References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
+	<1399935074-25167-10-git-send-email-andi@firstfloor.org>
+Date: Wed, 14 May 2014 14:50:47 +0900
+In-Reply-To: <1399935074-25167-10-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Mon, 12 May 2014 15:51:14 -0700")
+Message-ID: <87r43wlxhk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <stern@rowland.harvard.edu>,
-        <hdegoede@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Boris Brezillon <boris@free-electrons.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <kevin.z.m.zh@gmail.com>, <sunny@allwinnertech.com>,
-        <shuge@allwinnertech.com>, <zhuzhenhua@allwinnertech.com>,
-        <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH RESEND v4 3/8] phy: sunxi: Rework phy initialization
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com> <1399995862-17788-4-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399995862-17788-4-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 12 May 2014 15:51:14 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Fix the logic to allow overriding event default periods with -c or -F
+> on the command line.  I'm not sure I understand this if() fully, but
+> this change makes all cases I tested work (tracepoint with default, default,
+> ,-c, -F)
+>
+> This fixed specifying -c / -F with json event list events,
+> which have a default period. It should do the same
+> for trace point events.
 
-On Tuesday 13 May 2014 09:14 PM, Maxime Ripard wrote:
-> Move the phy initialization and variables declaration to the loop itself, since
-> it is where it really belongs. Also remove all the temporary variables, we can
-> use the structure members directly.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Hmm.. doesn't that require both -c and -F are given at the same time?
 
-let me know if I have to queue this and the next patch in my PHY tree.
+Anyway, there was a similar discussion, but I suggested an other way.
+Please see the line below.
 
-Cheers
-Kishon
+https://lkml.org/lkml/2014/2/4/807
 
-> ---
->  drivers/phy/phy-sun4i-usb.c | 42 ++++++++++++++++++------------------------
->  1 file changed, 18 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index e6e6c4ba7145..66a87d50512b 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -224,13 +224,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  	struct sun4i_usb_phy_data *data;
->  	struct device *dev = &pdev->dev;
->  	struct device_node *np = dev->of_node;
-> -	void __iomem *pmu = NULL;
->  	struct phy_provider *phy_provider;
-> -	struct reset_control *reset;
-> -	struct regulator *vbus;
->  	struct resource *res;
-> -	struct phy *phy;
-> -	char name[16];
->  	int i;
->  
->  	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
-> @@ -262,42 +257,41 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  
->  	/* Skip 0, 0 is the phy for otg which is not yet supported. */
->  	for (i = 1; i < data->num_phys; i++) {
-> +		struct sun4i_usb_phy *phy = data->phys + i;
-> +		char name[16];
-> +
->  		snprintf(name, sizeof(name), "usb%d_vbus", i);
-> -		vbus = devm_regulator_get_optional(dev, name);
-> -		if (IS_ERR(vbus)) {
-> -			if (PTR_ERR(vbus) == -EPROBE_DEFER)
-> +		phy->vbus = devm_regulator_get_optional(dev, name);
-> +		if (IS_ERR(phy->vbus)) {
-> +			if (PTR_ERR(phy->vbus) == -EPROBE_DEFER)
->  				return -EPROBE_DEFER;
-> -			vbus = NULL;
-> +			phy->vbus = NULL;
->  		}
->  
->  		snprintf(name, sizeof(name), "usb%d_reset", i);
-> -		reset = devm_reset_control_get(dev, name);
-> -		if (IS_ERR(reset)) {
-> +		phy->reset = devm_reset_control_get(dev, name);
-> +		if (IS_ERR(phy->reset)) {
->  			dev_err(dev, "failed to get reset %s\n", name);
-> -			return PTR_ERR(reset);
-> +			return PTR_ERR(phy->reset);
->  		}
->  
->  		if (i) { /* No pmu for usbc0 */
->  			snprintf(name, sizeof(name), "pmu%d", i);
->  			res = platform_get_resource_byname(pdev,
->  							IORESOURCE_MEM, name);
-> -			pmu = devm_ioremap_resource(dev, res);
-> -			if (IS_ERR(pmu))
-> -				return PTR_ERR(pmu);
-> +			phy->pmu = devm_ioremap_resource(dev, res);
-> +			if (IS_ERR(phy->pmu))
-> +				return PTR_ERR(phy->pmu);
->  		}
->  
-> -		phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
-> -		if (IS_ERR(phy)) {
-> +		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
-> +		if (IS_ERR(phy->phy)) {
->  			dev_err(dev, "failed to create PHY %d\n", i);
-> -			return PTR_ERR(phy);
-> +			return PTR_ERR(phy->phy);
->  		}
->  
-> -		data->phys[i].phy = phy;
-> -		data->phys[i].pmu = pmu;
-> -		data->phys[i].vbus = vbus;
-> -		data->phys[i].reset = reset;
-> -		data->phys[i].index = i;
-> -		phy_set_drvdata(phy, &data->phys[i]);
-> +		phy->index = i;
-> +		phy_set_drvdata(phy->phy, &data->phys[i]);
->  	}
->  
->  	dev_set_drvdata(dev, data);
-> 
+Thanks,
+Namhyung
