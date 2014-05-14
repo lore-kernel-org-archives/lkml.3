@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaENT4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:56:04 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:60658 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaENT4B (ORCPT
+	id S1752045AbaENT5B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:57:01 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55822 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943AbaENT47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:56:01 -0400
-Date: Wed, 14 May 2014 21:55:55 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 23/27] sparc: Use common bits from generic tlb.h
-Message-ID: <20140514195555.GA2801@ravnborg.org>
-References: <1400093999-18703-1-git-send-email-richard@nod.at>
- <1400093999-18703-24-git-send-email-richard@nod.at>
+	Wed, 14 May 2014 15:56:59 -0400
+Date: Wed, 14 May 2014 21:56:57 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: arik@wizery.com, coelho@ti.com, david.gnedt@davizone.at, eliad@wizery.com,
+        jan.nikitenko@gmail.com, laurent.pinchart+renesas@ideasonboard.com,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com, luca@coelho.fi, tony@atomide.com
+Subject: Re: [PATCH] lib/crc7: Shift crc7() output left 1 bit
+Message-ID: <20140514195657.GA5320@amd.pavel.ucw.cz>
+References: <20140511082811.GA2695@xo-6d-61-c0.localdomain>
+ <20140511091607.31386.qmail@ns.horizon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400093999-18703-24-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140511091607.31386.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 08:59:55PM +0200, Richard Weinberger wrote:
-> It is no longer needed to define them on our own.
+On Sun 2014-05-11 05:16:07, George Spelvin wrote:
+> > Looks good, but should not function name change when functionality got
+> > completely different?
 > 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: sparclinux@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/sparc/include/asm/tlb_32.h | 8 --------
->  arch/sparc/include/asm/tlb_64.h | 3 ---
->  2 files changed, 11 deletions(-)
+> I couldn't think of one.  Can you?
 > 
-> diff --git a/arch/sparc/include/asm/tlb_32.h b/arch/sparc/include/asm/tlb_32.h
-> index 6d02d1c..60641a1 100644
-> --- a/arch/sparc/include/asm/tlb_32.h
-> +++ b/arch/sparc/include/asm/tlb_32.h
-> @@ -11,14 +11,6 @@ do {								\
->  	flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
->  } while (0)
->  
-> -#define __tlb_remove_tlb_entry(tlb, pte, address) \
-> -	do { } while (0)
-> -
-> -#define tlb_flush(tlb) \
-> -do {								\
-> -	flush_tlb_mm((tlb)->mm);				\
-> -} while (0)
-> -
->  #include <asm-generic/tlb.h>
->  
->  #endif /* _SPARC_TLB_H */
+> I suppose adding a _be (big-endian) suffix would be consistent.
+> Is that okay with you?
+> 
+> To do it properly, I have to rename all of:
+> 
+> crc7_syndrome_table[]
+> crc7_byte()
+> crc7()
+> 
+> even though the third is the only (in-tree) user of the first two.
 
-This part looks OK.
+If the first two are static, there's no problem.
 
-> diff --git a/arch/sparc/include/asm/tlb_64.h b/arch/sparc/include/asm/tlb_64.h
-> index 190e189..36fdcec 100644
-> --- a/arch/sparc/include/asm/tlb_64.h
-> +++ b/arch/sparc/include/asm/tlb_64.h
-> @@ -22,9 +22,6 @@ extern void smp_flush_tlb_mm(struct mm_struct *mm);
->  extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
->  extern void flush_tlb_pending(void);
->  
-> -#define tlb_start_vma(tlb, vma) do { } while (0)
-> -#define tlb_end_vma(tlb, vma)	do { } while (0)
-> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
->  #define tlb_flush(tlb)	flush_tlb_pending()
->  
->  #include <asm-generic/tlb.h>
-
-This does not fly for sparc64.
-__pte_free_tlb is a static inline in pgalloc_64.h so no
-define exist to teach tlb.h that an arch override exist.
-
-Likewise for __pmd_free_tlb
-
-	Sam
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
