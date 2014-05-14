@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaENUEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 16:04:45 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750838AbaENUEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 16:04:43 -0400
-Message-ID: <5373CC59.8070702@nod.at>
-Date: Wed, 14 May 2014 22:04:41 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752464AbaENUGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 16:06:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46266 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaENUGE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 16:06:04 -0400
+Date: Wed, 14 May 2014 13:06:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Carbonated Beverage <ramune@psychosnugglebunnies.net>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] 3.14.3 i915 dead display under X11
+Message-ID: <20140514200603.GA32452@kroah.com>
+References: <20140512031029.GA18875@psychosnugglebunnies.net>
+ <20140514204738.60a2f49c@neptune.home>
+ <CAKMK7uFDJym3fKewmivps_894_P_ifQ0TYeBXg5oevP6wrz1zw@mail.gmail.com>
+ <20140514193339.GA18197@kroah.com>
+ <CA+5PVA57hWTE8XuQWzadh+Cyd0iB5Ne7SM60ZzAS=Nu-5-AtAA@mail.gmail.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 23/27] sparc: Use common bits from generic tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-24-git-send-email-richard@nod.at> <20140514195555.GA2801@ravnborg.org>
-In-Reply-To: <20140514195555.GA2801@ravnborg.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA57hWTE8XuQWzadh+Cyd0iB5Ne7SM60ZzAS=Nu-5-AtAA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 21:55, schrieb Sam Ravnborg:
-> On Wed, May 14, 2014 at 08:59:55PM +0200, Richard Weinberger wrote:
->> It is no longer needed to define them on our own.
->>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: Richard Weinberger <richard@nod.at>
->> Cc: sparclinux@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  arch/sparc/include/asm/tlb_32.h | 8 --------
->>  arch/sparc/include/asm/tlb_64.h | 3 ---
->>  2 files changed, 11 deletions(-)
->>
->> diff --git a/arch/sparc/include/asm/tlb_32.h b/arch/sparc/include/asm/tlb_32.h
->> index 6d02d1c..60641a1 100644
->> --- a/arch/sparc/include/asm/tlb_32.h
->> +++ b/arch/sparc/include/asm/tlb_32.h
->> @@ -11,14 +11,6 @@ do {								\
->>  	flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
->>  } while (0)
->>  
->> -#define __tlb_remove_tlb_entry(tlb, pte, address) \
->> -	do { } while (0)
->> -
->> -#define tlb_flush(tlb) \
->> -do {								\
->> -	flush_tlb_mm((tlb)->mm);				\
->> -} while (0)
->> -
->>  #include <asm-generic/tlb.h>
->>  
->>  #endif /* _SPARC_TLB_H */
+On Wed, May 14, 2014 at 03:43:53PM -0400, Josh Boyer wrote:
+> On Wed, May 14, 2014 at 3:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, May 14, 2014 at 09:19:32PM +0200, Daniel Vetter wrote:
+> >> On Wed, May 14, 2014 at 08:47:38PM +0200, Bruno Prémont wrote:
+> >> > CCing intel-gfx as otherwise it will probably not get seen by developers.
+> >> >
+> >> > On Sun, 11 May 2014 Carbonated Beverage <ramune@psychosnugglebunnies.net> wrote:
+> >> > > Bisecting from 3.13.6 (good) to 3.14.3 (bad) ended up with...
+> >> > >
+> >> > > commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
+> >> > > Author: Jani Nikula <jani.nikula@intel.com>
+> >> > > Date:   Thu Nov 14 12:13:41 2013 +0200
+> >> > >
+> >> > >     drm/i915: do full backlight setup at enable time
+> >> > >
+> >> > >     We should now have all the information we need to do a full
+> >> > >     initialization of the backlight registers.
+> >> > >
+> >> > >     v2: Keep QUIRK_NO_PCH_PWM_ENABLE for now (Imre).
+> >> > >
+> >> > >     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+> >> > >     Reviewed-by: Imre Deak <imre.deak@intel.com>
+> >> > >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >> > >
+> >> > > Which is in 3.12.0????
+> >> > >
+> >> > > I'm not sure how that came to be.  Does that look right?  What other
+> >> > > information would be required to track this down?
+> >>
+> >> We've killed this again in 3.14 since we've hoped the backlight rework in
+> >> there fixed it. For 3.15 we finally have the right fix - vbt has a bit
+> >> telling us not to look at the integrated PWM for the panel.
+> >>
+> >> For 3.14 we will (again) resurrect the quirk because the vbt thing is a
+> >> bit too risky an imo needs a full -rc cycle for testing. But that revert
+> >> is currently stalled because Greg KH is travelling too much ;-)
+> >>
+> >> Cc'ing him to make sure that patch doesn't miss the next 3.14.x release.
+> >
+> > What specific patch are you wanting to make sure makes it in?  I've been
 > 
-> This part looks OK.
+> Subject: [PATCH for stable 3.14 only 0/1] drm/i915: restore
+> QUIRK_NO_PCH_PWM_ENABLE
 > 
->> diff --git a/arch/sparc/include/asm/tlb_64.h b/arch/sparc/include/asm/tlb_64.h
->> index 190e189..36fdcec 100644
->> --- a/arch/sparc/include/asm/tlb_64.h
->> +++ b/arch/sparc/include/asm/tlb_64.h
->> @@ -22,9 +22,6 @@ extern void smp_flush_tlb_mm(struct mm_struct *mm);
->>  extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
->>  extern void flush_tlb_pending(void);
->>  
->> -#define tlb_start_vma(tlb, vma) do { } while (0)
->> -#define tlb_end_vma(tlb, vma)	do { } while (0)
->> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
->>  #define tlb_flush(tlb)	flush_tlb_pending()
->>  
->>  #include <asm-generic/tlb.h>
+> > avoiding all of the drm patches so far for 3.14.y as it's an easy thing
+> > to do, but I'll eventually have to start paying attention to them :)
 > 
-> This does not fly for sparc64.
-> __pte_free_tlb is a static inline in pgalloc_64.h so no
-> define exist to teach tlb.h that an arch override exist.
+> Jani has bugged you twice about it I think.  You've said it's not lost
+> both times.  Third time is a charm?
 
-Okay, we need a #define __pte_free_tlb __pte_free_tlb.
+Fine, I'll go apply it now...
 
-> Likewise for __pmd_free_tlb
-
-__pmd_free_tlb is already a macro so the generic tlb.h should handle it correctly.
-
-#define __pmd_free_tlb(tlb, pmd, addr)                \
-        pgtable_free_tlb(tlb, pmd, false)
-
-I'd move both __pmd_free_tlb and __pte_free_tlb into tlb.h such that the include order
-of tlb.h vs pgalloc.h does not matter.
-Are you fine with that?
-
-Thanks,
-//richard
