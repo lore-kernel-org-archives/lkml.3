@@ -1,166 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaENOec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 10:34:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61518 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062AbaENOe0 (ORCPT
+	id S1754431AbaENOeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 10:34:31 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:62213 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149AbaENOe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 May 2014 10:34:26 -0400
+Date: Wed, 14 May 2014 16:34:21 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] drivers/base: Add interface framework
+Message-ID: <20140514143421.GG8790@phenom.ffwll.local>
+Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Russell King <rmk+kernel@arm.linux.org.uk>,
+	dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
+	David Herrmann <dh.herrmann@gmail.com>,
+	Philipp Zabel <p.zabel@pengutronix.de>,
+	Sascha Hauer <s.hauer@pengutronix.de>, linux-tegra@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1399995050-28435-1-git-send-email-thierry.reding@gmail.com>
+ <1399995050-28435-5-git-send-email-thierry.reding@gmail.com>
+ <20140513175713.GS3908@phenom.ffwll.local>
+ <20140513213057.GA7239@mithrandir>
 MIME-Version: 1.0
-In-Reply-To: <53730130.3000300@ti.com>
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
-	<5371EA01.3080307@gmail.com>
-	<537208A9.4020507@ti.com>
-	<53720E0F.3070008@gmail.com>
-	<537216AC.4090401@ti.com>
-	<53721ABF.8060705@gmail.com>
-	<53721D24.4090704@ti.com>
-	<CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
-	<53730130.3000300@ti.com>
-Date: Wed, 14 May 2014 09:34:25 -0500
-Message-ID: <CADYTM3YH2TJpS0z-Pb=rQPVV5ETHwfYMOOv=BohNB7UmahC9Rw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
-From: Bin Liu <binmlist@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com,
-        gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513213057.GA7239@mithrandir>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-George,
+On Tue, May 13, 2014 at 11:31:07PM +0200, Thierry Reding wrote:
+> A different solution, which seems to be fairly common for DRM drivers
+> for SoCs, is to instantiate a dummy device so that the DRM driver can
+> bind to it. This can happen in two forms: add the dummy device directly
+> in device tree (which goes against pretty much everything that's been
+> preached about device tree in the past) or the dummy device can be
+> instantiated in code, which is what the current Tegra DRM/host1x driver
+> does.
 
-On Wed, May 14, 2014 at 12:37 AM, George Cherian <george.cherian@ti.com> wrote:
-> On 5/14/2014 12:07 AM, Bin Liu wrote:
->>
->> Hi,
->>
->> On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com>
->> wrote:
->>>
->>> Hi Daniel,
->>>
->>>
->>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
->>>>
->>>> Hi George,
->>>>
->>>> On 05/13/2014 02:57 PM, George Cherian wrote:
->>>>>
->>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
->>>>> reg.
->>>>> can you try with the following patch.
->>>>>
->>>>> diff --git a/drivers/usb/musb/musb_dsps.c
->>>>> b/drivers/usb/musb/musb_dsps.c
->>>>> index 1ae6681..1160cd1 100644
->>>>> --- a/drivers/usb/musb/musb_dsps.c
->>>>> +++ b/drivers/usb/musb/musb_dsps.c
->>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
->>>>>           * logic enabled.
->>>>>           */
->>>>>          val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
->>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
->>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
->>>>>                  glue->sw_babble_enabled = true;
->>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
->>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
->>>>> +       }
->>>>>          ret = dsps_musb_dbg_init(musb, glue);
->>>>>          if (ret)
->>>>
->>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
->>>> without the patch: a full glue reset is conducted. Do I get you right
->>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
->>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
->>>>
->>> Basically, there are 2 types of babble conditions.
->>> 1) Transient babble condition - which could be recovered from without an
->>> IP
->>> reset .
->>> 2) Babble condition - which could be recovered from only by doing an IP
->>> reset.
->>>
->>> Looks like you are always hitting case 2 (Most times am also hitting the
->>> same).
->>> Case 1 is really hard to reproduce. I don't have a reliable method as of
->>> now
->>> to
->>> reproduce this case consistently.
->>>
->>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
->>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
->>>> (a_wait_bcon)
->>>> [   19.685815] usb 1-1: USB disconnect, device number 3
->>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
->>>> 44
->>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
->>>>
->>>>
->>>> I don't quite follow, especially as I lack documentation of the IP core.
->>>> How do you test babble errors, is there any way to force them to happen
->>>> reliably?
->>>
->>>
->>> There is no 100% reliable method to force it to happen. Following is
->>
->> I have a way to force babble happen reliably - shorting DP or DM to
->> VBUS. I opened the far-end plug of the USB cable, so I can easily
->> short DP or DM to VBUS.
->
-> Good to know that you have a reliable way to test babble condition.
-> Can you please do a quick test on 3.15.0-rc4 with the series applied?
-> In case of any assistance please do let me know.
+Actually the dummy device seems to be an acceptable solution and iirc was
+even acked by DT maintainers in the last KS. I'm not on top of things, but
+iirc the thinking was that a dummy device which just pulls in all the
+relevant real bits with phandles is justified in the board file since it
+tells you how the board is intended to be used. The justification was that
+on SoCs where assigning stuff between v4l and drm is really flexible (e.g.
+on omap or so where you can assign the display pipes essentially freely)
+the use-case of the board is what matters, and that's a somewhat physical
+property of it (i.e. in what kind of device it's sitting.)
 
-Sure, but could you please re-send those patches to my corporate email
-so that I can apply them from Thunderbird?
+So in your case you'd have a fake display and a fake video device which
+pulls everything the drm/v4l driver need together. So if the issue is how
+to get at a master device I think that's simple to solve.
 
-I read these linux-usb emails in Gmail, and  am not aware of any easy
-way to extract patches from Gmail.
-
-BTY, I tested with TI 3.12.10 kernel, in which I guess the babble
-handling is similar to this patch set. With TI3.12.10, MISC is always
-0x64, so MUSB never restarts.
-
-Thanks,
--Bin.
-
->
->> But the interesting thing is that with TI 3.2 kernel, shorting DP or
->> DM to VBUS causes MISC register to be 0x4, but the result is
->> completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
->>
->> So in the 3.2 kernel, the babble handing resets the controller, but
->> the 3.12.10 does not.
->>
->> Regards,
->> -Bin.
->>
->>> my setup ,
->>> I have a HUB with 4 devices connected , which gives me a Babble interrupt
->>> on both connects and disconnects ( Not always though).
->>>
->>>> Anyway, the full glue layer solves this rare condition quite well for
->>>> me. Is there any downside of this?
->>>>
->>>>
->>>> Daniel
->>>>
->>>
->>> --
->>> -George
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->>>
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> -George
->
+If the issue otoh is how the various drivers can get at the bus-like
+services host1x exposes, then I think a real bus driver makes a lot more
+sense. And Greg seems to have ideas about that already.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
