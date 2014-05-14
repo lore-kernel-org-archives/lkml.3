@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaENJ7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 05:59:53 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:61427 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752075AbaENJ7t (ORCPT
+	id S1754218AbaENKCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 06:02:17 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:46185 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752121AbaENKCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 05:59:49 -0400
-Message-ID: <1400061587.31197.18.camel@x220>
-Subject: [PATCH] ARM: nommu: remove unused KTHREAD_SIZE #define
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 May 2014 11:59:47 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Wed, 14 May 2014 06:02:14 -0400
+Message-ID: <53733ECD.7090708@st.com>
+Date: Wed, 14 May 2014 12:00:45 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        olof Johansson <olof@lixom.net>, <devicetree@vger.kernel.org>,
+        <kernel@stlinux.com>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        <linux-input@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: Re: [STLinux Kernel] [PATCH v4 2/7] driver: reset: sti: add keyscan
+ for stih415
+References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>	 <1397228856-9218-3-git-send-email-gabriel.fernandez@linaro.org>	 <53732EAB.1050709@st.com> <1400058953.13056.2.camel@paszta.hi.pengutronix.de>
+In-Reply-To: <1400058953.13056.2.camel@paszta.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 May 2014 09:59:47.0762 (UTC) FILETIME=[3D443120:01CF6F5B]
-X-RcptDomain: vger.kernel.org
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-14_03:2014-05-13,2014-05-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested.
+Thanks Philipp.
 
-1) A very similar commit is 10b5aabddd1e ("[PATCH]
-include/asm-h8300/page.h: remove unused KTHREAD_SIZE #define"). I found
-that commit by looking into the history of the unloved
-CONFIG_SMALL_TASKS macro. References to it were added to (a few places
-in) the tree, starting with v2.5.46. But I haven't found evidence that
-it was ever defined.
-
- arch/arm/include/asm/page-nommu.h | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/arch/arm/include/asm/page-nommu.h b/arch/arm/include/asm/page-nommu.h
-index d1b162a18dcb..58da8b22cf10 100644
---- a/arch/arm/include/asm/page-nommu.h
-+++ b/arch/arm/include/asm/page-nommu.h
-@@ -11,12 +11,6 @@
- #ifndef _ASMARM_PAGE_NOMMU_H
- #define _ASMARM_PAGE_NOMMU_H
- 
--#if !defined(CONFIG_SMALL_TASKS) && PAGE_SHIFT < 13
--#define KTHREAD_SIZE (8192)
--#else
--#define KTHREAD_SIZE PAGE_SIZE
--#endif
-- 
- #define get_user_page(vaddr)		__get_free_page(GFP_KERNEL)
- #define free_user_page(page, addr)	free_page(addr)
- 
--- 
-1.9.0
-
+On 05/14/2014 11:15 AM, Philipp Zabel wrote:
+> Hi Maxime,
+>
+> Am Mittwoch, den 14.05.2014, 10:51 +0200 schrieb Maxime Coquelin:
+>> Hi Philipp,
+>>
+>> 	I am preparing the arm_soc pull request for STi platforms.
+>>
+>> 	In this series, there are DT patches depending on this reset patch
+>> (same for patch 3).
+>>
+>> 	Can I queue theses two reset patches in my pull request for arm_soc to
+>> avoid compilation breakage?
+>
+> Yes, please do. For both of them, feel free to add my
+> Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+>
+> best regards
+> Philipp
+>
