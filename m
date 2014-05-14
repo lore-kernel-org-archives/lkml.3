@@ -1,154 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaENIkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:40:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38363 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048AbaENIkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:40:51 -0400
-Message-ID: <53732BC9.3020507@ti.com>
-Date: Wed, 14 May 2014 14:09:37 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753514AbaENImk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:42:40 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54530 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaENIme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 04:42:34 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma reserved memory when not used
+In-Reply-To: <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 14 May 2014 14:12:19 +0530
+Message-ID: <8761l8ah04.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, <stern@rowland.harvard.edu>,
-        <hdegoede@redhat.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Boris Brezillon <boris@free-electrons.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <kevin.z.m.zh@gmail.com>, <sunny@allwinnertech.com>,
-        <shuge@allwinnertech.com>, <zhuzhenhua@allwinnertech.com>,
-        <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH RESEND v4 4/8] phy: usb: sunxi: Introduce Allwinner A31
- USB PHY support
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com> <1399995862-17788-5-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1399995862-17788-5-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051408-1618-0000-0000-0000003854A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-On Tuesday 13 May 2014 09:14 PM, Maxime Ripard wrote:
-> The USB phy controller in the A31 differs mostly from the older controllers
-> because it has a clock dedicated for each phy, while the older ones were having
-> a single clock for all the phys.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-> ---
->  drivers/phy/phy-sun4i-usb.c | 33 ++++++++++++++++++++++-----------
->  1 file changed, 22 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index 66a87d50512b..115d8d5190d5 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -61,7 +61,6 @@
->  #define MAX_PHYS			3
+> CMA is introduced to provide physically contiguous pages at runtime.
+> For this purpose, it reserves memory at boot time. Although it reserve
+> memory, this reserved memory can be used for movable memory allocation
+> request. This usecase is beneficial to the system that needs this CMA
+> reserved memory infrequently and it is one of main purpose of
+> introducing CMA.
+>
+> But, there is a problem in current implementation. The problem is that
+> it works like as just reserved memory approach. The pages on cma reserved
+> memory are hardly used for movable memory allocation. This is caused by
+> combination of allocation and reclaim policy.
+>
+> The pages on cma reserved memory are allocated if there is no movable
+> memory, that is, as fallback allocation. So the time this fallback
+> allocation is started is under heavy memory pressure. Although it is under
+> memory pressure, movable allocation easily succeed, since there would be
+> many pages on cma reserved memory. But this is not the case for unmovable
+> and reclaimable allocation, because they can't use the pages on cma
+> reserved memory. These allocations regard system's free memory as
+> (free pages - free cma pages) on watermark checking, that is, free
+> unmovable pages + free reclaimable pages + free movable pages. Because
+> we already exhausted movable pages, only free pages we have are unmovable
+> and reclaimable types and this would be really small amount. So watermark
+> checking would be failed. It will wake up kswapd to make enough free
+> memory for unmovable and reclaimable allocation and kswapd will do.
+> So before we fully utilize pages on cma reserved memory, kswapd start to
+> reclaim memory and try to make free memory over the high watermark. This
+> watermark checking by kswapd doesn't take care free cma pages so many
+> movable pages would be reclaimed. After then, we have a lot of movable
+> pages again, so fallback allocation doesn't happen again. To conclude,
+> amount of free memory on meminfo which includes free CMA pages is moving
+> around 512 MB if I reserve 512 MB memory for CMA.
+
+
+Another issue i am facing with the current code is the atomic allocation
+failing even with large number of CMA pages around. In my case we never
+reclaimed because large part of the memory is consumed by the page cache and
+for that, free memory check doesn't include at free_cma. I will test
+with this patchset and update here once i have the results.
+
+>
+> I found this problem on following experiment.
+>
+> 4 CPUs, 1024 MB, VIRTUAL MACHINE
+> make -j24
+>
+> CMA reserve:		0 MB		512 MB
+> Elapsed-time:		234.8		361.8
+> Average-MemFree:	283880 KB	530851 KB
+>
+> To solve this problem, I can think following 2 possible solutions.
+> 1. allocate the pages on cma reserved memory first, and if they are
+>    exhausted, allocate movable pages.
+> 2. interleaved allocation: try to allocate specific amounts of memory
+>    from cma reserved memory and then allocate from free movable memory.
+>
+> I tested #1 approach and found the problem. Although free memory on
+> meminfo can move around low watermark, there is large fluctuation on free
+> memory, because too many pages are reclaimed when kswapd is invoked.
+> Reason for this behaviour is that successive allocated CMA pages are
+> on the LRU list in that order and kswapd reclaim them in same order.
+> These memory doesn't help watermark checking from kwapd, so too many
+> pages are reclaimed, I guess.
+>
+> So, I implement #2 approach.
+> One thing I should note is that we should not change allocation target
+> (movable list or cma) on each allocation attempt, since this prevent
+> allocated pages to be in physically succession, so some I/O devices can
+> be hurt their performance. To solve this, I keep allocation target
+> in at least pageblock_nr_pages attempts and make this number reflect
+> ratio, free pages without free cma pages to free cma pages. With this
+> approach, system works very smoothly and fully utilize the pages on
+> cma reserved memory.
+>
+> Following is the experimental result of this patch.
+>
+> 4 CPUs, 1024 MB, VIRTUAL MACHINE
+> make -j24
+>
+> <Before>
+> CMA reserve:            0 MB            512 MB
+> Elapsed-time:           234.8           361.8
+> Average-MemFree:        283880 KB       530851 KB
+> pswpin:                 7               110064
+> pswpout:                452             767502
+>
+> <After>
+> CMA reserve:            0 MB            512 MB
+> Elapsed-time:           234.2           235.6
+> Average-MemFree:        281651 KB       290227 KB
+> pswpin:                 8               8
+> pswpout:                430             510
+>
+> There is no difference if we don't have cma reserved memory (0 MB case).
+> But, with cma reserved memory (512 MB case), we fully utilize these
+> reserved memory through this patch and the system behaves like as
+> it doesn't reserve any memory.
+>
+> With this patch, we aggressively allocate the pages on cma reserved memory
+> so latency of CMA can arise. Below is the experimental result about
+> latency.
+>
+> 4 CPUs, 1024 MB, VIRTUAL MACHINE
+> CMA reserve: 512 MB
+> Backgound Workload: make -jN
+> Real Workload: 8 MB CMA allocation/free 20 times with 5 sec interval
+>
+> N:                    1        4       8        16
+> Elapsed-time(Before): 4309.75  9511.09 12276.1  77103.5
+> Elapsed-time(After):  5391.69 16114.1  19380.3  34879.2
+>
+> So generally we can see latency increase. Ratio of this increase
+> is rather big - up to 70%. But, under the heavy workload, it shows
+> latency decrease - up to 55%. This may be worst-case scenario, but
+> reducing it would be important for some system, so, I can say that
+> this patch have advantages and disadvantages in terms of latency.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index fac5509..3ff24d4 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -389,6 +389,12 @@ struct zone {
+>  	int			compact_order_failed;
+>  #endif
 >  
->  struct sun4i_usb_phy_data {
-> -	struct clk *clk;
->  	void __iomem *base;
->  	struct mutex mutex;
->  	int num_phys;
-> @@ -71,6 +70,7 @@ struct sun4i_usb_phy_data {
->  		void __iomem *pmu;
->  		struct regulator *vbus;
->  		struct reset_control *reset;
-> +		struct clk *clk;
->  		int index;
->  	} phys[MAX_PHYS];
->  };
-> @@ -146,13 +146,13 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->  	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
->  	int ret;
+> +#ifdef CONFIG_CMA
+> +	int has_cma;
+> +	int nr_try_cma;
+> +	int nr_try_movable;
+> +#endif
+
+
+Can you write documentation around this ?
+
+> +
+>  	ZONE_PADDING(_pad1_)
 >  
-> -	ret = clk_prepare_enable(data->clk);
-> +	ret = clk_prepare_enable(phy->clk);
->  	if (ret)
->  		return ret;
->  
->  	ret = reset_control_deassert(phy->reset);
->  	if (ret) {
-> -		clk_disable_unprepare(data->clk);
-> +		clk_disable_unprepare(phy->clk);
->  		return ret;
->  	}
->  
-> @@ -170,11 +170,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->  static int sun4i_usb_phy_exit(struct phy *_phy)
->  {
->  	struct sun4i_usb_phy *phy = phy_get_drvdata(_phy);
-> -	struct sun4i_usb_phy_data *data = to_sun4i_usb_phy_data(phy);
->  
->  	sun4i_usb_phy_passby(phy, 0);
->  	reset_control_assert(phy->reset);
-> -	clk_disable_unprepare(data->clk);
-> +	clk_disable_unprepare(phy->clk);
->  
->  	return 0;
+>  	/* Fields commonly accessed by the page reclaim scanner */
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 674ade7..6f2b27b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -788,6 +788,16 @@ void __init __free_pages_bootmem(struct page *page, unsigned int order)
 >  }
-> @@ -225,6 +224,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  	struct device *dev = &pdev->dev;
->  	struct device_node *np = dev->of_node;
->  	struct phy_provider *phy_provider;
-> +	bool dedicated_clocks;
->  	struct resource *res;
->  	int i;
 >  
-> @@ -244,17 +244,16 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  	else
->  		data->disc_thresh = 2;
->  
-> +	if (of_device_is_compatible(np, "allwinner,sun6i-a31-usb-phy"))
-> +		dedicated_clocks = true;
-> +	else
-> +		dedicated_clocks = false;
+>  #ifdef CONFIG_CMA
+> +void __init init_alloc_ratio_counter(struct zone *zone)
+> +{
+> +	if (zone->has_cma)
+> +		return;
 > +
->  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_ctrl");
->  	data->base = devm_ioremap_resource(dev, res);
->  	if (IS_ERR(data->base))
->  		return PTR_ERR(data->base);
->  
-> -	data->clk = devm_clk_get(dev, "usb_phy");
-> -	if (IS_ERR(data->clk)) {
-> -		dev_err(dev, "could not get usb_phy clock\n");
-> -		return PTR_ERR(data->clk);
-> -	}
-> -
->  	/* Skip 0, 0 is the phy for otg which is not yet supported. */
->  	for (i = 1; i < data->num_phys; i++) {
->  		struct sun4i_usb_phy *phy = data->phys + i;
-> @@ -268,6 +267,17 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  			phy->vbus = NULL;
->  		}
->  
-> +		if (dedicated_clocks)
-> +			snprintf(name, sizeof(name), "usb%d_phy", i);
-> +		else
-> +			strlcpy(name, "usb_phy", sizeof(name));
+> +	zone->has_cma = 1;
+> +	zone->nr_try_movable = 0;
+> +	zone->nr_try_cma = 0;
+> +}
 > +
-> +		phy->clk = devm_clk_get(dev, name);
-> +		if (IS_ERR(phy->clk)) {
-> +			dev_err(dev, "failed to get clock %s\n", name);
-> +			return PTR_ERR(phy->clk);
-> +		}
+>  /* Free whole pageblock and set its migration type to MIGRATE_CMA. */
+>  void __init init_cma_reserved_pageblock(struct page *page)
+>  {
+> @@ -803,6 +813,7 @@ void __init init_cma_reserved_pageblock(struct page *page)
+>  	set_pageblock_migratetype(page, MIGRATE_CMA);
+>  	__free_pages(page, pageblock_order);
+>  	adjust_managed_page_count(page, pageblock_nr_pages);
+> +	init_alloc_ratio_counter(page_zone(page));
+>  }
+>  #endif
+>  
+> @@ -1136,6 +1147,69 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+>  	return NULL;
+>  }
+>  
+> +#ifdef CONFIG_CMA
+> +static struct page *__rmqueue_cma(struct zone *zone, unsigned int order,
+> +						int migratetype)
+> +{
+> +	long free, free_cma, free_wmark;
+> +	struct page *page;
 > +
->  		snprintf(name, sizeof(name), "usb%d_reset", i);
->  		phy->reset = devm_reset_control_get(dev, name);
->  		if (IS_ERR(phy->reset)) {
-> @@ -305,6 +315,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  static const struct of_device_id sun4i_usb_phy_of_match[] = {
->  	{ .compatible = "allwinner,sun4i-a10-usb-phy" },
->  	{ .compatible = "allwinner,sun5i-a13-usb-phy" },
-> +	{ .compatible = "allwinner,sun6i-a31-usb-phy" },
+> +	if (migratetype != MIGRATE_MOVABLE || !zone->has_cma)
+> +		return NULL;
+> +
+> +	if (zone->nr_try_movable)
+> +		goto alloc_movable;
+> +
+> +alloc_cma:
+> +	if (zone->nr_try_cma) {
+> +		/* Okay. Now, we can try to allocate the page from cma region */
+> +		zone->nr_try_cma--;
+> +		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
+> +
+> +		/* CMA pages can vanish through CMA allocation */
+> +		if (unlikely(!page && order == 0))
+> +			zone->nr_try_cma = 0;
+> +
+> +		return page;
+> +	}
+> +
+> +	/* Reset ratio counter */
+> +	free_cma = zone_page_state(zone, NR_FREE_CMA_PAGES);
+> +
+> +	/* No cma free pages, so recharge only movable allocation */
+> +	if (free_cma <= 0) {
+> +		zone->nr_try_movable = pageblock_nr_pages;
+> +		goto alloc_movable;
+> +	}
+> +
+> +	free = zone_page_state(zone, NR_FREE_PAGES);
+> +	free_wmark = free - free_cma - high_wmark_pages(zone);
+> +
+> +	/*
+> +	 * free_wmark is below than 0, and it means that normal pages
+> +	 * are under the pressure, so we recharge only cma allocation.
+> +	 */
+> +	if (free_wmark <= 0) {
+> +		zone->nr_try_cma = pageblock_nr_pages;
+> +		goto alloc_cma;
+> +	}
+> +
+> +	if (free_wmark > free_cma) {
+> +		zone->nr_try_movable =
+> +			(free_wmark * pageblock_nr_pages) / free_cma;
+> +		zone->nr_try_cma = pageblock_nr_pages;
+> +	} else {
+> +		zone->nr_try_movable = pageblock_nr_pages;
+> +		zone->nr_try_cma = free_cma * pageblock_nr_pages / free_wmark;
+> +	}
 
-Do you have Documentation for this comptible binding? Would be good to mention
-that in the commit log.
+Can you add the commit message documentation here. 
 
-Thanks
-Kishon
+> +
+> +	/* Reset complete, start on movable first */
+> +alloc_movable:
+> +	zone->nr_try_movable--;
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  /*
+>   * Do the hard work of removing an element from the buddy allocator.
+>   * Call me with the zone->lock already held.
+> @@ -1143,10 +1217,14 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+>  static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>  						int migratetype)
+>  {
+> -	struct page *page;
+> +	struct page *page = NULL;
+> +
+> +	if (IS_ENABLED(CONFIG_CMA))
+> +		page = __rmqueue_cma(zone, order, migratetype);
+
+It would be better to move the migrate check here, So that it becomes 
+
+         /* For migrate movable allocation try cma area first */
+	if (IS_ENABLED(CONFIG_CMA) && (migratetype == MIGRATE_MOVABLE))
+
+
+
+>  
+>  retry_reserve:
+> -	page = __rmqueue_smallest(zone, order, migratetype);
+> +	if (!page)
+> +		page = __rmqueue_smallest(zone, order, migratetype);
+>  
+>  	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
+>  		page = __rmqueue_fallback(zone, order, migratetype);
+> @@ -4849,6 +4927,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>  		zone_seqlock_init(zone);
+>  		zone->zone_pgdat = pgdat;
+>  		zone_pcp_init(zone);
+> +		if (IS_ENABLED(CONFIG_CMA))
+> +			zone->has_cma = 0;
+>  
+>  		/* For bootup, initialized properly in watermark setup */
+>  		mod_zone_page_state(zone, NR_ALLOC_BATCH, zone->managed_pages);
+> -- 
+> 1.7.9.5
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
