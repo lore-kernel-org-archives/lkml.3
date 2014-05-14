@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaENTny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 15:43:54 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:64257 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaENTnx convert rfc822-to-8bit (ORCPT
+	id S1752138AbaENToI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 15:44:08 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:62362 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaENToE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 15:43:53 -0400
+	Wed, 14 May 2014 15:44:04 -0400
+Message-ID: <5372E1C6.5070109@gmail.com>
+Date: Wed, 14 May 2014 05:23:50 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140514193339.GA18197@kroah.com>
-References: <20140512031029.GA18875@psychosnugglebunnies.net>
-	<20140514204738.60a2f49c@neptune.home>
-	<CAKMK7uFDJym3fKewmivps_894_P_ifQ0TYeBXg5oevP6wrz1zw@mail.gmail.com>
-	<20140514193339.GA18197@kroah.com>
-Date: Wed, 14 May 2014 15:43:53 -0400
-X-Google-Sender-Auth: mxRPCofnkB3mKDMmYXkjka6TZog
-Message-ID: <CA+5PVA57hWTE8XuQWzadh+Cyd0iB5Ne7SM60ZzAS=Nu-5-AtAA@mail.gmail.com>
-Subject: Re: [Intel-gfx] 3.14.3 i915 dead display under X11
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Carbonated Beverage <ramune@psychosnugglebunnies.net>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>
+Subject: Re: [PATCH 1/3] sched: Make sched_setattr() correctly return -EFBIG
+References: <536CEAEE.4010609@gmail.com> <536CEC17.9070903@gmail.com>
+In-Reply-To: <536CEC17.9070903@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 3:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, May 14, 2014 at 09:19:32PM +0200, Daniel Vetter wrote:
->> On Wed, May 14, 2014 at 08:47:38PM +0200, Bruno Prémont wrote:
->> > CCing intel-gfx as otherwise it will probably not get seen by developers.
->> >
->> > On Sun, 11 May 2014 Carbonated Beverage <ramune@psychosnugglebunnies.net> wrote:
->> > > Bisecting from 3.13.6 (good) to 3.14.3 (bad) ended up with...
->> > >
->> > > commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
->> > > Author: Jani Nikula <jani.nikula@intel.com>
->> > > Date:   Thu Nov 14 12:13:41 2013 +0200
->> > >
->> > >     drm/i915: do full backlight setup at enable time
->> > >
->> > >     We should now have all the information we need to do a full
->> > >     initialization of the backlight registers.
->> > >
->> > >     v2: Keep QUIRK_NO_PCH_PWM_ENABLE for now (Imre).
->> > >
->> > >     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
->> > >     Reviewed-by: Imre Deak <imre.deak@intel.com>
->> > >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->> > >
->> > > Which is in 3.12.0????
->> > >
->> > > I'm not sure how that came to be.  Does that look right?  What other
->> > > information would be required to track this down?
->>
->> We've killed this again in 3.14 since we've hoped the backlight rework in
->> there fixed it. For 3.15 we finally have the right fix - vbt has a bit
->> telling us not to look at the integrated PWM for the panel.
->>
->> For 3.14 we will (again) resurrect the quirk because the vbt thing is a
->> bit too risky an imo needs a full -rc cycle for testing. But that revert
->> is currently stalled because Greg KH is travelling too much ;-)
->>
->> Cc'ing him to make sure that patch doesn't miss the next 3.14.x release.
->
-> What specific patch are you wanting to make sure makes it in?  I've been
+Peter,
 
-Subject: [PATCH for stable 3.14 only 0/1] drm/i915: restore
-QUIRK_NO_PCH_PWM_ENABLE
+In the title of this patch, EFBIG should have been E2BIG. Shall
+I resubmit a corrected version?
 
-> avoiding all of the drm patches so far for 3.14.y as it's an easy thing
-> to do, but I'll eventually have to start paying attention to them :)
+Cheers,
 
-Jani has bugged you twice about it I think.  You've said it's not lost
-both times.  Third time is a charm?
+Michael
 
-josh
+On 05/09/2014 04:54 PM, Michael Kerrisk (man-pages) wrote:
+> From: Michael Kerrisk <mtk.manpages@gmail.com>
+> 
+> The documented[1] behavior of sched_attr() in your proposed man page text is:
+> 
+>     sched_attr::size must be set to the size of the structure, as in
+>     sizeof(struct sched_attr), if the provided structure is smaller
+>     than the kernel structure, any additional fields are assumed
+>     '0'. If the provided structure is larger than the kernel structure,
+>     the kernel verifies all additional fields are '0' if not the
+>     syscall will fail with -E2BIG.
+> 
+> As currently implemented, sched_copy_attr() returns -EFBIG for
+> for this case, but the logic in sys_sched_setattr() converts that
+> error to -EFAULT. This patch fixes the behavior.
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel/1615615/focus=1697760
+> 
+> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+> ---
+>  kernel/sched/core.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 268a45e..6c9ce28 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3650,8 +3650,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
+>  	if (!uattr || pid < 0 || flags)
+>  		return -EINVAL;
+>  
+> -	if (sched_copy_attr(uattr, &attr))
+> -		return -EFAULT;
+> +	retval = sched_copy_attr(uattr, &attr);
+> +	if (retval)
+> +		return retval;
+>  
+>  	rcu_read_lock();
+>  	retval = -ESRCH;
+> 
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
