@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaENIEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:04:30 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:39279 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990AbaENIET (ORCPT
+	id S1753282AbaENIEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:04:40 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:33470 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356AbaENIEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:04:19 -0400
+	Wed, 14 May 2014 04:04:34 -0400
 From: Chander Kashyap <chander.kashyap@linaro.org>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org,
@@ -14,9 +14,9 @@ To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
 Cc: daniel.lezcano@linaro.org, lorenzo.pieralisi@arm.com, rjw@rjwysocki.net,
         kgene.kim@samsung.com, Chander Kashyap <chander.kashyap@linaro.org>,
         Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH v5 1/6] driver: cpuidle-big-little: add of_device_id structure
-Date: Wed, 14 May 2014 13:33:52 +0530
-Message-Id: <1400054637-21505-2-git-send-email-chander.kashyap@linaro.org>
+Subject: [PATCH v5 4/6] driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+Date: Wed, 14 May 2014 13:33:55 +0530
+Message-Id: <1400054637-21505-5-git-send-email-chander.kashyap@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
 References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
@@ -25,47 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver will be used by many big.Little Soc's. As of now it does
-string matching of hardcoded compatible string to init the driver. This
-comparison list will keep on growing with addition of new SoC's.
-Hence add of_device_id structure to collect the compatible strings of
-SoC's using this driver.
+Add "samsung,exynos5420" compatible string to initialize generic
+big-little cpuidle driver for Exynos5420.
 
 Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
 Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/cpuidle/cpuidle-big_little.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Changes in v4: None
+Changes in v3:
+	1. Add compatible string to of_device_id table insted comparing directoly
+Changes in v2: none
+
+ drivers/cpuidle/cpuidle-big_little.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-index b45fc62..4cd02bd 100644
+index 4cd02bd..344d79fa 100644
 --- a/drivers/cpuidle/cpuidle-big_little.c
 +++ b/drivers/cpuidle/cpuidle-big_little.c
-@@ -163,14 +163,23 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
- 	return 0;
- }
+@@ -165,6 +165,7 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
  
-+static const struct of_device_id compatible_machine_match[] = {
-+	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
-+	{},
-+};
-+
- static int __init bl_idle_init(void)
- {
- 	int ret;
-+	struct device_node *root = of_find_node_by_path("/");
-+
-+	if (!root)
-+		return -ENODEV;
+ static const struct of_device_id compatible_machine_match[] = {
+ 	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
++	{ .compatible = "samsung,exynos5420" },
+ 	{},
+ };
  
- 	/*
- 	 * Initialize the driver just for a compliant set of machines
- 	 */
--	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
-+	if (!of_match_node(compatible_machine_match, root))
- 		return -ENODEV;
- 	/*
- 	 * For now the differentiation between little and big cores
 -- 
 1.7.9.5
 
