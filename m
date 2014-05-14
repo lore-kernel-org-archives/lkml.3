@@ -1,96 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbaENLri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 07:47:38 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:52995 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429AbaENLre (ORCPT
+	id S1755460AbaENLsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 07:48:20 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:63236 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948AbaENLsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 07:47:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
+	Wed, 14 May 2014 07:48:19 -0400
+Message-ID: <537357FE.2050803@gmail.com>
+Date: Wed, 14 May 2014 13:48:14 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] mtd: orion-nand: fix build error with ARMv4
-Date: Wed, 14 May 2014 13:47:20 +0200
-Message-ID: <4645786.pJABUgPlCA@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140513205548.GC22907@obsidianresearch.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de> <20140509220915.GA391@arch.cereza> <20140513205548.GC22907@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:fx+WR49xISKGcz6m1pAawPCepP4HolBOy4mfuVz8dP7
- P3BYKcOYCaWIZ+JPKiRW8ZQosZl6N+RX1RSbBi/R3Ec8SRGW5j
- axI/jOYtIuzAAaPhDCSiMOF/qlADUupGJ39owq/K6VRr6DtlV1
- nwkyum4ho3w11L0UybS+sMsoHpUJ6fImC/0w+EzToDET61t2Dx
- 3LX78kd6Ye8Fq0S6bEJ2e9yI0zykJiEgq8J1GHLOXBVUILFd9c
- GxZDm1altQ7GKl/IaESPJ9EuG8Ab54n1vvIyEcAtz4E3Dsa3Dq
- THwnEYo+s2vqcrLy3Em4ABJ30OvTZcCvQMT6vli03W/PozC0mp
- rDidgQ6T+kQ6snniNcwY=
+Subject: Re: [PATCH 6/8] clk: berlin: add core clock driver for BG2/BG2CD
+References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com> <1399839881-29895-7-git-send-email-sebastian.hesselbarth@gmail.com> <20140514114315.GJ29318@piout.net>
+In-Reply-To: <20140514114315.GJ29318@piout.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 May 2014 14:55:48 Jason Gunthorpe wrote:
-> On Fri, May 09, 2014 at 07:09:15PM -0300, Ezequiel Garcia wrote:
-> > On 09 May 03:28 PM, Jason Gunthorpe wrote:
-> > > 
-> > > > I gave this a try in order to answer Arnd's performance
-> > > > question. First of all, the patch seems wrong. I guess it's because
-> > > > readsl reads 4-bytes pieces, instead of 8-bytes.
-> > > > 
-> > > > This patch below is tested (but not completely, see below) and works:
-> > > 
-> > > Compilers are better now, I think you can just ditch the weirdness:
-> > > 
-> > [..]
-> > > 
-> > > The below gives:
-> > > 
-> > >   c8:   ea000002        b       d8 <orion_nand_read_buf+0x84>
-> > >   cc:   e5dc0000        ldrb    r0, [ip]
-> > >   d0:   e7c30001        strb    r0, [r3, r1]
-> > >   d4:   e2811001        add     r1, r1, #1
-> > >   d8:   e1510002        cmp     r1, r2
-> > > 
-> > > Which looks the same as the asm version to me.
-> > > 
-> > 
-> > Nice! It wasn't really needed but since I have the board here:
-> > 
-> > # time nanddump /dev/mtd5 -f /dev/null -q
-> > real  0m 5.82s
-> > user  0m 0.20s
-> > sys   0m 5.60s
-> > 
-> > Jason: Care to submit a proper patch?
-> 
-> Sure, but did anyone (Arnd?) have thoughts on a better way to do this:
-> 
-> +#ifdef CONFIG_64BIT
-> +               buf64[i++] = readq_relaxed(io_base);
-> +#else
-> +               buf64[i++] = *(const volatile u64 __force *)io_base;
-> +#endif
+On 05/14/2014 01:43 PM, Alexandre Belloni wrote:
+> On 11/05/2014 at 22:24:39 +0200, Sebastian Hesselbarth wrote :
+>> This driver deals with the core clocks found on Marvell Berlin
+>> BG2 and BG2CD. For the shared register dividers, make use of the
+>> corresponding driver and add some single clock muxes and gates for
+>> the rest.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+[...]
+>> diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
+>> new file mode 100644
+>> index 000000000000..7fe04e11861b
+>> --- /dev/null
+>> +++ b/drivers/clk/berlin/bg2.c
+>> @@ -0,0 +1,509 @@
+>> +/*
+>> + * Copyright (c) 2014 Marvell Technology Group Ltd.
+>> + *
+>> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> + * Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License along with
+>> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/clk-provider.h>
+>> +#include <linux/io.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/slab.h>
+>> +
+>> +#include "berlin2-div.h"
+>> +
+>> +/*
+>> + * BG2/BG2CD SoCs have the following audio/video I/O units:
+>> + *
+>> + * audiohd: HDMI TX audio
+>> + * audio0:  7.1ch TX
+>> + * audio1:  2ch TX
+>> + * audio2:  2ch RX
+>> + * audio3:  SPDIF TX
+>> + * video0:  HDMI video
+>> + * video1:  Secondary video
+>> + * video2:  SD auxiliary video
+>> + *
+>> + * There are no external audio clocks (ACLKI0, ACLKI1) and
+>> + * only one external video clock (VCLKI0).
+>> + *
+>> + * Currently missing bits and pieces:
+>> + * - audio_fast_pll is unknown
+>> + * - audiohd_pll is unknown
+>> + * - video0_pll is unknown
+>> + * - audio[023], audiohd parent pll is assumed to be audio_fast_pll
+>> + *
+>> + */
+>> +
+>> +struct bg2_gate_data {
+>> +	const char *name;
+>> +	const char *parent_name;
+>> +	u8 bit_idx;
+>> +	unsigned long flags;
+>> +};
+>> +
+>> +#define REG_CLKENABLE		0x00
+>> +#define REG_CLKSELECT0		0x04
+>> +#define REG_CLKSELECT1		0x08
+>> +#define REG_CLKSELECT2		0x0c
+>> +#define REG_CLKSELECT3		0x10
+>> +#define REG_CLKSWITCH0		0x14
+>> +#define REG_CLKSWITCH1		0x18
+>> +
+>> +enum {
+>> +	/* clock divider cells */
+>> +	SYS, CPU, DRMFIGO, CFG, GFX, ZSP, PERIF, PCUBE, VSCOPE, NFC_ECC,
+>> +	VPP, APP, AUDIO0, AUDIO2, AUDIO3, AUDIO1,
+>> +	/* clock gates */
+>> +	GETH0, GETH1, SATA, AHBAPB, USB0, USB1, PBRIDGE, SDIO0, SDIO1,
+>> +	NFC, SMEMC, AUDIOHD, VIDEO0, VIDEO1, VIDEO2,
+>> +	MAX_CLKS
+>> +};
+>> +
 >
-> IMHO, readq should exist on any platform that can issue a 64 bit bus
-> transaction, and I expect many ARM's qualify.
+> Shouldn't you reuse the CLKID_* that you are introducing in
+> dt-bindings/clock/berlin2.h in a following patch there ?
+> That would prevent inconsistencies.
 
-Well, the original problem happened specifically for the case that doesn't
-have a 64-bit bus transaction (building for ARMv4). If we define
-readq_relaxed, it has to be an inline assembly, in order to work for
-drivers that require an atomic transaction, so that would have the
-same problem. We are a bit inconsistent here though: most 32-bit
-architectures have no readq, parisc has one that does two 32-bit accesses,
-sh relies on the compiler, and tile apparently has a native instruction.
+I didn't follow the discussion of whether it is reasonable to
+include dt-bindings/foo.h into driver code. But a quick git grep
+reveals at least some drivers do it.
 
-It seems reasonable to replace the inline assembly in this driver with
-a new function as a cleanup, but then how do you want to solve the case
-of building a combined armv4/v5 kernel?
+So, yes, if that is still valid, I fix it up to reuse the dt-binding
+include here.
 
-	Arnd
+Sebastian
+
