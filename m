@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaENIVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:21:10 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49772 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaENIVF (ORCPT
+	id S1753746AbaENIVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:21:32 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39459 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbaENIV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:21:05 -0400
-Subject: [PATCH -tip v11 3/7] kprobes/x86: Use kprobe_blacklist for
- .kprobes.text and .entry.text
+	Wed, 14 May 2014 04:21:26 -0400
+Subject: [PATCH -tip v11 6/7] kprobes: Introduce kprobe cache to reduce
+ cache misshits
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>, fche@redhat.com,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 May 2014 17:20:56 +0900
-Message-ID: <20140514082056.5791.33122.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 14 May 2014 17:21:16 +0900
+Message-ID: <20140514082116.5791.73641.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -33,170 +30,322 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
-instead of arch_within_kprobe_blacklist. This also makes them visible
-via (debugfs)/kprobes/blacklist.
+Introduce kprobe cache to reduce cache misshits for
+massive multiple kprobes.
+For stress testing kprobes, we need to activate kprobes
+as many as possible. This situation causes cache miss
+hit storm on kprobe hash-list. kprobe hashlist is already
+enlarged to 512 entries and this is still small for 40k
+kprobes.
+
+For example, when registering 40k probes on the hlist and
+enabling 20k probes, perf tools shows still a lot of
+cache-misses are on the get_kprobe.
+  ----
+  Samples: 633  of event 'cache-misses', Event count (approx.): 3414776
+  +  68.13%  [k] get_kprobe
+  +   4.38%  [k] ftrace_lookup_ip
+  +   2.54%  [k] kprobe_ftrace_handler
+  ----
+
+Also, I found that the most of the kprobes are not hit.
+In that case, to reduce cache-misses, we can reduce the
+random memory access by introducing a per-cpu cache which
+caches the address of frequently used kprobe data structure
+and its probe address.
+
+With kpcache enabled, the get_kprobe_cached goes down to
+around 4-5% of cache-misses with 20k probes.
+  ----
+  Samples: 729  of event 'cache-misses', Event count (approx.): 690125
+  +  14.49%  [k] ftrace_lookup_ip
+  +   5.61%  [k] kprobe_trace_func
+  +   5.17%  [k] kprobe_ftrace_handler
+  +   4.62%  [k] get_kprobe_cached
+  ----
+
+Of course this reduces the enabling time too.
+
+Without this fix (just enlarge hash table):
+(2934 sec, 1 min intervals for each 2000 probes enabled)
+
+  ----
+  Enabling trace events: start at 1393921862
+  0 1393921864 a2mp_chan_alloc_skb_cb_38581
+  ...
+  19999 1393924928 nfs4_open_confirm_done_11785
+  ----
+
+With this fix:
+(2025 sec, 1 min intervals for each 2000 probes enabled)
+  ----
+  Enabling trace events: start at 1393912623
+  0 1393912625 a2mp_chan_alloc_skb_cb_38800
+  ....
+  19999 1393914648 nfs2_xdr_dec_readlinkres_11628
+  ----
+
+This patch implements a simple per-cpu 4way/512entry cache
+for kprobes hlist. All get_kprobe on hot-path uses the cache
+and if the cache miss-hit, it searches kprobes on the hlist
+and inserts the found kprobes to the cache entry.
+When removing kprobes, it clears cache entries by using IPI,
+because it is per-cpu cache.
+
+Note that this consumes some amount of memory (34KB per cpu)
+compared with previous one (4KB total) only for kprobes.
+
+Changes from v10:
+ - Use ACCESS_ONCE and barrier() to ensure acquiring cached
+   kprobe right before checking cache-update.
+ - Retry cache read if th cache is updated.
+ - Update cache index when invalidate entry.
+ - Update comment of kpcache_invalidate().
+
+Changes from v9:
+ - Add a comment for kpcache_invalidate().
+ - Remove CONFIG_KPROBE_CACHE kconfig according to Ingo's suggestion.
+
+Changes from v7:
+ - Re-evaluate the performance improvements with 512 entry size.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/kernel/kprobes/core.c |   11 +------
- include/linux/kprobes.h        |    1 +
- kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
- 3 files changed, 48 insertions(+), 28 deletions(-)
+ arch/x86/kernel/kprobes/core.c   |    2 -
+ arch/x86/kernel/kprobes/ftrace.c |    2 -
+ include/linux/kprobes.h          |    1 
+ kernel/kprobes.c                 |  142 +++++++++++++++++++++++++++++++++++---
+ 4 files changed, 135 insertions(+), 12 deletions(-)
 
 diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 7596df6..c7e29f7 100644
+index cec5879..69b42f7 100644
 --- a/arch/x86/kernel/kprobes/core.c
 +++ b/arch/x86/kernel/kprobes/core.c
-@@ -1068,17 +1068,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- }
- NOKPROBE_SYMBOL(longjmp_break_handler);
+@@ -576,7 +576,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
  
--bool arch_within_kprobe_blacklist(unsigned long addr)
--{
--	return  (addr >= (unsigned long)__kprobes_text_start &&
--		 addr < (unsigned long)__kprobes_text_end) ||
--		(addr >= (unsigned long)__entry_text_start &&
--		 addr < (unsigned long)__entry_text_end);
--}
--
- int __init arch_init_kprobes(void)
- {
--	return 0;
-+	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
-+					  (unsigned long) __entry_text_end);
- }
+ 	kcb = get_kprobe_ctlblk();
+-	p = get_kprobe(addr);
++	p = get_kprobe_cached(addr);
  
- int arch_trampoline_kprobe(struct kprobe *p)
+ 	if (p) {
+ 		if (kprobe_running()) {
+diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
+index 717b02a..8178dd4 100644
+--- a/arch/x86/kernel/kprobes/ftrace.c
++++ b/arch/x86/kernel/kprobes/ftrace.c
+@@ -63,7 +63,7 @@ void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 	/* Disable irq for emulating a breakpoint and avoiding preempt */
+ 	local_irq_save(flags);
+ 
+-	p = get_kprobe((kprobe_opcode_t *)ip);
++	p = get_kprobe_cached((kprobe_opcode_t *)ip);
+ 	if (unlikely(!p) || kprobe_disabled(p))
+ 		goto end;
+ 
 diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index e059507..e81bced 100644
+index e81bced..70c3314 100644
 --- a/include/linux/kprobes.h
 +++ b/include/linux/kprobes.h
-@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
- extern bool arch_within_kprobe_blacklist(unsigned long addr);
-+extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
+@@ -339,6 +339,7 @@ extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
  
- struct kprobe_insn_cache {
- 	struct mutex mutex;
+ /* Get the kprobe at this addr (if any) - called with preemption disabled */
+ struct kprobe *get_kprobe(void *addr);
++struct kprobe *get_kprobe_cached(void *addr);
+ void kretprobe_hash_lock(struct task_struct *tsk,
+ 			 struct hlist_head **head, unsigned long *flags);
+ void kretprobe_hash_unlock(struct task_struct *tsk, unsigned long *flags);
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 8319048..abdede5 100644
+index a29e622..f0ea46c 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -1325,13 +1325,6 @@ out:
- 	return ret;
- }
+@@ -91,6 +91,97 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ static LIST_HEAD(kprobe_blacklist);
+ static DEFINE_MUTEX(kprobe_blacklist_mutex);
  
--bool __weak arch_within_kprobe_blacklist(unsigned long addr)
--{
--	/* The __kprobes marked functions and entry code must not be probed */
--	return addr >= (unsigned long)__kprobes_text_start &&
--	       addr < (unsigned long)__kprobes_text_end;
--}
--
- static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- {
- 	struct kprobe_blacklist_entry *ent;
-@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- 
- static bool within_kprobe_blacklist(unsigned long addr)
- {
--	if (arch_within_kprobe_blacklist(addr))
--		return true;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
- 	 * fail any probe registration in the prohibited area
-@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
- }
- NOKPROBE_SYMBOL(dump_kprobe);
- 
-+static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
++/* Kprobe cache */
++#define KPCACHE_BITS	2
++#define KPCACHE_SIZE	(1 << KPCACHE_BITS)
++#define KPCACHE_INDEX(i)	((i) & (KPCACHE_SIZE - 1))
++
++struct kprobe_cache_entry {
++	unsigned long addr;
++	struct kprobe *kp;
++};
++
++struct kprobe_cache {
++	struct kprobe_cache_entry table[KPROBE_TABLE_SIZE][KPCACHE_SIZE];
++	int index[KPROBE_TABLE_SIZE];
++};
++
++static DEFINE_PER_CPU(struct kprobe_cache, kpcache);
++
++static inline
++struct kprobe *kpcache_get(unsigned long hash, unsigned long addr)
 +{
-+	struct kprobe_blacklist_entry *ent;
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	struct kprobe *ret = NULL;
++	int i, idx;
 +
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->start_addr = start;
-+	ent->end_addr = end;
-+	INIT_LIST_HEAD(&ent->list);
-+	list_add_tail(&ent->list, &kprobe_blacklist);
-+	return 0;
-+}
-+
-+int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long offset = 0, size = 0;
-+	int err = 0;
-+
-+	mutex_lock(&kprobe_blacklist_mutex);
-+	while (!err && start < end) {
-+		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
-+		    size == 0) {
-+			err = -ENOENT;
++retry:
++	idx = ACCESS_ONCE(cache->index[hash]);
++	for (i = 0; i < KPCACHE_SIZE; i++)
++		if (ent[i].addr == addr) {
++			/* Save the current value */
++			ret = ACCESS_ONCE(ent[i].kp);
 +			break;
 +		}
-+		err = __kprobe_blacklist_add(start, start + size);
-+		start += size;
-+	}
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+	return err;
++	barrier();
++	/* Retry if the cache is updated */
++	if (unlikely(idx != ACCESS_ONCE(cache->index[hash])))
++		goto retry;
++
++	return ret;
 +}
 +
++static inline void kpcache_set(unsigned long hash, unsigned long addr,
++				struct kprobe *kp)
++{
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	int i = KPCACHE_INDEX(cache->index[hash]++);
++
++	/*
++	 * Setting must be done in this order for avoiding interruption;
++	 * (1)invalidate entry, (2)set the value, and (3)enable entry.
++	 */
++	ent[i].addr = 0;
++	barrier();
++	ent[i].kp = kp;
++	barrier();
++	ent[i].addr = addr;
++}
++
++static void kpcache_invalidate_this_cpu(void *addr)
++{
++	unsigned long hash = hash_ptr(addr, KPROBE_HASH_BITS);
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	int i;
++
++	for (i = 0; i < KPCACHE_SIZE; i++)
++		if (ent[i].addr == (unsigned long)addr) {
++			ent[i].addr = 0;
++			/* Disturb the round-robin for better utilization */
++			i += KPCACHE_SIZE - KPCACHE_INDEX(cache->index[hash]);
++			cache->index[hash] += i; /* Update cache index */
++		}
++}
++
++/* This must be called after ensuring the kprobe is removed from hlist */
++static void kpcache_invalidate(unsigned long addr)
++{
++	on_each_cpu(kpcache_invalidate_this_cpu, (void *)addr, 1);
++	/*
++	 * Here is a trick. Normally, we need another synchronize_rcu() here,
++	 * but all kpcache users are called from arch-dependent kprobe handler
++	 * which runs as an interrupt handler. Since kpcache invalidation is
++	 * done in IPI handler on each processor, kprobe handlers have left
++	 * from the cached kprobe at this point. Note that kpcache_invalidate()
++	 * waits for finishing IPIs, all kprobes before running IPI have done,
++	 * and the kprobes after the IPI can not access invalideted data.
++	 * So it is already safe to release them beyond this point.
++	 */
++}
++
+ #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
  /*
-  * Lookup and populate the kprobe_blacklist.
-  *
-@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
- static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+  * kprobe->ainsn.insn points to the copy of the instruction to be
+@@ -297,18 +388,13 @@ static inline void reset_kprobe_instance(void)
+ 	__this_cpu_write(kprobe_instance, NULL);
+ }
+ 
+-/*
+- * This routine is called either:
+- * 	- under the kprobe_mutex - during kprobe_[un]register()
+- * 				OR
+- * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
+- */
+-struct kprobe *get_kprobe(void *addr)
++static nokprobe_inline
++struct kprobe *__get_kprobe(void *addr, unsigned long hash)
  {
- 	unsigned long *iter;
--	struct kprobe_blacklist_entry *ent;
- 	unsigned long offset = 0, size = 0;
-+	int ret;
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
  
- 	mutex_lock(&kprobe_blacklist_mutex);
- 	for (iter = start; iter < end; iter++) {
-@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
- 			continue;
- 		}
--
--		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
--		if (!ent)
--			return -ENOMEM;
--		ent->start_addr = *iter;
--		ent->end_addr = *iter + size;
--		INIT_LIST_HEAD(&ent->list);
--		list_add_tail(&ent->list, &kprobe_blacklist);
-+		ret = __kprobe_blacklist_add(*iter, *iter + size);
- 	}
- 	mutex_unlock(&kprobe_blacklist_mutex);
+-	head = &kprobe_table[hash_ptr(addr, KPROBE_HASH_BITS)];
++	head = &kprobe_table[hash];
+ 	hlist_for_each_entry_rcu(p, head, hlist) {
+ 		if (p->addr == addr)
+ 			return p;
+@@ -316,8 +402,41 @@ struct kprobe *get_kprobe(void *addr)
  
-@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
- 
- 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
- 					__stop_kprobe_blacklist);
--	if (err) {
+ 	return NULL;
+ }
 +
-+	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
-+		/* The __kprobes marked functions must not be probed */
-+		err = kprobe_blacklist_add_range(
-+					(unsigned long)__kprobes_text_start,
-+					(unsigned long)__kprobes_text_end);
-+	}
++/*
++ * This routine is called either:
++ *  - under the kprobe_mutex - during kprobe_[un]register()
++ * OR
++ *  - with preemption disabled - from arch/xxx/kernel/kprobes.c
++ */
++struct kprobe *get_kprobe(void *addr)
++{
++	return __get_kprobe(addr, hash_ptr(addr, KPROBE_HASH_BITS));
++}
+ NOKPROBE_SYMBOL(get_kprobe);
+ 
++/*
++ * This must be called from kprobe internal arch-dependent functions
++ * which interrupts in the normal kernel path. For other usecases,
++ * please use get_kprobe() for safe.
++ */
++struct kprobe *get_kprobe_cached(void *addr)
++{
++	unsigned long hash = hash_ptr(addr, KPROBE_HASH_BITS);
++	struct kprobe *p;
 +
-+	if (err < 0) {
- 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
- 		pr_err("Please take care of using kprobes.\n");
++	p = kpcache_get(hash, (unsigned long)addr);
++	if (likely(p))
++		return p;
++
++	p = __get_kprobe(addr, hash);
++	if (likely(p))
++		kpcache_set(hash, (unsigned long)addr, p);
++	return p;
++}
++NOKPROBE_SYMBOL(get_kprobe_cached);
++
++
+ static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
+ 
+ /* Return true if the kprobe is an aggregator */
+@@ -518,6 +637,7 @@ static void do_free_cleaned_kprobes(void)
+ 	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
+ 		BUG_ON(!kprobe_unused(&op->kp));
+ 		list_del_init(&op->list);
++		kpcache_invalidate((unsigned long)op->kp.addr);
+ 		free_aggr_kprobe(&op->kp);
  	}
+ }
+@@ -1639,13 +1759,15 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
+ {
+ 	struct kprobe *ap;
+ 
+-	if (list_empty(&p->list))
++	if (list_empty(&p->list)) {
+ 		/* This is an independent kprobe */
++		kpcache_invalidate((unsigned long)p->addr);
+ 		arch_remove_kprobe(p);
+-	else if (list_is_singular(&p->list)) {
++	} else if (list_is_singular(&p->list)) {
+ 		/* This is the last child of an aggrprobe */
+ 		ap = list_entry(p->list.next, struct kprobe, list);
+ 		list_del(&p->list);
++		kpcache_invalidate((unsigned long)p->addr);
+ 		free_aggr_kprobe(ap);
+ 	}
+ 	/* Otherwise, do nothing. */
 
 
