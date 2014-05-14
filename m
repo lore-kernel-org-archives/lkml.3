@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaENP4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 11:56:09 -0400
-Received: from 8bytes.org ([85.214.48.195]:46168 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755426AbaENP4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 11:56:06 -0400
-Date: Wed, 14 May 2014 17:56:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-doc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, linux-pci@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v3 0/4] Clean up DMA API docs and dma_addr_t usage
-Message-ID: <20140514155601.GF23770@8bytes.org>
-References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140514102307.GD6026@8bytes.org>
- <537390BE.3010307@infradead.org>
+	id S932102AbaENP5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 11:57:14 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40596 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668AbaENP5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 11:57:12 -0400
+Date: Wed, 14 May 2014 08:57:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Uma Sharma <uma.sharma523@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/1] rcu: Variable name changed in
+ tree_plugin.h and used in tree.c
+Message-ID: <20140514155706.GG4570@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1400027459-29427-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140514154150.GA1873@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <537390BE.3010307@infradead.org>
+In-Reply-To: <20140514154150.GA1873@thin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed May 14 17:56:04 2014
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5373921420861849420876
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051415-1542-0000-0000-000001CC7C07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 08:50:22AM -0700, Randy Dunlap wrote:
-> On 05/14/2014 03:23 AM, Joerg Roedel wrote:
-> > On Thu, May 08, 2014 at 02:48:47PM -0600, Bjorn Helgaas wrote:
-> >> Maybe the third time's a charm :)
-> >>
-> >> This cleans up some DMA-API documentation and makes a minor no-op change to
-> >> the dma_declare_coherent_memory() prototype.
-> >>
-> >> Changes from v2:
-> >>   - Added description of CPU virtual/physical and bus addresses in
-> >>     DMA-API-HOWTO
-> >>   - Added comments to sh/PCI (Dreamcast) update
-> >>   - Dropped IOMMU interface dma_addr_t changes
-> >>
-> >> I didn't add Arnd's and Greg's acks to patch 1 because of all the new
-> >> address description text I added.
-> >>
-> >> ---
-> >>
-> >> Bjorn Helgaas (4):
-> >>       DMA-API: Clarify physical/bus address distinction
-> >>       DMA-API: Change dma_declare_coherent_memory() CPU address to phys_addr_t
-> >>       sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
-> >>       iommu/exynos: Remove unnecessary "&" from function pointers
+On Wed, May 14, 2014 at 08:41:50AM -0700, Josh Triplett wrote:
+> On Tue, May 13, 2014 at 05:30:59PM -0700, Paul E. McKenney wrote:
+> > From: Uma Sharma <uma.sharma523@gmail.com>
 > > 
-> > Applied patches 1-3 to my core branch and patch 4 to the arm/exynos
-> > branch. Patch 3 doesn't really belong into my tree, please let me know
-> > if there are any objections against it being there and I'll drop it.
+> > The variable and struct both having the name "rcu_state" confuses
+> > sparse in some situations, so this commit changes the variable to
+> > "rcu_state_p" in order to avoid this confusion.  This also makes
+> > things easier for human readers.
 > 
-> I was thinking that either Bjorn or I should merge patches 1 and 2.
+> Human readers aside, how does Sparse get confused?  Let's fix that.
 
-Okay, fine with me. Then I drop 1-3 entirely and only keep patch 4 in
-the exynos branch.
+OK.  The issue appears to be that we have a variable with the same
+name as a struct, as in:
 
+struct rcu_state *rcu_state;
 
-	Joerg
+Of course, now I don't recall the details or the kernel version, other
+than that the name change cleared things up.  :-/
 
+> Personally, I don't think the _p makes things particularly easier for
+> human readers, but it doesn't make things *harder* for anyone other than
+> those used to reading the existing code, so, *shrug*.
+
+It does make it a bit easier for me when grepping through the source,
+given the large number of "struct rcu_state" strings in there.  And
+yes, I should be using some more modern tools than "grep" and "cscope"!
+But I am not the only throwback.  ;-)
+
+							Thanx, Paul
 
