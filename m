@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaENN0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 09:26:49 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:58372 "EHLO
+	id S932114AbaENN0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 09:26:47 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:58375 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755899AbaENNZh (ORCPT
+	by vger.kernel.org with ESMTP id S1755739AbaENNZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 May 2014 09:25:37 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -21,9 +21,9 @@ Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>,
         Pankaj Dev <pankaj.dev@st.com>
-Subject: [PATCH v2 06/10] ARM: STi: DT: STiH415: 415 DT Entry for clockgen A0/1/10/11/12
-Date: Wed, 14 May 2014 15:24:14 +0200
-Message-Id: <1400073858-28912-7-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 01/10] ARM: STi: DT: STiH416: 416 DT Entry for clockgen A0/1/10/11/12
+Date: Wed, 14 May 2014 15:24:09 +0200
+Message-Id: <1400073858-28912-2-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -38,22 +38,22 @@ Patch adds DT entries for clockgen A0/1/10/11/12
 Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih415-clock.dtsi     | 475 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/stih415.dtsi           |  10 +-
- include/dt-bindings/clock/stih415-clks.h |  15 +
- 3 files changed, 495 insertions(+), 5 deletions(-)
- create mode 100644 include/dt-bindings/clock/stih415-clks.h
+ arch/arm/boot/dts/stih416-clock.dtsi     | 477 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi           |  10 +-
+ include/dt-bindings/clock/stih416-clks.h |  15 +
+ 3 files changed, 497 insertions(+), 5 deletions(-)
+ create mode 100644 include/dt-bindings/clock/stih416-clks.h
 
-diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
-index d047dbc..9b8f4c0 100644
---- a/arch/arm/boot/dts/stih415-clock.dtsi
-+++ b/arch/arm/boot/dts/stih415-clock.dtsi
-@@ -5,8 +5,15 @@
+diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+index a6942c7..9d16600 100644
+--- a/arch/arm/boot/dts/stih416-clock.dtsi
++++ b/arch/arm/boot/dts/stih416-clock.dtsi
+@@ -6,8 +6,15 @@
   * it under the terms of the GNU General Public License version 2 as
   * published by the Free Software Foundation.
   */
 +
-+#include <dt-bindings/clock/stih415-clks.h>
++#include <dt-bindings/clock/stih416-clks.h>
 +
  / {
  	clocks {
@@ -62,15 +62,15 @@ index d047dbc..9b8f4c0 100644
 +		ranges;
 +
  		/*
- 		 * Fixed 30MHz oscillator input to SoC
+ 		 * Fixed 30MHz oscillator inputs to SoC
  		 */
-@@ -48,5 +55,473 @@
+@@ -51,5 +58,475 @@
  			clock-frequency = <25000000>;
- 			clock-output-names = "CLKS_ETH1_PHY";
+ 			clock-output-names = "CLK_S_ETH1_PHY";
  		};
 +
 +		/*
-+		 * ClockGenAs on SASG1
++		 * ClockGenAs on SASG2
 +		 */
 +		clockgenA@fee62000 {
 +			reg = <0xfee62000 0xb48>;
@@ -126,7 +126,7 @@ index d047dbc..9b8f4c0 100644
 +						     "CLK_S_EMISS",
 +						     "CLK_S_ETH1_PHY",
 +						     "CLK_S_MII_REF_OUT";
-+						 /* Remaining outputs unused */
++						     /* Remaining outputs unused */
 +			};
 +		};
 +
@@ -179,19 +179,20 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_S_A1_PLL 2>; /* PLL1 */
 +
 +				clock-output-names = "CLK_S_ICN_IF_2",
-+						     "CLK_S_CARD_MMC",
++						     "CLK_S_CARD_MMC_0",
 +						     "CLK_S_ICN_IF_1",
 +						     "CLK_S_GMAC0_PHY",
 +						     "CLK_S_NAND_CTRL",
 +						     "", /* Reserved */
 +						     "CLK_S_MII0_REF_OUT",
-+						     ""; /* CLK_S_STAC_SYS */
-+						 /* Remaining outputs unused */
++						     "CLK_S_STAC_SYS",
++						     "CLK_S_CARD_MMC_1";
++						     /* Remaining outputs unused */
 +			};
 +		};
 +
 +		/*
-+		 * ClockGenAs on MPE41
++		 * ClockGenAs on MPE42
 +		 */
 +		clockgenA@fde12000 {
 +			reg = <0xfde12000 0xb50>;
@@ -239,14 +240,14 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A0_PLL0 0>, /* PLL0 PHI0 */
 +					 <&CLK_M_A0_PLL1 0>; /* PLL1 PHI0 */
 +
-+				clock-output-names = "CLK_M_APB_PM", /* Unused */
++				clock-output-names = "", /* Unused */
 +						     "", /* Unused */
-+						     "", /* Unused */
++						     "CLK_M_FDMA_12",
 +						     "", /* Unused */
 +						     "CLK_M_PP_DMU_0",
 +						     "CLK_M_PP_DMU_1",
-+						     "CLK_M_ICM_DISP",
-+						     ""; /* Unused */
++						     "CLK_M_ICM_LMI",
++						     "CLK_M_VID_DMU_0";
 +			};
 +
 +			CLK_M_A0_DIV1: CLK_M_A0_DIV1 {
@@ -258,7 +259,7 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A0_PLL0 1>, /* PLL0 PHI1 */
 +					 <&CLK_M_A0_PLL1 1>; /* PLL1 PHI1 */
 +
-+				clock-output-names = "", /* Unused */
++				clock-output-names = "CLK_M_VID_DMU_1",
 +						     "", /* Unused */
 +						     "CLK_M_A9_EXT2F",
 +						     "CLK_M_ST40RT",
@@ -280,11 +281,11 @@ index d047dbc..9b8f4c0 100644
 +				clock-output-names = "CLK_M_ST231_GP_1",
 +						     "CLK_M_ICN_CPU",
 +						     "CLK_M_ICN_STAC",
-+						     "CLK_M_ICN_DMU_0",
-+						     "CLK_M_ICN_DMU_1",
-+						     "", /* Unused */
-+						     "", /* Unused */
-+						     ""; /* Unused */
++						     "CLK_M_TX_ICN_DMU_0",
++						     "CLK_M_TX_ICN_DMU_1",
++						     "CLK_M_TX_ICN_TS",
++						     "CLK_M_ICN_VDP_0",
++						     "CLK_M_ICN_VDP_1";
 +			};
 +
 +			CLK_M_A0_DIV3: CLK_M_A0_DIV3 {
@@ -300,9 +301,9 @@ index d047dbc..9b8f4c0 100644
 +						     "", /* Unused */
 +						     "", /* Unused */
 +						     "", /* Unused */
++						     "CLK_M_ICN_VP8",
 +						     "", /* Unused */
-+						     "", /* Unused */
-+						     "CLK_M_ICN_ERAM",
++						     "CLK_M_ICN_REG_11",
 +						     "CLK_M_A9_TRACE";
 +			};
 +		};
@@ -353,14 +354,14 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A1_PLL0 0>, /* PLL0 PHI0 */
 +					 <&CLK_M_A1_PLL1 0>; /* PLL1 PHI0 */
 +
-+				clock-output-names = "CLK_M_FDMA_12",
++				clock-output-names = "", /* Unused */
 +						     "CLK_M_FDMA_10",
 +						     "CLK_M_FDMA_11",
-+						     "CLK_M_HVA_LMI",
++						     "CLK_M_HVA_ALT",
 +						     "CLK_M_PROC_SC",
 +						     "CLK_M_TP",
-+						     "CLK_M_ICN_GPU",
-+						     "CLK_M_ICN_VDP_0";
++						     "CLK_M_RX_ICN_DMU_0",
++						     "CLK_M_RX_ICN_DMU_1";
 +			};
 +
 +			CLK_M_A1_DIV1: CLK_M_A1_DIV1 {
@@ -372,14 +373,14 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A1_PLL0 1>, /* PLL0 PHI1 */
 +					 <&CLK_M_A1_PLL1 1>; /* PLL1 PHI1 */
 +
-+				clock-output-names = "CLK_M_ICN_VDP_1",
-+						     "CLK_M_ICN_VDP_2",
-+						     "CLK_M_ICN_VDP_3",
++				clock-output-names = "CLK_M_RX_ICN_TS",
++						     "CLK_M_RX_ICN_VDP_0",
++						     "", /* Unused */
 +						     "CLK_M_PRV_T1_BUS",
-+						     "CLK_M_ICN_VDP_4",
++						     "CLK_M_ICN_REG_12",
 +						     "CLK_M_ICN_REG_10",
 +						     "", /* Unused */
-+						     ""; /* CLK_M_ICN_ST231 */
++						     "CLK_M_ICN_ST231";
 +			};
 +
 +			CLK_M_A1_DIV2: CLK_M_A1_DIV2 {
@@ -392,12 +393,12 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A1_PLL1 2>; /* PLL1 PHI2 */
 +
 +				clock-output-names = "CLK_M_FVDP_PROC_ALT",
++						     "CLK_M_ICN_REG_13",
++						     "CLK_M_TX_ICN_GPU",
++						     "CLK_M_RX_ICN_GPU",
 +						     "", /* Unused */
 +						     "", /* Unused */
-+						     "", /* Unused */
-+						     "", /* Unused */
-+						     "", /* Unused */
-+						     "", /* Unused */
++						     "", /* CLK_M_APB_PM_12 */
 +						     ""; /* Unused */
 +			};
 +
@@ -417,7 +418,7 @@ index d047dbc..9b8f4c0 100644
 +						     "", /* Unused */
 +						     "", /* Unused */
 +						     "", /* Unused */
-+						     ""; /* Unused */
++						     ""; /* CLK_M_GPU_ALT */
 +			};
 +		};
 +
@@ -500,8 +501,8 @@ index d047dbc..9b8f4c0 100644
 +						     "CLK_M_COMPO_AUX",
 +						     "CLK_M_BDISP_0",
 +						     "CLK_M_BDISP_1",
-+						     "CLK_M_ICN_BDISP_0",
-+						     "CLK_M_ICN_BDISP_1";
++						     "CLK_M_ICN_BDISP",
++						     "CLK_M_ICN_COMPO";
 +			};
 +
 +			CLK_M_A2_DIV2: CLK_M_A2_DIV2 {
@@ -513,12 +514,12 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A2_PLL0 2>, /* PLL0 PHI2 */
 +					 <&CLK_M_A2_PLL1 2>; /* PLL1 PHI2 */
 +
-+				clock-output-names = "", /* CLK_M_ICN_HQVDP0 */
-+						     "", /* CLK_M_ICN_HQVDP1 */
-+						     "CLK_M_ICN_COMPO",
-+						     "", /* CLK_M_ICN_VDPAUX */
-+						     "CLK_M_ICN_TS",
-+						     "CLK_M_ICN_REG_LP_10",
++				clock-output-names = "CLK_M_ICN_VDP_2",
++						     "", /* Unused */
++						     "CLK_M_ICN_REG_14",
++						     "CLK_M_MDTP",
++						     "CLK_M_JPEGDEC",
++						     "", /* Unused */
 +						     "CLK_M_DCEPHY_IMPCTRL",
 +						     ""; /* Unused */
 +			};
@@ -532,73 +533,74 @@ index d047dbc..9b8f4c0 100644
 +					 <&CLK_M_A2_PLL0 3>, /* PLL0 PHI3 */
 +					 <&CLK_M_A2_PLL1 3>; /* PLL1 PHI3 */
 +
-+				clock-output-names = ""; /* Unused */
-+						/* Remaining outputs unused */
++				clock-output-names = "", /* Unused */
++						     ""; /* CLK_M_APB_PM_11 */
++						     /* Remaining outputs unused */
 +			};
 +		};
  	};
  };
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index d89064c..3b69550 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
-@@ -82,7 +82,7 @@
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 78746d2..f5e888e 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -89,7 +89,7 @@
+ 			status 		= "disabled";
+ 			reg		= <0xfed32000 0x2c>;
  			interrupts	= <0 197 0>;
+-			clocks          = <&CLK_S_ICN_REG_0>;
++			clocks 		= <&CLK_S_A0_LS CLK_ICN_REG>;
  			pinctrl-names 	= "default";
- 			pinctrl-0 	= <&pinctrl_serial2>;
--			clocks		= <&CLKS_ICN_REG_0>;
-+			clocks		= <&CLK_S_A0_LS CLK_ICN_REG>;
+ 			pinctrl-0 	= <&pinctrl_serial2 &pinctrl_serial2_oe>;
  		};
- 
- 		/* SBC comms block ASCs in SASG1 */
-@@ -100,7 +100,7 @@
+@@ -109,7 +109,7 @@
  			compatible	= "st,comms-ssc4-i2c";
  			reg		= <0xfed40000 0x110>;
  			interrupts	= <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
--			clocks		= <&CLKS_ICN_REG_0>;
-+			clocks		= <&CLK_S_A0_LS CLK_ICN_REG>;
+-			clocks		= <&CLK_S_ICN_REG_0>;
++			clocks 		= <&CLK_S_A0_LS CLK_ICN_REG>;
  			clock-names	= "ssc";
  			clock-frequency = <400000>;
  			pinctrl-names	= "default";
-@@ -113,7 +113,7 @@
+@@ -122,7 +122,7 @@
  			compatible	= "st,comms-ssc4-i2c";
  			reg		= <0xfed41000 0x110>;
  			interrupts	= <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
--			clocks		= <&CLKS_ICN_REG_0>;
-+			clocks		= <&CLK_S_A0_LS CLK_ICN_REG>;
+-			clocks		= <&CLK_S_ICN_REG_0>;
++			clocks 		= <&CLK_S_A0_LS CLK_ICN_REG>;
  			clock-names	= "ssc";
  			clock-frequency = <400000>;
  			pinctrl-names	= "default";
-@@ -170,7 +170,7 @@
+@@ -176,7 +176,7 @@
  			pinctrl-names 	= "default";
  			pinctrl-0	= <&pinctrl_mii0>;
  			clock-names	= "stmmaceth";
--			clocks		= <&CLKS_GMAC0_PHY>;
+-			clocks		= <&CLK_S_GMAC0_PHY>;
 +			clocks		= <&CLK_S_A1_LS CLK_GMAC0_PHY>;
  		};
  
  		ethernet1: dwmac@fef08000 {
-@@ -193,7 +193,7 @@
+@@ -198,7 +198,7 @@
  			pinctrl-names 	= "default";
  			pinctrl-0	= <&pinctrl_mii1>;
  			clock-names	= "stmmaceth";
--			clocks		= <&CLKS_ETH1_PHY>;
+-			clocks		= <&CLK_S_ETH1_PHY>;
 +			clocks		= <&CLK_S_A0_LS CLK_ETH1_PHY>;
  		};
  
  		rc: rc@fe518000 {
-diff --git a/include/dt-bindings/clock/stih415-clks.h b/include/dt-bindings/clock/stih415-clks.h
+diff --git a/include/dt-bindings/clock/stih416-clks.h b/include/dt-bindings/clock/stih416-clks.h
 new file mode 100644
-index 0000000..0d2c739
+index 0000000..552c779
 --- /dev/null
-+++ b/include/dt-bindings/clock/stih415-clks.h
++++ b/include/dt-bindings/clock/stih416-clks.h
 @@ -0,0 +1,15 @@
 +/*
 + * This header provides constants clk index STMicroelectronics
-+ * STiH415 SoC.
++ * STiH416 SoC.
 + */
-+#ifndef _CLK_STIH415
-+#define _CLK_STIH415
++#ifndef _CLK_STIH416
++#define _CLK_STIH416
 +
 +/* CLOCKGEN A0 */
 +#define CLK_ICN_REG		0
