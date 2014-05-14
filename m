@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaENV5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 17:57:13 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:37268 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaENV5L (ORCPT
+	id S1753552AbaENV5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 17:57:46 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:44170 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345AbaENV5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 17:57:11 -0400
-Date: Wed, 14 May 2014 17:57:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140514215707.GG15690@htj.dyndns.org>
-References: <20140514174749.1ec4d37f@canb.auug.org.au>
- <20140514145520.f010e4593071cf5a756ddc5b@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514145520.f010e4593071cf5a756ddc5b@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 14 May 2014 17:57:44 -0400
+From: Alexander Bersenev <bay@hackerdom.ru>
+To: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: Alexander Bersenev <bay@hackerdom.ru>
+Subject: [PATCH v7 0/3] ARM: sunxi: Add support for consumer infrared devices
+Date: Thu, 15 May 2014 03:56:39 +0600
+Message-Id: <1400104602-16431-1-git-send-email-bay@hackerdom.ru>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch introduces Consumer IR(CIR) support for sunxi boards.
 
-On Wed, May 14, 2014 at 02:55:20PM -0700, Andrew Morton wrote:
-> > @@ -6026,7 +6026,7 @@ static struct cftype mem_cgroup_files[] = {
-> >  	{
-> >  		.name = "low_limit_in_bytes",
-> >  		.private = MEMFILE_PRIVATE(_MEM, RES_LOW_LIMIT),
-> > -		.write_string = mem_cgroup_write,
-> > +		.write = mem_cgroup_write,
-> >  		.read_u64 = mem_cgroup_read_u64,
-> >  	},
-> 
-> Renaming buffer to buf was rather unneeded.
-> 
-> I have 24 patches here against mm/memcontrol.c.  Go gently, please.
+This is based on Alexsey Shestacov's work based on the original driver 
+supplied by Allwinner.
 
-Yeah, sorry about that.  That conflict wasn't necessary.
+Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 
-Thanks.
+---
+Changes since version 1: 
+ - Fix timer memory leaks 
+ - Fix race condition when driver unloads while interrupt handler is active
+ - Support Cubieboard 2(need testing)
+
+Changes since version 2:
+- More reliable keydown events
+- Documentation fixes
+- Rename registers accurding to A20 user manual
+- Remove some includes, order includes alphabetically
+- Use BIT macro
+- Typo fixes
+
+Changes since version 3:
+- Split the patch on smaller parts
+- More documentation fixes
+- Add clock-names in DT
+- Use devm_clk_get function to get the clocks
+- Removed gpios property from ir's DT
+- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
+- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
+- Add myself in the copyright ;)
+- Coding style and indentation fixes
+
+Changes since version 4:
+- Try to fix indentation errors by sending patches with git send-mail
+
+Changes since version 5:
+- More indentation fixes
+- Make patches pass checkpatch with --strict option
+- Replaced magic numbers with defines(patch by Priit Laes)
+- Fixed oops on loading(patch by Hans de Goede)
+
+Changes since version 6:
+- Removed constants from code
+- Better errrors handling on loading
+- Renamed sunxi-ir.c to sunxi-cir.c
+- Changed description of second commit
+- Order entries in dts and dtsi by register address
+- Code style fixes
+
+
+Alexander Bersenev (3):
+  ARM: sunxi: Add documentation for sunxi consumer infrared devices
+  [media] rc: add sunxi-ir driver
+  ARM: sunxi: Add IR controller support in DT on A20
+
+ .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |  32 ++
+ drivers/media/rc/Kconfig                           |  10 +
+ drivers/media/rc/Makefile                          |   1 +
+ drivers/media/rc/sunxi-cir.c                       | 334 +++++++++++++++++++++
+ 7 files changed, 412 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ create mode 100644 drivers/media/rc/sunxi-cir.c
 
 -- 
-tejun
+1.9.3
