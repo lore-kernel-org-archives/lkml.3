@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaENSrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 14:47:49 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:38527 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaENSrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 14:47:48 -0400
-Date: Wed, 14 May 2014 20:47:38 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Carbonated Beverage <ramune@psychosnugglebunnies.net>
-Cc: linux-kernel@vger.kernel.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.14.3 i915 dead display under X11
-Message-ID: <20140514204738.60a2f49c@neptune.home>
-In-Reply-To: <20140512031029.GA18875@psychosnugglebunnies.net>
-References: <20140512031029.GA18875@psychosnugglebunnies.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751153AbaENSt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 14:49:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaENSt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 14:49:56 -0400
+Message-ID: <5373BACB.9090807@redhat.com>
+Date: Wed, 14 May 2014 19:49:47 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>,
+        Sergio Durigan Junior <sergiodj@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Tom Tromey <tromey@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
+References: <m3wqic205t.fsf@redhat.com> <20140107153036.GA4749@redhat.com> <52CEEF1F.90803@redhat.com> <20140110135802.GA26953@redhat.com> <m3sisk4rfq.fsf@redhat.com> <20140119152922.GA13689@redhat.com>
+In-Reply-To: <20140119152922.GA13689@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing intel-gfx as otherwise it will probably not get seen by developers.
+I realized now that I responded to this.  Sorry about that.
 
-On Sun, 11 May 2014 Carbonated Beverage <ramune@psychosnugglebunnies.net> wrote:
-> Hi all,
+On 01/19/2014 03:29 PM, Oleg Nesterov wrote:
+> On 01/19, Sergio Durigan Junior wrote:
+>>
+>> On Friday, January 10 2014, Oleg Nesterov wrote:
+>>
+>>> So suppose that gdb does ptrace(PTRACE_SINGLESTEP) and the tracee
+>>> executes the "syscall" insn. What it should report?
+>> [...]
+>>> But what should syscall-exit do? Should it still report SIGSEGV as
+>>> it currently does, or should it report _SYSCALL_EXIT instead (if
+>>> PTRACE_O_SYSCALL_EXIT of course), or should it report both?
+>>
+>> Both only if _SYSCALL_EXIT is set.  Otherwise, stick to the current
+>> behavior, I guess.
 > 
-> I rarely upgrade kernels these days -- so when updating to 3.14.3, I found
-> the X display was blank -- switching to a text console appears to work, but
-> I still have to type blind.
-> 
-> Symptoms:
-> 
-> Text mode and KMS works correctly to come up with the text console.  Running
-> X (whether through xdm or /usr/bin/Xorg) causes the display to go blank
-> and apparently turn off.  Switching to a text console via Control-Alt-F#
-> leaves a mostly blank screen up, but there are brief flashes where it looks
-> like the contents of the text console gets rendered once every 5 seconds or so,
-> but so fast no words or letters can be recognized.
-> 
-> System:
-> 
-> * Thinkpad R61
-> * 00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960 Integrated Graphics Controller (primary) (rev 0c)
-> * Debian/wheezy
-> * xserver-xorg-video-intel 2:2.19.0-6
-> 
-> A diff of the Xorg.0.log (with timestamps removed, as it made almost every line
-> show up in the diff) trimmed down shows:
-> 
-> @@ -53,7 +53,7 @@
->   (==) |-->Input Device "<default keyboard>"
->   (==) The core keyboard device wasn't specified explicitly in the layout.
->  	Using the default keyboard configuration.
-> - (II) Loader magic: 0x7f2813451ae0
-> + (II) Loader magic: 0x7f492c35aae0
->   (II) Module ABI versions:
->   	X.Org ANSI C Emulation: 0.4
->   	X.Org Video Driver: 12.1
-> @@ -170,15 +170,17 @@
->  	Sandybridge Server, Ivybridge Mobile (GT1), Ivybridge Mobile (GT2),
->  	Ivybridge Desktop (GT1), Ivybridge Desktop (GT2), Ivybridge Server,
->  	Ivybridge Server (GT2)
-> - (--) using VT number 7
-> + (++) using VT number 7
->  
-> + (WW) xf86OpenConsole: setpgid failed: Operation not permitted
-> + (WW) xf86OpenConsole: setsid failed: Operation not permitted
->   (WW) VGA arbiter: cannot open kernel arbiter, no multi-card support
->   drmOpenDevice: node name is /dev/dri/card0
-> - drmOpenDevice: open result is 10, (OK)
-> + drmOpenDevice: open result is 8, (OK)
->   drmOpenByBusid: Searching for BusID pci:0000:00:02.0
->   drmOpenDevice: node name is /dev/dri/card0
-> - drmOpenDevice: open result is 10, (OK)
-> - drmOpenByBusid: drmOpenMinor returns 10
-> + drmOpenDevice: open result is 8, (OK)
-> + drmOpenByBusid: drmOpenMinor returns 8
->   drmOpenByBusid: drmGetBusid reports pci:0000:00:02.0
->   (**) intel(0): Depth 16, (--) framebuffer bpp 16
->   (==) intel(0): RGB weight 565
-> @@ -387,7 +389,17 @@
->   (II) AutoAddDevices is off - not adding device.
->   (II) config/udev: Adding input device ThinkPad Extra Buttons (/dev/input/event5)
->   (II) AutoAddDevices is off - not adding device.
-> - (II) AIGLX: Suspending AIGLX clients for VT switch
-> - (II) UnloadModule: "kbd"
-> - (II) UnloadModule: "mouse"
-> - Server terminated successfully (0). Closing log file.
-> + (II) intel(0): EDID vendor "LEN", prod id 16435
-> + (II) intel(0): Printing DDC gathered Modelines:
-> + (II) intel(0): Modeline "1440x900"x0.0   97.78  1440 1488 1520 1760  900 903 909 926 -hsync -vsync (55.6 kHz eP)
-> + (II) intel(0): Modeline "1440x900"x0.0   81.49  1440 1488 1520 1760  900 903 909 926 -hsync -vsync (46.3 kHz e)
-> + (II) intel(0): Modeline "800x600"x0.0   40.00  800 840 968 1056  600 601 605 628 +hsync +vsync (37.9 kHz e)
-> + (II) intel(0): Modeline "640x480"x0.0   25.18  640 656 752 800  480 490 492 525 -hsync -vsync (31.5 kHz e)
-> + (II) intel(0): Modeline "1024x768"x0.0   65.00  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz e)
-> + (II) intel(0): EDID vendor "LEN", prod id 16435
-> + (II) intel(0): Printing DDC gathered Modelines:
-> + (II) intel(0): Modeline "1440x900"x0.0   97.78  1440 1488 1520 1760  900 903 909 926 -hsync -vsync (55.6 kHz eP)
-> + (II) intel(0): Modeline "1440x900"x0.0   81.49  1440 1488 1520 1760  900 903 909 926 -hsync -vsync (46.3 kHz e)
-> + (II) intel(0): Modeline "800x600"x0.0   40.00  800 840 968 1056  600 601 605 628 +hsync +vsync (37.9 kHz e)
-> + (II) intel(0): Modeline "640x480"x0.0   25.18  640 656 752 800  480 490 492 525 -hsync -vsync (31.5 kHz e)
-> + (II) intel(0): Modeline "1024x768"x0.0   65.00  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz e)
-> 
-> Bisecting from 3.13.6 (good) to 3.14.3 (bad) ended up with...
-> 
-> commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
-> Author: Jani Nikula <jani.nikula@intel.com>
-> Date:   Thu Nov 14 12:13:41 2013 +0200
-> 
->     drm/i915: do full backlight setup at enable time
->     
->     We should now have all the information we need to do a full
->     initialization of the backlight registers.
->     
->     v2: Keep QUIRK_NO_PCH_PWM_ENABLE for now (Imre).
->     
->     Signed-off-by: Jani Nikula <jani.nikula@intel.com>
->     Reviewed-by: Imre Deak <imre.deak@intel.com>
->     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> Which is in 3.12.0????
-> 
-> I'm not sure how that came to be.  Does that look right?  What other
-> information would be required to track this down?
-> 
-> Thanks,
-> 
-> -- DN
-> Daniel Nobuto
+> OK, both. In which order? Probably _EXIT first. But this looks a bit
+> strange. Suppose that the tracee reports _EXIT, then debugger does
+> ptrace(PTRACE_CONT), should the tracee report SIGTRAP?
+
+Seems to me that this should be very much the same as fork/vfork/clone
+event handling.  Those are triggered by a syscall anyway.  So, say:
+
+- ptrace(PTRACE_SINGLESTEP)
+- the tracee executes the "syscall" insn, and the syscall is "clone".
+- PTRACE_EVENT_FORK is reported.
+- The debugger does ptrace(PTRACE_CONT).
+
+What should be reported?  What is reported now?
+
+-- 
+Pedro Alves
+
