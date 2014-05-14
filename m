@@ -1,191 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaENITe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 04:19:34 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49379 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaENITa (ORCPT
+	id S1753166AbaENIUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 04:20:50 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39282 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaENIUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 04:19:30 -0400
-Message-ID: <53732709.1050208@hitachi.com>
-Date: Wed, 14 May 2014 17:19:21 +0900
+	Wed, 14 May 2014 04:20:46 -0400
+Subject: [PATCH -tip v11 0/7] kprobes: NOKPROBE_SYMBOL for modules,
+ and scalbility efforts
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find
- blacklist" error on ia64 and ppc64
-References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp> <536A2013.8020609@hitachi.com>
-In-Reply-To: <536A2013.8020609@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 14 May 2014 17:20:34 +0900
+Message-ID: <20140514082034.5791.38607.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/07 20:59), Masami Hiramatsu wrote:
-> Hi Tony, Benjamin and Paul,
-> 
-> I've tried to fix this bug, but since I don't have either ppc64 nor ia64,
-> this patch is not tested on those archs. Please review and test it on
-> those machines.
+Hi,
+Here is the version 11 of NOKPROBE_SYMBOL/scalability series.
+This fixes some issues.
 
-Ping?
+Blacklist for kmodule
+=====================
+Since most of the NOKPROBE_SYMBOL series are merged, this just adds
+kernel module support of NOKPROBE_SYMBOL. If kprobes user module
+has kprobes handlers and local functions which is only called from
+the handlers, it should be marked as NOKPROBE_SYMBOL. Such symbols
+are automatically added to kprobe blacklist.
 
-I need your help since I don't have test environment.
+Scalability effort
+==================
+This series fixes not only the kernel crashable "qualitative" bugs
+but also "quantitative" issue with massive multiple kprobes. Thus
+we can now do a stress test, putting kprobes on all (non-blacklisted)
+kernel functions and enabling all of them.
+To set kprobes on all kernel functions, run the below script.
+  ----
+  #!/bin/sh
+  TRACE_DIR=/sys/kernel/debug/tracing/
+  echo > $TRACE_DIR/kprobe_events
+  grep -iw t /proc/kallsyms | tr -d . | \
+    awk 'BEGIN{i=0};{print("p:"$3"_"i, "0x"$1); i++}' | \
+    while read l; do echo $l >> $TRACE_DIR/kprobe_events ; done
+  ----
+Since it doesn't check the blacklist at all, you'll see many write
+errors, but no problem :).
+
+Note that a kind of performance issue is still in the kprobe-tracer
+if you trace all functions. Since a few ftrace functions are called
+inside the kprobe tracer even if we shut off the tracing (tracing_on
+= 0), enabling kprobe-events on the functions will cause a bad
+performance impact (it is safe, but you'll see the system slowdown
+and no event recorded because it is just ignored).
+To find those functions, you can use the third column of
+(debugfs)/tracing/kprobe_profile as below, which tells you the number
+of miss-hit(ignored) for each events. If you find that some events
+which have small number in 2nd column and large number in 3rd column,
+those may course the slowdown.
+  ----
+  # sort -rnk 3 (debugfs)/tracing/kprobe_profile | head
+  ftrace_cmp_recs_4907                               264950231     33648874543
+  ring_buffer_lock_reserve_5087                              0      4802719935
+  trace_buffer_lock_reserve_5199                             0      4385319303
+  trace_event_buffer_lock_reserve_5200                       0      4379968153
+  ftrace_location_range_4918                          18944015      2407616669
+  bsearch_17098                                       18979815      2407579741
+  ftrace_location_4972                                18927061      2406723128
+  ftrace_int3_handler_1211                            18926980      2406303531
+  poke_int3_handler_199                               18448012      1403516611
+  inat_get_opcode_attribute_16941                            0        12715314
+  ----
+
+I'd recommend you to enable events on such functions after all other
+events enabled. Then its performance impact becomes minimum.
+
+To enable kprobes on all kernel functions, run the below script.
+  ----
+  #!/bin/sh
+  TRACE_DIR=/sys/kernel/debug/tracing
+  echo "Disable tracing to remove tracing overhead"
+  echo 0 > $TRACE_DIR/tracing_on
+
+  BADS="ftrace_cmp_recs ring_buffer_lock_reserve trace_buffer_lock_reserve trace_event_buffer_lock_reserve ftrace_location_range bsearch ftrace_location ftrace_int3_handler poke_int3_handler inat_get_opcode_attribute"
+HIDES=
+  for i in $BADS; do HIDES=$HIDES" --hide=$i*"; done
+
+  SDATE=`date +%s`
+  echo "Enabling trace events: start at $SDATE"
+
+  cd $TRACE_DIR/events/kprobes/
+  for i in `ls $HIDES` ; do echo 1 > $i/enable; done
+  for j in $BADS; do for i in `ls -d $j*`;do echo 1 > $i/enable; done; done
+
+  EDATE=`date +%s`
+  TIME=`expr $EDATE - $SDATE`
+  echo "Elapsed time: $TIME"
+  ---- 
+Note: Perhaps, using systemtap doesn't need to consider above bad
+symbols since it has own logic not to probe itself.
+
+Result
+======
+These were also enabled after all other events are enabled.
+And it took 2254 sec(without any intervals) for enabling 37222 probes.
+And at that point, the perf top showed below result:
+  ----
+  Samples: 10K of event 'cycles', Event count (approx.): 270565996
+  +  16.39%  [kernel]                       [k] native_load_idt
+  +  11.17%  [kernel]                       [k] int3
+  -   7.91%  [kernel]                       [k] 0x00007fffa018e8e0
+   - 0xffffffffa018d8e0
+        59.09% trace_event_buffer_lock_reserve
+           kprobe_trace_func
+           kprobe_dispatcher
+      + 40.45% trace_event_buffer_lock_reserve
+  ----
+0x00007fffa018e8e0 may be the trampoline buffer of an optimized
+probe on trace_event_buffer_lock_reserve. native_load_idt and int3
+are also called from normal kprobes.
+This means, at least my environment, kprobes now passed the
+stress test, and even if we put probes on all available functions
+it just slows down about 50%.
+
+Changes from v10:
+ - [6/7] Use ACCESS_ONCE and barrier() to ensure acquiring cached
+         kprobe right before checking cache-update.
+ - [6/7] Retry cache read if th cache is updated.
+ - [6/7] Update cache index when invalidate entry.
+ - [6/7] Update comment of kpcache_invalidate(). 
+ - [7/7] Update comment of the flag according to Steven's comment.
+
+Changes from v9:
+ - [1/7] Remove unneeded #include <linux/kprobes.h> from module.h
+ - [6/7] Add a comment for kpcache_invalidate().
+ - [6/7] Remove CONFIG_KPROBE_CACHE accoding to Ingo's suggestion.
+
 
 Thank you,
 
-> 
-> Thank you,
-> 
-> (2014/05/07 20:55), Masami Hiramatsu wrote:
->> On ia64 and ppc64, the function pointer does not point the
->> entry address of the function, but the address of function
->> discriptor (which contains the entry address and misc
->> data.) Since the kprobes passes the function pointer stored
->> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
->> initalizing its blacklist, it fails and reports many errors
->> as below.
->>
->>   Failed to find blacklist 0001013168300000
->>   Failed to find blacklist 0001013000f0a000
->>   Failed to find blacklist 000101315f70a000
->>   Failed to find blacklist 000101324c80a000
->>   Failed to find blacklist 0001013063f0a000
->>   Failed to find blacklist 000101327800a000
->>   Failed to find blacklist 0001013277f0a000
->>   Failed to find blacklist 000101315a70a000
->>   Failed to find blacklist 0001013277e0a000
->>   Failed to find blacklist 000101305a20a000
->>   Failed to find blacklist 0001013277d0a000
->>   Failed to find blacklist 00010130bdc0a000
->>   Failed to find blacklist 00010130dc20a000
->>   Failed to find blacklist 000101309a00a000
->>   Failed to find blacklist 0001013277c0a000
->>   Failed to find blacklist 0001013277b0a000
->>   Failed to find blacklist 0001013277a0a000
->>   Failed to find blacklist 000101327790a000
->>   Failed to find blacklist 000101303140a000
->>   Failed to find blacklist 0001013a3280a000
->>
->> To fix this bug, this introduces function_entry() macro to
->> retrieve the entry address from the given function pointer,
->> and uses it in NOKPROBE_SYMBOL().
->>
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Reported-by: Tony Luck <tony.luck@gmail.com>
->> Cc: Tony Luck <tony.luck@intel.com>
->> Cc: Fenghua Yu <fenghua.yu@intel.com>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
->> Cc: Kevin Hao <haokexin@gmail.com>
->> Cc: linux-ia64@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linuxppc-dev@lists.ozlabs.org
->> ---
->>  arch/ia64/include/asm/types.h    |    2 ++
->>  arch/powerpc/include/asm/types.h |   11 +++++++++++
->>  include/linux/kprobes.h          |    3 ++-
->>  include/linux/types.h            |    4 ++++
->>  4 files changed, 19 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
->> index 4c351b1..6ab7b6c 100644
->> --- a/arch/ia64/include/asm/types.h
->> +++ b/arch/ia64/include/asm/types.h
->> @@ -27,5 +27,7 @@ struct fnptr {
->>  	unsigned long gp;
->>  };
->>  
->> +#define constant_function_entry(fn) (((struct fnptr *)(fn))->ip)
->> +
->>  #endif /* !__ASSEMBLY__ */
->>  #endif /* _ASM_IA64_TYPES_H */
->> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
->> index bfb6ded..fd297b8 100644
->> --- a/arch/powerpc/include/asm/types.h
->> +++ b/arch/powerpc/include/asm/types.h
->> @@ -25,6 +25,17 @@ typedef struct {
->>  	unsigned long env;
->>  } func_descr_t;
->>  
->> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
->> +/*
->> + * On PPC64 ABIv1 the function pointer actually points to the
->> + * function's descriptor. The first entry in the descriptor is the
->> + * address of the function text.
->> + */
->> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
->> +#else
->> +#define constant_function_entry(fn)	((unsigned long)(fn))
->> +#endif
->> +
->>  #endif /* __ASSEMBLY__ */
->>  
->>  #endif /* _ASM_POWERPC_TYPES_H */
->> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
->> index e059507..637eafe 100644
->> --- a/include/linux/kprobes.h
->> +++ b/include/linux/kprobes.h
->> @@ -40,6 +40,7 @@
->>  #include <linux/rcupdate.h>
->>  #include <linux/mutex.h>
->>  #include <linux/ftrace.h>
->> +#include <linux/types.h>
->>  
->>  #ifdef CONFIG_KPROBES
->>  #include <asm/kprobes.h>
->> @@ -485,7 +486,7 @@ static inline int enable_jprobe(struct jprobe *jp)
->>  #define __NOKPROBE_SYMBOL(fname)			\
->>  static unsigned long __used				\
->>  	__attribute__((section("_kprobe_blacklist")))	\
->> -	_kbl_addr_##fname = (unsigned long)fname;
->> +	_kbl_addr_##fname = constant_function_entry(fname);
->>  #define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
->>  #else
->>  #define NOKPROBE_SYMBOL(fname)
->> diff --git a/include/linux/types.h b/include/linux/types.h
->> index 4d118ba..78e2d7d 100644
->> --- a/include/linux/types.h
->> +++ b/include/linux/types.h
->> @@ -212,5 +212,9 @@ struct callback_head {
->>  };
->>  #define rcu_head callback_head
->>  
->> +#ifndef constant_function_entry
->> +#define constant_function_entry(fn)	((unsigned long)(fn))
->> +#endif
->> +
->>  #endif /*  __ASSEMBLY__ */
->>  #endif /* _LINUX_TYPES_H */
->>
->>
->>
-> 
-> 
+---
+
+Masami Hiramatsu (7):
+      kprobes: Support blacklist functions in module
+      kprobes: Use NOKPROBE_SYMBOL() in sample modules
+      kprobes/x86: Use kprobe_blacklist for .kprobes.text and .entry.text
+      kprobes/x86: Remove unneeded preempt_disable/enable in interrupt handlers
+      kprobes: Enlarge hash table to 512 entries
+      kprobes: Introduce kprobe cache to reduce cache misshits
+      ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
 
 
--- 
+ Documentation/kprobes.txt           |    8 +
+ arch/x86/kernel/kprobes/core.c      |   37 +---
+ arch/x86/kernel/kprobes/ftrace.c    |    2 
+ include/linux/ftrace.h              |    3 
+ include/linux/kprobes.h             |    2 
+ include/linux/module.h              |    4 
+ kernel/kprobes.c                    |  288 +++++++++++++++++++++++++++++------
+ kernel/module.c                     |    6 +
+ kernel/trace/ftrace.c               |    3 
+ samples/kprobes/jprobe_example.c    |    1 
+ samples/kprobes/kprobe_example.c    |    3 
+ samples/kprobes/kretprobe_example.c |    2 
+ 12 files changed, 283 insertions(+), 76 deletions(-)
+
+--
 Masami HIRAMATSU
 Software Platform Research Dept. Linux Technology Research Center
 Hitachi, Ltd., Yokohama Research Laboratory
