@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891AbaEOU6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:58:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43688 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826AbaEOU6O (ORCPT
+	id S1755215AbaEOVB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:01:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38124 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaEOVB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:58:14 -0400
-Date: Thu, 15 May 2014 23:57:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Konrad Zapalowicz <bergo.torino@gmail.com>
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/rtl8723au fix sparse warning in os_initfs.c
-Message-ID: <20140515205739.GE8897@mwanda>
-References: <1400186614-5978-1-git-send-email-bergo.torino@gmail.com>
+	Thu, 15 May 2014 17:01:56 -0400
+Message-ID: <53752B41.5070709@infradead.org>
+Date: Thu, 15 May 2014 14:01:53 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400186614-5978-1-git-send-email-bergo.torino@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [patch v4] Documentation/email-clients.txt: add a section about
+ git
+References: <20140515093328.GA31597@mwanda>
+In-Reply-To: <20140515093328.GA31597@mwanda>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 10:43:34PM +0200, Konrad Zapalowicz wrote:
-> This commit fixes the following sparse warning:
+On 05/15/2014 02:33 AM, Dan Carpenter wrote:
+> These days most people use git to send patches so I have added a section
+> about that.
 > 
-> drivers/staging/rtl8723au/os_dep/os_intfs.c:
->     - 322:14: warning: restricted __be16 degrades to integer
-> 
-> Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+Applied.  Thanks.
+
 > ---
->  drivers/staging/rtl8723au/os_dep/os_intfs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> v2: fix typo in commit message
+> v3: update git am and log commands.  Mention the man pages.
+> v4: s/list/appropriate mailing list(s)/
 > 
-> diff --git a/drivers/staging/rtl8723au/os_dep/os_intfs.c b/drivers/staging/rtl8723au/os_dep/os_intfs.c
-> index 57eca7a..31a70af 100644
-> --- a/drivers/staging/rtl8723au/os_dep/os_intfs.c
-> +++ b/drivers/staging/rtl8723au/os_dep/os_intfs.c
-> @@ -319,7 +319,7 @@ u16 rtw_recv_select_queue23a(struct sk_buff *skb)
+> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+> index 4e30eba..9293477 100644
+> --- a/Documentation/email-clients.txt
+> +++ b/Documentation/email-clients.txt
+> @@ -1,6 +1,17 @@
+>  Email clients info for Linux
+>  ======================================================================
 >  
->  	memcpy(&eth_type, pdata + (ETH_ALEN << 1), 2);
->  	switch (eth_type) {
-> -	case htons(ETH_P_IP):
-> +	case be16_to_cpu(htons(ETH_P_IP)):
+> +Git
+> +----------------------------------------------------------------------
+> +These days most developers use `git send-email` instead of regular
+> +email clients.  The man page for this is quite good.  On the receiving
+> +end, maintainers use `git am` to apply the patches.
+> +
+> +If you are new to git then send your first patch to yourself.  Save it
+> +as raw text including all the headers.  Run `git am raw_email.txt` and
+> +then review the changelog with `git log`.  When that works then send
+> +the patch to the appropriate mailing list(s).
+> +
+>  General Preferences
+>  ----------------------------------------------------------------------
+>  Patches for the Linux kernel are submitted via email, preferably as
+> _______________________________________________
 
-You should be more careful.  This would have just made the code buggy.
 
-Anyway someone already cleaned up this code.  You should be working
-against linux-next.
-
-regards,
-dan carpenter
-
+-- 
+~Randy
