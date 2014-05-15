@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaEOPaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:30:35 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:62007 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551AbaEOPae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:30:34 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1060,1389744000"; 
-   d="scan'208";a="131527407"
-Message-ID: <5374DD84.20904@citrix.com>
-Date: Thu, 15 May 2014 16:30:12 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753580AbaEOPb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:31:56 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:63862 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaEOPbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:31:55 -0400
 MIME-Version: 1.0
-To: <xen-devel@lists.xenproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCHv6 0/9] x86/xen: fixes for mapping high MMIO regions (and
- remove _PAGE_IOMAP)
-References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+References: <20140513160926.GA3621@amd.pavel.ucw.cz>
+	<20140513163734.GA4602@amd.pavel.ucw.cz>
+	<20140513214155.GA5087@amd.pavel.ucw.cz>
+	<alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
+	<20140514155759.GB9723@amd.pavel.ucw.cz>
+	<20140514182046.GA13342@amd.pavel.ucw.cz>
+	<alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+Date: Thu, 15 May 2014 17:31:54 +0200
+Message-ID: <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
+Subject: Re: 3.15-rc: regression in suspend
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/04/14 15:15, David Vrabel wrote:
-> This a fix for the problems with mapping high MMIO regions in certain
-> cases (e.g., the RDMA drivers) as not all mappers were specifing
-> _PAGE_IOMAP which meant no valid MFN could be found and the resulting
-> PTEs would be set as not present, causing subsequent faults.
+On Thu, May 15, 2014 at 5:29 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> > Note that X do work somehow after resume (I can't switch virtual
+>> > desktops and dialog is stuck on screen, but it is not complete
+>> > failure). I can do ctrl-alt-f1 and get to useful prompt.
+>>
+>> Oops. You were right. It seems it is duplicate after all.
+>>
+>> [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00001020 tail 00000000 start 00003000
+>
+> Pavel, thanks a lot for testing.
+>
+> Adding Daniel and Chris to CC -- we have another incarnation of the bug
+> that is being chased in 76554.
 
-I've applied patches #1 to #6 to devel/for-linus-3.16.  These fix the
-bug.  Patches #7 to #9 remove _PAGE_IOMAP but depend on an x86 change
-which is not yet acked and I'm not going to delay (again) the bug fix
-for this.
-
-David
+Someone succeeding at a bisect would be awesome ... Note that the only
+key here is the ring init failure in dmesg.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
