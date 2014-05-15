@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaEOMOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:14:35 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:50165 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420AbaEOMOb convert rfc822-to-8bit (ORCPT
+	id S1753557AbaEOMQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:16:41 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:36209 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaEOMQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:14:31 -0400
+	Thu, 15 May 2014 08:16:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140515074724.GJ16662@pengutronix.de>
-References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
-	<20140515074724.GJ16662@pengutronix.de>
-Date: Thu, 15 May 2014 07:14:30 -0500
-X-Google-Sender-Auth: zqGUL_-Vp_uSTJ4cAvjUAg2xFdY
-Message-ID: <CAGo_u6pxat1=X5tvqb8FYqUttYTaAimbjcdwsUYtS-rYt59v+A@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] Frequency resolution in CCF vs. cpufreq
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <1397211951-20549-11-git-send-email-miklos@szeredi.hu>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-11-git-send-email-miklos@szeredi.hu>
+Date: Thu, 15 May 2014 14:16:39 +0200
+Message-ID: <CAJfpeguPz23Sgj3FDKbKn_7UdqDfj4YNZ2yr3ydRi-KO-GX+7w@mail.gmail.com>
+Subject: Re: [PATCH 10/15] powerpc: add renameat2 syscall
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 2:47 AM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-[...]
->> cpufreq, which simply divides values it obtains through clk_round_rate() by
->> 1000, 666666.
->> Since passing 666666 to clk_round_rate() does not result in 666666660
->> (clk_round_rate() always rounds down!), we chose to put 666667 in the OPP. This
-> What is OPP?
+On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Operating Performance Point (Documentation/power/opp.txt describes
-frequencies in Hz, the bindings we chose in the community
-Documentation/devicetree/bindings/power/opp.txt describes it in KHz).
+Ben,
 
-Regards,
-Nishanth Menon
+I'll be sending a batch of patches with arch support for the renameat2
+syscall to Linus next week.  If you'd like me to send this as well,
+could you please ACK it?
+
+Thanks,
+Miklos
+
+> ---
+>  arch/powerpc/include/asm/systbl.h      | 1 +
+>  arch/powerpc/include/asm/unistd.h      | 2 +-
+>  arch/powerpc/include/uapi/asm/unistd.h | 1 +
+>  3 files changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+> index 3ddf70276706..ea4dc3a89c1f 100644
+> --- a/arch/powerpc/include/asm/systbl.h
+> +++ b/arch/powerpc/include/asm/systbl.h
+> @@ -361,3 +361,4 @@ SYSCALL(finit_module)
+>  SYSCALL(ni_syscall) /* sys_kcmp */
+>  SYSCALL_SPU(sched_setattr)
+>  SYSCALL_SPU(sched_getattr)
+> +SYSCALL_SPU(renameat2)
+> diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+> index 4494f029b632..9b892bbd9d84 100644
+> --- a/arch/powerpc/include/asm/unistd.h
+> +++ b/arch/powerpc/include/asm/unistd.h
+> @@ -12,7 +12,7 @@
+>  #include <uapi/asm/unistd.h>
+>
+>
+> -#define __NR_syscalls          357
+> +#define __NR_syscalls          358
+>
+>  #define __NR__exit __NR_exit
+>  #define NR_syscalls    __NR_syscalls
+> diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
+> index 881bf2e2560d..2d526f7b48da 100644
+> --- a/arch/powerpc/include/uapi/asm/unistd.h
+> +++ b/arch/powerpc/include/uapi/asm/unistd.h
+> @@ -379,5 +379,6 @@
+>  #define __NR_kcmp              354
+>  #define __NR_sched_setattr     355
+>  #define __NR_sched_getattr     356
+> +#define __NR_renameat2         357
+>
+>  #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
+> --
+> 1.8.1.4
+>
