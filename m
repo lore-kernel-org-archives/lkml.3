@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaEOXBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 19:01:53 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:51209 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaEOXBv (ORCPT
+	id S1755024AbaEOXEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 19:04:51 -0400
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:40451 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751654AbaEOXEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 19:01:51 -0400
-Date: Fri, 16 May 2014 01:01:44 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ARM: imx: clean up error handling
-Message-ID: <20140515230144.GA10217@lianli>
-References: <1400181871-10325-1-git-send-email-emilgoode@gmail.com>
- <20140515203212.GD8897@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515203212.GD8897@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 May 2014 19:04:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2553:2559:2562:2828:2897:3138:3139:3140:3141:3142:3352:3622:3653:3865:3867:3868:3872:3874:4250:4321:5007:6119:7652:7903:8957:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12049:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: event94_ccecec531f2c
+X-Filterd-Recvd-Size: 2042
+Message-ID: <1400195086.5058.26.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: Add --strict test for kmalloc/kzalloc with
+ multiply
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 15 May 2014 16:04:46 -0700
+In-Reply-To: <20140515155844.041ee0bc17aae5f3b8eacd70@linux-foundation.org>
+References: <1400024929.24350.76.camel@joe-AO725>
+	 <20140515155844.041ee0bc17aae5f3b8eacd70@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
-
-Thanks for the review and sorry for the late reply.
-
-On Thu, May 15, 2014 at 11:32:13PM +0300, Dan Carpenter wrote:
-> On Thu, May 15, 2014 at 09:24:30PM +0200, Emil Goode wrote:
-> > If we fail to allocate struct platform_device pdev we
-> > dereference it after the goto label err.
-> > 
-> > I have rearranged the error handling a bit to fix the issue
-> > and also make it more clear.
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> >  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
-> >  1 file changed, 13 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > index fc4dd7c..14d61d9 100644
-> > --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
-> >  
-> >  	pdev = platform_device_alloc("mx3-camera", 0);
-> >  	if (!pdev)
-> > -		goto err;
-> > +		return ERR_PTR(ret);
+On Thu, 2014-05-15 at 15:58 -0700, Andrew Morton wrote:
+> On Tue, 13 May 2014 16:48:49 -0700 Joe Perches <joe@perches.com> wrote:
+> > Protect against sizeof overflows by preferring
+> > kmalloc_array and kcalloc to kmalloc/kzalloc
+> > with a sizeof multiply.
+[]
+> > +# check for k[mz]alloc with multiplies that could be kmalloc_array/kcalloc
+> > +		if ($^V && $^V ge 5.10.0 &&
+> > +		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/) {
+> > +			my $oldfunc = $3;
+> > +			my $a1 = $4;
+> > +			my $a2 = $10;
+> > +			my $newfunc = "kmalloc_array";
+> > +			$newfunc = "kcalloc" if ($oldfunc eq "kzalloc");
+> > +			if ($a1 =~ /^sizeof\s*\S/ || $a2 =~ /^sizeof\s*\S/) {
+> > +				CHK("ALLOC_WITH_MULTIPLY",
+> > +				    "Prefer $newfunc over $oldfunc with multiply\n" . $herecurr);
+> > +			}
+> > +		}
+> > +
 > 
-> It's more readable to say "return ERR_PTR(-ENOMEM);".
+> Why hide this behind --strict?
 
-I think so to, will change this one but still use the ret variable at the
-bottom of the function.
+Non-obvious CHK/--strict tests are less controversial.
 
-> 
-> This patch is great but the subject should say "fix" and not "clean up"
-> since it fixes a NULL dereference bug.  The people who call their
-> checkpatch.pl clean ups "fixes" are also doing it wrong but those are
-> newbies and not worth educating.
+The block above it
+"prefer foo = alloc(sizeof(*foo)) over foo = alloc(sizeof(struct bar))"
+used CHK so I copied it.
 
-I agree, it's a bug fix and not a clean up.
+I've no objection to making it WARN instead,
 
-Will resend tomorrow.
 
-Best regards,
-
-Emil Goode
-
-> 
-> regards,
-> dan carpenter
-> 
