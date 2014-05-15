@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaEOIqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:46:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42956 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004AbaEOIqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:46:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
-   d="scan'208";a="539434507"
-Message-ID: <1400143528.2273.30.camel@rzhang1-toshiba>
-Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
-From: Zhang Rui <rui.zhang@intel.com>
-To: Amit Kachhap <amit.kachhap@gmail.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        eduardo.valentin@ti.com
-Date: Thu, 15 May 2014 16:45:28 +0800
-In-Reply-To: <CADGdYn719UzdPd3fVWrPi=mTnKvKy3O5bPHZcn8xCFjrAWp7yA@mail.gmail.com>
-References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
-	 <CADGdYn719UzdPd3fVWrPi=mTnKvKy3O5bPHZcn8xCFjrAWp7yA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752041AbaEOIqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:46:43 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:32857 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaEOIqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 04:46:39 -0400
+Message-ID: <53747EE4.3020605@linux.vnet.ibm.com>
+Date: Thu, 15 May 2014 16:46:28 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+References: <537192D3.5030907@linux.vnet.ibm.com> <20140513094737.GU30445@twins.programming.kicks-ass.net> <53721FD4.6060300@redhat.com> <20140513142328.GE2485@laptop.programming.kicks-ass.net> <53731D12.7040804@linux.vnet.ibm.com> <20140514094426.GF30445@twins.programming.kicks-ass.net> <5374387E.4080802@linux.vnet.ibm.com> <20140515083531.GE30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140515083531.GE30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051508-0260-0000-0000-000004F31876
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 四, 2014-04-24 at 11:48 +0530, Amit Kachhap wrote:
-> On 4/14/14, Tushar Behera <tushar.behera@linaro.org> wrote:
-> > Currently the threshold limits are updated in 2 stages, once for all
-> > software trigger levels and again for hardware trip point.
-> I guess the first stage is bootloader as could not find this in this file.
-> Anyways the changes looks fine to me.
+On 05/15/2014 04:35 PM, Peter Zijlstra wrote:
+> On Thu, May 15, 2014 at 11:46:06AM +0800, Michael wang wrote:
+>> But for the dbench, stress combination, that's not spin-wasted, dbench
+>> throughput do dropped, how could we explain that one?
 > 
-> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> I've no clue what dbench does.. At this point you'll have to
+> expose/trace the per-task runtime accounting for these tasks and ideally
+> also the things the cgroup code does with them to see if it still makes
+> sense.
 
-applied.
+I see :)
 
-thanks,
-rui
+BTW, some interesting thing we found during the dbench/stress testing
+is, by doing:
+
+	echo 240000000 > /proc/sys/kernel/sched_latency_ns
+        echo NO_GENTLE_FAIR_SLEEPERS > /sys/kernel/debug/sched_features
+
+that is sched_latency_ns increased around 10 times and
+GENTLE_FAIR_SLEEPERS was disabled, the dbench got it's CPU back.
+
+However, when the group level is too deep, that doesn't works any more...
+
+I'm not sure but seems like 'deep group level' and 'vruntime bonus for
+sleeper' is the keep points here, will try to list the root cause after
+more investigation, thanks for the hints and suggestions, really helpful ;-)
+
+Regards,
+Michael Wang
+
 > 
-> >
-> > While updating the software trigger levels, it overwrites the threshold
-> > limit for hardware trip point thereby forcing the Exynos core to issue
-> > an emergency shutdown.
-> >
-> > Updating only the required fields in threshold register fixes this issue.
-> >
-> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> > ---
-> > Based on v3.15-rc1.
-> >
-> >  drivers/thermal/samsung/exynos_tmu.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
-> > b/drivers/thermal/samsung/exynos_tmu.c
-> > index 0d96a51..ffccc89 100644
-> > --- a/drivers/thermal/samsung/exynos_tmu.c
-> > +++ b/drivers/thermal/samsung/exynos_tmu.c
-> > @@ -225,6 +225,8 @@ skip_calib_data:
-> >  			trigger_levs++;
-> >  	}
-> >
-> > +	rising_threshold = readl(data->base + reg->threshold_th0);
-> > +
-> >  	if (data->soc == SOC_ARCH_EXYNOS4210) {
-> >  		/* Write temperature code for threshold */
-> >  		threshold_code = temp_to_code(data, pdata->threshold);
-> > @@ -249,6 +251,7 @@ skip_calib_data:
-> >  				ret = threshold_code;
-> >  				goto out;
-> >  			}
-> > +			rising_threshold &= ~(0xff << 8 * i);
-> >  			rising_threshold |= threshold_code << 8 * i;
-> >  			if (pdata->threshold_falling) {
-> >  				threshold_code = temp_to_code(data,
-> > @@ -281,6 +284,7 @@ skip_calib_data:
-> >  			}
-> >  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
-> >  				/* 1-4 level to be assigned in th0 reg */
-> > +				rising_threshold &= ~(0xff << 8 * i);
-> >  				rising_threshold |= threshold_code << 8 * i;
-> >  				writel(rising_threshold,
-> >  					data->base + reg->threshold_th0);
-> > --
-> > 1.7.9.5
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> > in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-
 
