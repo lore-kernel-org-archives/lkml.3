@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaEOHO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:14:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53114 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497AbaEOHOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:14:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
-   d="scan'208";a="540766126"
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-kernel@vger.kernel.org, bin.yang@intel.com,
-        lejun.zhu@linux.intel.com
-Subject: [PATCH 4/4] mfd: intel_soc_pmic: Build files
-Date: Wed, 14 May 2014 22:59:38 +0800
-Message-Id: <1400079578-32329-5-git-send-email-lejun.zhu@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
+	id S1754622AbaEOHOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:14:48 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:33706 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577AbaEOHOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 03:14:45 -0400
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <53735D88.5090108@mycable.de>
+Date: Thu, 15 May 2014 00:14:37 -0700
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Guenter Roeck <linux@roeck-us.net>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <4E9BC0D6-C8A7-4967-8F98-82D7D93B9667@konsulko.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com> <1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com> <20140514100856.5198DC4153D@trevor.secretlab.ca> <53735D88.5090108@mycable.de>
+To: Michael Stickel <ms@mycable.de>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices based on Intel SoC products such as Baytrail have a Power
-Management IC. This patch adds Intel SoC PMIC support to the build files.
+Hi Michael,
 
-Signed-off-by: Yang, Bin <bin.yang@intel.com>
-Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
----
- drivers/mfd/Kconfig  | 10 ++++++++++
- drivers/mfd/Makefile |  3 +++
- 2 files changed, 13 insertions(+)
+On May 14, 2014, at 5:11 AM, Michael Stickel wrote:
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3383412..075572f 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -241,6 +241,16 @@ config LPC_SCH
- 	  LPC bridge function of the Intel SCH provides support for
- 	  System Management Bus and General Purpose I/O.
- 
-+config INTEL_SOC_PMIC
-+	bool "Support for Intel Atom SoC PMIC"
-+	depends on I2C=y
-+	select MFD_CORE
-+	help
-+	  Select this option to enable support for the PMIC device
-+	  on some Intel SoC systems. The PMIC provides ADC, GPIO,
-+	  thermal, charger and related power management functions
-+	  on these systems.
-+
- config MFD_INTEL_MSIC
- 	bool "Intel MSIC"
- 	depends on INTEL_SCU_IPC
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2851275..1a18d8b 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -166,3 +166,6 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
- obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-+
-+intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o intel_soc_pmic_i2c.o
-+obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
--- 
-1.8.3.2
+> Hi Grant,
+> 
+> Am 14.05.2014 12:08, schrieb Grant Likely:
+>> More generally I am concerned about whether or not overlays
+>> will introduce corner cases that can never be handled correctly,
+>> particularly in how multiple overlays will get handled. I want to see
+>> very clear rules on what happens when multiple overlays are applied, and
+>> then removed again. Is it possible to remove overlays out of order? If
+>> so, what are the conditions that would not be allowed?
+> 
+> Yes, it is possible that an overlay depends on another.
+> 
+> The problem is not, that an overlay is removed other overlays depend on,
+> but that nodes of an overlay may depend on the to-be-removed overlay and
+> the resulting devicetree can become inconsistent.
+> 
+> 
+> I have an SPI Bus with two slaves. The second slave is used only on one
+> of our boards. That is why we split the overlays the following way:
+> 
+> xxxx_spi1.dts:
+>  Pinmux for SPI-Bus and activation of spi-controller.
+>  Pinmux for CS0 and definition of first slave.
+> 
+> xxxx_spi1_cs1:
+>  Pinmux for CS1 and definition of second slave.
+> 
+> When the overlay for the bus is removed, the overlays for the second
+> slave does not make any sense anymore.
+> 
+> It is even worse in a scenario we have with a test board.
+> One of the slaves is an spi-io-controller with a few bitbanging i2c
+> masters. In an extreme case, each component is defined in a separate
+> overlay and only the overlay with the master is removed. I know, that
+> this is completely sick. The devices are removed cleanly because of the
+> device dependency.
+> 
+
+Well, shouldn't you be reverting the overlays in reverse sequence?
+
+As I see it, when proper subtree tracking is implemented this use case 
+(of removing #0 before #1) will not be allowed.
+
+What is your ideal scenario for this use case?
+
+> Michael
+> 
+
+Regards
+
+-- Pantelis
 
