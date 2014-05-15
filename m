@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaEOObt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:31:49 -0400
-Received: from smtp1.ono.com ([62.42.230.162]:3807 "EHLO smtp1.ono.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107AbaEOObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:31:48 -0400
-X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 May 2014 10:31:47 EDT
-X-CTCH-RefID: str=0001.0A0B0207.5374CE6C.002B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-VOD: Unknown
-X-CTCH-Spam: Unknown
-Message-ID: <5374CE6B.6030905@ono.com>
-Date: Thu, 15 May 2014 16:25:47 +0200
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: NFSACL broken from 3.13 to 3.14
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755107AbaEOOb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:31:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33840 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583AbaEOOb5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:31:57 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH] ARM: QCOM: Enable ARM_AMBA option for Qcom SOCS.
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1400148535-30772-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Thu, 15 May 2014 09:31:52 -0500
+Cc: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4FB5A6A0-B4C5-4E97-AD7D-8049CFA60393@codeaurora.org>
+References: <1400148535-30772-1-git-send-email-srinivas.kandagatla@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry if this gets twice to the list, my ISP's SMPT seems to have
-gone haywire....)
 
-Hi...
+On May 15, 2014, at 5:08 AM, Srinivas Kandagatla <srinivas.kandagatla@linaro.org> wrote:
 
-I mount homes from a Solaris 10 server, via NFSv3. Solaris nfs has a special
-sideband server on a port for NFS to check ACLs. With previous version of
-kernel (3.13.10 was the latest I check), I need no special option to mount
-Solaris shares. With 3.14, it began to give errors, directories created
-with mkdir returned error, files got created but truncated to 0 size...
-(now I have 3.14.3).
+> As some of the IPs on Qualcomm SOCs are based on ARM PrimeCell IPs.
+> For example SDCC controller is PrimeCell MCI pl180. Adding this option will
+> give flexibility to reuse the existing drivers as it is without major
+> modifications.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> ---
+> arch/arm/mach-qcom/Kconfig | 1 +
+> 1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
+> index a028be2..5bac591 100644
+> --- a/arch/arm/mach-qcom/Kconfig
+> +++ b/arch/arm/mach-qcom/Kconfig
+> @@ -2,6 +2,7 @@ config ARCH_QCOM
+> 	bool "Qualcomm Support" if ARCH_MULTI_V7
+> 	select ARCH_REQUIRE_GPIOLIB
+> 	select ARM_GIC
+> +	select ARM_AMBA
+> 	select CLKSRC_OF
+> 	select GENERIC_CLOCKEVENTS
+> 	select HAVE_SMP
+> -- 
+> 1.9.1
 
-I solved it adding the 'noacl' option to Solaris mount entries in autofs,
-so the linux clients don't use the sideband protocol.
+I’d rather have the driver have the select of ARM_AMBA and not the core support.  We clearly don’t need to build ARM_AMBA in to function.
 
-As I have read, NFSACL usage is negotitated between client and server.
-Something has changed and the negotiation fails, perhaps ?
-
-Any idea ?
-
-TIA
+- k
 
 -- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
