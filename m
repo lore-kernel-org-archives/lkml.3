@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135AbaEOPLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:11:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43503 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993AbaEOPLf (ORCPT
+	id S1754898AbaEOPM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:12:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57222 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751541AbaEOPMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:11:35 -0400
-Date: Thu, 15 May 2014 17:11:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Carlos O'Donell" <carlos@redhat.com>
-Cc: mtk.manpages@gmail.com, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-Message-ID: <20140515151109.GQ30445@twins.programming.kicks-ass.net>
-References: <537346E5.4050407@gmail.com>
- <CF98E3EF.90564%dvhart@linux.intel.com>
- <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
- <5373D0CA.2050204@redhat.com>
- <20140515081444.GD11096@twins.programming.kicks-ass.net>
- <5374BE9E.8080408@redhat.com>
- <20140515132235.GM30445@twins.programming.kicks-ass.net>
- <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
- <5374D18D.6020608@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bmpniq+Thlljzm46"
-Content-Disposition: inline
-In-Reply-To: <5374D18D.6020608@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 15 May 2014 11:12:55 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
+        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] ARM: dt: imx28-cfa10036: introduce a regulator for mmc0
+Date: Thu, 15 May 2014 17:12:48 +0200
+Message-Id: <1400166768-18801-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The PWM3 pinmux configuration conflicts with gpio 3.28. Introduce a regulator
+for mmc0 so that it conflicts with the pwm driver and fails gracefully. The
+kernel will then able to access mmc0 normally.
 
---Bmpniq+Thlljzm46
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/imx28-cfa10036.dts | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-On Thu, May 15, 2014 at 10:39:09AM -0400, Carlos O'Donell wrote:
-> For example does gettid *really* return a pid_t as considered by
-> userspace? It's not a full out process...
+diff --git a/arch/arm/boot/dts/imx28-cfa10036.dts b/arch/arm/boot/dts/imx28-cfa10036.dts
+index cabb6171a19d..cd5fab8efa76 100644
+--- a/arch/arm/boot/dts/imx28-cfa10036.dts
++++ b/arch/arm/boot/dts/imx28-cfa10036.dts
+@@ -53,6 +53,17 @@
+ 					fsl,pull-up = <MXS_PULL_DISABLE>;
+ 				};
+ 
++				mmc_pwr_cfa10036: mmc_pwr_cfa10036@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x31c3 /*
++						MX28_PAD_PWM3__GPIO_3_28 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
+ 			};
+ 
+ 			ssp0: ssp@80010000 {
+@@ -60,6 +71,7 @@
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&mmc0_4bit_pins_a
+ 					&mmc0_cd_cfg &mmc0_sck_cfg>;
++				vmmc-supply = <&reg_vddio_sd0>;
+ 				bus-width = <4>;
+ 				status = "okay";
+ 			};
+@@ -114,4 +126,14 @@
+ 			default-state = "on";
+ 		};
+ 	};
++
++	reg_vddio_sd0: vddio-sd0 {
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&mmc_pwr_cfa10036>;
++		regulator-name = "vddio-sd0";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio3 28 0>;
++	};
+ };
+-- 
+1.9.1
 
-Yeah, PIDs and TIDs are the same namespace in the kernel. All we have
-are tasks and each task has an id. gettid() actually returns the id of
-the current task.
-
-getpid() returns the id of the thread group leader, so for that task
-gettid() and getpid() return the same id.
-
---Bmpniq+Thlljzm46
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdNkNAAoJEHZH4aRLwOS6ENQP/RsOAo22nckgUnC7R0YLUkB2
-KUEz2sf8LL/kFob5ad7RY5ELhWk7HjmTj4RQFo/gc3GR8gb/3oc8m3xTB5Sa7TZw
-Nu/50en1ZOmEMCJmPZ14l6WMudGZRRuIhyfTidDlKefNe9IlbRDC1iyn2KEmzBiq
-Q8uplsw7myoWIduyYjN8xyCNVaDiUT1xOLuQYiqFU5SUJ9orYt/fU8e3u0L8qhAK
-cggS4xMxVZDJSsIvZ/7AeQmWSCFU2WkSEWQNJ5Nlaza2+1SDinJoIbATQrGSTMuq
-MgK5mF0+FF7tevN4PEmN0LBSS07UrKwpzlclSZwAKHLNuH6ZVclvtWeE0QC4vWRD
-UaRFdXjgU4SFsA/DFeY2TaM5WDqdYo+YkX5wFkyPLcSUGGU0BGIK5i+iAhabCZb9
-46jW+ZHkqmMkKMkmgypuIgdHyquukGZlvxLzd9sXjl7StV2uuxh4oMBI9GbXVozM
-UBahHvXpWAxVNuTKo3ykemKBOPxiri2dBQOT9lomg+i+auTzhdxYuUEYnQwCZayu
-MDKFaCNc7nw14+A6UnFUgyDMoFhoh4iDacv4+DXzD8NlJ7ZcReEpJ96N67jJfrYC
-X8WOian0MSdtikRvoVNvI2zIalOj7/rNw/o7Rj6AtHAYYlUAXwxVKx6VuMbvg+NB
-WTXlkC/b43xDkG1m+2Xh
-=HyM8
------END PGP SIGNATURE-----
-
---Bmpniq+Thlljzm46--
