@@ -1,86 +1,710 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaEONmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:42:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48427 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167AbaEONmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:42:06 -0400
-Date: Thu, 15 May 2014 15:42:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: jack@suse.cz, lczerner@redhat.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ext2: fix error handling in ext2_fill_super()
-Message-ID: <20140515134204.GA660@quack.suse.cz>
-References: <1400156776-3412-1-git-send-email-waydi1@gmail.com>
- <1400156776-3412-2-git-send-email-waydi1@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400156776-3412-2-git-send-email-waydi1@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754716AbaEONnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:43:08 -0400
+Received: from exprod7og119.obsmtp.com ([64.18.2.16]:41380 "EHLO
+	exprod7og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaEONnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:43:06 -0400
+From: Anders Berg <anders.berg@avagotech.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Anders Berg <anders.berg@lsi.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH] clk: Add clock driver for AXM55xx SoC
+Date: Thu, 15 May 2014 15:42:25 +0200
+Message-Id: <1400161345-30130-1-git-send-email-anders.berg@avagotech.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-05-14 21:26:16, Seunghun Lee wrote:
-> ext2_fill_super is using err variable, but it is not applied to return value.
-> 
-> This patch fixes it.
-  I see no point why we should have 'err' and 'ret' variables. Just use
-'ret' where 'err' is used and be done with it...
+From: Anders Berg <anders.berg@lsi.com>
 
-								Honza
-> 
-> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
-> ---
->  fs/ext2/super.c |   10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-> index e3fc51e..7e36536 100644
-> --- a/fs/ext2/super.c
-> +++ b/fs/ext2/super.c
-> @@ -770,14 +770,13 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
->  	unsigned long logic_sb_block;
->  	unsigned long offset = 0;
->  	unsigned long def_mount_opts;
-> -	int ret = -EINVAL;
-> +	int ret = -ENOMEM;
->  	int blocksize = BLOCK_SIZE;
->  	int db_count;
->  	int i, j;
->  	__le32 features;
-> -	int err;
-> +	int err = 0;
->  
-> -	err = -ENOMEM;
->  	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
->  	if (!sbi)
->  		goto failed;
-> @@ -793,6 +792,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
->  
->  	spin_lock_init(&sbi->s_lock);
->  
-> +	/* -EINVAL is default */
-> +	ret = -EINVAL;
-> +
->  	/*
->  	 * See what the current blocksize for the device is, and
->  	 * use that as the blocksize.  Otherwise (or if the blocksize
-> @@ -1140,7 +1142,7 @@ failed_sbi:
->  	kfree(sbi->s_blockgroup_lock);
->  	kfree(sbi);
->  failed:
-> -	return ret;
-> +	return err ? err : ret;
->  }
->  
->  static void ext2_clear_super_error(struct super_block *sb)
-> -- 
-> 1.7.9.5
-> 
+Add clk driver to support clock blocks found on the AXM55xx devices. The driver
+provides clock implementations for three different types of clock devices on
+the AXM55xx device: PLL clock, a clock divider and a clock mux.
+
+Signed-off-by: Anders Berg <anders.berg@lsi.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
+---
+ .../devicetree/bindings/clock/lsi,axm5516-clks.txt |  29 +
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-axm5516.c                          | 615 +++++++++++++++++++++
+ 3 files changed, 645 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/lsi,axm5516-clks.txt
+ create mode 100644 drivers/clk/clk-axm5516.c
+
+diff --git a/Documentation/devicetree/bindings/clock/lsi,axm5516-clks.txt b/Documentation/devicetree/bindings/clock/lsi,axm5516-clks.txt
+new file mode 100644
+index 0000000..3ce97cf
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/lsi,axm5516-clks.txt
+@@ -0,0 +1,29 @@
++AXM5516 clock driver bindings
++-----------------------------
++
++Required properties :
++- compatible : shall contain "lsi,axm5516-clks"
++- reg : shall contain base register location and length
++- #clock-cells : shall contain 1
++
++The consumer specifies the desired clock by having the clock ID in its "clocks"
++phandle cell. See <dt-bindings/clock/lsi,axxia-clock.h> for the list of
++supported clock IDs.
++
++Example:
++
++	clks: clock-controller@2010020000 {
++		compatible = "lsi,axm5516-clks";
++		#clock-cells = <1>;
++		reg = <0x20 0x10020000 0 0x20000>;
++	};
++
++	serial0: uart@2010080000 {
++		compatible = "arm,pl011", "arm,primecell";
++		reg = <0x20 0x10080000 0 0x1000>;
++		interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&clks AXXIA_CLK_PER>;
++		clock-names = "apb_pclk";
++	};
++																																};
++
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 5f8a287..32051e7 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ # hardware specific clock types
+ # please keep this section sorted lexicographically by file/directory path name
+ obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN)	+= clk-axi-clkgen.o
++obj-$(CONFIG_ARCH_AXXIA)		+= clk-axm5516.o
+ obj-$(CONFIG_ARCH_BCM2835)		+= clk-bcm2835.o
+ obj-$(CONFIG_ARCH_EFM32)		+= clk-efm32gg.o
+ obj-$(CONFIG_ARCH_HIGHBANK)		+= clk-highbank.o
+diff --git a/drivers/clk/clk-axm5516.c b/drivers/clk/clk-axm5516.c
+new file mode 100644
+index 0000000..d2f1e11
+--- /dev/null
++++ b/drivers/clk/clk-axm5516.c
+@@ -0,0 +1,615 @@
++/*
++ * drivers/clk/clk-axm5516.c
++ *
++ * Provides clock implementations for three different types of clock devices on
++ * the Axxia device: PLL clock, a clock divider and a clock mux.
++ *
++ * Copyright (C) 2014 LSI Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/clk-provider.h>
++#include <linux/regmap.h>
++#include <dt-bindings/clock/lsi,axm5516-clks.h>
++
++
++/**
++ * struct axxia_clk - Common struct to all Axxia clocks.
++ * @hw: clk_hw for the common clk framework
++ * @regmap: Regmap for the clock control registers
++ */
++struct axxia_clk {
++	struct clk_hw hw;
++	struct regmap *regmap;
++};
++#define to_axxia_clk(_hw) container_of(_hw, struct axxia_clk, hw)
++
++/**
++ * struct axxia_pllclk - Axxia PLL generated clock.
++ * @aclk: Common struct
++ * @reg: Offset into regmap for PLL control register
++ */
++struct axxia_pllclk {
++	struct axxia_clk aclk;
++	u32 reg;
++};
++#define to_axxia_pllclk(_aclk) container_of(_aclk, struct axxia_pllclk, aclk)
++
++/**
++ * axxia_pllclk_recalc - Calculate the PLL generated clock rate given the
++ * parent clock rate.
++ */
++static unsigned long
++axxia_pllclk_recalc(struct clk_hw *hw, unsigned long parent_rate)
++{
++	struct axxia_clk *aclk = to_axxia_clk(hw);
++	struct axxia_pllclk *pll = to_axxia_pllclk(aclk);
++	unsigned long rate, fbdiv, refdiv, postdiv;
++	u32 control;
++
++	regmap_read(aclk->regmap, pll->reg, &control);
++	postdiv = ((control >> 0) & 0xf) + 1;
++	fbdiv   = ((control >> 4) & 0xfff) + 3;
++	refdiv  = ((control >> 16) & 0x1f) + 1;
++	rate = (parent_rate / (refdiv * postdiv)) * fbdiv;
++
++	return rate;
++}
++
++static const struct clk_ops axxia_pllclk_ops = {
++	.recalc_rate = axxia_pllclk_recalc,
++};
++
++/**
++ * struct axxia_divclk - Axxia clock divider
++ * @aclk: Common struct
++ * @reg: Offset into regmap for PLL control register
++ * @shift: Bit position for divider value
++ * @width: Number of bits in divider value
++ */
++struct axxia_divclk {
++	struct axxia_clk aclk;
++	u32 reg;
++	u32 shift;
++	u32 width;
++};
++#define to_axxia_divclk(_aclk) container_of(_aclk, struct axxia_divclk, aclk)
++
++/**
++ * axxia_divclk_recalc_rate - Calculate clock divider output rage
++ */
++static unsigned long
++axxia_divclk_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
++{
++	struct axxia_clk *aclk = to_axxia_clk(hw);
++	struct axxia_divclk *divclk = to_axxia_divclk(aclk);
++	u32 ctrl, div;
++
++	regmap_read(aclk->regmap, divclk->reg, &ctrl);
++	div = 1 + ((ctrl >> divclk->shift) & ((1 << divclk->width)-1));
++
++	return parent_rate / div;
++}
++
++static const struct clk_ops axxia_divclk_ops = {
++	.recalc_rate = axxia_divclk_recalc_rate,
++};
++
++/**
++ * struct axxia_clkmux - Axxia clock mux
++ * @aclk: Common struct
++ * @reg: Offset into regmap for PLL control register
++ * @shift: Bit position for selection value
++ * @width: Number of bits in selection value
++ */
++struct axxia_clkmux {
++	struct axxia_clk aclk;
++	u32 reg;
++	u32 shift;
++	u32 width;
++};
++#define to_axxia_clkmux(_aclk) container_of(_aclk, struct axxia_clkmux, aclk)
++
++/**
++ * axxia_clkmux_get_parent - Return the index of selected parent clock
++ */
++static u8 axxia_clkmux_get_parent(struct clk_hw *hw)
++{
++	struct axxia_clk *aclk = to_axxia_clk(hw);
++	struct axxia_clkmux *mux = to_axxia_clkmux(aclk);
++	u32 ctrl, parent;
++
++	regmap_read(aclk->regmap, mux->reg, &ctrl);
++	parent = (ctrl >> mux->shift) & ((1 << mux->width) - 1);
++
++	return (u8) parent;
++}
++
++static const struct clk_ops axxia_clkmux_ops = {
++	.get_parent = axxia_clkmux_get_parent,
++};
++
++
++/*
++ * PLLs
++ */
++
++static struct axxia_pllclk clk_fab_pll = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_fab_pll",
++		.parent_names = (const char *[]){
++			"clk_ref0"
++		},
++		.num_parents = 1,
++		.ops = &axxia_pllclk_ops,
++	},
++	.reg   = 0x01800,
++};
++
++static struct axxia_pllclk clk_cpu_pll = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu_pll",
++		.parent_names = (const char *[]){
++			"clk_ref0"
++		},
++		.num_parents = 1,
++		.ops = &axxia_pllclk_ops,
++	},
++	.reg   = 0x02000,
++};
++
++static struct axxia_pllclk clk_sys_pll = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_sys_pll",
++		.parent_names = (const char *[]){
++			"clk_ref0"
++		},
++		.num_parents = 1,
++		.ops = &axxia_pllclk_ops,
++	},
++	.reg   = 0x02800,
++};
++
++static struct axxia_pllclk clk_sm0_pll = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_sm0_pll",
++		.parent_names = (const char *[]){
++			"clk_ref2"
++		},
++		.num_parents = 1,
++		.ops = &axxia_pllclk_ops,
++	},
++	.reg   = 0x03000,
++};
++
++static struct axxia_pllclk clk_sm1_pll = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_sm1_pll",
++		.parent_names = (const char *[]){
++			"clk_ref1"
++		},
++		.num_parents = 1,
++		.ops = &axxia_pllclk_ops,
++	},
++	.reg   = 0x03800,
++};
++
++/*
++ * Clock dividers
++ */
++
++static struct axxia_divclk clk_cpu0_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu0_div",
++		.parent_names = (const char *[]){
++			"clk_cpu_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x10008,
++	.shift = 0,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_cpu1_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu1_div",
++		.parent_names = (const char *[]){
++			"clk_cpu_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x10008,
++	.shift = 4,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_cpu2_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu2_div",
++		.parent_names = (const char *[]){
++			"clk_cpu_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x10008,
++	.shift = 8,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_cpu3_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu3_div",
++		.parent_names = (const char *[]){
++			"clk_cpu_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x10008,
++	.shift = 12,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_nrcp_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_nrcp_div",
++		.parent_names = (const char *[]){
++			"clk_sys_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x1000c,
++	.shift = 0,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_sys_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_sys_div",
++		.parent_names = (const char *[]){
++			"clk_sys_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x1000c,
++	.shift = 4,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_fab_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_fab_div",
++		.parent_names = (const char *[]){
++			"clk_fab_pll"
++		},
++		.num_parents = 1,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x1000c,
++	.shift = 8,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_per_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_per_div",
++		.parent_names = (const char *[]){
++			"clk_sm1_pll"
++		},
++		.num_parents = 1,
++		.flags = CLK_IS_BASIC,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x1000c,
++	.shift = 12,
++	.width = 4,
++};
++
++static struct axxia_divclk clk_mmc_div = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_mmc_div",
++		.parent_names = (const char *[]){
++			"clk_sm1_pll"
++		},
++		.num_parents = 1,
++		.flags = CLK_IS_BASIC,
++		.ops = &axxia_divclk_ops,
++	},
++	.reg   = 0x1000c,
++	.shift = 16,
++	.width = 4,
++};
++
++/*
++ * Clock MUXes
++ */
++
++static struct axxia_clkmux clk_cpu0_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu0",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_cpu_pll",
++			"clk_cpu0_div",
++			"clk_cpu0_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10000,
++	.shift = 0,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_cpu1_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu1",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_cpu_pll",
++			"clk_cpu1_div",
++			"clk_cpu1_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10000,
++	.shift = 2,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_cpu2_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu2",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_cpu_pll",
++			"clk_cpu2_div",
++			"clk_cpu2_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10000,
++	.shift = 4,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_cpu3_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_cpu3",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_cpu_pll",
++			"clk_cpu3_div",
++			"clk_cpu3_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10000,
++	.shift = 6,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_nrcp_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_nrcp",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_sys_pll",
++			"clk_nrcp_div",
++			"clk_nrcp_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10004,
++	.shift = 0,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_sys_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_sys",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_sys_pll",
++			"clk_sys_div",
++			"clk_sys_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10004,
++	.shift = 2,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_fab_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_fab",
++		.parent_names = (const char *[]){
++			"clk_ref0",
++			"clk_fab_pll",
++			"clk_fab_div",
++			"clk_fab_div"
++		},
++		.num_parents = 4,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10004,
++	.shift = 4,
++	.width = 2,
++};
++
++static struct axxia_clkmux clk_per_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_per",
++		.parent_names = (const char *[]){
++			"clk_ref1",
++			"clk_per_div"
++		},
++		.num_parents = 2,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10004,
++	.shift = 6,
++	.width = 1,
++};
++
++static struct axxia_clkmux clk_mmc_mux = {
++	.aclk.hw.init = &(struct clk_init_data){
++		.name = "clk_mmc",
++		.parent_names = (const char *[]){
++			"clk_ref1",
++			"clk_mmc_div"
++		},
++		.num_parents = 2,
++		.ops = &axxia_clkmux_ops,
++	},
++	.reg   = 0x10004,
++	.shift = 9,
++	.width = 1,
++};
++
++/* Table of all supported clocks indexed by the clock identifiers from the
++ * device tree binding
++ */
++static struct axxia_clk *axmclk_clocks[] = {
++	[AXXIA_CLK_FAB_PLL]  = &clk_fab_pll.aclk,
++	[AXXIA_CLK_CPU_PLL]  = &clk_cpu_pll.aclk,
++	[AXXIA_CLK_SYS_PLL]  = &clk_sys_pll.aclk,
++	[AXXIA_CLK_SM0_PLL]  = &clk_sm0_pll.aclk,
++	[AXXIA_CLK_SM1_PLL]  = &clk_sm1_pll.aclk,
++	[AXXIA_CLK_FAB_DIV]  = &clk_fab_div.aclk,
++	[AXXIA_CLK_SYS_DIV]  = &clk_sys_div.aclk,
++	[AXXIA_CLK_NRCP_DIV] = &clk_nrcp_div.aclk,
++	[AXXIA_CLK_CPU0_DIV] = &clk_cpu0_div.aclk,
++	[AXXIA_CLK_CPU1_DIV] = &clk_cpu1_div.aclk,
++	[AXXIA_CLK_CPU2_DIV] = &clk_cpu2_div.aclk,
++	[AXXIA_CLK_CPU3_DIV] = &clk_cpu3_div.aclk,
++	[AXXIA_CLK_PER_DIV]  = &clk_per_div.aclk,
++	[AXXIA_CLK_MMC_DIV]  = &clk_mmc_div.aclk,
++	[AXXIA_CLK_FAB]      = &clk_fab_mux.aclk,
++	[AXXIA_CLK_SYS]      = &clk_sys_mux.aclk,
++	[AXXIA_CLK_NRCP]     = &clk_nrcp_mux.aclk,
++	[AXXIA_CLK_CPU0]     = &clk_cpu0_mux.aclk,
++	[AXXIA_CLK_CPU1]     = &clk_cpu1_mux.aclk,
++	[AXXIA_CLK_CPU2]     = &clk_cpu2_mux.aclk,
++	[AXXIA_CLK_CPU3]     = &clk_cpu3_mux.aclk,
++	[AXXIA_CLK_PER]      = &clk_per_mux.aclk,
++	[AXXIA_CLK_MMC]      = &clk_mmc_mux.aclk,
++};
++
++static const struct regmap_config axmclk_regmap_config = {
++	.reg_bits	= 32,
++	.reg_stride	= 4,
++	.val_bits	= 32,
++	.max_register	= 0x1fffc,
++	.fast_io	= true,
++};
++
++static const struct of_device_id axmclk_match_table[] = {
++	{ .compatible = "lsi,axm5516-clks" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, axmclk_match_table);
++
++struct axmclk_priv {
++	struct clk_onecell_data onecell;
++	struct clk *clks[];
++};
++
++static int axmclk_probe(struct platform_device *pdev)
++{
++	void __iomem *base;
++	struct resource *res;
++	int i, ret;
++	struct device *dev = &pdev->dev;
++	struct clk *clk;
++	struct regmap *regmap;
++	size_t num_clks;
++	struct axmclk_priv *priv;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	regmap = devm_regmap_init_mmio(dev, base, &axmclk_regmap_config);
++	if (IS_ERR(regmap))
++		return PTR_ERR(regmap);
++
++	num_clks = ARRAY_SIZE(axmclk_clocks);
++	pr_info("axmclk: supporting %u clocks\n", num_clks);
++	priv = devm_kzalloc(dev, sizeof(*priv) + sizeof(*priv->clks) * num_clks,
++			    GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->onecell.clks = priv->clks;
++	priv->onecell.clk_num = num_clks;
++
++	/* Update each entry with the allocated regmap and register the clock
++	 * with the common clock framework
++	 */
++	for (i = 0; i < num_clks; i++) {
++		axmclk_clocks[i]->regmap = regmap;
++		clk = devm_clk_register(dev, &axmclk_clocks[i]->hw);
++		if (IS_ERR(clk))
++			return PTR_ERR(clk);
++		priv->clks[i] = clk;
++	}
++
++	ret = of_clk_add_provider(dev->of_node,
++				  of_clk_src_onecell_get, &priv->onecell);
++
++	return ret;
++}
++
++static int axmclk_remove(struct platform_device *pdev)
++{
++	of_clk_del_provider(pdev->dev.of_node);
++	return 0;
++}
++
++static struct platform_driver axmclk_driver = {
++	.probe		= axmclk_probe,
++	.remove		= axmclk_remove,
++	.driver		= {
++		.name	= "clk-axm5516",
++		.owner	= THIS_MODULE,
++		.of_match_table = axmclk_match_table,
++	},
++};
++
++static int __init axmclk_init(void)
++{
++	return platform_driver_register(&axmclk_driver);
++}
++core_initcall(axmclk_init);
++
++static void __exit axmclk_exit(void)
++{
++	platform_driver_unregister(&axmclk_driver);
++}
++module_exit(axmclk_exit);
++
++MODULE_DESCRIPTION("AXM5516 clock driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:clk-axm5516");
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.2
+
