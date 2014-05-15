@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaEOQGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:06:44 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:43278 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaEOQGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:06:43 -0400
-Date: Thu, 15 May 2014 12:06:40 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 3/6] sched/fair.c: disambiguate existing/remaining
- "capacity" usage
-In-Reply-To: <CAKfTPtDueiEzqL_1kVvScvLvGmeNTMqX5mCU-2JdZ=Uth=nd-g@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405151204090.17310@knanqh.ubzr>
-References: <1400101030-17717-1-git-send-email-nicolas.pitre@linaro.org> <1400101030-17717-4-git-send-email-nicolas.pitre@linaro.org> <CAKfTPtDueiEzqL_1kVvScvLvGmeNTMqX5mCU-2JdZ=Uth=nd-g@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753718AbaEOQHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:07:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35688 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751614AbaEOQHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:07:47 -0400
+Date: Thu, 15 May 2014 11:07:35 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <joe@perches.com>, <auttamchandani@logicube.com>
+Subject: Re: [PATCH 2/2 v4] usb: gadget: net2280: Add support for PLX USB338X
+Message-ID: <20140515160735.GF7360@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1400156926-11100-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1400156926-11100-2-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vA66WO2vHvL/CRSR"
+Content-Disposition: inline
+In-Reply-To: <1400156926-11100-2-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Vincent Guittot wrote:
+--vA66WO2vHvL/CRSR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 14 May 2014 22:57, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > We have "power" (which should actually become "capacity") and "capacity"
-> > which is a scaled down "capacity factor" in terms of possible tasks.
-> > Let's use "capa_factor" to make room for proper usage of "capacity"
-> > later.
-> >
-> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > ---
-> >  kernel/sched/fair.c | 42 +++++++++++++++++++++---------------------
-> >  1 file changed, 21 insertions(+), 21 deletions(-)
-> >
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 0eda4c527e..2633c42692 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -5487,7 +5487,7 @@ struct sg_lb_stats {
-> >         unsigned long load_per_task;
-> >         unsigned long group_power;
-> >         unsigned int sum_nr_running; /* Nr tasks running in the group */
-> > -       unsigned int group_capacity;
-> > +       unsigned int group_capa_factor;
-> 
-> As it is mainly compared to sum_nr_running, you might rename it to
-> group_nr_capacity instead of group_capa_factor
+On Thu, May 15, 2014 at 02:28:46PM +0200, Ricardo Ribalda Delgado wrote:
+> This patch adds support for the PLX USB3380 and USB3382.
+>=20
+> This driver is based on the driver from the manufacturer.
+>=20
+> Since USB338X is register compatible with NET2280, I thought that it
+> would be better to include this hardware into net2280 driver.
+>=20
+> Manufacturer's driver only supported the USB33X, did not follow the
+> Kernel Style and contain some trivial errors. This patch has tried to
+> address this issues.
+>=20
+> This patch has only been tested on USB338x hardware, but the merge has
+> been done trying to not affect the behaviour of NET2280.
+>=20
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-But what actual meaning would "group_nr_capacity" convey?  This could be 
-interpreted as the total number of groups possible for example.
+anybody with net2280, please give me a Tested-by so I'm sure there are
+no regressions caused by this patch. One question though, is it worth to
+use the legacy mode just to get register compatibility ? What are the
+drawbacks of using legacy mode ? Is any feature missing when we use
+legacy mode ?
 
+cheers
 
-Nicolas
+--=20
+balbi
+
+--vA66WO2vHvL/CRSR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTdOZHAAoJEIaOsuA1yqREqP0P/iN3/EWHS8XpxUKNAk7WqG9a
+X3shjZJqNm2FI4BTfRzkKDWXOClV6NBX9Dje7hkOpdrLF3mhjcuT+3bFWJc+QJ3m
+/AnqfWTzru7XpsAFtgCu2V3YbsM9ouetR+A/NC3MRhgNk8RbbgSyM+3nrj+UpLe8
+hWhCPbFZ7VNp11PiruhV8LtW4t78DjmBD4+2zYiMGhUo/i9mvZIhH3S13UlEP85k
+9xIMvPimjZ7UjLtioJxCDAX/U5J3rO1TXhFqmRZk+94Q1bESs9eN09WBRjxKBk0v
+3D4DexJs7k6JZUyttjbWtJ4Os8SfOzY8qeF7PRKpRUTDalRoIM9RozHLwvXnmeXg
+wls0xPL237AN3wRFsSwIhSOySM4BZZolBHfR4YPbzANK6q2AuLL+mqCiJLlwb6S9
+XwmoM3ti7CYQSjCAmenBHVQm3edZGw4ROvHkLFYAc0h+jtX0Pmbyj+5+K/sFp+R6
+oEK/e3qHhgQp/sxEm1OP/Ij9G5sG+CTM3+8/VuVzw9FDUtkaeLaMseEXGSWU7S3i
+HHr7eZLWMOHZ1lisj3H6A6owaCttUlvbcXM0ZOVWcJ7gVHFXgMJDC4t9c6kfssSe
+nAnKv3R3UsCl43N9KcnUZYkSILzG+fcCO+HUCggg1WNSbVa/q3J0uMDufj6RLaHS
+/wsSWv7X88ukdz3Vhwa7
+=/hpW
+-----END PGP SIGNATURE-----
+
+--vA66WO2vHvL/CRSR--
