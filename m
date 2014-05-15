@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaEOJGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:06:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27457 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002AbaEOJGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:06:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
-   d="scan'208";a="512047004"
-Message-ID: <1400144805.2273.34.camel@rzhang1-toshiba>
-Subject: Re: [PATCH 00/10] thermal: exynos: various cleanups
-From: Zhang Rui <rui.zhang@intel.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 17:06:45 +0800
-In-Reply-To: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752537AbaEOJIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:08:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56959 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaEOJIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:08:43 -0400
+Date: Thu, 15 May 2014 11:08:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: Consolidate tlb.h
+Message-ID: <20140515090839.GJ30445@twins.programming.kicks-ass.net>
+References: <1400093999-18703-1-git-send-email-richard@nod.at>
+ <20140515083258.GD30445@twins.programming.kicks-ass.net>
+ <53747F65.4090203@nod.at>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Sao9idefCFjK9Dt3"
+Content-Disposition: inline
+In-Reply-To: <53747F65.4090203@nod.at>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 一, 2014-05-05 at 13:15 +0200, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> This patch series contains various cleanups for EXYNOS thermal
-> driver.  Overall it decreases driver's LOC by 13%.  It is based
-> on next-20140428 kernel.  It should not cause any functionality
-> changes.
-> 
-Amit,
 
-what do you think of this patch set?
+--Sao9idefCFjK9Dt3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks,
-rui
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
-> 
-> Bartlomiej Zolnierkiewicz (10):
->   thermal: exynos: remove unused struct exynos_tmu_registers entries
->   thermal: exynos: remove unused defines
->   thermal: exynos: remove dead code for HW_MODE calibration
->   thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
->     calibration
->   thermal: exynos: remove redundant pdata checks from
->     exynos_tmu_initialize()
->   thermal: exynos: remove redundant threshold_code checks from
->     exynos_tmu_initialize()
->   thermal: exynos: simplify temp_to_code() and code_to_temp()
->   thermal: exynos: cache non_hw_trigger_levels in pdata
->   thermal: exynos: remove redundant pdata checks from
->     exynos_tmu_control()
->   thermal: exynos: remove identical values from exynos*_tmu_registers
->     structures
-> 
->  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
->  drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
->  drivers/thermal/samsung/exynos_tmu.h            |  86 +----------
->  drivers/thermal/samsung/exynos_tmu_data.c       |  40 +-----
->  drivers/thermal/samsung/exynos_tmu_data.h       |  32 +----
->  5 files changed, 37 insertions(+), 303 deletions(-)
-> 
+On Thu, May 15, 2014 at 10:48:37AM +0200, Richard Weinberger wrote:
 
+> If it helps I can pickup your series and finalize it.
+> Actually I was abound to consolidate TLB gather implementations too.
 
+If you have the cycles, please do. I'll try and help where I can.
+
+--Sao9idefCFjK9Dt3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdIQXAAoJEHZH4aRLwOS6o10P/2tfN37Q2qlB7IF9gaPaJb4w
+Np8aJiFPvcZ/mQu5SiPhHq/Qkx9HH+jlRP05kGaxCNqRtjIWVaYBdufkMB54s8jb
+9LdMyuynjYkKFk0is+D0upAtRaEbbhJ4EVPmozvP+3kOORxI1SBgJ9bJwtzTEoxN
+KSbxOxsIG4gpdEVW17kPtHAL9rAss2ca1jghhA6FHLQkBKq9+aTHa2RX3ZdQ88Ld
+VRoobPbWzhkNEJuZeXnamw+GvGMpz3LXjXqukDzIONoqdip1ALwt6iGTW3QZEm6F
+YEzZfkmZE4VXPzJmIxjMyBbclpWGvEIi8vKVFDTRja7d2som3/RI8GyZVuI+mLJ3
+hlc3/7SICSIGye3JwD6Ff8A9twefuEWWBZ6IveXRSdFKXpib1O2lPwwEDGpTEpPe
+Vsu5C0JgM6+CrA5QExGQ4Dlh+USftSsYnppDW3IFtJUzVJr3P9J0VAjtIFr2vLVE
+X04I15DoWnx4ItTzV/8uPGiG93+43ysU959Mrn2F6mqOCD9Ftp3ykn4au4aZDXMj
+nEyQ0rVKQyEQ6yoUcwAzqT1KTvw3Cp7CWgnF+4uwSPZY8HQSndEDxGmpWFdD/9K7
+xsjZkTeo0pNJi/92LWZ6nfbVTllPpTeYvdAhTTY/7y8UtmmAWzHGQMGGdyLyHjGR
+K//GHWMp3aQDvs17Jf9X
+=gJQ9
+-----END PGP SIGNATURE-----
+
+--Sao9idefCFjK9Dt3--
