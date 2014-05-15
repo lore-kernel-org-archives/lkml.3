@@ -1,149 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaEORnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:43:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074AbaEORnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:43:07 -0400
-Date: Thu, 15 May 2014 19:42:53 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] perf: Prevent false warning in perf_swevent_add
-Message-ID: <20140515174253.GF4009@krava.brq.redhat.com>
-References: <1396861448-10097-1-git-send-email-jolsa@redhat.com>
+	id S1755379AbaEORnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:43:21 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36185 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678AbaEORnR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:43:17 -0400
+From: bsegall@google.com
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, pjt@google.com,
+        chris.j.arges@canonical.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
+References: <87mwej0yja.wl%klamm@yandex-team.ru>
+Date: Thu, 15 May 2014 10:43:14 -0700
+In-Reply-To: <87mwej0yja.wl%klamm@yandex-team.ru> (Roman Gushchin's message of
+	"Thu, 15 May 2014 20:58:17 +0400")
+Message-ID: <xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396861448-10097-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+Roman Gushchin <klamm@yandex-team.ru> writes:
 
-thanks,
-jirka
+> tg_set_cfs_bandwidth() sets cfs_b->timer_active to 0 to
+> force the period timer restart. It's not safe, because
+> can lead to deadlock, described in commit 927b54fccbf0:
+> "__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+> waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+> runs for another loop iteration, the hrtimer can attempt to take
+> rq->lock, resulting in deadlock."
+> If tg_set_cfs_bandwidth() resets cfs_b->timer_active concurrently
+> to the second iteration of sched_cfs_period_timer, deadlock occurs.
 
-On Mon, Apr 07, 2014 at 11:04:08AM +0200, Jiri Olsa wrote:
-> The perf cpu offline callback takes down all cpu context
-> events and releases swhash->swevent_hlist.
-> 
-> This could race with task context software event being just
-> scheduled on this cpu via perf_swevent_add while cpu hotplug
-> code already cleaned up event's data.
-> 
-> The race happens in the gap between the cpu notifier code
-> and the cpu being actually taken down. Note that only cpu
-> ctx events are terminated in the perf cpu hotplug code.
-> 
-> It's easily reproduced with:
->   $ perf record -e faults perf bench sched pipe
-> 
-> while putting one of the cpus offline:
->   # echo 0 > /sys/devices/system/cpu/cpu1/online
-> 
-> Console emits following warning:
->   WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
->   Modules linked in:
->   CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
->   Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
->    0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
->    0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
->    ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
->   Call Trace:
->    [<ffffffff81665a23>] dump_stack+0x4f/0x7c
->    [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
->    [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
->    [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
->    [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
->    [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
->    [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
->    [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
->    [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
->    [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
->    [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
->    [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
->    [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
->    [<ffffffff8166a7de>] __schedule+0x30e/0xad0
->    [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
->    [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
->    [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
->    [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
->    [<ffffffff816707f0>] retint_kernel+0x20/0x30
->    [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
->    [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
->    [<ffffffff81679321>] ? sysret_check+0x5/0x56
-> 
-> Fixing this by tracking the cpu hotplug state and displaying
-> the WARN only if current cpu is initialized properly.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Fengguang Wu <fengguang.wu@intel.com>
+I do not see this deadlock. cfs_b->timer_active is protected by
+cfs_b->lock on both read and write, and I don't think it would even
+directly cause deadlock if it wasn't. In particular this patch makes us
+run for strictly longer outside of the interrupt (although I think the
+patched version is also correct). The old issue was calling
+hrtimer_cancel, which would mean we hold cfs_b->lock while waiting for
+the interrupt to complete, while the interrupt was waiting to take
+cfs_b->lock.
+
+This patch /does/ ensure that we call
+start_bandwidth_timer/__hrtimer_start_range_ns with the updated period,
+but if I'm remembering my hrtimer mechanics correctly that is not
+necessary.
+
+I just did notice however that sched_cfs_period_timer reads
+cfs_b->period without any locks, which can in fact race with an update
+to period (and isn't fixed by this patch). If this write doesn't happen
+to be atomic (which is certainly not guaranteed, and is entirely
+plausible on say 32-bit x86, much less other archs), we could read a
+partially written value and move the timer incorrectly. Pulling the
+lock/unlock out of do_sched_cfs_period_timer should fix this easily
+enough.
+
+unthrottle_offline_cfs_rqs could cause similar issues with its unlocked
+read of quota, and can also be easily fixed.
+
+
+>
+> Instead of resetting cfs_b->timer_active, tg_set_cfs_bandwidth can
+> wait for period timer callbacks (ignoring cfs_b->timer_active) and
+> restart the timer explicitly.
+>
+> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> Cc: Ben Segall <bsegall@google.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: pjt@google.com
+> Cc: Chris J Arges <chris.j.arges@canonical.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > ---
->  kernel/events/core.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 661951a..0747389 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -5423,6 +5423,9 @@ struct swevent_htable {
+>  kernel/sched/core.c  |    3 +--
+>  kernel/sched/fair.c  |    8 ++++----
+>  kernel/sched/sched.h |    2 +-
+>  3 files changed, 6 insertions(+), 7 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index d9d8ece..e9b9c66 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -7717,8 +7717,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>  	/* restart the period timer (if active) to handle new period expiry */
+>  	if (runtime_enabled && cfs_b->timer_active) {
+>  		/* force a reprogram */
+> -		cfs_b->timer_active = 0;
+> -		__start_cfs_bandwidth(cfs_b);
+> +		__start_cfs_bandwidth(cfs_b, true);
+>  	}
+>  	raw_spin_unlock_irq(&cfs_b->lock);
 >  
->  	/* Recursion avoidance in each contexts */
->  	int				recursion[PERF_NR_CONTEXTS];
-> +
-> +	/* Keeps track of cpu being initialized/exited */
-> +	bool				online;
->  };
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7570dd9..55a0a5b 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3129,7 +3129,7 @@ static int assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+>  		 */
+>  		if (!cfs_b->timer_active) {
+>  			__refill_cfs_bandwidth_runtime(cfs_b);
+> -			__start_cfs_bandwidth(cfs_b);
+> +			__start_cfs_bandwidth(cfs_b, false);
+>  		}
 >  
->  static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-> @@ -5669,8 +5672,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
->  	hwc->state = !(flags & PERF_EF_START);
->  
->  	head = find_swevent_head(swhash, event);
-> -	if (WARN_ON_ONCE(!head))
-> +	if (!head) {
-> +		/*
-> +		 * We can race with cpu hotplug code. Do not
-> +		 * WARN if the cpu just got unplugged.
-> +		 */
-> +		WARN_ON_ONCE(swhash->online);
->  		return -EINVAL;
-> +	}
->  
->  	hlist_add_head_rcu(&event->hlist_entry, head);
->  
-> @@ -7850,6 +7859,7 @@ static void perf_event_init_cpu(int cpu)
->  	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
->  
->  	mutex_lock(&swhash->hlist_mutex);
-> +	swhash->online = true;
->  	if (swhash->hlist_refcount > 0) {
->  		struct swevent_hlist *hlist;
->  
-> @@ -7907,6 +7917,7 @@ static void perf_event_exit_cpu(int cpu)
->  	perf_event_exit_cpu_context(cpu);
->  
->  	mutex_lock(&swhash->hlist_mutex);
-> +	swhash->online = false;
->  	swevent_hlist_release(swhash);
->  	mutex_unlock(&swhash->hlist_mutex);
+>  		if (cfs_b->runtime > 0) {
+> @@ -3308,7 +3308,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+>  	raw_spin_lock(&cfs_b->lock);
+>  	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
+>  	if (!cfs_b->timer_active)
+> -		__start_cfs_bandwidth(cfs_b);
+> +		__start_cfs_bandwidth(cfs_b, false);
+>  	raw_spin_unlock(&cfs_b->lock);
 >  }
-> -- 
-> 1.7.11.7
-> 
+>  
+> @@ -3690,7 +3690,7 @@ static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+>  }
+>  
+>  /* requires cfs_b->lock, may release to reprogram timer */
+> -void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+> +void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force)
+>  {
+>  	/*
+>  	 * The timer may be active because we're trying to set a new bandwidth
+> @@ -3705,7 +3705,7 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+>  		cpu_relax();
+>  		raw_spin_lock(&cfs_b->lock);
+>  		/* if someone else restarted the timer then we're done */
+> -		if (cfs_b->timer_active)
+> +		if (!force && cfs_b->timer_active)
+>  			return;
+>  	}
+>  
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 456e492..369b4d6 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -278,7 +278,7 @@ extern void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
+>  extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
+>  
+>  extern void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b);
+> -extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
+> +extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force);
+>  extern void unthrottle_cfs_rq(struct cfs_rq *cfs_rq);
+>  
+>  extern void free_rt_sched_group(struct task_group *tg);
