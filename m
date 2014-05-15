@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaEOEww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 00:52:52 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:34133 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaEOEwu (ORCPT
+	id S1752750AbaEOEw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 00:52:57 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:41807 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265AbaEOEwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 00:52:50 -0400
-Message-ID: <53744767.8090307@gmail.com>
-Date: Thu, 15 May 2014 06:49:43 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 00:52:54 -0400
 MIME-Version: 1.0
-To: "Carlos O'Donell" <carlos@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: mtk.manpages@gmail.com, Darren Hart <dvhart@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <537430B5.2060001@redhat.com>
-In-Reply-To: <537430B5.2060001@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+Date: Thu, 15 May 2014 10:22:53 +0530
+X-Google-Sender-Auth: a0XYIVTz_cKG1fFXBZEkItLZ86Y
+Message-ID: <CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 05:12 AM, Carlos O'Donell wrote:
-> On 05/14/2014 07:34 PM, Thomas Gleixner wrote:
->> On Wed, 14 May 2014, Carlos O'Donell wrote:
->>
->>> On 05/14/2014 03:03 PM, Michael Kerrisk (man-pages) wrote:
->>>>> However, unless I'm sorely mistaken, the larger problem is that glibc
->>>>> removed the futex() call entirely, so these man pages don't describe
->>>>
->>>> I don't think futex() ever was in glibc--that's by design, and
->>>> completely understandable: no user-space application would want to
->>>> directly use futex(). (BTW, I mispoke in my earlier mail when I said I
->>>> wanted documentation suitable for "writers of library functions" -- I
->>>> meant suitable for "writers of *C library*".)
->>>
->>> I fully agree with Michael here.
->>>
->>> The futex() syscall was never exposed to userspace specifically because
->>> it was an interface we did not want to support forever with a stable ABI.
->>> The futex() syscall is an implementation detail that is shared between
->>> the kernel and the writers of core runtimes for Linux.
->>
->> Nonsense. 
-> 
-> What is nonsense?
+On Thu, May 15, 2014 at 10:06 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 May 2014 10:02, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>> I feel freeing of opps are needed at least at the driver unregistration
+>> time, like we free cpufreq_table.
+>> Otherwise it amounts to memory leak unless we assume that the same driver is
+>> going to re-register and re-use the same opps.
+>
+> Its memory leak only if we have lost the pointer to allocated memory, which
+> we haven't. Yes, it will keep occupying some space but there is only
+> one instance
+> of that per 'cluster' and is very much affordable instead of building it again..
+>
+> There is a high chance that it will be used again by this or any other driver,
+> cpufreq or outside of it.
+>
+> But, yes I do agree that the OPPs not added from dts, i.e. added from
+> platform should be freed when they don't make a sense. But that's a different
+> issue altogether.
 
-I suspect there's a misunderstanding between worlds here. Thomas means
-that the kernel ABI is stable. You mean, glibc does not want to have to
-export an ABI that you have to support.
+What i am saying that "what if we are not going to re-use again ? " I
+am not sure if its practical.
+Also, I feel the driver who created the opp table at its registration
+time should free it at its unregistration. Isn't it true in general?
 
-> I do not want to be responsible for the futex API by having glibc provide
-> wrappers. That can't be nonsense since it's a glibc community decision to
-> make.
 
-See my above.
-
-Cheers,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
