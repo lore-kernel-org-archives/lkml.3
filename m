@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaEOB0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 21:26:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35123 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198AbaEOB0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 21:26:53 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140515011551.26781.qmail@ns.horizon.com>
-References: <20140515011551.26781.qmail@ns.horizon.com>
+	id S1751855AbaEOBcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 21:32:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49916 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaEOBct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 21:32:49 -0400
+Date: Wed, 14 May 2014 18:32:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Eric Biederman <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        lxc-devel@lists.linuxcontainers.org
+Subject: Re: [RFC PATCH 00/11] Add support for devtmpfs in user namespaces
+Message-ID: <20140515013245.GA1764@kroah.com>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v2 1/3] lib/crc7: Shift crc7() output left 1 bit
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 14 May 2014 18:26:09 -0700
-To: George Spelvin <linux@horizon.com>, pavel@ucw.cz
-CC: arik@wizery.com, david.gnedt@davizone.at, eliad@wizery.com,
-        jan.nikitenko@gmail.com, laurent.pinchart+renesas@ideasonboard.com,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linville@tuxdriver.com, luca@coelho.fi, tony@atomide.com
-Message-ID: <2e076c13-84aa-4da4-a443-7e8fcc462fc9@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems to me to make the code easier to read, not harder. That was the whole point.
+On Wed, May 14, 2014 at 04:34:48PM -0500, Seth Forshee wrote:
+> Unpriveleged containers cannot run mknod, making it difficult to support
+> devices which appear at runtime.
 
-On May 14, 2014 6:15:51 PM PDT, George Spelvin <linux@horizon.com> wrote:
->H. Peter Anvin wrote:
->> If the whole point of this is to use it for MMC/SD cards, why not
->just
->> also subsume the OR 1 and call it crc7_mmc() or something like that.
->>
->> (Which I'm all for doing... I don't know of any other crc7 users.)
->
->You'll find all users in my patch series.  2/3 updates the MMC
->card, while 3/3 hits drivers/net/wireless/ti/wl1251/spi.c and
->drivers/net/wireless/ti/wlcore/spi.c (which I'm pretty sure aren't
->MMC/SPI cards).
->
->Now, it turns out that they *also* set the lsbit (calling it
->WSPI_INIT_CMD_END).  However, it's not possible to put that into the
->CRC
->table (it would mess up all bytes but the last), so an explicitly coded
->"| 1" is required at the end.  Thic ends up being no saving at all to
->execution path length, and only moves one instruction from three
->drivers
->to shared code.  While making it harder to read the drivers.
->
->A microscopic space saving (if and only if you have more than one of
->these
->drivers loaded) and no performance improvement didn't seem worth it to
->me.
+Wait.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Why would you even want a container to see a "new" device?  That's the
+whole point, your container should see a "clean" system, not the "this
+USB device was just plugged in" system.  Otherwise, how are you going to
+even tell that container a new device showed up?  Are you now going to
+add udev support in containers?  Hah, no.
+
+> Using devtmpfs is one possible
+> solution, and it would have the added benefit of making container setup
+> simpler. But simply letting containers mount devtmpfs isn't sufficient
+> since the container may need to see a different, more limited set of
+> devices, and because different environments making modifications to
+> the filesystem could lead to conflicts.
+> 
+> This series solves these problems by assigning devices to user
+> namespaces. Each device has an "owner" namespace which specifies which
+> devtmpfs mount the device should appear in as well allowing priveleged
+> operations on the device from that namespace. This defaults to
+> init_user_ns. There's also an ns_global flag to indicate a device should
+> appear in all devtmpfs mounts.
+
+I'd strongly argue that this isn't even a "problem" at all.  And, as I
+said at the Plumbers conference last year, adding namespaces to devices
+isn't going to happen, sorry.  Please don't continue down this path.
+
+greg k-h
