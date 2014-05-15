@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaEOOdD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:33:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49429 "EHLO mga11.intel.com"
+	id S1754536AbaEOOgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:36:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44586 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaEOOdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:33:02 -0400
+	id S1751956AbaEOOgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:36:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="532450642"
-Date: Thu, 15 May 2014 07:32:58 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@ghostprotocols.net, jolsa@redhat.com, jmario@redhat.com,
-        dzickus@redhat.com
-Subject: Re: [PATCH] perf/x86: fix Haswell precise store data source encoding
-Message-ID: <20140515143258.GA19657@tassilo.jf.intel.com>
-References: <20140515115337.GA2855@quad>
+   d="scan'208";a="540983611"
+Message-ID: <5374D0A8.2090407@linux.intel.com>
+Date: Thu, 15 May 2014 22:35:20 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515115337.GA2855@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
+ T100
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 01:53:37PM +0200, Stephane Eranian wrote:
+On 2014/5/15 21:40, Heikki Krogerus wrote:
+> Changes since v1:
+> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
+> - NULL checks for clk_name allocation in acpi_lpss.c
 > 
-> This patches fixes a bug in  precise_store_data_hsw() whereby
-> it would set the data source memory level to the wrong value.
+> This combines two patch sets for LPSS that I had already send for
+> review separately. They conflicted with each other.
 > 
-> As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
-> Address Information in PEBS Record), when status bit 0 is set
-> this is a L1 hit, otherwise this is a L1 miss. 
+> The first two patches will fix a problem were the context of the
+> private LPSS registers is lost when entering D3. The last two will add
+> support for the M/N dividers on LPSS by adding a new basic clock type
+> for fractional dividers. The UART driver needs support for it in order
+> to get clock rates that suit the requested baud rates.
+
+The major issue in my mind is, this proposal makes a couple between I2C
+designware, HSUART, or probably DMA driver as well with LPSS driver.
+That is, currently without LPSS driver, I2C/HSUART won't work properly.
+So we at least need to describe this dependency in Kconfig.
+
+Thanks,
+-Aubrey
 > 
-> This patch encodes the memory level according to the specification.
-
-It's not enough. as I said it needs more fixes.
-
-For most events it should be _NA, _STORE can be only specified
-for the explicit _STORE events.
-
--Andi
-
 > 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+> Heikki Krogerus (4):
+>   ACPI / PM: Export rest of the subsys functions
+>   ACPI / LPSS: custom power domain for LPSS
+>   clk: new basic clk type for fractional divider
+>   ACPI / LPSS: support for fractional divider clock
 > 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index ae96cfa..81424f6 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -114,9 +114,13 @@ static u64 precise_store_data_hsw(u64 status)
->  
->  	dse.val = 0;
->  	dse.mem_op = PERF_MEM_OP_STORE;
-> -	dse.mem_lvl = PERF_MEM_LVL_NA;
-> +	dse.mem_lvl = PERF_MEM_LVL_L1;
-> +
->  	if (status & 1)
-> -		dse.mem_lvl = PERF_MEM_LVL_L1;
-> +		dse.mem_lvl |= PERF_MEM_LVL_HIT;
-> +	else
-> +		dse.mem_lvl |= PERF_MEM_LVL_MISS;
-> +
->  	/* Nothing else supported. Sorry. */
->  	return dse.val;
->  }
+>  drivers/acpi/acpi_lpss.c             | 204 ++++++++++++++++++++++++++++++-----
+>  drivers/acpi/device_pm.c             |   2 +
+>  drivers/clk/Makefile                 |   1 +
+>  drivers/clk/clk-fractional-divider.c | 135 +++++++++++++++++++++++
+>  include/linux/acpi.h                 |   4 +
+>  include/linux/clk-provider.h         |  31 ++++++
+>  6 files changed, 349 insertions(+), 28 deletions(-)
+>  create mode 100644 drivers/clk/clk-fractional-divider.c
+> 
 
--- 
-ak@linux.intel.com -- Speaking for myself only
