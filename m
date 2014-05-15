@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaEORMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:12:03 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:40631 "EHLO
+	id S1754480AbaEORML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:12:11 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:40652 "EHLO
 	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaEORL7 (ORCPT
+	with ESMTP id S1751829AbaEORMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:11:59 -0400
-Message-ID: <5374F55E.4030004@codesourcery.com>
-Date: Fri, 16 May 2014 01:11:58 +0800
+	Thu, 15 May 2014 13:12:07 -0400
+Message-ID: <5374F56A.3090406@codesourcery.com>
+Date: Fri, 16 May 2014 01:12:10 +0800
 From: Chung-Lin Tang <cltang@codesourcery.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
@@ -18,13 +18,14 @@ CC: Geert Uytterhoeven <geert@linux-m68k.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
         Linux-Arch <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        "Joseph S. Myers" <joseph@codesourcery.com>
 Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
 References: <1399971456-3941-1-git-send-email-lftan@altera.com> <8399002.IIyBoyEHox@wuerfel> <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com> <4160991.69XaTMjMrC@wuerfel>
 In-Reply-To: <4160991.69XaTMjMrC@wuerfel>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 May 2014 17:11:53.0627 (UTC) FILETIME=[C4B2FEB0:01CF7060]
+X-OriginalArrivalTime: 15 May 2014 17:12:06.0272 (UTC) FILETIME=[CC3C7800:01CF7060]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
