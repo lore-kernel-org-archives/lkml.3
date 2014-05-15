@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265AbaEOQDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:03:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34042 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073AbaEOQCJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:02:09 -0400
+	id S1754984AbaEOQDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:03:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55383 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754071AbaEOQCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:02:07 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v1 3/5] phy: pci serdes phy driver for keystone
-Date: Thu, 15 May 2014 12:01:30 -0400
-Message-ID: <1400169692-9677-4-git-send-email-m-karicheri2@ti.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v1 2/5] pci: designware: enhancements to support keystone pcie
+Date: Thu, 15 May 2014 12:01:29 -0400
+Message-ID: <1400169692-9677-3-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
 References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
@@ -26,284 +24,315 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This phy driver is used by keystone PCI driver. The hw vendor that
-provides the phy hw published only registers and their values. So
-this driver uses these hard coded values to initialize the phy.
+keystone pcie hardware is based on designware hw version 3.65.
+There is no support for ATU port and has registers in
+application space to configure inbound/outbound access. Also
+doesn't support PCI PVM option. The MSI IRQ registers available
+in application space is used to mask/unmask/enable the MSI IRQs.
 
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
+DW core driver is a set of common functions that are abstracted
+to support DW pci drivers. To allow re-use of these functions for
+keystone pci driver, core driver is to be enhanced.
+
+Following are done to allow re-use of the functions on keystone pci
+driver.
+
+ 1. Some of the variables in pcie_port struct is folded inside
+    a union that now contains both new DW hw related variables as well
+    as old hardware related variables such as application reg base.
+ 2. Added a dw_pcie_common_host_init() function that holds common
+    host initialization code for old and new hw.
+ 3. dw_pcie_parse_resource() is used for parsing resource related
+    information from DT bindings.
+ 4. dw_pcie_host_init() is called by new DW hw drivers as before.
+    Added dw_old_pcie_host_init() is it's counter part on old dw hw.
+    Both these functions now call dw_pcie_common_host_init().
+ 5. Some of the static functions are made global to allow use from
+    dw old pci drivers such as pci-keystone.
+
 CC: Mohit Kumar <mohit.kumar@st.com>
 CC: Jingoo Han <jg1.han@samsung.com>
 CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- drivers/phy/Kconfig        |    6 ++
- drivers/phy/Makefile       |    1 +
- drivers/phy/phy-keystone.c |  230 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 237 insertions(+)
- create mode 100644 drivers/phy/phy-keystone.c
+ drivers/pci/host/pcie-designware.c |  101 ++++++++++++++++++++++++------------
+ drivers/pci/host/pcie-designware.h |   42 ++++++++++++---
+ 2 files changed, 103 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 4906c27..e5f4b5a 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -167,4 +167,10 @@ config PHY_XGENE
- 	help
- 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index c4e3732..9ea8e79 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -277,11 +277,15 @@ static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+ 		}
+ 		set_bit(pos0 + i, pp->msi_irq_in_use);
+ 		/*Enable corresponding interrupt in MSI interrupt controller */
+-		res = ((pos0 + i) / 32) * 12;
+-		bit = (pos0 + i) % 32;
+-		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
+-		val |= 1 << bit;
+-		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
++		if (!(pp->version & DW_VERSION_OLD)) {
++			res = ((pos0 + i) / 32) * 12;
++			bit = (pos0 + i) % 32;
++			dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
++						 4, &val);
++			val |= 1 << bit;
++			dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
++						 4, val);
++		}
+ 	}
  
-+config PHY_TI_KEYSTONE
-+	bool "TI Keystone PHY support"
-+	depends on ARCH_KEYSTONE
-+	select GENERIC_PHY
-+	help
-+	  This option enables support for TI Keystone PHY (serdes).
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 7728518..bd306a7 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -19,3 +19,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
-+obj-$(CONFIG_PHY_TI_KEYSTONE)		+= phy-keystone.o
-diff --git a/drivers/phy/phy-keystone.c b/drivers/phy/phy-keystone.c
-new file mode 100644
-index 0000000..ba1b9fa
---- /dev/null
-+++ b/drivers/phy/phy-keystone.c
-@@ -0,0 +1,230 @@
-+/*
-+ * PCIe Keystone platform specific driver code
-+ *
-+ * Copyright (C) 2013-2014 Texas Instruments, Inc.
-+ *		http://www.ti.com
-+ *
-+ * Author: Murali Karicheri <m-karicheri2@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+ 	*pos = pos0;
+@@ -349,7 +353,10 @@ static int dw_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
+ 	 */
+ 	desc->msi_attrib.multiple = msgvec;
+ 
+-	msg.address_lo = virt_to_phys((void *)pp->msi_data);
++	if (pp->ops->get_msi_data)
++		msg.address_lo = pp->ops->get_msi_data(pp);
++	else
++		msg.address_lo = virt_to_phys((void *)pp->msi_data);
+ 	msg.address_hi = 0x0;
+ 	msg.data = pos;
+ 	write_msi_msg(irq, &msg);
+@@ -389,13 +396,11 @@ static const struct irq_domain_ops msi_domain_ops = {
+ 	.map = dw_pcie_msi_map,
+ };
+ 
+-int __init dw_pcie_host_init(struct pcie_port *pp)
++int __init dw_pcie_parse_resource(struct pcie_port *pp)
+ {
+ 	struct device_node *np = pp->dev->of_node;
+-	struct of_pci_range range;
+ 	struct of_pci_range_parser parser;
+-	u32 val;
+-	int i;
++	struct of_pci_range range;
+ 
+ 	if (of_pci_range_parser_init(&parser, np)) {
+ 		dev_err(pp->dev, "missing ranges property\n");
+@@ -440,23 +445,17 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 			return -ENOMEM;
+ 		}
+ 	}
+-
+-	pp->cfg0_base = pp->cfg.start;
+-	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+ 	pp->mem_base = pp->mem.start;
+ 
+-	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+-					pp->config.cfg0_size);
+-	if (!pp->va_cfg0_base) {
+-		dev_err(pp->dev, "error with ioremap in function\n");
+-		return -ENOMEM;
+-	}
+-	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+-					pp->config.cfg1_size);
+-	if (!pp->va_cfg1_base) {
+-		dev_err(pp->dev, "error with ioremap\n");
+-		return -ENOMEM;
+-	}
++	return 0;
++}
 +
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+
-+#define reg_dump(addr, mask) \
-+		pr_debug("reg %p has value %x\n", (void *)addr, \
-+			(readl(addr) & ~mask))
-+
-+/* mask bits point to bits being modified */
-+#define reg_rmw(addr, value, mask) \
-+		writel(((readl(addr) & (~(mask))) | \
-+			(value & (mask))), (addr))
-+struct serdes_config {
-+	u32 reg;
++int __init dw_pcie_common_host_init(struct pcie_port *pp, struct hw_pci *hw,
++				const struct irq_domain_ops *irq_msi_ops)
++{
++	struct device_node *np = pp->dev->of_node;
 +	u32 val;
-+	u32 mask;
-+};
-+
-+struct phy_keystone {
-+	struct device *dev;
-+	void __iomem *base;
-+};
-+
-+static struct serdes_config ks_100mhz_pcie_5gbps_serdes[] = {
-+	{0x0000, 0x00000800, 0x0000ff00},
-+	{0x0060, 0x00041c5c, 0x00ffffff},
-+	{0x0064, 0x0343c700, 0xffffff00},
-+	{0x006c, 0x00000012, 0x000000ff},
-+	{0x0068, 0x00070000, 0x00ff0000},
-+	{0x0078, 0x0000c000, 0x0000ff00},
-+
-+	{0x0200, 0x00000000, 0x000000ff},
-+	{0x0204, 0x5e000080, 0xff0000ff},
-+	{0x0208, 0x00000006, 0x000000ff},
-+	{0x0210, 0x00000023, 0x000000ff},
-+	{0x0214, 0x2e003060, 0xff00ffff},
-+	{0x0218, 0x76000000, 0xff000000},
-+	{0x022c, 0x00200002, 0x00ff00ff},
-+	{0x02a0, 0xffee0000, 0xffff0000},
-+	{0x02a4, 0x0000000f, 0x000000ff},
-+	{0x0204, 0x5e000000, 0xff000000},
-+	{0x0208, 0x00000006, 0x000000ff},
-+	{0x0278, 0x00002000, 0x0000ff00},
-+	{0x0280, 0x00280028, 0x00ff00ff},
-+	{0x0284, 0x2d0f0385, 0xffffffff},
-+	{0x0250, 0xd0000000, 0xff000000},
-+	{0x0284, 0x00000085, 0x000000ff},
-+	{0x0294, 0x20000000, 0xff000000},
-+
-+	{0x0400, 0x00000000, 0x000000ff},
-+	{0x0404, 0x5e000080, 0xff0000ff},
-+	{0x0408, 0x00000006, 0x000000ff},
-+	{0x0410, 0x00000023, 0x000000ff},
-+	{0x0414, 0x2e003060, 0xff00ffff},
-+	{0x0418, 0x76000000, 0xff000000},
-+	{0x042c, 0x00200002, 0x00ff00ff},
-+	{0x04a0, 0xffee0000, 0xffff0000},
-+	{0x04a4, 0x0000000f, 0x000000ff},
-+	{0x0404, 0x5e000000, 0xff000000},
-+	{0x0408, 0x00000006, 0x000000ff},
-+	{0x0478, 0x00002000, 0x0000ff00},
-+	{0x0480, 0x00280028, 0x00ff00ff},
-+	{0x0484, 0x2d0f0385, 0xffffffff},
-+	{0x0450, 0xd0000000, 0xff000000},
-+	{0x0494, 0x20000000, 0xff000000},
-+
-+	{0x0604, 0x00000080, 0x000000ff},
-+	{0x0600, 0x00000000, 0x000000ff},
-+	{0x0604, 0x5e000000, 0xff000000},
-+	{0x0608, 0x00000006, 0x000000ff},
-+	{0x0610, 0x00000023, 0x000000ff},
-+	{0x0614, 0x2e003060, 0xff00ffff},
-+	{0x0618, 0x76000000, 0xff000000},
-+	{0x062c, 0x00200002, 0x00ff00ff},
-+	{0x06a0, 0xffee0000, 0xffff0000},
-+	{0x06a4, 0x0000000f, 0x000000ff},
-+	{0x0604, 0x5e000000, 0xff000000},
-+	{0x0608, 0x00000006, 0x000000ff},
-+	{0x0678, 0x00002000, 0x0000ff00},
-+	{0x0680, 0x00280028, 0x00ff00ff},
-+	{0x0684, 0x2d0f0385, 0xffffffff},
-+	{0x0650, 0xd0000000, 0xff000000},
-+	{0x0694, 0x20000000, 0xff000000},
-+
-+	{0x0800, 0x00000000, 0x000000ff},
-+	{0x0804, 0x5e000080, 0xff0000ff},
-+	{0x0808, 0x00000006, 0x000000ff},
-+	{0x0810, 0x00000023, 0x000000ff},
-+	{0x0814, 0x2e003060, 0xff00ffff},
-+	{0x0818, 0x76000000, 0xff000000},
-+	{0x082c, 0x00200002, 0x00ff00ff},
-+	{0x08a0, 0xffee0000, 0xffff0000},
-+	{0x08a4, 0x0000000f, 0x000000ff},
-+	{0x0804, 0x5e000000, 0xff000000},
-+	{0x0808, 0x00000006, 0x000000ff},
-+	{0x0878, 0x00002000, 0x0000ff00},
-+	{0x0880, 0x00280028, 0x00ff00ff},
-+	{0x0884, 0x2d0f0385, 0xffffffff},
-+	{0x0850, 0xd0000000, 0xff000000},
-+	{0x0894, 0x20000000, 0xff000000},
-+
-+	{0x0a00, 0x00000100, 0x0000ff00},
-+	{0x0a08, 0x00e12c08, 0x00ffffff},
-+	{0x0a0c, 0x00000081, 0x000000ff},
-+	{0x0a18, 0x00e80000, 0x00ff0000},
-+	{0x0a30, 0x002f2f00, 0x00ffff00},
-+	{0x0a4c, 0xac820000, 0xffff0000},
-+	{0x0a54, 0xc0000000, 0xff000000},
-+	{0x0a58, 0x00001441, 0x0000ffff},
-+	{0x0a84, 0x00000301, 0x0000ffff},
-+
-+	{0x0a8c, 0x81030000, 0xffff0000},
-+	{0x0a90, 0x00006001, 0x0000ffff},
-+	{0x0a94, 0x01000000, 0xff000000},
-+	{0x0aa0, 0x81000000, 0xff000000},
-+	{0x0abc, 0xff000000, 0xff000000},
-+	{0x0ac0, 0x0000008b, 0x000000ff},
-+
-+	{0x0000, 0x00000003, 0x000000ff},
-+	{0x0a00, 0x0000009f, 0x000000ff},
-+
-+	{0x0a44, 0x5f733d00, 0xffffff00},
-+	{0x0a48, 0x00fdca00, 0x00ffff00},
-+	{0x0a5c, 0x00000000, 0xffff0000},
-+	{0x0a60, 0x00008000, 0xffffffff},
-+	{0x0a64, 0x0c581220, 0xffffffff},
-+	{0x0a68, 0xe13b0602, 0xffffffff},
-+	{0x0a6c, 0xb8074cc1, 0xffffffff},
-+	{0x0a70, 0x3f02e989, 0xffffffff},
-+	{0x0a74, 0x00000001, 0x000000ff},
-+	{0x0b14, 0x00370000, 0x00ff0000},
-+	{0x0b10, 0x37000000, 0xff000000},
-+	{0x0b14, 0x0000005d, 0x000000ff},
-+};
-+
-+static int ks_phy_init(struct phy *phy)
-+{
-+	struct serdes_config *p;
-+	struct phy_keystone *ks_phy = phy_get_drvdata(phy);
-+
 +	int i;
-+
-+	for (i = 0, p = &ks_100mhz_pcie_5gbps_serdes[0];
-+		i < ARRAY_SIZE(ks_100mhz_pcie_5gbps_serdes);
-+		i++, p++) {
-+		reg_rmw((ks_phy->base + p->reg), p->val, p->mask);
-+		reg_dump((ks_phy->base + p->reg), p->mask);
-+	}
-+	udelay(2000);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ks_phy_ops = {
-+	.init		= ks_phy_init,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int ks_phy_probe(struct platform_device *pdev)
+ 
+ 	if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
+ 		dev_err(pp->dev, "Failed to parse the number of lanes\n");
+@@ -465,7 +464,7 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 
+ 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+ 		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+-					MAX_MSI_IRQS, &msi_domain_ops,
++					MAX_MSI_IRQS, irq_msi_ops,
+ 					&dw_pcie_msi_chip);
+ 		if (!pp->irq_domain) {
+ 			dev_err(pp->dev, "irq domain init failed\n");
+@@ -488,10 +487,10 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 	val |= PORT_LOGIC_SPEED_CHANGE;
+ 	dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
+ 
+-	dw_pci.nr_controllers = 1;
+-	dw_pci.private_data = (void **)&pp;
++	hw->nr_controllers = 1;
++	hw->private_data = (void **)&pp;
+ 
+-	pci_common_init_dev(pp->dev, &dw_pci);
++	pci_common_init_dev(pp->dev, hw);
+ 	pci_assign_unassigned_resources();
+ #ifdef CONFIG_PCI_DOMAINS
+ 	dw_pci.domain++;
+@@ -500,6 +499,32 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+ 	return 0;
+ }
+ 
++int __init dw_pcie_host_init(struct pcie_port *pp)
 +{
-+	struct phy_provider *phy_provider;
-+	struct device *dev = &pdev->dev;
-+	struct phy_keystone *ks_phy;
-+	struct phy *phy;
-+	struct resource *res;
++	int ret;
 +
-+	ks_phy = devm_kzalloc(dev, sizeof(*ks_phy), GFP_KERNEL);
-+	if (!ks_phy)
++	ret = dw_pcie_parse_resource(pp);
++	if (ret)
++		return ret;
++
++	pp->cfg0_base = pp->cfg.start;
++	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
++	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
++					pp->config.cfg0_size);
++	if (!pp->va_cfg0_base) {
++		dev_err(pp->dev, "error with ioremap in function\n");
 +		return -ENOMEM;
++	}
++	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
++					pp->config.cfg1_size);
++	if (!pp->va_cfg1_base) {
++		dev_err(pp->dev, "error with ioremap\n");
++		return -ENOMEM;
++	}
 +
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg_serdes");
-+	ks_phy->base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(ks_phy->base))
-+		return PTR_ERR(ks_phy->base);
-+
-+	ks_phy->dev = dev;
-+	phy = devm_phy_create(dev, &ks_phy_ops, NULL);
-+	if (IS_ERR(phy))
-+		return PTR_ERR(phy);
-+
-+	phy_set_drvdata(phy, ks_phy);
-+	phy_provider = devm_of_phy_provider_register(ks_phy->dev,
-+				of_phy_simple_xlate);
-+
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	dev_info(dev, "keystone phy initialized\n");
-+	return 0;
++	return dw_pcie_common_host_init(pp, &dw_pci, &msi_domain_ops);
 +}
 +
-+static const struct of_device_id ks_phy_of_match[] = {
-+	{ .compatible = "ti,keystone-phy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, ks_phy_of_match);
+ static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
+ {
+ 	/* Program viewport 0 : OUTBOUND : CFG0 */
+@@ -654,7 +679,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
+ 
+ 	spin_lock_irqsave(&pp->conf_lock, flags);
+ 	if (bus->number != pp->root_bus_nr)
+-		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
++		if (pp->ops->rd_other_conf)
++			ret = pp->ops->rd_other_conf(pp, bus, devfn,
++						where, size, val);
++		else
++			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+ 						where, size, val);
+ 	else
+ 		ret = dw_pcie_rd_own_conf(pp, where, size, val);
+@@ -680,7 +709,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
+ 
+ 	spin_lock_irqsave(&pp->conf_lock, flags);
+ 	if (bus->number != pp->root_bus_nr)
+-		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
++		if (pp->ops->wr_other_conf)
++			ret = pp->ops->wr_other_conf(pp, bus, devfn,
++						where, size, val);
++		else
++			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+ 						where, size, val);
+ 	else
+ 		ret = dw_pcie_wr_own_conf(pp, where, size, val);
+@@ -694,7 +727,7 @@ static struct pci_ops dw_pcie_ops = {
+ 	.write = dw_pcie_wr_conf,
+ };
+ 
+-static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
++int dw_pcie_setup(int nr, struct pci_sys_data *sys)
+ {
+ 	struct pcie_port *pp;
+ 
+@@ -717,7 +750,7 @@ static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
+ 	return 1;
+ }
+ 
+-static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
++struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+ {
+ 	struct pci_bus *bus;
+ 	struct pcie_port *pp = sys_to_pcie(sys);
+@@ -746,7 +779,7 @@ static int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ 	return irq;
+ }
+ 
+-static void dw_pcie_add_bus(struct pci_bus *bus)
++void dw_pcie_add_bus(struct pci_bus *bus)
+ {
+ 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+ 		struct pcie_port *pp = sys_to_pcie(bus->sysdata);
+diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+index 3063b35..e97f4d7 100644
+--- a/drivers/pci/host/pcie-designware.h
++++ b/drivers/pci/host/pcie-designware.h
+@@ -35,21 +35,39 @@ struct pcie_port {
+ 	struct device		*dev;
+ 	u8			root_bus_nr;
+ 	void __iomem		*dbi_base;
+-	u64			cfg0_base;
+-	void __iomem		*va_cfg0_base;
+-	u64			cfg1_base;
+-	void __iomem		*va_cfg1_base;
++	/*
++	 * Old DW version implement application register space for
++	 * MSI and has no ATU view port
++	 */
++#define DW_VERSION_OLD	BIT(0)
++	u32			version;
++	union {
++		/* new dw core specific */
++		struct {
++			u64		cfg0_base;
++			void __iomem	*va_cfg0_base;
++			u64		cfg1_base;
++			void __iomem	*va_cfg1_base;
++			int		msi_irq;
++		};
 +
-+static struct platform_driver ks_phy_driver = {
-+	.probe	= ks_phy_probe,
-+	.driver = {
-+		.of_match_table	= ks_phy_of_match,
-+		.name  = "ti,keystone-phy",
-+		.owner = THIS_MODULE,
-+	}
-+};
-+module_platform_driver(ks_phy_driver);
-+
-+MODULE_DESCRIPTION("TI Keystone SerDes PHY driver");
-+MODULE_LICENSE("GPL V2");
-+MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
++		/* old dw core specific */
++		struct  {
++			struct irq_domain	*legacy_irq_domain;
++			void __iomem		*va_app_base;
++			u64			app_base;
++		};
++	};
+ 	u64			io_base;
+ 	u64			mem_base;
+ 	spinlock_t		conf_lock;
+-	struct resource		cfg;
+ 	struct resource		io;
+ 	struct resource		mem;
++	struct resource		cfg;
+ 	struct pcie_port_info	config;
+ 	int			irq;
+ 	u32			lanes;
+ 	struct pcie_host_ops	*ops;
+-	int			msi_irq;
+ 	struct irq_domain	*irq_domain;
+ 	unsigned long		msi_data;
+ 	DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
+@@ -62,8 +80,13 @@ struct pcie_host_ops {
+ 			u32 val, void __iomem *dbi_base);
+ 	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
+ 	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
++	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
++			unsigned int devfn, int where, int size, u32 *val);
++	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
++			unsigned int devfn, int where, int size, u32 val);
+ 	int (*link_up)(struct pcie_port *pp);
+ 	void (*host_init)(struct pcie_port *pp);
++	u32 (*get_msi_data)(struct pcie_port *pp);
+ };
+ 
+ int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
+@@ -73,5 +96,12 @@ void dw_pcie_msi_init(struct pcie_port *pp);
+ int dw_pcie_link_up(struct pcie_port *pp);
+ void dw_pcie_setup_rc(struct pcie_port *pp);
+ int dw_pcie_host_init(struct pcie_port *pp);
++int dw_pcie_setup(int nr, struct pci_sys_data *sys);
++struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys);
++void dw_pcie_add_bus(struct pci_bus *bus);
++int dw_pcie_parse_resource(struct pcie_port *pp);
+ 
++/* internal to dw core */
++int dw_pcie_common_host_init(struct pcie_port *pp, struct hw_pci *hw,
++			const struct irq_domain_ops *irq_ops);
+ #endif /* _PCIE_DESIGNWARE_H */
 -- 
 1.7.9.5
 
