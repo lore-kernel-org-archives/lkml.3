@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970AbaEOS0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:26:01 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:38511 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014AbaEOSZ7 (ORCPT
+	id S1755420AbaEOS01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:26:27 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:39523 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755296AbaEOS0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:25:59 -0400
+	Thu, 15 May 2014 14:26:25 -0400
+Date: Thu, 15 May 2014 14:26:20 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Alex Elder <elder@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, sboyd@codeaurora.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 RESEND 2/5] ARM: add SMP support for Broadcom mobile
+ SoCs
+Message-ID: <20140515182620.GN32082@beef>
+References: <1400176691-26058-1-git-send-email-elder@linaro.org>
+ <1400176691-26058-3-git-send-email-elder@linaro.org>
+ <CAGVrzca20+3kmJjyGv8Pr-qNNV4n0hhADL6GWvcYVDUL4q28Hg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140515140856.GA17453@kroah.com>
-References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
-	<20140515013245.GA1764@kroah.com>
-	<1400120251.7699.11.camel@canyon.ip6.wittsend.com>
-	<20140515031527.GA146352@ubuntu-hedt>
-	<20140515040032.GA6702@kroah.com>
-	<1400161337.7699.33.camel@canyon.ip6.wittsend.com>
-	<20140515140856.GA17453@kroah.com>
-Date: Thu, 15 May 2014 20:25:58 +0200
-Message-ID: <CAFLxGvwfbVdLUq0NrSrQNYH+bTzYLuCE2moooHH319qRfDkS6Q@mail.gmail.com>
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user namespaces
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
-Cc: "Michael H. Warfield" <mhw@wittsend.com>, Jens Axboe <axboe@kernel.dk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGVrzca20+3kmJjyGv8Pr-qNNV4n0hhADL6GWvcYVDUL4q28Hg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> Then don't use a container to build such a thing, or fix the build
-> scripts to not do that :)
+On Thu, May 15, 2014 at 11:03:49AM -0700, Florian Fainelli wrote:
+> Hi Alex,
+> 
+> 2014-05-15 10:58 GMT-07:00 Alex Elder <elder@linaro.org>:
+> > This patch adds SMP support for BCM281XX and BCM21664 family SoCs.
+> >
+> > This feature is controlled with a distinct config option such that a
+> > SMP-enabled multi-v7 binary can be configured to run these SoCs in
+> > uniprocessor mode.  Since this SMP functionality is used for
+> > multiple Broadcom mobile chip families the config option is called
+> > ARCH_BCM_MOBILE_SMP (for lack of a better name).
+> >
+> > On SoCs of this type, the secondary core is not held in reset on
+> > power-on.  Instead it loops in a ROM-based holding pen.  To release
+> > it, one must write into a special register a jump address whose
+> > low-order bits have been replaced with a secondary core's id, then
+> > trigger an event with SEV.  On receipt of an event, the ROM code
+> > will examine the register's contents, and if the low-order bits
+> > match its cpu id, it will clear them and write the value back to the
+> > register just prior to jumping to the address specified.
+> >
+> > The location of the special register is defined in the device tree
+> > using a "secondary-boot-reg" property in a node whose "enable-method"
+> > matches.
+> >
+> > Derived from code originally provided by Ray Jui <rjui@broadcom.com>
+> >
+> > Signed-off-by: Alex Elder <elder@linaro.org>
+> > ---
+> >  arch/arm/mach-bcm/Kconfig   |  18 +++-
+> >  arch/arm/mach-bcm/Makefile  |   3 +
+> >  arch/arm/mach-bcm/platsmp.c | 201 ++++++++++++++++++++++++++++++++++++++++++++
+> 
+> Could we make that name a little bit more specific to the mobile SoCs?
+> There are other BCM SoCs either currently supported in this directory
+> (BCM5310X), or making their way to be supported (brcmstb, bcm63xx),
+> and those share nothing with the Mobile SoC SMP code.
+ 
+Right.
 
-I second this.
-To me it looks like some folks try to (ab)use Linux containers
-for purposes where KVM would much better fit in.
-Please don't put more complexity into containers. They are already
-horrible complex
-and error prone.
+> Maybe we should create another level directory within mach-bcm...
 
--- 
-Thanks,
-//richard
+Let's not go that far. The general direction we need to go is to work
+toward removing this code from mach-bcm/ completely. I don't really want
+to see us adding directories and encouraging burying a lot of new files
+in them.
+
+A unique name will be enough and then we can work toward moving things
+out to drivers/ over time.
+
+-Matt
