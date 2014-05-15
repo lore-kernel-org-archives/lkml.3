@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaEOQqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249AbaEOQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:46:18 -0400
-Date: Thu, 15 May 2014 12:45:52 -0400
-From: Kyle McMartin <kmcmarti@redhat.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] arm64: don't set READ_IMPLIES_EXEC for EM_AARCH64
-Message-ID: <20140515164552.GB15570@redacted.bos.redhat.com>
-References: <20140514185720.GI26038@redacted.bos.redhat.com>
- <20140515090535.GB27594@arm.com>
+	id S1753264AbaEOQql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:46:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55010 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaEOQqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:46:40 -0400
+Date: Thu, 15 May 2014 18:46:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Mateusz Guzik <mguzik@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: WARN in do_rt_tgsigqueueinfo()
+In-Reply-To: <20140515155415.GA326@redhat.com>
+Message-ID: <alpine.DEB.2.02.1405151845070.6261@ionos.tec.linutronix.de>
+References: <20140515133834.GN13658@twins.programming.kicks-ass.net> <20140515142723.GB22041@mguzik.redhat.com> <20140515150412.GP30445@twins.programming.kicks-ass.net> <20140515155415.GA326@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515090535.GB27594@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 10:05:35AM +0100, Will Deacon wrote:
-> Unfortunately, my understanding is that GCC currently requires this for
-> nested functions, so this is an effective ABI breakage. On the plus side,
-> the GCC guys are planning to fix that, so we should see PT_GNU_STACK getting
-> used more frequently in the future.
+On Thu, 15 May 2014, Dave Jones wrote:
+
+> On Thu, May 15, 2014 at 05:04:12PM +0200, Peter Zijlstra wrote:
 > 
+>  > > > trinity$ MALLOC_CHECK_=0 ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet -C 400 -l off -xmremap
+>  > > > 
+>  > > > [watchdog] kernel became tainted! (512/0) Last seed was 4072360471
+>  > > > 
+>  > > > [15908.562512] ------------[ cut here ]------------
+>  > > > [15908.567245] WARNING: CPU: 22 PID: 3312 at /usr/src/linux-2.6/kernel/signal.c:3060 do_rt_tgsigqueueinfo+0xb4/0xc0()
+>  > > > 
+>  > > > This is apparently a very common thing to hit according to google.
+>  > > 
+>  > > Well, it warns about an argument received from userland, so nothing fishy
+>  > > going on as far as kernel consistency is concerned if that's what you mean.
+>  > 
+>  > I hadn't looked that far.. I just manged to hit it two times in a row
+>  > while waiting for my bug to trigger.
+> 
+> There's a ton of 'noise' like this that fuzzing turns up.
+> I've been collecting some of the stuff to shut it up..
+> 
+> http://codemonkey.org.uk/junk/silence-fuzz-testing-noise.patch
+> http://codemonkey.org.uk/junk/silence-noisy-deprecated-warnings-while-fuzzing.patch
+> 
+> I'm of the opinion that a user-triggerable WARN is a bug, but aparently
+> not everyone else feels that way.
 
-nested functions are a GNU extension, and aside from grub, I don't
-think anyone really uses them. (At least, I certainly hope not.) Also,
-ld.so already has a different idea from the kernel:
-master@glibc:.% git grep DEFAULT_STACK_PERMS -- sysdeps/aarch64
-(kyle@dreadnought:~/src/glibc)
-sysdeps/aarch64/stackinfo.h:#define DEFAULT_STACK_PERMS (PF_R|PF_W)
+I agree. It returns -EPERM which is the right answer
 
-ppc64 also does similarly, where they use the EXSTACK_DEFAULT in the
-compat case, but their 64-bit ABI doesn't.
+Thanks,
 
-108 # define elf_read_implies_exec(ex, exec_stk) (is_32bit_task() ? \
-109                 (exec_stk == EXSTACK_DEFAULT) : 0)
-
-I've submitted a gcc patch to emit .note.GNU-stack on AArch64 (which I
-suspect was just an oversight initially.) Which will mean that anything
-that puts code on the stack will be annotated to require executable
-stacks.
-
-And, frankly, I think it's kind of strange to have any of the personality
-bits set by default.
-
-regards, Kyle
+	tglx
