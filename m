@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaEOI7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:59:41 -0400
-Received: from [217.156.133.130] ([217.156.133.130]:15757 "EHLO
-	imgpgp01.kl.imgtec.org" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751052AbaEOI7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:59:39 -0400
-X-PGP-Universal: processed;
-	by imgpgp01.kl.imgtec.org on Thu, 15 May 2014 09:59:37 +0100
-Message-ID: <537481F8.50809@imgtec.com>
-Date: Thu, 15 May 2014 09:59:36 +0100
-From: James Hogan <james.hogan@imgtec.com>
+	id S1753025AbaEOJBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:01:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37203 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254AbaEOJBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:01:14 -0400
+Message-ID: <53748227.3050809@ti.com>
+Date: Thu, 15 May 2014 14:30:23 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, <linux-arch@vger.kernel.org>,
-        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
-CC: <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH 14/27] metag: Use common bits from generic tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-15-git-send-email-richard@nod.at>
-In-Reply-To: <1400093999-18703-15-git-send-email-richard@nod.at>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="6c7aqJUCE21fWNhW84WX85CBuO0gjtfEp"
-X-Originating-IP: [192.168.154.101]
-X-ESG-ENCRYPT-TAG: 2110538f
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Arnd Bergmann <arnd@arndb.de>
+CC: <joelf@ti.com>, <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>, "Mattson, Mark" <m-mattson@ti.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 3/5] dt/bindings: ti,edma: Remove redundant properties
+ from documentation
+References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com> <1399977032-26469-4-git-send-email-peter.ujfalusi@ti.com> <7468082.VY82PIo3ZY@wuerfel> <5374784B.7020608@ti.com>
+In-Reply-To: <5374784B.7020608@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6c7aqJUCE21fWNhW84WX85CBuO0gjtfEp
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
++ DT bindings maintainers
 
-On 14/05/14 19:59, Richard Weinberger wrote:
-> It is no longer needed to define them on our own.
->=20
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: linux-metag@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+On Thursday 15 May 2014 01:48 PM, Peter Ujfalusi wrote:
+> On 05/15/2014 11:01 AM, Arnd Bergmann wrote:
+>> On Tuesday 13 May 2014 13:30:30 Peter Ujfalusi wrote:
+>>> From CCCFG register of eDMA3 we can get all the needed information for the
+>>> driver about the IP:
+>>> Number of channels: NUM_DMACH
+>>> Number of regions: NUM_REGN
+>>> Number of slots (PaRAM sets): NUM_PAENTRY
+>>> Number of TC/EQ: NUM_EVQUE
+>>>
+>>> The ti,edma-regions; ti,edma-slots and dma-channels in DT are
+>>> redundant since the very same information can be obtained from the HW.
+>>> The mentioned properties can be removed from the binding document.
+>>>
+>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>
+>> I wonder if we should keep them listed as "optional" properties so you
+>> can have a dtb file that still works with older kernels which need them.
+>>
+>> What you do is an incompatible change to the binding, which we shouldn't
+>> do lightly. Any new dts files don't need this information of course, but
+>> as a general rule, I'd rather keep things like this around unless we
+>> already have to enforce an ABI break that is well documented.
+> 
+> We could keep them as optional, or to be precise: ignored properties since we
+> are not going to even look at them in the future.
+> But I do not really see the reason to do so. With this change new kernels will
+> boot with old DTB - if it can not be changed which I have not seen yet. Sure
+> old kernel would not boot with this change, but why would you downgrade the
+> kernel and update the DTB on a board?
+> Bisecting is not a good reason since the bug you might be hunting for could be
+> in the DTS or in the kernel code so you need to update both of them to be sure
+> you reach the commit you are looking for.
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
+Agree with Peter here. The bisecting corner case can hopefully be
+handled by appended DTB even if the original DTB was ROMed.
 
-Thanks
-James
-
-> ---
->  arch/metag/include/asm/tlb.h | 10 ----------
->  1 file changed, 10 deletions(-)
->=20
-> diff --git a/arch/metag/include/asm/tlb.h b/arch/metag/include/asm/tlb.=
-h
-> index 048282f1..0fb0b46 100644
-> --- a/arch/metag/include/asm/tlb.h
-> +++ b/arch/metag/include/asm/tlb.h
-> @@ -19,18 +19,8 @@
->  		if (!tlb->fullmm)					      \
->  			flush_tlb_range(vma, vma->vm_start, vma->vm_end);     \
->  	} while (0)
-> -
-> -
-> -#else
-> -
-> -#define tlb_start_vma(tlb, vma)			do { } while (0)
-> -#define tlb_end_vma(tlb, vma)			do { } while (0)
-> -
->  #endif
-> =20
-> -#define __tlb_remove_tlb_entry(tlb, pte, addr)	do { } while (0)
-> -#define tlb_flush(tlb)				flush_tlb_mm((tlb)->mm)
-> -
->  #include <asm-generic/tlb.h>
-> =20
->  #endif
->=20
-
-
---6c7aqJUCE21fWNhW84WX85CBuO0gjtfEp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdIH4AAoJEGwLaZPeOHZ6y4wP/jgyrDKgmMPz4A5QH7SRG471
-bKGXA23n0aMZrXEecJN0b6Vi941PVvb8J6Z7zazEsrNGDuVCHXacOoLc3/Yv/FvZ
-u/m+GXMwA0rB8sms3M+7Lf+HSdTwnuqAiLLLymMKSEycR1d6hlqS6kC7iNqxCc2f
-32zuLADp2YeV5W3nuieOzijUih+r8Rim6nakfgQplZ84oZhTFTDDycErYGYSDRXE
-JA9/F4r7y9pGNCdeRIdrPEBkOqGUM0zT4diwrmZVF4RoBAh6l3SvAuWlHAj3IKd4
-ELji3I0ECu535nEd0ney94d9nQ/aila5lNYis4TR9zdmAFWjDDBnF9L3x9+m5fRn
-BTAzsexr3ObT+17n4xRY13cFDf4bm7VfEmYBofhWSpAYSh8PfraZ31d5G9nnretp
-4w0lJl20jgk+FnMjFRA5K+vtyngNSkebkWEZL+m89uJtfZUyIaOiLaK6kcMrCq0V
-qVISyj+RP57G217K08oI/PcOHidaC7Ql02+o42qVy3K/dK6rgU2oJFQifG9hRoKt
-fI7i+6US4qA+QF9gApbkFnse89YBbWvP3X0XRlt/S1D9NJJ2XscSNSABh/krimaI
-woYuYmC0HIAvhcgHYukM1/UuuFAz6i0xq0ZKKemRu2g11uLOcCm5R2zHMeuABqC8
-b1f604UBj/10z3jb6QaF
-=iYPb
------END PGP SIGNATURE-----
-
---6c7aqJUCE21fWNhW84WX85CBuO0gjtfEp--
+Thanks,
+Sekhar
