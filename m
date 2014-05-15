@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374AbaEOWut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:50:49 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:50033 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaEOWus (ORCPT
+	id S1755847AbaEOWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:51:58 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:34841 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754031AbaEOWv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:50:48 -0400
+	Thu, 15 May 2014 18:51:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkkHAO5DdVN5LL1s/2dsb2JhbABZgwaDPqhfAQEBAQEBBpodAYESF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIQNFXFxaFPoh6B4MrgRUEmVCTFYNIKw
+Date: Fri, 16 May 2014 08:51:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>, sandeen@redhat.com,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140515225141.GA26353@dastard>
+References: <20140514111449.GB5824@quack.suse.cz>
+ <20140514112619.GA10637@mguzik.redhat.com>
+ <20140514113945.GC5824@quack.suse.cz>
+ <20140514220052.GD5421@dastard>
+ <20140514223745.GF5421@dastard>
+ <5373F0D6.4090600@redhat.com>
+ <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
+ <20140515104746.GF10637@mguzik.redhat.com>
+ <20140515222135.GZ26353@dastard>
+ <20140515223439.GA24089@mguzik.redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1400190194.3289.143.camel@ul30vt.home>
-References: <20140509201655.2849.97478.stgit@bling.home>
-	<20140512190812.GH25056@phenom.ffwll.local>
-	<1399923039.6734.97.camel@bling.home>
-	<20140512193825.GI25056@phenom.ffwll.local>
-	<1400190194.3289.143.camel@ul30vt.home>
-Date: Fri, 16 May 2014 00:50:47 +0200
-X-Google-Sender-Auth: rBUeIcdfyicOcZOlVEaqBF2lQvU
-Message-ID: <CAKMK7uGRCQSUNjBiegkYncUiYmFfoLAqxj6UPYJNeOf2S2x-7w@mail.gmail.com>
-Subject: Re: [PATCH] i915: Add module option to support VGA arbiter on HD devices
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515223439.GA24089@mguzik.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:43 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> I don't know what to do with this.  It seems like a lot of wishful
-> thinking that in the best case would drag on for years.  Even if we get
-> VGA arbitration out of Xorg, the bit about making the userspace VGA
-> arbiter interface lie depending on current->comm sounds tricky and
-> horrible.  If we can lie to Xorg there, why don't we do that now?  If we
-> can't lie to Xorg now, then what deprecation event or detection of the
-> caller is going to allow us to do so in the future?
+On Fri, May 16, 2014 at 12:34:40AM +0200, Mateusz Guzik wrote:
+> On Fri, May 16, 2014 at 08:21:35AM +1000, Dave Chinner wrote:
+> > > IOW, a new column in mountinfo. For frozen filesystems it would contain
+> > > 'frozen_by=[%s]:[%d]' (escaped comm, pid).
+> > 
+> > I really don't see that the process that froze the filesystem is
+> > particularly useful - it many cases that process is long gone (e.g.
+> > fsfreeze is being used to allow a HW array to take a snapshot). Just
+> > the fact it is in the process of freezing (if stuck, stack trace in
+> > sysrq-w should be present) or frozen (freezing process may be long
+> > gone, and is mostly irrelevant because you're now tracking down why
+> > a thaw hasn't happened)...
+> 
+> There are deamons which perform freezing and unfreezing on their own.
+> Thus storing the name along with pid helps to determine whether someone
+> went behind such daemon's back, or maybe it's the daemon which "forgot" to
+> unfreeze after all.
 
-Well we wouldn't necessarily need to lie to X, but could instead look
-whether all the vga devices in a system are claimed by kms drivers. If
-that's the case the userspace doesn't have an awful lot of business
-touching the VGA registers and we could simply not obey a vga arb
-request from userspace.
+Such a daemon should be logging the fact that it's freezing and
+thawing the filesystem. The kernel is not the place to track what
+buggy userspace applications are doing wrong.
 
-More advanced would be if we still obey it for those devices not
-claimed by kms drivers. So not really a need to key on current->comm.
+Cheers,
 
-> Meanwhile anyone that wants i915 to participate in arbitration like it
-> should have from the start needs to patch their kernel with forward
-> ports of the reverted commits.
->
-> I just don't see this moving forward, which is why I thought a module
-> option at least gives us a workaround.  Thanks,
-
-I know that this is awful, but a module option means that the few
-people interested in moving this forward will be happy enough to no
-longer bother. Which is even worse from my pov as driver maintainer. I
-highly consider module options used in production evil.
--Daniel
+Dave.
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Dave Chinner
+david@fromorbit.com
