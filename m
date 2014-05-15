@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaEOP67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:58:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42607 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755286AbaEOP64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:58:56 -0400
-Date: Thu, 15 May 2014 11:58:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming
- runtime-suspended devices unnecessarily
-In-Reply-To: <20140515000320.3c1c9256@jacob-desktop>
-Message-ID: <Pine.LNX.4.44L0.1405151151560.910-100000@iolanthe.rowland.org>
+	id S1755379AbaEOP7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:59:10 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:41576
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754180AbaEOP7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:59:07 -0400
+From: <tthayer@altera.com>
+To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
+        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@altera.com>
+Subject: [PATCHv5 2/3] dts: socfpga: Add bindings for Altera SoC SDRAM EDAC
+Date: Thu, 15 May 2014 11:04:50 -0500
+Message-ID: <1400169891-29546-3-git-send-email-tthayer@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(33646001)(83072002)(102836001)(79102001)(77982001)(50986999)(85852003)(50226001)(84676001)(20776003)(42186004)(19580395003)(92566001)(4396001)(46102001)(31966008)(62966002)(6806004)(81542001)(36756003)(77156001)(89996001)(44976005)(83322001)(74662001)(93916002)(86362001)(19580405001)(99396002)(16796002)(76482001)(2201001)(97736001)(47776003)(88136002)(86152002)(80022001)(87936001)(575784001)(76176999)(48376002)(87286001)(92726001)(81342001)(74502001)(50466002)(1121002)(921003)(2101003)(83996005);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB057;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0212BDE3BE
+Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
+ smtp.mailfrom=tthayer@altera.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Jacob Pan wrote:
+From: Thor Thayer <tthayer@altera.com>
 
-> On Thu, 15 May 2014 10:29:42 -0400 (EDT)
-> Alan Stern <stern@rowland.harvard.edu> wrote:
-> 
-> > On Thu, 15 May 2014, Jacob Pan wrote:
-> > 
-> > > > > should we respect ignore_children flag here? not all parent
-> > > > > devices create children with proper .prepare() function. this
-> > > > > allows parents override children.
-> > > > > I am looking at USB, a USB device could have logical children
-> > > > > such as ep_xx, they don't go through the same
-> > > > > subsystem .prepare().
-> > > > 
-> > > > Well, I'm not sure about that.  Let me consider that for a while.
-> > > OK. let me be more clear about the situation i see in USB. Correct
-> > > me if I am wrong, a USB device will always has at least one
-> > > endpoint/ep_00 as a kid for control pipe, it is a logical device.
-> > > So when device_prepare() is called, its call back is NULL which
-> > > makes .direct_complete = 0. Since children device suspend is called
-> > > before parents, the parents .direct_complete flag will always get
-> > > cleared.
-> > > 
-> > > What i am trying to achieve here is to see if we avoid resuming
-> > > built-in (hardwired connect_type) non-hub USB devices based on this
-> > > new patchset. E.g. we don't want to resume/suspend USB camera every
-> > > time in system suspend/resume cycle if they are already rpm
-> > > suspended. We can save ~100ms resume time for the devices we have
-> > > tested.
-> > 
-> > This is a good point, but I don't think it is at all related to 
-> > ignore_children.
-> > 
-> > Instead, it seems that the best way to solve it would be to add a 
-> > ->prepare() handler for usb_ep_device_type that would always turn 
-> > on direct_complete.
-> > 
-> yeah, that would solve the problem with EP device type. But what about
-> other subdevices. e.g. for USB camera, uvcvideo device? We can add
-> .prepare(return 1;) for each level but would it be better to have a
-> flag similar to ignore_children if not ignore_children itself.
+Addition of the Altera SDRAM EDAC bindings and device
+tree changes to the Altera SoC project.
 
-Something like that could always be added.
+v2: Changes to SoC EDAC source code.
 
-> Actually, I don't understand why this is not related to
-> ignore_children. Could you explain?
+v3: Fix typo in device tree documentation.
 
-It's hard to explain why two things are totally separate.  Much better 
-for you to describe why you think they _are_ related, so that I can 
-explain how you are wrong.
+v4,v5: No changes - bump version for consistency.
 
-> If the parent knows it can ignore children and already rpm suspended,
-> why do we still ask children?
+Signed-off-by: Thor Thayer <tthayer@altera.com>
+---
+ .../bindings/arm/altera/socfpga-sdram-edac.txt     |   12 ++++++++++++
+ arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+ 2 files changed, 17 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
 
-The "ignore_children" flag doesn't mean that the parent can ignore its 
-children.  It means that the PM core is allowed to do a runtime suspend 
-of the parent while leaving the children at full power.
-
-In particular, it doesn't mean that the children's ->suspend() callback 
-will work correctly if it is called while the parent is runtime 
-suspended.
-
-Alan Stern
+diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+new file mode 100644
+index 0000000..431e98b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+@@ -0,0 +1,12 @@
++Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
++
++Required properties:
++- compatible : should contain "altr,sdram-edac";
++- interrupts : Should contain the SDRAM ECC IRQ in the
++	appropriate format for the IRQ controller.
++
++Example:
++	sdramedac@0 {
++		compatible = "altr,sdram-edac";
++		interrupts = <0 39 4>;
++	};
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index 6ce912e..a0ea69b 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -681,6 +681,11 @@
+ 			reg = <0xffc25000 0x1000>;
+ 		};
+ 
++		sdramedac@0 {
++			compatible = "altr,sdram-edac";
++			interrupts = <0 39 4>;
++		};
++
+ 		rstmgr@ffd05000 {
+ 			compatible = "altr,rst-mgr";
+ 			reg = <0xffd05000 0x1000>;
+-- 
+1.7.9.5
 
