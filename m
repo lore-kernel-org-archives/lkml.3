@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaEOTTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:19:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628AbaEOTTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:19:23 -0400
-Message-ID: <5375110A.1010307@redhat.com>
-Date: Thu, 15 May 2014 15:10:02 -0400
-From: "Carlos O'Donell" <carlos@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755644AbaEOTTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:19:44 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:50958 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaEOTTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:19:41 -0400
+Date: Thu, 15 May 2014 15:19:38 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
+        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
+        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 3/3] CPU hotplug, smp: Flush any pending IPI callbacks
+ before CPU offline
+Message-ID: <20140515191938.GB21306@htj.dyndns.org>
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
+ <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        mtk.manpages@gmail.com
-CC: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com>	 <CF98E3EF.90564%dvhart@linux.intel.com>	 <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <1400100977.3865.30.camel@buesod1.americas.hpqcorp.net> <53740A30.20807@zytor.com>
-In-Reply-To: <53740A30.20807@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 08:28 PM, H. Peter Anvin wrote:
-> On 05/14/2014 01:56 PM, Davidlohr Bueso wrote:
->>>
->>>> However, unless I'm sorely mistaken, the larger problem is that glibc
->>>> removed the futex() call entirely, so these man pages don't describe
->>>
->>> I don't think futex() ever was in glibc--that's by design, and
->>> completely understandable: no user-space application would want to
->>> directly use futex(). 
->>
->> That's actually not quite true. There are plenty of software efforts out
->> there that use futex calls directly to implement userspace serialization
->> mechanisms as an alternative to the bulky sysv semaphores. I worked
->> closely with an in-memory DB project that makes heavy use of them. Not
->> everyone can simply rely on pthreads.
->>
-> 
-> More fundamentally, futex(2), like clone(2), are things that can be
-> legitimately by user space without automatically breaking all of glibc.
->  There are some other things where that is *not* true, because glibc
-> relies on being able to mediate all accesses to a kernel facility, but
-> not here.
+Hello,
 
-Careful there. There is *some* danger in using clone(2) because of the
-coordination required to implement thread-local storage. I'm sure you're
-aware of this, but I'd like the record to show that we're going to need
-clear documentation of what's considered safe given the known
-implementations.
+On Fri, May 16, 2014 at 12:44:13AM +0530, Srivatsa S. Bhat wrote:
+>  /*
+> + * flush_smp_call_function_queue - Flush any pending smp-call-function
 
-Cheers,
-Carlos.
+Don't we need a blank line here?
 
+> + * callbacks queued on this CPU (including those for which the source CPU's
+> + * IPIs might not have been received on this CPU yet). This is invoked by a
+> + * CPU about to go offline, to ensure that all pending IPI functions are run
+> + * before it goes completely offline.
+> + *
+> + * Loop through the call_single_queue and run all the queued functions.
+> + * Must be called with interrupts disabled.
+> + */
+
+Other than that, looks good to me.
+
+Reviewed-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
