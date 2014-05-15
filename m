@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaEOPdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:33:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58169 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaEOPdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:33:08 -0400
-Date: Thu, 15 May 2014 08:33:07 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: JA Magall??n <jamagallon@ono.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
-Subject: Re: NFSACL broken from 3.13 to 3.14
-Message-ID: <20140515153307.GA9016@infradead.org>
-References: <5374CE6B.6030905@ono.com>
+	id S1753901AbaEOPd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:33:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13721 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577AbaEOPd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:33:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1060,1389772800"; 
+   d="scan'208";a="532485639"
+Message-ID: <5374E0D6.40103@linux.intel.com>
+Date: Thu, 15 May 2014 18:44:22 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5374CE6B.6030905@ono.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: gregkh@linuxfoundation.org
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sarah.a.sharp@linux.intel.com
+Subject: Re: [PATCH 00/10] xhci: features for usb-next
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+In-Reply-To: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 04:25:47PM +0200, JA Magall??n wrote:
-> I mount homes from a Solaris 10 server, via NFSv3. Solaris nfs has a special
-> sideband server on a port for NFS to check ACLs. With previous version of
-> kernel (3.13.10 was the latest I check), I need no special option to mount
-> Solaris shares. With 3.14, it began to give errors, directories created
-> with mkdir returned error, files got created but truncated to 0 size...
-> (now I have 3.14.3).
-> 
-> I solved it adding the 'noacl' option to Solaris mount entries in autofs,
-> so the linux clients don't use the sideband protocol.
-> 
-> As I have read, NFSACL usage is negotitated between client and server.
-> Something has changed and the negotiation fails, perhaps ?
 
-We have some pretty bug ACL changes in 3.14.  I've tested it against a
-Linux server, but don't have a Solaris server available.  Do you have
-something like strace or wireshark traces to show differences between
-the versions?
+On 05/08/2014 07:25 PM, Mathias Nyman wrote:
+> Hi Greg
+> 
+> These following xhci patches are for usb-next and hopefully for 3.16
+> 
+> This patcheseries includes a bigger change in xhci command queue code,
+> (last four patches), a task that I've been working on for a longer time.
+> Sarah gave green light for v5 before she went on her sabbatical.
+> 
+> http://marc.info/?l=linux-usb&m=139889908701592&w=2
+> 
+> -Mathias
+> 
+
+Ping
+
+Any chance of getting these into your usb-next tree?
+
+-Mathias
