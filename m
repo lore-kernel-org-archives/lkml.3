@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaEOOCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:02:21 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:20462
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751768AbaEOOCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:02:19 -0400
-Date: Thu, 15 May 2014 07:00:26 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-CC: Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/5] Frequency resolution in CCF vs. cpufreq
-References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
- <20140515074724.GJ16662@pengutronix.de>
+	id S1754501AbaEOODK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:03:10 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:49615 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752759AbaEOODH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:03:07 -0400
+Message-ID: <5374C8C6.8060202@st.com>
+Date: Thu, 15 May 2014 16:01:42 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140515074724.GJ16662@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <6fe97032-ba6b-4dac-9064-34a9c788c57c@BN1BFFO11FD001.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(377424004)(24454002)(189002)(51704005)(199002)(33646001)(31966008)(50466002)(50986999)(44976005)(86362001)(74502001)(70736001)(81542001)(83072002)(87936001)(92726001)(4396001)(74316001)(99396002)(47776003)(76176999)(54356999)(83322001)(46102001)(83506001)(85852003)(53416003)(80022001)(81342001)(79102001)(31696002)(85182001)(23676002)(85202002)(20776003)(76482001)(77982001)(74662001)(92566001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB039;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0212BDE3BE
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v2 00/10] ARM: STi: Add Clock driver support STiH415 &
+ STiH416
+References: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-15_03:2014-05-15,2014-05-15,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+Hi Gabi,
 
-On Thu, 2014-05-15 at 09:47AM +0200, Uwe Kleine-König wrote:
-> On Wed, May 14, 2014 at 03:30:50PM -0700, Soren Brinkmann wrote:
-> > Hi,
-> > 
-> > I have one or two problems with cpufreq and the CCF, which are caused by
-> > rounding/different frequency resolutions.
-> > 
-> > cpufreq works with kHz, while the CCF uses Hz. On Zynq our default frequency is
-> > 666666666 Hz which the CCF, due to rounding, reports as 666666660. And for
-> Why does this happen? Isn't that a bug? What is the actual freqency?
-> 666666666 Hz or 2000000000/3 Hz?
+	For the series:
 
-I don't know for sure. I think it's rounding that takes place in the
-CCF. That output clock goes from a x-tal through an PLL and various
-muxes and dividers. I guess some inaccuracies in the magnitude of a few
-Hz are probably not avoidable in that processing chain.
+	Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-> 
-> > cpufreq, which simply divides values it obtains through clk_round_rate() by
-> > 1000, 666666.
-> > Since passing 666666 to clk_round_rate() does not result in 666666660
-> > (clk_round_rate() always rounds down!), we chose to put 666667 in the OPP. This
-> What is OPP?
+	It will be part of DT pull request I'm preparing for v3.16.
 
-As Nishanth already said, Operating Performance Points. Sorry for being
-lazy and not having spelled that out.
+Thanks,
+Maxime
 
-	Sören
-
+On 05/14/2014 03:24 PM, Gabriel FERNANDEZ wrote:
+> Changes in v2:
+>   - move stih415-clks.h & stih416-clks.h to include/dt-bindings/clock/
+>   - add clk_ignore_unused to bootargs. Interconnect clocks are not yet
+>     managed at the init, then we have to start the kernel with
+>     clk_ignore_unused.
+>
+> The goal of this series is to add DT definition for STiH415
+> and STiH416 SoCs on B2000 and B2020 boards.
+>
+> Gabriel Fernandez (10):
+>    ARM: STi: DT: STiH416: 416 DT Entry for clockgen A0/1/10/11/12
+>    ARM: STi: DT: STiH416: Remove unused CLK_S_ICN_REG_0 fixed clock
+>    ARM: STi: DT: STiH416: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY
+>      fixed clocks
+>    ARM: STi: DT: STiH416: 416 DT Entry for clockgen B/C/D/E/F
+>    ARM: STi: DT: STiH416: 416 DT Entry for clockgen A9/DDR/GPU
+>    ARM: STi: DT: STiH415: 415 DT Entry for clockgen A0/1/10/11/12
+>    ARM: STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock
+>    ARM: STi: DT: STiH415: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY
+>      fixed clocks
+>    ARM: STi: DT: STiH415: 415 DT Entry for clockgen A9
+>    ARM: STi: DT: STiH41x Add clk_ignore_unused to bootargs
+>
+>   arch/arm/boot/dts/stih415-clock.dtsi     | 517 +++++++++++++++++++++-
+>   arch/arm/boot/dts/stih415.dtsi           |  10 +-
+>   arch/arm/boot/dts/stih416-clock.dtsi     | 732 ++++++++++++++++++++++++++++++-
+>   arch/arm/boot/dts/stih416.dtsi           |  10 +-
+>   arch/arm/boot/dts/stih41x-b2000.dtsi     |   2 +-
+>   arch/arm/boot/dts/stih41x-b2020.dtsi     |   2 +-
+>   include/dt-bindings/clock/stih415-clks.h |  15 +
+>   include/dt-bindings/clock/stih416-clks.h |  15 +
+>   8 files changed, 1258 insertions(+), 45 deletions(-)
+>   create mode 100644 include/dt-bindings/clock/stih415-clks.h
+>   create mode 100644 include/dt-bindings/clock/stih416-clks.h
+>
