@@ -1,144 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaEOPpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:45:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40550 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaEOPpU (ORCPT
+	id S1753580AbaEOPql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:46:41 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:46905 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaEOPqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:45:20 -0400
-Date: Thu, 15 May 2014 17:45:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v4
-Message-ID: <20140515154506.GF11096@twins.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140514161152.GA2615@redhat.com>
- <20140514192945.GA10830@redhat.com>
- <20140515104808.GF23991@suse.de>
- <20140515132058.GL30445@twins.programming.kicks-ass.net>
- <20140515153424.GB30668@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HJakWL7yBo69DI1O"
-Content-Disposition: inline
-In-Reply-To: <20140515153424.GB30668@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 15 May 2014 11:46:40 -0400
+Message-ID: <1400168793.6946.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 5/5] ipc,msg: loosen check for full queue
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: akpm@linux-foundation.org, aswin@hp.com, linux-kernel@vger.kernel.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 15 May 2014 08:46:33 -0700
+In-Reply-To: <537440A7.2020707@colorfullife.com>
+References: <1400012857-11733-1-git-send-email-davidlohr@hp.com>
+	 <1400012857-11733-6-git-send-email-davidlohr@hp.com>
+	 <5373AF39.7030406@colorfullife.com>
+	 <1400097031.3865.25.camel@buesod1.americas.hpqcorp.net>
+	 <537440A7.2020707@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-05-15 at 06:20 +0200, Manfred Spraul wrote:
+> Hi Davidlohr,
+> 
+> On 05/14/2014 09:50 PM, Davidlohr Bueso wrote:
+> > Do you have any preferences? I can cook up a patch if you think that
+> > this merits Linux having MSGTQL.
+> MSGTQL means a global counter - therefore zero scalability. That's why I 
+> didn't implement it when I noticed the issue with 0-byte messages.
 
---HJakWL7yBo69DI1O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmmm so I was actually thinking of calculating it on demand, but after a
+closer look, we don't track each queue in the system, which would have
+made this rather trivial.
 
-On Thu, May 15, 2014 at 05:34:24PM +0200, Oleg Nesterov wrote:
-> On 05/15, Peter Zijlstra wrote:
-> >
-> > So I suppose I'm failing to see the problem with something like:
->=20
-> Yeeees, I was thinking about something like this too ;)
->=20
-> > static inline void lock_page(struct page *page)
-> > {
-> > 	if (!trylock_page(page))
-> > 		__lock_page(page);
-> > }
-> >
-> > static inline void unlock_page(struct page *page)
-> > {
-> > 	clear_bit_unlock(&page->flags, PG_locked);
-> > 	if (PageWaiters(page))
-> > 		__unlock_page();
-> > }
->=20
-> but in this case we need mb() before PageWaiters(), I guess.
+We do however have plenty of similar counters in the kernel, and the
+natural way of dealing with the scalability issue is using percpu
+counters. But I won't argue much if we leave it as it is, it's been like
+that since almost forever and no one is complaining but me.
 
-Ah indeed so, or rather, this is a good reason to use smp_mb__after_atomic(=
-).
+Andrew, could you please drop this patch from -mm, I'll send another one
+to add a comment instead.
 
-> > void __lock_page(struct page *page)
-> > {
-> > 	struct wait_queue_head_t *wqh =3D page_waitqueue(page);
-> > 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
-> >
-> > 	spin_lock_irq(&wqh->lock);
-> > 	if (!PageWaiters(page))
-> > 		SetPageWaiters(page);
-> >
-> > 	wait.flags |=3D WQ_FLAG_EXCLUSIVE;
-> > 	preempt_disable();
->=20
-> why?
->=20
-> > 	do {
-> > 		if (list_empty(&wait->task_list))
-> > 			__add_wait_queue_tail(wqh, &wait);
-> >
-> > 		set_current_state(TASK_UNINTERRUPTIBLE);
-> >
-> > 		if (test_bit(wait.key.bit_nr, wait.key.flags)) {
-> > 			spin_unlock_irq(&wqh->lock);
-> > 			schedule_preempt_disabled();
-> > 			spin_lock_irq(&wqh->lock);
->=20
-> OK, probably to avoid the preemption before schedule().
+> > Worst case scenario, we should update the msgsnd(2) manpage and document
+> > this unique Linux behavior.
+> I would document the current behavior.
 
-Indeed.
+Cc'ing Michael. Here is a vague attempt to update our manpage, feel free
+to update it to your taste.
 
-> Still can't  undestand why this makes sense,
+Thanks,
+Davidlohr
 
-Because calling schedule twice in a row is like a bit of wasted effort.
-Its just annoying there isn't a more convenient way to express this,
-because its a fairly common thing in wait loops.
+8<------------------------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] msgop.2: Document full queue criteria
 
-> but in this case it would be better
-> to do disable/enable under "if (test_bit())" ?
+Explicitly mention the two conditions we rely on when
+checking if a message queue is full when calling msgsnd(2).
 
-Ah yes.. that code grew and the preempt_disable came about before that
-test_bit() block.. :-)
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ man2/msgop.2 | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-> Of course, this needs more work for lock_page_killable(), but this
-> should be simple.
+diff --git a/man2/msgop.2 b/man2/msgop.2
+index 3f5bc36..b4c8c04 100644
+--- a/man2/msgop.2
++++ b/man2/msgop.2
+@@ -105,13 +105,29 @@ by
+ If sufficient space is available in the queue,
+ .BR msgsnd ()
+ succeeds immediately.
+-(The queue capacity is defined by the
+-.I msg_qbytes
++The queue capacity is governed by the
++.I msg_qbytes 
+ field in the associated data structure for the message queue.
+ During queue creation this field is initialized to
+ .B MSGMNB
+ bytes, but this limit can be modified using
+-.BR msgctl (2).)
++.BR msgctl (2).
++A full queue is defined by two factors :
++.IP * 2
++The new msg size + current size of the queue is greater than the 
++queue's maximum size (the
++.I msg_qbytes
++field).
++.IP *
++The current amount of messages in the queue + 1 (the new msg) is 
++greater than the queue's maximum size (the
++.I msg_qbytes
++field). This is necessary to prevent users from using infinite 
++amounts of locked memory (used by the kernel for headers) by 
++sending 0-byte messages. This is equivalent to the traditional
++MSGTQL parameter present in many Unix systems. This behavior
++is unique to Linux.
++.PP
+ If insufficient space is available in the queue, then the default
+ behavior of
+ .BR msgsnd ()
+-- 
+1.8.1.4
 
-Yeah, I just wanted to illustrate the point, and cobbling one together
-=66rom various wait loops was plenty I thought ;-)
 
---HJakWL7yBo69DI1O
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTdOECAAoJEHZH4aRLwOS623wQAK23Jo8JO5J4d+UfM/tWWoA9
-0qguSZkmn3AOdBTEz2b3yh2LkLMIauqTuLMfxM/zQaxySznVRrfm6kx7AWCjyOo6
-GwDbIfBYYFla1+y9XCIC53qz8LComc2QDGhTtIcU7Alg44yllMr9Kk445dHEUfBz
-DdBQDhzDmlq/0FnhzKDd6GYxVkwHFqfCxpJviA9M4copFu+pT0gVcR0vAeY5qfwS
-616Xm5vQIaosAVjai4aCYW1PWDi2pasmyiIw5/dXXMxMrqcObbtE6IDboHk5NpNh
-DSxY8Ua4GIbnJlnDHiFF52gfXMQc3bQeQn6rNkNq3baS4XVdnkQDapzOxCzmgru4
-d1YvB7txk5RjBAavzrgxqNEY9z1c5Nt4b72AX54f9YjkWZ1Yi1FiNfOn/7dvks+b
-TYO5gTzNOdEmkvkpAKQgJBBzZnN02Y6WcuOM38HdiDceqlblyL7YIoeNAOOUaOj8
-nEU1ONOFtliyfKH2zZHO/Loce84TAH1ZlXi7LrnI/4MRz7ZMD04ij46RvUDc41hR
-4mz2dmogCLHDXNFQ8gDeMm502kthzeDgmmzp+K45JG78ZCrmeKiGkQeMiTf0Ww/v
-G6Az6zEf+n77v0EkoZPHzElTEWyPVA1KlIYoaXSSjxsGz9ymTu3hGNtFQmrYq+D/
-Yoq+8KgJkDKoTZI37Ew6
-=4rMb
------END PGP SIGNATURE-----
-
---HJakWL7yBo69DI1O--
