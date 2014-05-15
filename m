@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaEOKyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:54:43 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:49522 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaEOKyl (ORCPT
+	id S1751806AbaEOK4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:56:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55092 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751255AbaEOK4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:54:41 -0400
-Date: Thu, 15 May 2014 12:52:35 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: stefan@agner.ch
-Cc: swarren@wwwdotorg.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2] drm/panel: add support for EDT ET057090DHU panel
-Message-ID: <20140515105234.GJ6434@ulmo>
-References: <1400146725-5788-1-git-send-email-stefan@agner.ch>
+	Thu, 15 May 2014 06:56:13 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
+Date: Thu, 15 May 2014 13:13:02 +0200
+Message-ID: <1495375.YeObBhD5SE@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J2uG6jHjFLimDtBY"
-Content-Disposition: inline
-In-Reply-To: <1400146725-5788-1-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, May 14, 2014 10:53:16 AM Alan Stern wrote:
+> On Tue, 13 May 2014, Rafael J. Wysocki wrote:
+> 
+> > > It would be surprising if ->prepare() needed to make any difficult
+> > > checks.  This would imply that the device could have multiple
+> > > runtime-suspend states, some of which are appropriate for system
+> > > suspend while others aren't.  Not impossible, but I wouldn't expect it
+> > > to come up often.
+> > 
+> > That is the case for every device with ACPI power management in principle. :-)
+> > 
+> > Please see patch [3/3] for details.
+> 
+> I don't understand enough about the ACPI subsystem to follow the
+> details of that patch.
+> 
+> > OK, I've updated the $subject patch in the meantime and the result is appended
+> > Former patch [1/3] is not necessary any more now and patch [3/3] is still valid.
+> > 
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
+> > 
+> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> > resume all runtime-suspended devices during system suspend, mostly
+> > because those devices may need to be reprogrammed due to different
+> > wakeup settings for system sleep and for runtime PM.
+> 
+> ...
+> 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> This is looking quite good.  I have one suggestion for a small 
+> improvement...
+> 
+> > @@ -1332,6 +1338,16 @@ static int __device_suspend(struct devic
+> >  	if (dev->power.syscore)
+> >  		goto Complete;
+> >  
+> > +	if (dev->power.direct_complete) {
+> > +		pm_runtime_disable(dev);
+> > +		if (dev->power.disable_depth == 1
+> > +		    && pm_runtime_status_suspended(dev))
+> > +			goto Complete;
+> > +
+> > +		dev->power.direct_complete = false;
+> > +		pm_runtime_enable(dev);
+> > +	}
+> 
+> Do we want to allow ->prepare() to return > 0 if the device isn't
+> runtime suspended?  If we do then non-suspended devices may be a common
+> case.  We should then avoid the extra overhead of disable + enable.  
+> So I would write:
+> 
+> 	if (dev->power.direct_complete) {
+> 		if (pm_runtime_status_suspended(dev)) {
+> 			pm_runtime_disable(dev);
+> 			if (dev->power.disable_depth == 1
+> 			    && pm_runtime_status_suspended(dev))
+> 				goto Complete;
+> 			pm_runtime_enable(dev);
+> 		}
+> 		dev->power.direct_complete = false;
+> 	}
 
---J2uG6jHjFLimDtBY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That is a good idea, thanks!
 
-On Thu, May 15, 2014 at 11:38:45AM +0200, stefan@agner.ch wrote:
-> From: Stefan Agner <stefan@agner.ch>
->=20
-> This panel is sold by Toradex for Colibri T20/T30 and Apalis T30
-> evaluation kits.
->=20
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  .../devicetree/bindings/panel/edt,et057090dhu.txt  |  7 ++++++
->  drivers/gpu/drm/panel/panel-simple.c               | 26 ++++++++++++++++=
-++++++
->  2 files changed, 33 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/panel/edt,et057090d=
-hu.txt
+> Also, now that we have finally settled on the appropriate API, there
+> needs to ba a patch updating the PM documentation.
 
-Applied, thanks.
+Absolutely.  I thought about updating the documentation in the same patch
+(at least the comments in pm.h), but I guess a separate patch for files
+under Documentation/ may be better.
 
-Thierry
+Rafael
 
---J2uG6jHjFLimDtBY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdJxyAAoJEN0jrNd/PrOhaX4QAL0axTjxBEU4TgE9odqQXdZD
-DrS/uBBpjdMGi58KYJV7EBbEUN6BjgbAGrVyX+TU22RaaKsUdyYNHoHxFHDNPOJz
-793+fQPaHLGjR8i9M+x/E00tbgtVnyj5OGZTYfhh5BcOzuEFnFbuOryWNYPdzakz
-mNawbUxFvh6bGxuSPMXtbKzJ7lscUr1A5crVQIo4k//cyr1MW3rBDKcdzsYWs6kl
-aMHKLuMYsjSoLwMNy28zWPsdGL9RXI/QEt7F06gbyzLATLulDUufCXbk2rk7Iswl
-7nF7p9CdAIOLs2G0e7Emvvzn4KtAVPCN9KJXc+W79+9IsOCTm/L+AuONsLSw7c68
-W7s4MFz8ehRkVkeTgW4/1J0wR6zjE7zTt6gQSGwtMbof8i5QZ1+6GLKh+1dYfKvw
-Yg2dZeBz9h+U4xb2lO5hLe1fRZINawNyijv9psncb7ReKY2pm6eoQiHwKIBuO/F1
-hwleFU0OmoqCDXKBQjMNAHz1drM68r5KBYaBs3pLTdH/j933YCAdYv2VaFyEcwx7
-Rqldc7ijLeGAAh3jR17wdzb38GaV3TAyWSNXYQH06jTY686oZArwLuwk9EO4+Y5S
-5oye9+ogbsaIJaJdggvM2N95wQs048safVUcJoMmFcP/0YKHT67Xf/LrGmB4qtEm
-4JzWMXbdXQS62S7ryvG6
-=adqH
------END PGP SIGNATURE-----
-
---J2uG6jHjFLimDtBY--
