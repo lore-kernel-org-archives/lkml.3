@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaEOJPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:15:51 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43591 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476AbaEOJPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:15:48 -0400
-Message-ID: <5374859F.5080902@ti.com>
-Date: Thu, 15 May 2014 14:45:11 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753358AbaEOJRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:17:19 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:44651 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556AbaEOJRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:17:14 -0400
+Message-ID: <53748616.3020109@imgtec.com>
+Date: Thu, 15 May 2014 10:17:10 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, dt list <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
-Subject: Re: [PATCH 03/17] phy: ti-pipe3: add external clock support for PCIe
- PHY
-References: <1399383244-14556-1-git-send-email-kishon@ti.com>	<1399383244-14556-4-git-send-email-kishon@ti.com>	<53736CBC.2060702@ti.com>	<5373897C.6080504@ti.com> <CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>
-In-Reply-To: <CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <luto@amacapital.net>, <nicolas.pitre@linaro.org>,
+        <daniel.lezcano@linaro.org>, <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        linux-metag <linux-metag@vger.kernel.org>
+Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+References: <20140411134243.160989490@infradead.org> <20140411135218.478299389@infradead.org> <CAAG0J9_q1KsUx10-XAb7AJnxv2ehctg6q1KME7ahsk1OZV8vZQ@mail.gmail.com> <20140509141520.GV2844@laptop.programming.kicks-ass.net> <536CEB7E.9080007@imgtec.com>
+In-Reply-To: <536CEB7E.9080007@imgtec.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth,
+Hi Peter,
 
-On Wednesday 14 May 2014 09:04 PM, Nishanth Menon wrote:
-> On Wed, May 14, 2014 at 10:19 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi Roger,
+On 09/05/14 15:51, James Hogan wrote:
+> On 09/05/14 15:15, Peter Zijlstra wrote:
+>> Most archs have (x86) hlt or (arm) wfi like idle instructions, and if
+>> that is your only possible idle function, you'll require the interrupt
+>> to wake up and there's really no point to having the POLLING bit.
 >>
->> On Wednesday 14 May 2014 06:46 PM, Roger Quadros wrote:
->>> Hi Kishon,
->>>
->>> On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
->>>> APLL used by PCIE phy can either use external clock as input or the clock
->>>> from DPLL. Added support for the APLL to use external clock as input here.
->>>>
->>>> Cc: Rajendra Nayak <rnayak@ti.com>
->>>> Cc: Tero Kristo <t-kristo@ti.com>
->>>> Cc: Paul Walmsley <paul@pwsan.com>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>  Documentation/devicetree/bindings/phy/ti-phy.txt |    4 ++
->>>>  drivers/phy/phy-ti-pipe3.c                       |   75 ++++++++++++++--------
->>>>  2 files changed, 52 insertions(+), 27 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>> index bc9afb5..d50f8ee 100644
->>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>> @@ -76,6 +76,10 @@ Required properties:
->>>>     * "dpll_ref_m2" - external dpll ref clk
->>>>     * "phy-div" - divider for apll
->>>>     * "div-clk" - apll clock
->>>> +   * "apll_mux" - mux for pcie apll
->>>> +   * "refclk_ext" - external reference clock for pcie apll
->>>> + - ti,ext-clk: To specifiy if PCIE apll should use external clock. Applicable
->>>> +   only to PCIE PHY.
->>>
->>> Instead of specifying both clock sources "dpll_ref_clock", "refclk_ext" and then specifying a 3rd control option "ti,ext-clk" to select one of the 2 sources, why can't the DT just supply one clock source, i.e. the one that is being used in the board instance? The driver should then just configure the clock rate that is needed at that node. Shouldn't the clock framework automatically take care of muxing and parent rates?
+>> Lastly, having the POLLING bit and not needing it is similarly non-fatal.
 >>
->> Want the dt to have all the clocks used by the controller. "ti,ext-clk" should
->> go in the board dt file (suggested by Nishanth).
->> The point is at some point later if some one wants to change the clock source,
->> it should be a simple enabling "ti,ext-clk" flag instead of finding the clock
->> phandle etc..
 > 
-> Wonder if that is implicit by the presence of  "refclk_ext" in the
-> clocks provided?
+> Thanks. I think the flag can go for Metag then. I suggest the following
+> patch.
 
-IMO the presence of "refclk_ext" is useless unless the board indicates it
-provides the clock source.
-
-refclk_ext holds phandle for *fixed-clock*, so irrespective of whether the
-board provides a clock or not, it can have that handle for configuring in PRCM.
-However if the board does not provide the clock source, configuring refclk_ext
-in PRCM is useless.
+This is still bust in linux-next. What's the status of this patch?
 
 Thanks
-Kishon
+James
+
+> 
+> From 15dd3f9cc18bdb1c8c4d2c395778421022250aa8 Mon Sep 17 00:00:00 2001
+> From: James Hogan <james.hogan@imgtec.com>
+> Date: Fri, 9 May 2014 15:36:21 +0100
+> Subject: [PATCH] metag: Remove TIF_POLLING_NRFLAG
+> 
+> The Meta idle function jumps into the interrupt handler which
+> efficiently blocks waiting for the next interrupt when it reads the
+> interrupt status register (TXSTATI). No other (polling) idle functions
+> can be used, therefore TIF_POLLING_NRFLAG is unnecessary, so lets remove
+> it.
+> 
+> Peter Zijlstra said:
+>> Most archs have (x86) hlt or (arm) wfi like idle instructions, and if
+>> that is your only possible idle function, you'll require the interrupt
+>> to wake up and there's really no point to having the POLLING bit.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/metag/include/asm/thread_info.h | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/metag/include/asm/thread_info.h b/arch/metag/include/asm/thread_info.h
+> index b19e9c588a16..47711336119e 100644
+> --- a/arch/metag/include/asm/thread_info.h
+> +++ b/arch/metag/include/asm/thread_info.h
+> @@ -117,10 +117,8 @@ static inline int kstack_end(void *addr)
+>  #define TIF_SECCOMP		5	/* secure computing */
+>  #define TIF_RESTORE_SIGMASK	6	/* restore signal mask in do_signal() */
+>  #define TIF_NOTIFY_RESUME	7	/* callback before returning to user */
+> -#define TIF_POLLING_NRFLAG      8	/* true if poll_idle() is polling
+> -					   TIF_NEED_RESCHED */
+> -#define TIF_MEMDIE		9	/* is terminating due to OOM killer */
+> -#define TIF_SYSCALL_TRACEPOINT  10	/* syscall tracepoint instrumentation */
+> +#define TIF_MEMDIE		8	/* is terminating due to OOM killer */
+> +#define TIF_SYSCALL_TRACEPOINT	9	/* syscall tracepoint instrumentation */
+>  
+>  
+>  #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
+> 
