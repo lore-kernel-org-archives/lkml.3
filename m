@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaEOSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:02:09 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:48261 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaEOSCH (ORCPT
+	id S1755854AbaEOSCZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:02:25 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:59974 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916AbaEOSCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:02:07 -0400
+	Thu, 15 May 2014 14:02:24 -0400
+Message-ID: <53750129.6060902@imgtec.com>
+Date: Thu, 15 May 2014 11:02:17 -0700
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1400171258.21547.136.camel@deneb.redhat.com>
-References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
-	<20140515144424.GA23884@linaro.org>
-	<1400171258.21547.136.camel@deneb.redhat.com>
-Date: Thu, 15 May 2014 18:55:22 +0100
-Message-ID: <CAPvkgC2WQcvn5e01Y70cm5nzenYZ6tk_1BampHw66VoRFn7Jiw@mail.gmail.com>
-Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
-From: Steve Capper <steve.capper@linaro.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Richard Weinberger <richard@nod.at>
+CC: <linux-arch@vger.kernel.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
+        "John Crispin" <blogic@openwrt.org>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 16/27] mips: Use common bits from generic tlb.h
+References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-17-git-send-email-richard@nod.at>
+In-Reply-To: <1400093999-18703-17-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2014 17:27, Mark Salter <msalter@redhat.com> wrote:
-> On Thu, 2014-05-15 at 15:44 +0100, Steve Capper wrote:
->> On Thu, May 15, 2014 at 10:19:22AM -0400, Mark Salter wrote:
->> > The following happens when trying to run a kvm guest on a kernel
->> > configured for 64k pages. This doesn't happen with 4k pages:
->> >
->> >   BUG: failure at include/linux/mm.h:297/put_page_testzero()!
->> >   Kernel panic - not syncing: BUG!
->> >   CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
->> >   Call trace:
->> >   [<fffffe0000096034>] dump_backtrace+0x0/0x16c
->> >   [<fffffe00000961b4>] show_stack+0x14/0x1c
->> >   [<fffffe000066e648>] dump_stack+0x84/0xb0
->> >   [<fffffe0000668678>] panic+0xf4/0x220
->> >   [<fffffe000018ec78>] free_reserved_area+0x0/0x110
->> >   [<fffffe000018edd8>] free_pages+0x50/0x88
->> >   [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
->> >   [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
->> >   [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
->> >   [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
->> >   [<fffffe00001edc1c>] __fput+0xb0/0x288
->> >   [<fffffe00001ede4c>] ____fput+0xc/0x14
->> >   [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
->> >   [<fffffe0000095c14>] do_notify_resume+0x54/0x58
->> >
->> > In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
->> > on the stage2 pgd which leads to the BUG in put_page_testzero(). This
->> > happens because a pud_huge() test in unmap_range() returns true when it
->> > should always be false with 2-level pages tables used by 64k pages.
->> > This patch removes support for huge puds if 2-level pagetables are
->> > being used.
->>
->> Hi Mark,
->> I'm still catching up with myself, sorry  (was off sick for a couple
->> of days)...
->>
->> I thought unmap_range was going to be changed?
->> Does the following help things?
->> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009388.html
+On 05/14/2014 11:59 AM, Richard Weinberger wrote:
+> It is no longer needed to define them on our own.
 >
-> No, I get the same BUG. Regardless, pud_huge() should always return
-> false for 2-level pagetables, right?
-
-Okay, thanks for giving that a go.
-
-Yeah I agree for 64K granule it doesn't make sense to have a huge_pud.
-The patch looks sound now, but checking for a folded pmd may run into
-problems if/when we get to 3-levels and 64K pages in future.
-
-Perhaps checking for PAGE_SHIFT==12 (or something similar) would be a
-bit more robust?
-
-Cheers,
--- 
-Steve
-
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: John Crispin <blogic@openwrt.org>
+> Cc: Markos Chandras <markos.chandras@imgtec.com>
+> Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: linux-mips@linux-mips.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   arch/mips/include/asm/tlb.h | 7 -------
+>   1 file changed, 7 deletions(-)
 >
->
+> diff --git a/arch/mips/include/asm/tlb.h b/arch/mips/include/asm/tlb.h
+> index 4a23493..5ea43ca 100644
+> --- a/arch/mips/include/asm/tlb.h
+> +++ b/arch/mips/include/asm/tlb.h
+> @@ -10,13 +10,6 @@
+>   		if (!tlb->fullmm)				\
+>   			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
+>   	}  while (0)
+> -#define tlb_end_vma(tlb, vma) do { } while (0)
+> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+> -
+> -/*
+> - * .. because we flush the whole mm when it fills up.
+> - */
+> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
+>   
+>   #define UNIQUE_ENTRYHI(idx)						\
+>   		((CKSEG0 + ((idx) << (PAGE_SHIFT + 1))) |		\
+
+I would like to know why these functions are eliminated (don't find any 
+clue).
+Is it just because there will be a generic one or the calls would be 
+eliminated?
+And if there are generic - can I tune it later?
+
+Explanation of Q:  MIPS R6 architecture has now TLBINV instruction which 
+eliminates TLB elements only for specific ASID (read here - "mm_struct") 
+and I would like to use it for efficiency in tlb_flush()/flush_tlb_mm.
+(Not sure about tlb_end_vma()/ __tlb_remove_tlb_entry() yet)
+
+- Leonid.
