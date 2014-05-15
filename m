@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaEOQJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:09:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42851 "EHLO mail.zytor.com"
+	id S1754168AbaEOQKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:10:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169AbaEOQJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:09:43 -0400
-Message-ID: <5374E653.2080309@zytor.com>
-Date: Thu, 15 May 2014 09:07:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751653AbaEOQKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:10:30 -0400
+Date: Thu, 15 May 2014 18:09:51 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: WARN in do_rt_tgsigqueueinfo()
+Message-ID: <20140515160950.GA22846@mguzik.redhat.com>
+References: <20140515133834.GN13658@twins.programming.kicks-ass.net>
+ <20140515142723.GB22041@mguzik.redhat.com>
+ <20140515150412.GP30445@twins.programming.kicks-ass.net>
+ <20140515155415.GA326@redhat.com>
 MIME-Version: 1.0
-To: chrubis@suse.cz
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <537407ED.8050606@zytor.com> <CF999CD6.90A93%dvhart@linux.intel.com> <5374C54B.7040408@gmail.com> <20140515154246.GC6926@rei.Home> <5374E2A4.2070408@zytor.com> <20140515160152.GA7529@rei.Home>
-In-Reply-To: <20140515160152.GA7529@rei.Home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140515155415.GA326@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 09:01 AM, chrubis@suse.cz wrote:
+On Thu, May 15, 2014 at 11:54:15AM -0400, Dave Jones wrote:
+> On Thu, May 15, 2014 at 05:04:12PM +0200, Peter Zijlstra wrote:
 > 
->> I really believe the proper fix is to use assembly syscall stubs.  In
->> klibc I build a fairly elaborate machinery to autogenerate such syscall
->> stubs for a variety of architectures.
+>  > > > trinity$ MALLOC_CHECK_=0 ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet -C 400 -l off -xmremap
+>  > > > 
+>  > > > [watchdog] kernel became tainted! (512/0) Last seed was 4072360471
+>  > > > 
+>  > > > [15908.562512] ------------[ cut here ]------------
+>  > > > [15908.567245] WARNING: CPU: 22 PID: 3312 at /usr/src/linux-2.6/kernel/signal.c:3060 do_rt_tgsigqueueinfo+0xb4/0xc0()
+>  > > > 
+>  > > > This is apparently a very common thing to hit according to google.
+>  > > 
+>  > > Well, it warns about an argument received from userland, so nothing fishy
+>  > > going on as far as kernel consistency is concerned if that's what you mean.
+>  > 
+>  > I hadn't looked that far.. I just manged to hit it two times in a row
+>  > while waiting for my bug to trigger.
 > 
-> Then it would be nice to share these between klibc and LTP (and possible
-> everybody else).
+> There's a ton of 'noise' like this that fuzzing turns up.
+> I've been collecting some of the stuff to shut it up..
+> 
+> http://codemonkey.org.uk/junk/silence-fuzz-testing-noise.patch
+> http://codemonkey.org.uk/junk/silence-noisy-deprecated-warnings-while-fuzzing.patch
+> 
+> I'm of the opinion that a user-triggerable WARN is a bug, but aparently
+> not everyone else feels that way.
 > 
 
-It should be quite easy to extract from klibc.
+imho warning sysadmins about userspace using deprecated stuff is fine as
+long as users are not able to spam the console with it.
 
-	-hpa
+Warning reported here just looks scary and provides no information for
+sysadmins so I guess it hould be changed.
 
+I see no value in removing this stuff. If it shows up in production you
+most likely want to know. Filtering this out during fuzzing should be an
+issue.
+
+my $0,03
+-- 
+Mateusz Guzik
