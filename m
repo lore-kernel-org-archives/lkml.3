@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaEOOiC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:38:02 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3351 "EHLO mga01.intel.com"
+	id S1754454AbaEOOjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:39:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632AbaEOOiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:38:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="532453041"
-Message-ID: <5374D12C.9030400@intel.com>
-Date: Thu, 15 May 2014 07:37:32 -0700
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751541AbaEOOjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:39:53 -0400
+Message-ID: <5374D18D.6020608@redhat.com>
+Date: Thu, 15 May 2014 10:39:09 -0400
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Ross Zwisler <ross.zwisler@linux.intel.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] drm: Missed clflushopt in drm_clflush_virt_range
-References: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com> <20140515123846.GQ8790@phenom.ffwll.local>
-In-Reply-To: <20140515123846.GQ8790@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1
+To: mtk.manpages@gmail.com, Peter Zijlstra <peterz@infradead.org>
+CC: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <20140515081444.GD11096@twins.programming.kicks-ass.net> <5374BE9E.8080408@redhat.com> <20140515132235.GM30445@twins.programming.kicks-ass.net> <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
+In-Reply-To: <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 05:38 AM, Daniel Vetter wrote:
-> On Wed, May 14, 2014 at 09:41:12AM -0600, Ross Zwisler wrote:
->> With this commit:
+On 05/15/2014 09:49 AM, Michael Kerrisk (man-pages) wrote:
+> On Thu, May 15, 2014 at 3:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Thu, May 15, 2014 at 09:18:22AM -0400, Carlos O'Donell wrote:
+>>> On 05/15/2014 04:14 AM, Peter Zijlstra wrote:
+>>>> On Wed, May 14, 2014 at 04:23:38PM -0400, Carlos O'Donell wrote:
+>>>>> There are other syscalls like gettid() that have a:
+>>>>> NOTE: There is no glibc wrapper for this system call; see NOTES.
+>>>>
+>>>> Yes, can we finally fix that please? It gets tedious having to endlessly
+>>>> copy/paste that thing around.
+>>>
+>>> What exactly would you like fixed?
 >>
->> 2a0788dc9bc4 x86: Use clflushopt in drm_clflush_virt_range
->>
->> If clflushopt is available on the system, we use it instead of clflush
->> in drm_clflush_virt_range.  There were two calls to clflush in this
->> function, but only one was changed to clflushopt.  This patch changes
->> the other clflush call to clflushopt.
->>
->> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
->> Reported-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
->>
->> Cc: David Airlie <airlied@linux.ie>
->> Cc: dri-devel@lists.freedesktop.org
->> Cc: H Peter Anvin <h.peter.anvin@intel.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Not having gettid() in glibc.
 > 
-> Picked to my topic/core-stuff drm branch so it doesn't get lost.
-> -Daniel
-> 
+> Get in the line ;-).
+> http://sourceware.org/bugzilla/show_bug.cgi?id=6399
 
-Does this mean you're picking this up, or do you want me to put it into
--tip?
+I have no objections to this, but I absolutely object to this without
+someone documenting and gathering consensus for consistent terminology
+to be used between the kernel and glibc.
 
-	-hpa
+The relevant comment is here:
+https://sourceware.org/bugzilla/show_bug.cgi?id=6399#c26
 
+I'd like to see a glibc manual patch for the threads.texi file, which
+can be completely linux-specific, to document gettid() and nomenclature.
+It should talk about the nomenclature used to discuss these interfaces
+and explain when it is or isn't valid to use a task id and with what 
+functions.
 
+For example does gettid *really* return a pid_t as considered by
+userspace? It's not a full out process...
+
+Cheers,
+Carlos.
