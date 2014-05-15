@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043AbaEORYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:24:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105AbaEORYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754924AbaEORYE (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 May 2014 13:24:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696AbaEORX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:23:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,47 +15,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 06/14] perf tools: Cache dso data file descriptor
-Date: Thu, 15 May 2014 19:23:27 +0200
-Message-Id: <1400174615-2121-7-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 04/14] perf tools: Add global list of opened dso objects
+Date: Thu, 15 May 2014 19:23:25 +0200
+Message-Id: <1400174615-2121-5-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the dso__data_close to keep the dso data file
-descriptor open if possible.
-
-We keep dsos data file descriptors open until their
-count reaches the half of the current fd open limit
-(RLIMIT_NOFILE). In this case we close file descriptor
-of the first opened dso object.
-
-We've got speed up in dso__data_fd function.
-
-Output from report over 10 GB data with DWARF unwind stacks:
-(TODO fix perf diff)
-
-  current code:
-   0.16%     perf  perf                       [.] dso__data_fd
-  change:
-   no record of dso__data_fd
-
-And we got some noticable overall speed up:
-(perf perf stat -e '{cycles,instructions}:u' ...)
-
-  current code:
-   291,315,329,878      cycles                     ( +-  0.22% )
-   391,763,485,304      instructions               ( +-  0.03% )
-
-     180.742249687 seconds time elapsed            ( +-  0.64% )
-
-  change:
-   228,948,088,958      cycles                     ( +-  0.20% )
-   324,936,504,336      instructions               ( +-  0.02% )
-
-     133.789677792 seconds time elapsed            ( +-  0.76% )
+Adding global list of opened dso objects, so we can
+track them and use the list for caching dso data file
+descriptors.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -68,112 +39,95 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c | 62 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 59 insertions(+), 3 deletions(-)
+ tools/perf/util/dso.c | 41 +++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/dso.h |  1 +
+ 2 files changed, 40 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 76e5c13..316e087 100644
+index 5acb4b8..5d7c7bc 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -1,4 +1,6 @@
- #include <asm/bug.h>
-+#include <sys/time.h>
-+#include <sys/resource.h>
- #include "symbol.h"
- #include "dso.h"
- #include "machine.h"
-@@ -204,11 +206,60 @@ static void close_dso(struct dso *dso)
- 	close_data_fd(dso);
+@@ -136,7 +136,22 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 	return ret;
+ }
+ 
+-static int open_dso(struct dso *dso, struct machine *machine)
++/*
++ * Global list of open DSOs.
++ */
++static LIST_HEAD(dso__data_open);
++
++static void dso__list_add(struct dso *dso)
++{
++	list_add_tail(&dso->data.open_entry, &dso__data_open);
++}
++
++static void dso__list_del(struct dso *dso)
++{
++	list_del(&dso->data.open_entry);
++}
++
++static int __open_dso(struct dso *dso, struct machine *machine)
+ {
+ 	int fd;
+ 	char *root_dir = (char *)"";
+@@ -159,14 +174,35 @@ static int open_dso(struct dso *dso, struct machine *machine)
+ 	return fd;
  }
  
 -void dso__data_close(struct dso *dso)
-+static void close_first_dso(void)
- {
-+	struct dso *dso;
++static int open_dso(struct dso *dso, struct machine *machine)
++{
++	int fd = __open_dso(dso, machine);
 +
-+	dso = list_first_entry(&dso__data_open, struct dso, data.open_entry);
- 	close_dso(dso);
++	if (fd > 0)
++		dso__list_add(dso);
++
++	return fd;
++}
++
++static void close_data_fd(struct dso *dso)
+ {
+ 	if (dso->data.fd >= 0) {
+ 		close(dso->data.fd);
+ 		dso->data.fd = -1;
++		dso__list_del(dso);
+ 	}
  }
  
-+static rlim_t get_fd_limit(void)
++static void close_dso(struct dso *dso)
 +{
-+	struct rlimit l;
-+	rlim_t limit = 0;
-+
-+	/* Allow half of the current open fd limit. */
-+	if (getrlimit(RLIMIT_NOFILE, &l) == 0) {
-+		if (l.rlim_cur == RLIM_INFINITY)
-+			limit = l.rlim_cur;
-+		else
-+			limit = l.rlim_cur / 2;
-+	} else {
-+		pr_err("failed to get fd limit\n");
-+		limit = 1;
-+	}
-+
-+	return limit;
-+}
-+
-+static bool may_cache_fd(void)
-+{
-+	static rlim_t limit;
-+
-+	if (!limit)
-+		limit = get_fd_limit();
-+
-+	if (limit == RLIM_INFINITY)
-+		return true;
-+
-+	return limit > (rlim_t) dso__data_open_cnt;
-+}
-+
-+static void data_close(void)
-+{
-+	bool cache_fd = may_cache_fd();
-+
-+	if (!cache_fd)
-+		close_first_dso();
++	close_data_fd(dso);
 +}
 +
 +void dso__data_close(struct dso *dso)
 +{
-+	if (dso->data.fd >= 0)
-+		data_close();
++	close_dso(dso);
 +}
 +
  int dso__data_fd(struct dso *dso, struct machine *machine)
  {
  	enum dso_binary_type binary_type_data[] = {
-@@ -318,6 +369,7 @@ static ssize_t
- dso_cache__read(struct dso *dso, struct machine *machine,
- 		 u64 offset, u8 *data, ssize_t size)
- {
-+	bool new_fd = dso->data.fd == -1;
- 	struct dso_cache *cache;
- 	ssize_t ret;
- 	int fd;
-@@ -356,7 +408,10 @@ dso_cache__read(struct dso *dso, struct machine *machine,
- 	if (ret <= 0)
- 		free(cache);
- 
--	dso__data_close(dso);
-+	/* Check the cache only if we just added new fd. */
-+	if (new_fd)
-+		data_close();
-+
- 	return ret;
- }
- 
-@@ -563,7 +618,8 @@ void dso__delete(struct dso *dso)
- 		dso->long_name_allocated = false;
+@@ -499,6 +535,7 @@ struct dso *dso__new(const char *name)
+ 		dso->kernel = DSO_TYPE_USER;
+ 		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
++		INIT_LIST_HEAD(&dso->data.open_entry);
  	}
  
--	dso__data_close(dso);
-+	if (dso->data.fd != -1)
-+		close_dso(dso);
- 	dso_cache__free(&dso->data.cache);
- 	dso__free_a2l(dso);
- 	zfree(&dso->symsrc_filename);
+ 	return dso;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index e48dcf5..90988bf 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -103,6 +103,7 @@ struct dso {
+ 	struct {
+ 		struct rb_root	 cache;
+ 		int		 fd;
++		struct list_head open_entry;
+ 	} data;
+ 
+ 	char		 name[0];
 -- 
 1.8.3.1
 
