@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaEOJfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:35:37 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57246 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650AbaEOJff (ORCPT
+	id S1753847AbaEOJft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:35:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47905 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760AbaEOJfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:35:35 -0400
-Message-ID: <53748A5D.6070605@linux.vnet.ibm.com>
-Date: Thu, 15 May 2014 17:35:25 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-References: <537192D3.5030907@linux.vnet.ibm.com> <20140513094737.GU30445@twins.programming.kicks-ass.net> <53721FD4.6060300@redhat.com> <20140513142328.GE2485@laptop.programming.kicks-ass.net> <53731D12.7040804@linux.vnet.ibm.com> <20140514094426.GF30445@twins.programming.kicks-ass.net> <5374387E.4080802@linux.vnet.ibm.com> <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140515090638.GI30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 May 2014 05:35:47 -0400
+Message-ID: <1400146519.4102.30.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stefan Agner <stefan@agner.ch>, swarren@wwwdotorg.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, marcel@ziswiler.com
+Date: Thu, 15 May 2014 11:35:19 +0200
+In-Reply-To: <20140515091220.GC6434@ulmo>
+References: <cover.1400103181.git.stefan@agner.ch>
+	 <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
+	 <20140515075102.GE5952@ulmo> <4de1d09b7873e012e43525c1f8ab9c66@agner.ch>
+	 <20140515091220.GC6434@ulmo>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051509-7014-0000-0000-000004E480EB
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 05:06 PM, Peter Zijlstra wrote:
-[snip]
->> However, when the group level is too deep, that doesn't works any more...
->>
->> I'm not sure but seems like 'deep group level' and 'vruntime bonus for
->> sleeper' is the keep points here, will try to list the root cause after
->> more investigation, thanks for the hints and suggestions, really helpful ;-)
+Am Donnerstag, den 15.05.2014, 11:12 +0200 schrieb Thierry Reding:
+> On Thu, May 15, 2014 at 10:24:39AM +0200, Stefan Agner wrote:
+> > Hi Thierry, hi Philipp,
+> > 
+> > Am 2014-05-15 09:51, schrieb Thierry Reding:
+> > > On Wed, May 14, 2014 at 11:45:57PM +0200, stefan@agner.ch wrote:
+> > >> From: Stefan Agner <stefan@agner.ch>
+> > >>
+> > >> This panels are sold by Toradex for Colibri T20/T30 and Apalis T30
+> > >> evaluation kits.
+> > >>
+> > >> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> > > 
+> > > Panel patches should go to the dri-devel mailing list as well.
+> > > 
+> > > Also a patch was posted only yesterday for a panel that seems to be the
+> > > exact same one as this, even though the name differs minimally, see:
+> > > 
+> > > 	https://patchwork.kernel.org/patch/4175251/
+> > > 
+> > > Adding Philipp on Cc so you guys can work together whether this is
+> > > indeed the same panel. The only differences seem to be in the vertical
+> > > front and back porches, but I suspect that either settings will work on
+> > > both Tegra and i.MX.
+> > 
+> > Its etm0700g0dh6 vs. et070080dh6, Philipp's panel is with captive multi
+> > touch, (hence the M I guess). The panel itself really looks the same.
+> > 
+> > I found this overview of EDT displays:
+> > http://www.dmbtechnics.com/scripts/passthru.php?id=7
+> > 
+> > There seem to be quite a lot variants with the same panel...
+> > 
+> > Regarding timings, I just checked the documentation, Philipp's timing
+> > really matches the documented ones, I miscalculated the vertical back
+> > porch.
 > 
-> How deep is deep? You run into numerical problems quite quickly, esp.
-> when you've got lots of CPUs. We've only got 64bit to play with, that
-> said there were some patches...
-
-It's like:
-
-	/cgroup/cpu/l1/l2/l3/l4/l5/l6/A
-
-about level 7, the issue can not be solved any more.
-
+> Okay, so that means that the panel works for you with the same timings
+> that Philipp has in the ETM0700G0DH6 patch? If so then I definitely
+> think we should be sharing the timings in the driver by making the two
+> compatible entries point to the same driver data.
 > 
-> What happens if you do the below, Google has been running with that, and
-> nobody was ever able to reproduce the report that got it disabled.
+> > How do we resolve that?
+> > 
+> > I would suggest that I split out that patch and remove the et070080dh6
+> > panel and send the other as a single patch to the dri-devel mailing list
+> > as well.
 > 
+> Yes, that would work.
 > 
+> > Philipp, could you add my display type (et070080dh6) to the compatible
+> > list of your mode/panel entry?
 > 
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index b2cbe81308af..e40819d39c69 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -40,7 +40,7 @@ extern void update_cpu_load_active(struct rq *this_rq);
->   * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
->   * increased costs.
->   */
-> -#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
-> +#if 1 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
+> I also noticed that Philipp's patch doesn't actually introduce the
+> device tree bindings, so that will have to be added as well.
 
-That is trying to solve the load overflow issue, correct?
+Hmm, yes. Should I take over the edt,et070080dh6.txt from Stefan's
+series and repost all, or can I just hand in the missing
+edt,etm0700g0dh6.txt separately?
 
-I'm not sure which account will turns to be huge when group get deeper,
-the load accumulation will suffer discount when passing up, isn't it?
-
-Anyway, will give it a try and see what happened :)
-
-Regards,
-Michael Wang
-
->  # define SCHED_LOAD_RESOLUTION	10
->  # define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
->  # define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
-> 
+regards
+Philipp
 
