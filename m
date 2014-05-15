@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaEOEBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 00:01:11 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:35708 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaEOEBJ (ORCPT
+	id S1751249AbaEOEGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 00:06:15 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:33073 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaEOEGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 00:01:09 -0400
+	Thu, 15 May 2014 00:06:14 -0400
+Date: Thu, 15 May 2014 00:06:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+Message-ID: <20140515040608.GA3825@htj.dyndns.org>
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+ <1398868249-26169-10-git-send-email-jslaby@suse.cz>
+ <20140501142414.GA31611@htj.dyndns.org>
+ <alpine.LNX.2.00.1405012206430.29834@pobox.suse.cz>
+ <20140501210242.GA28948@mtj.dyndns.org>
+ <20140501210943.GB28948@mtj.dyndns.org>
+ <537384B9.5090907@suse.cz>
+ <20140514151501.GA24142@suse.cz>
+ <20140514163238.GA15690@htj.dyndns.org>
+ <1400126037.5175.55.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <5373CBAD.2010505@gmail.com>
-References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
-	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
-	<5373CBAD.2010505@gmail.com>
-Date: Thu, 15 May 2014 09:31:07 +0530
-X-Google-Sender-Auth: xXx3vbe6kYu--PxSmtI0q_FcRjM
-Message-ID: <CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400126037.5175.55.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Tomasz,
+Hey, Mike.
 
-On 15 May 2014 01:31, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Rahul, Tomasz,
-[snip]
->> +     simplephys: simple-phys@10040000 {
->> +             compatible = "samsung,exynos5250-simple-phy";
->
-> Missing reg property or unnecessary @unit-address suffix in node name.
+On Thu, May 15, 2014 at 05:53:57AM +0200, Mike Galbraith wrote:
+> Hm.  The user would need to be able to identify and prioritize the
 
-I should have removed "@unit-address". I will change this.
+I suppose you mean userland by "the user"?
 
->
->> +             samsung,pmu-syscon = <&pmu_system_controller>;
->> +             #phy-cells = <1>;
->> +     };
->
-> In general, the idea is quite good, but I think this should rather bind
-> to the main PMU node, since this is just a part of the PMU, not another
-> device in the system. This also means that the PMU node itself should be
-> the PHY provider.
->
+> things, and have his settings stick.  Any dynamic pool business doing
+> allocations and/or munging priorities would be highly annoying.
 
-Please correct me if I got you wrong. You want somthing like this:
+There are some use cases where control over worker priority or other
+attributes are necessary.  I'm not sure using kthread for that reason
+is a good engineering choice tho.  Many of those cases end up being
+accidental.
 
-pmu_system_controller: system-controller@10040000 {
-         ...
-          simple_phys: simple-phys {
-                        compatible = "samsung,exynos5420-simple-phy";
-                        ...
-          };
-};
+I think it'd be healthier to identify the use cases and then provide
+proper interface for it.  Note that workqueue can now expose interface
+to modify concurrency, priority and cpumask to userland which
+writeback workers are already using.
 
-Regards,
-Rahul Sharma.
+In general, being restricted to using kthread internally for this
+reason seems wrong to me.  It's too direct influence on the
+implementation mechanism.
 
-> Otherwise looks good.
->
-> Best regards,
-> Tomasz
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> I saw a case where dynamic workers inflicted a realtime regression on a
+> user (but what they were getting away with previously was.. horrid).
+
+Yeah, exactly.  It'd be far better to identify the use case properly
+and provide the appropriate interface for it.  That said, even if it
+really requires diddling with kthread directly from userland,
+kthread_worker can still be used.  It's still one dedicated kthread
+but with structured usage from kernel side so that infrastructure
+features like freezer and possibly kgr can be implemented in a single
+place rather than scattered around all over the place.
+
+Thanks.
+
+-- 
+tejun
