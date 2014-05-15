@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991AbaEOTq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:46:58 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:59258 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146AbaEOTq4 (ORCPT
+	id S1755994AbaEOTrv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:47:51 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:39350 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaEOTru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:46:56 -0400
+	Thu, 15 May 2014 15:47:50 -0400
+Date: Thu, 15 May 2014 22:43:17 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: remove some dead code
+Message-ID: <20140515194317.GB4752@drone.musicnaut.iki.fi>
+References: <1400181381.11786.18.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140515084558.GI28328@moon>
-References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
- <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
- <5373DBE4.6030907@oracle.com> <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
- <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
- <20140514221140.GF28328@moon> <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
- <20140515084558.GI28328@moon>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 15 May 2014 12:46:34 -0700
-Message-ID: <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
-Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400181381.11786.18.camel@x220>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 1:45 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Wed, May 14, 2014 at 03:23:27PM -0700, Andy Lutomirski wrote:
->> I can summarize:
->>
->> On 3.14 and before, the vdso is just a bunch of ELF headers and
->> executable data.  When executed by 64-bit binaries, it reads from the
->> fixmap to do its thing.  That is, it reads from kernel addresses that
->> don't have vmas.  When executed by 32-bit binaries, it doesn't read
->> anything, since there was no 32-bit timing code.
->>
->> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
->> a separate vma containing two pages worth of time-varying read-only
->> data.  The vdso reads those pages using PIC references.
->
-> Andy, could you please point me where is the code which creates a second vma?
-> latest 3.15 master branch
+On Thu, May 15, 2014 at 09:16:21PM +0200, Paul Bolle wrote:
+> A check for CONFIG_CBUS_TAHVO_USB was added in v2.6.17. The related
+> Kconfig symbol has never been part of the tree. Remove that check.
+> 
+> Replace the while (...) loop with a simple if (...) statement, while
+> we're at it.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Search for _install_special_mapping in arch/x86/vdso.  It's in a
-different place in 3.15-rc and -next.
+Acked-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 
->
-> [root@fc ~]# cat /proc/self/maps
-> ...
-> 7fff57b6e000-7fff57b8f000 rw-p 00000000 00:00 0                          [stack]
-> 7fff57bff000-7fff57c00000 r-xp 00000000 00:00 0                          [vdso]
-> ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
-> [root@fc ~]#
->
+> ---
+> Untested, as usual.
+> 
+> A quick search across the history of the tree suggests CBUS_TAHVO_USB
+> was N770 related. Not that this matters much.
 
-What version and bitness is this?
+Yes, Tahvo USB is only used on Nokia 770 (which is the correct name,
+not N770). The driver is nowadays behind TAHVO_USB, but like you said
+the old symbol was never part of the mainline so it's OK to delete it.
 
-> Or you mean vsyscall area? If yes, then in criu we don't dump vsyscall zone.
-> On restore we don't touch  vsyscall either but for vdso there are two cases
-
-vsyscalls are almost gone now :)
-
->
->  - if there were no kernel change on vdso contents we simply use vdso provided
->    by the kernel at the moment of criu startup
->
->  - if vdso has been changed and looks different from one saved in image during
->    checkpoint, we map it from image but then patch (push jmp instruction) so
->    when application calls for some of vdso function it jumps into vdso code
->    saved in image and then jumps into vdso mapped by the kernel (ie kind of
->    proxy calls) This force us to do own Elf parsing inside criu to calculate
->    proper offsets.
-
-Yuck :)
-
---Andy
+A.
