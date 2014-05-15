@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaEOWOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:14:33 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:61766 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaEOWOc convert rfc822-to-8bit (ORCPT
+	id S1755812AbaEOWPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:15:54 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:42718 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbaEOWPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:14:32 -0400
+	Thu, 15 May 2014 18:15:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140515220808.GA13306@kroah.com>
-References: <1400190833-27882-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140515220808.GA13306@kroah.com>
-Date: Fri, 16 May 2014 00:14:31 +0200
-Message-ID: <CAFo99gbSLRaV+f=53b+ph+P=TH1faDZ0PATENVDtv_v+6mA+Xw@mail.gmail.com>
-Subject: Re: [PATCH] Fix for possible null pointer dereference in node.c
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Masood Mehmood <ody.guru@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20140515215722.GU28328@moon>
+References: <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
+ <20140514221140.GF28328@moon> <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
+ <20140515084558.GI28328@moon> <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
+ <20140515195320.GR28328@moon> <CALCETrWbf8XYvBh=zdyOBqVqRd7s8SVbbDX=O2X+zAZn83r-bw@mail.gmail.com>
+ <20140515201914.GS28328@moon> <20140515213124.GT28328@moon>
+ <CALCETrXe80dx+ODPF1o2iUMOEOO_JAdev4f9gOQ4SUj4JQv36Q@mail.gmail.com> <20140515215722.GU28328@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 15 May 2014 15:15:32 -0700
+Message-ID: <CALCETrUTM7ZJrWvWa4bHi0RSFhzAZu7+z5XHbJuP+==Cd8GRqw@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all, and Greg!
-
-Good idea!
-I will do it in all the other mail.
-
-
-Best regards
-Rickard Strandqvist
-
-
-2014-05-16 0:08 GMT+02:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Thu, May 15, 2014 at 11:53:53PM +0200, Rickard Strandqvist wrote:
->> There is otherwise a risk of a possible null pointer dereference.
+On Thu, May 15, 2014 at 2:57 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Thu, May 15, 2014 at 02:42:48PM -0700, Andy Lutomirski wrote:
+>> >
+>> > Looking forward the question appear -- will VDSO_PREV_PAGES and rest of variables
+>> > be kind of immutable constants? If yes, we could calculate where the additional
+>> > vma lives without requiring any kind of [vdso] mark in proc/pid/maps output.
 >>
->> Was largely found by using a static code analysis program called cppcheck.
+>> Please don't!
 >>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/staging/tidspbridge/rmgr/node.c |    4 ++--
->>  1 fil ändrad, 2 tillägg(+), 2 borttagningar(-)
+>> These might, in principle, even vary between tasks on the same system.
+>>  Certainly the relative positions of the vmas will be different
+>> between 3.15 and 3.16, since we need almost my entire cleanup series
+>> to reliably put them into their 3.16 location.  And I intend to change
+>> the number of pages in 3.16 or 3.17.
 >
-> Please work a bit on your Subject lines to make it easier to figure out
-> where the patches belong.
->
-> For this one, it should be:
->         Subject: staging: tidspridge: fix for possible null pointer dereference in node.c
-> or:
->         Subject: staging: tidspridge: node.c: fix for possible null pointer dereference
->
-> That way people can figure out _what_ node.c file you are referring to
-> and to see if they care about it or not :)
->
-> thanks,
->
-> greg k-h
+> There are other ways how to find where additional pages are laying but it
+> would be great if there a straightforward interface for that (ie some mark
+> in /proc/pid/maps output).
+
+I'll try to write a patch in time for 3.15.
+
+--Andy
