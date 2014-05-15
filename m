@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaEOFkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 01:40:04 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51376 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488AbaEOFkC (ORCPT
+	id S1753352AbaEOFqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 01:46:22 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59519 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaEOFqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 01:40:02 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <5374532D.7030602@lge.com>
-Date: Thu, 15 May 2014 14:39:57 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 01:46:20 -0400
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>, gurugio@gmail.com
-Subject: [RFC PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure
- mode
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+	<CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+	<CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
+Date: Thu, 15 May 2014 11:16:19 +0530
+X-Google-Sender-Auth: TSvTon2yayz-U9tCY-1j3qdeBEg
+Message-ID: <CAOqmu83ptKYHECdtLgEJLxbWa-VjxjKfw4dQo2gqQJP4doS_FQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 15, 2014 at 11:07 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 May 2014 11:00, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>> On Thu, May 15, 2014 at 10:34 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> On 15 May 2014 10:22, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>>>
+>>>> What i am saying that "what if we are not going to re-use again ? "
+>>>
+>>> That's what I said:
+>>>
+>>> Yes, it will keep occupying some space but there is only one instance
+>>> of that per 'cluster' and is very much affordable instead of building it again..
+>>>
+>>> So, we may not need to free it.
+>>
+>> Its not just about cpufreq. There may be others using OPPs as well.
+>> For example devfreq.
+>
+> And who is stopping these to use the already built ones? Exactly for
+> this reason I have been saying that lets not free OPPs already built.
+> Devfreq can simply use the ones built by cpufreq, even if cpufreq isn't
+> using it anymore.
 
-Hi,
+I think I did not make myself clear.
+Devfreq will have its own opp table associated with its own device. It
+does not uses the opp table of cpus.
+Hence there may be need to free the table if driver (at least devfreq)
+getting un-registered.
 
-My board is using Trustzone and running kernel is non-secure mode.
-But setup function of PL310 driver is only for secure mode kernel.
-
-What about adding an entry for non-secure mode setup function?
-
-I'm sorry for my poor code but I just wanna say what I need .
-
------------------------------- 8< -------------------------------
->From ee4b03fb2c12038c6bbb9f752558abae8d500c07 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Thu, 15 May 2014 14:06:36 +0900
-Subject: [PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
-
-For some platforms using Trustzone and running kernel in non-secure mode,
-another l2 setup function is necessary.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.c>
----
- arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++++
- arch/arm/mm/cache-l2x0.c                   |   26 +++++++++++++++++++++++++-
- 2 files changed, 34 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
-index 6dec6da..de31114 100644
---- a/arch/arm/include/asm/hardware/cache-l2x0.h
-+++ b/arch/arm/include/asm/hardware/cache-l2x0.h
-@@ -21,6 +21,7 @@
- #define __ASM_ARM_HARDWARE_L2X0_H
-
- #include <linux/errno.h>
-+#include <linux/of.h>
-
- #define L2X0_CACHE_ID                  0x000
- #define L2X0_CACHE_TYPE                        0x004
-@@ -110,11 +111,19 @@
- extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
- #if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_OF)
- extern int l2x0_of_init(u32 aux_val, u32 aux_mask);
-+extern int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
-+                       void (*fp)(const struct device_node *, u32 *, u32 *));
- #else
- static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
- {
-        return -ENODEV;
- }
-+static inline int l2x0_of_set_setup_nonsecure(const char *compatible,
-+                                             size_t len,
-+                     void (*fp)(const struct device_node *, u32 *, u32 *))
-+{
-+       return -ENODEV;
-+}
- #endif
-
- struct l2x0_regs {
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 728d644..582ea37 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -45,6 +45,7 @@ struct l2x0_regs l2x0_saved_regs;
- struct l2x0_of_data {
-        void (*setup)(const struct device_node *, u32 *, u32 *);
-        void (*save)(void);
-+       void (*setup_nonsecure)(const struct device_node *, u32 *, u32 *);
-        struct outer_cache_fns outer_cache;
- };
-
-@@ -968,6 +969,23 @@ static const struct of_device_id l2x0_ids[] __initconst = {
-        {}
- };
-
-+int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
-+                       void (*fp)(const struct device_node *, u32 *, u32 *))
-+{
-+       const struct of_device_id *id;
-+
-+       for (id = &l2x0_ids[0]; id->compatible != NULL; id++) {
-+               if (strncmp(id->compatible, compatible, len) == 0) {
-+                       struct l2x0_of_data *data = id->data;
-+
-+                       data->setup_nonsecure = fp;
-+                       return 0;
-+               }
-+       }
-+
-+       return -EINVAL;
-+}
-+
- int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
- {
-        struct device_node *np;
-@@ -989,8 +1007,14 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
-
-        /* L2 configuration can only be changed if the cache is disabled */
-        if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
--               if (data->setup)
-+
-+               if (data->setup_nonsecure)
-+                       data->setup_nonsecure(np, &aux_val, &aux_mask);
-+               else if (data->setup)
-                        data->setup(np, &aux_val, &aux_mask);
-+               else
-+                       /* no function to enable cache */
-+                       return -ENODEV;
-
-                /* For aurora cache in no outer mode select the
-                 * correct mode using the coprocessor*/
---
-1.7.9.5
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
