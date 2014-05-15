@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaEOJPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:15:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53697 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753068AbaEOJPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:15:11 -0400
-Date: Thu, 15 May 2014 11:14:38 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH RESEND v4 0/8] Add Allwinner A31 USB support
-Message-ID: <20140515091438.GR29258@lukather>
-References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140514123419.GK29258@lukather>
- <20140514160520.GA4679@kroah.com>
+	id S1753245AbaEOJPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:15:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43591 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751476AbaEOJPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:15:48 -0400
+Message-ID: <5374859F.5080902@ti.com>
+Date: Thu, 15 May 2014 14:45:11 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dQ2XShfnd5GHxhN7"
-Content-Disposition: inline
-In-Reply-To: <20140514160520.GA4679@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nishanth Menon <nm@ti.com>
+CC: Roger Quadros <rogerq@ti.com>, dt list <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+Subject: Re: [PATCH 03/17] phy: ti-pipe3: add external clock support for PCIe
+ PHY
+References: <1399383244-14556-1-git-send-email-kishon@ti.com>	<1399383244-14556-4-git-send-email-kishon@ti.com>	<53736CBC.2060702@ti.com>	<5373897C.6080504@ti.com> <CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>
+In-Reply-To: <CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Nishanth,
 
---dQ2XShfnd5GHxhN7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 14 May 2014 09:04 PM, Nishanth Menon wrote:
+> On Wed, May 14, 2014 at 10:19 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> Hi Roger,
+>>
+>> On Wednesday 14 May 2014 06:46 PM, Roger Quadros wrote:
+>>> Hi Kishon,
+>>>
+>>> On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
+>>>> APLL used by PCIE phy can either use external clock as input or the clock
+>>>> from DPLL. Added support for the APLL to use external clock as input here.
+>>>>
+>>>> Cc: Rajendra Nayak <rnayak@ti.com>
+>>>> Cc: Tero Kristo <t-kristo@ti.com>
+>>>> Cc: Paul Walmsley <paul@pwsan.com>
+>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/phy/ti-phy.txt |    4 ++
+>>>>  drivers/phy/phy-ti-pipe3.c                       |   75 ++++++++++++++--------
+>>>>  2 files changed, 52 insertions(+), 27 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> index bc9afb5..d50f8ee 100644
+>>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>> @@ -76,6 +76,10 @@ Required properties:
+>>>>     * "dpll_ref_m2" - external dpll ref clk
+>>>>     * "phy-div" - divider for apll
+>>>>     * "div-clk" - apll clock
+>>>> +   * "apll_mux" - mux for pcie apll
+>>>> +   * "refclk_ext" - external reference clock for pcie apll
+>>>> + - ti,ext-clk: To specifiy if PCIE apll should use external clock. Applicable
+>>>> +   only to PCIE PHY.
+>>>
+>>> Instead of specifying both clock sources "dpll_ref_clock", "refclk_ext" and then specifying a 3rd control option "ti,ext-clk" to select one of the 2 sources, why can't the DT just supply one clock source, i.e. the one that is being used in the board instance? The driver should then just configure the clock rate that is needed at that node. Shouldn't the clock framework automatically take care of muxing and parent rates?
+>>
+>> Want the dt to have all the clocks used by the controller. "ti,ext-clk" should
+>> go in the board dt file (suggested by Nishanth).
+>> The point is at some point later if some one wants to change the clock source,
+>> it should be a simple enabling "ti,ext-clk" flag instead of finding the clock
+>> phandle etc..
+> 
+> Wonder if that is implicit by the presence of  "refclk_ext" in the
+> clocks provided?
 
-Hi Greg,
+IMO the presence of "refclk_ext" is useless unless the board indicates it
+provides the clock source.
 
-On Wed, May 14, 2014 at 06:05:20PM +0200, Greg Kroah-Hartman wrote:
-> On Wed, May 14, 2014 at 02:34:19PM +0200, Maxime Ripard wrote:
-> > On Tue, May 13, 2014 at 05:44:14PM +0200, Maxime Ripard wrote:
-> > > Hi everyone,
-> > >=20
-> > > This patchset adds support for the USB controllers found in the
-> > > Allwinner A31.
-> > >=20
-> > > While the design is similar to the earlier Allwinner SoCs that are
-> > > already supported, a few details here and there change, like the fact
-> > > that the PHYs now have one clock per phy, while it used to be only one
-> > > for all the PHYs.
-> > >=20
-> > > Resent adding Alan Stern's Acked-by and puting Greg KH in the
-> > > recipients this time...
-> >=20
-> > Applied patches 2, 7 and 8.
->=20
-> Feel free to apply patches 5 and 6 to your tree, as your branch needs
-> these, with my:
->=20
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->=20
-> Or, if you want me to take them, just let me know and I will.
+refclk_ext holds phandle for *fixed-clock*, so irrespective of whether the
+board provides a clock or not, it can have that handle for configuring in PRCM.
+However if the board does not provide the clock source, configuring refclk_ext
+in PRCM is useless.
 
-You can merge them, I don't need them in any of my branch.
-
-Thanks,
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---dQ2XShfnd5GHxhN7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTdIV+AAoJEBx+YmzsjxAgJ0kQALobMEW0hgF49rlagystwri3
-ZCsI8Sjw0uljIH3MFiMfOQrgT8Ywa07LKVn59snKF0d6MNYb54LjKKQAc6pKuItP
-6Br7DQbEBC6pE+l1uaDaTvsCo4AG/kil35WBiQ6pp+HNbXod+ZcORQTHe2K8oHHA
-o79Pu9VMKVPZtknX8cgfDx1DjufDo1zjrLG2RSYx+Kj758OTcXrec4++tTReZzAu
-x67adxjH4eimcedz94Y1Tw8ogCYEN72ZNZWUbpnKP7sE3K5ACsOEImxDxMFBiycv
-Ua8U69SXEKdJTkmn2L/Fg4N6wPm9xvQzjXU15Jc7Oo7XiDykKVqnyIXIbPJMwLi6
-n+WtLFuosG1pgoVbfPj/rIYWcGINdhXbz59F21rdi0FW4Zprjr/Xvk1f66Nc+fiV
-2b8Scx6ZnBh6gC7CpVbJUxduGYS7giL82LGibSZz7ivJf/UymoR8Q2ffNB2lRAVo
-Rpa7GTMab0NZnvAWikcmUTjrSnr2DoJ339v2Mvl8c6X2VemWjTjZ9jISdx/zyuOY
-eJeZzDAkTyMLvgdREd7/wg54NnAT2OuZhrX1secOTfeQ3U0lXJ9+J9HFBqU6zhyN
-GQ9fC7dFsHwYBxnePT9hBaAMD8dzwabUBs1rsazvECjJzbgCKl5xCoev1yMIO+rl
-mWX8krULIxyUscQSk5s8
-=tPO3
------END PGP SIGNATURE-----
-
---dQ2XShfnd5GHxhN7--
+Thanks
+Kishon
