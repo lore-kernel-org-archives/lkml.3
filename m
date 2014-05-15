@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696AbaEOVPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:15:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715AbaEOVPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:15:32 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, sds@tycho.nsa.gov,
-        eparis@redhat.com
-Subject: Re: [2/2] conditionally reschedule in hashtab_insert while loading selinux policy.
-Date: Thu, 15 May 2014 17:15:29 -0400
-Message-ID: <3386355.fA7X58KLEY@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.13 (Linux/3.14.1-gentoo; KDE/4.13.0; x86_64; ; )
-In-Reply-To: <20140515190353.GB16816@redhat.com>
-References: <20140515190353.GB16816@redhat.com>
+	id S1755783AbaEOVQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:16:04 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42586 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752681AbaEOVQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:16:02 -0400
+Date: Thu, 15 May 2014 17:16:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andrew Bresticker <abrestic@chromium.org>
+cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH 06/10] usb: xhci: Add Tegra XHCI host-controller
+ driver
+In-Reply-To: <CAL1qeaHm7U2NVDeVZS-Tiz5ntkk4c13RR_1ws9MTYGGoGCOB5A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1405151709100.887-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 15, 2014 03:03:53 PM Dave Jones wrote:
-> After silencing the sleeping warning in mls_convert_context() I started
-> seeing similar traces from hashtab_insert. Do a cond_resched there too.
-> 
-> Signed-off-by: Dave Jones <davej@redhat.com>
+On Thu, 15 May 2014, Andrew Bresticker wrote:
 
-Merged to the SELinux #next branch, thanks.
-
-> diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
-> index 933e735bb185..2cc496149842 100644
-> --- a/security/selinux/ss/hashtab.c
-> +++ b/security/selinux/ss/hashtab.c
-> @@ -6,6 +6,7 @@
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
->  #include <linux/errno.h>
-> +#include <linux/sched.h>
->  #include "hashtab.h"
+> > This does not feel appropriate at all: Rather than creating a child device,
+> > you should have a specific driver that hooks into functions exported
+> > by the xhci core. See Documentation/driver-model/design-patterns.txt
 > 
->  struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const
-> void *key), @@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void
-> *key, void *datum) u32 hvalue;
->  	struct hashtab_node *prev, *cur, *newnode;
-> 
-> +	cond_resched();
-> +
->  	if (!h || h->nel == HASHTAB_MAX_NODES)
->  		return -EINVAL;
+> This is how DWC3, currently the only in-tree non-PCI XHCI host driver,
+> is structured - see drivers/usb/dwc3/host.c.  The recently proposed
+> Armada XHCI driver [1] just adds clock support and a hook in
+> xhci-plat's probe() to do the platform-specific initialization.
+> Tegra's XHCI driver initialization is quite a bit more complicated,
+> mainly due to the need for external firmware and specific ordering
+> (e.g. firmware messages should only be enabled after the HCD is
+> created).  I could do away with the xhci-plat sub-device and just
+> create a Tegra hc_driver, but it seems silly to have three XHCI
+> platform drivers structured in three different ways.  USB folks, do
+> you have an opinion on how this should be done?
 
--- 
-paul moore
-security and virtualization @ redhat
+Felipe and I have differing opinions.  I prefer not to create an extra 
+device level, and he does (that's why the non-PCI EHCI drivers don't do 
+it and the dwc3 driver does).  I consider Felipe's approach to be an 
+example of the "Midlayer Mistake" anti-pattern from the LWN 
+article mentioned earlier in this thread -- I don't know what he thinks 
+about my approach.
+
+Anyway, unless I'm totally mistaken, you wouldn't end up with three
+platform drivers structured in three different ways.  Either way, your
+new driver would be structured like one of the existing two.
+
+Alan Stern
 
