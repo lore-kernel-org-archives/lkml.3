@@ -1,147 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaEOGQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:16:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45205 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403AbaEOGP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:15:57 -0400
-Message-ID: <53745B74.2040808@ti.com>
-Date: Thu, 15 May 2014 11:45:16 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753941AbaEOGQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:16:09 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:11876 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753594AbaEOGQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 02:16:06 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-16.tower-194.messagelabs.com!1400134561!11820583!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 15 May 2014 08:16:01 +0200
+Date: Thu, 15 May 2014 08:15:55 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 14 (tty/serial/men_z135_uart.c)
+Message-ID: <20140515061555.GA13254@jtlinux>
+References: <20140514182649.33e63e49@canb.auug.org.au>
+ <53739A4E.2040009@infradead.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <tj@kernel.org>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <1400060942-10588-2-git-send-email-antoine.tenart@free-electrons.com> <537341AF.5030105@ti.com> <20140514102122.GA11140@kwain>
-In-Reply-To: <20140514102122.GA11140@kwain>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53739A4E.2040009@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 14, 2014 at 09:31:10AM -0700, Randy Dunlap wrote:
+> On 05/14/2014 01:26 AM, Stephen Rothwell wrote:
+> > Hi all,
+> >
+> > Changes since 20140513:
+> >
+>
+> on x86_64:
+>
+> CONFIG_SERIAL_CORE=m
+> but SERIAL_MEN_Z135=y.
+>
+> drivers/built-in.o: In function `men_z135_remove':
+> men_z135_uart.c:(.text+0x5bc53): undefined reference to `uart_remove_one_port'
+> drivers/built-in.o: In function `men_z135_set_termios':
+> men_z135_uart.c:(.text+0x5c3b5): undefined reference to `uart_get_baud_rate'
+> men_z135_uart.c:(.text+0x5c415): undefined reference to `uart_update_timeout'
+> drivers/built-in.o: In function `men_z135_handle_tx':
+> men_z135_uart.c:(.text+0x5c8f4): undefined reference to `uart_write_wakeup'
+> drivers/built-in.o: In function `men_z135_intr':
+> men_z135_uart.c:(.text+0x5ce28): undefined reference to `uart_handle_dcd_change'
+> men_z135_uart.c:(.text+0x5ce51): undefined reference to `uart_handle_cts_change'
+> drivers/built-in.o: In function `men_z135_probe':
+> men_z135_uart.c:(.text+0x5cf96): undefined reference to `uart_add_one_port'
+> drivers/built-in.o: In function `men_z135_init':
+> men_z135_uart.c:(.init.text+0x26e9): undefined reference to `uart_register_driver'
+> men_z135_uart.c:(.init.text+0x2766): undefined reference to `uart_unregister_driver'
+> drivers/built-in.o: In function `men_z135_exit':
+> men_z135_uart.c:(.exit.text+0xe4): undefined reference to `uart_unregister_driver'
+> make[1]: *** [vmlinux] Error 1
+>
 
-On Wednesday 14 May 2014 03:51 PM, Antoine Ténart wrote:
-> Hi,
-> 
-> On Wed, May 14, 2014 at 03:43:03PM +0530, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Wednesday 14 May 2014 03:18 PM, Antoine Ténart wrote:
-> 
-> […]
-> 
->>> +#define to_berlin_sata_phy_priv(desc)	\
->>> +	container_of((desc), struct phy_berlin_priv, phys[(desc)->index])
->>> +
->>> +struct phy_berlin_desc {
->>> +	struct phy	*phy;
->>> +	u32		val;
->>> +	unsigned	index;
->>> +};
->>> +
->>> +struct phy_berlin_priv {
->>> +	void __iomem	*base;
->>> +	spinlock_t	lock;
->>> +	struct phy_berlin_desc	phys[BERLIN_SATA_PHY_NB];
->>
->> Can't we do away with hardcoding BERLIN_SATA_PHY_NB?
-> 
-> We can't if we want to be able to use the container_of macro in
-> to_berlin_sata_phy_priv(). And we want a common structure to store the
-> common spinlock and base address.
+Hi Randy,
 
-to get phy_berlin_priv, you can use dev_get_drvdata(phy->dev->parent).
+There is a not yet merged patch from Arnd Bergmann, which can be found here:
+https://lkml.org/lkml/2014/4/29/529
 
-> 
-> […]
-> 
->>> +		/*
->>> +		 * By default the PHY node is used to request and match a PHY.
->>> +		 * We describe one PHY per sub-node here. Use the right node.
->>> +		 */
->>> +		phy->dev.of_node = child;
->>> +
->>> +		priv->phys[phy_id].phy = phy;
->>> +		priv->phys[phy_id].val = desc[phy_id].val;
->>> +		priv->phys[phy_id].index = phy_id;
->>> +		phy_set_drvdata(phy, &priv->phys[phy_id]);
->>> +
->>> +		/* Make sure the PHY is off */
->>> +		phy_berlin_sata_power_off(phy);
->>> +
->>> +		phy_provider = devm_of_phy_provider_register(&phy->dev,
->>> +							     of_phy_simple_xlate);
->>> +		if (IS_ERR(phy_provider))
->>> +			return PTR_ERR(phy_provider);
->>
->> was this intentional? registering multiple PHY providers?
-> 
-> Yes. Each sub-node describe a PHY and register as a PHY provider. This
-> allow to reference the PHY as <&sata_phy0> and not <&sata_phy 0>. It
-> would be confusing to have a sub-node sata_phy0 and to use its parent
-> to access it.
+I've just checked and it resolves the problem at my place, can you please
+verify it as well.
 
-It is still a single PHY provider, so you can't register multiple PHY
-providers. So in this case <&sata_phy 0> is not that bad.
-
-However phy-core.c should be patched with the following (only compile tested)
-
->From 2517d4c0ad7f13abc2613516ef2b222a1fbcb550 Mon Sep 17 00:00:00 2001
-From: Kishon Vijay Abraham I <kishon@ti.com>
-Date: Thu, 15 May 2014 11:32:57 +0530
-Subject: [PATCH] phy: phy-core: Support modelling multi-PHY PHY nodes as
- subnodes of PHY PROVIDER
-
-When a single PHY provider implementing multiple PHYs is represented in dt,
-the PHYs should be modelled as sub nodes of the PHY PROVIDER node.
-
-So the consumers using the PHY will have the phandle of the sub node rather
-than the phandle of the PHY PROVIDER. Amended *of_phy_provider_lookup* in
-PHY core to return the PHY PROVIDER even when the phandle of the PHY PROVIDERs
-sub node is provided.
-
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/phy/phy-core.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..124c6ec 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -83,10 +83,18 @@ static struct phy *phy_lookup(struct device *device, const
-char *port)
- static struct phy_provider *of_phy_provider_lookup(struct device_node *node)
- {
-        struct phy_provider *phy_provider;
-+       struct device_node *child;
-
-        list_for_each_entry(phy_provider, &phy_provider_list, list) {
--               if (phy_provider->dev->of_node == node)
-+               if (phy_provider->dev->of_node != node) {
-+                       for_each_child_of_node(phy_provider->dev->of_node,
-+                               child) {
-+                               if (child == node)
-+                                       return phy_provider;
-+                       }
-+               } else {
-                        return phy_provider;
-+               }
-        }
-
-        return ERR_PTR(-EPROBE_DEFER);
--- 
-1.7.9.5
-
-Thanks
-Kishon
+Thanks,
+	Johannes
