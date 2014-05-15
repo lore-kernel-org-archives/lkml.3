@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaEOU7Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:59:25 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36113 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826AbaEOU6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755891AbaEOU6R (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 May 2014 16:58:17 -0400
-Date: Thu, 15 May 2014 16:58:15 -0400 (EDT)
-Message-Id: <20140515.165815.500119926518586830.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: kernel-janitors@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] ip_tunnel: delete unneeded call to netdev_priv
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1400125401-15512-3-git-send-email-Julia.Lawall@lip6.fr>
-References: <1400125401-15512-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 May 2014 13:58:17 -0700 (PDT)
+Received: from userp1040.oracle.com ([156.151.31.81]:43688 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826AbaEOU6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 16:58:14 -0400
+Date: Thu, 15 May 2014 23:57:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Konrad Zapalowicz <bergo.torino@gmail.com>
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/rtl8723au fix sparse warning in os_initfs.c
+Message-ID: <20140515205739.GE8897@mwanda>
+References: <1400186614-5978-1-git-send-email-bergo.torino@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400186614-5978-1-git-send-email-bergo.torino@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Thu, 15 May 2014 05:43:20 +0200
+On Thu, May 15, 2014 at 10:43:34PM +0200, Konrad Zapalowicz wrote:
+> This commit fixes the following sparse warning:
+> 
+> drivers/staging/rtl8723au/os_dep/os_intfs.c:
+>     - 322:14: warning: restricted __be16 degrades to integer
+> 
+> Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
+> ---
+>  drivers/staging/rtl8723au/os_dep/os_intfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/rtl8723au/os_dep/os_intfs.c b/drivers/staging/rtl8723au/os_dep/os_intfs.c
+> index 57eca7a..31a70af 100644
+> --- a/drivers/staging/rtl8723au/os_dep/os_intfs.c
+> +++ b/drivers/staging/rtl8723au/os_dep/os_intfs.c
+> @@ -319,7 +319,7 @@ u16 rtw_recv_select_queue23a(struct sk_buff *skb)
+>  
+>  	memcpy(&eth_type, pdata + (ETH_ALEN << 1), 2);
+>  	switch (eth_type) {
+> -	case htons(ETH_P_IP):
+> +	case be16_to_cpu(htons(ETH_P_IP)):
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Netdev_priv is an accessor function, and has no purpose if its result is
-> not used.
-> 
-> A simplified version of the semantic match that fixes this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@ local idexpression x; @@
-> -x = netdev_priv(...);
-> ... when != x
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+You should be more careful.  This would have just made the code buggy.
 
-Applied.
+Anyway someone already cleaned up this code.  You should be working
+against linux-next.
+
+regards,
+dan carpenter
+
