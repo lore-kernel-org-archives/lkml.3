@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaEOU7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:59:05 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:17532 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaEOU7C (ORCPT
+	id S1756107AbaEOU7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:59:25 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36113 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826AbaEOU6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:59:02 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 15 May 2014 14:00:37 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Andrew Duggan <aduggan@synaptics.com>
-Subject: [PATCH] HID: rmi: fix masks for x and w_x data
-Date: Thu, 15 May 2014 13:52:29 -0700
-Message-ID: <1400187149-7619-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+	Thu, 15 May 2014 16:58:17 -0400
+Date: Thu, 15 May 2014 16:58:15 -0400 (EDT)
+Message-Id: <20140515.165815.500119926518586830.davem@davemloft.net>
+To: Julia.Lawall@lip6.fr
+Cc: kernel-janitors@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] ip_tunnel: delete unneeded call to netdev_priv
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1400125401-15512-3-git-send-email-Julia.Lawall@lip6.fr>
+References: <1400125401-15512-3-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 May 2014 13:58:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The F11 data in the HID report contains four bits of data for w_x and the least significant bits
-of x. Currently only the first three bits are being used which is resulting in small jumps in
-the position data on the x axis and in the w_x data.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Thu, 15 May 2014 05:43:20 +0200
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
- drivers/hid/hid-rmi.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Netdev_priv is an accessor function, and has no purpose if its result is
+> not used.
+> 
+> A simplified version of the semantic match that fixes this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@ local idexpression x; @@
+> -x = netdev_priv(...);
+> ... when != x
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 7ebdc96..c529b03 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -277,9 +277,9 @@ static void rmi_f11_process_touch(struct rmi_data *hdata, int slot,
- 	input_mt_report_slot_state(hdata->input, MT_TOOL_FINGER,
- 			finger_state == 0x01);
- 	if (finger_state == 0x01) {
--		x = (touch_data[0] << 4) | (touch_data[2] & 0x07);
-+		x = (touch_data[0] << 4) | (touch_data[2] & 0x0F);
- 		y = (touch_data[1] << 4) | (touch_data[2] >> 4);
--		wx = touch_data[3] & 0x07;
-+		wx = touch_data[3] & 0x0F;
- 		wy = touch_data[3] >> 4;
- 		wide = (wx > wy);
- 		major = max(wx, wy);
--- 
-1.9.1
-
+Applied.
