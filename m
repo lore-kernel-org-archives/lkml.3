@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688AbaEOTVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:21:08 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:50452 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaEOTVF (ORCPT
+	id S1755742AbaEOTVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:21:19 -0400
+Received: from smtp-out-167.synserver.de ([212.40.185.167]:1353 "EHLO
+	smtp-out-123.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751000AbaEOTVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:21:05 -0400
-Date: Thu, 15 May 2014 22:16:31 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 0/5] tsc2005 DT binding
-Message-ID: <20140515191631.GA4752@drone.musicnaut.iki.fi>
-References: <1398470179-20880-1-git-send-email-sre@kernel.org>
- <20140515142315.GA15716@earth.universe>
+	Thu, 15 May 2014 15:21:16 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 21065
+Message-ID: <537513A8.701@metafoo.de>
+Date: Thu, 15 May 2014 21:21:12 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515142315.GA15716@earth.universe>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Tushar Behera <tushar.behera@linaro.org>
+CC: Jassi Brar <jassisinghbrar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-ALSA <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] dma: pl330: Add support for DMA_PAUSE command
+References: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org> <CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com> <CAHbNUh0fVND_oGLXWzsyKzbmJc_=FqhZTAnVHE4GGZ5aaJQbEg@mail.gmail.com> <5373607D.2000200@metafoo.de> <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com>
+In-Reply-To: <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/15/2014 02:01 PM, Tushar Behera wrote:
+> On 14 May 2014 17:54, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 05/14/2014 02:07 PM, Tushar Behera wrote:
+>>>
+>>> On 14 May 2014 17:29, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>>>
+>>>> On Wed, May 14, 2014 at 8:53 AM, Tushar Behera <tushar.behera@linaro.org>
+>>>> wrote:
+>>>>>
+>>>>> While playing back audio, pmc_dmaengine requests the DMA channel to
+>>>>> stop DMA transmission through DMA_PAUSE command.
+>>>>>
+>>>>> Currently PL330 driver doesn't support DMA pause command, leaving
+>>>>> the DMA state inconsistent when the system resumes. Instead, it would
+>>>>> be better to terminate the DMA transfer during suspend and restart
+>>>>> again during resume.
+>>>>>
+>>>>> Tested with audio playback across a suspend-resume cycle.
+>>>>>
+>>>> What is pmc_dmaengine? How does DMA_PAUSE help, when there is no
+>>>> DMA_RESUME?
+>>>>
+>>>
+>>> Sorry, it is a typo.
+>>>
+>>> sound/core/pcm_dmaengine.c:snd_dmaengine_pcm_trigger() -->
+>>> dmaengine_pause() is called during system suspend.
+>>
+>>
+>> It is only called if the DMA driver has support for pausing and resuming DMA
+>> transfers. Or at least that is the intention.
+>>
+>> - Lars
+>
+> During suspend, snd_dmaengine_pcm_trigger():SNDRV_PCM_TRIGGER_SUSPEND
+> is called which unconditionally calls dmaengine_pause(). Should we
+> update snd_dmaengine_pcm_trigger() to check for DMA pause/resume
+> support and call dmaengine_pause() or dmaengine_terminate_all()
+> accordingly?
 
-On Thu, May 15, 2014 at 04:23:16PM +0200, Sebastian Reichel wrote:
-> On Sat, Apr 26, 2014 at 01:56:14AM +0200, Sebastian Reichel wrote:
-> > This adds device tree support for the tsc2005 touchscreen
-> > controller, which is currently only used by the Nokia N900
-> > board.
-> > 
-> > The patch does not update the reset pin handling for platform
-> > data based probe to avoid merge conflicts. The n900 platform
-> > code will be removed in the near future (3.16?) and the driver
-> > can be simplified once that has happened.
-> 
-> Ping. It would be nice to see this patchset in 3.16, since its
-> the last important hardware component missing for N900 DT boot.
+As far as I understand it we do not have to do anything for TRIGGER_SUSPEND 
+if we do not set the SNDRV_PCM_INFO_RESUME flag. It looks like 
+TRIGGER_SUSPEND is called unconditionally during suspend. But since the 
+error code is ignored it should be fine if we just call dmaengine_pause() 
+and that return -ENOSYS or similar.
 
-FWIW, for all these patches feel free to add:
+Are you seeing an actual issue that you are trying to fix with your patch?
 
-	Acked-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+- Lars
 
-Thanks for great work,
-
-A.
