@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaEORCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:02:52 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:59934 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752183AbaEORCv (ORCPT
+	id S1754311AbaEOREi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:04:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:23228 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752392AbaEOREh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:02:51 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoMRAGLydFNXQwiB/2dsb2JhbABZgwaDPqhZBAEBAQEBAQUBmhkCAoERF3SCUxMcIxiBAiQTiEUB0SuFVIh6hEcBA48qiiYBiw2IB4M4Ow
-Date: Thu, 15 May 2014 19:02:48 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/hfsplus/options.c: replace seq_printf by seq_puts
-Message-Id: <20140515190248.2692f498ec1ecd5fe26c30ff@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
+	Thu, 15 May 2014 13:04:37 -0400
+Date: Thu, 15 May 2014 13:04:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [patch 2/2] rtmutex: Avoid pointless requeueing in the deadlock
+ detection chain walk
+Message-ID: <20140515130435.24132d1b@gandalf.local.home>
+In-Reply-To: <20140514200104.670614672@linutronix.de>
+References: <20140514195705.618583609@linutronix.de>
+	<20140514200104.670614672@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace seq_printf where possible
+On Wed, 14 May 2014 20:03:27 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/hfsplus/options.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+> In case the dead lock detector is enabled we follow the lock chain to
+> the end in rt_mutex_adjust_prio_chain, even if we could stop earlier
+> due to the priority/waiter constellation.
 
-diff --git a/fs/hfsplus/options.c b/fs/hfsplus/options.c
-index 68537e8..c90b72e 100644
---- a/fs/hfsplus/options.c
-+++ b/fs/hfsplus/options.c
-@@ -173,9 +173,8 @@ int hfsplus_parse_options(char *input, struct hfsplus_sb_info *sbi)
- 			if (p)
- 				sbi->nls = load_nls(p);
- 			if (!sbi->nls) {
--				pr_err("unable to load "
--						"nls mapping \"%s\"\n",
--					p);
-+				pr_err("unable to load nls mapping \"%s\"\n",
-+				       p);
- 				kfree(p);
- 				return 0;
- 			}
-@@ -232,8 +231,8 @@ int hfsplus_show_options(struct seq_file *seq, struct dentry *root)
- 	if (sbi->nls)
- 		seq_printf(seq, ",nls=%s", sbi->nls->charset);
- 	if (test_bit(HFSPLUS_SB_NODECOMPOSE, &sbi->flags))
--		seq_printf(seq, ",nodecompose");
-+		seq_puts(seq, ",nodecompose");
- 	if (test_bit(HFSPLUS_SB_NOBARRIER, &sbi->flags))
--		seq_printf(seq, ",nobarrier");
-+		seq_puts(seq, ",nobarrier");
- 	return 0;
- }
--- 
-1.8.4.5
+I'm assuming that we want to detect deadlocks for all futex calls
+even when CONFIG_DEBUG_RT_MUTEXES is set?
+
+In kernel/locking/rtmutex_common.h:
+
+#ifdef CONFIG_DEBUG_RT_MUTEXES
+# include "rtmutex-debug.h"
+#else
+# include "rtmutex.h"
+#endif
+
+In kernel/locking/rtmutex.h:
+
+#define debug_rt_mutex_detect_deadlock(w,d)             (d)
+
+In kernel/locking/rtmutex.h:
+
+static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
+                                                 int detect)
+{
+        return (waiter != NULL);
+}
+
+Shouldn't that be: return detect || waiter != NULL;
+
+?
+
+I know this a separate issue from this patch series, but it's
+something that I just noticed.
+
+> 
+> But once we are not longer the top priority waiter in a certain step
+
+"we are no longer the top"
+
+> or the task holding the lock has already the same priority then there
+> is no point in dequeing and enqueing along the lock chain as there is
+> no change at all.
+> 
+> So stop the queueing at this point.
+
+I'll continue reviewing the patch.
+
+-- Steve
