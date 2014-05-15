@@ -1,68 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaEOWv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:51:58 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:34841 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754031AbaEOWv5 (ORCPT
+	id S1756137AbaEOWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:53:58 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.97]:48354 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660AbaEOWx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:51:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkHAO5DdVN5LL1s/2dsb2JhbABZgwaDPqhfAQEBAQEBBpodAYESF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIQNFXFxaFPoh6B4MrgRUEmVCTFYNIKw
-Date: Fri, 16 May 2014 08:51:41 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>, sandeen@redhat.com,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515225141.GA26353@dastard>
-References: <20140514111449.GB5824@quack.suse.cz>
- <20140514112619.GA10637@mguzik.redhat.com>
- <20140514113945.GC5824@quack.suse.cz>
- <20140514220052.GD5421@dastard>
- <20140514223745.GF5421@dastard>
- <5373F0D6.4090600@redhat.com>
- <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
- <20140515104746.GF10637@mguzik.redhat.com>
- <20140515222135.GZ26353@dastard>
- <20140515223439.GA24089@mguzik.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 15 May 2014 18:53:56 -0400
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1399139966-10625-1-git-send-email-peter@piie.net> <20140515160508.GA27909@developer>
+Message-ID: <cone.1400194431.560139.1402.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
+        Zhang Rui <rui.zhang@intel.com>, Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v3 0/6] acerhdf/thermal: adding new models, appropriate
+         governor and minor clean up
+Date: Fri, 16 May 2014 00:53:51 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
-In-Reply-To: <20140515223439.GA24089@mguzik.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:34:40AM +0200, Mateusz Guzik wrote:
-> On Fri, May 16, 2014 at 08:21:35AM +1000, Dave Chinner wrote:
-> > > IOW, a new column in mountinfo. For frozen filesystems it would contain
-> > > 'frozen_by=[%s]:[%d]' (escaped comm, pid).
-> > 
-> > I really don't see that the process that froze the filesystem is
-> > particularly useful - it many cases that process is long gone (e.g.
-> > fsfreeze is being used to allow a HW array to take a snapshot). Just
-> > the fact it is in the process of freezing (if stuck, stack trace in
-> > sysrq-w should be present) or frozen (freezing process may be long
-> > gone, and is mostly irrelevant because you're now tracking down why
-> > a thaw hasn't happened)...
+Hi Eduardo,
+
+Eduardo Valentin writes:
+
+> Hello Peter,
 > 
-> There are deamons which perform freezing and unfreezing on their own.
-> Thus storing the name along with pid helps to determine whether someone
-> went behind such daemon's back, or maybe it's the daemon which "forgot" to
-> unfreeze after all.
+> On Sat, May 03, 2014 at 07:59:20PM +0200, Peter Feuerer wrote:
+>> 
+>> Hi,
+>> 
+>> This patch series is intended to:
+>> 
+>>   * Introduce "manual mode" support (Patch 1 & 2), which is needed to control
+>>     the fan of a few new models.
+>> 
+>>   * Add an appropriate thermal governor (Patch 3 & 4).  Manipulating and
+>>     fiddling around with the step-wise governor has been a very fragile thing
+>>     in the past and as it broke again, I used the opportunity to add a two
+>>     point thermal governor which implements the actual fan handling required by
+>>     acerhdf and puts from my point of view things straight.
+>> 
+> 
+> Can you please provide more groundings why step_wise is not working?
 
-Such a daemon should be logging the fact that it's freezing and
-thawing the filesystem. The kernel is not the place to track what
-buggy userspace applications are doing wrong.
+Step_wise does (or did) not support hysteresis functionality, so what we've
+done in the past was to manipulate the fan handling within acerhdf (e.g.
+reporting different trip temperature, based whether the fan is on or not).
+But this was very fragile and with each change in step_wise we had to find
+another method to somehow fit acerhdf into it again.  Step_wise is clearly
+intended for fans which can be regulated in speed and it has some fancy
+algorithms like trend monitoring which work fine there.
 
-Cheers,
+But for the audience of acerhdf it has always been overkill and they've noticed
+broken fan control, when things changed in step_wise again.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+> I had a look on bang bang proposal patch and to me, at a first glance,
+> step_wise should cover the target behavior. Of course, that also depend 
+> on the cooling device you attach to it.
+
+Actually even Rui stated a while ago, creation of a separate governor would be
+one thinkable solution to get a more robust solution for the two step
+regulation of acerhdf.
+
+
+> Is it possible to report the problems you have with step_wise? This way
+> we could benefit the other users of it as well.
+
+There is no problem in step_wise in general.  It is just so, that the 
+governor is overkill for the simple on-off fan of acerhdf.
+
+And what's the deal of having plugable governors, when you try to fit every
+single feature into one gigantic?
+Aren't the unix philosophies of modularity, serparation and simplicity valid
+in the kernel too?
+
+kind regards,
+--peter;
+
+> 
+> 
+> 
+> 
+>>   * Do some minor clean up like:
+>>       - adding second trip point for critical temperature (Patch 5)
+>>       - removing _t suffix from struct which isn't typedef and replace unsigned
+>>         char by u8 (Patch 6)
+>> 
+>> Thanks and kind regards,
+>> peter
+>> 
+>> 
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Andreas Mohr <andi@lisas.de>
+>> Cc: Borislav Petkov <bp@suse.de>
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Cc: Javi Merino <javi.merino@arm.com>
+>> 
+>> 
+>> Peter Feuerer (6):
+>>   acerhdf: Adding support for "manual mode"
+>>   acerhdf: Adding support for new models
+>>   thermal: Added Bang-bang thermal governor
+>>   acerhdf: Use bang-bang thermal governor
+>>   acerhdf: added critical trip point
+>>   acerhdf: minor clean up
+>> 
+>>  drivers/platform/x86/Kconfig    |   2 +-
+>>  drivers/platform/x86/acerhdf.c  | 260 +++++++++++++++++++++++++---------------
+>>  drivers/thermal/Kconfig         |  10 ++
+>>  drivers/thermal/Makefile        |   1 +
+>>  drivers/thermal/gov_bang_bang.c | 131 ++++++++++++++++++++
+>>  drivers/thermal/thermal_core.c  |   5 +
+>>  drivers/thermal/thermal_core.h  |   8 ++
+>>  7 files changed, 321 insertions(+), 96 deletions(-)
+>>  create mode 100644 drivers/thermal/gov_bang_bang.c
+>> 
+>> -- 
+>> 1.9.2
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
