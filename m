@@ -1,124 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaEOJiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:38:13 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:64069 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956AbaEOJiJ (ORCPT
+	id S1755047AbaEOJij (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:38:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38287 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927AbaEOJiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:38:09 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v2 14/14] mmc: mmci: Add Qcom specific pio_read function.
-Date: Thu, 15 May 2014 10:38:04 +0100
-Message-Id: <1400146684-30384-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Thu, 15 May 2014 05:38:05 -0400
+Message-ID: <53748AFA.8010109@canonical.com>
+Date: Thu, 15 May 2014 11:38:02 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de>
+In-Reply-To: <53748702.6070606@vodafone.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+op 15-05-14 11:21, Christian König schreef:
+> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
+>> op 14-05-14 17:29, Christian König schreef:
+>>>> +    /* did fence get signaled after we enabled the sw irq? */
+>>>> +    if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
+>>>> +        radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
+>>>> +        return false;
+>>>> +    }
+>>>> +
+>>>> +    fence->fence_wake.flags = 0;
+>>>> +    fence->fence_wake.private = NULL;
+>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
+>>>> +    __add_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
+>>>> +    fence_get(f);
+>>> That looks like a race condition to me. The fence needs to be added to the wait queue before the check, not after.
+>>>
+>>> Apart from that the whole approach looks like a really bad idea to me. How for example is lockup detection supposed to happen with this? 
+>> It's not a race condition because fence_queue.lock is held when this function is called.
+> Ah, I see. That's also the reason why you moved the wake_up_all out of the processing function.
+Correct. :-)
+>> Lockup's a bit of a weird problem, the changes wouldn't allow core ttm code to handle the lockup any more,
+>> but any driver specific wait code would still handle this. I did this by design, because in future patches the wait
+>> function may be called from outside of the radeon driver. The official wait function takes a timeout parameter,
+>> so lockups wouldn't be fatal if the timeout is set to something like 30*HZ for example, it would still return
+>> and report that the function timed out.
+> Timeouts help with the detection of the lockup, but not at all with the handling of them.
+>
+> What we essentially need is a wait callback into the driver that is called in non atomic context without any locks held.
+>
+> This way we can block for the fence to become signaled with a timeout and can then also initiate the reset handling if necessary.
+>
+> The way you designed the interface now means that the driver never gets a chance to wait for the hardware to become idle and so never has the opportunity to the reset the whole thing.
+You could set up a hangcheck timer like intel does, and end up with a reliable hangcheck detection that doesn't depend on cpu waits. :-) Or override the default wait function and restore the old behavior.
 
-MCIFIFOCNT register behaviour on Qcom chips is very different than the other
-pl180 integrations. MCIFIFOCNT register contains the number of
-words that are still waiting to be transferred through the FIFO. It keeps
-decrementing once the host CPU reads the MCIFIFO. With the existing logic and
-the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
-register will always return transfer size before reading the FIFO.
-
-Also the data sheet states that "This register is only useful for debug
-purposes and should not be used for normal operation since it does not reflect
-data which may or may not be in the pipeline".
-
-This patch implements qcom_pio_read function so as existing mmci_pio_read is
-not suitable for Qcom SOCs. qcom_pio_read function is only selected
-based on qcom_fifo flag in variant data structure.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
----
- drivers/mmc/host/mmci.c | 35 +++++++++++++++++++++++++++++++++--
- 1 file changed, 33 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index cf58fec1..94b99d6 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -77,6 +77,7 @@ static unsigned int fmax = 515633;
-  *			 are not ignored.
-  * @explicit_mclk_control: enable explicit mclk control in driver.
-  * @qcom_cclk_is_mclk: enable iff card clock is multimedia card adapter clock.
-+ * @qcom_fifo: enables qcom specific fifo pio read function.
-  */
- struct variant_data {
- 	unsigned int		clkreg;
-@@ -101,6 +102,7 @@ struct variant_data {
- 	bool			mclk_delayed_writes;
- 	bool			explicit_mclk_control;
- 	bool			qcom_cclk_is_mclk;
-+	bool			qcom_fifo;
- };
- 
- static struct variant_data variant_arm = {
-@@ -211,6 +213,7 @@ static struct variant_data variant_qcom = {
- 	.mclk_delayed_writes	= true,
- 	.explicit_mclk_control	= true,
- 	.qcom_cclk_is_mclk	= true,
-+	.qcom_fifo		= true,
- };
- 
- static inline u32 mmci_readl(struct mmci_host *host, u32 off)
-@@ -1026,6 +1029,29 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
- 	}
- }
- 
-+static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
-+			 unsigned int remain)
-+{
-+	uint32_t	*ptr = (uint32_t *) buffer;
-+	int		count = 0;
-+	struct variant_data *variant = host->variant;
-+	int		fifo_size = variant->fifosize;
-+
-+	if (remain % 4)
-+		remain = ((remain >> 2) + 1) << 2;
-+
-+	while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-+		*ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
-+		ptr++;
-+		count += sizeof(uint32_t);
-+
-+		remain -=  sizeof(uint32_t);
-+		if (remain == 0)
-+			break;
-+	}
-+	return count;
-+}
-+
- static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
- {
- 	void __iomem *base = host->base;
-@@ -1147,8 +1173,13 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 		remain = sg_miter->length;
- 
- 		len = 0;
--		if (status & MCI_RXACTIVE)
--			len = mmci_pio_read(host, buffer, remain);
-+		if (status & MCI_RXACTIVE) {
-+			if (variant->qcom_fifo)
-+				len = mmci_qcom_pio_read(host, buffer, remain);
-+			else
-+				len = mmci_pio_read(host, buffer, remain);
-+		}
-+
- 		if (status & MCI_TXACTIVE)
- 			len = mmci_pio_write(host, buffer, remain, status);
- 
--- 
-1.9.1
+~Maarten
 
