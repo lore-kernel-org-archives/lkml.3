@@ -1,331 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942AbaEOO35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:29:57 -0400
-Received: from mail-yk0-f182.google.com ([209.85.160.182]:52500 "EHLO
-	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559AbaEOO3x (ORCPT
+	id S1755028AbaEOOau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:30:50 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46447 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaEOOas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:29:53 -0400
-Date: Thu, 15 May 2014 10:31:33 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10] thermal: exynos: remove dead code for
- TYPE_TWO_POINT_TRIMMING calibration
-Message-ID: <20140515143004.GC27339@developer>
-References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
- <1399288539-1793-5-git-send-email-b.zolnierkie@samsung.com>
+	Thu, 15 May 2014 10:30:48 -0400
+Message-ID: <5374CFB8.3000107@linaro.org>
+Date: Thu, 15 May 2014 16:31:20 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399288539-1793-5-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 2/7] acpi, apei, ghes: Introduce more generic mechanism
+ to init/deinit GHES error notifications.
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-3-git-send-email-tomasz.nowicki@linaro.org> <20140513181353.GC8760@pd.tnic>
+In-Reply-To: <20140513181353.GC8760@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bartlomiej,
+On 13.05.2014 20:13, Borislav Petkov wrote:
+> On Wed, Apr 09, 2014 at 05:14:30PM +0200, Tomasz Nowicki wrote:
+>> Init/deinit of GHES error notifications are moved to corresponding
+>> functions e.g. for SCI ghes_notify_init_sci{sci} and ghes_notify_remove_{sci}
+>> which in turn are gathered to ghes_notify_tab table.
+>> ghes_probe and ghes_remove check notification support based on
+>> function reference pointer in ghes_notify_tab and call it with ghes argument.
+>>
+>> This approach allows us to change address of a given error notification
+>> init/deinit function call in ghes_notify_tab in runtime. In turn,
+>> we can avoid #ifdef usage in common code e.g. for NMI which is currently
+>> supported by x86.
+>>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> ---
+>>   drivers/acpi/apei/ghes.c |  242 ++++++++++++++++++++++++++++------------------
+>>   1 file changed, 149 insertions(+), 93 deletions(-)
+>>
+>> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+>> index f7edffc..ca8387e 100644
+>> --- a/drivers/acpi/apei/ghes.c
+>> +++ b/drivers/acpi/apei/ghes.c
+>> @@ -148,6 +148,14 @@ static struct irq_work ghes_proc_irq_work;
+>>   struct ghes_estatus_cache *ghes_estatus_caches[GHES_ESTATUS_CACHES_SIZE];
+>>   static atomic_t ghes_estatus_cache_alloced;
+>>
+>> +struct ghes_notify_setup {
+>> +	const char *notif_name;
+>> +	int 	   (*init_call)(struct ghes *ghes);
+>> +	void 	   (*remove_call)(struct ghes *ghes);
+>> +};
+>
+> Please run through checkpatch before submitting:
+>
+> WARNING: please, no space before tabs
+> #44: FILE: drivers/acpi/apei/ghes.c:153:
+> +^Iint ^I   (*init_call)(struct ghes *ghes);$
+>
+> WARNING: please, no space before tabs
+> #45: FILE: drivers/acpi/apei/ghes.c:154:
+> +^Ivoid ^I   (*remove_call)(struct ghes *ghes);$
 
-On Mon, May 05, 2014 at 01:15:33PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Only TYPE_ONE_POINT_TRIMMING calibration is used so remove
-> the dead code for TYPE_TWO_POINT_TRIMMING calibration.
-> 
+My bad, will run it before next submission.
 
-Only TYPE_ONE_POINT_TRIMMING is used by which SoC? This patch removes
-all four types of calibrations, as present in the current code. Is this
-the expected outcome?
+>
+>> +
+>> +static struct ghes_notify_setup	ghes_notify_tab[];
+>> +
+>>   static int ghes_ioremap_init(void)
+>>   {
+>>   	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+>> @@ -879,10 +887,6 @@ out:
+>>   	return ret;
+>>   }
+>>
+>> -static struct notifier_block ghes_notifier_sci = {
+>> -	.notifier_call = ghes_notify_sci,
+>> -};
+>> -
+>>   static unsigned long ghes_esource_prealloc_size(
+>>   	const struct acpi_hest_generic *generic)
+>>   {
+>> @@ -898,33 +902,151 @@ static unsigned long ghes_esource_prealloc_size(
+>>   	return prealloc_size;
+>>   }
+>>
+>> +static int ghes_notify_init_nmi(struct ghes *ghes)
+>> +{
+>> +	unsigned long len;
+>> +
+>> +	len = ghes_esource_prealloc_size(ghes->generic);
+>> +	ghes_estatus_pool_expand(len);
+>> +	mutex_lock(&ghes_list_mutex);
+>> +	if (list_empty(&ghes_nmi))
+>> +		register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0, "ghes");
+>> +	list_add_rcu(&ghes->list, &ghes_nmi);
+>> +	mutex_unlock(&ghes_list_mutex);
+>> +
+>> +	return 0;
+>
+> Unconditionally returning 0 seems kinda moot. At least
+> register_nmi_handler() retval could be returned...
+>
+> ...
 
-According to commit 9d97e5c8, which introduced this feature,
-TYPE_TWO_POINT_TRIMMING is supported by exynos4 tmu, as per code
-history, for instance.
+Yes, it's worth returning register_nmi_handler() retval. Nice catch.
 
-> There should be no functional changes caused by this patch.
-> 
+>
+>> +static struct ghes_notify_setup
+>> +       ghes_notify_tab[ACPI_HEST_NOTIFY_RESERVED] = {
+>> +               [ACPI_HEST_NOTIFY_POLLED]   = {"POLLED",
+>> +                                              ghes_notify_init_polled,
+>> +                                              ghes_notify_remove_polled},
+>> +               [ACPI_HEST_NOTIFY_EXTERNAL] = {"EXT_IRQ",
+>> +                                              ghes_notify_init_external,
+>> +                                              ghes_notify_remove_external},
+>> +               [ACPI_HEST_NOTIFY_LOCAL]    = {"LOCAL_IRQ", NULL, NULL},
+>> +               [ACPI_HEST_NOTIFY_SCI]      = {"SCI",
+>> +                                              ghes_notify_init_sci,
+>> +                                              ghes_notify_remove_sci},
+>> +               [ACPI_HEST_NOTIFY_NMI]      = {"NMI",
+>> +                                              ghes_notify_init_nmi,
+>> +                                              ghes_notify_remove_nmi},
+>> +               [ACPI_HEST_NOTIFY_CMCI]     = {"CMCI", NULL, NULL},
+>> +               [ACPI_HEST_NOTIFY_MCE]      = {"MCE", NULL, NULL},
+>> +};
+>
+> I guess you don't need to save the ->notif_name strings but add
+> a function which maps ACPI_HEST_* to strings => smaller struct
+> ghes_notify_setup.
 
-Well, the patch seams to be doing more than removing type two trimming.
+Well, we need to keep these strings somewhere :) IMO, this is simpler 
+solution. What would be advantage of additional map function?
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c      | 55 ++++++-------------------------
->  drivers/thermal/samsung/exynos_tmu.h      | 20 +----------
->  drivers/thermal/samsung/exynos_tmu_data.c | 17 +---------
->  drivers/thermal/samsung/exynos_tmu_data.h |  2 --
->  4 files changed, 12 insertions(+), 82 deletions(-)
-> 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index 9f2a5ee..903566f 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -47,8 +47,7 @@
->   * @irq_work: pointer to the irq work structure.
->   * @lock: lock to implement synchronization.
->   * @clk: pointer to the clock structure.
-> - * @temp_error1: fused value of the first point trim.
-> - * @temp_error2: fused value of the second point trim.
-> + * @temp_error: fused value of the first point trim.
->   * @regulator: pointer to the TMU regulator structure.
->   * @reg_conf: pointer to structure to register with core thermal.
->   */
-> @@ -62,14 +61,13 @@ struct exynos_tmu_data {
->  	struct work_struct irq_work;
->  	struct mutex lock;
->  	struct clk *clk;
-> -	u8 temp_error1, temp_error2;
-> +	u8 temp_error;
->  	struct regulator *regulator;
->  	struct thermal_sensor_conf *reg_conf;
->  };
->  
->  /*
->   * TMU treats temperature as a mapped temperature code.
-> - * The temperature is converted differently depending on the calibration type.
->   */
->  static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
->  {
-> @@ -83,20 +81,7 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
->  			goto out;
->  		}
->  
-> -	switch (pdata->cal_type) {
-> -	case TYPE_TWO_POINT_TRIMMING:
-> -		temp_code = (temp - pdata->first_point_trim) *
-> -			(data->temp_error2 - data->temp_error1) /
-> -			(pdata->second_point_trim - pdata->first_point_trim) +
-> -			data->temp_error1;
-> -		break;
-> -	case TYPE_ONE_POINT_TRIMMING:
-> -		temp_code = temp + data->temp_error1 - pdata->first_point_trim;
-> -		break;
-> -	default:
-> -		temp_code = temp + pdata->default_temp_offset;
-> -		break;
-> -	}
-> +	temp_code = temp + data->temp_error - pdata->first_point_trim;
->  out:
->  	return temp_code;
->  }
-> @@ -117,20 +102,7 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
->  			goto out;
->  		}
->  
-> -	switch (pdata->cal_type) {
-> -	case TYPE_TWO_POINT_TRIMMING:
-> -		temp = (temp_code - data->temp_error1) *
-> -			(pdata->second_point_trim - pdata->first_point_trim) /
-> -			(data->temp_error2 - data->temp_error1) +
-> -			pdata->first_point_trim;
-> -		break;
-> -	case TYPE_ONE_POINT_TRIMMING:
-> -		temp = temp_code - data->temp_error1 + pdata->first_point_trim;
-> -		break;
-> -	default:
-> -		temp = temp_code - pdata->default_temp_offset;
-> -		break;
-> -	}
-> +	temp = temp_code - data->temp_error + pdata->first_point_trim;
->  out:
->  	return temp;
->  }
-> @@ -179,19 +151,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->  	} else {
->  		trim_info = readl(data->base + reg->triminfo_data);
->  	}
-> -	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
-> -	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
-> -				EXYNOS_TMU_TEMP_MASK);
-> -
-> -	if (!data->temp_error1 ||
-> -		(pdata->min_efuse_value > data->temp_error1) ||
-> -		(data->temp_error1 > pdata->max_efuse_value))
-> -		data->temp_error1 = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
-> -
-> -	if (!data->temp_error2)
-> -		data->temp_error2 =
-> -			(pdata->efuse_value >> reg->triminfo_85_shift) &
-> -			EXYNOS_TMU_TEMP_MASK;
-> +	data->temp_error = trim_info & EXYNOS_TMU_TEMP_MASK;
-> +
-> +	if (!data->temp_error ||
-> +	    pdata->min_efuse_value > data->temp_error ||
-> +	    data->temp_error > pdata->max_efuse_value)
-> +		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
->  
->  	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
->  		dev_err(&pdev->dev, "Invalid max trigger level\n");
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index e417af8..186e39e 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -26,14 +26,6 @@
->  
->  #include "exynos_thermal_common.h"
->  
-> -enum calibration_type {
-> -	TYPE_ONE_POINT_TRIMMING,
-> -	TYPE_ONE_POINT_TRIMMING_25,
-> -	TYPE_ONE_POINT_TRIMMING_85,
-> -	TYPE_TWO_POINT_TRIMMING,
-> -	TYPE_NONE,
-> -};
+>
+>
+>> @@ -944,48 +1066,10 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>>   	if (rc < 0)
+>>   		goto err;
+>>
+>> -	switch (generic->notify.type) {
+>> -	case ACPI_HEST_NOTIFY_POLLED:
+>> -		ghes->timer.function = ghes_poll_func;
+>> -		ghes->timer.data = (unsigned long)ghes;
+>> -		init_timer_deferrable(&ghes->timer);
+>> -		ghes_add_timer(ghes);
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_EXTERNAL:
+>> -		/* External interrupt vector is GSI */
+>> -		rc = acpi_gsi_to_irq(generic->notify.vector, &ghes->irq);
+>> -		if (rc) {
+>> -			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+>> -			       generic->header.source_id);
+>> -			goto err_edac_unreg;
+>> -		}
+>> -		rc = request_irq(ghes->irq, ghes_irq_func, 0, "GHES IRQ", ghes);
+>> -		if (rc) {
+>> -			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+>> -			       generic->header.source_id);
+>> -			goto err_edac_unreg;
+>> -		}
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_SCI:
+>> -		mutex_lock(&ghes_list_mutex);
+>> -		if (list_empty(&ghes_sci))
+>> -			register_acpi_hed_notifier(&ghes_notifier_sci);
+>> -		list_add_rcu(&ghes->list, &ghes_sci);
+>> -		mutex_unlock(&ghes_list_mutex);
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_NMI:
+>> -		len = ghes_esource_prealloc_size(generic);
+>> -		ghes_estatus_pool_expand(len);
+>> -		mutex_lock(&ghes_list_mutex);
+>> -		if (list_empty(&ghes_nmi))
+>> -			register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
+>> -						"ghes");
+>> -		list_add_rcu(&ghes->list, &ghes_nmi);
+>> -		mutex_unlock(&ghes_list_mutex);
+>> -		break;
+>> -	default:
+>> -		BUG();
+>
+> What happened to those BUG() catch-all stoppers?
 
+I am validating generic->notify.type at the begin of function and return 
+error in case of unknown value. I think there is no need to check that 
+again.
 
-There are more than two types of calibrations. tmu_control covers
-all types. This patch misses tmu_control.
+>
+>> -	}
+>> +	rc = (*ghes_init_call)(ghes);
+>> +	if (rc)
+>> +		goto err_edac_unreg;
+>> +
+>>   	platform_set_drvdata(ghes_dev, ghes);
+>>
+>>   	return 0;
+>> @@ -1003,44 +1087,16 @@ static int ghes_remove(struct platform_device *ghes_dev)
+>>   {
+>>   	struct ghes *ghes;
+>>   	struct acpi_hest_generic *generic;
+>> -	unsigned long len;
+>> +	void (*ghes_remove_call)(struct ghes *ghes);
+>>
+>>   	ghes = platform_get_drvdata(ghes_dev);
+>> +	ghes->flags |= GHES_EXITING;
+>> +
+>>   	generic = ghes->generic;
+>> +	ghes_remove_call = ghes_notify_tab[generic->notify.type].remove_call;
+>>
+>> -	ghes->flags |= GHES_EXITING;
+>> -	switch (generic->notify.type) {
+>> -	case ACPI_HEST_NOTIFY_POLLED:
+>> -		del_timer_sync(&ghes->timer);
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_EXTERNAL:
+>> -		free_irq(ghes->irq, ghes);
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_SCI:
+>> -		mutex_lock(&ghes_list_mutex);
+>> -		list_del_rcu(&ghes->list);
+>> -		if (list_empty(&ghes_sci))
+>> -			unregister_acpi_hed_notifier(&ghes_notifier_sci);
+>> -		mutex_unlock(&ghes_list_mutex);
+>> -		break;
+>> -	case ACPI_HEST_NOTIFY_NMI:
+>> -		mutex_lock(&ghes_list_mutex);
+>> -		list_del_rcu(&ghes->list);
+>> -		if (list_empty(&ghes_nmi))
+>> -			unregister_nmi_handler(NMI_LOCAL, "ghes");
+>> -		mutex_unlock(&ghes_list_mutex);
+>> -		/*
+>> -		 * To synchronize with NMI handler, ghes can only be
+>> -		 * freed after NMI handler finishes.
+>> -		 */
+>> -		synchronize_rcu();
+>> -		len = ghes_esource_prealloc_size(generic);
+>> -		ghes_estatus_pool_shrink(len);
+>> -		break;
+>> -	default:
+>> -		BUG();
+>> -		break;
+>
+> This one too.
+>
+For this one I should provide generic->notify.type validation. Will 
+rethink and fix it.
 
-> -
->  enum soc_type {
->  	SOC_ARCH_EXYNOS4210 = 1,
->  	SOC_ARCH_EXYNOS4412,
-> @@ -74,8 +66,6 @@ enum soc_type {
->   * bitfields. The register validity, offsets and bitfield values may vary
->   * slightly across different exynos SOC's.
->   * @triminfo_data: register containing 2 pont trimming data
-> - * @triminfo_25_shift: shift bit of the 25 C trim value in triminfo_data reg.
-> - * @triminfo_85_shift: shift bit of the 85 C trim value in triminfo_data reg.
->   * @triminfo_ctrl: trim info controller register.
->   * @tmu_ctrl: TMU main controller register.
->   * @test_mux_addr_shift: shift bits of test mux address.
-> @@ -116,8 +106,6 @@ enum soc_type {
->   */
->  struct exynos_tmu_registers {
->  	u32	triminfo_data;
-> -	u32	triminfo_25_shift;
-> -	u32	triminfo_85_shift;
->  
->  	u32	triminfo_ctrl;
->  
-> @@ -207,10 +195,7 @@ struct exynos_tmu_registers {
->   * @min_efuse_value: minimum valid trimming data
->   * @max_efuse_value: maximum valid trimming data
->   * @first_point_trim: temp value of the first point trimming
-> - * @second_point_trim: temp value of the second point trimming
-> - * @default_temp_offset: default temperature offset in case of no trimming
->   * @test_mux; information if SoC supports test MUX
-> - * @cal_type: calibration type for temperature
->   * @freq_clip_table: Table representing frequency reduction percentage.
->   * @freq_tab_count: Count of the above table as frequency reduction may
->   *	applicable to only some of the trigger levels.
-> @@ -232,15 +217,12 @@ struct exynos_tmu_platform_data {
->  	u8 reference_voltage;
->  	u8 noise_cancel_mode;
->  
-> -	u32 efuse_value;
-> +	u8 efuse_value;
-
-Why?
-
->  	u32 min_efuse_value;
->  	u32 max_efuse_value;
->  	u8 first_point_trim;
-> -	u8 second_point_trim;
-> -	u8 default_temp_offset;
->  	u8 test_mux;
->  
-> -	enum calibration_type cal_type;
->  	enum soc_type type;
->  	struct freq_clip_table freq_tab[4];
->  	unsigned int freq_tab_count;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 4b992d9..c32d186 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -27,8 +27,6 @@
->  #if defined(CONFIG_CPU_EXYNOS4210)
->  static const struct exynos_tmu_registers exynos4210_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
->  	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-> @@ -66,12 +64,9 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
->  		.max_trigger_level = 4,
->  		.gain = 15,
->  		.reference_voltage = 7,
-> -		.cal_type = TYPE_ONE_POINT_TRIMMING,
->  		.min_efuse_value = 40,
->  		.max_efuse_value = 100,
->  		.first_point_trim = 25,
-> -		.second_point_trim = 85,
-> -		.default_temp_offset = 50,
->  		.freq_tab[0] = {
->  			.freq_clip_max = 800 * 1000,
->  			.temp_level = 85,
-> @@ -93,8 +88,6 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
->  #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
->  static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-> @@ -145,13 +138,10 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->  	.gain = 8, \
->  	.reference_voltage = 16, \
->  	.noise_cancel_mode = 4, \
-> -	.cal_type = TYPE_ONE_POINT_TRIMMING, \
->  	.efuse_value = 55, \
->  	.min_efuse_value = 40, \
->  	.max_efuse_value = 100, \
->  	.first_point_trim = 25, \
-> -	.second_point_trim = 85, \
-> -	.default_temp_offset = 50, \
->  	.freq_tab[0] = { \
->  		.freq_clip_max = 1400 * 1000, \
->  		.temp_level = 70, \
-> @@ -195,8 +185,6 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
->  #if defined(CONFIG_SOC_EXYNOS5440)
->  static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->  	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.tmu_ctrl = EXYNOS5440_TMU_S0_7_CTRL,
->  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
->  	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-> @@ -240,13 +228,10 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->  	.gain = 5, \
->  	.reference_voltage = 16, \
->  	.noise_cancel_mode = 4, \
-> -	.cal_type = TYPE_ONE_POINT_TRIMMING, \
-> -	.efuse_value = 0x5b2d, \
-> +	.efuse_value = 45, \
-
-What efuse value has to do with removing type two calibration type?
-
->  	.min_efuse_value = 16, \
->  	.max_efuse_value = 76, \
->  	.first_point_trim = 25, \
-> -	.second_point_trim = 70, \
-> -	.default_temp_offset = 25, \
->  	.type = SOC_ARCH_EXYNOS5440, \
->  	.registers = &exynos5440_tmu_registers, \
->  	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index 1fed00d..734d1f9 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -51,8 +51,6 @@
->  #define EXYNOS_THD_TEMP_FALL		0x54
->  #define EXYNOS_EMUL_CON		0x80
->  
-> -#define EXYNOS_TRIMINFO_25_SHIFT	0
-> -#define EXYNOS_TRIMINFO_85_SHIFT	8
->  #define EXYNOS_TMU_RISE_INT_MASK	0x111
->  #define EXYNOS_TMU_RISE_INT_SHIFT	0
->  #define EXYNOS_TMU_FALL_INT_MASK	0x111
-> -- 
-> 1.8.2.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-
+Tomasz
