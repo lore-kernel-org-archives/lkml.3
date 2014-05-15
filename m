@@ -1,89 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510AbaEOSch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:32:37 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:63289 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaEOScf (ORCPT
+	id S1755839AbaEOSdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:33:09 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:12757 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754293AbaEOSdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:32:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140515182620.GN32082@beef>
-References: <1400176691-26058-1-git-send-email-elder@linaro.org>
- <1400176691-26058-3-git-send-email-elder@linaro.org> <CAGVrzca20+3kmJjyGv8Pr-qNNV4n0hhADL6GWvcYVDUL4q28Hg@mail.gmail.com>
- <20140515182620.GN32082@beef>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 15 May 2014 11:31:54 -0700
-Message-ID: <CAGVrzcafQkOxOBLX_5AJDeX1yERndu60ogZJgeA407e20N9oMg@mail.gmail.com>
-Subject: Re: [PATCH v3 RESEND 2/5] ARM: add SMP support for Broadcom mobile SoCs
-To: Matt Porter <mporter@linaro.org>
-Cc: Alex Elder <elder@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, sboyd <sboyd@codeaurora.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 May 2014 14:33:06 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoMRAHwHdVNXQwiB/2dsb2JhbABZgwaDPqhaBAEBAQEBAQUBmhkCAoESF3SCUxMcIxiBAiQTiEUB0UKFVIgsToRHAQOPKoomAZMUgzg7
+Date: Thu, 15 May 2014 20:33:02 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
+        Viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>,
+        tytso <tytso@mit.edu>
+Subject: [PATCH V6 1/2] FS: Add generic data flush to fsync
+Message-Id: <20140515203302.e6e712e73046a187887a186c@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-15 11:26 GMT-07:00 Matt Porter <mporter@linaro.org>:
-> On Thu, May 15, 2014 at 11:03:49AM -0700, Florian Fainelli wrote:
->> Hi Alex,
->>
->> 2014-05-15 10:58 GMT-07:00 Alex Elder <elder@linaro.org>:
->> > This patch adds SMP support for BCM281XX and BCM21664 family SoCs.
->> >
->> > This feature is controlled with a distinct config option such that a
->> > SMP-enabled multi-v7 binary can be configured to run these SoCs in
->> > uniprocessor mode.  Since this SMP functionality is used for
->> > multiple Broadcom mobile chip families the config option is called
->> > ARCH_BCM_MOBILE_SMP (for lack of a better name).
->> >
->> > On SoCs of this type, the secondary core is not held in reset on
->> > power-on.  Instead it loops in a ROM-based holding pen.  To release
->> > it, one must write into a special register a jump address whose
->> > low-order bits have been replaced with a secondary core's id, then
->> > trigger an event with SEV.  On receipt of an event, the ROM code
->> > will examine the register's contents, and if the low-order bits
->> > match its cpu id, it will clear them and write the value back to the
->> > register just prior to jumping to the address specified.
->> >
->> > The location of the special register is defined in the device tree
->> > using a "secondary-boot-reg" property in a node whose "enable-method"
->> > matches.
->> >
->> > Derived from code originally provided by Ray Jui <rjui@broadcom.com>
->> >
->> > Signed-off-by: Alex Elder <elder@linaro.org>
->> > ---
->> >  arch/arm/mach-bcm/Kconfig   |  18 +++-
->> >  arch/arm/mach-bcm/Makefile  |   3 +
->> >  arch/arm/mach-bcm/platsmp.c | 201 ++++++++++++++++++++++++++++++++++++++++++++
->>
->> Could we make that name a little bit more specific to the mobile SoCs?
->> There are other BCM SoCs either currently supported in this directory
->> (BCM5310X), or making their way to be supported (brcmstb, bcm63xx),
->> and those share nothing with the Mobile SoC SMP code.
->
-> Right.
->
->> Maybe we should create another level directory within mach-bcm...
->
-> Let's not go that far. The general direction we need to go is to work
-> toward removing this code from mach-bcm/ completely. I don't really want
-> to see us adding directories and encouraging burying a lot of new files
-> in them.
+Description by Jan Kara:
+"A lot of older filesystems don't properly flush volatile disk caches
+on fsync(2) which can lead to loss of fsynced data after power failure.
 
-Ok, makes sense.
+This patch makes generic_file_fsync() issue proper cache flush to fix the
+problem. Sysadmin can use /sys/devices/.../cache_type to tell the system
+it should not send the cache flush."
 
->
-> A unique name will be enough and then we can work toward moving things
-> out to drivers/ over time.
+Suggested-by: Jan Kara <jack@suse.cz>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+v6: 
+   -Complete description (Jan Kara)
+   -#ifdef CONFIG_BLOCK (Andrew Morton/Jan Kara)
+v5: patch2/2 ext4 patch fix (Thanks to Ming Lei)
+V4: update description
+V3: __generic_file_fsync = no flush
+V2: No additional flag
+V1: First version with MS_BARRIER flag
 
-Sounds good, thanks!
+ fs/libfs.c         | 39 ++++++++++++++++++++++++++++++++++++---
+ include/linux/fs.h |  1 +
+ 2 files changed, 37 insertions(+), 3 deletions(-)
+
+diff --git a/fs/libfs.c b/fs/libfs.c
+index a184424..3a704e1 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -3,6 +3,7 @@
+  *	Library for filesystems writers.
+  */
+ 
++#include <linux/blkdev.h>
+ #include <linux/export.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+@@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
+ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
+ 
+ /**
+- * generic_file_fsync - generic fsync implementation for simple filesystems
++ * __generic_file_fsync - generic fsync implementation for simple filesystems
++ *
+  * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
+  * @datasync:	only synchronize essential metadata if true
+  *
+  * This is a generic implementation of the fsync method for simple
+  * filesystems which track all non-inode metadata in the buffers list
+  * hanging off the address_space structure.
+  */
+-int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+-		       int datasync)
++int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
++				 int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 	int err;
+@@ -952,10 +956,39 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+ 	err = sync_inode_metadata(inode, 1);
+ 	if (ret == 0)
+ 		ret = err;
++
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return ret;
+ }
++EXPORT_SYMBOL(__generic_file_fsync);
++
++/**
++ * generic_file_fsync - generic fsync implementation for simple filesystems
++ *			with flush
++ * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
++ * @datasync:	only synchronize essential metadata if true
++ *
++ */
++
++int generic_file_fsync(struct file *file, loff_t start, loff_t end,
++		       int datasync)
++{
++	struct inode *inode = file->f_mapping->host;
++	int err;
++
++	err = __generic_file_fsync(file, start, end, datasync);
++	if (err)
++		return err;
++#ifdef CONFIG_BLOCK
++	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
++#else
++	return err;
++#endif
++
++}
+ EXPORT_SYMBOL(generic_file_fsync);
+ 
+ /**
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8780312..c3f46e4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
+ extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
+ 		const void __user *from, size_t count);
+ 
++extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
+ extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
+ 
+ extern int generic_check_addressable(unsigned, u64);
 -- 
-Florian
+1.8.4.5
+
