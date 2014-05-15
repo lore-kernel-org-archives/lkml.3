@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaEOIRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:17:41 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:48419 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754256AbaEOIRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:17:35 -0400
+	id S1754742AbaEOITE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:19:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49605 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345AbaEOITA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 04:19:00 -0400
+Message-ID: <5374784B.7020608@ti.com>
+Date: Thu, 15 May 2014 11:18:19 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140515074203.GD5952@ulmo>
-References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
-	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
-	<20140514221423.GC6215@mithrandir>
-	<CAPdUM4NaLpN99JCJH3qMakSO3OG6ASjEuvvr_CnKv=gOiqfzMQ@mail.gmail.com>
-	<20140515074203.GD5952@ulmo>
-Date: Thu, 15 May 2014 13:47:33 +0530
-X-Google-Sender-Auth: oWEcEZoAqEVkRbIAs0LhYlOJlK8
-Message-ID: <CAPdUM4OXXMzMDNVym1ysMx7wifbO2QsSP5jk6cn3+F8Or3ng3w@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        sunil joshi <joshi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <nsekhar@ti.com>, <joelf@ti.com>, <linux@arm.linux.org.uk>,
+        <vinod.koul@intel.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <tony@atomide.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH v2 3/5] dt/bindings: ti,edma: Remove redundant properties
+ from documentation
+References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com> <1399977032-26469-4-git-send-email-peter.ujfalusi@ti.com> <7468082.VY82PIo3ZY@wuerfel>
+In-Reply-To: <7468082.VY82PIo3ZY@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2014 13:12, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Thu, May 15, 2014 at 10:49:37AM +0530, Rahul Sharma wrote:
->> Hi Thierry,
+On 05/15/2014 11:01 AM, Arnd Bergmann wrote:
+> On Tuesday 13 May 2014 13:30:30 Peter Ujfalusi wrote:
+>> From CCCFG register of eDMA3 we can get all the needed information for the
+>> driver about the IP:
+>> Number of channels: NUM_DMACH
+>> Number of regions: NUM_REGN
+>> Number of slots (PaRAM sets): NUM_PAENTRY
+>> Number of TC/EQ: NUM_EVQUE
 >>
->> On 15 May 2014 03:44, Thierry Reding <thierry.reding@gmail.com> wrote:
->> > On Thu, May 15, 2014 at 12:47:21AM +0530, Rahul Sharma wrote:
-> [...]
->> >> +#define HDMI_PHY     0
->> >> +#define DAC_PHY      1
->> >> +#define ADC_PHY      2
->> >> +#define PCIE_PHY     3
->> >> +#define SATA_PHY     4
->> >
->> > Perhaps these should be namespaced somehow to avoid potential conflicts
->> > with other PHY providers?
+>> The ti,edma-regions; ti,edma-slots and dma-channels in DT are
+>> redundant since the very same information can be obtained from the HW.
+>> The mentioned properties can be removed from the binding document.
 >>
->> How about XXX_SIMPLE_PHY?
->
-> The indices are specific to the Exynos PHY device, so why not
-> PHY_EXYNOS_SIMPLE_XXX (or any variation thereof)?
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> 
+> I wonder if we should keep them listed as "optional" properties so you
+> can have a dtb file that still works with older kernels which need them.
+> 
+> What you do is an incompatible change to the binding, which we shouldn't
+> do lightly. Any new dts files don't need this information of course, but
+> as a general rule, I'd rather keep things like this around unless we
+> already have to enforce an ABI break that is well documented.
 
-This looks ok. I will use that.
+We could keep them as optional, or to be precise: ignored properties since we
+are not going to even look at them in the future.
+But I do not really see the reason to do so. With this change new kernels will
+boot with old DTB - if it can not be changed which I have not seen yet. Sure
+old kernel would not boot with this change, but why would you downgrade the
+kernel and update the DTB on a board?
+Bisecting is not a good reason since the bug you might be hunting for could be
+in the DTS or in the kernel code so you need to update both of them to be sure
+you reach the commit you are looking for.
 
->
->> >> +#define PHY_NR       5
->> >
->> > I'm not sure that this belongs here either. It's not a value that will
->> > ever appear in a DT source file.
->>
->> I want it to grow along with new additions in the phy list else
->> catastrophic. This will look unrelated in driver.
->
-> But this is in no way growing automatically as it is. Whoever adds a new
-> type of PHY will need to manually increment this define. Furthermore the
-> driver will need to be updated to cope with this anyway.
-
-Not automatically. What I meant was If keeping it at end of the list, it is not
-possible that somebody skip the updation of PHY_NR when adding a new phy
-type.
-
-If I leave a comment at the end of the list to update PHY_NR (after moving it
-to driver), that also serves the purpose.
-
->
-> I think this is even a reason to have this only in the driver. Otherwise
-> you could have a situation where somebody upgrades the binding (and this
-> file along with it) but not update the driver with the necessary support.
-> But the driver will still pick up the PHY_NR change and will accept the
-> new PHY type as valid, even though it has no code to handle it. If you
-> have this in the driver, however, then as long as the driver has not yet
-> been updated it will reject requests for the new PHY type. And that's
-> exactly what it should be doing since it doesn't know how to handle it.
-
-hmn...Ok.
-
-Regards,
-Rahul Sharma
-
->
-> Thierry
+-- 
+Péter
