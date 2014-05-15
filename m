@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaEOPLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:11:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39959 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179AbaEOPLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:11:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="539622805"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [RFC 1/2] perf: add data_{offset,size} to user_page
-Date: Thu, 15 May 2014 18:08:29 +0300
-Message-Id: <1400166510-9234-2-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1755135AbaEOPLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:11:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43503 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993AbaEOPLf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:11:35 -0400
+Date: Thu, 15 May 2014 17:11:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Carlos O'Donell" <carlos@redhat.com>
+Cc: mtk.manpages@gmail.com, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140515151109.GQ30445@twins.programming.kicks-ass.net>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
+ <5373D0CA.2050204@redhat.com>
+ <20140515081444.GD11096@twins.programming.kicks-ass.net>
+ <5374BE9E.8080408@redhat.com>
+ <20140515132235.GM30445@twins.programming.kicks-ass.net>
+ <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
+ <5374D18D.6020608@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bmpniq+Thlljzm46"
+Content-Disposition: inline
+In-Reply-To: <5374D18D.6020608@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the actual perf ring buffer is one page into the mmap area,
-following the user page and the userspace follows this convention. This
-patch adds data_{offset,size} fields to user_page that can be used by
-userspace instead for locating perf data in the mmap area.
 
-Right now, it is made to follow the existing convention that
+--Bmpniq+Thlljzm46
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	data_offset == PAGE_SIZE and
-	data_offset + data_size == mmap_size.
+On Thu, May 15, 2014 at 10:39:09AM -0400, Carlos O'Donell wrote:
+> For example does gettid *really* return a pid_t as considered by
+> userspace? It's not a full out process...
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
----
- include/uapi/linux/perf_event.h | 5 +++++
- kernel/events/core.c            | 2 ++
- 2 files changed, 7 insertions(+)
+Yeah, PIDs and TIDs are the same namespace in the kernel. All we have
+are tasks and each task has an id. gettid() actually returns the id of
+the current task.
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 853bc1c..ef95af4 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -488,9 +488,14 @@ struct perf_event_mmap_page {
- 	 * In this case the kernel will not over-write unread data.
- 	 *
- 	 * See perf_output_put_handle() for the data ordering.
-+	 *
-+	 * data_{offset,size} indicate the location and size of the perf record
-+	 * buffer within the mmapped area.
- 	 */
- 	__u64   data_head;		/* head in the data section */
- 	__u64	data_tail;		/* user-space written tail */
-+	__u64	data_offset;		/* where the buffer starts */
-+	__u64	data_size;		/* data buffer size */
- };
- 
- #define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 0b9309b..bbe8b48 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3768,6 +3768,8 @@ static void perf_event_init_userpage(struct perf_event *event)
- 	/* Allow new userspace to detect that bit 0 is deprecated */
- 	userpg->cap_bit0_is_deprecated = 1;
- 	userpg->size = offsetof(struct perf_event_mmap_page, __reserved);
-+	userpg->data_offset = PAGE_SIZE;
-+	userpg->data_size = perf_data_size(rb);
- 
- unlock:
- 	rcu_read_unlock();
--- 
-2.0.0.rc2
+getpid() returns the id of the thread group leader, so for that task
+gettid() and getpid() return the same id.
 
+--Bmpniq+Thlljzm46
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdNkNAAoJEHZH4aRLwOS6ENQP/RsOAo22nckgUnC7R0YLUkB2
+KUEz2sf8LL/kFob5ad7RY5ELhWk7HjmTj4RQFo/gc3GR8gb/3oc8m3xTB5Sa7TZw
+Nu/50en1ZOmEMCJmPZ14l6WMudGZRRuIhyfTidDlKefNe9IlbRDC1iyn2KEmzBiq
+Q8uplsw7myoWIduyYjN8xyCNVaDiUT1xOLuQYiqFU5SUJ9orYt/fU8e3u0L8qhAK
+cggS4xMxVZDJSsIvZ/7AeQmWSCFU2WkSEWQNJ5Nlaza2+1SDinJoIbATQrGSTMuq
+MgK5mF0+FF7tevN4PEmN0LBSS07UrKwpzlclSZwAKHLNuH6ZVclvtWeE0QC4vWRD
+UaRFdXjgU4SFsA/DFeY2TaM5WDqdYo+YkX5wFkyPLcSUGGU0BGIK5i+iAhabCZb9
+46jW+ZHkqmMkKMkmgypuIgdHyquukGZlvxLzd9sXjl7StV2uuxh4oMBI9GbXVozM
+UBahHvXpWAxVNuTKo3ykemKBOPxiri2dBQOT9lomg+i+auTzhdxYuUEYnQwCZayu
+MDKFaCNc7nw14+A6UnFUgyDMoFhoh4iDacv4+DXzD8NlJ7ZcReEpJ96N67jJfrYC
+X8WOian0MSdtikRvoVNvI2zIalOj7/rNw/o7Rj6AtHAYYlUAXwxVKx6VuMbvg+NB
+WTXlkC/b43xDkG1m+2Xh
+=HyM8
+-----END PGP SIGNATURE-----
+
+--Bmpniq+Thlljzm46--
