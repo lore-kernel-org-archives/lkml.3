@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaEODce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:32:34 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:56032 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaEODcc (ORCPT
+	id S1753167AbaEODee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:34:34 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54122 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaEODed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:32:32 -0400
-Date: Wed, 14 May 2014 23:32:29 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-In-Reply-To: <537406FA.2040906@zytor.com>
-Message-ID: <alpine.LFD.2.11.1405142319140.17310@knanqh.ubzr>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <6202090.0OtAjefIFT@wuerfel> <CAMuHMdVxc3XRanpboWPumvQKbg-qdRBHQvYXwjTKX4CrxXPeAw@mail.gmail.com> <8399002.IIyBoyEHox@wuerfel> <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com>
- <537406FA.2040906@zytor.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 May 2014 23:34:33 -0400
+Message-ID: <1400124866.26173.19.camel@cyc>
+Subject: Re: [PATCH] mm/memory-failure.c: fix memory leak by race between
+ poison and unpoison
+From: cyc <soldier.cyc81@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Thu, 15 May 2014 11:34:26 +0800
+In-Reply-To: <1400080891-5145-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1400080891-5145-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, H. Peter Anvin wrote:
+在 2014-05-14三的 11:21 -0400，Naoya Horiguchi写道：
+> When a memory error happens on an in-use page or (free and in-use) hugepage,
+> the victim page is isolated with its refcount set to one. When you try to
+> unpoison it later, unpoison_memory() calls put_page() for it twice in order to
+> bring the page back to free page pool (buddy or free hugepage list.)
+> However, if another memory error occurs on the page which we are unpoisoning,
+> memory_failure() returns without releasing the refcount which was incremented
+> in the same call at first, which results in memory leak and unconsistent
+> num_poisoned_pages statistics. This patch fixes it.
 
-> On 05/14/2014 02:33 PM, John Stultz wrote:
-> > 
-> > We can do some tricks for internal optimizations here if these are
-> > critical.  I'd be more concerned about userland divisions where moving
-> > to a 64bit time_t would cause performance issues that we cannot help
-> > optimize.
-> > 
+We assume that a new memory error occurs on the hugepage which we are
+unpoisoning. 
+
+          A   unpoisoned  B    poisoned    C          
+hugepage: |---------------+++++++++++++++++|
+
+There are two cases, so shown.
+  1. the victim page belongs to A-B, the memory_failure will be blocked
+by lock_page() until unlock_page() invoked by unpoison_memory().
+  2. the victim page belongs to B-C, the memory_failure() will return
+very soon at the beginning of this function.
+
+So the new memory error will have no effect what you say so.
+
+thx!
+cyc 
+
 > 
-> Honestly, the cost of not addressing the Y2038 problem in plenty of time
-> is going to be way, way, way, way more expensive than some additional
-> arithmetic.
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: <stable@vger.kernel.org>    [2.6.32+]
+> ---
+>  mm/memory-failure.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> As far as converting to calendar notation (e.g. the Gregorian calendar),
-> only the first division needs to be done with full time_t width.
-> Furthermore, since the divisor is known a priori, the compiler *should*
-> be able to do it as an inverse multiply.[1]
+> diff --git next-20140512.orig/mm/memory-failure.c next-20140512/mm/memory-failure.c
+> index 9872af1b1e9d..93a08bd78c78 100644
+> --- next-20140512.orig/mm/memory-failure.c
+> +++ next-20140512/mm/memory-failure.c
+> @@ -1153,6 +1153,8 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+>  	 */
+>  	if (!PageHWPoison(p)) {
+>  		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
+> +		atomic_long_sub(nr_pages, &num_poisoned_pages);
+> +		put_page(hpage);
+>  		res = 0;
+>  		goto out;
+>  	}
 
-The compiler is apparently not that smart.  It does it already for 32 by 
-32 bit divisions, but not for 64 by 32 divisions. Fortunately, with 
-gcc-4 at least, constant propagation on long longs works well enough to 
-do it by hand.  That's how I implemented do_div() for ARM years ago.  
-See arch/arm/include/asm/div64.h from line 65.  The same could be 
-implemented for x86 and others.
 
-
-Nicolas
