@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaEOIqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:46:05 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:43054 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaEOIqB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:46:01 -0400
-Date: Thu, 15 May 2014 12:45:58 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
-Message-ID: <20140515084558.GI28328@moon>
-References: <53739201.6080604@oracle.com>
- <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
- <5373D509.7090207@oracle.com>
- <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
- <5373DBE4.6030907@oracle.com>
- <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
- <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
- <20140514221140.GF28328@moon>
- <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751847AbaEOIqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:46:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42956 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaEOIqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 04:46:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
+   d="scan'208";a="539434507"
+Message-ID: <1400143528.2273.30.camel@rzhang1-toshiba>
+Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Kachhap <amit.kachhap@gmail.com>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        eduardo.valentin@ti.com
+Date: Thu, 15 May 2014 16:45:28 +0800
+In-Reply-To: <CADGdYn719UzdPd3fVWrPi=mTnKvKy3O5bPHZcn8xCFjrAWp7yA@mail.gmail.com>
+References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
+	 <CADGdYn719UzdPd3fVWrPi=mTnKvKy3O5bPHZcn8xCFjrAWp7yA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 03:23:27PM -0700, Andy Lutomirski wrote:
-> I can summarize:
+On 四, 2014-04-24 at 11:48 +0530, Amit Kachhap wrote:
+> On 4/14/14, Tushar Behera <tushar.behera@linaro.org> wrote:
+> > Currently the threshold limits are updated in 2 stages, once for all
+> > software trigger levels and again for hardware trip point.
+> I guess the first stage is bootloader as could not find this in this file.
+> Anyways the changes looks fine to me.
 > 
-> On 3.14 and before, the vdso is just a bunch of ELF headers and
-> executable data.  When executed by 64-bit binaries, it reads from the
-> fixmap to do its thing.  That is, it reads from kernel addresses that
-> don't have vmas.  When executed by 32-bit binaries, it doesn't read
-> anything, since there was no 32-bit timing code.
+> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+
+applied.
+
+thanks,
+rui
 > 
-> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
-> a separate vma containing two pages worth of time-varying read-only
-> data.  The vdso reads those pages using PIC references.
+> >
+> > While updating the software trigger levels, it overwrites the threshold
+> > limit for hardware trip point thereby forcing the Exynos core to issue
+> > an emergency shutdown.
+> >
+> > Updating only the required fields in threshold register fixes this issue.
+> >
+> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> > ---
+> > Based on v3.15-rc1.
+> >
+> >  drivers/thermal/samsung/exynos_tmu.c |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> >
+> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> > b/drivers/thermal/samsung/exynos_tmu.c
+> > index 0d96a51..ffccc89 100644
+> > --- a/drivers/thermal/samsung/exynos_tmu.c
+> > +++ b/drivers/thermal/samsung/exynos_tmu.c
+> > @@ -225,6 +225,8 @@ skip_calib_data:
+> >  			trigger_levs++;
+> >  	}
+> >
+> > +	rising_threshold = readl(data->base + reg->threshold_th0);
+> > +
+> >  	if (data->soc == SOC_ARCH_EXYNOS4210) {
+> >  		/* Write temperature code for threshold */
+> >  		threshold_code = temp_to_code(data, pdata->threshold);
+> > @@ -249,6 +251,7 @@ skip_calib_data:
+> >  				ret = threshold_code;
+> >  				goto out;
+> >  			}
+> > +			rising_threshold &= ~(0xff << 8 * i);
+> >  			rising_threshold |= threshold_code << 8 * i;
+> >  			if (pdata->threshold_falling) {
+> >  				threshold_code = temp_to_code(data,
+> > @@ -281,6 +284,7 @@ skip_calib_data:
+> >  			}
+> >  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
+> >  				/* 1-4 level to be assigned in th0 reg */
+> > +				rising_threshold &= ~(0xff << 8 * i);
+> >  				rising_threshold |= threshold_code << 8 * i;
+> >  				writel(rising_threshold,
+> >  					data->base + reg->threshold_th0);
+> > --
+> > 1.7.9.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> > in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
-Andy, could you please point me where is the code which creates a second vma?
-latest 3.15 master branch
 
-[root@fc ~]# cat /proc/self/maps
-...
-7fff57b6e000-7fff57b8f000 rw-p 00000000 00:00 0                          [stack]
-7fff57bff000-7fff57c00000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
-[root@fc ~]#
-
-Or you mean vsyscall area? If yes, then in criu we don't dump vsyscall zone.
-On restore we don't touch  vsyscall either but for vdso there are two cases
-
- - if there were no kernel change on vdso contents we simply use vdso provided
-   by the kernel at the moment of criu startup
-
- - if vdso has been changed and looks different from one saved in image during
-   checkpoint, we map it from image but then patch (push jmp instruction) so
-   when application calls for some of vdso function it jumps into vdso code
-   saved in image and then jumps into vdso mapped by the kernel (ie kind of
-   proxy calls) This force us to do own Elf parsing inside criu to calculate
-   proper offsets.
-
-We don't support (and have no plans to support) x86-32 kernels but there
-left a case with compatible mode (32bit app on 64bit kernel) which has
-not yet been implemented though.
-
-> On linux-next, all vdsos work the same way.  There are two vmas.  The
-> first vma is executable text, which can be poked at by ptrace, etc
-> normally.  The second vma contains time-varying state, should not
-> allow poking, and is accessed by PIC references.
-> 
-> What does CRIU do to restore the vdso?  Will 3.15 and/or linux-next
-> need to make some concession for CRIU?
