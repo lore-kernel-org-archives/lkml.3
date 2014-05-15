@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742AbaEOTVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:21:19 -0400
-Received: from smtp-out-167.synserver.de ([212.40.185.167]:1353 "EHLO
-	smtp-out-123.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751000AbaEOTVQ (ORCPT
+	id S1755788AbaEOTWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:22:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55392 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaEOTWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:21:16 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 21065
-Message-ID: <537513A8.701@metafoo.de>
-Date: Thu, 15 May 2014 21:21:12 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 15 May 2014 15:22:05 -0400
+Message-ID: <537513D8.7060203@wwwdotorg.org>
+Date: Thu, 15 May 2014 13:22:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: Jassi Brar <jassisinghbrar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-ALSA <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH] dma: pl330: Add support for DMA_PAUSE command
-References: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org> <CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com> <CAHbNUh0fVND_oGLXWzsyKzbmJc_=FqhZTAnVHE4GGZ5aaJQbEg@mail.gmail.com> <5373607D.2000200@metafoo.de> <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com>
-In-Reply-To: <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jim Lin <jilin@nvidia.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH 04/10] clk: tegra: Initialize xusb clocks
+References: <1400113986-339-1-git-send-email-abrestic@chromium.org> <1400113986-339-5-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1400113986-339-5-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 02:01 PM, Tushar Behera wrote:
-> On 14 May 2014 17:54, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 05/14/2014 02:07 PM, Tushar Behera wrote:
->>>
->>> On 14 May 2014 17:29, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>>>
->>>> On Wed, May 14, 2014 at 8:53 AM, Tushar Behera <tushar.behera@linaro.org>
->>>> wrote:
->>>>>
->>>>> While playing back audio, pmc_dmaengine requests the DMA channel to
->>>>> stop DMA transmission through DMA_PAUSE command.
->>>>>
->>>>> Currently PL330 driver doesn't support DMA pause command, leaving
->>>>> the DMA state inconsistent when the system resumes. Instead, it would
->>>>> be better to terminate the DMA transfer during suspend and restart
->>>>> again during resume.
->>>>>
->>>>> Tested with audio playback across a suspend-resume cycle.
->>>>>
->>>> What is pmc_dmaengine? How does DMA_PAUSE help, when there is no
->>>> DMA_RESUME?
->>>>
->>>
->>> Sorry, it is a typo.
->>>
->>> sound/core/pcm_dmaengine.c:snd_dmaengine_pcm_trigger() -->
->>> dmaengine_pause() is called during system suspend.
->>
->>
->> It is only called if the DMA driver has support for pausing and resuming DMA
->> transfers. Or at least that is the intention.
->>
->> - Lars
->
-> During suspend, snd_dmaengine_pcm_trigger():SNDRV_PCM_TRIGGER_SUSPEND
-> is called which unconditionally calls dmaengine_pause(). Should we
-> update snd_dmaengine_pcm_trigger() to check for DMA pause/resume
-> support and call dmaengine_pause() or dmaengine_terminate_all()
-> accordingly?
+On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
+> Initialize the XUSB-related clocks with appropriate parents and rates
+> for both Tegra114 and Tegra124.
 
-As far as I understand it we do not have to do anything for TRIGGER_SUSPEND 
-if we do not set the SNDRV_PCM_INFO_RESUME flag. It looks like 
-TRIGGER_SUSPEND is called unconditionally during suspend. But since the 
-error code is ignored it should be fine if we just call dmaengine_pause() 
-and that return -ENOSYS or similar.
+These first 4 clock driver patches look plausible to me, although I
+didn't look that hard!
 
-Are you seeing an actual issue that you are trying to fix with your patch?
-
-- Lars
-
+Peter or Mike, if they look OK to you, can you please pick them up for
+3.16 so that by the time we apply the rest of the patches in this series
+for 3.17, the clock dependencies are already there? Thanks.
