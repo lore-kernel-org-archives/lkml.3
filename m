@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaEOUhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:37:37 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:50761 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504AbaEOUhf (ORCPT
+	id S1755722AbaEOUik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:38:40 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52612 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073AbaEOUii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:37:35 -0400
-Date: Thu, 15 May 2014 22:37:31 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, t.figa@samsung.com,
-        Will Deacon <will.deacon@arm.com>, tomasz.figa@gmail.com,
-        joshi@samsung.com, s.nawrocki@samsung.com, Varun.Sethi@freescale.com,
-        kgene.kim@samsung.com, prathyush.k@samsung.com,
-        sachin.kamat@linaro.org, joro@8bytes.org, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>, grundler@chromium.org,
-        linux-samsung-soc@vger.kernel.org, a.motakis@virtualopensystems.com,
-        pullip.cho@samsung.com, rahul.sharma@samsung.com,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        supash.ramaswamy@linaro.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v12 11/31] documentation: iommu: add binding document of
- Exynos System MMU
-Message-ID: <20140515203729.GA7136@mithrandir>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
- <6544270.ddFBoY6LMm@wuerfel>
- <20140428111802.GI19455@ulmo>
- <4780885.JaktFvJeC7@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <4780885.JaktFvJeC7@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 15 May 2014 16:38:38 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v3 0/6] watchdog: Add reboot API
+Date: Thu, 15 May 2014 13:38:18 -0700
+Message-Id: <1400186304-1691-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some hardware implements reboot through its watchdog hardware, for example
+by triggering a watchdog timeout or by writing into its watchdog register
+set. Platform specific code starts to spread into watchdog drivers,
+typically by setting pointers to a callback function which is then called
+from the architecture's reset handler.
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+While global and exported callback function pointers (such as arm_pm_restart)
+may be acceptable as long as they are used from platform and/or architecture
+code, using such a mechanism across subsystems and drivers is less than
+desirable. Ultimately, we'll need a better solution.
 
-On Mon, Apr 28, 2014 at 02:05:30PM +0200, Arnd Bergmann wrote:
-[...]
-> let me clarify by example:
->=20
-> 	iommu@1 {
-> 		compatible =3D "some,simple-iommu";
-> 		reg =3D <1>;
-> 		#iommu-cells =3D <0>; /* supports only one master */
-> 	};
->=20
-> 	iommu@2 {
-> 		compatible =3D "some,other-iommu";
-> 		reg =3D <3>;
-> 		#iommu-cells =3D <1>; /* contains master ID */
-> 	};
->=20
-> 	iommu@3 {
-> 		compatible =3D "some,windowed-iommu";
-> 		reg =3D <2>;
-> 		#iommu-cells =3D <2>; /* contains dma-window */
-> 	};
->=20
-> 	device@4 {
-> 		compatible =3D "some,ethernet";
-> 		iommus =3D <&/iommu@1>;
-> 	};
->=20
-> 	device@5 {
-> 		compatible =3D "some,dmaengine";
-> 		iommus =3D <&/iommu@2 0x40000000 0x1000000>,
-> 			 <&/iommu@3 0x101>;
-> 	};
->=20
-> The device at address 4 has a one-one relationship with iommu@1, so there
-> is no need for any data. device@5 has two master ports. One is connected =
-to
-> an IOMMU that has a per-device aperture, device@5 can only issue transfers
-> to the 256MB area at 0x40000000, and the IOMMU will have to put entries f=
-or
-> this device into that address. The second master port is connected to
-> iommu@3, which uses a master ID that gets passed along with each transfer,
-> so that needs to be put into the IOTLBs.
+This patch series provides such a solution. It extends the watchdog
+subsystem to support reboot functionality, provides an API function
+call to trigger reboots, adds support for the new API to arm and arm64,
+and converts the drivers providing reboot functionality to use the new
+infrastructure.
 
-iommu@3 and the second port of device@5 seem to match what we need for
-Tegra (and as I understand also Exynos). Can we settle on this for now
-so that Hiroshi and Cho can go update their drivers for this binding?
+The first patch in the series implements the new API. The second patch
+documents it. The third and fourth patch modify the arm and arm64
+architecture reset handlers to call the added API function. The final
+two patches register the reboot handlers in the sunxi and moxart watchdog
+drivers with the watchdog subsystem.
 
-> A variation would be to not use #iommu-cells at all, but provide a
-> #address-cells / #size-cells pair in the IOMMU, and have a translation
-> as we do for dma-ranges. This is probably most flexible.
+The sunxi patch depends on the most recent patch series sumitted by
+Maxime Ripard.
 
-The remainder of this discussion seems to indicate that #iommu-cells and
-dma-ranges don't have to be mutually exclusive. For some IOMMUs it might
-make sense to use both.
+Note that I did not address the comments asking for support of multiple
+watchdogs with reset handlers, nor the request to add a flag to provide
+'preferential' treatment for one of those watchdogs. This will require
+additional discussion and needs to be addressed with a later patch if needed.
+Key questions are how to add such support for non-DT systems, and if the
+scope of restart handling is a function of the driver or of the system.
+Also, if one of the watchdogs does not result in a complete system reset
+but another one does, it is not clear to me why the less-than-perfect
+watchdog would be configured in the first place (or how this situation
+would be handled today).
 
-In fact perhaps we should require every IOMMU user to also specify a
-dma-ranges property, even if for some cases the range would be simply
-the complete physical address space. Perhaps in analogy to the ranges
-property an empty dma-ranges property could be taken to mean all of the
-physical address space.
-
-I'm aware that this doesn't cover any of the more exotic cases out
-there, but the fact is that we have real devices out there that ship
-with some variations of these simple IOMMUs and I don't think we're
-doing ourselves a favour by blocking support for these to be added on
-the hope of merging the perfect solution that covers all use-cases.
-Patches for Tegra have already been around for close to half a year.
-
-Thierry
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdSWIAAoJEN0jrNd/PrOhNlcQAL3IQystbn7k1fYhGLuqJ15t
-FnHMNLIrL5LroGQBJ0F/zGd+tGe8lSlo+pwbAK5ewxVdPCJL29VpeuEPLwZpZGiN
-QRrxFHnZPhyKTiTiFVGJJThCW0yY4IMLZ/c3wZk/17KYKftTFyOaWjGQFLwMQ6Hu
-xDZOO+5dmcc9SckHRJUOn+WDLExBDV3GNOZxSGbMNtiYqYjCV6vRmqI+O55lq9+1
-vmN78TzdKCj+lHN4jsRk2ehn1Zfqy/mNkmjcV1I4wL5CPl4XV7XC1SxFaZNBINIT
-12cp+2NcGE+yuizM+mOyF/hVdGR8P4i3wMBTAuX8fzH6g2gAnelRkzCGvefLe5aX
-2qJbUJ/S/pXxq+kga9eBgyMzTj8xLqZMawHCfDUSIv1YDfRXBWyZy0xK44aD+a/g
-igQOpSLhJc0xb3QF8EUntTB8Et23OzbyKXWW+cMXnuAcW1ahL0M85Z+ixuYRfJl+
-MggbJUUVa14EJvJMrAwFMVHm2j7Kjsalhfy8m8dke/3HoAeeaY1Lrehdf8DbsGtu
-edFGeuwLyUCwYc1jh620+qeNjDjo6ovORjPOJo6fIxf+gaiszXxFf7Fm/KHtBAoQ
-ns8fOahCGwFvch3snzU12QhVW6cBNtMPINL3+nqyeThN3shf6neaqrgWJPOiUSwh
-zoYccPp4OLvP5zEZCEmA
-=tf6d
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+Compile tested only for arm64. Tested on arm/moxart by Jonas Jensen.
