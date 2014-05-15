@@ -1,121 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736AbaEOWDc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:03:32 -0400
+	id S932097AbaEOWEB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:04:01 -0400
 Received: from mga03.intel.com ([143.182.124.21]:56238 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755110AbaEOWD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:03:27 -0400
+	id S1755430AbaEOWDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 18:03:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1062,1389772800"; 
-   d="scan'208";a="432790836"
+   d="scan'208";a="432790844"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
-Subject: perf: Add support for full Intel event lists v4
-Date: Thu, 15 May 2014 15:03:03 -0700
-Message-Id: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 5/9] perf, tools: Add perf download to download event files v3
+Date: Thu, 15 May 2014 15:03:08 -0700
+Message-Id: <1400191392-11569-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
+References: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v2: Review feedback addressed and some minor improvements]
-[v3: More review feedback addressed and handle test failures better.
-Ported to latest tip/core.]
-[v4: Addressed Namhyung's feedback]
+From: Andi Kleen <ak@linux.intel.com>
 
-perf has high level events which are useful in many cases. However
-there are some tuning situations where low level events in the CPU
-are needed. Traditionally this required specifying the event in 
-raw form (very awkward) or using non standard frontends
-like ocperf or patching in libpfm.
+Add a downloader to automatically download the right
+files from a download site.
 
-Intel CPUs can have very large event files (Haswell has ~336 core events,
-much more if you add uncore or all the offcore combinations), which is too
-large to describe through the kernel interface. It would require tying up
-significant amounts of unswappable memory for this.
+This is implemented as a script calling wget, similar to
+perf archive. The perf driver automatically calls the right
+binary. The downloader is extensible, but currently only
+implements an Intel event download.  It would be straightforward
+to add other sites too for other vendors.
 
-oprofile always had separate event list files that were maintained by 
-the CPU vendors. The oprofile events were shipped with the tool.
-The Intel events get updated regularly, for example to add references
-to the specification updates or add new events.
+The downloaded event files are put into ~/.cache/pmu-events, where the
+builtin event parser in util/* can find them automatically.
 
-Unfortunately oprofile usually did not keep up with these updates,
-so the events in oprofile were often out of date. In addition
-it ties up quite a bit of disk space, mostly for CPUs you don't have.
+v2: Use ~/.cache
+v3: Check for wget. Some cleanups.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-download.txt | 28 +++++++++++++++
+ tools/perf/Documentation/perf-list.txt     | 12 ++++++-
+ tools/perf/Makefile.perf                   |  5 ++-
+ tools/perf/perf-download.sh                | 57 ++++++++++++++++++++++++++++++
+ 4 files changed, 100 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/Documentation/perf-download.txt
+ create mode 100755 tools/perf/perf-download.sh
 
-This patch kit implements another mechanism that avoids these problems.
-Intel releases the event lists for CPUs in a standardized JSON format
-on a download server.
+diff --git a/tools/perf/Documentation/perf-download.txt b/tools/perf/Documentation/perf-download.txt
+new file mode 100644
+index 0000000..7af841b
+--- /dev/null
++++ b/tools/perf/Documentation/perf-download.txt
+@@ -0,0 +1,28 @@
++perf-download(1)
++===============
++
++NAME
++----
++perf-download - Download event files for current CPU.
++
++SYNOPSIS
++--------
++[verse]
++'perf download' [vendor-family-model]
++
++DESCRIPTION
++-----------
++This command automatically downloads event list for the current CPU and
++stores them in $XDG_CACHE_HOME/pmu-events (or $HOME/.cache/pmu-events).
++The other tools automatically look for them there. The CPU can be also
++specified at the command line.
++
++The downloading is done using http through wget, which needs
++to be installed.
++
++The user should regularly call this to download updated event lists
++for the current CPU.
++
++Note the downloaded files are stored per user, so if you use
++perf as normal user or with sudo you have to run perf download
++for both or specify --events-file for the users manually.
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 9305a37..2b4eba0 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -61,6 +61,16 @@ Sampling). Examples to use IBS:
+  perf record -a -e r076:p ...          # same as -e cpu-cycles:p
+  perf record -a -e r0C1:p ...          # use ibs op counting micro-ops
+ 
++PER CPU EVENT LISTS
++-------------------
++
++For some CPUs (particularly modern Intel CPUs) "perf download" can
++download additional CPU specific event definitions, which then
++become visible in perf list and available in the other perf tools.
++
++This obsoletes the raw event description method described below
++for most cases.
++
+ RAW HARDWARE EVENT DESCRIPTOR
+ -----------------------------
+ Even when an event is not available in a symbolic form within perf right now,
+@@ -123,6 +133,6 @@ types specified.
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-top[1],
+-linkperf:perf-record[1],
++linkperf:perf-record[1], linkperf:perf-download[1],
+ http://www.intel.com/Assets/PDF/manual/253669.pdf[Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 3B: System Programming Guide],
+ http://support.amd.com/us/Processor_TechDocs/24593_APM_v2.pdf[AMD64 Architecture Programmer’s Manual Volume 2: System Programming]
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 8800838..4dc1682 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -126,6 +126,7 @@ PYRF_OBJS =
+ SCRIPT_SH =
+ 
+ SCRIPT_SH += perf-archive.sh
++SCRIPT_SH += perf-download.sh
+ 
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+@@ -872,6 +873,8 @@ install-bin: all install-gtk
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ 	$(call QUIET_INSTALL, perf-archive) \
+ 		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
++	$(call QUIET_INSTALL, perf-download) \
++		$(INSTALL) $(OUTPUT)perf-download -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+ 	$(call QUIET_INSTALL, perl-scripts) \
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
+@@ -917,7 +920,7 @@ config-clean:
+ 	@$(MAKE) -C config/feature-checks clean >/dev/null
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
++	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)/perf-download $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
+ 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+diff --git a/tools/perf/perf-download.sh b/tools/perf/perf-download.sh
+new file mode 100755
+index 0000000..b6e4299
+--- /dev/null
++++ b/tools/perf/perf-download.sh
+@@ -0,0 +1,57 @@
++#!/bin/bash
++# download event files for current cpu for perf
++
++WGETOPT=${WGETOPT:---no-verbose --timeout 5}
++
++set -e
++
++if ! type wget > /dev/null ; then
++	echo "please install wget"
++	exit 1
++fi
++
++if [ "$1" == "" ] ; then
++	S=$(awk '
++/^vendor/     		{ V=$3 }
++/^model/ && $2 == ":" 	{ M=$3 }
++/^cpu family/ 		{ F = $4 }
++END	      		{ printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
++else
++	S="$1"
++fi
++V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
++
++CACHEDIR=${XDG_CACHE_HOME:-~/.cache}
++[ ! -d $CACHEDIR/pmu-events ] && mkdir -p $CACHEDIR/pmu-events
++cd $CACHEDIR/pmu-events
++
++case "$V" in
++GenuineIntel)
++	echo "Downloading models file"
++	URLBASE=${URLBASE:-https://download.01.org/perfmon}
++	MAPFILE=${MAPFILE:-mapfile.csv}
++	echo "Downloading readme.txt"
++	wget -N $WGETOPT $URLBASE/readme.txt
++	;;
++
++# Add more CPU vendors here
++
++*)
++	echo "Unsupported CPU vendor $V"
++	exit 1
++	;;
++esac
++
++wget -N $WGETOPT $URLBASE/$MAPFILE
++
++echo "Downloading events file"
++awk -v urlbase=$URLBASE -v cpu="$S" -F, \
++	'$1 == cpu && $4 == "core" { print urlbase $3; exit 0 }' \
++	$MAPFILE > url$$
++if [ -s url$$ ] ; then
++	wget $WGETOPT -q -i url$$ -O $S-core.json
++else
++	echo "CPU $S not found"
++fi
++rm -f url$$
++
+-- 
+1.9.0
 
-I implemented an automatic downloader to get the event file for the
-current CPU.  The events are stored in ~/.cache/pmu-events.
-Then perf adds a parser that converts the JSON format into perf event
-aliases, which then can be used directly as any other perf event.
-
-The parsing is done using a simple existing JSON library.
-
-The events are still abstracted for perf, but the abstraction mechanism is
-through the downloaded file instead of through the kernel.
-
-The JSON format and perf parser has some minor Intelisms, but they
-are simple and small and optional. It's easy to extend, so it would be
-possible to use it for other CPUs too, add different pmu attributes, and
-add new download sites to the downloader tool.
-
-Currently only core events are supported, uncore may come at a later
-point. No kernel changes, all code in perf user tools only.
-
-Some of the parser files are partially shared with separate event parser
-library and are thus 2-clause BSD licensed.
-
-Patches also available from
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/json
-
-Example output:
-
-% perf download 
-Downloading models file
-Downloading readme.txt
-2014-03-05 10:39:33 URL:https://download.01.org/perfmon/readme.txt [10320/10320] -> "readme.txt" [1]
-2014-03-05 10:39:34 URL:https://download.01.org/perfmon/mapfile.csv [1207/1207] -> "mapfile.csv" [1]
-Downloading events file
-% perf list
-...
-  br_inst_exec.all_branches                          [Speculative and retired
-                                                      branches]
-  br_inst_exec.all_conditional                       [Speculative and retired
-                                                      macro-conditional
-                                                      branches]
-  br_inst_exec.all_direct_jmp                        [Speculative and retired
-                                                      macro-unconditional
-                                                      branches excluding
-                                                      calls and indirects]
-... 333 more new events ...
-
-% perf stat -e br_inst_exec.all_direct_jmp true
-
- Performance counter stats for 'true':
-
-             6,817      cpu/br_inst_exec.all_direct_jmp/                                   
-
-       0.003503212 seconds time elapsed
-
-One nice feature is that a pointer to the specification update is now
-included in the description, which will hopefully clear up many problems:
-
-% perf list
-...
-  mem_load_uops_l3_hit_retired.xsnp_hit              [Retired load uops which
-                                                      data sources were L3
-                                                      and cross-core snoop
-                                                      hits in on-pkg core
-                                                      cache. Supports address
-                                                      when precise. Spec
-                                                      update: HSM26, HSM30
-                                                      (Precise event)]
-...
-
-
--Andi
