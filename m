@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaEOGLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:11:08 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:48837 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaEOGLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:11:03 -0400
-X-Google-Original-From: Jassi Brar <jaswinder.singh@linaro.org>
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, s-anna@ti.com, loic.pallardy@st.com,
-        lftan.linux@gmail.com, slapdau@yahoo.com.au,
-        courtney.cavin@sonymobile.com, robherring2@gmail.com, arnd@arndb.de,
-        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
-        ks.giri@samsung.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCHv5 1/4] mailbox: rename pl320-ipc specific mailbox.h
-Date: Thu, 15 May 2014 11:40:05 +0530
-Message-Id: <1400134205-3910-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+	id S1753825AbaEOGLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:11:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:45005 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753447AbaEOGL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 02:11:28 -0400
+Date: Thu, 15 May 2014 16:11:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@linaro.org>, Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa+renesas@sang-engineering.com>
+Subject: linux-next: manual merge of the clk tree with the renesas tree
+Message-ID: <20140515161121.39998223@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/DIBg/d8/SGKnLDEcMnbpxYX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suman Anna <s-anna@ti.com>
+--Sig_/DIBg/d8/SGKnLDEcMnbpxYX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The patch 30058677 "ARM / highbank: add support for pl320 IPC"
-added a pl320 IPC specific header file as a generic mailbox.h.
-This file has been renamed appropriately to allow the
-introduction of the generic mailbox API framework.
+Hi Mike,
 
-Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- arch/arm/mach-highbank/highbank.c        | 2 +-
- drivers/cpufreq/highbank-cpufreq.c       | 2 +-
- drivers/mailbox/pl320-ipc.c              | 2 +-
- include/linux/{mailbox.h => pl320-ipc.h} | 0
- 4 files changed, 3 insertions(+), 3 deletions(-)
- rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
+Today's linux-next merge of the clk tree got a conflict in
+Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
+between commit b557deadc5cc ("ARM: shmobile: r7s72100: document MSTP
+clock support") from the renesas tree and commit 5483bf698f42 ("clk:
+shmobile: r8a7779: Add MSTP clock support") from the clk tree.
 
-diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
-index c7de89b..f295cbb 100644
---- a/arch/arm/mach-highbank/highbank.c
-+++ b/arch/arm/mach-highbank/highbank.c
-@@ -20,7 +20,7 @@
- #include <linux/input.h>
- #include <linux/io.h>
- #include <linux/irqchip.h>
--#include <linux/mailbox.h>
-+#include <linux/pl320-ipc.h>
- #include <linux/of.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
-diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
-index bf8902a..b464f29 100644
---- a/drivers/cpufreq/highbank-cpufreq.c
-+++ b/drivers/cpufreq/highbank-cpufreq.c
-@@ -19,7 +19,7 @@
- #include <linux/cpu.h>
- #include <linux/err.h>
- #include <linux/of.h>
--#include <linux/mailbox.h>
-+#include <linux/pl320-ipc.h>
- #include <linux/platform_device.h>
- 
- #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
-diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-index d873cba..f3755e0 100644
---- a/drivers/mailbox/pl320-ipc.c
-+++ b/drivers/mailbox/pl320-ipc.c
-@@ -26,7 +26,7 @@
- #include <linux/device.h>
- #include <linux/amba/bus.h>
- 
--#include <linux/mailbox.h>
-+#include <linux/pl320-ipc.h>
- 
- #define IPCMxSOURCE(m)		((m) * 0x40)
- #define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
-diff --git a/include/linux/mailbox.h b/include/linux/pl320-ipc.h
-similarity index 100%
-rename from include/linux/mailbox.h
-rename to include/linux/pl320-ipc.h
--- 
-1.8.1.2
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.t=
+xt
+index b5fc72621bfd,30df825d72ef..000000000000
+--- a/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
++++ b/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
+@@@ -10,7 -10,7 +10,8 @@@ index in the group, from 0 to 31
+  Required Properties:
+ =20
+    - compatible: Must be one of the following
+ +    - "renesas,r7s72100-mstp-clocks" for R7S72100 (RZ) MSTP gate clocks
++     - "renesas,r8a7779-mstp-clocks" for R8A7779 (R-Car H1) MSTP gate cloc=
+ks
+      - "renesas,r8a7790-mstp-clocks" for R8A7790 (R-Car H2) MSTP gate cloc=
+ks
+      - "renesas,r8a7791-mstp-clocks" for R8A7791 (R-Car M2) MSTP gate cloc=
+ks
+      - "renesas,cpg-mstp-clock" for generic MSTP gate clocks
+
+--Sig_/DIBg/d8/SGKnLDEcMnbpxYX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTdFqNAAoJEMDTa8Ir7ZwVqtIP/3430H+vGs0teN8LtJkLBoe4
+ZPYcAEsVly4CZGjU0ZB13KAymKTw6I+uTP2dh569m/oqTw8yodjvtJ20pDSoDCW/
+wqKn5UYUwdhHgogPJ9cpTeydGkDGSKt+mudMCPRbZLm6SZ/TPSs0/fljcMGSHY6Z
+SjQionBFZv27KdicJxD7VWPm9s39+pQNgRafROPjCmeRbRvKei7CrM6Y+LvWMBBk
+onG+PsjuT4zXHnvnGPepAcgKq7ffpaULPKpqNpIPCl96ikdrGl4Bi18iqN1rwCLp
+P/dgYr9mCxXBTrkkYkIhlZYhvBv4z82y0/BbeJv60jFkCjEcSdfD1ICY8PmTGsrE
+K9M3Kf2/RumLOntx4mCCwTtea+CJu8tLXhsHYkuJNrf0BDCkmZOqdJTFSWV5MMXT
+/0+jmttUHcx/8/WAX0Cc4hjkWtQF22SkU/ciUIuH/xxNn2E0Mx9HdQXaned1WG/J
+N4VTBCIFvP3kIx/EGkHL4L5dFqCtQBR9pwAVlb1SzSIUJrDQBn4vGwKWD9Xd6rdf
+cCBrvo2ogiVd5A9+6fKGZjWvrPN7OKsqEZ7QwjxBpLKU1sOQmh7ERhKQQX4omvQf
+WRqJvjhABXTTHCflkdlL7HPF5xdnf39lhiM7WwLdE/eAn7jkNgIY0XMPjpWNWm/l
+t8sWfs+Rii2l63ZnNKNZ
+=g7sI
+-----END PGP SIGNATURE-----
+
+--Sig_/DIBg/d8/SGKnLDEcMnbpxYX--
