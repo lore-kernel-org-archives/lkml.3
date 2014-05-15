@@ -1,91 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaEOOPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:15:30 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41871 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217AbaEOOP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:15:27 -0400
-Date: Thu, 15 May 2014 10:15:15 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Mateusz Guzik <mguzik@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Eric Sandeen <esandeen@redhat.com>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515141515.GA21632@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Mateusz Guzik <mguzik@redhat.com>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Eric Sandeen <esandeen@redhat.com>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
- <1400005862-3751-2-git-send-email-mguzik@redhat.com>
- <20140514215457.GC5421@dastard>
- <20140515094236.GE10637@mguzik.redhat.com>
- <20140515100157.GB27289@quack.suse.cz>
- <20140515124725.GA8194@thunk.org>
- <20140515134610.GB660@quack.suse.cz>
+	id S1754924AbaEOOQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:16:13 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:44317 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaEOOQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:16:11 -0400
+Date: Thu, 15 May 2014 16:16:05 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, hch@infradead.org,
+        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] smp: Print more useful debug info upon receiving
+ IPI on an offline CPU
+Message-ID: <20140515141600.GB11458@localhost.localdomain>
+References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
+ <20140511203647.17152.45125.stgit@srivatsabhat.in.ibm.com>
+ <20140513153845.GD13828@localhost.localdomain>
+ <537461C9.9000309@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140515134610.GB660@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <537461C9.9000309@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 03:46:10PM +0200, Jan Kara wrote:
-> > Saving it in the superblock would require changing a bunch of file
-> > systems.  What if we store this information in memory, and print it
-> > out under certain conditions (i.e., after a soft lockup detection, or
-> > upon request of some magic sysrq request)?
->   By 'superblock' I meant 'struct super_block' ;) So we are in agreement I
-> believe.
+On Thu, May 15, 2014 at 12:12:17PM +0530, Srivatsa S. Bhat wrote:
+> On 05/13/2014 09:08 PM, Frederic Weisbecker wrote:
+> > On Mon, May 12, 2014 at 02:06:49AM +0530, Srivatsa S. Bhat wrote:
+> >> Today the smp-call-function code just prints a warning if we get an IPI on
+> >> an offline CPU. This info is sufficient to let us know that something went
+> >> wrong, but often it is very hard to debug exactly who sent the IPI and why,
+> >> from this info alone.
+> >>
+> >> In most cases, we get the warning about the IPI to an offline CPU, immediately
+> >> after the CPU going offline comes out of the stop-machine phase and reenables
+> >> interrupts. Since all online CPUs participate in stop-machine, the information
+> >> regarding the sender of the IPI is already lost by the time we exit the
+> >> stop-machine loop. So even if we dump the stack on each CPU at this point,
+> >> we won't find anything useful since all of them will show the stack-trace of
+> >> the stopper thread. So we need a better way to figure out who sent the IPI and
+> >> why.
+> >>
+> >> To achieve this, when we detect an IPI targeted to an offline CPU, loop through
+> >> the call-single-data linked list and print out the payload (i.e., the name
+> >> of the function which was supposed to be executed by the target CPU). This
+> >> would give us an insight as to who might have sent the IPI and help us debug
+> >> this further.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  kernel/smp.c |   18 ++++++++++++++----
+> >>  1 file changed, 14 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/kernel/smp.c b/kernel/smp.c
+> >> index 06d574e..f864921 100644
+> >> --- a/kernel/smp.c
+> >> +++ b/kernel/smp.c
+> >> @@ -185,14 +185,24 @@ void generic_smp_call_function_single_interrupt(void)
+> >>  {
+> >>  	struct llist_node *entry;
+> >>  	struct call_single_data *csd, *csd_next;
+> >> +	static bool warned;
+> >> +
+> >> +	entry = llist_del_all(&__get_cpu_var(call_single_queue));
+> >> +	entry = llist_reverse_order(entry);
+> >>  
+> >>  	/*
+> >>  	 * Shouldn't receive this interrupt on a cpu that is not yet online.
+> >>  	 */
+> >> -	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
+> >> -
+> >> -	entry = llist_del_all(&__get_cpu_var(call_single_queue));
+> >> -	entry = llist_reverse_order(entry);
+> >> +	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
+> >> +		warned = true;
+> >> +		WARN_ON(1);
+> > 
+> > More details may be better:
+> > 
+> > WARN_ONCE(1, "IPI on offline CPU");
+> >
+> 
+> Sure, that sounds better.
+>  
+> >> +		/*
+> >> +		 * We don't have to use the _safe() variant here
+> >> +		 * because we are not invoking the IPI handlers yet.
+> >> +		 */
+> >> +		llist_for_each_entry(csd, entry, llist)
+> >> +			pr_warn("SMP IPI Payload: %pS \n", csd->func);
+> > 
+> > Payload is kind of vague. How about "IPI func %pS sent on offline CPU".
+> > 
+> 
+> Ok, and maybe s/func/function and s/on/to ?
 
-Ah, yes, we're in agreement.  I thought you were talking about the
-on-disk superblock.
+Yeah looks good.
 
-> > Or we could create a tunable threshold and print a message after a
-> > file system has been frozen more than a particular specified duration,
-> > with that duration set conservatively to something like 60 or 120
-> > seconds by default.
->   I was thinking about this as well but all these "warn after X seconds"
-> warnings tend to have quite a few false positives in practice so dumping
-> this in emergency-thaw sysrq handler or exposing the information somewhere
-> in proc (e.g. mountinfo) would look like a better option to me.
+Thanks.
 
-Well, we already have the soft lockup warning, which sometimes has
-some false positives, but in practice, if a process is runable but
-doesn't get to run in 2 minutes (the default is 20 seconds, but we've
-used 2 minutes to avoid the false positive problem on a super busy
-system), something is probably clearly wrong.
-
-Similarly, if a process is trying to write to a frozen file system,
-and can't after two minutes, something is almost certainly wrong, or
-least, it's something a system administrator should know about it.  We
-can argue over whether the default threshold should be 20 seconds, or
-120 seconds, or 2 hours, but I think there would be agreement that for
-pretty much any configuration, there is some delay after which
-printing a message is actually the right thing to do.  (Yes, "time
-that a process is waiting to write to a frozen file system != time the
-file system is frozen" --- the latter is easier to implement, but if
-people feel strongly about it, the former isn't that much more
-difficult.)
-
-The problem with using an sysrq handler is the user has to know how to
-use it.  If the user files a bug saying the system has mysteriously
-hung, the fact that the system log contains a hint as to what might be
-going on would be very useful for an enterprise distribiution's help
-desk.  (Yes, this won't help if it's the root file system is the one
-that's been frozen, unless the customer has configured remote syslog.
-But for many cases, it might provide a vital clue that could save a
-lot of time and support costs.)
-
-						- Ted
+> 
+> >> +	}
+> >>  
+> >>  	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
+> >>  		csd->func(csd->info);
+> >>
+> > 
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
