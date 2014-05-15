@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120AbaEOUjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:39:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36467 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096AbaEOUjN (ORCPT
+	id S1756081AbaEOUjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:39:11 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:62855 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811AbaEOUjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:39:13 -0400
-Message-ID: <537525EB.9090704@wwwdotorg.org>
-Date: Thu, 15 May 2014 14:39:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 16:39:06 -0400
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [RFC PATCH 05/10] ARM: tegra: Export function to read USB calibration
- data
-References: <1400113986-339-1-git-send-email-abrestic@chromium.org> <1400113986-339-6-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1400113986-339-6-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <537512E0.7000102@wwwdotorg.org>
+References: <25738681139c04272b6d2ebeff244c6d36c893f7.1400133090.git.viresh.kumar@linaro.org>
+	<537512E0.7000102@wwwdotorg.org>
+Date: Thu, 15 May 2014 13:39:05 -0700
+X-Google-Sender-Auth: X6eCvCa2mTheGSPc-hclq8hwR2g
+Message-ID: <CAD=FV=X_tVnMBz3yOf6QBYf4+-AK79_sF=asX4mD2mptxhM2CQ@mail.gmail.com>
+Subject: Re: [RFC] cpufreq: send notifications for intermediate (stable) frequencies
+From: Doug Anderson <dianders@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arvind.chauhan@arm.com, Stephen Warren <swarren@nvidia.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
-> Board-specific USB configuration data is stored in FUSE_SKU_CALIB_0.
-> Export a function to read it so the PHY can be properly configured.
+Hi,
 
-This patch seems conceptually fine to me. Presumably once Peter's fuse
-driver is fleshed out, it can expose the exact same semantic interface
-to drivers.
+On Thu, May 15, 2014 at 12:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/14/2014 11:56 PM, Viresh Kumar wrote:
+>> Douglas Anderson, recently pointed out an interesting problem due to which his
+>> udelay() was expiring earlier than it should:
+>> https://lkml.org/lkml/2014/5/13/766
+>>
+>> While transitioning between frequencies few platforms may temporarily switch to
+>> a stable frequency, waiting for the main PLL to stabilize.
+>>
+>> For example: When we transition between very low frequencies on exynos, like
+>> between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
+>> No CPUFREQ notification is sent for that. That means there's a period of time
+>> when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
+>> and 300MHz. And so udelay behaves badly.
+>>
+>> To get this fixed in a generic way, lets introduce another callback safe_freq()
+>> for the cpufreq drivers.
+>>
+>> safe_freq() should return a stable intermediate frequency a platform might want
+>> to switch to, before jumping to the frequency corresponding to 'index'. Core
+>> will send the 'PRE' notification for this 'stable' frequency and 'POST' for the
+>> 'target' frequency. Though if ->target_index() fails, it will handle POST for
+>> 'stable' frequency only.
+>>
+>> Drivers must send 'POST' notification for 'stable' freq and 'PRE' for 'target'
+>> freq. If they can't switch to target frequency, they don't need to send any
+>> notification.
+>
+> This seems rather complex. Can't either the driver or the cpufreq core
+> be responsible for all of the notifications? Otherwise, the logic gets
+> rather complex, and spread between the core and the driver.
+>
+> Perhaps the core should make separate calls into the driver to switch to
+> the temporary frequency and the final frequency, so it can manage all
+> the notifications. Probably best to use a separate function pointer for
+> the temporary change so the driver can easily know what it's doing.
 
-I suppose one could argue that we should create/use an explicit fuse
-subsystem with a standard API that drivers can call into, rather than a
-custom API. We can get the appropriate handle to use for that API from a
-phandle (plus fuse IDs?) in a DT property (in the XHCI device node,
-pointing at the fuse device node) much like any other cross-device
-resource reference. I'm not too bothered whether the code actually does
-that in the first instance, although we should make sure we add that DT
-property (containing all required fuse ID information) so that the code
-/can/ work that way if we want it to in the future.
+In the discussion about the exynos cpufreq redesign (atop
+cpufreq-cpu0), it turns out that they've come up with a pretty
+reasonable solution that also happens to solve our problem.  They
+utilize an extra divider to make sure that the temporary PLL gets
+divided down so that it's low enough.
+
+It might mean that going between 300 MHz and 500 MHz that you will
+transition through 400 MHz, but I'm quite OK with not sending out a
+notification for that.
+
+If something like that could work for tegra, then maybe we can drop
+this whole thing and it will all just fix itself.  ;)
+
+-Doug
