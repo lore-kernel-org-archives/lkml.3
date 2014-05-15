@@ -1,192 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659AbaEOT0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:26:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000AbaEOT0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:26:47 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: x86@kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Elliott@hp.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/6] x86, nmi:  Add new nmi type 'external'
-Date: Thu, 15 May 2014 15:25:45 -0400
-Message-Id: <1400181949-157170-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
-References: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
+	id S1755488AbaEOT1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:27:32 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:51183 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552AbaEOT12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:27:28 -0400
+Message-ID: <537514D3.4060308@linux.vnet.ibm.com>
+Date: Fri, 16 May 2014 00:56:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
+        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
+        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 3/3] CPU hotplug, smp: Flush any pending IPI callbacks
+ before CPU offline
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com> <20140515191938.GB21306@htj.dyndns.org>
+In-Reply-To: <20140515191938.GB21306@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051519-9264-0000-0000-000006178F99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed when debugging a perf problem on a machine with GHES enabled,
-perf seemed slow.  I then realized that the GHES NMI routine was taking
-a global lock all the time to inspect the hardware.  This contended
-with all the local perf counters which did not need a lock.  So each cpu
-accidentally was synchronizing with itself when using perf.
+On 05/16/2014 12:49 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, May 16, 2014 at 12:44:13AM +0530, Srivatsa S. Bhat wrote:
+>>  /*
+>> + * flush_smp_call_function_queue - Flush any pending smp-call-function
+> 
+> Don't we need a blank line here?
+>
 
-This is because the way the nmi handler works.  It executes all the handlers
-registered to a particular subtype (to deal with nmi sharing).  As a result
-the GHES handler was executed on every PMI.
+Hmm? That sentence continues on the next line, hence I didn't add any blank
+line there.
 
-Fix this by creating a new nmi type called NMI_EXT, which is used by
-handlers that need to probe external hardware and require a global lock
-to do so.
+>> + * callbacks queued on this CPU (including those for which the source CPU's
+>> + * IPIs might not have been received on this CPU yet). This is invoked by a
+>> + * CPU about to go offline, to ensure that all pending IPI functions are run
+>> + * before it goes completely offline.
+>> + *
+>> + * Loop through the call_single_queue and run all the queued functions.
+>> + * Must be called with interrupts disabled.
+>> + */
+> 
+> Other than that, looks good to me.
+> 
+> Reviewed-by: Tejun Heo <tj@kernel.org>
+> 
 
-Now the main NMI handler can check the internal NMI handlers first and
-then the external ones if nothing is found.
+Thank you!
 
-This makes perf a little faster again on those machines with GHES enabled.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/include/asm/nmi.h |    1 +
- arch/x86/kernel/nmi.c      |   41 ++++++++++++++++++++++++++---------------
- drivers/acpi/apei/ghes.c   |    4 ++--
- drivers/watchdog/hpwdt.c   |   10 ++--------
- 4 files changed, 31 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index 5f2fc44..8631a49 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -25,6 +25,7 @@ extern int unknown_nmi_panic;
- 
- enum {
- 	NMI_LOCAL=0,
-+	NMI_EXT,
- 	NMI_UNKNOWN,
- 	NMI_SERR,
- 	NMI_IO_CHECK,
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 7b17864..b7c6f6b 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -34,29 +34,32 @@
- #include <trace/events/nmi.h>
- 
- struct nmi_desc {
--	spinlock_t lock;
--	struct list_head head;
-+	spinlock_t		lock;
-+	struct list_head	head;
- };
- 
- static struct nmi_desc nmi_desc[NMI_MAX] = 
- {
--	{
--		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[0].lock),
--		.head = LIST_HEAD_INIT(nmi_desc[0].head),
-+	[NMI_LOCAL] = {
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_LOCAL].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[NMI_LOCAL].head),
- 	},
--	{
--		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[1].lock),
--		.head = LIST_HEAD_INIT(nmi_desc[1].head),
-+	[NMI_EXT] = {
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_EXT].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[NMI_EXT].head),
- 	},
--	{
--		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[2].lock),
--		.head = LIST_HEAD_INIT(nmi_desc[2].head),
-+	[NMI_UNKNOWN] = {
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_UNKNOWN].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[NMI_UNKNOWN].head),
- 	},
--	{
--		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[3].lock),
--		.head = LIST_HEAD_INIT(nmi_desc[3].head),
-+	[NMI_SERR] = {
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_SERR].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[NMI_SERR].head),
-+	},
-+	[NMI_IO_CHECK] = {
-+		.lock = __SPIN_LOCK_UNLOCKED(&nmi_desc[NMI_IO_CHECK].lock),
-+		.head = LIST_HEAD_INIT(nmi_desc[NMI_IO_CHECK].head),
- 	},
--
- };
- 
- struct nmi_stats {
-@@ -428,8 +431,16 @@ static __kprobes void default_do_nmi(struct pt_regs *regs)
- 
- 	__this_cpu_write(last_nmi_rip, regs->ip);
- 
-+	/* try local NMIs first */
- 	handled = nmi_handle(NMI_LOCAL, regs, b2b);
- 	__this_cpu_add(nmi_stats.normal, handled);
-+
-+	/* if unclaimed, try external NMIs next */
-+	if (!handled) {
-+		handled = nmi_handle(NMI_EXT, regs, b2b);
-+		__this_cpu_add(nmi_stats.external, handled);
-+	}
-+
- 	if (handled) {
- 		/*
- 		 * There are cases when a NMI handler handles multiple
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index dab7cb7..8b78bf5 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -976,7 +976,7 @@ static int ghes_probe(struct platform_device *ghes_dev)
- 		ghes_estatus_pool_expand(len);
- 		mutex_lock(&ghes_list_mutex);
- 		if (list_empty(&ghes_nmi))
--			register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
-+			register_nmi_handler(NMI_EXT, ghes_notify_nmi, 0,
- 						"ghes");
- 		list_add_rcu(&ghes->list, &ghes_nmi);
- 		mutex_unlock(&ghes_list_mutex);
-@@ -1025,7 +1025,7 @@ static int ghes_remove(struct platform_device *ghes_dev)
- 		mutex_lock(&ghes_list_mutex);
- 		list_del_rcu(&ghes->list);
- 		if (list_empty(&ghes_nmi))
--			unregister_nmi_handler(NMI_LOCAL, "ghes");
-+			unregister_nmi_handler(NMI_EXT, "ghes");
- 		mutex_unlock(&ghes_list_mutex);
- 		/*
- 		 * To synchronize with NMI handler, ghes can only be
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 75d2243..dd70ee7 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -736,12 +736,9 @@ static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
- 	if (retval)
- 		goto error;
--	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
-+	retval = register_nmi_handler(NMI_EXT, hpwdt_pretimeout, 0, "hpwdt");
- 	if (retval)
- 		goto error1;
--	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
--	if (retval)
--		goto error2;
- 
- 	dev_info(&dev->dev,
- 			"HP Watchdog Timer Driver: NMI decoding initialized"
-@@ -749,8 +746,6 @@ static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 			(allow_kdump == 0) ? "OFF" : "ON");
- 	return 0;
- 
--error2:
--	unregister_nmi_handler(NMI_SERR, "hpwdt");
- error1:
- 	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
- error:
-@@ -765,8 +760,7 @@ error:
- static void hpwdt_exit_nmi_decoding(void)
- {
- 	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
--	unregister_nmi_handler(NMI_SERR, "hpwdt");
--	unregister_nmi_handler(NMI_IO_CHECK, "hpwdt");
-+	unregister_nmi_handler(NMI_EXT, "hpwdt");
- 	if (cru_rom_addr)
- 		iounmap(cru_rom_addr);
- }
--- 
-1.7.1
+Regards,
+Srivatsa S. Bhat
 
