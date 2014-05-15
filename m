@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaEOUy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:54:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38098 "EHLO
+	id S1755512AbaEOUyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:54:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38101 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876AbaEOUy0 (ORCPT
+	with ESMTP id S1752139AbaEOUyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:54:26 -0400
-Message-ID: <53752981.3040307@infradead.org>
-Date: Thu, 15 May 2014 13:54:25 -0700
+	Thu, 15 May 2014 16:54:53 -0400
+Message-ID: <5375299C.5040706@infradead.org>
+Date: Thu, 15 May 2014 13:54:52 -0700
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
 To: LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Paul McQuade <paulmcquad@gmail.com>
-Subject: [PATCH 2/4] Documentation: update thunderbird email client settings
+        Jonathan Callen <jcallen@gentoo.org>
+Subject: [PATCH 3/4] Documentation: update java sample wrapper for java 7
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul McQuade <paulmcquad@gmail.com>
+From:	Jonathan Callen <jcallen@gentoo.org>
 
-Added setting to email-clients that is easier to read
-and is easier to setup thunderbird. Removed config settings
-and added GUI settings.
+The sample wrapper currently fails on some Java 7 .class files.  This
+updates the wrapper to properly handle those files.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Jonathan Callen <jcallen@gentoo.org>
 Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 ---
- Documentation/email-clients.txt |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ Documentation/java.txt |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- lnx-315-rc2.orig/Documentation/email-clients.txt
-+++ lnx-315-rc2/Documentation/email-clients.txt
-@@ -201,20 +201,15 @@ To beat some sense out of the internal e
+--- lnx-315-rc2.orig/Documentation/java.txt
++++ lnx-315-rc2/Documentation/java.txt
+@@ -188,6 +188,9 @@ shift
+ #define CP_METHODREF 10
+ #define CP_INTERFACEMETHODREF 11
+ #define CP_NAMEANDTYPE 12
++#define CP_METHODHANDLE 15
++#define CP_METHODTYPE 16
++#define CP_INVOKEDYNAMIC 18
  
- - Edit your Thunderbird config settings so that it won't use format=flowed.
-   Go to "edit->preferences->advanced->config editor" to bring up the
--  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
--  "false".
-+  thunderbird's registry editor.
+ /* Define some commonly used error messages */
  
--- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
-+- Set "mailnews.send_plaintext_flowed" to "false"
- 
--- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
-+- Set "mailnews.wraplength" from "72" to "0"
- 
--- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
-+- "View" > "Message Body As" > "Plain Text"
- 
--- Install the "toggle wordwrap" extension.  Download the file from:
--    https://addons.mozilla.org/thunderbird/addon/2351/
--  Then go to "tools->add ons", select "install" at the bottom of the screen,
--  and browse to where you saved the .xul file.  This adds an "Enable
--  Wordwrap" entry under the Options menu of the message composer.
-+- "View" > "Character Encoding" > "Unicode (UTF-8)"
- 
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- TkRat (GUI)
+@@ -242,14 +245,19 @@ void skip_constant(FILE *classfile, u_in
+ 		break;
+ 	case CP_CLASS:
+ 	case CP_STRING:
++	case CP_METHODTYPE:
+ 		seekerr = fseek(classfile, 2, SEEK_CUR);
+ 		break;
++	case CP_METHODHANDLE:
++		seekerr = fseek(classfile, 3, SEEK_CUR);
++		break;
+ 	case CP_INTEGER:
+ 	case CP_FLOAT:
+ 	case CP_FIELDREF:
+ 	case CP_METHODREF:
+ 	case CP_INTERFACEMETHODREF:
+ 	case CP_NAMEANDTYPE:
++	case CP_INVOKEDYNAMIC:
+ 		seekerr = fseek(classfile, 4, SEEK_CUR);
+ 		break;
+ 	case CP_LONG:
