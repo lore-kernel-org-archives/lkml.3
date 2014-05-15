@@ -1,89 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaEOPrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:47:11 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40800 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753670AbaEOPrI (ORCPT
+	id S1754256AbaEOPsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:48:24 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:33762 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561AbaEOPsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:47:08 -0400
-Message-ID: <1400168823.7862.9.camel@dabdike>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Date: Thu, 15 May 2014 11:47:03 -0400
-In-Reply-To: <8468354.y2kUZdOz9e@wuerfel>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
-	 <8399002.IIyBoyEHox@wuerfel>
-	 <CAMuHMdW5HSVyXpz9HFcrDDYq=zOFrBr6d8jOd8i_FMkXsEpr2Q@mail.gmail.com>
-	 <8468354.y2kUZdOz9e@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 15 May 2014 11:48:22 -0400
+X-Spam-Flag: NO
+X-Spam-Score: 0.2
+Authentication-Results: rohrpostix1.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 1D8CB261452
+Message-ID: <5374E1B5.2020408@vodafone.de>
+Date: Thu, 15 May 2014 17:48:05 +0200
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com>
+In-Reply-To: <5374CC9A.9090905@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-14 at 13:00 +0200, Arnd Bergmann wrote:
-> On Tuesday 13 May 2014 22:35:08 Geert Uytterhoeven wrote:
-> > 
-> > On Tue, May 13, 2014 at 9:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > I think we have three categories:
-> > 
-> > Thanks for the list!
-> > 
-> > > a) interfaces that uses relative time_t/timespec/timeval:
-> > > b) interfaces that don't make sense for times in the past:
-> > 
-> > > c) interfaces that require absolute times:
-> > >    - stat/lstat/fstatat/
-> > >    - utime/utimes/futimesat
-> > >
-> > > These absolutely have to use something better than time_t
-> > > both in user space and in the kernel so we can deal with
-> > > old files. A lot of file systems need to be fixed as well so
-> > > we can actually store the times, regardless of whether we
-> > > are running a 32 or 64 bit kernel.
-> > 
-> > So these are the ones we have to worry about.
-> > It looks like they all involve I/O? Apart from the case of using block data
-> > from the buffer cache, the 64-bit operations should disappear in the
-> > actual I/O noise, right?
-> 
-> Right. Also there have been proposals for a better 'stat' replacement
-> for years, which would solve half of the interface problem for the
-> file system interfaces.
-> 
-> However, we also need to find a solution for category b), I only put
-> them into a different category above because we can treat them
-> differently in the kernel. For instance, we could use ktime_t for
-> the kernel code in category b) and a new struct timespec64 for
-> the times in struct inode.
-> On the user interface side, using timespec64 would be a reasonable
-> choice for both categories, because we already have two implementations
-> of all those syscalls in order to handle 32-on-64 compat tasks,
-> and we could use the same set of syscall implementations for time64-on-32.
+Am 15.05.2014 16:18, schrieb Maarten Lankhorst:
+> op 15-05-14 15:19, Christian König schreef:
+>> Am 15.05.2014 15:04, schrieb Maarten Lankhorst:
+>>> op 15-05-14 11:42, Christian König schreef:
+>>>> Am 15.05.2014 11:38, schrieb Maarten Lankhorst:
+>>>>> op 15-05-14 11:21, Christian König schreef:
+>>>>>> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
+>>>>>>> op 14-05-14 17:29, Christian König schreef:
+>>>>>>>>> +    /* did fence get signaled after we enabled the sw irq? */
+>>>>>>>>> +    if 
+>>>>>>>>> (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) 
+>>>>>>>>> >= fence->seq) {
+>>>>>>>>> +        radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
+>>>>>>>>> +        return false;
+>>>>>>>>> +    }
+>>>>>>>>> +
+>>>>>>>>> +    fence->fence_wake.flags = 0;
+>>>>>>>>> +    fence->fence_wake.private = NULL;
+>>>>>>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
+>>>>>>>>> + __add_wait_queue(&fence->rdev->fence_queue, 
+>>>>>>>>> &fence->fence_wake);
+>>>>>>>>> +    fence_get(f);
+>>>>>>>> That looks like a race condition to me. The fence needs to be 
+>>>>>>>> added to the wait queue before the check, not after.
+>>>>>>>>
+>>>>>>>> Apart from that the whole approach looks like a really bad idea 
+>>>>>>>> to me. How for example is lockup detection supposed to happen 
+>>>>>>>> with this? 
+>>>>>>> It's not a race condition because fence_queue.lock is held when 
+>>>>>>> this function is called.
+>>>>>> Ah, I see. That's also the reason why you moved the wake_up_all 
+>>>>>> out of the processing function.
+>>>>> Correct. :-)
+>>>>>>> Lockup's a bit of a weird problem, the changes wouldn't allow 
+>>>>>>> core ttm code to handle the lockup any more,
+>>>>>>> but any driver specific wait code would still handle this. I did 
+>>>>>>> this by design, because in future patches the wait
+>>>>>>> function may be called from outside of the radeon driver. The 
+>>>>>>> official wait function takes a timeout parameter,
+>>>>>>> so lockups wouldn't be fatal if the timeout is set to something 
+>>>>>>> like 30*HZ for example, it would still return
+>>>>>>> and report that the function timed out.
+>>>>>> Timeouts help with the detection of the lockup, but not at all 
+>>>>>> with the handling of them.
+>>>>>>
+>>>>>> What we essentially need is a wait callback into the driver that 
+>>>>>> is called in non atomic context without any locks held.
+>>>>>>
+>>>>>> This way we can block for the fence to become signaled with a 
+>>>>>> timeout and can then also initiate the reset handling if necessary.
+>>>>>>
+>>>>>> The way you designed the interface now means that the driver 
+>>>>>> never gets a chance to wait for the hardware to become idle and 
+>>>>>> so never has the opportunity to the reset the whole thing.
+>>>>> You could set up a hangcheck timer like intel does, and end up 
+>>>>> with a reliable hangcheck detection that doesn't depend on cpu 
+>>>>> waits. :-) Or override the default wait function and restore the 
+>>>>> old behavior.
+>>>>
+>>>> Overriding the default wait function sounds better, please 
+>>>> implement it this way.
+>>>>
+>>>> Thanks,
+>>>> Christian. 
+>>>
+>>> Does this modification look sane?
+>> Adding the timeout is on my todo list for quite some time as well, so 
+>> this part makes sense.
+>>
+>>> +static long __radeon_fence_wait(struct fence *f, bool intr, long 
+>>> timeout)
+>>> +{
+>>> +    struct radeon_fence *fence = to_radeon_fence(f);
+>>> +    u64 target_seq[RADEON_NUM_RINGS] = {};
+>>> +
+>>> +    target_seq[fence->ring] = fence->seq;
+>>> +    return radeon_fence_wait_seq_timeout(fence->rdev, target_seq, 
+>>> intr, timeout);
+>>> +}
+>> When this call is comming from outside the radeon driver you need to 
+>> lock rdev->exclusive_lock here to make sure not to interfere with a 
+>> possible reset.
+> Ah thanks, I'll add that.
+>
+>>>      .get_timeline_name = radeon_fence_get_timeline_name,
+>>>      .enable_signaling = radeon_fence_enable_signaling,
+>>>      .signaled = __radeon_fence_signaled,
+>> Do we still need those callback when we implemented the wait callback?
+> .get_timeline_name is used for debugging (trace events).
+> .signaled is the non-blocking call to check if the fence is signaled 
+> or not.
+> .enable_signaling is used for adding callbacks upon fence completion, 
+> the default 'fence_default_wait' uses it, so
+> when it works no separate implementation is needed unless you want to 
+> do more than just waiting.
+> It's also used when fence_add_callback is called. i915 can be patched 
+> to use it. ;-)
 
-To step back a bit, is a 64 bit time_t actually a good solution on 32
-bits?  Paying a 64 bit penalty on every time operation does seem a bit
-overkill.  Most eventual uses are either monotonic counting or relative
-addition/subtraction.  If we added an additional 32 bit quantity called
-epoch, this would increase once every 68 years.  Within the kernel, we
-could do intelligent interpolation about what the epoch is, so in 2039
-if we get a low 32 bit time_t value, we assume epoch == 1, conversely if
-we see a high one, we assume epoch == 0.  We could add epoch on the end
-of the syscalls and detect if it's not present and fill in an
-interpolated value.  Interfaces which truly want 64 bit time_t would get
-it from epoch + 32 bit time_t.
+I just meant enable_signaling, the other ones are fine with me. The 
+problem with enable_signaling is that it's called with a spin lock held, 
+so we can't sleep.
 
-James
+While resetting the GPU could be moved out into a timer the problem here 
+is that I can't lock rdev->exclusive_lock in such situations.
 
+This means when i915 would call into radeon to enable signaling for a 
+fence we can't make sure that there is not GPU reset running on another 
+CPU. And touching the IRQ registers while a reset is going on is a 
+really good recipe to lockup the whole system.
+
+Christian.
+
+>
+> ~Maarten
 
