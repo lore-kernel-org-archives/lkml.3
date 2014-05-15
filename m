@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782AbaEOWfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:35:33 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47073 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430AbaEOWfb (ORCPT
+	id S1756068AbaEOWgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:36:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39062 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475AbaEOWgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:35:31 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Mark A. Greer" <mgreer@animalcreek.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: Re: bq24190: What's the correct API to turn boost mode (OTG) on for the battery charger ?
-Date: Fri, 16 May 2014 00:35:34 +0200
-Message-ID: <1782446.TpztL69o3V@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140515220844.GA10762@animalcreek.com>
-References: <2044381.o3QyvTfyIx@avalon> <20140515220844.GA10762@animalcreek.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 15 May 2014 18:36:21 -0400
+Date: Thu, 15 May 2014 15:36:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Jianyu Zhan <nasa4836@gmail.com>, iamjoonsoo.kim@lge.com,
+        aneesh.kumar@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com,
+        aarcange@redhat.com, steve.capper@linaro.org, davidlohr@hp.com,
+        kirill.shutemov@linux.intel.com, dave.hansen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm, hugetlb: move the error handle logic out of normal
+ code path
+Message-Id: <20140515153620.344fe054b6b8d054a28fbf82@linux-foundation.org>
+In-Reply-To: <20140515090142.GB3938@dhcp22.suse.cz>
+References: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
+	<20140515090142.GB3938@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, 15 May 2014 11:01:42 +0200 Michal Hocko <mhocko@suse.cz> wrote:
 
-Thank you for the quick reply.
+> On Wed 14-05-14 15:10:59, Jianyu Zhan wrote:
+> > alloc_huge_page() now mixes normal code path with error handle logic.
+> > This patches move out the error handle logic, to make normal code
+> > path more clean and redue code duplicate.
+> 
+> I don't know. Part of the function returns and cleans up on its own and
+> other part relies on clean up labels. This is not so much nicer than the
+> previous state.
 
-On Thursday 15 May 2014 15:08:44 Mark A. Greer wrote:
-> On Thu, May 15, 2014 at 10:29:26PM +0200, Laurent Pinchart wrote:
-> > Hello,
-> 
-> [Adding Anton Vorontsov to CC list.]
-> 
-> Hi Laurent.
-> 
-> > I'm trying to enable battery charging on an OMAP4 board based on a twl6030
-> > PMIC with external bq24190 battery charger and bq27510 fuel gauge.
-> > 
-> > The system has an OTG USB port that can be used to charge the battery, and
-> > that can also be used in host mode. In that case the bq24190 needs to be
-> > switched to boost mode to provide the +5V power supply from the battery.
-> > 
-> > The bq24190 has a charge configuration register field that supports charge
-> > disabled, charge enabled and OTG (boost mode). The field is set by the
-> > bq24190 driver in response to setting the charge type :
-> > POWER_SUPPLY_CHARGE_TYPE_NONE will disable charing, and
-> > POWER_SUPPLY_CHARGE_TYPE_TRICKLE and
-> > POWER_SUPPLY_CHARGE_TYPE_FAST will enable it. However, OTG boost mode is
-> > not supported.
-> > 
-> > 
-> > The driver exposes most register fields as sysfs attributes (which doesn't
-> > sound very safe to me, but that's another story). I can thus enable OTG
-> > boost mode directly from userspace through the driver-specific API, but
-> > that just bypasses the power supply API. I'm thus not very fond of that
-> > solution.
->
-> No, its not a good solution.  As indicated in the commit log, the sysfs
-> entries are there because there are just so many fields that don't map
-> well to the existing interface.
-> 
-> Maybe we should add support for a DT entry to enable exporting those
-> fields(disabled by default)?
-> 
-> > Possibly due to my really basic (not to say nonexistent) knowledge of the
-> > power supply subsystem I haven't found an API to expose this feature. I
-> > was wondering if someone had given a though regarding how to implement
-> > this properly.
-> 
-> What if we just added something like POWER_SUPPLY_CHARGE_TYPE_BOOST?
+That's actually a common pattern:
 
-That was actually my first thought, and I assumed it would be rejected as 
-boost mode is not a charge type but a discharge type :-) This being said, I 
-don't have enough experience with battery chargers to decide whether this is a 
-good solution. If you believe it is, I'll trust you on that.
+foo()
+{
+	if (check which doesn't change any state)
+		return -Efoo;
+	if (another check which doesn't change any state)
+		return -Ebar;
 
-On a side note, is there any reference userspace implementation of a battery 
-manager ? The vendor BSP I've received with the board hardcodes calls to the 
-bq24190 in the MUSB driver to switch between OTG and trickle charge modes 
-based on USB cable connection/disconnection events. That's pretty ugly, and I 
-assume this should be handled in userspace - or is there a standard kernel 
-infrastructure for that ? 
+	do_something_which_changes_state()
+	
+	if (another check)
+		goto undo_that_state_chage;
+	...
 
--- 
-Regards,
+undo_that_state_change:
+	...
+}
 
-Laurent Pinchart
+
+This ties into the main reason why we use all these gotos: to support
+evolution of the code.  With multiple return points we risk later
+adding resource leaks and locking errors.  Plus the code becomes more
+and more duplicative and spaghettified.
+
 
