@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbaEOGMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:12:13 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:36951 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712AbaEOGMK (ORCPT
+	id S1754069AbaEOGM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:12:27 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:37188 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848AbaEOGM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:12:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
-Date: Thu, 15 May 2014 11:42:09 +0530
-Message-ID: <CAKohpokm3WVnu_DggKc4PbhVAKNexrJ4051F-gnVFFTDOyz9ew@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] Frequency resolution in CCF vs. cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 May 2014 02:12:26 -0400
+X-Google-Original-From: Jassi Brar <jaswinder.singh@linaro.org>
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, s-anna@ti.com, loic.pallardy@st.com,
+        lftan.linux@gmail.com, slapdau@yahoo.com.au,
+        courtney.cavin@sonymobile.com, robherring2@gmail.com, arnd@arndb.de,
+        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
+        ks.giri@samsung.com, Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCHv5 3/4] mailbox: Fix TX completion init
+Date: Thu, 15 May 2014 11:41:41 +0530
+Message-Id: <1400134301-4010-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2014 04:00, Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
-> I have one or two problems with cpufreq and the CCF, which are caused by
-> rounding/different frequency resolutions.
->
-> cpufreq works with kHz, while the CCF uses Hz. On Zynq our default frequency is
-> 666666666 Hz which the CCF, due to rounding, reports as 666666660. And for
-> cpufreq, which simply divides values it obtains through clk_round_rate() by
-> 1000, 666666.
-> Since passing 666666 to clk_round_rate() does not result in 666666660
-> (clk_round_rate() always rounds down!), we chose to put 666667 in the OPP. This
-> causes issue 1: cpufreq stats are broken.
+From: LeyFoon Tan <lftan.linux@gmail.com>
 
-I know it might a big exercise, but wouldn't it be worth to make cpufreq start
-using frequencies in Hz ?
+For fast TX the complete could be called before being initialized as follows
+ mbox_send_message --> poll_txdone --> tx_tick --> complete(&chan->tx_complete)
+
+Init the completion early enough to fix the race.
+
+Signed-off-by: LeyFoon Tan <lftan.linux@gmail.com>
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
+ drivers/mailbox/mailbox.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index 921fedd3..befb256 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -245,6 +245,9 @@ int mbox_send_message(struct mbox_chan *chan, void *mssg)
+ 	if (!chan || !chan->cl)
+ 		return -EINVAL;
+ 
++	if (chan->cl->tx_block)
++		init_completion(&chan->tx_complete);
++
+ 	t = _add_to_rbuf(chan, mssg);
+ 	if (t < 0) {
+ 		pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
+@@ -258,7 +261,6 @@ int mbox_send_message(struct mbox_chan *chan, void *mssg)
+ 
+ 	if (chan->cl->tx_block && chan->active_req) {
+ 		int ret;
+-		init_completion(&chan->tx_complete);
+ 		ret = wait_for_completion_timeout(&chan->tx_complete,
+ 			chan->cl->tx_tout);
+ 		if (ret == 0) {
+-- 
+1.8.1.2
+
