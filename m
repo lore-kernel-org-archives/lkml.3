@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaEOOmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:42:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3370 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbaEOOmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:42:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="540984982"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Yao Jin <yao.jin@intel.com>, Aubrey Li <aubrey.li@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] i2c: designware-pci: Add Haswell PCI IDs
-Date: Thu, 15 May 2014 17:37:24 +0300
-Message-Id: <1400164644-3222-5-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1754698AbaEOOnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:43:04 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:46470 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179AbaEOOnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:43:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140515143258.GA19657@tassilo.jf.intel.com>
+References: <20140515115337.GA2855@quad>
+	<20140515143258.GA19657@tassilo.jf.intel.com>
+Date: Thu, 15 May 2014 16:43:01 +0200
+Message-ID: <CABPqkBS6F8+s4ff2=dn-H3ybxeTrknK3SCW5Ro50GpzH9Y27pA@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: fix Haswell precise store data source encoding
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Joe Mario <jmario@redhat.com>,
+        Don Zickus <dzickus@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Haswell has the same I2C host controller than Baytrail and it can
-also be enumerated as a PCI device. Add the PCI IDs to the driver list.
+On Thu, May 15, 2014 at 4:32 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On Thu, May 15, 2014 at 01:53:37PM +0200, Stephane Eranian wrote:
+>>
+>> This patches fixes a bug in  precise_store_data_hsw() whereby
+>> it would set the data source memory level to the wrong value.
+>>
+>> As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
+>> Address Information in PEBS Record), when status bit 0 is set
+>> this is a L1 hit, otherwise this is a L1 miss.
+>>
+>> This patch encodes the memory level according to the specification.
+>
+> It's not enough. as I said it needs more fixes.
+>
+> For most events it should be _NA, _STORE can be only specified
+> for the explicit _STORE events.
+>
+Yes, I forgot about that. Will re-spin the patch.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/i2c/busses/i2c-designware-pcidrv.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index 85056c22d21e..3356f7ab9f79 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -56,6 +56,7 @@ enum dw_pci_ctl_id_t {
- 	medfield_5,
- 
- 	baytrail,
-+	haswell,
- };
- 
- struct dw_scl_sda_cfg {
-@@ -95,6 +96,15 @@ static struct dw_scl_sda_cfg byt_config = {
- 	.sda_hold = 0x6,
- };
- 
-+/* Haswell HCNT/LCNT/SDA hold time */
-+static struct dw_scl_sda_cfg hsw_config = {
-+	.ss_hcnt = 0x01b0,
-+	.fs_hcnt = 0x48,
-+	.ss_lcnt = 0x01fb,
-+	.fs_lcnt = 0xa0,
-+	.sda_hold = 0x9,
-+};
-+
- static struct  dw_pci_controller  dw_pci_controllers[] = {
- 	[moorestown_0] = {
- 		.bus_num     = 0,
-@@ -168,6 +178,15 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
- 		.functionality = I2C_FUNC_10BIT_ADDR,
- 		.scl_sda_cfg = &byt_config,
- 	},
-+	[haswell] = {
-+		.bus_num = -1,
-+		.bus_cfg = INTEL_MID_STD_CFG | DW_IC_CON_SPEED_FAST,
-+		.tx_fifo_depth = 32,
-+		.rx_fifo_depth = 32,
-+		.clk_khz = 100000,
-+		.functionality = I2C_FUNC_10BIT_ADDR,
-+		.scl_sda_cfg = &hsw_config,
-+	},
- };
- static struct i2c_algorithm i2c_dw_algo = {
- 	.master_xfer	= i2c_dw_xfer,
-@@ -328,6 +347,9 @@ static const struct pci_device_id i2_designware_pci_ids[] = {
- 	{ PCI_VDEVICE(INTEL, 0x0F45), baytrail },
- 	{ PCI_VDEVICE(INTEL, 0x0F46), baytrail },
- 	{ PCI_VDEVICE(INTEL, 0x0F47), baytrail },
-+	/* Haswell */
-+	{ PCI_VDEVICE(INTEL, 0x9c61), haswell },
-+	{ PCI_VDEVICE(INTEL, 0x9c62), haswell },
- 	{ 0,}
- };
- MODULE_DEVICE_TABLE(pci, i2_designware_pci_ids);
--- 
-2.0.0.rc2
-
+> -Andi
+>
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> index ae96cfa..81424f6 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> @@ -114,9 +114,13 @@ static u64 precise_store_data_hsw(u64 status)
+>>
+>>       dse.val = 0;
+>>       dse.mem_op = PERF_MEM_OP_STORE;
+>> -     dse.mem_lvl = PERF_MEM_LVL_NA;
+>> +     dse.mem_lvl = PERF_MEM_LVL_L1;
+>> +
+>>       if (status & 1)
+>> -             dse.mem_lvl = PERF_MEM_LVL_L1;
+>> +             dse.mem_lvl |= PERF_MEM_LVL_HIT;
+>> +     else
+>> +             dse.mem_lvl |= PERF_MEM_LVL_MISS;
+>> +
+>>       /* Nothing else supported. Sorry. */
+>>       return dse.val;
+>>  }
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
