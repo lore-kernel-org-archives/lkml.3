@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaEONaB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:30:01 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60050 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaEON37 (ORCPT
+	id S1754246AbaEONbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:31:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:54455 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497AbaEONbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:29:59 -0400
-Date: Thu, 15 May 2014 15:29:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v4
-Message-ID: <20140515132945.GM13658@twins.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140514161152.GA2615@redhat.com>
- <20140514192945.GA10830@redhat.com>
- <20140515104808.GF23991@suse.de>
- <20140515132058.GL30445@twins.programming.kicks-ass.net>
+	Thu, 15 May 2014 09:31:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH 06/10] usb: xhci: Add Tegra XHCI host-controller driver
+Date: Thu, 15 May 2014 15:30:06 +0200
+Message-ID: <11038777.juA2AddEko@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140515091938.GD6434@ulmo>
+References: <1400113986-339-1-git-send-email-abrestic@chromium.org> <15599140.PsD4j7x3tZ@wuerfel> <20140515091938.GD6434@ulmo>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lYetfuAxy9ic4HK3"
-Content-Disposition: inline
-In-Reply-To: <20140515132058.GL30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:V8t+5+KSni28MpFkx6/dpDkxg67e8mqa0/BelvYCY78
+ hOYgbWk2JeDfIjT4Ql/PxmLIYFE1Y0FJQ+7zBPK2LJfVM+F5XJ
+ wkVjQ6k7AseFrBZY4iHSCjUJePvvDlZ31Vst9bmk6c31JFvsZ1
+ vqzXV0/+GfCo2i3PZLqfbpH+Nm1giaS9Lw/jBIpicOjHGmwEZU
+ NJowCvYhH339msHWafry7fSdkqEgR+6Vk56aIoyfSJKW5LDKmh
+ g8YXZXsbX4odsT7/qWzQssvKZt5YiZE8YhyBnZvtwsaMBK7/XV
+ aJ4Gp3Kz+N20mdxfyMtJaTpZAxE0vAWvsr9hc/laYU9fuj43T9
+ 3Xqrw1/Bx2u6VN4kHclA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 15 May 2014 11:19:40 Thierry Reding wrote:
+> > > +
+> > > +   xhci = platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
+> > > +   if (!xhci) {
+> > > +           dev_err(dev, "Failed to allocate XHCI host\n");
+> > > +           ret = -ENOMEM;
+> > > +           goto out;
+> > > +   }
+> > 
+> > This does not feel appropriate at all: Rather than creating a child device,
+> > you should have a specific driver that hooks into functions exported
+> > by the xhci core. See Documentation/driver-model/design-patterns.txt
+> 
+> I don't think Documentation/driver-model/design-patterns.txt documents
+> this. Perhaps this is what you had in mind?
+> 
+>         http://lwn.net/Articles/336262/
 
---lYetfuAxy9ic4HK3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No, I did mean Documentation/driver-model/design-patterns.txt.
 
-On Thu, May 15, 2014 at 03:20:58PM +0200, Peter Zijlstra wrote:
-> void __unlock_page(struct page *page)
-> {
-> 	struct wait_bit_key key =3D __WAIT_BIT_KEY_INITIALIZER(&page->flags, PG_=
-locked);
-> 	struct wait_queue_head_t *wqh =3D page_waitqueue(page);
-> 	wait_queue_t *curr;
+The pattern used in the proposed driver is to create the generic platform_device
+as the child of the more specific platform_device.
 
-	if (!PG_waiters && !waitqueue_active(wqh))
-		return;
+The normal pattern is to have only one device and embed the generic structure
+inside of the more specific structure and use container_of to cast between
+the two as needed.
 
-> 	spin_lock_irq(&wqh->lock);
-> 	list_for_each_entry(curr, &wqh->task_list, task_list) {
-> 		unsigned int flags =3D curr->flags;
->=20
-> 		if (curr->func(curr, TASK_NORMAL, 0, &key))
-> 			goto unlock;
-> 	}
-> 	ClearPageWaiters(page);
-> unlock:
-> 	spin_unlock_irq(&wqh->lock);
-> }
->=20
-> Yes, the __unlock_page() will have the unconditional wqh->lock, but it
-> should also call __unlock_page() a lot less, and it doesn't have that
-> horrid timeout.
->=20
-> Now, the above is clearly sub-optimal when !extended_page_flags, but I
-> suppose we could have two versions of __unlock_page() for that.
-
-Or I suppose the above would fix it too.
-
---lYetfuAxy9ic4HK3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdMFJAAoJEHZH4aRLwOS6ZukP+wVHsi0r2hjIyvHrenQGvz/X
-r5VBqVsF601MvQvr9ZoswfC6y27cfNO59NGsmspwjmbmPXFkSGkZiHl4PI4AwVVY
-8O8y63ZwnKZCIUgWBvYz0/QUpDd8M0QmimMV/TUR0H6b0/qiT1Wx90mQRnzAAmK0
-OBlVyxKRS0Z1ZeCqNcjQvNUEUmw8DPdzIBnkJR+oD2lkXJBcqJNPijwjIK/3F9L4
-6ggs22RhzphV2DQ5fv+g8fFoFWQFHrhOoxL8zqTUhR6u5+J6YfH7YcQIereaSqYV
-yRiU/gpEKsl0KglXxnKTNz+BeXp9W3v69byHzx4D69VwfdcFfLvqTg5Uq3enchOd
-wXetc2i1WQTimd5dTsLTVZ0xgWGJP0ist0C/ZF1nwrmhVLnnHr+5hCpK9sW1PThF
-BPLHMkqideLZnk8IIL6AsLer+YQABWPnFWVkDce5MLkPMqXYAqVVyXJ/1FVU/X0b
-a7LA6QLHSKhfB4rPQG/Cc2gLq2Af9+RWjIIcVj/tncVRjbWfSZ9HxPaHLz2U54ML
-vhwz1iTPJNLtxUn9zXoCOwsIH4I5zLLrb5NxDNpIM1i1+EbqG2aSgO69iqjF5onp
-M9IaizbdpOuGKb82jrXWY+JKMcZ2sgWZ9GdEFuF4CLt6rBdq3wgtYPnO4XD4c209
-z3DBW8+Ivygi4soqDVCm
-=jxIX
------END PGP SIGNATURE-----
-
---lYetfuAxy9ic4HK3--
+	Arnd
