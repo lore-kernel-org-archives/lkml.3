@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaEOWCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:02:14 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:57774 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754125AbaEOWCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754475AbaEOWCM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 15 May 2014 18:02:12 -0400
-X-Sasl-enc: Tcm8fUu7+lmBzWQ6GqxN0Uo+pfnmSzNFDdciQWRvVWo+ 1400191331
-Date: Thu, 15 May 2014 15:05:29 -0700
-From: Greg KH <greg@kroah.com>
-To: =?iso-8859-1?Q?Cl=E9ment?= Calmels <clement.calmels@free.fr>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: sep: fix coding style issue
-Message-ID: <20140515220529.GA8459@kroah.com>
-References: <1399398881-2611-1-git-send-email-clement.calmels@free.fr>
+Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:51490
+	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751689AbaEOWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 18:02:11 -0400
+Date: Thu, 15 May 2014 21:57:26 +0000
+From: dwalker@fifo99.com
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: msm: remove board file for Nexus One (ie. mahimahi)
+Message-ID: <20140515215726.GA1171@fifo99.com>
+References: <1400101656.9826.4.camel@x220>
+ <20140515174448.GA31159@fifo99.com>
+ <1400177413.11786.11.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399398881-2611-1-git-send-email-clement.calmels@free.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400177413.11786.11.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 07:54:41PM +0200, Clément Calmels wrote:
-> This is a patch to fix coding style issue found by
-> scripts/checkpatch.pl utility.
+On Thu, May 15, 2014 at 08:10:13PM +0200, Paul Bolle wrote:
+> Daniel,
 > 
-> Signed-off-by: Clément Calmels <clement.calmels@free.fr>
-> ---
->  drivers/staging/sep/sep_dev.h | 3 +++
->  1 file changed, 3 insertions(+)
+> On Thu, 2014-05-15 at 17:44 +0000, dwalker@fifo99.com wrote:
+> > On Wed, May 14, 2014 at 11:07:36PM +0200, Paul Bolle wrote:
+> > > Commit 1b802ff79f03 ("arm: msm: add board file for Nexus One (ie.
+> > > mahimahi)") added just board-mahimahi.c. It did not add
+> > > board-mahimahi.h, Makefile changes or Kconfig changes.
+> > > 
+> > > Four years have passed and this file is still dangling. Remove it.
+> > > 
+> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > > ---
+> > > Untested. But what to test here?
+> > > 
+> > I don't mine if Sapphire gets removed,
 > 
-> diff --git a/drivers/staging/sep/sep_dev.h b/drivers/staging/sep/sep_dev.h
-> index 5f6a07f..5faeefa1 100644
-> --- a/drivers/staging/sep/sep_dev.h
-> +++ b/drivers/staging/sep/sep_dev.h
-> @@ -139,12 +139,14 @@ struct sep_queue_info {
->  static inline void sep_write_reg(struct sep_device *dev, int reg, u32 value)
->  {
->  	void __iomem *addr = dev->reg_addr + reg;
-> +
->  	writel(value, addr);
->  }
->  
->  static inline u32 sep_read_reg(struct sep_device *dev, int reg)
->  {
->  	void __iomem *addr = dev->reg_addr + reg;
-> +
->  	return readl(addr);
->  }
->  
-> @@ -152,6 +154,7 @@ static inline u32 sep_read_reg(struct sep_device *dev, int reg)
->  static inline void sep_wait_sram_write(struct sep_device *dev)
->  {
->  	u32 reg_val;
-> +
->  	do {
->  		reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
->  	} while (!(reg_val & 1));
+> Could you ACK that patch, please?
 
-Someone else already sent in this same patch, sorry.
+I don't mind if it gets removed, but I wouldn't ACK it's removal ..
+ 
+> >  but I'm working on this one now..
+> 
+> That's good to hear.
+> 
+> >  So I don't want it deleted.
+> 
+> This is not something I get to decide. Nevertheless, given that this
+> file shouldn't have been merged to begin with, I'd appreciate it if some
+> deadline could be agreed upon.
 
-greg k-h
+I think I merged it actually, but there's no rules about what gets merged. How when what order, etc.
+It's all free form.
+
+> That being said, I'm not sure how having just this file in mainline
+> helps your development efforts. It seems it did receive some updates
+> for, well, treewide stuff. But it surely didn't get build coverage or
+> runtime testing. So would you lose much if it only remains in your
+> development tree?
+
+It's effort to remove it.. Your asking for it to get removed, then re-added.. That sounds
+like a fairly large amount of effort vs just leaving it in place.
+
+Daniel
