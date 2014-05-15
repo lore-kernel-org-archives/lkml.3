@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaEOOQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:16:13 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:44317 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaEOOQL (ORCPT
+	id S1755066AbaEOOSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:18:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39664 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469AbaEOOSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:16:11 -0400
-Date: Thu, 15 May 2014 16:16:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] smp: Print more useful debug info upon receiving
- IPI on an offline CPU
-Message-ID: <20140515141600.GB11458@localhost.localdomain>
-References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com>
- <20140511203647.17152.45125.stgit@srivatsabhat.in.ibm.com>
- <20140513153845.GD13828@localhost.localdomain>
- <537461C9.9000309@linux.vnet.ibm.com>
+	Thu, 15 May 2014 10:18:05 -0400
+Message-ID: <5374CC9A.9090905@canonical.com>
+Date: Thu, 15 May 2014 16:18:02 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537461C9.9000309@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de>
+In-Reply-To: <5374BEE2.4060608@vodafone.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 12:12:17PM +0530, Srivatsa S. Bhat wrote:
-> On 05/13/2014 09:08 PM, Frederic Weisbecker wrote:
-> > On Mon, May 12, 2014 at 02:06:49AM +0530, Srivatsa S. Bhat wrote:
-> >> Today the smp-call-function code just prints a warning if we get an IPI on
-> >> an offline CPU. This info is sufficient to let us know that something went
-> >> wrong, but often it is very hard to debug exactly who sent the IPI and why,
-> >> from this info alone.
-> >>
-> >> In most cases, we get the warning about the IPI to an offline CPU, immediately
-> >> after the CPU going offline comes out of the stop-machine phase and reenables
-> >> interrupts. Since all online CPUs participate in stop-machine, the information
-> >> regarding the sender of the IPI is already lost by the time we exit the
-> >> stop-machine loop. So even if we dump the stack on each CPU at this point,
-> >> we won't find anything useful since all of them will show the stack-trace of
-> >> the stopper thread. So we need a better way to figure out who sent the IPI and
-> >> why.
-> >>
-> >> To achieve this, when we detect an IPI targeted to an offline CPU, loop through
-> >> the call-single-data linked list and print out the payload (i.e., the name
-> >> of the function which was supposed to be executed by the target CPU). This
-> >> would give us an insight as to who might have sent the IPI and help us debug
-> >> this further.
-> >>
-> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >> ---
-> >>
-> >>  kernel/smp.c |   18 ++++++++++++++----
-> >>  1 file changed, 14 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/kernel/smp.c b/kernel/smp.c
-> >> index 06d574e..f864921 100644
-> >> --- a/kernel/smp.c
-> >> +++ b/kernel/smp.c
-> >> @@ -185,14 +185,24 @@ void generic_smp_call_function_single_interrupt(void)
-> >>  {
-> >>  	struct llist_node *entry;
-> >>  	struct call_single_data *csd, *csd_next;
-> >> +	static bool warned;
-> >> +
-> >> +	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-> >> +	entry = llist_reverse_order(entry);
-> >>  
-> >>  	/*
-> >>  	 * Shouldn't receive this interrupt on a cpu that is not yet online.
-> >>  	 */
-> >> -	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-> >> -
-> >> -	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-> >> -	entry = llist_reverse_order(entry);
-> >> +	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-> >> +		warned = true;
-> >> +		WARN_ON(1);
-> > 
-> > More details may be better:
-> > 
-> > WARN_ONCE(1, "IPI on offline CPU");
-> >
-> 
-> Sure, that sounds better.
->  
-> >> +		/*
-> >> +		 * We don't have to use the _safe() variant here
-> >> +		 * because we are not invoking the IPI handlers yet.
-> >> +		 */
-> >> +		llist_for_each_entry(csd, entry, llist)
-> >> +			pr_warn("SMP IPI Payload: %pS \n", csd->func);
-> > 
-> > Payload is kind of vague. How about "IPI func %pS sent on offline CPU".
-> > 
-> 
-> Ok, and maybe s/func/function and s/on/to ?
+op 15-05-14 15:19, Christian König schreef:
+> Am 15.05.2014 15:04, schrieb Maarten Lankhorst:
+>> op 15-05-14 11:42, Christian König schreef:
+>>> Am 15.05.2014 11:38, schrieb Maarten Lankhorst:
+>>>> op 15-05-14 11:21, Christian König schreef:
+>>>>> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
+>>>>>> op 14-05-14 17:29, Christian König schreef:
+>>>>>>>> +    /* did fence get signaled after we enabled the sw irq? */
+>>>>>>>> +    if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
+>>>>>>>> +        radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
+>>>>>>>> +        return false;
+>>>>>>>> +    }
+>>>>>>>> +
+>>>>>>>> +    fence->fence_wake.flags = 0;
+>>>>>>>> +    fence->fence_wake.private = NULL;
+>>>>>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
+>>>>>>>> + __add_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
+>>>>>>>> +    fence_get(f);
+>>>>>>> That looks like a race condition to me. The fence needs to be added to the wait queue before the check, not after.
+>>>>>>>
+>>>>>>> Apart from that the whole approach looks like a really bad idea to me. How for example is lockup detection supposed to happen with this? 
+>>>>>> It's not a race condition because fence_queue.lock is held when this function is called.
+>>>>> Ah, I see. That's also the reason why you moved the wake_up_all out of the processing function.
+>>>> Correct. :-)
+>>>>>> Lockup's a bit of a weird problem, the changes wouldn't allow core ttm code to handle the lockup any more,
+>>>>>> but any driver specific wait code would still handle this. I did this by design, because in future patches the wait
+>>>>>> function may be called from outside of the radeon driver. The official wait function takes a timeout parameter,
+>>>>>> so lockups wouldn't be fatal if the timeout is set to something like 30*HZ for example, it would still return
+>>>>>> and report that the function timed out.
+>>>>> Timeouts help with the detection of the lockup, but not at all with the handling of them.
+>>>>>
+>>>>> What we essentially need is a wait callback into the driver that is called in non atomic context without any locks held.
+>>>>>
+>>>>> This way we can block for the fence to become signaled with a timeout and can then also initiate the reset handling if necessary.
+>>>>>
+>>>>> The way you designed the interface now means that the driver never gets a chance to wait for the hardware to become idle and so never has the opportunity to the reset the whole thing.
+>>>> You could set up a hangcheck timer like intel does, and end up with a reliable hangcheck detection that doesn't depend on cpu waits. :-) Or override the default wait function and restore the old behavior.
+>>>
+>>> Overriding the default wait function sounds better, please implement it this way.
+>>>
+>>> Thanks,
+>>> Christian. 
+>>
+>> Does this modification look sane?
+> Adding the timeout is on my todo list for quite some time as well, so this part makes sense.
+>
+>> +static long __radeon_fence_wait(struct fence *f, bool intr, long timeout)
+>> +{
+>> +    struct radeon_fence *fence = to_radeon_fence(f);
+>> +    u64 target_seq[RADEON_NUM_RINGS] = {};
+>> +
+>> +    target_seq[fence->ring] = fence->seq;
+>> +    return radeon_fence_wait_seq_timeout(fence->rdev, target_seq, intr, timeout);
+>> +}
+> When this call is comming from outside the radeon driver you need to lock rdev->exclusive_lock here to make sure not to interfere with a possible reset.
+Ah thanks, I'll add that.
 
-Yeah looks good.
+>>      .get_timeline_name = radeon_fence_get_timeline_name,
+>>      .enable_signaling = radeon_fence_enable_signaling,
+>>      .signaled = __radeon_fence_signaled,
+> Do we still need those callback when we implemented the wait callback?
+.get_timeline_name is used for debugging (trace events).
+.signaled is the non-blocking call to check if the fence is signaled or not.
+.enable_signaling is used for adding callbacks upon fence completion, the default 'fence_default_wait' uses it, so
+when it works no separate implementation is needed unless you want to do more than just waiting.
+It's also used when fence_add_callback is called. i915 can be patched to use it. ;-)
 
-Thanks.
-
-> 
-> >> +	}
-> >>  
-> >>  	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
-> >>  		csd->func(csd->info);
-> >>
-> > 
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
+~Maarten
