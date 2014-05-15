@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673AbaEOThL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:37:11 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:60479 "EHLO
-	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604AbaEOThJ (ORCPT
+	id S1755783AbaEOTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:37:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35470 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717AbaEOThY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:37:09 -0400
-X-TM-IMSS-Message-ID: <7d68c8730015f359@nsa.gov>
-Message-ID: <5375130B.8010303@tycho.nsa.gov>
-Date: Thu, 15 May 2014 15:18:35 -0400
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        pmoore@redhat.com, eparis@redhat.com
-Subject: Re: [2/2] conditionally reschedule in hashtab_insert while loading
- selinux policy.
-References: <20140515190353.GB16816@redhat.com>
-In-Reply-To: <20140515190353.GB16816@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 15 May 2014 15:37:24 -0400
+Date: Thu, 15 May 2014 15:37:21 -0400 (EDT)
+Message-Id: <20140515.153721.2222505094570361361.davem@davemloft.net>
+To: teg@jklm.no
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
+        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru
+Subject: Re: [PATCH] net: tunnels - enable module autoloading
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1399970908-9973-1-git-send-email-teg@jklm.no>
+References: <1399970908-9973-1-git-send-email-teg@jklm.no>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 May 2014 12:37:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4FJbdfO017129
 
-On 05/15/2014 03:03 PM, Dave Jones wrote:
-> After silencing the sleeping warning in mls_convert_context() I started
-> seeing similar traces from hashtab_insert. Do a cond_resched there too.
+From: Tom Gundersen <teg@jklm.no>
+Date: Tue, 13 May 2014 10:48:28 +0200
+
+> Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
 > 
-> Signed-off-by: Dave Jones <davej@redhat.com>
-
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-
+> This is in line with how most other netdev kinds work, and will allow userspace
+> to create tunnels without having CAP_SYS_MODULE.
 > 
-> diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
-> index 933e735bb185..2cc496149842 100644
-> --- a/security/selinux/ss/hashtab.c
-> +++ b/security/selinux/ss/hashtab.c
-> @@ -6,6 +6,7 @@
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
->  #include <linux/errno.h>
-> +#include <linux/sched.h>
->  #include "hashtab.h"
->  
->  struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const void *key),
-> @@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void *key, void *datum)
->  	u32 hvalue;
->  	struct hashtab_node *prev, *cur, *newnode;
->  
-> +	cond_resched();
-> +
->  	if (!h || h->nel == HASHTAB_MAX_NODES)
->  		return -EINVAL;
->  
-> 
+> Signed-off-by: Tom Gundersen <teg@jklm.no>
+> Tested-by: Susant Sahani <susant@redhat.com>
 
+This doesn't even compile:
+
+  CC [M]  net/ipv4/ipip.o
+In file included from include/linux/module.h:17:0,
+                 from net/ipv4/ipip.c:95:
+include/linux/moduleparam.h:21:1: error: expected ¡,¢ or ¡;¢ before ¡static¢
+ static const char __UNIQUE_ID(name)[]       \
+ ^
+include/linux/module.h:86:32: note: in expansion of macro ¡__MODULE_INFO¢
+ #define MODULE_INFO(tag, info) __MODULE_INFO(tag, tag, info)
+                                ^
+include/linux/module.h:89:30: note: in expansion of macro ¡MODULE_INFO¢
+ #define MODULE_ALIAS(_alias) MODULE_INFO(alias, _alias)
+                              ^
+include/linux/netdevice.h:3283:2: note: in expansion of macro ¡MODULE_ALIAS¢
+  MODULE_ALIAS("netdev-" device)
+  ^
+net/ipv4/ipip.c:490:1: note: in expansion of macro ¡MODULE_ALIAS_NETDEV¢
+ MODULE_ALIAS_NETDEV("tunl0");
+ ^
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
