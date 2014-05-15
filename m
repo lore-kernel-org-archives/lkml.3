@@ -1,166 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaEOQNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:13:25 -0400
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:37628 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaEOQNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:13:23 -0400
-X-Spam-Flag: NO
-X-Spam-Score: 0.2
-Authentication-Results: rohrpostix1.prod.vfnet.de (amavisd-new); dkim=pass
-	header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de CB94F261452
-Message-ID: <5374E792.4070607@vodafone.de>
-Date: Thu, 15 May 2014 18:13:06 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754843AbaEOQNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:13:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36058 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411AbaEOQNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:13:34 -0400
+Date: Thu, 15 May 2014 11:13:23 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: =?utf-8?B?6buD5L+K56W6?= <steve.huang@climax.com.tw>
+CC: Mark Jackson <mpfj-list@newflow.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: AM335x host only USB
+Message-ID: <20140515161323.GG7360@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <528DE96A.6080903@newflow.co.uk>
+ <CAF3EQkSrpf-9Ezf5Y7htfaQAEfN9PDV=CUxS_h9peKjawDhUSw@mail.gmail.com>
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, airlied@linux.ie
-CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
- for fences
-References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com> <5374E1B5.2020408@vodafone.de> <5374E410.1080203@canonical.com>
-In-Reply-To: <5374E410.1080203@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vJguvTgX93MxBIIe"
+Content-Disposition: inline
+In-Reply-To: <CAF3EQkSrpf-9Ezf5Y7htfaQAEfN9PDV=CUxS_h9peKjawDhUSw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.05.2014 17:58, schrieb Maarten Lankhorst:
-> op 15-05-14 17:48, Christian König schreef:
->> Am 15.05.2014 16:18, schrieb Maarten Lankhorst:
->>> op 15-05-14 15:19, Christian König schreef:
->>>> Am 15.05.2014 15:04, schrieb Maarten Lankhorst:
->>>>> op 15-05-14 11:42, Christian König schreef:
->>>>>> Am 15.05.2014 11:38, schrieb Maarten Lankhorst:
->>>>>>> op 15-05-14 11:21, Christian König schreef:
->>>>>>>> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
->>>>>>>>> op 14-05-14 17:29, Christian König schreef:
->>>>>>>>>>> +    /* did fence get signaled after we enabled the sw irq? */
->>>>>>>>>>> +    if 
->>>>>>>>>>> (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= 
->>>>>>>>>>> fence->seq) {
->>>>>>>>>>> + radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
->>>>>>>>>>> +        return false;
->>>>>>>>>>> +    }
->>>>>>>>>>> +
->>>>>>>>>>> +    fence->fence_wake.flags = 0;
->>>>>>>>>>> +    fence->fence_wake.private = NULL;
->>>>>>>>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
->>>>>>>>>>> + __add_wait_queue(&fence->rdev->fence_queue, 
->>>>>>>>>>> &fence->fence_wake);
->>>>>>>>>>> +    fence_get(f);
->>>>>>>>>> That looks like a race condition to me. The fence needs to be 
->>>>>>>>>> added to the wait queue before the check, not after.
->>>>>>>>>>
->>>>>>>>>> Apart from that the whole approach looks like a really bad 
->>>>>>>>>> idea to me. How for example is lockup detection supposed to 
->>>>>>>>>> happen with this? 
->>>>>>>>> It's not a race condition because fence_queue.lock is held 
->>>>>>>>> when this function is called.
->>>>>>>> Ah, I see. That's also the reason why you moved the wake_up_all 
->>>>>>>> out of the processing function.
->>>>>>> Correct. :-)
->>>>>>>>> Lockup's a bit of a weird problem, the changes wouldn't allow 
->>>>>>>>> core ttm code to handle the lockup any more,
->>>>>>>>> but any driver specific wait code would still handle this. I 
->>>>>>>>> did this by design, because in future patches the wait
->>>>>>>>> function may be called from outside of the radeon driver. The 
->>>>>>>>> official wait function takes a timeout parameter,
->>>>>>>>> so lockups wouldn't be fatal if the timeout is set to 
->>>>>>>>> something like 30*HZ for example, it would still return
->>>>>>>>> and report that the function timed out.
->>>>>>>> Timeouts help with the detection of the lockup, but not at all 
->>>>>>>> with the handling of them.
->>>>>>>>
->>>>>>>> What we essentially need is a wait callback into the driver 
->>>>>>>> that is called in non atomic context without any locks held.
->>>>>>>>
->>>>>>>> This way we can block for the fence to become signaled with a 
->>>>>>>> timeout and can then also initiate the reset handling if 
->>>>>>>> necessary.
->>>>>>>>
->>>>>>>> The way you designed the interface now means that the driver 
->>>>>>>> never gets a chance to wait for the hardware to become idle and 
->>>>>>>> so never has the opportunity to the reset the whole thing.
->>>>>>> You could set up a hangcheck timer like intel does, and end up 
->>>>>>> with a reliable hangcheck detection that doesn't depend on cpu 
->>>>>>> waits. :-) Or override the default wait function and restore the 
->>>>>>> old behavior.
->>>>>>
->>>>>> Overriding the default wait function sounds better, please 
->>>>>> implement it this way.
->>>>>>
->>>>>> Thanks,
->>>>>> Christian. 
->>>>>
->>>>> Does this modification look sane?
->>>> Adding the timeout is on my todo list for quite some time as well, 
->>>> so this part makes sense.
->>>>
->>>>> +static long __radeon_fence_wait(struct fence *f, bool intr, long 
->>>>> timeout)
->>>>> +{
->>>>> +    struct radeon_fence *fence = to_radeon_fence(f);
->>>>> +    u64 target_seq[RADEON_NUM_RINGS] = {};
->>>>> +
->>>>> +    target_seq[fence->ring] = fence->seq;
->>>>> +    return radeon_fence_wait_seq_timeout(fence->rdev, target_seq, 
->>>>> intr, timeout);
->>>>> +}
->>>> When this call is comming from outside the radeon driver you need 
->>>> to lock rdev->exclusive_lock here to make sure not to interfere 
->>>> with a possible reset.
->>> Ah thanks, I'll add that.
->>>
->>>>>      .get_timeline_name = radeon_fence_get_timeline_name,
->>>>>      .enable_signaling = radeon_fence_enable_signaling,
->>>>>      .signaled = __radeon_fence_signaled,
->>>> Do we still need those callback when we implemented the wait callback?
->>> .get_timeline_name is used for debugging (trace events).
->>> .signaled is the non-blocking call to check if the fence is signaled 
->>> or not.
->>> .enable_signaling is used for adding callbacks upon fence 
->>> completion, the default 'fence_default_wait' uses it, so
->>> when it works no separate implementation is needed unless you want 
->>> to do more than just waiting.
->>> It's also used when fence_add_callback is called. i915 can be 
->>> patched to use it. ;-)
->>
->> I just meant enable_signaling, the other ones are fine with me. The 
->> problem with enable_signaling is that it's called with a spin lock 
->> held, so we can't sleep.
->>
->> While resetting the GPU could be moved out into a timer the problem 
->> here is that I can't lock rdev->exclusive_lock in such situations.
->>
->> This means when i915 would call into radeon to enable signaling for a 
->> fence we can't make sure that there is not GPU reset running on 
->> another CPU. And touching the IRQ registers while a reset is going on 
->> is a really good recipe to lockup the whole system.
-> If you increase the irq counter on all rings before doing a gpu reset, 
-> adjust the state and call sw_irq_put when done this race could never 
-> happen. Or am I missing something?
->
-Beside that's being extremely ugly in the case of a hard PCI reset even 
-touching any register or just accessing VRAM in this moment can crash 
-the box. Just working around the enable/disable of the interrupt here 
-won't help us much.
+--vJguvTgX93MxBIIe
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Adding another spin lock won't work so well either, because the reset 
-function itself wants to sleep as well.
+Hi,
 
-The only solution I see off hand is making the critical reset code path 
-work in atomic context as well, but that's not really doable cause AFAIK 
-we need to work with functions from the PCI subsystem and spinning on a 
-lock for up to a second is not really desirable also.
+On Thu, May 15, 2014 at 03:23:14PM +0800, =E9=BB=83=E4=BF=8A=E7=A5=BA wrote:
+> Dear all,
+>=20
+> Is any update here?
+> I'm looking forward for your reply, thanks.
+>=20
+> Steve
+>=20
+>=20
+>=20
+> 2013-11-21 19:07 GMT+08:00 Mark Jackson <mpfj-list@newflow.co.uk>:
+>=20
+> > We have a custom AM335x CPU board with a type A connector, which is
+> > intended
+> > to be run in host-only mode.
+> >
+> > Using Linus' latest git, I can compile a part-working kernel that can
+> > detect
+> > an (internal?) usb hub, but is unable to see any devices connected to i=
+t.
+> >
+> > Here's a snippet from my boot log:-
+> >
+> > Starting kernel ...
+> >
+> > [    0.000000] Booting Linux on physical CPU 0x0
+> > [    0.000000] Linux version 3.12.0-10713-gf9a173a-dirty
 
-Christian.
+pretty old kernel, friend. You know we can't really support you on such
+an old kernel, right ?
 
-> ~Maarten
->
+In any case, try to backport commits:
 
+943c13971c08ddeb06f4cb9dea1addb76f6b4423
+2df6761e5eca9a810050a15062ae8abce1bbae41
+
+and see what happens. I'm assuming you didn't ground ID pin, since
+you're using a standard A receptacle. I suggest hardwiring it to ground
+anyway.
+
+--=20
+balbi
+
+--vJguvTgX93MxBIIe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTdOeiAAoJEIaOsuA1yqRE0NcQALMRMMQ29B8TK2Pi9VH1Te6H
+kGtt+5cZz/o6nRKpiRmzcHSeLGegZRmmMqLczI+8LzLyvGjJqyFI+g+YUJDTACRo
+CvR9qA3WW1tJXHRr1j7uvthUlFuWNeD9Ra8hAv6dnTGrw2JB0pQCfZwIVOVzhdqh
+7acjZoV6nar2l9rY8pbBjtNa+zBhEXjkt4g1uRYRtPVwBge3Blo+9kYv4bWhhqme
+94x6eqI287Kr/EzzgpIgoFr4Q+nlOQFIM23pSjHw8WQLHPJAjBgqFUqQdcYce+eW
+xjFLQSdRey+wxcasfGc9+TrDTt9+lFURiHN4Ie+6ARPYbdwGgatPH3sS+O4IPCuX
+UpXWZWMvX9o/sOCTZYNDR5H94IHBVpyEk/rG2fq0335mQCBsislT8EhGEmjtmK2B
+WdSEaSssqKYOZxYsoj+qQ3dq9+5WDEXsvc+ISi84Y3+qdIbB+GCD0UXgUqciYCpw
+GuMSawk/QqnPF+qRyTqom48pyCajqFFXiJqbsoor6WIhsUcyFFpZ0joindLzvQfk
+mCHANKtIxTDcuDxXMqvw7+cMys54qCW71OgvDIAhJkdZBReQh6O07c2lI2A45cv6
+WvjkgRsa9HMPflXzJaQKJiCzEcu9rOAZinJmvAwR3ZTaQMNXz+EUD4Rd+jz4KcEV
+L9onSlrnoylIbLysE+lv
+=avHa
+-----END PGP SIGNATURE-----
+
+--vJguvTgX93MxBIIe--
