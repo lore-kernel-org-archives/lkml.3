@@ -1,104 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbaEORZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:25:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21644 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214AbaEORYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:24:17 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 10/14] perf tests: Spawn child for each test
-Date: Thu, 15 May 2014 19:23:31 +0200
-Message-Id: <1400174615-2121-11-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	id S1755468AbaEORZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:25:56 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:33745 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755145AbaEORYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:24:13 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnRMAMT3dFNXQwiB/2dsb2JhbABZgwaBYYFdqFoEAQEBAQEBBQGaGQICgREXdIJTExwjGIECJBOIRQHRLoVUiHqERwEDjyqKJgGLDYgHgzg7MA
+Date: Thu, 15 May 2014 19:24:09 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Subject: [PATCH 3/3] FS/HPFS: use __func__ for logging
+Message-Id: <20140515192409.c8990dd41f8d034832ee1c63@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In upcoming tests we will setup process limits, which
-might affect other tests. Spawning child for each test
-to prevent this.
+Normalize function display fx() using __func__
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- tools/perf/tests/builtin-test.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ fs/hpfs/buffer.c | 12 ++++++------
+ fs/hpfs/dnode.c  | 12 ++++++------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 0d5afaf..fe46f3e 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -3,6 +3,8 @@
-  *
-  * Builtin regression testing command: ever growing number of sanity tests
-  */
-+#include <unistd.h>
-+#include <string.h>
- #include "builtin.h"
- #include "intlist.h"
- #include "tests.h"
-@@ -164,6 +166,34 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
- 	return false;
+diff --git a/fs/hpfs/buffer.c b/fs/hpfs/buffer.c
+index e5f62d4..07e0b0f 100644
+--- a/fs/hpfs/buffer.c
++++ b/fs/hpfs/buffer.c
+@@ -55,7 +55,7 @@ void *hpfs_map_sector(struct super_block *s, unsigned secno, struct buffer_head
+ 	if (bh != NULL)
+ 		return bh->b_data;
+ 	else {
+-		pr_warn("hpfs_map_sector: read error\n");
++		pr_warn("%s(): read error\n", __func__);
+ 		return NULL;
+ 	}
+ }
+@@ -76,7 +76,7 @@ void *hpfs_get_sector(struct super_block *s, unsigned secno, struct buffer_head
+ 		set_buffer_uptodate(bh);
+ 		return bh->b_data;
+ 	} else {
+-		pr_warn("hpfs_get_sector: getblk failed\n");
++		pr_warn("%s(): getblk failed\n", __func__);
+ 		return NULL;
+ 	}
+ }
+@@ -93,7 +93,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
+ 	cond_resched();
+ 
+ 	if (secno & 3) {
+-		pr_warn("hpfs_map_4sectors: unaligned read\n");
++		pr_warn("%s(): unaligned read\n", __func__);
+ 		return NULL;
+ 	}
+ 
+@@ -112,7 +112,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
+ 
+ 	qbh->data = data = kmalloc(2048, GFP_NOFS);
+ 	if (!data) {
+-		pr_warn("hpfs_map_4sectors: out of memory\n");
++		pr_warn("%s(): out of memory\n", __func__);
+ 		goto bail4;
+ 	}
+ 
+@@ -145,7 +145,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
+ 	hpfs_lock_assert(s);
+ 
+ 	if (secno & 3) {
+-		pr_warn("hpfs_get_4sectors: unaligned read\n");
++		pr_warn("%s(): unaligned read\n", __func__);
+ 		return NULL;
+ 	}
+ 
+@@ -161,7 +161,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
+ 	}
+ 
+ 	if (!(qbh->data = kmalloc(2048, GFP_NOFS))) {
+-		pr_warn("hpfs_get_4sectors: out of memory\n");
++		pr_warn("%s(): out of memory\n", __func__);
+ 		goto bail4;
+ 	}
+ 	return qbh->data;
+diff --git a/fs/hpfs/dnode.c b/fs/hpfs/dnode.c
+index 69554e2..d10c5e9 100644
+--- a/fs/hpfs/dnode.c
++++ b/fs/hpfs/dnode.c
+@@ -17,7 +17,7 @@ static loff_t get_pos(struct dnode *d, struct hpfs_dirent *fde)
+ 		if (de == fde) return ((loff_t) le32_to_cpu(d->self) << 4) | (loff_t)i;
+ 		i++;
+ 	}
+-	pr_info("get_pos: not_found\n");
++	pr_info("%s(): not_found\n", __func__);
+ 	return ((loff_t)le32_to_cpu(d->self) << 4) | (loff_t)1;
  }
  
-+static int run_test(struct test *test)
-+{
-+	int status, err = -1, child = fork();
-+
-+	if (child < 0) {
-+		pr_err("failed to fork test: %s\n", strerror(errno));
-+		return -1;
-+	}
-+
-+	if (!child) {
-+		pr_debug("test child forked, pid %d\n", getpid());
-+		err = test->func();
-+		exit(err);
-+	}
-+
-+	wait(&status);
-+
-+	if (WIFEXITED(status)) {
-+		err = WEXITSTATUS(status);
-+		pr_debug("test child finished with %d\n", err);
-+	} else if (WIFSIGNALED(status)) {
-+		err = -1;
-+		pr_debug("test child interrupted\n");
-+	}
-+
-+	return err;
-+}
-+
- static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
- {
- 	int i = 0;
-@@ -192,7 +222,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
- 		}
- 
- 		pr_debug("\n--- start ---\n");
--		err = tests[curr].func();
-+		err = run_test(&tests[curr]);
- 		pr_debug("---- end ----\n%s:", tests[curr].desc);
- 
- 		switch (err) {
+@@ -94,8 +94,8 @@ static void hpfs_pos_ins(loff_t *p, loff_t d, loff_t c)
+ 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
+ 		int n = (*p & 0x3f) + c;
+ 		if (n > 0x3f)
+-			pr_warn("hpfs_pos_ins: %08x + %d\n",
+-				(int)*p, (int)c >> 8);
++			pr_warn("%s(): %08x + %d\n",
++				__func__, (int)*p, (int)c >> 8);
+ 		else
+ 			*p = (*p & ~0x3f) | n;
+ 	}
+@@ -106,8 +106,8 @@ static void hpfs_pos_del(loff_t *p, loff_t d, loff_t c)
+ 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
+ 		int n = (*p & 0x3f) - c;
+ 		if (n < 1)
+-			pr_warn("hpfs_pos_ins: %08x - %d\n",
+-				(int)*p, (int)c >> 8);
++			pr_warn("%s(): %08x - %d\n",
++				__func__, (int)*p, (int)c >> 8);
+ 		else
+ 			*p = (*p & ~0x3f) | n;
+ 	}
+@@ -251,7 +251,7 @@ static int hpfs_add_to_dnode(struct inode *i, dnode_secno dno,
+ 	}
+ 	go_up:
+ 	if (namelen >= 256) {
+-		hpfs_error(i->i_sb, "hpfs_add_to_dnode: namelen == %d", namelen);
++		hpfs_error(i->i_sb, "%s(): namelen == %d", __func__, namelen);
+ 		kfree(nd);
+ 		kfree(nname);
+ 		return 1;
 -- 
-1.8.3.1
-
+1.8.4.5
