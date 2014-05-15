@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaEOO4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:56:24 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:43256 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605AbaEOO4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:56:21 -0400
-Date: Thu, 15 May 2014 10:55:52 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/10] thermal: exynos: remove redundant threshold_code
- checks from exynos_tmu_initialize()
-Message-ID: <20140515145552.GB27690@developer>
-References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
- <1399288539-1793-7-git-send-email-b.zolnierkie@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399288539-1793-7-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1754371AbaEOO4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:56:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29406 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751689AbaEOO4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:56:13 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Steve Capper <steve.capper@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH] arm64: fix pud_huge() for 2-level pagetables
+Date: Thu, 15 May 2014 10:19:22 -0400
+Message-Id: <1400163562-7481-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bartlomiej,
+The following happens when trying to run a kvm guest on a kernel
+configured for 64k pages. This doesn't happen with 4k pages:
 
-On Mon, May 05, 2014 at 01:15:35PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Remove runtime checks for negative return values of temp_to_code()
-> from exynos_tmu_initialize().  The current level temperature data
-> hardcoded in pdata will never cause a negative temp_to_code()
-> return values and for the new code potential mistakes should be
-> caught during development/review phases.
-> 
-> Theres should be no functional changes caused by this patch.
-> 
+  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+  Kernel panic - not syncing: BUG!
+  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+  Call trace:
+  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+  [<fffffe00000961b4>] show_stack+0x14/0x1c
+  [<fffffe000066e648>] dump_stack+0x84/0xb0
+  [<fffffe0000668678>] panic+0xf4/0x220
+  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+  [<fffffe000018edd8>] free_pages+0x50/0x88
+  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+  [<fffffe00001edc1c>] __fput+0xb0/0x288
+  [<fffffe00001ede4c>] ____fput+0xc/0x14
+  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
 
-Same question as in previous patch. Removing defensive code must
-be done carefully. 
+In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+happens because a pud_huge() test in unmap_range() returns true when it
+should always be false with 2-level pages tables used by 64k pages.
+This patch removes support for huge puds if 2-level pagetables are
+being used.
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c | 16 +---------------
->  1 file changed, 1 insertion(+), 15 deletions(-)
-> 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index 789d745..a415829 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -170,10 +170,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->  	if (data->soc == SOC_ARCH_EXYNOS4210) {
->  		/* Write temperature code for threshold */
->  		threshold_code = temp_to_code(data, pdata->threshold);
-> -		if (threshold_code < 0) {
-> -			ret = threshold_code;
-> -			goto out;
-> -		}
->  		writeb(threshold_code,
->  			data->base + reg->threshold_temp);
->  		for (i = 0; i < trigger_levs; i++)
-> @@ -187,18 +183,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->  		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
->  			threshold_code = temp_to_code(data,
->  						pdata->trigger_levels[i]);
-> -			if (threshold_code < 0) {
-> -				ret = threshold_code;
-> -				goto out;
-> -			}
->  			rising_threshold |= threshold_code << 8 * i;
->  			if (pdata->threshold_falling) {
->  				threshold_code = temp_to_code(data,
->  						pdata->trigger_levels[i] -
->  						pdata->threshold_falling);
-> -				if (threshold_code > 0)
-> -					falling_threshold |=
-> -						threshold_code << 8 * i;
-> +				falling_threshold |= threshold_code << 8 * i;
->  			}
->  		}
->  
-> @@ -217,10 +207,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->  				(pdata->trigger_type[i] == HW_TRIP)) {
->  			threshold_code = temp_to_code(data,
->  						pdata->trigger_levels[i]);
-> -			if (threshold_code < 0) {
-> -				ret = threshold_code;
-> -				goto out;
-> -			}
->  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
->  				/* 1-4 level to be assigned in th0 reg */
->  				rising_threshold |= threshold_code << 8 * i;
-> -- 
-> 1.8.2.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm64/mm/hugetlbpage.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+index 5e9aec3..9bed38f 100644
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
+ 
+ int pud_huge(pud_t pud)
+ {
++#ifndef __PAGETABLE_PMD_FOLDED
+ 	return !(pud_val(pud) & PUD_TABLE_BIT);
++#else
++	return 0;
++#endif
+ }
+ 
+ int pmd_huge_support(void)
+@@ -64,8 +68,10 @@ static __init int setup_hugepagesz(char *opt)
+ 	unsigned long ps = memparse(opt, &opt);
+ 	if (ps == PMD_SIZE) {
+ 		hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
++#ifndef __PAGETABLE_PMD_FOLDED
+ 	} else if (ps == PUD_SIZE) {
+ 		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
++#endif
+ 	} else {
+ 		pr_err("hugepagesz: Unsupported page size %lu M\n", ps >> 20);
+ 		return 0;
+-- 
+1.9.0
+
