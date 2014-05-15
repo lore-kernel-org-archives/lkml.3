@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaEONZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32204 "EHLO mx1.redhat.com"
+	id S1754231AbaEONZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:25:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60839 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460AbaEONZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:25:24 -0400
+	id S1753460AbaEONZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:25:29 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
         "K. Y. Srinivasan" <kys@microsoft.com>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Yinghai Lu <yinghai@kernel.org>,
         "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Subject: [PATCH 1/2 v2] x86, irq: get correct available vectors for cpu disable
-Date: Thu, 15 May 2014 09:25:04 -0400
-Message-Id: <1400160305-17774-2-git-send-email-prarit@redhat.com>
+Subject: [PATCH 2/2 v2] x86, make check_irq_vectors_for_cpu_disable() aware of numa node irqs
+Date: Thu, 15 May 2014 09:25:05 -0400
+Message-Id: <1400160305-17774-3-git-send-email-prarit@redhat.com>
 In-Reply-To: <1400160305-17774-1-git-send-email-prarit@redhat.com>
 References: <1400160305-17774-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+Commit da6139e49c7cb0f4251265cb5243b8d220adb48d, x86: Add check for number
+of available vectors before CPU down, added
+check_irq_vectors_for_cpu_disable() which checks if there are enough empty
+vectors to replace the vectors of a downed cpu.
 
-check_irq_vectors_for_cpu_disable() may overestimate the number of
-available vectors assigned to a cpu.  This can cause cpu remove to
-erroneously fail.
+After some additional testing I had noticed some odd failures with storage
+irqs that I originally had thought were likely due to incorrect
+CPU_DOWN_FAILED calls in the kernel.  The manifest themselves as disk IO
+errors in the kernel, and eventually lead to the system filesystems
+remounting as read only.
 
-commit da6139e49c7cb0f4251265cb5243b8d220adb48d,  x86: Add check for
-number of available vectors before CPU down, introduces a check to see if
-there are enough empty vectors in the system to replace a downed cpu's
-vectors.  Code inspection shows that the range used in the check
-(currently from FIRST_EXTERNAL_VECTOR to NR_VECTORS) is incorrect and
-should be FIRST_EXTERNAL_VECTOR to first_system_vector.  The value of
-first_system_vector is decremented when system vectors are assigned in
-alloc_system_vector().
+It turns out that these errors are not issues with CPU_DOWN_FAILED
+callbacks and  the check_irq_vectors_for_cpu_disable() is still
+insufficient in the way it checks for available vectors which leads to the
+possiblity of "orphaned" irqs (that is, active irqs not assigned to a cpu)
+after a CPU down.
 
-The check_irq_vectors_for_cpu_disable() check also does not take into
-account the first 32 system vectors which are not managed in the per_cpu
-vector_irq arrays, including IA32_SYSCALL_VECTOR (0x80) and the
-IRQ_MOVE_CLEANUP_VECTOR (0x20).
+The current check in check_irq_vectors_for_cpu_disable() does not take into
+account cases where irqs are restricted to specific numa nodes.  Currently,
+the code assumes that an irq can be placed on any cpu, however, if the
+PCI device that the irq is assigned to is on a specific node, the irq must
+also be moved to another cpu on that node.
+
+This patch uses the irq's node information and affinity mask to determine
+where an node-specific irq can transition to.  This is done by first
+creating a table of cpus and the number of empty vectors each cpu has.
+Then the code traverses the list of irqs on the down'd CPU and "allocates"
+an irq to an empty vector slot on the cpus.  If there are no available
+vectors the code returns an error.  Note that the actual assignment of the
+irqs is still done later in the cpu disable code path.
+
+At the same time I've created a helper function, _evaluate_irq_for_cpu_disable()that is only called in from check_irq_vectors_for_cpu_disable().  This makes
+the code alot easier to read.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -54,49 +68,199 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
-[v2]: fixed up typos
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- arch/x86/kernel/irq.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/x86/kernel/irq.c |  142 +++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 101 insertions(+), 41 deletions(-)
 
 diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 283a76a..276b02b 100644
+index 276b02b..359f028 100644
 --- a/arch/x86/kernel/irq.c
 +++ b/arch/x86/kernel/irq.c
-@@ -17,6 +17,7 @@
- #include <asm/idle.h>
- #include <asm/mce.h>
- #include <asm/hw_irq.h>
-+#include <asm/desc.h>
+@@ -274,67 +274,113 @@ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
  
- #define CREATE_TRACE_POINTS
- #include <asm/trace/irq_vectors.h>
-@@ -334,8 +335,21 @@ int check_irq_vectors_for_cpu_disable(void)
- 	for_each_online_cpu(cpu) {
- 		if (cpu == this_cpu)
- 			continue;
--		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
--		     vector++) {
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+-/* These two declarations are only used in check_irq_vectors_for_cpu_disable()
++/*
++ * These two declarations are only used in check_irq_vectors_for_cpu_disable()
+  * below, which is protected by stop_machine().  Putting them on the stack
+  * results in a stack frame overflow.  Dynamically allocating could result in a
+  * failure so declare these two cpumasks as global.
+  */
+ static struct cpumask affinity_new, online_new;
+ 
++/* This array is used to keep track of how many empty vectors each cpu has. */
++static int empty_vectors[NR_CPUS];
 +
+ /*
+- * This cpu is going to be removed and its vectors migrated to the remaining
+- * online cpus.  Check to see if there are enough vectors in the remaining cpus.
+- * This function is protected by stop_machine().
++ * Helper function for check_irqs_vectors_for_cpu_disable().  Returns 0 if the
++ * irq doesn't need to be reassigned to a new cpu, returns 1 if the irq does
++ * need to be reassigned to a new cpu, and an -error if there is no room for
++ * the irq.
+  */
+-int check_irq_vectors_for_cpu_disable(void)
++static int _evaluate_irq_for_cpu_disable(int irq)
+ {
+-	int irq, cpu;
+-	unsigned int this_cpu, vector, this_count, count;
++	int empty_vectors_set;
++	unsigned int this_cpu;
++	unsigned int vector_cpu;
+ 	struct irq_desc *desc;
+ 	struct irq_data *data;
+ 
+-	this_cpu = smp_processor_id();
+-	cpumask_copy(&online_new, cpu_online_mask);
+-	cpu_clear(this_cpu, online_new);
++	if (irq < 0)
++		return 0;
+ 
+-	this_count = 0;
+-	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+-		irq = __this_cpu_read(vector_irq[vector]);
+-		if (irq >= 0) {
+-			desc = irq_to_desc(irq);
+-			data = irq_desc_get_irq_data(desc);
+-			cpumask_copy(&affinity_new, data->affinity);
+-			cpu_clear(this_cpu, affinity_new);
++	this_cpu = smp_processor_id();
++	desc = irq_to_desc(irq);
++	data = irq_desc_get_irq_data(desc);
++	cpumask_copy(&affinity_new, data->affinity);
++	cpu_clear(this_cpu, affinity_new);
+ 
+-			/* Do not count inactive or per-cpu irqs. */
+-			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
+-				continue;
++	/* Do not count inactive or per-cpu irqs. */
++	if (!irq_has_action(irq) || irqd_is_per_cpu(data))
++		return 0;
+ 
+-			/*
+-			 * A single irq may be mapped to multiple
+-			 * cpu's vector_irq[] (for example IOAPIC cluster
+-			 * mode).  In this case we have two
+-			 * possibilities:
+-			 *
+-			 * 1) the resulting affinity mask is empty; that is
+-			 * this the down'd cpu is the last cpu in the irq's
+-			 * affinity mask, or
+-			 *
+-			 * 2) the resulting affinity mask is no longer
+-			 * a subset of the online cpus but the affinity
+-			 * mask is not zero; that is the down'd cpu is the
+-			 * last online cpu in a user set affinity mask.
+-			 */
+-			if (cpumask_empty(&affinity_new) ||
+-			    !cpumask_subset(&affinity_new, &online_new))
+-				this_count++;
++	if (desc->irq_data.node == NUMA_NO_NODE) {
 +		/*
-+		 * assign_irq_vector() only scans per_cpu vectors from
-+		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
-+		 * It also skips vectors that are set in used_vectors bitmask.
-+		 * used_vectors could have bits set for
-+		 *	IA32_SYSCALL_VECTOR (0x80)
-+		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
-+		 * Don't count those as available vectors.
++		 * A single irq may be mapped to multiple cpu's vector_irq[]
++		 * (for example IOAPIC cluster mode).  In this case we have two
++		 * possibilities:
++		 *
++		 * 1) the resulting affinity mask is empty; that is this the
++		 * down'd cpu is the last cpu in the irq's affinity mask, or
++		 *
++		 * 2) the resulting affinity mask is no longer a subset of the
++		 * online cpus but the affinity mask is not zero; that is the
++		 * down'd cpu is the last online cpu in a user set affinity
++		 * mask.
 +		 */
-+		for (vector = FIRST_EXTERNAL_VECTOR;
-+		     vector < first_system_vector; vector++) {
-+			if (test_bit(vector, used_vectors))
-+				continue;
-+
- 			if (per_cpu(vector_irq, cpu)[vector] < 0)
- 				count++;
++		if (cpumask_empty(&affinity_new) ||
++		    !cpumask_subset(&affinity_new, &online_new))
++			return 1;
++	} else {
++		/*
++		 * In this case, the irq can be mapped to only the CPUs in
++		 * the affinity mask.  If the mask is empty, then there are
++		 * no other available cpus.
++		 */
++		if (cpumask_empty(&affinity_new)) {
++			pr_warn("CPU %d disable failed: IRQ %u has no availble CPUS to transition IRQ.\n",
++				this_cpu, irq);
++			return -ERANGE;
++		}
++		/* Check to see if there are any available vectors. */
++		for_each_cpu(vector_cpu, &affinity_new) {
++			empty_vectors_set = 0;
++			if (empty_vectors[vector_cpu] > 0) {
++				empty_vectors[vector_cpu]--;
++				empty_vectors_set = 1;
++				break;
++			}
  		}
++		if (!empty_vectors_set) {
++			pr_warn("CPU %d disable failed: IRQ %u has no available CPUS with available vectors.\n",
++				this_cpu, irq);
++			return -ERANGE;
++		}
++		return 1;
+ 	}
++	return 0;
++}
++
++
++/*
++ * This cpu is going to be removed and its vectors migrated to the remaining
++ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
++ * This function is protected by stop_machine().
++ */
++int check_irq_vectors_for_cpu_disable(void)
++{
++	int irq, cpu, ret;
++	unsigned int this_cpu, vector, this_count, count, curr_count;
++
++	this_cpu = smp_processor_id();
++	cpumask_copy(&online_new, cpu_online_mask);
++	cpu_clear(this_cpu, online_new);
+ 
+ 	count = 0;
+ 	for_each_online_cpu(cpu) {
+-		if (cpu == this_cpu)
++		if (cpu == this_cpu) {
++			/* we're never assigning irqs to the down'd cpu */
++			empty_vectors[cpu] = -1;
+ 			continue;
++		}
+ 
+ 		/*
+ 		 * assign_irq_vector() only scans per_cpu vectors from
+@@ -345,14 +391,28 @@ int check_irq_vectors_for_cpu_disable(void)
+ 		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
+ 		 * Don't count those as available vectors.
+ 		 */
++		curr_count = 0;
+ 		for (vector = FIRST_EXTERNAL_VECTOR;
+ 		     vector < first_system_vector; vector++) {
+ 			if (test_bit(vector, used_vectors))
+ 				continue;
+ 
+-			if (per_cpu(vector_irq, cpu)[vector] < 0)
++			if (per_cpu(vector_irq, cpu)[vector] < 0) {
+ 				count++;
++				curr_count++;
++			}
+ 		}
++		empty_vectors[cpu] = curr_count;
++	}
++
++	this_count = 0;
++	for (vector = FIRST_EXTERNAL_VECTOR; vector < first_system_vector;
++	     vector++) {
++		irq = __this_cpu_read(vector_irq[vector]);
++		ret = _evaluate_irq_for_cpu_disable(irq);
++		if (ret < 0)
++			return ret;
++		this_count += ret;
+ 	}
+ 
+ 	if (count < this_count) {
 -- 
 1.7.9.3
 
