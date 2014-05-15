@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaEOJhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:37:10 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:55879 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaEOJhG (ORCPT
+	id S1754550AbaEOJhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:37:22 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:62488 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391AbaEOJhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:37:06 -0400
+	Thu, 15 May 2014 05:37:13 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v2 06/14] mmc: mmci: Qcomm: Add 3 clock cycle delay after register write
-Date: Thu, 15 May 2014 10:37:01 +0100
-Message-Id: <1400146621-30056-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2 07/14] mmc: mmci: add ddrmode mask to variant data
+Date: Thu, 15 May 2014 10:37:08 +0100
+Message-Id: <1400146628-30097-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,64 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Most of the Qcomm SD card controller registers must be updated to the MCLK
-domain so subsequent writes to registers will be ignored until 3 clock cycles
-have passed.
+This patch adds ddrmode mask to variant structure giving more flexibility
+to the driver to support more SOCs which have different datactrl register
+layout.
 
-This patch adds a 3 clock cycle delay required after writing to controller
-registers on Qualcomm SOCs. Without this delay all the register writes are not
-successful, resulting in not detecting cards. The write clock delay is
-activated by setting up mclk_delayed_writes variable in variant data.
+Without this patch datactrl register is updated with wrong ddrmode mask on non
+ST SOCs, resulting in card detection failures.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/mmc/host/mmci.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 881bb24..1385554 100644
+index 1385554..dec70d2 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -67,6 +67,8 @@ static unsigned int fmax = 515633;
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
-  * @busy_detect: true if busy detection on dat0 is supported
-  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-+ * @mclk_delayed_writes: enable delayed writes to ensure, subsequent updates
-+ *			 are not ignored.
-  */
- struct variant_data {
- 	unsigned int		clkreg;
-@@ -83,6 +85,7 @@ struct variant_data {
- 	bool			pwrreg_clkgate;
- 	bool			busy_detect;
- 	bool			pwrreg_nopower;
-+	bool			mclk_delayed_writes;
- };
- 
- static struct variant_data variant_arm = {
-@@ -171,6 +174,12 @@ static struct variant_data variant_qcom = {
+@@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
+  *		  is asserted (likewise for RX)
+  * @sdio: variant supports SDIO
+  * @st_clkdiv: true if using a ST-specific clock divider algorithm
++ * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
+  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
+  * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
+  *		     register
+@@ -76,6 +77,7 @@ struct variant_data {
+ 	unsigned int		datalength_bits;
+ 	unsigned int		fifosize;
+ 	unsigned int		fifohalfsize;
++	unsigned int		datactrl_mask_ddrmode;
+ 	bool			sdio;
+ 	bool			st_clkdiv;
+ 	bool			blksz_datactrl16;
+@@ -114,6 +116,7 @@ static struct variant_data variant_u300 = {
+ 	.fifosize		= 16 * 4,
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg_enable		= MCI_ST_U300_HWFCEN,
++	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
+ 	.datalength_bits	= 16,
+ 	.sdio			= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+@@ -126,6 +129,7 @@ static struct variant_data variant_nomadik = {
+ 	.fifosize		= 16 * 4,
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
++	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
  	.datalength_bits	= 24,
- 	.blksz_datactrl4	= true,
- 	.pwrreg_powerup		= MCI_PWR_UP,
-+	/*
-+	 * On QCom SD card controller, registers must be updated to the
-+	 * MCLK domain so subsequent writes to this register will be ignored
-+	 * for 3 clk cycles.
-+	 */
-+	.mclk_delayed_writes	= true,
- };
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+@@ -140,6 +144,7 @@ static struct variant_data variant_ux500 = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
++	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
+ 	.datalength_bits	= 24,
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+@@ -155,6 +160,7 @@ static struct variant_data variant_ux500v2 = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
++	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
+ 	.datalength_bits	= 24,
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+@@ -800,7 +806,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 		}
  
- static inline u32 mmci_readl(struct mmci_host *host, u32 off)
-@@ -181,6 +190,9 @@ static inline u32 mmci_readl(struct mmci_host *host, u32 off)
- static inline void mmci_writel(struct mmci_host *host, u32 data, u32 off)
- {
- 	writel(data, host->base + off);
-+
-+	if (host->variant->mclk_delayed_writes)
-+		udelay(DIV_ROUND_UP((3 * USEC_PER_SEC), host->mclk));
- }
+ 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
+-		datactrl |= MCI_ST_DPSM_DDRMODE;
++		datactrl |= variant->datactrl_mask_ddrmode;
  
- static int mmci_card_busy(struct mmc_host *mmc)
+ 	/*
+ 	 * Attempt to use DMA operation mode, if this
 -- 
 1.9.1
 
