@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaEOGK7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:10:59 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:51340 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaEOGK6 (ORCPT
+	id S1752887AbaEOGLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:11:08 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:48837 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaEOGLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:10:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=mYH1f69B+dHwQR71Qmpi7a07rWhQ=up-9zriY9hOFng@mail.gmail.com>
-References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
-	<20140514150255.GA8330@amd.pavel.ucw.cz>
-	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
-	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
-	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
-	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
-	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
-	<CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
-	<CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
-	<CAOqmu83ptKYHECdtLgEJLxbWa-VjxjKfw4dQo2gqQJP4doS_FQ@mail.gmail.com>
-	<CAKohpo=mYH1f69B+dHwQR71Qmpi7a07rWhQ=up-9zriY9hOFng@mail.gmail.com>
-Date: Thu, 15 May 2014 11:40:57 +0530
-X-Google-Sender-Auth: VUlyvXjbPmkT-qgoL0UuASgbxc4
-Message-ID: <CAOqmu82rYWomE6n=vEFk97tiS0Da4mZSFdvO5zVbApRAoS2LNA@mail.gmail.com>
-Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
-From: Inderpal Singh <inderpal.s@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        "[Chander Kashyap" <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 May 2014 02:11:03 -0400
+X-Google-Original-From: Jassi Brar <jaswinder.singh@linaro.org>
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, s-anna@ti.com, loic.pallardy@st.com,
+        lftan.linux@gmail.com, slapdau@yahoo.com.au,
+        courtney.cavin@sonymobile.com, robherring2@gmail.com, arnd@arndb.de,
+        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
+        ks.giri@samsung.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCHv5 1/4] mailbox: rename pl320-ipc specific mailbox.h
+Date: Thu, 15 May 2014 11:40:05 +0530
+Message-Id: <1400134205-3910-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:31 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 15 May 2014 11:16, Inderpal Singh <inderpal.s@samsung.com> wrote:
->> I think I did not make myself clear.
->
-> Probably I was the one who got confused :)
->
->> Devfreq will have its own opp table associated with its own device. It
->> does not uses the opp table of cpus.
->> Hence there may be need to free the table if driver (at least devfreq)
->> getting un-registered.
->
-> We may have an unregister routine routine, I am not arguing about that.
-> But we don't need to call that for CPU's opp, that's it.. For devices it might
-> make sense to free memory.
+From: Suman Anna <s-anna@ti.com>
 
-Yes the provision should be there in the OPP framework and let the
-individual drivers decide whether to invoke or not.
+The patch 30058677 "ARM / highbank: add support for pl320 IPC"
+added a pl320 IPC specific header file as a generic mailbox.h.
+This file has been renamed appropriately to allow the
+introduction of the generic mailbox API framework.
 
+Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ arch/arm/mach-highbank/highbank.c        | 2 +-
+ drivers/cpufreq/highbank-cpufreq.c       | 2 +-
+ drivers/mailbox/pl320-ipc.c              | 2 +-
+ include/linux/{mailbox.h => pl320-ipc.h} | 0
+ 4 files changed, 3 insertions(+), 3 deletions(-)
+ rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+index c7de89b..f295cbb 100644
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -20,7 +20,7 @@
+ #include <linux/input.h>
+ #include <linux/io.h>
+ #include <linux/irqchip.h>
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+index bf8902a..b464f29 100644
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -19,7 +19,7 @@
+ #include <linux/cpu.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ #include <linux/platform_device.h>
+ 
+ #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+index d873cba..f3755e0 100644
+--- a/drivers/mailbox/pl320-ipc.c
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -26,7 +26,7 @@
+ #include <linux/device.h>
+ #include <linux/amba/bus.h>
+ 
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ 
+ #define IPCMxSOURCE(m)		((m) * 0x40)
+ #define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
+diff --git a/include/linux/mailbox.h b/include/linux/pl320-ipc.h
+similarity index 100%
+rename from include/linux/mailbox.h
+rename to include/linux/pl320-ipc.h
+-- 
+1.8.1.2
+
