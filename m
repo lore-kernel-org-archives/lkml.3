@@ -1,131 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaEOQzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:55:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34186 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752278AbaEOQzf (ORCPT
+	id S1754014AbaEOQ4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:56:41 -0400
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:35293 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753847AbaEOQ4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:55:35 -0400
-Date: Thu, 15 May 2014 18:55:31 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Jisheng Zhang <jszhang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/10] clk: berlin: add core clock driver for BG2/BG2CD
-Message-ID: <20140515165531.GV29318@piout.net>
-References: <1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1400098522-14770-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1400098522-14770-7-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140515080921.GQ29318@piout.net>
- <5374E087.7030703@gmail.com>
+	Thu, 15 May 2014 12:56:39 -0400
+Date: Thu, 15 May 2014 18:56:35 +0200
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: query regarding not returning error if request_irq fails after
+ rtc registration
+Message-ID: <20140515185635.617d372b@linux.lan.towertech.it>
+In-Reply-To: <5374EF1A.2000609@gmail.com>
+References: <5374EF1A.2000609@gmail.com>
+Organization: Tower Technologies
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5374E087.7030703@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/05/2014 at 17:43:03 +0200, Sebastian Hesselbarth wrote :
-> On 05/15/2014 10:09 AM, Alexandre Belloni wrote:
-> >On 14/05/2014 at 22:15:17 +0200, Sebastian Hesselbarth wrote :
-> >>+	/* clock divider cells */
-> >>+	parent_names[1] = avpllb_names[CH4];
-> >>+	parent_names[2] = avpllb_names[CH5];
-> >>+	parent_names[3] = avpllb_names[CH6];
-> >>+	parent_names[4] = avpllb_names[CH7];
-> >>+
-> >>+	parent_names[0] = refclk_names[SYSPLL];
-> >
-> >It should actually be:
-> >
-> >parent_names[0] = avpllb_names[CH4];
-> >parent_names[1] = avpllb_names[CH5];
-> >parent_names[2] = avpllb_names[CH6];
-> >parent_names[3] = avpllb_names[CH7];
-> >parent_names[4] = refclk_names[SYSPLL];
-> 
-> Given the comment to remove index 0 in the last patch, I translate that
-> into: "the input mux bypass is there, but {cannot,should not,we do not
-> want it to} be used". *sigh*
-> 
-> Actually, almost all of this is based on Chromecast mirrored BSP code
-> and I though about leaving the bypass mux in - even if it is not used
-> at all.
-> 
-> The reason is that I am _very_ tired of reading through the BSP code
-> and have all the things in mind where the BSP code is unclear.
-> 
+On Thu, 15 May 2014 22:15:14 +0530
+RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com> wrote:
 
-Ok, I made a mistake, I also have a hard time to picture everything
-myself ;)
+> my question is that the set_alarm and alarm_irq_enable is still active,
+> so should i use some flag in the global private variable of the driver
+> so that if the request irq fails, then using this flag the set_alarm
+> and alarm_irq_enable can return error since there is no irq handler
+> for the rtc interrupt 
+> or is there any other solution 
+> or let the set_alarm and alarm_irq_enable routine be as it is and will
 
-So, the mux is there iand can be used, hence, the parents are actually:
-
-parent_names[0] = refclk_names[SYSPLL];
-parent_names[1] = avpllb_names[CH4];
-parent_names[2] = avpllb_names[CH5];
-parent_names[3] = avpllb_names[CH6];
-parent_names[4] = avpllb_names[CH7];
-parent_names[5] = refclk_names[SYSPLL];
-
-and disregard my comment on the previous patch.
-
-> >>+	data = &bg2_divs[CLKID_SYS];
-> >>+	clks[CLKID_SYS] = berlin2_div_register(&data->map, base, data->name,
-> >>+		       data->div_flags, parent_names, 5, data->flags, &lock);
-> >>+
-> >>+	parent_names[0] = refclk_names[CPUPLL];
-> >>+	parent_names[5] = refclk_names[MEMPLL];
-> >
-> >The only valid choice here should be (remember, we are not adding 1 to
-> >the index anymore):
-> >parent_names[4] = refclk_names[MEMPLL];
-
-There, you actually had it right, maybe we could set parent_names[1] to
-parent_names[4] to something bogus or all to refclk_names[MEMPLL].
-
-> 
-> Funny to see that there ought to be a CPUPLL which isn't used by the
-> CPU at all. This also implies to remove CPUPLL, right?
-> 
-> >>+	data = &bg2_divs[CLKID_CPU];
-> >>+	clks[CLKID_CPU] = berlin2_div_register(&data->map, base, data->name,
-> >>+			 data->div_flags, parent_names, 6, data->flags, &lock);
-> >>+
-> >
-> >This is where it gets tricky, now we should have:
-> >parent_names[0] = avpllb_names[CH4];
-> >parent_names[1] = avplla_names[CH5];
-> >parent_names[2] = avpllb_names[CH6];
-> >parent_names[3] = avpllb_names[CH7];
-> >parent_names[4] = refclk_names[SYSPLL];
-> 
-> First I thought that it is just the default input mux clocks again..
-> but then I noticed that it is actually AVPLL_A5 not B5.
-> 
-
-Here it becomes:
-parent_names[0] = refclk_names[SYSPLL];
-parent_names[1] = avpllb_names[CH4];
-parent_names[2] = avplla_names[CH5];
-parent_names[3] = avpllb_names[CH6];
-parent_names[4] = avpllb_names[CH7];
-parent_names[5] = refclk_names[SYSPLL];
-
-
-> Ok, I admit having confirmed information is maybe better. So, you agree
-> that we can remove the input mux bypass on the complex divider, too?
-> (Including all the consequences: remove it from the divmap, driver, ...)
-> 
-
-No, let's keep the mux, sorry about that confusion.
-
+ you can use a flag (or set the irq to -1)
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
