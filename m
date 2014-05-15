@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaEODiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:38:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50457 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaEODit (ORCPT
+	id S1753333AbaEODou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:44:50 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:65226
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751279AbaEODot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:38:49 -0400
-Date: Wed, 14 May 2014 20:38:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: Re: [PATCH v2 -next] x86,vdso: Fix an OOPS accessing the hpet
- mapping w/o an hpet
-Message-Id: <20140514203859.8c82aa3a.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBC1E9x-zU-zJbNP+zbPgb=nhi39TqrxqpcGdi=OR9duXg@mail.gmail.com>
-References: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400111179.git.luto@amacapital.net>
-	<CAJd=RBC1E9x-zU-zJbNP+zbPgb=nhi39TqrxqpcGdi=OR9duXg@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 23:44:49 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1056,1389740400"; 
+   d="scan'208";a="61911941"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: netdev@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] drivers/net/wan: delete unneeded call to netdev_priv
+Date: Thu, 15 May 2014 05:43:18 +0200
+Message-Id: <1400125401-15512-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014 11:18:29 +0800 Hillf Danton <dhillf@gmail.com> wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> > --- a/arch/x86/vdso/vma.c
-> > +++ b/arch/x86/vdso/vma.c
-> > @@ -90,6 +90,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
-> >         struct vm_area_struct *vma;
-> >         unsigned long addr;
-> >         int ret = 0;
-> > +       static struct page *no_pages[] = {NULL};
-> >
-> >         if (calculate_addr) {
-> >                 addr = vdso_addr(current->mm->start_stack,
-> > @@ -125,7 +126,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
-> >                                        addr + image->size,
-> >                                        image->sym_end_mapping - image->size,
-> >                                        VM_READ,
-> > -                                      NULL);
-> > +                                      no_pages);
-> >
-> >         if (IS_ERR(vma)) {
-> >                 ret = PTR_ERR(vma);
-> > --
-> > 1.9.0
-> >
-> As the comment says,
-> /*
->  * Called with mm->mmap_sem held for writing.
->  * Insert a new vma covering the given region, with the given flags.
->  * Its pages are supplied by the given array of struct page *.
->  * The array can be shorter than len >> PAGE_SHIFT if it's null-terminated.
->  * The region past the last page supplied will always produce SIGBUS.
->  * The array pointer and the pages it points to are assumed to stay alive
->  * for as long as this mapping might exist.
->  */
-> struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
->    unsigned long addr, unsigned long len,
->    unsigned long vm_flags, struct page **pages)
-> {
-> 
-> we can send sigbus at fault time if no pages are supplied at install time.
+Netdev_priv is an accessor function, and has no purpose if its result is
+not used.
 
-Yes, but the way to communicate "no pages" is to pass (*pages)==NULL. 
-Passing (pages)==NULL causes the code to oops at fault time.
+A simplified version of the semantic match that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-We could easily change the interface so that pages==NULL means "no
-pages" but that isn't the way it works at present.
+// <smpl>
+@@ local idexpression x; @@
+-x = netdev_priv(...);
+... when != x
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/net/wan/sdla.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/net/wan/sdla.c b/drivers/net/wan/sdla.c
+index de3bbf4..cdd45fb 100644
+--- a/drivers/net/wan/sdla.c
++++ b/drivers/net/wan/sdla.c
+@@ -1322,10 +1322,6 @@ NOTE:  This is rather a useless action right now, as the
+ 
+ static int sdla_change_mtu(struct net_device *dev, int new_mtu)
+ {
+-	struct frad_local *flp;
+-
+-	flp = netdev_priv(dev);
+-
+ 	if (netif_running(dev))
+ 		return -EBUSY;
+ 
 
