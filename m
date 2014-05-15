@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaEOVu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:50:26 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:51981 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781AbaEOVuZ (ORCPT
+	id S1756100AbaEOVxL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:53:11 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:38381 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaEOVxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:50:25 -0400
-Message-ID: <53751321.7070905@linux.vnet.ibm.com>
-Date: Fri, 16 May 2014 00:48:57 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
-        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
+	Thu, 15 May 2014 17:53:09 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Masood Mehmood <ody.guru@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191338.19811.72313.stgit@srivatsabhat.in.ibm.com> <20140515191720.GA21306@htj.dyndns.org>
-In-Reply-To: <20140515191720.GA21306@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051519-1618-0000-0000-0000003B0145
+Subject: =?UTF-8?q?=5BPATCH=5D=20Fix=20for=20possible=20null=20pointer=20dereference=20in=20node=2Ec?=
+Date: Thu, 15 May 2014 23:53:53 +0200
+Message-Id: <1400190833-27882-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 12:47 AM, Tejun Heo wrote:
-> On Fri, May 16, 2014 at 12:43:44AM +0530, Srivatsa S. Bhat wrote:
->> During CPU offline, stop-machine is used to take control over all the online
->> CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
->> that is to be taken offline.
-> ...
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> 
+There is otherwise a risk of a possible null pointer dereference.
 
-Cool! Thanks a lot Tejun!
- 
-Regards,
-Srivatsa S. Bhat
+Was largely found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/tidspbridge/rmgr/node.c |    4 ++--
+ 1 fil ändrad, 2 tillägg(+), 2 borttagningar(-)
+
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index 9d3044a..94c2cce 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -2361,8 +2361,7 @@ static void delete_node(struct node_object *hnode,
+ 	struct node_taskargs task_arg_obj;
+ #ifdef DSP_DMM_DEBUG
+ 	struct dmm_object *dmm_mgr;
+-	struct proc_object *p_proc_object =
+-	    (struct proc_object *)hnode->processor;
++	struct proc_object *p_proc_object;
+ #endif
+ 	int status;
+ 	if (!hnode)
+@@ -2431,6 +2430,7 @@ static void delete_node(struct node_object *hnode,
+ 							dsp_heap_res_addr,
+ 							pr_ctxt);
+ #ifdef DSP_DMM_DEBUG
++			p_proc_object = (struct proc_object *)hnode->processor;
+ 			status = dmm_get_handle(p_proc_object, &dmm_mgr);
+ 			if (dmm_mgr)
+ 				dmm_mem_map_dump(dmm_mgr);
+-- 
+1.7.10.4
 
