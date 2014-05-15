@@ -1,42 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaEOKsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:48:39 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49161 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaEOKsh (ORCPT
+	id S1752826AbaEOKtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:49:22 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:41057 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaEOKtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:48:37 -0400
-Message-ID: <53749855.4050906@ahsoftware.de>
-Date: Thu, 15 May 2014 12:35:01 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Rename EPROBE_DEFER to ENOTHING_TO_SEE_WE_SOLVE_EVERYTHING_LATER
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Thu, 15 May 2014 06:49:20 -0400
+Subject: Re: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after
+ all initialization done
+From: ching <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <5373675B.5030102@redhat.com>
+References: <1400068509.6957.62.camel@localhost>
+	 <5373675B.5030102@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 May 2014 18:49:12 +0800
+Message-ID: <1400150952.7179.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe in verbose names, therefor
+Hi Tomas,
 
-find linux.git/ -name '*.[c|h]' -exec sed 
-s/EPROBE_DEFER/ENOTHING_TO_SEE_WE_SOLVE_EVERYTHING_LATER/g -i {} 
-2>/dev/null \;
+Then I will have a patch 18/16 to replace flush_scheduled_work with flush_work.
+Thanks for your advice.
 
-142 files changed, 261 insertions(+), 261 deletions(-)
+On Wed, 2014-05-14 at 14:53 +0200, Tomas Henzl wrote:
+> On 05/14/2014 01:55 PM, ching wrote:
+> > From: Ching<ching2048@areca.com.tw>
+> >
+> > This is a new patch after patch v1.1 series.
+> >
+> > Fixed calling scsi_scan_host until all initialization are done.
+> > And fixed error path free allocated resource.
+> >
+> > Signed-off-by: Ching<ching2048@areca.com.tw>
+> > ---
+> >
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> > --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
+> > @@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
+> >  static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
+> >  static const char *arcmsr_info(struct Scsi_Host *);
+> >  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
+> > +static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
+> >  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
+> >  					  int queue_depth, int reason)
+> >  {
+> > @@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
+> >  	}
+> >  	error = scsi_add_host(host, &pdev->dev);
+> >  	if(error){
+> > -		goto RAID_controller_stop;
+> > +		goto free_ccb_pool;
+> >  	}
+> >  	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
+> >  		goto scsi_host_remove;
+> >  	arcmsr_iop_init(acb);
+> > -    	scsi_scan_host(host);
+> >  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+> >  	atomic_set(&acb->rq_map_token, 16);
+> >  	atomic_set(&acb->ante_token_value, 16);
+> > @@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
+> >  	add_timer(&acb->eternal_timer);
+> >  	if(arcmsr_alloc_sysfs_attr(acb))
+> >  		goto out_free_sysfs;
+> > +    	scsi_scan_host(host);
+> >  	return 0;
+> >  out_free_sysfs:
+> > -scsi_host_remove:
+> > -	scsi_remove_host(host);
+> > -RAID_controller_stop:
+> > +	del_timer_sync(&acb->eternal_timer);
+> > + 	flush_work(&acb->arcmsr_do_message_isr_bh);
+> 
+> In your driver you use both flush_work(struct work_struct *) and flush_scheduled_work(),
+> the second form is used used to flush the shared workqueue. 
+> That said (and I think you use just one queue) you should decide which one is correct.
+> In my previous mail I have asked about flush_work because i have it seen elsewhere in
+> your code, now I've noticed the use of schedule_work and that means that you are using the global wq.
+>  
+> 
+> >  	arcmsr_stop_adapter_bgrb(acb);
+> >  	arcmsr_flush_adapter_cache(acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> > +scsi_host_remove:
+> > +	scsi_remove_host(host);
+> > +free_ccb_pool:
+> >  	arcmsr_free_ccb_pool(acb);
+> >  free_hbb_mu:
+> >  	arcmsr_free_mu(acb);
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Tested!
 
-And how do deferred probes handle cycles?
-
-I suggest to make squares out of them.
-
-Convinced? ;)
-
-Alexander Holler
-
-PS: And no, I don't throw chairs around. I just think sometimes a joke 
-is a good thing.
