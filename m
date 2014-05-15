@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaEOFeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 01:34:10 -0400
-Received: from ozlabs.org ([103.22.144.67]:39584 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaEOFeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 01:34:09 -0400
-Date: Thu, 15 May 2014 15:31:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Amos Kong <akong@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] virtio-rng: cope if struct hwrng.name is changed to
- const
-Message-ID: <20140515153140.49b8028b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753389AbaEOFhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 01:37:35 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:38739 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609AbaEOFhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 01:37:33 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ey+Q_2BD200qr1PaOic8wMb"; protocol="application/pgp-signature"
+In-Reply-To: <CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+	<CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+Date: Thu, 15 May 2014 11:07:33 +0530
+Message-ID: <CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Inderpal Singh <inderpal.s@samsung.com>
+Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ey+Q_2BD200qr1PaOic8wMb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 15 May 2014 11:00, Inderpal Singh <inderpal.s@samsung.com> wrote:
+> On Thu, May 15, 2014 at 10:34 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 15 May 2014 10:22, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>>
+>>> What i am saying that "what if we are not going to re-use again ? "
+>>
+>> That's what I said:
+>>
+>> Yes, it will keep occupying some space but there is only one instance
+>> of that per 'cluster' and is very much affordable instead of building it again..
+>>
+>> So, we may not need to free it.
+>
+> Its not just about cpufreq. There may be others using OPPs as well.
+> For example devfreq.
 
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/char/hw_random/virtio-rng.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-Based on the current virtio tree in linux-next.
-
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/v=
-irtio-rng.c
-index 12e242bbb0f5..6319b133b7aa 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -94,9 +94,11 @@ static int probe_common(struct virtio_device *vdev)
- {
- 	int err, i;
- 	struct virtrng_info *vi =3D NULL;
-+	char *name;
-=20
- 	vi =3D kmalloc(sizeof(struct virtrng_info), GFP_KERNEL);
--	vi->hwrng.name =3D kmalloc(40, GFP_KERNEL);
-+	name =3D kmalloc(40, GFP_KERNEL);
-+	vi->hwrng.name =3D name;
- 	init_completion(&vi->have_data);
-=20
- 	vi->hwrng.read =3D virtio_read;
-@@ -117,7 +119,7 @@ static int probe_common(struct virtio_device *vdev)
-=20
- 	i =3D 0;
- 	do {
--		sprintf(vi->hwrng.name, "virtio_rng.%d", i++);
-+		sprintf(name, "virtio_rng.%d", i++);
- 		err =3D hwrng_register(&vi->hwrng);
- 	} while (err =3D=3D -EEXIST);
-=20
---=20
-2.0.0.rc2
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/ey+Q_2BD200qr1PaOic8wMb
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTdFFAAAoJEMDTa8Ir7ZwVpk8P/1w09Qx8pFezuBTEdEzUrRoC
-4U2IdqQDNazWg+7rxaRRul1pPLfH0vEeHjUGCX8Jx9jBEZ8HzKAfcGJ7fK+cwgWs
-l2digEVGLireoZIlF0XvhKgOL12X5LWpe3f20T6TuZ7JmGRzmLaUxalJnGVC5f2S
-ykuFpDmLFWiDn0+SBA9yYXMUR+89aSmFlafppZe+2OgiRmgQJidRSO2K1g33tqAK
-FXYDlMMSwhQ2uq+/0ODfKh8I8xDySA26MYsLcgppclidLu7UMDEFU9ae2Sj927mo
-prdKaukCA9R51fGx1bPcQmOIUNn8X/Lwf99ZojQQoM33+7aCr7jUTG2xZX7DJwx9
-uzeaNfKV1ti3K8q4I8c92Wvewlfvb9xWwkqh9n9FN8jA4uuGX8XsJjxFiyrDYBsm
-lnNGu1OmIKbHlA9FeEKtUGIC/1gSDverA9/64O2pqsn4hjHRKd+sR//o4dYvgSO0
-piE4Bu9rjedyM2nx+jSzmxgo4Za7WYrXgjYhaUvaqEzXUMPj7N/oZ8zwDdxQYkAu
-2hyU4ScnRCVutxUJ9aKfLJtyO3JGXnWu8k5VsHO1Q2VrScwgjweTvq8NsHeW1rwf
-eX0ZPNJuswoxkkGkRJ3sjykcMPLn4L1IpsX7s4hQuadOs7QEFUszZAsAKkGmC/ef
-E6+W8FJRKf57lSl9+lVi
-=8V6F
------END PGP SIGNATURE-----
-
---Sig_/ey+Q_2BD200qr1PaOic8wMb--
+And who is stopping these to use the already built ones? Exactly for
+this reason I have been saying that lets not free OPPs already built.
+Devfreq can simply use the ones built by cpufreq, even if cpufreq isn't
+using it anymore.
