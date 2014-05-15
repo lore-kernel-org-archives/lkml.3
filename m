@@ -1,120 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaEOJVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:21:49 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:64669 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaEOJVq (ORCPT
+	id S1753127AbaEOJZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:25:58 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:42042 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaEOJZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:21:46 -0400
-Date: Thu, 15 May 2014 11:19:40 +0200
+	Thu, 15 May 2014 05:25:55 -0400
+Date: Thu, 15 May 2014 11:23:50 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
+To: Rahul Sharma <rahul.sharma@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
         Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [RFC PATCH 06/10] usb: xhci: Add Tegra XHCI host-controller
- driver
-Message-ID: <20140515091938.GD6434@ulmo>
-References: <1400113986-339-1-git-send-email-abrestic@chromium.org>
- <1400113986-339-7-git-send-email-abrestic@chromium.org>
- <15599140.PsD4j7x3tZ@wuerfel>
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+Message-ID: <20140515092349.GE6434@ulmo>
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+ <1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+ <20140514221423.GC6215@mithrandir>
+ <CAPdUM4NaLpN99JCJH3qMakSO3OG6ASjEuvvr_CnKv=gOiqfzMQ@mail.gmail.com>
+ <20140515074203.GD5952@ulmo>
+ <CAPdUM4OXXMzMDNVym1ysMx7wifbO2QsSP5jk6cn3+F8Or3ng3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P+33d92oIH25kiaB"
+	protocol="application/pgp-signature"; boundary="ep0oHQY+/Gbo/zt0"
 Content-Disposition: inline
-In-Reply-To: <15599140.PsD4j7x3tZ@wuerfel>
+In-Reply-To: <CAPdUM4OXXMzMDNVym1ysMx7wifbO2QsSP5jk6cn3+F8Or3ng3w@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---P+33d92oIH25kiaB
+--ep0oHQY+/Gbo/zt0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 15, 2014 at 10:17:10AM +0200, Arnd Bergmann wrote:
-> On Wednesday 14 May 2014 17:33:02 Andrew Bresticker wrote:
+On Thu, May 15, 2014 at 01:47:33PM +0530, Rahul Sharma wrote:
+> On 15 May 2014 13:12, Thierry Reding <thierry.reding@gmail.com> wrote:
+> > On Thu, May 15, 2014 at 10:49:37AM +0530, Rahul Sharma wrote:
+> >> On 15 May 2014 03:44, Thierry Reding <thierry.reding@gmail.com> wrote:
+> >> > On Thu, May 15, 2014 at 12:47:21AM +0530, Rahul Sharma wrote:
 [...]
-> > +	/* Create child xhci-plat device */
-> > +	memset(xhci_resources, 0, sizeof(xhci_resources));
-> > +	res =3D platform_get_resource(to_platform_device(dev), IORESOURCE_IRQ=
-, 0);
-> > +	if (!res) {
-> > +		dev_err(dev, "Missing XHCI IRQ\n");
-> > +		ret =3D -ENODEV;
-> > +		goto out;
-> > +	}
-> > +	xhci_resources[0].start =3D res->start;
-> > +	xhci_resources[0].end =3D res->end;
-> > +	xhci_resources[0].flags =3D res->flags;
-> > +	xhci_resources[0].name =3D res->name;
-> > +	res =3D platform_get_resource(to_platform_device(dev), IORESOURCE_MEM=
-, 0);
-> > +	if (!res) {
-> > +		dev_err(dev, "Missing XHCI registers\n");
-> > +		ret =3D -ENODEV;
-> > +		goto out;
-> > +	}
-> > +	xhci_resources[1].start =3D res->start;
-> > +	xhci_resources[1].end =3D res->end;
-> > +	xhci_resources[1].flags =3D res->flags;
-> > +	xhci_resources[1].name =3D res->name;
-> > +
-> > +	xhci =3D platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
-> > +	if (!xhci) {
-> > +		dev_err(dev, "Failed to allocate XHCI host\n");
-> > +		ret =3D -ENOMEM;
-> > +		goto out;
-> > +	}
+> >> >> +#define PHY_NR       5
+> >> >
+> >> > I'm not sure that this belongs here either. It's not a value that wi=
+ll
+> >> > ever appear in a DT source file.
+> >>
+> >> I want it to grow along with new additions in the phy list else
+> >> catastrophic. This will look unrelated in driver.
+> >
+> > But this is in no way growing automatically as it is. Whoever adds a new
+> > type of PHY will need to manually increment this define. Furthermore the
+> > driver will need to be updated to cope with this anyway.
 >=20
-> This does not feel appropriate at all: Rather than creating a child devic=
-e,
-> you should have a specific driver that hooks into functions exported
-> by the xhci core. See Documentation/driver-model/design-patterns.txt
+> Not automatically. What I meant was If keeping it at end of the list, it =
+is not
+> possible that somebody skip the updation of PHY_NR when adding a new phy
+> type.
 
-I don't think Documentation/driver-model/design-patterns.txt documents
-this. Perhaps this is what you had in mind?
+It's perhaps not as likely, but still possible.
 
-	http://lwn.net/Articles/336262/
+> If I leave a comment at the end of the list to update PHY_NR (after movin=
+g it
+> to driver), that also serves the purpose.
+
+I don't think this is needed either. Like I said earlier, since the
+driver has an internal maximum number of PHYs that it supports the
+maximum that can be specified in the DTS is irrelevant. If it doesn't
+support a new one, then it will simply return an error. And I would
+assume that if somebody added support for a new PHY type then they
+probably wouldn't forget to update the driver since they're modifying
+it anyway and testing will fail if they don't.
 
 Thierry
 
---P+33d92oIH25kiaB
+--ep0oHQY+/Gbo/zt0
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTdIaqAAoJEN0jrNd/PrOhBUIQAKd1nXshSupjAjeGsNlkQyez
-GH8FCmraBgDc4Kf5v7+l03kYBgpI8rB1itwjnslS59CxSz6E6BVzAI6sFQvZ8kpQ
-K7v/OAju6QNevxHHwrqWeyeiQtXE81Il0Q0w/14ca1uoD+64PoN+ztVVkwsegcZy
-LtXV5+8WfwUCiaB9IS8ASerm2o17LzUzPTs0qKETwsq7Hy6l17y45uqPYVcFfPR8
-tsp6FU+lNEtF9oylXDpjD2I6p4r7MlCClSrSwWURgIeD/Gzq3OjjPf47g/nTMuop
-J5UAWrF8XiSgOO03PM5tiK40oHUWmSsDQtvOnaXE1KKyBoKGzhHrYz69lD/4ahps
-jzseFt2wimbjXXlVQdydhJthD/nWv62V5yooST1ON6VBUBtmLx37JXhZwU9fTDXF
-jxS9aEzCcpDVpWqbe4nT7azZIAywCfle/noJ3qILW+S9a5yF6jqYTv8WBroW2sTt
-k3p1ItSxEbIDKfM10FRTlRYGVI49w6W4aTjUvnAzj1rwe0nfr4pxFQD/TM9qpLE1
-23f1ebQRRwDJp3Hh8/5VduH7+5JmAc4PMG3do/Lu3bGKH3ahm6OBZPafUd3LYsKR
-ThnPd3Cywg2C9eRgez8anuZGsnRREOMmsbRwe+zFLqDB18u/cm2E4b+KlNQNVFZu
-1MtdbHv1Ur8/6oBue1vj
-=1JJ4
+iQIcBAEBAgAGBQJTdIelAAoJEN0jrNd/PrOhflAP/1Gzw5mXfrnFNP7lQrnxHxSC
+aT9K0BoLcPdz37oJu5euWFZAT8Oe2cojaVfWCeeBPi2kaKEdCHIV82Dr9wJjE9Rs
+0hJu8Kp9pprXVSkYUje+6ik1Ts+oKjzrdiaz0IDkUzqFhQHAJY9AQn/yilSCnGct
+vswKnpht5t2r0SfzIeNahCksgbZnqkDfUOb2RI/IwPFo23pJSv44ljvE2FDJ4qZ8
+l+2Nyurd+86+G/swomAwNQd4oaby0vrSkXt0Y6vreKYtWoSyrB7JtBWuuip8L3S7
+8giMMldQyMG1bXiOwKkz7+IUVBtKI4Q2lALsjmiL0FstkEXE3HiVVP8zp9H3JT2M
+5qqDOM5Wx0AI6oRhnzMyVxpU3JSxMFix9+Jyt1Hc7HGZ5GHHfAo9x3SqQGyvYur/
+kn6fa5j1h0h+MH38AlvCXDNGaK90BUG09pj+aafnIXTdKqkV8W+x04gDjS7fNlHJ
+c+nRCcOiYuF4aE3g4twhB0pLB3YmBidhP8piKVaSG/70Zt4QvOeRnYlA0UyCGaPr
+cRUk96raZn/+ncLToghVSxf6Cv4CHSb+jOgcRq28xzn31Yllp0la7qOTmPHr24f0
+6/7rh6MP649kMVPOTXBTzlVYZXVnT7TlN8OQ7ChTk1e4JhS6iYw8XUbXBHWhZQBc
+LDhbFXosdQNy9GtqdjcR
+=12g9
 -----END PGP SIGNATURE-----
 
---P+33d92oIH25kiaB--
+--ep0oHQY+/Gbo/zt0--
