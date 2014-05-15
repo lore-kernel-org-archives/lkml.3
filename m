@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765AbaEOJkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:40:09 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:57022 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235AbaEOJkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:40:06 -0400
+	id S1754480AbaEOJhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:37:19 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754402AbaEOJhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:37:13 -0400
+Message-ID: <53748AC3.9080709@nod.at>
+Date: Thu, 15 May 2014 11:37:07 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 01/27] arm64: Override defaults from generic/tlb.h
+References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-2-git-send-email-richard@nod.at> <20140515093430.GE11117@localhost>
+In-Reply-To: <20140515093430.GE11117@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 15 May 2014 11:39:41 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, swarren@wwwdotorg.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com
-Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
-In-Reply-To: <1400146519.4102.30.camel@paszta.hi.pengutronix.de>
-References: <cover.1400103181.git.stefan@agner.ch>
- <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
- <20140515075102.GE5952@ulmo> <4de1d09b7873e012e43525c1f8ab9c66@agner.ch>
- <20140515091220.GC6434@ulmo>
- <1400146519.4102.30.camel@paszta.hi.pengutronix.de>
-Message-ID: <cc51075ad7c00d6b08d28834d651b198@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-05-15 11:35, schrieb Philipp Zabel:
-> Am Donnerstag, den 15.05.2014, 11:12 +0200 schrieb Thierry Reding:
-<snip>
->> I also noticed that Philipp's patch doesn't actually introduce the
->> device tree bindings, so that will have to be added as well.
+Am 15.05.2014 11:34, schrieb Catalin Marinas:
+> On Wed, May 14, 2014 at 07:59:33PM +0100, Richard Weinberger wrote:
+>> --- a/arch/arm64/include/asm/tlb.h
+>> +++ b/arch/arm64/include/asm/tlb.h
+>> @@ -19,7 +19,14 @@
+>>  #ifndef __ASM_TLB_H
+>>  #define __ASM_TLB_H
+>>  
+>> +/* These defines are needed to override the defaults from asm-generic/tlb.h */
+>>  #define  __tlb_remove_pmd_tlb_entry __tlb_remove_pmd_tlb_entry
+>> +#define tlb_start_vma tlb_start_vma
+>> +#define tlb_end_vma tlb_end_vma
+>> +#define __tlb_remove_tlb_entry __tlb_remove_tlb_entry
+>> +#define tlb_flush tlb_flush
+>> +#define __pte_free_tlb __pte_free_tlb
+>> +#define __pmd_free_tlb __pmd_free_tlb
+>>  
+>>  #include <asm-generic/tlb.h>
 > 
-> Hmm, yes. Should I take over the edt,et070080dh6.txt from Stefan's
-> series and repost all, or can I just hand in the missing
-> edt,etm0700g0dh6.txt separately?
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> I hope subsequent series would consolidate some more of the above (for
+> example tlb_start_vma() is not really arm64 specific.
 
-Just sent a revision of my patch which doesn't contain that text file
-anymore, hence for me it would be preferable if you can add both
-files...
+Yes, peterz pointed me to a not jet merged series which consolidates
+much more.
+I'll revive it.
 
---
-Stefan
+Thanks,
+//richard
