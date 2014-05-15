@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824AbaEOUbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:31:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37537 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaEOUbg (ORCPT
+	id S1755928AbaEOUdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:33:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33914 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249AbaEOUdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:31:36 -0400
-Date: Thu, 15 May 2014 13:34:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: devel@driverdev.osuosl.org, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging:dgnc:dgnc_driver open/close braces
-Message-ID: <20140515203454.GA14523@kroah.com>
-References: <1397061004-7924-1-git-send-email-paulmcquad@gmail.com>
+	Thu, 15 May 2014 16:33:11 -0400
+Date: Thu, 15 May 2014 23:32:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ARM: imx: clean up error handling
+Message-ID: <20140515203212.GD8897@mwanda>
+References: <1400181871-10325-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397061004-7924-1-git-send-email-paulmcquad@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400181871-10325-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 05:30:04PM +0100, Paul McQuade wrote:
-> ERROR: that open brace { should be on the previous line
-> ERROR: else should follow close brace '}
-> ERROR: space required before the open parenthesis '(
-> ERROR: trailing whitespace
-> ERROR: open brace '{' following function declarations go on the next line
-> ERROR: space required after that ',' (ctx:VxV)
-> ERROR: space required before the open parenthesis '('
+On Thu, May 15, 2014 at 09:24:30PM +0200, Emil Goode wrote:
+> If we fail to allocate struct platform_device pdev we
+> dereference it after the goto label err.
 > 
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+> I have rearranged the error handling a bit to fix the issue
+> and also make it more clear.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 > ---
->  drivers/staging/dgnc/dgnc_driver.c | 22 ++++++++++------------
->  1 file changed, 10 insertions(+), 12 deletions(-)
+>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> index fc4dd7c..14d61d9 100644
+> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+>  
+>  	pdev = platform_device_alloc("mx3-camera", 0);
+>  	if (!pdev)
+> -		goto err;
+> +		return ERR_PTR(ret);
 
-There is something really odd in this patch that git refuses to apply
-it.  Can you please refresh it and send it again, after verifying that
-it will apply properly on your side?
+It's more readable to say "return ERR_PTR(-ENOMEM);".
 
-The error I get is:
+This patch is great but the subject should say "fix" and not "clean up"
+since it fixes a NULL dereference bug.  The people who call their
+checkpatch.pl clean ups "fixes" are also doing it wrong but those are
+newbies and not worth educating.
 
-Applying: Staging:dgnc:dgnc_driver open/close braces
-fatal: patch fragment without header at line 77: @@ -895,7 +893,7 @@ int dgnc_ms_sleep(ulong ms)
+regards,
+dan carpenter
 
-thanks,
-
-greg k-h
