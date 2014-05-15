@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaEOSxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:53:42 -0400
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:33686 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732AbaEOSxG (ORCPT
+	id S1754942AbaEOSz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:55:58 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:57504 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551AbaEOSz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:53:06 -0400
-Date: Thu, 15 May 2014 14:58:14 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
-        rjw@rjwysocki.net
-Subject: Re: [RFC PATCH 4/5] thermal: cpu_cooling: Release the upper cooling
- limit checks
-Message-ID: <20140515185814.GD3138@developer>
-References: <1399559880-20562-1-git-send-email-amit.daniel@samsung.com>
- <1399559880-20562-5-git-send-email-amit.daniel@samsung.com>
+	Thu, 15 May 2014 14:55:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399559880-20562-5-git-send-email-amit.daniel@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <53750A9A.8000808@wwwdotorg.org>
+References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
+	<1397757570-19750-8-git-send-email-dianders@chromium.org>
+	<53750A9A.8000808@wwwdotorg.org>
+Date: Thu, 15 May 2014 11:55:55 -0700
+X-Google-Sender-Auth: Q3wExu_bD46JljyKtr8KdgA9dlU
+Message-ID: <CAD=FV=Vj5M_yiYZOkjzB-QjYJa9WE2fcGcwwzAF1h8gcjc9jeA@mail.gmail.com>
+Subject: Re: [PATCH 7/7] ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
+From: Doug Anderson <dianders@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Simon Glass <sjg@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Amit,
+Stephen,
 
-On Thu, May 08, 2014 at 08:07:59PM +0530, Amit Daniel Kachhap wrote:
-> This is required as with addition of cpufreq cooling notifiers
-> mechanism the client can enable some more cooling states at a later
-> point of time. Say when minimum p state is reached then ACPI specific
-> throttling is enabled which may add some more cooling states.
-> 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  drivers/thermal/step_wise.c    |    2 +-
->  drivers/thermal/thermal_core.c |    9 +++------
->  include/linux/thermal.h        |    1 +
->  3 files changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
-> index f251521..7d65617 100644
-> --- a/drivers/thermal/step_wise.c
-> +++ b/drivers/thermal/step_wise.c
-> @@ -72,7 +72,7 @@ static unsigned long get_target_state(struct thermal_instance *instance,
->  		}
->  		break;
->  	case THERMAL_TREND_RAISE_FULL:
-> -		if (throttle)
-> +		if (instance->upper != THERMAL_CSTATE_MAX && throttle)
->  			next_target = instance->upper;
->  		break;
->  	case THERMAL_TREND_DROPPING:
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 71b0ec0..36bb107 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -921,7 +921,6 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
->  	struct thermal_instance *pos;
->  	struct thermal_zone_device *pos1;
->  	struct thermal_cooling_device *pos2;
-> -	unsigned long max_state;
->  	int result;
->  
->  	if (trip >= tz->trips || (trip < 0 && trip != THERMAL_TRIPS_NONE))
-> @@ -939,13 +938,11 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
->  	if (tz != pos1 || cdev != pos2)
->  		return -EINVAL;
->  
-> -	cdev->ops->get_max_state(cdev, &max_state);
-> -
+On Thu, May 15, 2014 at 11:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/17/2014 11:59 AM, Doug Anderson wrote:
+>> This adds the EC i2c tunnel (and devices under it) to the
+>> tegra124-venice2 device tree.
+>
+> Did the MFD patches at the start of this series get applied yet? I was
+> hoping to apply this one patch to the Tegra tree for 3.16, and that
+> needs to happen by tomorrow morning at the latest since -rc6 is looming
+> fast. However, I'm holding off until the rest of the series is applied
+> to the MFD tree so I can be sure the DT binding is accepted first...
 
-I am not sure I follow why we need to release this check. Can't the user
-use the notifier infrastructure and change the max state?
+As far as I know, they didn't.  Lee was waiting on Wolfram's ack to
+the i2c tunnel before landing them.  ...and I'm still eagerly awaiting
+Wolfram's next i2c tunnel review.
 
-I think I need a better view of use cases where max state would change.
-
-
-
-> -	/* lower default 0, upper default max_state */
-> +	/* lower default 0, upper default THERMAL_CSTATE_MAX */
->  	lower = lower == THERMAL_NO_LIMIT ? 0 : lower;
-> -	upper = upper == THERMAL_NO_LIMIT ? max_state : upper;
-> +	upper = upper == THERMAL_NO_LIMIT ? THERMAL_CSTATE_MAX : upper;
->  
-> -	if (lower > upper || upper > max_state)
-> +	if (lower > upper)
->  		return -EINVAL;
->  
->  	dev =
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index f7e11c7..3748e6d 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -36,6 +36,7 @@
->  
->  /* invalid cooling state */
->  #define THERMAL_CSTATE_INVALID -1UL
-> +#define THERMAL_CSTATE_MAX 1UL
->  
->  /* No upper/lower limit requirement */
->  #define THERMAL_NO_LIMIT	THERMAL_CSTATE_INVALID
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Doug
