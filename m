@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaEOR1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:27:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754573AbaEORYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:24:01 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/14] perf tools: Add global count of opened dso objects
-Date: Thu, 15 May 2014 19:23:26 +0200
-Message-Id: <1400174615-2121-6-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	id S1755567AbaEOR12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:27:28 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39718 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaEOR10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:27:26 -0400
+Message-ID: <1400174841.18229.6.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 15 May 2014 19:27:21 +0200
+In-Reply-To: <20140515144553.GZ4570@linux.vnet.ibm.com>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+	 <1400123931.5175.38.camel@marge.simpson.net>
+	 <20140515144553.GZ4570@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding global count of opened dso objects so we could
-properly limit the number of opened dso data file
-descriptors.
+On Thu, 2014-05-15 at 07:45 -0700, Paul E. McKenney wrote: 
+> On Thu, May 15, 2014 at 05:18:51AM +0200, Mike Galbraith wrote:
+> > On Wed, 2014-05-14 at 08:44 -0700, Paul E. McKenney wrote:
+> > 
+> > > In practice, not sure how much testing CONFIG_NO_HZ_FULL=y has received
+> > > for -rt kernels in production environments.
+> > 
+> > I took 3.14-rt out for a quick spin on my 64 core box, it didn't work at
+> > all with 60 cores isolated.  I didn't have time to rummage, but it looks
+> > like there are still bugs to squash. 
+> > 
+> > Biggest problem with CONFIG_NO_HZ_FULL is the price tag.  It just raped
+> > fast mover performance last time I measured.
+> 
+> I do have a report of the RCU grace-period kthreads (rcu_preempt,
+> rcu_sched, and rcu_bh) consuming excessive CPU time on large boxes,
+> but this is for workloads with lots of threads and context switches.
+> 
+> Whether relevant or not to your situation, working on it...
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/dso.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+RCU signal was swamped by accounting.
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 5d7c7bc..76e5c13 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -1,3 +1,4 @@
-+#include <asm/bug.h>
- #include "symbol.h"
- #include "dso.h"
- #include "machine.h"
-@@ -137,18 +138,23 @@ int dso__read_binary_type_filename(const struct dso *dso,
- }
- 
- /*
-- * Global list of open DSOs.
-+ * Global list of open DSOs and the counter.
-  */
- static LIST_HEAD(dso__data_open);
-+static long dso__data_open_cnt;
- 
- static void dso__list_add(struct dso *dso)
- {
- 	list_add_tail(&dso->data.open_entry, &dso__data_open);
-+	dso__data_open_cnt++;
- }
- 
- static void dso__list_del(struct dso *dso)
- {
- 	list_del(&dso->data.open_entry);
-+	WARN_ONCE(dso__data_open_cnt <= 0,
-+		  "DSO data fd counter out of bounds.");
-+	dso__data_open_cnt--;
- }
- 
- static int __open_dso(struct dso *dso, struct machine *machine)
--- 
-1.8.3.1
+-Mike
 
