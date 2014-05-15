@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaEOU6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:58:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36103 "EHLO
+	id S1755967AbaEOU6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:58:19 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36107 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaEOU6G (ORCPT
+	with ESMTP id S1753846AbaEOU6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:58:06 -0400
-Date: Thu, 15 May 2014 16:58:04 -0400 (EDT)
-Message-Id: <20140515.165804.1922893829087325806.davem@davemloft.net>
+	Thu, 15 May 2014 16:58:11 -0400
+Date: Thu, 15 May 2014 16:58:10 -0400 (EDT)
+Message-Id: <20140515.165810.1301594950523192843.davem@davemloft.net>
 To: Julia.Lawall@lip6.fr
 Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] drivers/net/wan: delete unneeded call to
- netdev_priv
+Subject: Re: [PATCH 2/4] net/ariadne: delete unneeded call to netdev_priv
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1400125401-15512-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1400125401-15512-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1400125401-15512-2-git-send-email-Julia.Lawall@lip6.fr>
+References: <1400125401-15512-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 May 2014 13:58:06 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 May 2014 13:58:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Thu, 15 May 2014 05:43:18 +0200
+Date: Thu, 15 May 2014 05:43:19 +0200
 
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
 > Netdev_priv is an accessor function, and has no purpose if its result is
 > not used.
 > 
