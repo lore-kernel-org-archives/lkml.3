@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaEOPfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49355 "EHLO mx1.redhat.com"
+	id S1754226AbaEOPfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:35:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50976 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660AbaEOPfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:35:23 -0400
-Date: Thu, 15 May 2014 17:34:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
-	lookups in unlock_page fastpath v4
-Message-ID: <20140515153424.GB30668@redhat.com>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140514161152.GA2615@redhat.com> <20140514192945.GA10830@redhat.com> <20140515104808.GF23991@suse.de> <20140515132058.GL30445@twins.programming.kicks-ass.net>
+	id S1751174AbaEOPfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:35:47 -0400
+Date: Thu, 15 May 2014 17:35:44 +0200
+From: chrubis@suse.cz
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140515153544.GB6926@rei.Home>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <537407ED.8050606@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140515132058.GL30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <537407ED.8050606@zytor.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15, Peter Zijlstra wrote:
->
-> So I suppose I'm failing to see the problem with something like:
+Hi!
+> > However, unless I'm sorely mistaken, the larger problem is that glibc
+> > removed the futex() call entirely, so these man pages don't describe
+> > something users even have access to anymore. I had to revert to calling
+> > the syscalls directly in the futextest test suite because of this:
+> > 
+> > http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inclu
+> > de/futextest.h#n67
+> > 
+> 
+> This really comes down to the fact that we should have a libinux which
+> contains the basic system call wrapper machinery for Linux specific
+> things and nothing else.
+> 
+> syscall(3) is toxic and breaks randomly on some platforms.
 
-Yeeees, I was thinking about something like this too ;)
++1
 
-> static inline void lock_page(struct page *page)
-> {
-> 	if (!trylock_page(page))
-> 		__lock_page(page);
-> }
->
-> static inline void unlock_page(struct page *page)
-> {
-> 	clear_bit_unlock(&page->flags, PG_locked);
-> 	if (PageWaiters(page))
-> 		__unlock_page();
-> }
+And while cleaning the LTP[1] testcases, we are slowly extracting the
+special cases into commont code.
 
-but in this case we need mb() before PageWaiters(), I guess.
+[1] http://linux-test-project.github.io/
 
-> void __lock_page(struct page *page)
-> {
-> 	struct wait_queue_head_t *wqh = page_waitqueue(page);
-> 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
->
-> 	spin_lock_irq(&wqh->lock);
-> 	if (!PageWaiters(page))
-> 		SetPageWaiters(page);
->
-> 	wait.flags |= WQ_FLAG_EXCLUSIVE;
-> 	preempt_disable();
-
-why?
-
-> 	do {
-> 		if (list_empty(&wait->task_list))
-> 			__add_wait_queue_tail(wqh, &wait);
->
-> 		set_current_state(TASK_UNINTERRUPTIBLE);
->
-> 		if (test_bit(wait.key.bit_nr, wait.key.flags)) {
-> 			spin_unlock_irq(&wqh->lock);
-> 			schedule_preempt_disabled();
-> 			spin_lock_irq(&wqh->lock);
-
-OK, probably to avoid the preemption before schedule(). Still can't
-undestand why this makes sense, but in this case it would be better
-to do disable/enable under "if (test_bit())" ?
-
-Of course, this needs more work for lock_page_killable(), but this
-should be simple.
-
-Oleg.
-
+-- 
+Cyril Hrubis
+chrubis@suse.cz
