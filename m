@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaEOQNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:13:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3617 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653AbaEOQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:13:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1060,1389772800"; 
-   d="scan'208";a="512255051"
-User-Agent: Microsoft-MacOutlook/14.4.1.140326
-Date: Thu, 15 May 2014 09:14:05 -0700
-Subject: Re: futex(2) man page update help request
-From: Darren Hart <dvhart@linux.intel.com>
-To: <chrubis@suse.cz>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Message-ID: <CF9A3521.90ECC%dvhart@linux.intel.com>
-Thread-Topic: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com>
- <CF98E3EF.90564%dvhart@linux.intel.com>
- <20140515152834.GA6926@rei.Home>
-In-Reply-To: <20140515152834.GA6926@rei.Home>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	id S1754996AbaEOQNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:13:52 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:28413
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752625AbaEOQNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:13:49 -0400
+X-Greylist: delayed 886 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 May 2014 12:13:48 EDT
+From: <tthayer@altera.com>
+To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
+        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@altera.com>
+Subject: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+Date: Thu, 15 May 2014 11:04:49 -0500
+Message-ID: <1400169891-29546-2-git-send-email-tthayer@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(81342001)(76482001)(76176999)(2201001)(97736001)(46102001)(83072002)(99396002)(85852003)(87286001)(86152002)(4396001)(50986999)(50466002)(77156001)(50226001)(79102001)(62966002)(86362001)(93916002)(102836001)(83322001)(20776003)(19580405001)(92726001)(48376002)(92566001)(36756003)(77982001)(88136002)(6806004)(80022001)(19580395003)(81542001)(42186004)(44976005)(47776003)(89996001)(33646001)(87936001)(16796002)(74662001)(74502001)(84676001)(31966008)(921003)(1121002)(2101003)(83996005);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB021;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0212BDE3BE
+Authentication-Results: spf=softfail (sender IP is 66.35.236.232)
+ smtp.mailfrom=tthayer@altera.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/14, 8:28, "chrubis@suse.cz" <chrubis@suse.cz> wrote:
+From: Thor Thayer <tthayer@altera.com>
 
->Hi!
->> 
->> However, unless I'm sorely mistaken, the larger problem is that glibc
->> removed the futex() call entirely, so these man pages don't describe
->> something users even have access to anymore. I had to revert to calling
->> the syscalls directly in the futextest test suite because of this:
->> 
->> 
->>http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inc
->>lu
->
->So there actually exists some tests for futexes, I've been asked if we
->have these as a LTP[1] maintainer several times.
->
->Are these tests executed regulary as a part of some automated framework?
->If not it would make sense to port them to LTP (looking at the code that
->would be quite easy task) and get them executed by several QA
->departments for free. What do you think?
->
->[1] http://linux-test-project.github.io/
+Addition of the Altera SDRAM controller bindings and device
+tree changes to the Altera SoC project.
 
-I've used LTP in the past (quite a bit), and I felt there was some
-advantage to keeping futextest independent. Perhaps things have changed
-enough since then (~2009 era) that we should reconsider. We can discuss
-the pros/cons there if you like. I have agreed to move the performance
-related tests over to perf, and Davidlohr has added some other such tests
-to perf. Trinity now covers the planned fuzz testing for futexes (very
-well... Obviously) so that idea will be dropped, leaving pure functional
-tests in futextest.
+v2: Changes to SoC SDRAM EDAC code.
 
+v3: Implement code suggestions for SDRAM EDAC code.
+
+v4: Remove syscon from SDRAM controller bindings.
+
+v5: No Change, bump version for consistency.
+
+Signed-off-by: Thor Thayer <tthayer@altera.com>
+---
+ .../bindings/arm/altera/socfpga-sdram.txt          |   11 +++++++++++
+ arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+ 2 files changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+new file mode 100644
+index 0000000..8f8746b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+@@ -0,0 +1,11 @@
++Altera SOCFPGA SDRAM Controller
++
++Required properties:
++- compatible : "altr,sdr-ctl";
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++	sdrctl@ffc25000 {
++		compatible = "altr,sdr-ctl";
++		reg = <0xffc25000 0x1000>;
++	};
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index df43702..6ce912e 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -676,6 +676,11 @@
+ 			clocks = <&l4_sp_clk>;
+ 		};
+ 
++		sdrctl@ffc25000 {
++			compatible = "altr,sdr-ctl", "syscon";
++			reg = <0xffc25000 0x1000>;
++		};
++
+ 		rstmgr@ffd05000 {
+ 			compatible = "altr,rst-mgr";
+ 			reg = <0xffd05000 0x1000>;
 -- 
-Darren Hart					Open Source Technology Center
-darren.hart@intel.com				            Intel Corporation
-
-
+1.7.9.5
 
