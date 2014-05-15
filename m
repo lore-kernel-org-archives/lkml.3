@@ -1,117 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaEOJOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:14:32 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:54847 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaEOJO1 (ORCPT
+	id S1753025AbaEOJPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:15:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53687 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752537AbaEOJPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:14:27 -0400
-Date: Thu, 15 May 2014 11:12:21 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, swarren@wwwdotorg.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com
-Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
-Message-ID: <20140515091220.GC6434@ulmo>
-References: <cover.1400103181.git.stefan@agner.ch>
- <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
- <20140515075102.GE5952@ulmo>
- <4de1d09b7873e012e43525c1f8ab9c66@agner.ch>
+	Thu, 15 May 2014 05:15:04 -0400
+Date: Thu, 15 May 2014 11:11:23 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
+ driver
+Message-ID: <20140515091123.GQ29258@lukather>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
+ <20140507213318.GA2105@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qbvjkv9qwOGw/5Fx"
+	protocol="application/pgp-signature"; boundary="VdnGiXwuH6t1Tqzo"
 Content-Disposition: inline
-In-Reply-To: <4de1d09b7873e012e43525c1f8ab9c66@agner.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140507213318.GA2105@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Qbvjkv9qwOGw/5Fx
+--VdnGiXwuH6t1Tqzo
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 15, 2014 at 10:24:39AM +0200, Stefan Agner wrote:
-> Hi Thierry, hi Philipp,
->=20
-> Am 2014-05-15 09:51, schrieb Thierry Reding:
-> > On Wed, May 14, 2014 at 11:45:57PM +0200, stefan@agner.ch wrote:
-> >> From: Stefan Agner <stefan@agner.ch>
-> >>
-> >> This panels are sold by Toradex for Colibri T20/T30 and Apalis T30
-> >> evaluation kits.
-> >>
-> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
+On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
+> On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
+> > Most of the watchdog code is duplicated between the machine restart cod=
+e and
+> > the watchdog driver. Add the restart hook to the watchdog driver, to be=
+ able to
+> > remove it from the machine code eventually.
 > >=20
-> > Panel patches should go to the dri-devel mailing list as well.
-> >=20
-> > Also a patch was posted only yesterday for a panel that seems to be the
-> > exact same one as this, even though the name differs minimally, see:
-> >=20
-> > 	https://patchwork.kernel.org/patch/4175251/
-> >=20
-> > Adding Philipp on Cc so you guys can work together whether this is
-> > indeed the same panel. The only differences seem to be in the vertical
-> > front and back porches, but I suspect that either settings will work on
-> > both Tegra and i.MX.
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
 >=20
-> Its etm0700g0dh6 vs. et070080dh6, Philipp's panel is with captive multi
-> touch, (hence the M I guess). The panel itself really looks the same.
->=20
-> I found this overview of EDT displays:
-> http://www.dmbtechnics.com/scripts/passthru.php?id=3D7
->=20
-> There seem to be quite a lot variants with the same panel...
->=20
-> Regarding timings, I just checked the documentation, Philipp's timing
-> really matches the documented ones, I miscalculated the vertical back
-> porch.
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Okay, so that means that the panel works for you with the same timings
-that Philipp has in the ETM0700G0DH6 patch? If so then I definitely
-think we should be sharing the timings in the driver by making the two
-compatible entries point to the same driver data.
+Wim, do you have any comment on this one?
 
-> How do we resolve that?
->=20
-> I would suggest that I split out that patch and remove the et070080dh6
-> panel and send the other as a single patch to the dri-devel mailing list
-> as well.
+Maxime
 
-Yes, that would work.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-> Philipp, could you add my display type (et070080dh6) to the compatible
-> list of your mode/panel entry?
-
-I also noticed that Philipp's patch doesn't actually introduce the
-device tree bindings, so that will have to be added as well.
-
-Thierry
-
---Qbvjkv9qwOGw/5Fx
-Content-Type: application/pgp-signature
+--VdnGiXwuH6t1Tqzo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTdIT0AAoJEN0jrNd/PrOhARoP/3+sfqWil3n784t6Iif8lKR3
-lR9uJGCRtop/QXlaPx5tiGwgDAwmR6tQkVcB0U/JzTxOJikgqYgQ17CS9prFVCRG
-s37jrsaPWWfs7CWI8ThBc5VI6fwo9BOwgy7/ARVkLi2GjUD3d8BGEQ62BslbznKa
-nG/uGqCEK8W+sFnv4ek3CIykGdB0YYtJW65aJYzbZYlklKptHtzLK+9kEaOXEFOU
-rIZuUzbr/iEtG7hEsrmLCoE8vFI3k7INwka1v/FZLpDeN69OuGW5cSbFu1lyLiQk
-QzveVW8AtW1gcbXP+4TPD0rj0E0HU+JUxhWdx8HB/NjBikg+hU20Qo1BsyNkBv/s
-5p3MZ9RtypORN1uJklsWq/oZZ8VeRyu6kyVyvuc42h9Ej7/N9rI7/prA8F4KBWDN
-9ABopZxwiPhGHYVh2q53Dpz2RgnCx+F7OJ9xb/Z3VKXYqyHDLp0Rz8iIpuChuC4s
-a/pXeF/kgqsjUdgMVzPsG+uBKUe1PxLaNjynoEmdF3kLsRdghfXztxkGOA4rn2+b
-gORMhOAy1CR9Vsqu8puN76k0bXCAZfPSNLcdHQTHt+T1P7Hyl/PR7sttYRpGQUnL
-4+GEyB1UKipt+AM38yUD0ED0+jnLvgaMp6giHjA/9lE3CIz1+PKYbNjmtG6xogp4
-KmiJ0lR4W91YZkznALh7
-=HiEb
+iQIcBAEBAgAGBQJTdIS7AAoJEBx+YmzsjxAgWgwQAJHysjX3WsE2v0U3SshRop8m
+U56t7pfLcYZutHMxSwUD4tZ45AX7X3pCOpOXhexLke/+uJ9wUalhL4EcaiOCfiGs
+BsAIDcvmJVUlxTLnkbTnLxfXV+pjbNjcdUp7rzZBjQJHGjU5z5HKx6Mbr8cUjmnA
+BVmaKNV2RUz23NnQ8HU8ew98heO+dHAMXlkMk/D1gTClNvecrhgrtyPFoCc3ITG3
+rYIH92sZlzwyR76X3gEY7Cp3E/WmCufGDOwBdWVKXdfiSNtJrvkbrHDL4gS1aCRi
+l9jzG5y6fjZbiD3eaT+N3otSpj1cxc31wLqjga9RG7sG5Hd4c/2SS4EUm/9UuYhL
+HV05TraHpDb1kpsYshcS6Vj/D+z9lZPOOw1jeSlXjP6G95NbrL/Iou+sWjuxec2x
+tjfcXlwDfuOMvFM4+eQc+lh1b/3ZOLGDm4UiQaimkN/4fYzKHUlBh/GYUUndAWcj
+KtOGoY8RZQBQpc8eBFhSLEOLzI+3JRrL38/Noy8uOhK/+++0Sz80zQtmUt9eKS1A
+E/DyAwdshbgYoxBG2lsAPiVJKjvZQzcGcbnzXhxSs1/L/UrPqh+uLJ7EUoJ1S2jR
+usxIZuFLetX/2UDBGK6g/41Ed+L2mxksCRSnEIhMwbqeH6L1waPtoslSc41JRBEL
+ScDRLVDBj6RZ6yHWrIZ4
+=dknw
 -----END PGP SIGNATURE-----
 
---Qbvjkv9qwOGw/5Fx--
+--VdnGiXwuH6t1Tqzo--
