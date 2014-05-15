@@ -1,100 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaEOJBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:01:49 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:32869 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaEOJBq (ORCPT
+	id S1753115AbaEOJCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:02:14 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:51319 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaEOJCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:01:46 -0400
-Date: Thu, 15 May 2014 11:01:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
-        aneesh.kumar@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com,
-        aarcange@redhat.com, steve.capper@linaro.org, davidlohr@hp.com,
-        kirill.shutemov@linux.intel.com, dave.hansen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm, hugetlb: move the error handle logic out of normal
- code path
-Message-ID: <20140515090142.GB3938@dhcp22.suse.cz>
-References: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
+	Thu, 15 May 2014 05:02:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <623d49a4a07f4e5a956ccc8c2725e557@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1400133427-5653-1-git-send-email-superlibj8301@gmail.com>
+	<623d49a4a07f4e5a956ccc8c2725e557@BY2PR03MB505.namprd03.prod.outlook.com>
+Date: Thu, 15 May 2014 17:02:11 +0800
+Message-ID: <CAHPCO9HVZSLHuL11zGnLQuuR-TnV7MTU2GDvJpf_+Qy5Dks6BA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
+From: Richard Lee <superlibj8301@gmail.com>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-05-14 15:10:59, Jianyu Zhan wrote:
-> alloc_huge_page() now mixes normal code path with error handle logic.
-> This patches move out the error handle logic, to make normal code
-> path more clean and redue code duplicate.
+ On Thu, May 15, 2014 at 4:55 PM, Li.Xiubo@freescale.com
+<Li.Xiubo@freescale.com> wrote:
+>> Subject: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
+>>
+>> Static vm area boundary check:
+>>
+>>       paddr1 --->|       |
+>>                  |       |
+>>                  |-------| <-\--- svm->vm->addr(is page aligned)
+>>       paddr2 --->|       |    |
+>>                  |     --| <--|-- svm->vm->phys_addr
+>>                  |       |    |
+>>       paddr3 --->|       |    |
+>>                  |       |    |
+>>                  |-------| <--|-- next page boundary
+>>                  |       |    |
+>>       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
+>>                  |       |    |
+>>                  |       |    |
+>> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
+>>                  | ///// |    |
+>>       paddr5 --->| guard |    |
+>>                  | page  |    |
+>>                  | ///// |    |
+>>                   -------  <-/--- svm->vm->addr + svm->vm_size
+>>
+>> <1> If the paddr == paddr1, then continue;
+>> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
+>>     then continue;
+>> <3> if the paddr >= paddr5 then continue;
+>>
+>> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
+>> ---
+>>  arch/arm/mm/ioremap.c | 44 ++++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 42 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+>> index be69333..2fa41f4 100644
+>> --- a/arch/arm/mm/ioremap.c
+>> +++ b/arch/arm/mm/ioremap.c
+>> @@ -47,16 +47,56 @@ static struct static_vm *find_static_vm_paddr(phys_addr_t
+>> paddr,
+>>  {
+>>       struct static_vm *svm;
+>>       struct vm_struct *vm;
+>> +     size_t offset;
+>> +
+>> +     /*
+>> +      * Make sure the size the mapping size is page aligned.
+>> +      */
+>> +     size = PAGE_ALIGN((paddr & ~PAGE_SIZE) + size);
+>> +     offset = paddr & ~PAGE_SIZE;
+>>
+>
+> Shouldn't it be PAGE_MASK ?
+>
 
-I don't know. Part of the function returns and cleans up on its own and
-other part relies on clean up labels. This is not so much nicer than the
-previous state.
+Yes, it is. I'll fix it.
 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  mm/hugetlb.c | 26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 26b1464..e81c69e 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1246,24 +1246,17 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  			return ERR_PTR(-ENOSPC);
->  
->  	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
-> -	if (ret) {
-> -		if (chg || avoid_reserve)
-> -			hugepage_subpool_put_pages(spool, 1);
-> -		return ERR_PTR(-ENOSPC);
-> -	}
-> +	if (ret)
-> +		goto out_subpool_put;
-> +
->  	spin_lock(&hugetlb_lock);
->  	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
->  	if (!page) {
->  		spin_unlock(&hugetlb_lock);
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> -		if (!page) {
-> -			hugetlb_cgroup_uncharge_cgroup(idx,
-> -						       pages_per_huge_page(h),
-> -						       h_cg);
-> -			if (chg || avoid_reserve)
-> -				hugepage_subpool_put_pages(spool, 1);
-> -			return ERR_PTR(-ENOSPC);
-> -		}
-> +		if (!page)
-> +			goto out_uncharge_cgroup;
-> +
->  		spin_lock(&hugetlb_lock);
->  		list_move(&page->lru, &h->hugepage_activelist);
->  		/* Fall through */
-> @@ -1275,6 +1268,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  
->  	vma_commit_reservation(h, vma, addr);
->  	return page;
-> +
-> +out_uncharge_cgroup:
-> +	hugetlb_cgroup_uncharge_cgroup(idx, pages_per_huge_page(h), h_cg);
-> +out_subpool_put:
-> +	if (chg || avoid_reserve)
-> +		hugepage_subpool_put_pages(spool, 1);
-> +	return ERR_PTR(-ENOSPC);
->  }
->  
->  /*
-> -- 
-> 2.0.0-rc3
-> 
+Thanks,
 
--- 
-Michal Hocko
-SUSE Labs
+Best regards,
+Richard Lee
+
+
+>
+>>       list_for_each_entry(svm, &static_vmlist, list) {
+>> +             phys_addr_t paddr_end, phys_addr_end;
+>> +             size_t vmoff;
+>> +
+>>               vm = &svm->vm;
+>>               if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+>>                       continue;
+>>               if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+>>                       continue;
+>>
+>> -             if (vm->phys_addr > paddr ||
+>> -                     paddr + size - 1 > vm->phys_addr + vm->size - 1)
+>> +             /* Static vm area boundary check:
+>> +              *
+>> +              *       paddr1 --->|       |
+>> +              *                  |       |
+>> +              *                  |-------| <-\--- svm->vm->addr(page aligned)
+>> +              *       paddr2 --->|       |    |
+>> +              *                  |     --| <--|-- svm->vm->phys_addr
+>> +              *                  |       |    |
+>> +              *       paddr3 --->|       |    |
+>> +              *                  |       |    |
+>> +              *                  |-------| <--|-- next page boundary
+>> +              *                  |       |    |
+>> +              *       paddr4 --->|       |    | <----- svm->vm->size,
+>> +              *                  |       |    |         including guard page
+>> +              *                  |       |    |
+>> +              * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
+>> +              *                  | ///// |    |
+>> +              *       paddr5 --->| guard |    |
+>> +              *                  | page  |    |
+>> +              *                  | ///// |    |
+>> +              *                   -------  <-/-- svm->vm->addr + svm->vm_size
+>> +              *
+>> +              * <1> If paddr == paddr1, then continue;
+>> +              * <2> If paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
+>> +              *     then continue;
+>> +              * <3> if paddr >= paddr5 then continue;
+>> +              */
+>> +             vmoff = vm->phys_addr & ~PAGE_SIZE;
+>
+> And here.
+>
+> Thanks,
+> BRs
+> Xiubo
+>
+>> +             phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
+>> +             paddr_end = paddr + size - offset;
+>> +             if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
+>> +                     paddr_end - 1 > phys_addr_end - 1)
+>>                       continue;
+>>
+>>               return svm;
+>> --
+>> 1.8.4
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
