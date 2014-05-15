@@ -1,172 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaEOG22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:28:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36887 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaEOG20 (ORCPT
+	id S1753411AbaEOGcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:32:21 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:34753 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaEOGcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:28:26 -0400
-Message-ID: <53745E84.2000002@ti.com>
-Date: Thu, 15 May 2014 11:58:20 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Bin Liu <binmlist@gmail.com>
-CC: Daniel Mack <zonque@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        "Liu, Bin" <b-liu@ti.com>
-Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
-References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>	<5371EA01.3080307@gmail.com>	<537208A9.4020507@ti.com>	<53720E0F.3070008@gmail.com>	<537216AC.4090401@ti.com>	<53721ABF.8060705@gmail.com>	<53721D24.4090704@ti.com>	<CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>	<53730130.3000300@ti.com>	<CADYTM3YH2TJpS0z-Pb=rQPVV5ETHwfYMOOv=BohNB7UmahC9Rw@mail.gmail.com> <CADYTM3bfnhCVi8VKiypMsQOndmzG-=yPksYNV+qZ8X73LPTZog@mail.gmail.com>
-In-Reply-To: <CADYTM3bfnhCVi8VKiypMsQOndmzG-=yPksYNV+qZ8X73LPTZog@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Thu, 15 May 2014 02:32:20 -0400
+Message-ID: <1400135537.5175.136.camel@marge.simpson.net>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 15 May 2014 08:32:17 +0200
+In-Reply-To: <20140515060515.GB5539@mtj.dyndns.org>
+References: <537384B9.5090907@suse.cz> <20140514151501.GA24142@suse.cz>
+	 <20140514163238.GA15690@htj.dyndns.org>
+	 <1400126037.5175.55.camel@marge.simpson.net>
+	 <20140515040608.GA3825@htj.dyndns.org>
+	 <1400129178.5175.82.camel@marge.simpson.net>
+	 <20140515045011.GB3825@htj.dyndns.org>
+	 <1400130262.5175.93.camel@marge.simpson.net>
+	 <20140515050915.GA5539@mtj.dyndns.org>
+	 <1400131949.5175.114.camel@marge.simpson.net>
+	 <20140515060515.GB5539@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bin,
+On Thu, 2014-05-15 at 02:05 -0400, Tejun Heo wrote:
 
-On 5/14/2014 10:13 PM, Bin Liu wrote:
-> George,
->
-> On Wed, May 14, 2014 at 9:34 AM, Bin Liu <binmlist@gmail.com> wrote:
->> George,
->>
->> On Wed, May 14, 2014 at 12:37 AM, George Cherian <george.cherian@ti.com> wrote:
->>> On 5/14/2014 12:07 AM, Bin Liu wrote:
->>>> Hi,
->>>>
->>>> On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com>
->>>> wrote:
->>>>> Hi Daniel,
->>>>>
->>>>>
->>>>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
->>>>>> Hi George,
->>>>>>
->>>>>> On 05/13/2014 02:57 PM, George Cherian wrote:
->>>>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
->>>>>>> reg.
->>>>>>> can you try with the following patch.
->>>>>>>
->>>>>>> diff --git a/drivers/usb/musb/musb_dsps.c
->>>>>>> b/drivers/usb/musb/musb_dsps.c
->>>>>>> index 1ae6681..1160cd1 100644
->>>>>>> --- a/drivers/usb/musb/musb_dsps.c
->>>>>>> +++ b/drivers/usb/musb/musb_dsps.c
->>>>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
->>>>>>>            * logic enabled.
->>>>>>>            */
->>>>>>>           val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
->>>>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
->>>>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
->>>>>>>                   glue->sw_babble_enabled = true;
->>>>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
->>>>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
->>>>>>> +       }
->>>>>>>           ret = dsps_musb_dbg_init(musb, glue);
->>>>>>>           if (ret)
->>>>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
->>>>>> without the patch: a full glue reset is conducted. Do I get you right
->>>>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
->>>>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
->>>>>>
->>>>> Basically, there are 2 types of babble conditions.
->>>>> 1) Transient babble condition - which could be recovered from without an
->>>>> IP
->>>>> reset .
->>>>> 2) Babble condition - which could be recovered from only by doing an IP
->>>>> reset.
->>>>>
->>>>> Looks like you are always hitting case 2 (Most times am also hitting the
->>>>> same).
->>>>> Case 1 is really hard to reproduce. I don't have a reliable method as of
->>>>> now
->>>>> to
->>>>> reproduce this case consistently.
->>>>>
->>>>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
->>>>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
->>>>>> (a_wait_bcon)
->>>>>> [   19.685815] usb 1-1: USB disconnect, device number 3
->>>>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
->>>>>> 44
->>>>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
->>>>>>
->>>>>>
->>>>>> I don't quite follow, especially as I lack documentation of the IP core.
->>>>>> How do you test babble errors, is there any way to force them to happen
->>>>>> reliably?
->>>>>
->>>>> There is no 100% reliable method to force it to happen. Following is
->>>> I have a way to force babble happen reliably - shorting DP or DM to
->>>> VBUS. I opened the far-end plug of the USB cable, so I can easily
->>>> short DP or DM to VBUS.
->>> Good to know that you have a reliable way to test babble condition.
->>> Can you please do a quick test on 3.15.0-rc4 with the series applied?
->>> In case of any assistance please do let me know.
->> Sure, but could you please re-send those patches to my corporate email
->> so that I can apply them from Thunderbird?
-> You don't have to resend the patches. Nishanth Menon showed me a way
-> to extract the patch from Gmail - Thanks Nishanth.
->
-> But which repo do you want to me test with? The first patch ([PATCH v2
-> 1/5] usb: musb: core: Convert babble recover work to delayed work)
-> does not apply to v3.15-rc4 tag. the current musb_core.c does not have
-> the recovery work for musb. Please let me know what I missed.
-Oops I missed to mention the same.
-Please try on
-git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git master
-> Thanks,
-> -Bin.
->
->> I read these linux-usb emails in Gmail, and  am not aware of any easy
->> way to extract patches from Gmail.
->>
->> BTY, I tested with TI 3.12.10 kernel, in which I guess the babble
->> handling is similar to this patch set. With TI3.12.10, MISC is always
->> 0x64, so MUSB never restarts.
->>
->> Thanks,
->> -Bin.
->>
->>>> But the interesting thing is that with TI 3.2 kernel, shorting DP or
->>>> DM to VBUS causes MISC register to be 0x4, but the result is
->>>> completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
->>>>
->>>> So in the 3.2 kernel, the babble handing resets the controller, but
->>>> the 3.12.10 does not.
->>>>
->>>> Regards,
->>>> -Bin.
->>>>
->>>>> my setup ,
->>>>> I have a HUB with 4 devices connected , which gives me a Babble interrupt
->>>>> on both connects and disconnects ( Not always though).
->>>>>
->>>>>> Anyway, the full glue layer solves this rare condition quite well for
->>>>>> me. Is there any downside of this?
->>>>>>
->>>>>>
->>>>>> Daniel
->>>>>>
->>>>> --
->>>>> -George
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->>>>>
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>>
->>> --
->>> -George
->>>
+> I'm not sure how much weight I can put on the specific use case.  Even
+> with the direct control that the user thought to have previously, the
+> use case was ripe with possibilities of breakage from any number of
+> reasons.  For example, there are driver paths which bounce to async
+> execution on IO exceptions (doesn't have to be hard errors) and setups
+> like the above would easily lock out exception handling and how's the
+> setup gonna work when the filesystems have to use dynamic pool of
+> workers as btrfs does?
 
+Oh yeah, this case isn't about _real_ realtime at all, it's just about
+unmanageable priority inversion.  With hack, any/all kthreads spawning
+will start life at the priority the user specified, so as long as he
+doesn't prioritize userspace above that, he can do whatever evil deeds
+he sees fit, and box will function as expected.
+> The identified problem in the above case is allowing the kernel to
+> make reasonable forward progress even when RT processes don't concede
+> CPU cycles.
 
--- 
--George
+Not only, but yeah, mostly.
+
+>   If that is a use case that needs to be supported, we
+> better engineer an appropriate solution for that.  Such solution
+> doesn't necessarily have to be advanced either.
+
+My solution isn't the least bit sophisticated.  Dirt simple is usually
+best anyway, and is enough for the cases I've encountered.
+
+>   Maybe all that's
+> necessary is marking the async mechanisms involved in IO path as such
+> (we already need to mark all workqueues involved in memory reclaim
+> path anyway) and provide a mechanism to make all of them RT when
+> directed.  It might be simple but still would be a concious
+> engineering decision.
+
+You could do all singing/dancing PI boost thingy like RCU, but
+personally, I hate that, disable it. 
+
+> I think the point I'm trying to make is that it isn't possible to
+> continue improving and maintaining the kernel with blanket
+> restrictions on internal details.  If certain things shouldn't be
+> done, we better find out the specific reasons; otherwise, it's
+> impossible to weight the pros and cons of different options and make a
+> reasonable choice or to find out ways to accomodate those restrictions
+> while still achieving the original goals.
+> 
+> Anyways, we're getting slightly off-topic and it seems like we'll have
+> to agree to disagree.
+
+Hey, we agree! :)
+
+-Mike
 
