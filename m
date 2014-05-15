@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaEOPys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:54:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753401AbaEOPyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:54:46 -0400
-Date: Thu, 15 May 2014 11:54:15 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: WARN in do_rt_tgsigqueueinfo()
-Message-ID: <20140515155415.GA326@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Mateusz Guzik <mguzik@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-References: <20140515133834.GN13658@twins.programming.kicks-ass.net>
- <20140515142723.GB22041@mguzik.redhat.com>
- <20140515150412.GP30445@twins.programming.kicks-ass.net>
+	id S1754903AbaEOP4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:56:50 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:48199 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927AbaEOP4t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:56:49 -0400
+Date: Thu, 15 May 2014 17:56:44 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@ghostprotocols.net,
+        jolsa@redhat.com, jmario@redhat.com, dzickus@redhat.com,
+        ak@linux.intel.com
+Subject: [PATCH v2]: fix Haswell precise store data source encoding
+Message-ID: <20140515155644.GA3884@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140515150412.GP30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 05:04:12PM +0200, Peter Zijlstra wrote:
 
- > > > trinity$ MALLOC_CHECK_=0 ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet -C 400 -l off -xmremap
- > > > 
- > > > [watchdog] kernel became tainted! (512/0) Last seed was 4072360471
- > > > 
- > > > [15908.562512] ------------[ cut here ]------------
- > > > [15908.567245] WARNING: CPU: 22 PID: 3312 at /usr/src/linux-2.6/kernel/signal.c:3060 do_rt_tgsigqueueinfo+0xb4/0xc0()
- > > > 
- > > > This is apparently a very common thing to hit according to google.
- > > 
- > > Well, it warns about an argument received from userland, so nothing fishy
- > > going on as far as kernel consistency is concerned if that's what you mean.
- > 
- > I hadn't looked that far.. I just manged to hit it two times in a row
- > while waiting for my bug to trigger.
+This patch fixes a bug in  precise_store_data_hsw() whereby
+it would set the data source memory level to the wrong value.
 
-There's a ton of 'noise' like this that fuzzing turns up.
-I've been collecting some of the stuff to shut it up..
+As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
+Address Information in PEBS Record), when status bit 0 is set
+this is a L1 hit, otherwise this is a L1 miss.
 
-http://codemonkey.org.uk/junk/silence-fuzz-testing-noise.patch
-http://codemonkey.org.uk/junk/silence-noisy-deprecated-warnings-while-fuzzing.patch
+This patch encodes the memory level according to the specification.
 
-I'm of the opinion that a user-triggerable WARN is a bug, but aparently
-not everyone else feels that way.
+In V2, we added the filtering on the store events.
+Only the following events produce L1 information:
+ * MEM_UOPS_RETIRED.STLB_MISS_STORES
+ * MEM_UOPS_RETIRED.LOCK_STORES
+ * MEM_UOPS_RETIRED.SPLIT_STORES
+ * MEM_UOPS_RETIRED.ALL_STORES
 
-	Dave
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index ae96cfa..980970c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -108,15 +108,31 @@ static u64 precise_store_data(u64 status)
+ 	return val;
+ }
+ 
+-static u64 precise_store_data_hsw(u64 status)
++static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
+ {
+ 	union perf_mem_data_src dse;
++	u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
+ 
+ 	dse.val = 0;
+ 	dse.mem_op = PERF_MEM_OP_STORE;
+ 	dse.mem_lvl = PERF_MEM_LVL_NA;
++
++	/*
++	 * L1 info only valid for following events:
++	 *
++	 * MEM_UOPS_RETIRED.STLB_MISS_STORES
++	 * MEM_UOPS_RETIRED.LOCK_STORES
++	 * MEM_UOPS_RETIRED.SPLIT_STORES
++	 * MEM_UOPS_RETIRED.ALL_STORES
++	 */
++	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0)
++		return dse.mem_lvl;
++
+ 	if (status & 1)
+-		dse.mem_lvl = PERF_MEM_LVL_L1;
++		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_HIT;
++	else
++		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_MISS;
++
+ 	/* Nothing else supported. Sorry. */
+ 	return dse.val;
+ }
+@@ -887,7 +903,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 				data.data_src.val = load_latency_data(pebs->dse);
+ 			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
+ 				data.data_src.val =
+-					precise_store_data_hsw(pebs->dse);
++					precise_store_data_hsw(event, pebs->dse);
+ 			else
+ 				data.data_src.val = precise_store_data(pebs->dse);
+ 		}
