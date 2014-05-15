@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaEOHhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:37:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56285 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaEOHhp (ORCPT
+	id S1754369AbaEOHi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:38:29 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43979 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995AbaEOHi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:37:45 -0400
-Date: Thu, 15 May 2014 09:37:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Carlos O'Donell" <carlos@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhart@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
-Message-ID: <20140515073734.GA30445@twins.programming.kicks-ass.net>
-References: <20140512190438.314125476@linutronix.de>
- <20140513035404.GA68181@dvhart-mac01.local>
- <alpine.DEB.2.02.1405131100510.6261@ionos.tec.linutronix.de>
- <53731608.3010803@redhat.com>
- <alpine.DEB.2.02.1405141155260.6261@ionos.tec.linutronix.de>
- <5373D94E.5030800@redhat.com>
+	Thu, 15 May 2014 03:38:27 -0400
+Date: Thu, 15 May 2014 09:38:16 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
+Message-ID: <20140515073816.GI16662@pengutronix.de>
+References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="awGZH0NYyyipry6r"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <5373D94E.5030800@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---awGZH0NYyyipry6r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+it's great you pick that up.
 
-On Wed, May 14, 2014 at 04:59:58PM -0400, Carlos O'Donell wrote:
-> Nobody has looked at this code in years, likely because all parties
-> thought they were done, but had in fact agreed to distinct expectations
-> and assumptions about the implementation.
+On Wed, May 14, 2014 at 03:30:52PM -0700, Soren Brinkmann wrote:
+> Introduce a new API function to round a rate to the closest possible
+> rate the HW clock can generate.
+> In contrast to 'clk_round_rate()' which works similar, but always returns
+> a frequency <= its input rate.
+> 
+> The code comes from Uwe and was copied from this LKML thread:
+> https://lkml.org/lkml/2013/3/21/115
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> 
+>  drivers/clk/clk.c   | 26 ++++++++++++++++++++++++--
+>  include/linux/clk.h | 14 ++++++++++++--
+>  2 files changed, 36 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index dff0373f53c1..b715f5a9826c 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1011,8 +1011,9 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
+>   * @rate: the rate which is to be rounded
+>   *
+>   * Takes in a rate as input and rounds it to a rate that the clk can actually
+> - * use which is then returned.  If clk doesn't support round_rate operation
+> - * then the parent rate is returned.
+> + * use and does not exceed the requested frequency, which is then returned.
+> + * If clk doesn't support round_rate operation then the parent rate
+> + * is returned.
+>   */
+>  long clk_round_rate(struct clk *clk, unsigned long rate)
+>  {
+> @@ -1027,6 +1028,27 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
+>  EXPORT_SYMBOL_GPL(clk_round_rate);
+>  
+>  /**
+> + * clk_round_rate_nearest - round the given rate for a clk
+> + * @clk: the clk for which we are rounding a rate
+> + * @rate: the rate which is to be rounded
+> + *
+> + * Takes in a rate as input and rounds it to the closest rate that the clk
+> + * can actually use which is then returned. If clk doesn't support
+> + * round_rate operation then the parent rate is returned.
+> + */
+> +long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
+> +{
+> +	long lower_limit = clk_round_rate(clk, rate);
+> +	long upper_limit = clk_round_rate(clk, rate + (rate - lower_limit));
+> +
+> +	if (rate - lower_limit < upper_limit - rate)
+> +		return lower_limit;
+> +	else
+> +		return upper_limit;
+I wanted to suggest to add some comment to describe why the calculation
+works here. While trying to proove it, I noticed that this
+implementation is buggy.
+Consider a clock that can provide the following frequencies: 38000,
+38401, 38600.
 
-That's just not true, we've been >< close to hijacking all the
-libpthread functionality from glibc through a kernel DSO in order to get
-some movement.
+	clk_round_rate_nearest(clk, 38400)
+	  lower_limit = clk_round_rate(clk, 38400) -> 38000
+	  upper_limit = clk_round_rate(clk, 38800) -> 38600
 
-Glibc has been known broken and unwilling to change for years and its
-lead to immense frustration with people.
+	  return 38600
 
-> I want it fix, and I'm in a position to move resources to fix it.
+but 38401 would have been the better/correct answer. I think you cannot
+implement clk_round_rate_nearest without iteration if you don't want to
+add specific logic to the clock providers.
 
-That's great news, and about bloody time too :-)
+Best regards
+Uwe
 
---awGZH0NYyyipry6r
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdG6+AAoJEHZH4aRLwOS6QP0P/1Sk1WRBUzoYXqDg+3/jRQ3H
-V/EE7AMTUJv56x3Swm9Nw7WOrMc74y755ew0m75W9N6uwIPLM2IRwi3EHTR13Yne
-5FbKxDcvwxmK3bi1Tyz3BrQFw0bp1IojGN0K3TKIO8Lop/nJ/RkU2ApTfDBFOSFe
-aX6u1g97AL4Y6HUpxNMWY5tZbo1RnImZqmrffQvOjagbTweR2n4EMNDLm/d5XEBd
-rAzR8B4sJRI8LdzAncj/H1XMtdssRNwYX9cKKqGmvp1M/UsghT6QrJMdpikzLUIf
-/+I1x3FBx7lRLQM/LGpfCU2sMzeF61BJXoYkS2+hayH11EntDpLpt3sMxIna99He
-FR8Vg8pvKv051k8uAxUmk2hkzLkvHzW/Fr7Xr48RDcS2Ggz1l3nxfs7U61kqAgUW
-P+OznDKXj+LOhL6kk+cxyTZBNw1Sd5Rc7G8cH8dwLhE+L8Rqzh9TteT3DBqzTUsw
-mG0LQxOOfUliAoA5f5ls/9bNXpe0BV1oxWSrD3JFeyRleidF2sTryudO+c6BB9ap
-GNWhLKRq4M+5wNwwngY9nxAUTWL9tVaHprctL1dFIfvbz5N+O+0rAyDefZGBRbHI
-OPonYQ/HALXcYA37G2TEv0QMkQ0cOE9w9rwEzqGfhSpK2iMCwztTMPUVLgxctrwe
-J2iWC4Te6Pu9grmefqyI
-=jcw2
------END PGP SIGNATURE-----
-
---awGZH0NYyyipry6r--
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
