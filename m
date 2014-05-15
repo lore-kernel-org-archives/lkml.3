@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaEOOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:08:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56344 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaEOOI6 (ORCPT
+	id S1754683AbaEOOKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:10:01 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63694 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaEOOKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:08:58 -0400
-Date: Thu, 15 May 2014 07:08:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Michael H. Warfield" <mhw@WittsEnd.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Eric Biederman <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        lxc-devel@lists.linuxcontainers.org
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
- namespaces
-Message-ID: <20140515140856.GA17453@kroah.com>
-References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
- <20140515013245.GA1764@kroah.com>
- <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
- <20140515031527.GA146352@ubuntu-hedt>
- <20140515040032.GA6702@kroah.com>
- <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+	Thu, 15 May 2014 10:10:00 -0400
+Message-ID: <5374CAB0.2070305@windriver.com>
+Date: Thu, 15 May 2014 10:09:52 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>	 <20140514154459.GE4570@linux.vnet.ibm.com>	 <20140514191100.GA24155@windriver.com> <1400122194.5175.18.camel@marge.simpson.net>
+In-Reply-To: <1400122194.5175.18.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 09:42:17AM -0400, Michael H. Warfield wrote:
-> On Wed, 2014-05-14 at 21:00 -0700, Greg Kroah-Hartman wrote:
-> > On Wed, May 14, 2014 at 10:15:27PM -0500, Seth Forshee wrote:
-> > > On Wed, May 14, 2014 at 10:17:31PM -0400, Michael H. Warfield wrote:
-> > > > > > Using devtmpfs is one possible
-> > > > > > solution, and it would have the added benefit of making container setup
-> > > > > > simpler. But simply letting containers mount devtmpfs isn't sufficient
-> > > > > > since the container may need to see a different, more limited set of
-> > > > > > devices, and because different environments making modifications to
-> > > > > > the filesystem could lead to conflicts.
-> > > > > > 
-> > > > > > This series solves these problems by assigning devices to user
-> > > > > > namespaces. Each device has an "owner" namespace which specifies which
-> > > > > > devtmpfs mount the device should appear in as well allowing priveleged
-> > > > > > operations on the device from that namespace. This defaults to
-> > > > > > init_user_ns. There's also an ns_global flag to indicate a device should
-> > > > > > appear in all devtmpfs mounts.
-> > > > 
-> > > > > I'd strongly argue that this isn't even a "problem" at all.  And, as I
-> > > > > said at the Plumbers conference last year, adding namespaces to devices
-> > > > > isn't going to happen, sorry.  Please don't continue down this path.
-> > > > 
-> > > > I was just mentioning that to Serge just a week or so ago reminding him
-> > > > of what you told all of us face to face back then.  We were having a
-> > > > discussion over loop devices into containers and this topic came up.
-> > > 
-> > > It was the loop device use case that got me started down this path in
-> > > the first place, so I don't personally have any interest in physical
-> > > devices right now (though I was sure others would).
+On 14-05-14 10:49 PM, Mike Galbraith wrote:
+> On Wed, 2014-05-14 at 15:11 -0400, Paul Gortmaker wrote:
 > 
-> > Why do you want to give access to a loop device to a container?
-> > Shouldn't you set up the loop devices before creating the container and
-> > then pass those mount points into the container?  I thought that was how
-> > things worked today, or am I missing something?
+>> Given that, perhaps a separate change to sched_rt_runtime_exceeded()
+>> that works out the CPU from the rt_rq, and returns zero if it is a
+>> nohz_full cpu?  Does that make sense?  Then the nohz_full people won't
+>> get the throttling message even if they go 100%.
 > 
-> Ah, you keep feeding me easy ones.  I need raw access to loop devices
-> and loop-control because I'm using containers to build NST (Network
-> Security Toolkit) distribution iso images (one container is x86_64 while
-> the other is i686).  Each requires 2 loop devices.  You can't set up the
-> loop devices in advance since the containers will be creating the images
-> and building them.  NST tinkers with the base build engine
-> configuration, so I really DON'T want it running on a hard iron host. 
-> There may be other cases where I need other specialized containers for
-> building distros.  I'm also looking at custom builds of Kali (another
-> security distribution).
+> I don't get it.  What reason would there be to run a hog on a dedicated
+> core as realtime policy/priority?  Given no competition, there's nothing
+> to prioritize, you could just as well run a critical task as SCHED_IDLE.
 
-Then don't use a container to build such a thing, or fix the build
-scripts to not do that :)
+Well, as per the original commit log, we acknowledge that people will do
+stupid things that don't make 100% sense, and when they do, we should
+ideally behave in a sane fashion in response to that.  And I don't think
+that "no competition" is a given for most folks.  They see all these
+internal threads running and just figure they can chrt their way to a
+solution, vs. taking the time to clean up, enable RCU_NOCB etc etc.
+Don't get me wrong; I'm not defending such behaviour...
 
-That is not a "normal" use case for a container at all.  Containers are
-not for "everything", use a virtual machine for some tasks (like this
-one).
+> 
+> I would also expect that anyone wanting bare metal will have all of
+> their critical cores isolated from the scheduler, watchdogs turned off
+> as well as that noisy throttle, the whole point being to make as much
+> silent as possible.  Seems to me tick_nohz_full_cpu(cpu) should be
+> predicated by that cpu being isolated from the #1 noise source, the
+> scheduler and its load balancing.  There's just no point to nohz_full
+> without that, or if there is, I sure don't see it.
 
-> Serge mentioned something to me about a loopdevfs (?) thing that someone
-> else is working on.  That would seem to be a better solution in this
-> particular case but I don't know much about it or where it's at.
+An interesting point.  One could argue that the default for the nohz_full
+cores should be to be isolated from the scheduler, vs needing to be
+manually excluded.
 
-Ok, let's see those patches then.
+P.
+--
 
-thanks,
-
-greg k-h
+> 
+> When I see people trying to run a hog as a realtime task, it's because
+> they are trying in vain to keep competition away from precious cores..
+> and one mlockall with a realtime hog blocking flush_work() gives them a
+> wakeup call.
+> 
+> -Mike
+> 
