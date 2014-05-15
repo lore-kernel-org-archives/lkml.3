@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbaEOVIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:08:41 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56749 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaEOVIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:08:38 -0400
-Date: Thu, 15 May 2014 22:07:17 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-Message-ID: <20140515220717.1ced0f1a@alan.etchedpixels.co.uk>
-In-Reply-To: <9176609.NChAu49t7f@wuerfel>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
-	<8468354.y2kUZdOz9e@wuerfel>
-	<1400168823.7862.9.camel@dabdike>
-	<9176609.NChAu49t7f@wuerfel>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1755105AbaEOVLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:11:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2676 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504AbaEOVLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:11:31 -0400
+Date: Thu, 15 May 2014 21:11:23 +0000
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] HID: rmi: fix masks for x and w_x data
+Message-ID: <20140515211123.GA10497@mail.corp.redhat.com>
+References: <1400187149-7619-1-git-send-email-aduggan@synaptics.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1400187149-7619-1-git-send-email-aduggan@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > could do intelligent interpolation about what the epoch is, so in 2039
-> > if we get a low 32 bit time_t value, we assume epoch == 1, conversely if
-> > we see a high one, we assume epoch == 0.  We could add epoch on the end
-> > of the syscalls and detect if it's not present and fill in an
-> > interpolated value.  Interfaces which truly want 64 bit time_t would get
-> > it from epoch + 32 bit time_t.
+On May 15 2014 or thereabouts, Andrew Duggan wrote:
+> The F11 data in the HID report contains four bits of data for w_x and the least significant bits
+> of x. Currently only the first three bits are being used which is resulting in small jumps in
+> the position data on the x axis and in the w_x data.
+> 
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> ---
 
-True sort of for the kernel (except you've got problems with file system
-compatibility and I believe stuff like NFS and that fact some file
-systems just break).
+Good catch. I might have considered that 3:0 means 3 bits, not 4. I must
+have been tired while writing it :)
 
-> The main advantage that I see with 64-bit time_t is that a lot of user
-> space already works with it, because NetBSD and OpenBSD use this, and
-> all 64-bit Linux systems already work with this without changing the ABI.
-> If we want a POSIX extension to cover a new ABI, this would be the most
-> likely candidate.
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-The main advantage IMHO of just using 64bit on 32bit boxes is getting it
-right. I'd go so far as to consider changing userspace time_t to be a
-struct. Yes it'll break lots of code but at least you'll know about it.
+Cheers,
+Benjamin
 
-(and for some other systems like 2BSD it's probably the least of evils
-because there isn't a 64bit type in the compiler!)
-
-> As mentioned earlier, between kernel and user space it's probably best
-> to avoid time_t and timeval completely and just use timespec64 or some
-> other safe type, but there has to be a way to port user space that relies
-> on time_t or timespec.
-
-This I think is bang on. We've already got lots of cases where we can't
-shoehorn useful info into syscalls due to time_t, including stuff like
-exposing accurate stamps in stat(). On an 8MHz 68000 not much happened in
-the same second, on a 32 core x86 it's a bit different.
-
-Alan
+>  drivers/hid/hid-rmi.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 7ebdc96..c529b03 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -277,9 +277,9 @@ static void rmi_f11_process_touch(struct rmi_data *hdata, int slot,
+>  	input_mt_report_slot_state(hdata->input, MT_TOOL_FINGER,
+>  			finger_state == 0x01);
+>  	if (finger_state == 0x01) {
+> -		x = (touch_data[0] << 4) | (touch_data[2] & 0x07);
+> +		x = (touch_data[0] << 4) | (touch_data[2] & 0x0F);
+>  		y = (touch_data[1] << 4) | (touch_data[2] >> 4);
+> -		wx = touch_data[3] & 0x07;
+> +		wx = touch_data[3] & 0x0F;
+>  		wy = touch_data[3] >> 4;
+>  		wide = (wx > wy);
+>  		major = max(wx, wy);
+> -- 
+> 1.9.1
+> 
