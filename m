@@ -1,270 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaEOWSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:18:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33076 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752291AbaEOWSy (ORCPT
+	id S1755848AbaEOWTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:19:08 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:59842 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754758AbaEOWTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:18:54 -0400
-Date: Thu, 15 May 2014 18:18:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Javi Merino <javi.merino@arm.com>
-Subject: [PATCH] tools lib traceevent: Added support for __get_bitmask()
- macro
-Message-ID: <20140515181852.11fffcda@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 15 May 2014 18:19:04 -0400
+Message-ID: <53753D54.7040308@gmail.com>
+Date: Thu, 15 May 2014 15:19:00 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Grant Likely <grant.likely@linaro.org>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/3] lib: add glibc style strchrnul() variant
+References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org> <1399993115-21552-2-git-send-email-grant.likely@linaro.org>
+In-Reply-To: <1399993115-21552-2-git-send-email-grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/13/2014 7:58 AM, Grant Likely wrote:
+> The strchrnul() variant helpfully returns a the end of the string
+> instead of a NULL if the requested character is not found. This can
+> simplify string parsing code since it doesn't need to expicitly check
+> for a NULL return. If a valid string pointer is passed in, then a valid
+> null terminated string will always come back out.
+> 
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> ---
+>  include/linux/string.h |  3 +++
+>  lib/string.c           | 15 +++++++++++++++
+>  2 files changed, 18 insertions(+)
+> 
+> diff --git a/include/linux/string.h b/include/linux/string.h
+> index ac889c5ea11b..d36977e029af 100644
+> --- a/include/linux/string.h
+> +++ b/include/linux/string.h
+> @@ -52,6 +52,9 @@ extern int strncasecmp(const char *s1, const char *s2, size_t n);
+>  #ifndef __HAVE_ARCH_STRCHR
+>  extern char * strchr(const char *,int);
+>  #endif
+> +#ifndef __HAVE_ARCH_STRCHRNUL
+> +extern char * strchrnul(const char *,int);
+> +#endif
+>  #ifndef __HAVE_ARCH_STRNCHR
+>  extern char * strnchr(const char *, size_t, int);
+>  #endif
+> diff --git a/lib/string.c b/lib/string.c
+> index 9b1f9062a202..059636f92c26 100644
+> --- a/lib/string.c
+> +++ b/lib/string.c
+> @@ -301,6 +301,21 @@ char *strchr(const char *s, int c)
+>  EXPORT_SYMBOL(strchr);
+>  #endif
+>  
+> +#ifndef __HAVE_ARCH_STRCHRNUL
+> +/**
+> + * strchr - Find the first occurrence of a character in a string
 
-Coming in v3.16, trace events will be able to save bitmasks in raw
-format in the ring buffer and output it with the __get_bitmask() macro.
+s/strchr/strchrnul/
 
-In order for userspace tools to parse this, it must be able to handle
-the __get_bitmask() call and be able to convert the data that's in
-the ring buffer into a nice bitmask format. The output is similar to
-what the kernel uses to print bitmasks, with a comma separator every
-4 bytes (8 characters).
+Add to the end of the description: if c is not found in s then return
+a pointer to the null byte at the end of s
 
-This allows for cpumasks to also be saved efficiently.
-
-The first user is the thermal:thermal_power_limit event which has the
-following output:
-
- thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
-
-Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
-
-Suggested-by: Javi Merino <javi.merino@arm.com>
-Tested-by: Javi Merino <javi.merino@arm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/event-parse.c | 113 +++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/event-parse.h |   7 +++
- 2 files changed, 120 insertions(+)
-
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index baec7d8..c76ca5c 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
- 	case PRINT_BSTRING:
- 		free(arg->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		free(arg->bitmask.bitmask);
-+		break;
- 	case PRINT_DYNAMIC_ARRAY:
- 		free(arg->dynarray.index);
- 		break;
-@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		ret = 0;
-@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		break;
-@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
- 	return EVENT_ERROR;
- }
- 
-+static enum event_type
-+process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
-+	    char **tok)
-+{
-+	enum event_type type;
-+	char *token;
-+
-+	if (read_expect_type(EVENT_ITEM, &token) < 0)
-+		goto out_free;
-+
-+	arg->type = PRINT_BITMASK;
-+	arg->bitmask.bitmask = token;
-+	arg->bitmask.offset = -1;
-+
-+	if (read_expected(EVENT_DELIM, ")") < 0)
-+		goto out_err;
-+
-+	type = read_token(&token);
-+	*tok = token;
-+
-+	return type;
-+
-+ out_free:
-+	free_token(token);
-+ out_err:
-+	*tok = NULL;
-+	return EVENT_ERROR;
-+}
-+
- static struct pevent_function_handler *
- find_func_handler(struct pevent *pevent, char *func_name)
- {
-@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_str(event, arg, tok);
- 	}
-+	if (strcmp(token, "__get_bitmask") == 0) {
-+		free_token(token);
-+		return process_bitmask(event, arg, tok);
-+	}
- 	if (strcmp(token, "__get_dynamic_array") == 0) {
- 		free_token(token);
- 		return process_dynamic_array(event, arg, tok);
-@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		return eval_type(val, arg, 0);
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 		return 0;
- 	case PRINT_FUNC: {
- 		struct trace_seq s;
-@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
- 		trace_seq_printf(s, format, str);
- }
- 
-+static void print_bitmask_to_seq(struct pevent *pevent,
-+				 struct trace_seq *s, const char *format,
-+				 int len_arg, const void *data, int size)
-+{
-+	int nr_bits = size * 8;
-+	int str_size = (nr_bits + 3) / 4;
-+	int len = 0;
-+	char buf[3];
-+	char *str;
-+	int index;
-+	int i;
-+
-+	/*
-+	 * The kernel likes to put in commas every 32 bits, we
-+	 * can do the same.
-+	 */
-+	str_size += (nr_bits - 1) / 32;
-+
-+	str = malloc(str_size + 1);
-+	if (!str) {
-+		do_warning("%s: not enough memory!", __func__);
-+		return;
-+	}
-+	str[str_size] = 0;
-+
-+	/* Start out with -2 for the two chars per byte */
-+	for (i = str_size - 2; i >= 0; i -= 2) {
-+		/*
-+		 * data points to a bit mask of size bytes.
-+		 * In the kernel, this is an array of long words, thus
-+		 * endianess is very important.
-+		 */
-+		if (pevent->file_bigendian)
-+			index = size - (len + 1);
-+		else
-+			index = len;
-+
-+		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
-+		memcpy(str + i, buf, 2);
-+		len++;
-+		if (!(len & 3) && i > 0) {
-+			i--;
-+			str[i] = ',';
-+		}
-+	}
-+
-+	if (len_arg >= 0)
-+		trace_seq_printf(s, format, len_arg, str);
-+	else
-+		trace_seq_printf(s, format, str);
-+
-+	free(str);
-+}
-+
- static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			  struct event_format *event, const char *format,
- 			  int len_arg, struct print_arg *arg)
-@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	case PRINT_BSTRING:
- 		print_str_to_seq(s, format, len_arg, arg->string.string);
- 		break;
-+	case PRINT_BITMASK: {
-+		int bitmask_offset;
-+		int bitmask_size;
-+
-+		if (arg->bitmask.offset == -1) {
-+			struct format_field *f;
-+
-+			f = pevent_find_any_field(event, arg->bitmask.bitmask);
-+			arg->bitmask.offset = f->offset;
-+		}
-+		bitmask_offset = data2host4(pevent, data + arg->string.offset);
-+		bitmask_size = bitmask_offset >> 16;
-+		bitmask_offset &= 0xffff;
-+		print_bitmask_to_seq(pevent, s, format, len_arg,
-+				     data + bitmask_offset, bitmask_size);
-+		break;
-+	}
- 	case PRINT_OP:
- 		/*
- 		 * The only op for string should be ? :
-@@ -4821,6 +4931,9 @@ static void print_args(struct print_arg *args)
- 	case PRINT_BSTRING:
- 		printf("__get_str(%s)", args->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		printf("__get_bitmask(%s)", args->bitmask.bitmask);
-+		break;
- 	case PRINT_TYPE:
- 		printf("(%s)", args->typecast.type);
- 		print_args(args->typecast.item);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 791c539..1048f22 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -208,6 +208,11 @@ struct print_arg_string {
- 	int			offset;
- };
- 
-+struct print_arg_bitmask {
-+	char			*bitmask;
-+	int			offset;
-+};
-+
- struct print_arg_field {
- 	char			*name;
- 	struct format_field	*field;
-@@ -274,6 +279,7 @@ enum print_arg_type {
- 	PRINT_DYNAMIC_ARRAY,
- 	PRINT_OP,
- 	PRINT_FUNC,
-+	PRINT_BITMASK,
- };
- 
- struct print_arg {
-@@ -288,6 +294,7 @@ struct print_arg {
- 		struct print_arg_hex		hex;
- 		struct print_arg_func		func;
- 		struct print_arg_string		string;
-+		struct print_arg_bitmask	bitmask;
- 		struct print_arg_op		op;
- 		struct print_arg_dynarray	dynarray;
- 	};
--- 
-1.8.1.4
+> + * @s: The string to be searched
+> + * @c: The character to search for
+> + */
+> +char *strchrnul(const char *s, int c)
+> +{
+> +	while (*s && *s != (char)c)
+> +		s++;
+> +	return (char *)s;
+> +}
+> +EXPORT_SYMBOL(strchrnul);
+> +#endif
+> +
+>  #ifndef __HAVE_ARCH_STRRCHR
+>  /**
+>   * strrchr - Find the last occurrence of a character in a string
+> 
 
