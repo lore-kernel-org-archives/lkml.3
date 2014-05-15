@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850AbaEORc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:32:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50335 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaEORcL (ORCPT
+	id S1755928AbaEORc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:32:58 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60176 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622AbaEORcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:32:11 -0400
-Date: Thu, 15 May 2014 12:32:06 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
-Message-ID: <20140515173206.GA16858@qualcomm.com>
-References: <1397772242-4048-1-git-send-email-agross@codeaurora.org>
- <20140502162841.GZ32284@intel.com>
- <20140502180827.GA9476@qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502180827.GA9476@qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 May 2014 13:32:52 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-27-5374fa413876
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH RFC 0/4] Add support for Exynos clock output configuration
+Date: Thu, 15 May 2014 19:32:27 +0200
+Message-id: <1400175151-27779-1-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t/xq7qOv0qCDX49ZLeY+vAJm8X8I+dY
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZLH2yF12i6XXLzJZPJ1wkc1i0dYv7BZTFh1mtWjde4Td
+	Yv2M1ywWq3b9YbRo/7uXzYHfY828NYweO2fdZffYtKqTzePOtT1sHpuX1Hv0bVnF6PF5k1wA
+	exSXTUpqTmZZapG+XQJXxo8v69gK7vBXfHiynK2B8RJ3FyMnh4SAicTC5VsYIWwxiQv31rN1
+	MXJxCAksZZT4uf4+E4TTxyRxaccHFpAqNgE1ic8Nj9hAbBEBVYnPbQvYQYqYBaaxSKxa1s4O
+	khAW8JLYu2AdE4jNAlT04nEbmM0r4CTRfPw2E8Q6OYn/L1cwTWDkXsDIsIpRNLU0uaA4KT3X
+	UK84Mbe4NC9dLzk/dxMjJBS/7GBcfMzqEKMAB6MSD2/H/uJgIdbEsuLK3EOMEhzMSiK85s9L
+	goV4UxIrq1KL8uOLSnNSiw8xMnFwSjUw6jItib/g1VVXscLsQ92zmXsf+C1OZWjsnBO9h72f
+	Te/J4SWfbuy4ybp9hWzjFvmGxEAm+SYRl9cirHz8P3z3vxBreLjDaxbTqbxpWY5uyrIvI/0i
+	rCZEvZsha9ToLJj/Ufoj46az7/hv5XKbJ71ZPn2XXfr3b1ZlXU53LwVk+e1p37i+rPyiEktx
+	RqKhFnNRcSIA+fidtCMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 01:08:27PM -0500, Andy Gross wrote:
-> On Fri, May 02, 2014 at 09:58:41PM +0530, Vinod Koul wrote:
-> > On Thu, Apr 17, 2014 at 05:04:02PM -0500, Andy Gross wrote:
-> > > This patch adds APIs that allow for BAM hardware flags to be set per
-> > > descriptor.  Each one of the new flags informs the attached peripheral of a
-> > > special behavior that is required.
-> > > 
-> > > The EOT flag requests that the peripheral assert an end of transaction interrupt
-> > > when that descriptor is complete.  It also results in special signaling protocol
-> > > that is used between the attached peripheral and the core using the DMA
-> > > controller.
-> > DMA_PREP_INTERRUPT ??
-> 
-> I have 3 different IRQs that can be asserted based on the bit I set in the
-> hardware descriptor.  The normal IRQ is the INT bit.  However, in some cases the
-> peripheral protocol requires the use of the EOT or EOB interrupt instead.  The
-> DMA_PREP_INTERRUPT would only work if I had only 2 choices.
+On all Exynos SoCs there is a dedicated CLKOUT pin that allows many of
+internal SoC clocks to be output from the SoC. The hardware structure
+of CLKOUT related clocks looks as follows:
 
-Thinking about this more, I could use the DMA_PREP_INTERRUPT to cover the EOT
-flag.  However, I might get in a bind later if I need to support the EOB (end of
-block) interrupt.
+	CMU	|---> clock0 --------->	|	PMU	|
+		|			|		|
+    several	|---> clock1 ---------> |	mux	|
+    muxes	|			|	+	|---> CLKOUT
+    dividers	|       ...		|	gate	|
+    and gates	|			|		|
+		|---> clockN ---------> |		|
 
-> 
-> > 
-> > > 
-> > > The NWD flag requests that the peripheral wait until the data has been fully
-> > > processed before signaling an interrupt.
-> > interrupt for transaction complete or DMA request?
-> 
-> This is a special signaling mechanism that holds off the DMA interrupt until the
-> peripheral actually acks that the data has been processed completely.  This is
-> required in many cases by the peripheral.  One example is the SPI controller.
-> At the end of a transaction you are supposed to set the NWD so that the chip
-> select is de-asserted.
+Since the block responsible for handling the pin is PMU, not CMU,
+a separate driver, that binds to PMU node is required and acquires
+all input clocks by standard DT clock look-up. This way we don't need
+any cross-IP block drivers and cross-driver register sharing or
+nodes for fake devices.
 
-I'm not sure what flag I could map this to... maybe DMA_CTRL_ACK?  or maybe the
-DMA_PREP_FENCE?  I don't generally like overloading the flags and slightly
-twisting their intent.  Could we add a flag to denote device ACK?
+To represent the PMU mux/gate clock, generic composite clock is registered.
+
+Tested on Odroid U3, with HSIC/USB hub using CLKOUT as reference clock,
+with some additional patches.
+
+Depends on:
+[PATCHv4 0/4] Enable usbphy and hsotg for exynos4
+(http://thread.gmane.org/gmane.linux.kernel.samsung-soc/30631)
+for Exynos4210/4x12 PMU DT nodes.
+
+Tomasz Figa (4):
+  clk: samsung: exynos4: Add missing DMC clock hierarchy
+  clk: samsung: exynos4: Add CLKOUT clock hierarchy
+  clk: samsung: Add driver to control CLKOUT line on Exynos SoCs
+  ARM: dts: exynos: Update PMU node with CLKOUT related data
+
+ .../devicetree/bindings/arm/samsung/pmu.txt        |  18 +++
+ arch/arm/boot/dts/exynos4210.dtsi                  |  10 ++
+ arch/arm/boot/dts/exynos4x12.dtsi                  |   7 +
+ arch/arm/boot/dts/exynos5250.dtsi                  |   3 +
+ arch/arm/boot/dts/exynos5420.dtsi                  |   3 +
+ drivers/clk/samsung/Makefile                       |   1 +
+ drivers/clk/samsung/clk-exynos4.c                  | 156 +++++++++++++++++++++
+ drivers/clk/samsung/exynos-clkout.c                | 107 ++++++++++++++
+ include/dt-bindings/clock/exynos4.h                |   6 +
+ 9 files changed, 311 insertions(+)
+ create mode 100644 drivers/clk/samsung/exynos-clkout.c
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.2
+
