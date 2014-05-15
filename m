@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaEOQab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:30:31 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51237 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaEOQa1 (ORCPT
+	id S1752916AbaEOQeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:34:11 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:42813 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715AbaEOQeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:30:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: monstr@monstr.eu
-Cc: Bart Tanghe <bart.tanghe@thomasmore.be>, thierry.reding@gmail.com,
-        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, grant.likely@linaro.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc]pwm: add xilinx pwm driver
-Date: Thu, 15 May 2014 18:30:13 +0200
-Message-ID: <16896948.U7hTsgDub4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5374C773.6070402@monstr.eu>
-References: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be> <5049141.XmehsUeakV@wuerfel> <5374C773.6070402@monstr.eu>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ei0W0zHWg9vPFNxoAUqNEUWvIy4lMeQ6E5yADRwmdVU
- lOPu6j93qzub4wxCTXOAj73Uf4FtuLq0VkVK45AfFaHZcIashf
- I+H4yrfRxcMITniCTd2TCNiq+ZaJuOh0FcUESx9xXjOshTfLql
- m2vde3QMoqVkuSMqG2xn1jFHEwJXMw7Y+urKFaZ/1l0GrwMUir
- R/Se0uz5nsTmx3M3pbo8jAHoQxvzPwJVwU0F28CAJNQpBe/dQa
- 3CsZvXlmvxUXmvYvsYgVCruL+9Y5Wap8RPyr4GksneQcVKLqbn
- tar/7U/6+cXIvjPmibhnr8dIkXZYIHhH/CUyesiJlPjIse34tr
- hZ5F0sX9TzlVD7XNFrEo=
+	Thu, 15 May 2014 12:34:09 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Alan Modra <amodra@gmail.com>
+Subject: [PATCH] powerpc: Fix 64 bit builds with binutils 2.24
+Date: Thu, 15 May 2014 09:33:42 -0700
+Message-Id: <1400171622-20572-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 May 2014 15:56:03 Michal Simek wrote:
-> IP is configurable as is normal for us.
-> You can select IP with just one timer.
-> It means register locations for specific timer are fixed.
-> http://www.xilinx.com/support/documentation/ip_documentation/xps_timer.pdf
-> 
-> timer0 - offset 0x0
-> timer1 - offset 0x10 (doesn't need to be synthesized)
-> 
-> There is one interrupt for both timers.
-> 
-> Timers can be as timers (up/down count/ reload with or without IRQs)
-> But then one options is to use both timers and generate PWM signal.
-> From full ip description in DT you can see xlnx,gen0-assert = <1>;
-> which can suggest that this IP can output PMW signal.
-> (We can also detect if PWM0 signal is connected just to be sure
-> that PWM can be enabled).
-> 
-> There is also capture trigger mode where external signal start/stop
-> timer counting.
-> 
-> It means there are 3 modes - timer, capture and PWM.
-> Timer (clocksource, clockevent) requires specific handling,
-> PWM has own subsystem and not sure if there is any subsystem for
-> capture mode. Is there any?
+With binutils 2.24, various 64 bit builds fail with relocation errors
+such as
 
-I don't think so. Possibly somewhere in IIO.
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_base_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_end_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
 
-> Not every timer configuration is suitable for all things
-> but fully configured timer can be used in all 3 modes.
-> 
-> 
-> I think that make sense to register and map all timers in the system
-> and classify them with flags (like can't be used for capture or PMW
-> if there are not outputs connected) and then use the best
-> timer for clocksource and clockevent. The best candidate is IP
-> with the lowest IRQ number in dual timer mode but in general
-> whatever timer can be used that's why we can't probably avoid
-> timer specification in DT.
-> In spite of this smells because you are saying via DT
-> to Linux which timer should be used for what purpose.
+The assembler maintainer says:
 
-We had discussions about this in the past, but I don't remember the
-outcome of that.
+ I changed the ABI, something that had to be done but unfortunately
+ happens to break the booke kernel code.  When building up a 64-bit
+ value with lis, ori, shl, oris, ori or similar sequences, you now
+ should use @high and @higha in place of @h and @ha.  @h and @ha
+ (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
+ now report overflow if the value is out of 32-bit signed range.
+ ie. @h and @ha assume you're building a 32-bit value. This is needed
+ to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
+ and @toc@ha expressions, and for consistency I did the same for all
+ other @h and @ha relocs.
 
-	Arnd
+Replacing @h with @high in one strategic location fixes the relocation
+errors. This has to be done conditionally since the assembler either
+supports @h or @high but not both.
+
+Cc: Alan Modra <amodra@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+All my test targets build with both binutils 2.23 and 2.24
+with this patch applied.
+
+The patch generates two checkpatch errors, but I consider those to be
+false positives. checkpatch requests spaces after , in the assembler
+instructions.
+
+Please consider adding Cc: stable.
+
+ arch/powerpc/Makefile              | 4 +++-
+ arch/powerpc/include/asm/ppc_asm.h | 7 ++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 4c0cedf..ce4c68a 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -150,7 +150,9 @@ endif
+ 
+ CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
+ 
+-KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
++asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
++
++KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
+ CPP		= $(CC) -E $(KBUILD_CFLAGS)
+diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+index 6586a40..cded7c1 100644
+--- a/arch/powerpc/include/asm/ppc_asm.h
++++ b/arch/powerpc/include/asm/ppc_asm.h
+@@ -318,11 +318,16 @@ n:
+ 	addi	reg,reg,(name - 0b)@l;
+ 
+ #ifdef __powerpc64__
++#ifdef HAVE_AS_ATHIGH
++#define __AS_ATHIGH high
++#else
++#define __AS_ATHIGH h
++#endif
+ #define LOAD_REG_IMMEDIATE(reg,expr)		\
+ 	lis     reg,(expr)@highest;		\
+ 	ori     reg,reg,(expr)@higher;	\
+ 	rldicr  reg,reg,32,31;		\
+-	oris    reg,reg,(expr)@h;		\
++	oris    reg,reg,(expr)@__AS_ATHIGH;	\
+ 	ori     reg,reg,(expr)@l;
+ 
+ #define LOAD_REG_ADDR(reg,name)			\
+-- 
+1.9.1
+
