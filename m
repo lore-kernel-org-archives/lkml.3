@@ -1,266 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaEONZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:25:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460AbaEONZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:25:29 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Subject: [PATCH 2/2 v2] x86, make check_irq_vectors_for_cpu_disable() aware of numa node irqs
-Date: Thu, 15 May 2014 09:25:05 -0400
-Message-Id: <1400160305-17774-3-git-send-email-prarit@redhat.com>
-In-Reply-To: <1400160305-17774-1-git-send-email-prarit@redhat.com>
-References: <1400160305-17774-1-git-send-email-prarit@redhat.com>
+	id S1754258AbaEON0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:26:37 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:45992 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700AbaEON0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:26:35 -0400
+Message-ID: <5374C08C.7040700@cogentembedded.com>
+Date: Thu, 15 May 2014 17:26:36 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 17/17] ARM: mvebu: add Device Tree description of the
+ EHCI controller on Armada 375
+References: <1400149062-32661-1-git-send-email-gregory.clement@free-electrons.com> <1400149062-32661-18-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1400149062-32661-18-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit da6139e49c7cb0f4251265cb5243b8d220adb48d, x86: Add check for number
-of available vectors before CPU down, added
-check_irq_vectors_for_cpu_disable() which checks if there are enough empty
-vectors to replace the vectors of a downed cpu.
+Hello.
 
-After some additional testing I had noticed some odd failures with storage
-irqs that I originally had thought were likely due to incorrect
-CPU_DOWN_FAILED calls in the kernel.  The manifest themselves as disk IO
-errors in the kernel, and eventually lead to the system filesystems
-remounting as read only.
+On 05/15/2014 02:17 PM, Gregory CLEMENT wrote:
 
-It turns out that these errors are not issues with CPU_DOWN_FAILED
-callbacks and  the check_irq_vectors_for_cpu_disable() is still
-insufficient in the way it checks for available vectors which leads to the
-possiblity of "orphaned" irqs (that is, active irqs not assigned to a cpu)
-after a CPU down.
+> The Marvell Armada 375 SoCs contains one EHCI controller. This commit
 
-The current check in check_irq_vectors_for_cpu_disable() does not take into
-account cases where irqs are restricted to specific numa nodes.  Currently,
-the code assumes that an irq can be placed on any cpu, however, if the
-PCI device that the irq is assigned to is on a specific node, the irq must
-also be moved to another cpu on that node.
+    However, you're adding two. :-)
 
-This patch uses the irq's node information and affinity mask to determine
-where an node-specific irq can transition to.  This is done by first
-creating a table of cpus and the number of empty vectors each cpu has.
-Then the code traverses the list of irqs on the down'd CPU and "allocates"
-an irq to an empty vector slot on the cpus.  If there are no available
-vectors the code returns an error.  Note that the actual assignment of the
-irqs is still done later in the cpu disable code path.
+> adds the Device Tree description of this interfaces at the SoC level,
+> and also enables the USB2 port on the Armada 375 DB platform.
 
-At the same time I've created a helper function, _evaluate_irq_for_cpu_disable()that is only called in from check_irq_vectors_for_cpu_disable().  This makes
-the code alot easier to read.
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/armada-375-db.dts |  4 ++++
+>   arch/arm/boot/dts/armada-375.dtsi   | 16 ++++++++++++++++
+>   2 files changed, 20 insertions(+)
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- arch/x86/kernel/irq.c |  142 +++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 101 insertions(+), 41 deletions(-)
+[...]
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 276b02b..359f028 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -274,67 +274,113 @@ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
- #ifdef CONFIG_HOTPLUG_CPU
- 
--/* These two declarations are only used in check_irq_vectors_for_cpu_disable()
-+/*
-+ * These two declarations are only used in check_irq_vectors_for_cpu_disable()
-  * below, which is protected by stop_machine().  Putting them on the stack
-  * results in a stack frame overflow.  Dynamically allocating could result in a
-  * failure so declare these two cpumasks as global.
-  */
- static struct cpumask affinity_new, online_new;
- 
-+/* This array is used to keep track of how many empty vectors each cpu has. */
-+static int empty_vectors[NR_CPUS];
-+
- /*
-- * This cpu is going to be removed and its vectors migrated to the remaining
-- * online cpus.  Check to see if there are enough vectors in the remaining cpus.
-- * This function is protected by stop_machine().
-+ * Helper function for check_irqs_vectors_for_cpu_disable().  Returns 0 if the
-+ * irq doesn't need to be reassigned to a new cpu, returns 1 if the irq does
-+ * need to be reassigned to a new cpu, and an -error if there is no room for
-+ * the irq.
-  */
--int check_irq_vectors_for_cpu_disable(void)
-+static int _evaluate_irq_for_cpu_disable(int irq)
- {
--	int irq, cpu;
--	unsigned int this_cpu, vector, this_count, count;
-+	int empty_vectors_set;
-+	unsigned int this_cpu;
-+	unsigned int vector_cpu;
- 	struct irq_desc *desc;
- 	struct irq_data *data;
- 
--	this_cpu = smp_processor_id();
--	cpumask_copy(&online_new, cpu_online_mask);
--	cpu_clear(this_cpu, online_new);
-+	if (irq < 0)
-+		return 0;
- 
--	this_count = 0;
--	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
--		irq = __this_cpu_read(vector_irq[vector]);
--		if (irq >= 0) {
--			desc = irq_to_desc(irq);
--			data = irq_desc_get_irq_data(desc);
--			cpumask_copy(&affinity_new, data->affinity);
--			cpu_clear(this_cpu, affinity_new);
-+	this_cpu = smp_processor_id();
-+	desc = irq_to_desc(irq);
-+	data = irq_desc_get_irq_data(desc);
-+	cpumask_copy(&affinity_new, data->affinity);
-+	cpu_clear(this_cpu, affinity_new);
- 
--			/* Do not count inactive or per-cpu irqs. */
--			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
--				continue;
-+	/* Do not count inactive or per-cpu irqs. */
-+	if (!irq_has_action(irq) || irqd_is_per_cpu(data))
-+		return 0;
- 
--			/*
--			 * A single irq may be mapped to multiple
--			 * cpu's vector_irq[] (for example IOAPIC cluster
--			 * mode).  In this case we have two
--			 * possibilities:
--			 *
--			 * 1) the resulting affinity mask is empty; that is
--			 * this the down'd cpu is the last cpu in the irq's
--			 * affinity mask, or
--			 *
--			 * 2) the resulting affinity mask is no longer
--			 * a subset of the online cpus but the affinity
--			 * mask is not zero; that is the down'd cpu is the
--			 * last online cpu in a user set affinity mask.
--			 */
--			if (cpumask_empty(&affinity_new) ||
--			    !cpumask_subset(&affinity_new, &online_new))
--				this_count++;
-+	if (desc->irq_data.node == NUMA_NO_NODE) {
-+		/*
-+		 * A single irq may be mapped to multiple cpu's vector_irq[]
-+		 * (for example IOAPIC cluster mode).  In this case we have two
-+		 * possibilities:
-+		 *
-+		 * 1) the resulting affinity mask is empty; that is this the
-+		 * down'd cpu is the last cpu in the irq's affinity mask, or
-+		 *
-+		 * 2) the resulting affinity mask is no longer a subset of the
-+		 * online cpus but the affinity mask is not zero; that is the
-+		 * down'd cpu is the last online cpu in a user set affinity
-+		 * mask.
-+		 */
-+		if (cpumask_empty(&affinity_new) ||
-+		    !cpumask_subset(&affinity_new, &online_new))
-+			return 1;
-+	} else {
-+		/*
-+		 * In this case, the irq can be mapped to only the CPUs in
-+		 * the affinity mask.  If the mask is empty, then there are
-+		 * no other available cpus.
-+		 */
-+		if (cpumask_empty(&affinity_new)) {
-+			pr_warn("CPU %d disable failed: IRQ %u has no availble CPUS to transition IRQ.\n",
-+				this_cpu, irq);
-+			return -ERANGE;
-+		}
-+		/* Check to see if there are any available vectors. */
-+		for_each_cpu(vector_cpu, &affinity_new) {
-+			empty_vectors_set = 0;
-+			if (empty_vectors[vector_cpu] > 0) {
-+				empty_vectors[vector_cpu]--;
-+				empty_vectors_set = 1;
-+				break;
-+			}
- 		}
-+		if (!empty_vectors_set) {
-+			pr_warn("CPU %d disable failed: IRQ %u has no available CPUS with available vectors.\n",
-+				this_cpu, irq);
-+			return -ERANGE;
-+		}
-+		return 1;
- 	}
-+	return 0;
-+}
-+
-+
-+/*
-+ * This cpu is going to be removed and its vectors migrated to the remaining
-+ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
-+ * This function is protected by stop_machine().
-+ */
-+int check_irq_vectors_for_cpu_disable(void)
-+{
-+	int irq, cpu, ret;
-+	unsigned int this_cpu, vector, this_count, count, curr_count;
-+
-+	this_cpu = smp_processor_id();
-+	cpumask_copy(&online_new, cpu_online_mask);
-+	cpu_clear(this_cpu, online_new);
- 
- 	count = 0;
- 	for_each_online_cpu(cpu) {
--		if (cpu == this_cpu)
-+		if (cpu == this_cpu) {
-+			/* we're never assigning irqs to the down'd cpu */
-+			empty_vectors[cpu] = -1;
- 			continue;
-+		}
- 
- 		/*
- 		 * assign_irq_vector() only scans per_cpu vectors from
-@@ -345,14 +391,28 @@ int check_irq_vectors_for_cpu_disable(void)
- 		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
- 		 * Don't count those as available vectors.
- 		 */
-+		curr_count = 0;
- 		for (vector = FIRST_EXTERNAL_VECTOR;
- 		     vector < first_system_vector; vector++) {
- 			if (test_bit(vector, used_vectors))
- 				continue;
- 
--			if (per_cpu(vector_irq, cpu)[vector] < 0)
-+			if (per_cpu(vector_irq, cpu)[vector] < 0) {
- 				count++;
-+				curr_count++;
-+			}
- 		}
-+		empty_vectors[cpu] = curr_count;
-+	}
-+
-+	this_count = 0;
-+	for (vector = FIRST_EXTERNAL_VECTOR; vector < first_system_vector;
-+	     vector++) {
-+		irq = __this_cpu_read(vector_irq[vector]);
-+		ret = _evaluate_irq_for_cpu_disable(irq);
-+		if (ret < 0)
-+			return ret;
-+		this_count += ret;
- 	}
- 
- 	if (count < this_count) {
--- 
-1.7.9.3
+> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
+> index 7b303ecc2490..53baeb2f1fe8 100644
+> --- a/arch/arm/boot/dts/armada-375.dtsi
+> +++ b/arch/arm/boot/dts/armada-375.dtsi
+> @@ -320,6 +320,22 @@
+>   				clocks = <&coreclk 0>;
+>   			};
+>
+> +			usb@50000 {
+> +				compatible = "marvell,orion-ehci";
+> +				reg = <0x50000 0x500>;
+> +				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+> +				clocks = <&gateclk 18>;
+> +				status = "disabled";
+> +			};
+> +
+> +			usb@54000 {
+> +				compatible = "marvell,orion-ehci";
+> +				reg = <0x54000 0x500>;
+> +				interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
+> +				clocks = <&gateclk 26>;
+> +				status = "disabled";
+> +			};
+> +
+>   			usb3@58000 {
+>   				compatible = "marvell,armada-375-xhci";
+>   				reg = <0x58000 0x20000>,<0x5b880 0x80>;
+>
+
+WBR, Sergei
 
