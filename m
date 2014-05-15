@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaEOVb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:31:28 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:51885 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704AbaEOVb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:31:27 -0400
-Date: Fri, 16 May 2014 01:31:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
-Message-ID: <20140515213124.GT28328@moon>
-References: <5373DBE4.6030907@oracle.com>
- <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
- <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
- <20140514221140.GF28328@moon>
- <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
- <20140515084558.GI28328@moon>
- <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
- <20140515195320.GR28328@moon>
- <CALCETrWbf8XYvBh=zdyOBqVqRd7s8SVbbDX=O2X+zAZn83r-bw@mail.gmail.com>
- <20140515201914.GS28328@moon>
+	id S1756171AbaEOVbo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:31:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29177 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704AbaEOVbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:31:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1062,1389772800"; 
+   d="scan'208";a="541232242"
+From: Andi Kleen <andi@firstfloor.org>
+To: Erik Bosman <erik@minemu.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] x86: SROP mitigation: implement signal canaries
+References: <20140515211004.GA9575@pizzadoos.com>
+Date: Thu, 15 May 2014 14:31:40 -0700
+In-Reply-To: <20140515211004.GA9575@pizzadoos.com> (Erik Bosman's message of
+	"Thu, 15 May 2014 23:10:04 +0200")
+Message-ID: <87vbt6rao3.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515201914.GS28328@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:19:14AM +0400, Cyrill Gorcunov wrote:
-> 
-> I see what you mean. We're rather targeting on bare x86-64 at the moment
-> but compat mode is needed as well (not yet implemented though). I'll take
-> a precise look into this area. Thanks!
+Erik Bosman <erik@minemu.org> writes:
 
-Indeed, because we were not running 32bit tasks vdso32-setup.c::arch_setup_additional_pages
-has never been called. That's the mode we will have to implement one day.
+>  
+> diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+> index 2206757..1a9285a 100644
+> --- a/arch/x86/ia32/ia32_signal.c
+> +++ b/arch/x86/ia32/ia32_signal.c
+> @@ -212,9 +212,18 @@ asmlinkage long sys32_sigreturn(void)
+>  	struct sigframe_ia32 __user *frame = (struct sigframe_ia32 __user *)(regs->sp-8);
+>  	sigset_t set;
+>  	unsigned int ax;
+> +#ifdef CONFIG_SIGNAL_CANARY
+> +	u32 canary;
+> +#endif
 
-Looking forward the question appear -- will VDSO_PREV_PAGES and rest of variables
-be kind of immutable constants? If yes, we could calculate where the additional
-vma lives without requiring any kind of [vdso] mark in proc/pid/maps output.
+Don't you completely break the ABI here? I'm sure there are programs out
+there who hard code the offset into the FP state.
+
+I think you either need to put it at the total end or somewhere
+currently unused
+
+Besides that I would remove the CONFIG_* once it works and just do it
+unconditionally.
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
