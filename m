@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaEOSE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:04:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754419AbaEOSE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:04:58 -0400
-Date: Thu, 15 May 2014 20:04:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: WARN in do_rt_tgsigqueueinfo()
-Message-ID: <20140515180409.GA5972@redhat.com>
-References: <20140515133834.GN13658@twins.programming.kicks-ass.net> <20140515142723.GB22041@mguzik.redhat.com> <20140515150412.GP30445@twins.programming.kicks-ass.net> <20140515155415.GA326@redhat.com> <20140515160950.GA22846@mguzik.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515160950.GA22846@mguzik.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754843AbaEOSKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:10:18 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:58336 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752591AbaEOSKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 14:10:16 -0400
+Message-ID: <1400177413.11786.11.camel@x220>
+Subject: Re: [PATCH] arm: msm: remove board file for Nexus One (ie. mahimahi)
+From: Paul Bolle <pebolle@tiscali.nl>
+To: dwalker@fifo99.com
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 20:10:13 +0200
+In-Reply-To: <20140515174448.GA31159@fifo99.com>
+References: <1400101656.9826.4.camel@x220>
+	 <20140515174448.GA31159@fifo99.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 May 2014 18:10:13.0722 (UTC) FILETIME=[EAEB1BA0:01CF7068]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15, Mateusz Guzik wrote:
->
-> On Thu, May 15, 2014 at 11:54:15AM -0400, Dave Jones wrote:
-> >
-> > I'm of the opinion that a user-triggerable WARN is a bug, but aparently
-> > not everyone else feels that way.
+Daniel,
 
-I didn't really like this WARN_ONCE() when I looked at the patch which
-added it, but I didn't try to argue.
+On Thu, 2014-05-15 at 17:44 +0000, dwalker@fifo99.com wrote:
+> On Wed, May 14, 2014 at 11:07:36PM +0200, Paul Bolle wrote:
+> > Commit 1b802ff79f03 ("arm: msm: add board file for Nexus One (ie.
+> > mahimahi)") added just board-mahimahi.c. It did not add
+> > board-mahimahi.h, Makefile changes or Kconfig changes.
+> > 
+> > Four years have passed and this file is still dangling. Remove it.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Untested. But what to test here?
+> > 
+> I don't mine if Sapphire gets removed,
 
-> imho warning sysadmins about userspace using deprecated stuff is fine as
-> long as users are not able to spam the console with it.
+Could you ACK that patch, please?
 
-Agreed,
+>  but I'm working on this one now..
 
-> Warning reported here just looks scary and provides no information for
-> sysadmins so I guess it hould be changed.
+That's good to hear.
 
-Again, agreed.
+>  So I don't want it deleted.
 
-So imo we should either remove it, ot turn it into
+This is not something I get to decide. Nevertheless, given that this
+file shouldn't have been merged to begin with, I'd appreciate it if some
+deadline could be agreed upon.
 
-	pr_warn_once("something meaningful");
+That being said, I'm not sure how having just this file in mainline
+helps your development efforts. It seems it did receive some updates
+for, well, treewide stuff. But it surely didn't get build coverage or
+runtime testing. So would you lose much if it only remains in your
+development tree?
 
-Oleg.
+
+Paul Bolle
 
