@@ -1,295 +1,594 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaEORML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:12:11 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:40652 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaEORMH (ORCPT
+	id S1753375AbaEORQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:16:36 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:1117 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751249AbaEORQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:12:07 -0400
-Message-ID: <5374F56A.3090406@codesourcery.com>
-Date: Fri, 16 May 2014 01:12:10 +0800
-From: Chung-Lin Tang <cltang@codesourcery.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        "Joseph S. Myers" <joseph@codesourcery.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <8399002.IIyBoyEHox@wuerfel> <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com> <4160991.69XaTMjMrC@wuerfel>
-In-Reply-To: <4160991.69XaTMjMrC@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 15 May 2014 13:16:34 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AooRAHb1dFNXQwiB/2dsb2JhbABZFoJwT4JvqFoEAQEBAQEBBQGaGQICgREXdIJGDRMcIxiBAiQTiEUBCNEkhVSHAYF5hEcEjyqKJgGBPYlQiAeDODswAQ
+Date: Thu, 15 May 2014 19:16:30 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] FS/HPFS: convert printk to pr_foo()
+Message-Id: <20140515191630.d982874c8318d427fdc560c0@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 May 2014 17:12:06.0272 (UTC) FILETIME=[CC3C7800:01CF7060]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/15 07:08 PM, Arnd Bergmann wrote:
-> On Wednesday 14 May 2014 14:33:18 John Stultz wrote:
->> On Tue, May 13, 2014 at 12:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Tuesday 13 May 2014 20:24:59 Geert Uytterhoeven wrote:
->>>> On Tue, May 13, 2014 at 8:10 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>>> Using 64-bit time_t on x32 is fine, because it's fast to operate
->>>>> in user space with 64-bit registers, and the kernel is 64-bit
->>>>> anyway. Inside of the kernel, we may get into trouble using
->>>>> a 64-bit time_t on 32-bit architectures because of the overhead
->>>>> in 64-bit math, e.g. all the timekeeping code that is based on
->>>>> timespec or some code paths in file systems and network code where
->>>>> we actually require division of time_t values.
->>>>
->>>> While going over time_t uses, have you found a pattern for use cases
->>>> involving division of time_t values in filesystem and networking code?
->>>
->>> In ipv4, we have multiple places doing this:
->>>
->>>         icmp_param.data.times[1] = htonl((tv.tv_sec % 86400) * MSEC_PER_SEC +
->>>                                          tv.tv_nsec / NSEC_PER_MSEC);
->>>
->>> to calculate the miliseconds since midnight. For file systems, I
->>> found that FAT uses seconds/minutes/hours/days/month/year representation,
->>> which is a lot of divides, but that can probably be optimized and
->>> we need to handle years beyond 2038 anyway.
->>
->> We can do some tricks for internal optimizations here if these are
->> critical.  I'd be more concerned about userland divisions where moving
->> to a 64bit time_t would cause performance issues that we cannot help
->> optimize.
-> 
-> Good point.
-> 
->>>>> We clearly have to change that code in some for to deal with y2038,
->>>>> but 64-bit time_t may not be the best option. A lot of the
->>>>> in-kernel code can probably use ktime_t, which we can change
->>>>> to a different representation (e.g. 34 bit seconds) if needed,
->>>>> and all the code that is only interested in relative time
->>>>> (e.g. nanosleep) doesn't have to change at all.
->>>>
->>>> Yeah. 32-bit uptimes should be good enough for everyone (don't quote
->>>> me on that), so adding a 64-bit offset when there's a need for absolute
->>>> time should be OK.
->>>
->>> I think we have three categories:
->>>
->>> a) interfaces that uses relative time_t/timespec/timeval:
->>>    - nanosleep
->>>    - select/pselect/poll/ppoll/epoll
->>>    - getrusage
->>>    - sched_rr_get_interval
->>>    - sigtimedwait
->>>    - clock_nanosleep
->>>    - alarm
->>>    - siginfo (rusage)
->>>
->>>   These can stay compatible, but we'd have to use a different
->>>   type if we change time_t.
->>
->>
->> So as a correction, at least clock_nanosleep can specify sleep times
->> using absolute time.
-> 
-> Thanks.
-> 
->>> b) interfaces that don't make sense for times in the past:
->>>    - getitimer/setitimer
->>>    - timer_settime/timer_gettime
->>>    - gettimeofday/settimeofday
->>>    - adjtimex
->>>    - clock_gettime/clock_settime/clock_adjtime
->>>    - time/stime
->>>    - socket time stamps
->>>    - audio time stamps
->>>    - v4l time stamps
->>>    - input event time stamps
->>>    - sysv ipc (msg, sem, shm)
->>>
->>>    Here, we are relatively free to change the start of the
->>>    epoch in the kernel but convert to something else on the
->>>    user space boundary. One possibility is to scale them to
->>>    boot time and use ktime_t in the kernel.
->>
->> I'm not sure I'm totally following this... Are you suggesting we keep
->> 32bit time internally w/ some different offset but then pass to
->> userland a 64bit time_t?  Or are you suggesting we change the abi to
->> move the epoch?
-> 
-> What I meant is that regardless of what we decide for the ABI,
-> we can change the in-kernel representation in any way we like as
-> long as we can represent all dates that can occur during the runtime
-> of the kernel, i.e. we don't have to represent times between 1970 and
-> 2014. This could mean one of many representations:
-> 
-> - time_t scaled forward by 44 years and/or made unsigned
-> - ktime_t scaled to boot time
-> - 64-bit nanoseconds starting at the epoch
-> - timespec64
-> 
->> I think I'm with hpa in his recent mail in that the internal
->> representation is an optimization detail, and the bigger question is
->> do we use a  64bit time_t for future systems (possibly w/ a major ABI
->> break - with compat interface for existing 32bit applications), or do
->> we try to rev interfaces function by function to provide 2038 safe
->> versions which applications will have to be modified to use?
->>
->> Me, I'm a fan of moving time_t to 64bits, since it makes "porting"
->> applications to a 2038 safe ABI easier.
-> 
-> I think there are two or three distinct problems:
-> 
-> a) We absolutely have to find a way to build a user space that
->    can survive 2038. This probably involves moving at least
->    time_t, timeval and timespec to use 64-bit representation.
-> b) We have to keep compatibility with existing user space running
->    on future kernels, which means at least x86, arm and a few
->    other 32-bit architectures (we can ignore some of the obsolete
->    ones if that helps us) need to provide syscall ABIs for both
->    32-bit time_t and whatever we use for the new syscalls and
->    ioctls. As Thomas said, for some interfaces this could mean
->    64-bit nanoseconds and for others it could be timespec64.
-> c) glibc may or may not provide a way for applications to use
->    the extended interfaces without a user space ABI break. My
->    impression so far is that this is going to be too hard and
->    it won't be done, but this is for the glibc developers to
->    determine.
+-No level printk in hptfs_error converted to pr_err
+(others to pr_warn or pr_info)
 
-glibc does version its exported symbols, so provided new/old syscalls
-are both provided, haveing a new version of a routine (using 64-bit
-time_t and new syscall interfaces) and the old compat routine co-exist
-should be possible. Of course, old binaries may still not be saved when
-2038 arrives.
+This patch also fixes if/then/else checkpatch warnings
 
-(Adding Joseph to the CC, for more definitive comments)
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/hpfs/alloc.c  |  2 +-
+ fs/hpfs/buffer.c | 12 ++++++------
+ fs/hpfs/dir.c    |  6 +++---
+ fs/hpfs/dnode.c  | 42 +++++++++++++++++++++++++-----------------
+ fs/hpfs/ea.c     |  6 +++---
+ fs/hpfs/inode.c  |  3 ++-
+ fs/hpfs/map.c    | 17 ++++++++++-------
+ fs/hpfs/name.c   | 11 ++++++-----
+ fs/hpfs/namei.c  |  2 +-
+ fs/hpfs/super.c  | 55 ++++++++++++++++++++++++++++++++-----------------------
+ 10 files changed, 89 insertions(+), 67 deletions(-)
 
-Thanks,
-Chung-Lin
-
-
-> The important distinction here is between user space time_t
-> (timeval, timespec) and __kernel_time_t. We probably need
-> to make the user space time_t a build-time conditional,
-> at least for the foreseeable future. New architectures or
-> new C libraries can start out using 64-bit time_t unconditionally.
-> 
-> For the kernel interface, I think we should deprecate any interfaces
-> using plain time_t and timeval, i.e. keep them around for existing
-> architectures (possibly with a kernel compile time option to disable
-> them so we are sure they don't leak out to new user space) and
-> provide kernel interfaces based on 64-bit timespec (or other 
-> appropriate data structures for timestamps) for new architectures.
-> 
-> I see multiple ways of doing this, and I don't like any of them ;-)
-> 
-> 1) rename all *time* types to *old_time*, and provide new ones
->    based on 64-bit time_t. We'd have to change them all at once,
->    and there would likely still be some build breakage with glibc.
->    The idea is that a libc built against old headers still works
->    fine on old and new kernels, and a libc built against new kernels
->    would automatically get 64-bit time but stop working on old
->    kernels. Also, any binaries built against old glibc wouldn't
->    work on new glibc, which is probably a killer.
-> 
->    Example:
-> 
->    -typedef long __kernel_time_t;
->    +typedef long __kernel_oldtime_t;
->    +typedef __s64 __kernel_time_t;
->    -struct timespec { __kernel_oldtime_t tv_sec; long   tv_nsec; };
->    +struct oldtimespec { __kernel_oldtime_t tv_sec; long   tv_nsec; };
->    +struct timespec { __s64 tv_sec; __s64 tv_nsec; };
-> 
->    -long sys_utime(char __user *filename, struct utimbuf __user *times);
->    -long sys_utimes(char __user *filename, struct timeval __user *utimes);
->    -long sys_futimesat(int dfd, const char __user *filename, struct timeval __user *utimes);
->    -long sys_utimensat(int dfd, const char __user *filename, struct timespec __user *utimes, int flags);
->    +long sys_oldutime(char __user *filename, struct oldutimbuf __user *times);
->    +long sys_oldutimes(char __user *filename, struct oldtimeval __user *utimes);
->    +long sys_oldfutimesat(int dfd, const char __user *filename, struct oldtimeval __user *utimes);
->    +long sys_oldutimensat(int dfd, const char __user *filename, struct oldtimespec __user *utimes, int flags);
-> 
->    +long sys_utimensat(int dfd, const char __user *filename, struct timespec __user *utimes, int flags);
-> 
->    -#define __NR_utimensat 88
->    -#define __NR_utimes 1037
->    -#define __NR_futimesat 1066
->    -#define __NR_utime 1063
->    +#define __NR_oldutimensat 88
->    +#define __NR_oldutimes 1037
->    +#define __NR_oldfutimesat 1066
->    +#define __NR_oldutime 1063
-> 
->    +#define __NR_utimensat 277  /* next free number for asm-generic/unistd.h */
->  
-> 2) leave the kernel time_t as 'long' and only introduce a new
->    struct timespec64,defined to be compatible with struct timespec on
->    64-bit architectures. For each syscall or ioctl that we need, come up
->    with a new one. Make the libc define its own time_t as 64-bit and use
->    the new syscalls instead of the old ones. This will allow a smooth
->    transition, but we might not be done with it before 2038.
-> 
->    Example:
-> 
->     typedef long __kernel_time_t;
->     struct timespec { __kernel_time_t tv_sec; long   tv_nsec; };
->    +struct timespec64 { __s64 tv_sec; __s64 tv_nsec; };
-> 
->    +#ifdef __ARCH_WANT_32BIT_TIME
->     long sys_utime(char __user *filename, struct utimbuf __user *times);
->     long sys_utimes(char __user *filename, struct timeval __user *utimes);
->     long sys_futimesat(int dfd, const char __user *filename, struct timeval __user *utimes);
->     long sys_utimensat(int dfd, const char __user *filename, struct timespec __user *utimes, int flags);
->    +#endif
->    +long sys_futimens64at(int dfd, const char __user *filename, struct timespec64 __user *utimes, int flags);
-> 
-> 
->    +#ifdef __ARCH_WANT_32BIT_TIME
->     #define __NR_utimensat 88
->     #define __NR_utimes 1037
->     #define __NR_futimesat 1066
->     #define __NR_utime 1063
->    +#endif
-> 
->    +#define __NR_futimens64at 277  /* next free number for asm-generic/unistd.h */
-> 
-> 3) Make time_t 64-bit for new 32-bit architectures right away, and worry
->    about existing architectures separately. This will mean avoiding intentional
->    ABI changes for the new architectures later, at the cost of having fringe
->    architecture use an ABI that nobody else uses, likely more broken.
-> 
->    Example (as in the patch series under review):
-> 
->    #ifndef __kernel_time_t
->    #typedef __s64 __kernel_time_t
->    #endif
-> 
-> 4) Allow combinations of the above approaches using #ifdef in the uabi
->    headers to let the libc decide at compile time which of the first two
->    it wants. At the binary level they are compatible. This is most flexible
->    but means we have to worry more about getting the corner cases right,
->    with code that is even harder to maintain.
-> 
->    Example:
-> 
->    #ifdef __libc_want_64bit_time
->    typedef long __kernel_oldtime_t;
->    typedef __s64 __kernel_time_t;
->    #else
->    typedef long __kernel_time_t;
->    typedef __s64 __kernel_time64_t;
->    #endif
-> 
->    #ifdef __libc_want_64bit_time
->    #define __NR_oldutimensat	88
->    #define __NR_futimensat	277
->    #else
->    #define __NR_utimensat	88
->    #define __NR_futimens64at	277
->    #endif
-> 
-> 	Arnd
-> 
+diff --git a/fs/hpfs/alloc.c b/fs/hpfs/alloc.c
+index 58b5106..f005046 100644
+--- a/fs/hpfs/alloc.c
++++ b/fs/hpfs/alloc.c
+@@ -316,7 +316,7 @@ void hpfs_free_sectors(struct super_block *s, secno sec, unsigned n)
+ 	struct quad_buffer_head qbh;
+ 	__le32 *bmp;
+ 	struct hpfs_sb_info *sbi = hpfs_sb(s);
+-	/*printk("2 - ");*/
++	/*pr_info("2 - ");*/
+ 	if (!n) return;
+ 	if (sec < 0x12) {
+ 		hpfs_error(s, "Trying to free reserved sector %08x", sec);
+diff --git a/fs/hpfs/buffer.c b/fs/hpfs/buffer.c
+index 139ef16..4b61be3 100644
+--- a/fs/hpfs/buffer.c
++++ b/fs/hpfs/buffer.c
+@@ -55,7 +55,7 @@ void *hpfs_map_sector(struct super_block *s, unsigned secno, struct buffer_head
+ 	if (bh != NULL)
+ 		return bh->b_data;
+ 	else {
+-		printk("HPFS: hpfs_map_sector: read error\n");
++		pr_warn("HPFS: hpfs_map_sector: read error\n");
+ 		return NULL;
+ 	}
+ }
+@@ -76,7 +76,7 @@ void *hpfs_get_sector(struct super_block *s, unsigned secno, struct buffer_head
+ 		set_buffer_uptodate(bh);
+ 		return bh->b_data;
+ 	} else {
+-		printk("HPFS: hpfs_get_sector: getblk failed\n");
++		pr_warn("HPFS: hpfs_get_sector: getblk failed\n");
+ 		return NULL;
+ 	}
+ }
+@@ -93,7 +93,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
+ 	cond_resched();
+ 
+ 	if (secno & 3) {
+-		printk("HPFS: hpfs_map_4sectors: unaligned read\n");
++		pr_warn("HPFS: hpfs_map_4sectors: unaligned read\n");
+ 		return NULL;
+ 	}
+ 
+@@ -112,7 +112,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
+ 
+ 	qbh->data = data = kmalloc(2048, GFP_NOFS);
+ 	if (!data) {
+-		printk("HPFS: hpfs_map_4sectors: out of memory\n");
++		pr_warn("HPFS: hpfs_map_4sectors: out of memory\n");
+ 		goto bail4;
+ 	}
+ 
+@@ -145,7 +145,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
+ 	hpfs_lock_assert(s);
+ 
+ 	if (secno & 3) {
+-		printk("HPFS: hpfs_get_4sectors: unaligned read\n");
++		pr_warn("HPFS: hpfs_get_4sectors: unaligned read\n");
+ 		return NULL;
+ 	}
+ 
+@@ -161,7 +161,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
+ 	}
+ 
+ 	if (!(qbh->data = kmalloc(2048, GFP_NOFS))) {
+-		printk("HPFS: hpfs_get_4sectors: out of memory\n");
++		pr_warn("HPFS: hpfs_get_4sectors: out of memory\n");
+ 		goto bail4;
+ 	}
+ 	return qbh->data;
+diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
+index 292b1ac..11ea936 100644
+--- a/fs/hpfs/dir.c
++++ b/fs/hpfs/dir.c
+@@ -36,7 +36,7 @@ static loff_t hpfs_dir_lseek(struct file *filp, loff_t off, int whence)
+ 	mutex_lock(&i->i_mutex);
+ 	hpfs_lock(s);
+ 
+-	/*printk("dir lseek\n");*/
++	/*pr_info("dir lseek\n");*/
+ 	if (new_off == 0 || new_off == 1 || new_off == 11 || new_off == 12 || new_off == 13) goto ok;
+ 	pos = ((loff_t) hpfs_de_as_down_as_possible(s, hpfs_inode->i_dno) << 4) + 1;
+ 	while (pos != new_off) {
+@@ -51,7 +51,7 @@ ok:
+ 	mutex_unlock(&i->i_mutex);
+ 	return new_off;
+ fail:
+-	/*printk("illegal lseek: %016llx\n", new_off);*/
++	/*pr_warn("illegal lseek: %016llx\n", new_off);*/
+ 	hpfs_unlock(s);
+ 	mutex_unlock(&i->i_mutex);
+ 	return -ESPIPE;
+@@ -127,7 +127,7 @@ static int hpfs_readdir(struct file *file, struct dir_context *ctx)
+ 		if (ctx->pos == 12)
+ 			goto out;
+ 		if (ctx->pos == 3 || ctx->pos == 4 || ctx->pos == 5) {
+-			printk("HPFS: warning: pos==%d\n",(int)ctx->pos);
++			pr_warn("HPFS: warning: pos==%d\n", (int)ctx->pos);
+ 			goto out;
+ 		}
+ 		if (ctx->pos == 0) {
+diff --git a/fs/hpfs/dnode.c b/fs/hpfs/dnode.c
+index 4364b2a..ff4f898 100644
+--- a/fs/hpfs/dnode.c
++++ b/fs/hpfs/dnode.c
+@@ -17,7 +17,7 @@ static loff_t get_pos(struct dnode *d, struct hpfs_dirent *fde)
+ 		if (de == fde) return ((loff_t) le32_to_cpu(d->self) << 4) | (loff_t)i;
+ 		i++;
+ 	}
+-	printk("HPFS: get_pos: not_found\n");
++	pr_info("HPFS: get_pos: not_found\n");
+ 	return ((loff_t)le32_to_cpu(d->self) << 4) | (loff_t)1;
+ }
+ 
+@@ -32,7 +32,7 @@ void hpfs_add_pos(struct inode *inode, loff_t *pos)
+ 			if (hpfs_inode->i_rddir_off[i] == pos) return;
+ 	if (!(i&0x0f)) {
+ 		if (!(ppos = kmalloc((i+0x11) * sizeof(loff_t*), GFP_NOFS))) {
+-			printk("HPFS: out of memory for position list\n");
++			pr_warn("HPFS: out of memory for position list\n");
+ 			return;
+ 		}
+ 		if (hpfs_inode->i_rddir_off) {
+@@ -63,7 +63,8 @@ void hpfs_del_pos(struct inode *inode, loff_t *pos)
+ 	}
+ 	return;
+ 	not_f:
+-	/*printk("HPFS: warning: position pointer %p->%08x not found\n", pos, (int)*pos);*/
++	/*pr_info("HPFS: warning: position pointer %p->%08x not found\n",
++		  pos, (int)*pos);*/
+ 	return;
+ }
+ 
+@@ -92,8 +93,11 @@ static void hpfs_pos_ins(loff_t *p, loff_t d, loff_t c)
+ {
+ 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
+ 		int n = (*p & 0x3f) + c;
+-		if (n > 0x3f) printk("HPFS: hpfs_pos_ins: %08x + %d\n", (int)*p, (int)c >> 8);
+-		else *p = (*p & ~0x3f) | n;
++		if (n > 0x3f)
++			pr_warn("HPFS: hpfs_pos_ins: %08x + %d\n",
++				(int)*p, (int)c >> 8);
++		else
++			*p = (*p & ~0x3f) | n;
+ 	}
+ }
+ 
+@@ -101,8 +105,11 @@ static void hpfs_pos_del(loff_t *p, loff_t d, loff_t c)
+ {
+ 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
+ 		int n = (*p & 0x3f) - c;
+-		if (n < 1) printk("HPFS: hpfs_pos_ins: %08x - %d\n", (int)*p, (int)c >> 8);
+-		else *p = (*p & ~0x3f) | n;
++		if (n < 1)
++			pr_warn("HPFS: hpfs_pos_ins: %08x - %d\n",
++				(int)*p, (int)c >> 8);
++		else
++			*p = (*p & ~0x3f) | n;
+ 	}
+ }
+ 
+@@ -239,7 +246,7 @@ static int hpfs_add_to_dnode(struct inode *i, dnode_secno dno,
+ 	struct fnode *fnode;
+ 	int c1, c2 = 0;
+ 	if (!(nname = kmalloc(256, GFP_NOFS))) {
+-		printk("HPFS: out of memory, can't add to dnode\n");
++		pr_warn("HPFS: out of memory, can't add to dnode\n");
+ 		return 1;
+ 	}
+ 	go_up:
+@@ -281,7 +288,7 @@ static int hpfs_add_to_dnode(struct inode *i, dnode_secno dno,
+ 		   not be any error while splitting dnodes, otherwise the
+ 		   whole directory, not only file we're adding, would
+ 		   be lost. */
+-		printk("HPFS: out of memory for dnode splitting\n");
++		pr_warn("HPFS: out of memory for dnode splitting\n");
+ 		hpfs_brelse4(&qbh);
+ 		kfree(nname);
+ 		return 1;
+@@ -597,7 +604,7 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
+ 		if (!de_next->down) goto endm;
+ 		ndown = de_down_pointer(de_next);
+ 		if (!(de_cp = kmalloc(le16_to_cpu(de->length), GFP_NOFS))) {
+-			printk("HPFS: out of memory for dtree balancing\n");
++			pr_warn("HPFS: out of memory for dtree balancing\n");
+ 			goto endm;
+ 		}
+ 		memcpy(de_cp, de, le16_to_cpu(de->length));
+@@ -612,7 +619,8 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
+ 			hpfs_brelse4(&qbh1);
+ 		}
+ 		hpfs_add_to_dnode(i, ndown, de_cp->name, de_cp->namelen, de_cp, de_cp->down ? de_down_pointer(de_cp) : 0);
+-		/*printk("UP-TO-DNODE: %08x (ndown = %08x, down = %08x, dno = %08x)\n", up, ndown, down, dno);*/
++		/*pr_info("UP-TO-DNODE: %08x (ndown = %08x, down = %08x, dno = %08x)\n",
++		  up, ndown, down, dno);*/
+ 		dno = up;
+ 		kfree(de_cp);
+ 		goto try_it_again;
+@@ -637,15 +645,15 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
+ 			if (!dlp && down) {
+ 				if (le32_to_cpu(d1->first_free) > 2044) {
+ 					if (hpfs_sb(i->i_sb)->sb_chk >= 2) {
+-						printk("HPFS: warning: unbalanced dnode tree, see hpfs.txt 4 more info\n");
+-						printk("HPFS: warning: terminating balancing operation\n");
++						pr_warn("HPFS: warning: unbalanced dnode tree, see hpfs.txt 4 more info\n");
++						pr_warn("HPFS: warning: terminating balancing operation\n");
+ 					}
+ 					hpfs_brelse4(&qbh1);
+ 					goto endm;
+ 				}
+ 				if (hpfs_sb(i->i_sb)->sb_chk >= 2) {
+-					printk("HPFS: warning: unbalanced dnode tree, see hpfs.txt 4 more info\n");
+-					printk("HPFS: warning: goin'on\n");
++					pr_warn("HPFS: warning: unbalanced dnode tree, see hpfs.txt 4 more info\n");
++					pr_warn("HPFS: warning: goin'on\n");
+ 				}
+ 				le16_add_cpu(&del->length, 4);
+ 				del->down = 1;
+@@ -659,7 +667,7 @@ static void delete_empty_dnode(struct inode *i, dnode_secno dno)
+ 				*(__le32 *) ((void *) del + le16_to_cpu(del->length) - 4) = cpu_to_le32(down);
+ 		} else goto endm;
+ 		if (!(de_cp = kmalloc(le16_to_cpu(de_prev->length), GFP_NOFS))) {
+-			printk("HPFS: out of memory for dtree balancing\n");
++			pr_warn("HPFS: out of memory for dtree balancing\n");
+ 			hpfs_brelse4(&qbh1);
+ 			goto endm;
+ 		}
+@@ -1000,7 +1008,7 @@ struct hpfs_dirent *map_fnode_dirent(struct super_block *s, fnode_secno fno,
+ 	int d1, d2 = 0;
+ 	name1 = f->name;
+ 	if (!(name2 = kmalloc(256, GFP_NOFS))) {
+-		printk("HPFS: out of memory, can't map dirent\n");
++		pr_warn("HPFS: out of memory, can't map dirent\n");
+ 		return NULL;
+ 	}
+ 	if (f->len <= 15)
+diff --git a/fs/hpfs/ea.c b/fs/hpfs/ea.c
+index bcaafcd..6ac822a 100644
+--- a/fs/hpfs/ea.c
++++ b/fs/hpfs/ea.c
+@@ -51,7 +51,7 @@ static char *get_indirect_ea(struct super_block *s, int ano, secno a, int size)
+ {
+ 	char *ret;
+ 	if (!(ret = kmalloc(size + 1, GFP_NOFS))) {
+-		printk("HPFS: out of memory for EA\n");
++		pr_warn("HPFS: out of memory for EA\n");
+ 		return NULL;
+ 	}
+ 	if (hpfs_ea_read(s, a, ano, 0, size, ret)) {
+@@ -139,7 +139,7 @@ char *hpfs_get_ea(struct super_block *s, struct fnode *fnode, char *key, int *si
+ 			if (ea_indirect(ea))
+ 				return get_indirect_ea(s, ea_in_anode(ea), ea_sec(ea), *size = ea_len(ea));
+ 			if (!(ret = kmalloc((*size = ea_valuelen(ea)) + 1, GFP_NOFS))) {
+-				printk("HPFS: out of memory for EA\n");
++				pr_warn("HPFS: out of memory for EA\n");
+ 				return NULL;
+ 			}
+ 			memcpy(ret, ea_data(ea), ea_valuelen(ea));
+@@ -165,7 +165,7 @@ char *hpfs_get_ea(struct super_block *s, struct fnode *fnode, char *key, int *si
+ 			if (ea_indirect(ea))
+ 				return get_indirect_ea(s, ea_in_anode(ea), ea_sec(ea), *size = ea_len(ea));
+ 			if (!(ret = kmalloc((*size = ea_valuelen(ea)) + 1, GFP_NOFS))) {
+-				printk("HPFS: out of memory for EA\n");
++				pr_warn("HPFS: out of memory for EA\n");
+ 				return NULL;
+ 			}
+ 			if (hpfs_ea_read(s, a, ano, pos + 4 + ea->namelen + 1, ea_valuelen(ea), ret)) {
+diff --git a/fs/hpfs/inode.c b/fs/hpfs/inode.c
+index 50a4273..42c2908 100644
+--- a/fs/hpfs/inode.c
++++ b/fs/hpfs/inode.c
+@@ -183,7 +183,8 @@ void hpfs_write_inode(struct inode *i)
+ 	struct inode *parent;
+ 	if (i->i_ino == hpfs_sb(i->i_sb)->sb_root) return;
+ 	if (hpfs_inode->i_rddir_off && !atomic_read(&i->i_count)) {
+-		if (*hpfs_inode->i_rddir_off) printk("HPFS: write_inode: some position still there\n");
++		if (*hpfs_inode->i_rddir_off)
++			pr_warn("HPFS: write_inode: some position still there\n");
+ 		kfree(hpfs_inode->i_rddir_off);
+ 		hpfs_inode->i_rddir_off = NULL;
+ 	}
+diff --git a/fs/hpfs/map.c b/fs/hpfs/map.c
+index 3aa66ae..398d7b1 100644
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -65,12 +65,13 @@ unsigned char *hpfs_load_code_page(struct super_block *s, secno cps)
+ 	struct code_page_directory *cp = hpfs_map_sector(s, cps, &bh, 0);
+ 	if (!cp) return NULL;
+ 	if (le32_to_cpu(cp->magic) != CP_DIR_MAGIC) {
+-		printk("HPFS: Code page directory magic doesn't match (magic = %08x)\n", le32_to_cpu(cp->magic));
++		pr_warn("HPFS: Code page directory magic doesn't match (magic = %08x)\n",
++			le32_to_cpu(cp->magic));
+ 		brelse(bh);
+ 		return NULL;
+ 	}
+ 	if (!le32_to_cpu(cp->n_code_pages)) {
+-		printk("HPFS: n_code_pages == 0\n");
++		pr_warn("HPFS: n_code_pages == 0\n");
+ 		brelse(bh);
+ 		return NULL;
+ 	}
+@@ -79,19 +80,19 @@ unsigned char *hpfs_load_code_page(struct super_block *s, secno cps)
+ 	brelse(bh);
+ 
+ 	if (cpi >= 3) {
+-		printk("HPFS: Code page index out of array\n");
++		pr_warn("HPFS: Code page index out of array\n");
+ 		return NULL;
+ 	}
+ 	
+ 	if (!(cpd = hpfs_map_sector(s, cpds, &bh, 0))) return NULL;
+ 	if (le16_to_cpu(cpd->offs[cpi]) > 0x178) {
+-		printk("HPFS: Code page index out of sector\n");
++		pr_warn("HPFS: Code page index out of sector\n");
+ 		brelse(bh);
+ 		return NULL;
+ 	}
+ 	ptr = (unsigned char *)cpd + le16_to_cpu(cpd->offs[cpi]) + 6;
+ 	if (!(cp_table = kmalloc(256, GFP_KERNEL))) {
+-		printk("HPFS: out of memory for code page table\n");
++		pr_warn("HPFS: out of memory for code page table\n");
+ 		brelse(bh);
+ 		return NULL;
+ 	}
+@@ -114,7 +115,7 @@ __le32 *hpfs_load_bitmap_directory(struct super_block *s, secno bmp)
+ 	int i;
+ 	__le32 *b;
+ 	if (!(b = kmalloc(n * 512, GFP_KERNEL))) {
+-		printk("HPFS: can't allocate memory for bitmap directory\n");
++		pr_warn("HPFS: can't allocate memory for bitmap directory\n");
+ 		return NULL;
+ 	}	
+ 	for (i=0;i<n;i++) {
+@@ -281,7 +282,9 @@ struct dnode *hpfs_map_dnode(struct super_block *s, unsigned secno,
+ 				hpfs_error(s, "dnode %08x does not end with \\377 entry", secno);
+ 				goto bail;
+ 			}
+-			if (b == 3) printk("HPFS: warning: unbalanced dnode tree, dnode %08x; see hpfs.txt 4 more info\n", secno);
++			if (b == 3)
++				pr_warn("HPFS: warning: unbalanced dnode tree, dnode %08x; see hpfs.txt 4 more info\n",
++					secno);
+ 		}
+ 	return dnode;
+ 	bail:
+diff --git a/fs/hpfs/name.c b/fs/hpfs/name.c
+index 9acdf33..61ffd04 100644
+--- a/fs/hpfs/name.c
++++ b/fs/hpfs/name.c
+@@ -56,14 +56,15 @@ unsigned char *hpfs_translate_name(struct super_block *s, unsigned char *from,
+ 	unsigned char *to;
+ 	int i;
+ 	if (hpfs_sb(s)->sb_chk >= 2) if (hpfs_is_name_long(from, len) != lng) {
+-		printk("HPFS: Long name flag mismatch - name ");
+-		for (i=0; i<len; i++) printk("%c", from[i]);
+-		printk(" misidentified as %s.\n", lng ? "short" : "long");
+-		printk("HPFS: It's nothing serious. It could happen because of bug in OS/2.\nHPFS: Set checks=normal to disable this message.\n");
++		pr_warn("HPFS: Long name flag mismatch - name ");
++		for (i = 0; i < len; i++)
++			pr_cont("%c", from[i]);
++		pr_cont(" misidentified as %s.\n", lng ? "short" : "long");
++		pr_warn("HPFS: It's nothing serious. It could happen because of bug in OS/2.\nHPFS: Set checks=normal to disable this message.\n");
+ 	}
+ 	if (!lc) return from;
+ 	if (!(to = kmalloc(len, GFP_KERNEL))) {
+-		printk("HPFS: can't allocate memory for name conversion buffer\n");
++		pr_warn("HPFS: can't allocate memory for name conversion buffer\n");
+ 		return from;
+ 	}
+ 	for (i = 0; i < len; i++) to[i] = locase(hpfs_sb(s)->sb_cp_table,from[i]);
+diff --git a/fs/hpfs/namei.c b/fs/hpfs/namei.c
+index 1b39afd..d11e6ed 100644
+--- a/fs/hpfs/namei.c
++++ b/fs/hpfs/namei.c
+@@ -404,7 +404,7 @@ again:
+ 			d_rehash(dentry);
+ 		} else {
+ 			struct iattr newattrs;
+-			/*printk("HPFS: truncating file before delete.\n");*/
++			/*pr_info("HPFS: truncating file before delete.\n");*/
+ 			newattrs.ia_size = 0;
+ 			newattrs.ia_valid = ATTR_SIZE | ATTR_CTIME;
+ 			err = notify_change(dentry, &newattrs, NULL);
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index fe3463a..e229b3f 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -62,22 +62,26 @@ void hpfs_error(struct super_block *s, const char *fmt, ...)
+ 	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+ 	va_end(args);
+ 
+-	printk("HPFS: filesystem error: %s", err_buf);
++	pr_err("HPFS: filesystem error: %s", err_buf);
+ 	if (!hpfs_sb(s)->sb_was_error) {
+ 		if (hpfs_sb(s)->sb_err == 2) {
+-			printk("; crashing the system because you wanted it\n");
++			pr_cont("; crashing the system because you wanted it\n");
+ 			mark_dirty(s, 0);
+ 			panic("HPFS panic");
+ 		} else if (hpfs_sb(s)->sb_err == 1) {
+-			if (s->s_flags & MS_RDONLY) printk("; already mounted read-only\n");
++			if (s->s_flags & MS_RDONLY)
++				pr_cont("; already mounted read-only\n");
+ 			else {
+-				printk("; remounting read-only\n");
++				pr_cont("; remounting read-only\n");
+ 				mark_dirty(s, 0);
+ 				s->s_flags |= MS_RDONLY;
+ 			}
+-		} else if (s->s_flags & MS_RDONLY) printk("; going on - but anything won't be destroyed because it's read-only\n");
+-		else printk("; corrupted filesystem mounted read/write - your computer will explode within 20 seconds ... but you wanted it so!\n");
+-	} else printk("\n");
++		} else if (s->s_flags & MS_RDONLY)
++				pr_cont("; going on - but anything won't be destroyed because it's read-only\n");
++		else
++			pr_cont("; corrupted filesystem mounted read/write - your computer will explode within 20 seconds ... but you wanted it so!\n");
++	} else
++		pr_cont("\n");
+ 	hpfs_sb(s)->sb_was_error = 1;
+ }
+ 
+@@ -292,7 +296,7 @@ static int parse_opts(char *opts, kuid_t *uid, kgid_t *gid, umode_t *umask,
+ 	if (!opts)
+ 		return 1;
+ 
+-	/*printk("Parsing opts: '%s'\n",opts);*/
++	/*pr_info("Parsing opts: '%s'\n",opts);*/
+ 
+ 	while ((p = strsep(&opts, ",")) != NULL) {
+ 		substring_t args[MAX_OPT_ARGS];
+@@ -387,7 +391,7 @@ static int parse_opts(char *opts, kuid_t *uid, kgid_t *gid, umode_t *umask,
+ 
+ static inline void hpfs_help(void)
+ {
+-	printk("\n\
++	pr_info("\n\
+ HPFS filesystem options:\n\
+       help              do not mount and display this text\n\
+       uid=xxx           set uid of files that don't have uid specified in eas\n\
+@@ -434,7 +438,7 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
+ 
+ 	if (!(o = parse_opts(data, &uid, &gid, &umask, &lowercase,
+ 	    &eas, &chk, &errs, &chkdsk, &timeshift))) {
+-		printk("HPFS: bad mount options.\n");
++		pr_warn("HPFS: bad mount options.\n");
+ 		goto out_err;
+ 	}
+ 	if (o == 2) {
+@@ -442,7 +446,7 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
+ 		goto out_err;
+ 	}
+ 	if (timeshift != sbi->sb_timeshift) {
+-		printk("HPFS: timeshift can't be changed using remount.\n");
++		pr_warn("HPFS: timeshift can't be changed using remount.\n");
+ 		goto out_err;
+ 	}
+ 
+@@ -523,7 +527,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 
+ 	if (!(o = parse_opts(options, &uid, &gid, &umask, &lowercase,
+ 	    &eas, &chk, &errs, &chkdsk, &timeshift))) {
+-		printk("HPFS: bad mount options.\n");
++		pr_warn("HPFS: bad mount options.\n");
+ 		goto bail0;
+ 	}
+ 	if (o==2) {
+@@ -542,16 +546,17 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	if (/*le16_to_cpu(bootblock->magic) != BB_MAGIC
+ 	    ||*/ le32_to_cpu(superblock->magic) != SB_MAGIC
+ 	    || le32_to_cpu(spareblock->magic) != SP_MAGIC) {
+-		if (!silent) printk("HPFS: Bad magic ... probably not HPFS\n");
++		if (!silent)
++			pr_warn("HPFS: Bad magic ... probably not HPFS\n");
+ 		goto bail4;
+ 	}
+ 
+ 	/* Check version */
+ 	if (!(s->s_flags & MS_RDONLY) &&
+ 	      superblock->funcversion != 2 && superblock->funcversion != 3) {
+-		printk("HPFS: Bad version %d,%d. Mount readonly to go around\n",
++		pr_warn("HPFS: Bad version %d,%d. Mount readonly to go around\n",
+ 			(int)superblock->version, (int)superblock->funcversion);
+-		printk("HPFS: please try recent version of HPFS driver at http://artax.karlin.mff.cuni.cz/~mikulas/vyplody/hpfs/index-e.cgi and if it still can't understand this format, contact author - mikulas@artax.karlin.mff.cuni.cz\n");
++		pr_warn("HPFS: please try recent version of HPFS driver at http://artax.karlin.mff.cuni.cz/~mikulas/vyplody/hpfs/index-e.cgi and if it still can't understand this format, contact author - mikulas@artax.karlin.mff.cuni.cz\n");
+ 		goto bail4;
+ 	}
+ 
+@@ -597,7 +602,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	/* Check for general fs errors*/
+ 	if (spareblock->dirty && !spareblock->old_wrote) {
+ 		if (errs == 2) {
+-			printk("HPFS: Improperly stopped, not mounted\n");
++			pr_warn("HPFS: Improperly stopped, not mounted\n");
+ 			goto bail4;
+ 		}
+ 		hpfs_error(s, "improperly stopped");
+@@ -611,22 +616,25 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 
+ 	if (spareblock->hotfixes_used || spareblock->n_spares_used) {
+ 		if (errs >= 2) {
+-			printk("HPFS: Hotfixes not supported here, try chkdsk\n");
++			pr_warn("HPFS: Hotfixes not supported here, try chkdsk\n");
+ 			mark_dirty(s, 0);
+ 			goto bail4;
+ 		}
+ 		hpfs_error(s, "hotfixes not supported here, try chkdsk");
+-		if (errs == 0) printk("HPFS: Proceeding, but your filesystem will be probably corrupted by this driver...\n");
+-		else printk("HPFS: This driver may read bad files or crash when operating on disk with hotfixes.\n");
++		if (errs == 0)
++			pr_warn("HPFS: Proceeding, but your filesystem will be probably corrupted by this driver...\n");
++		else
++			pr_warn("HPFS: This driver may read bad files or crash when operating on disk with hotfixes.\n");
+ 	}
+ 	if (le32_to_cpu(spareblock->n_dnode_spares) != le32_to_cpu(spareblock->n_dnode_spares_free)) {
+ 		if (errs >= 2) {
+-			printk("HPFS: Spare dnodes used, try chkdsk\n");
++			pr_warn("HPFS: Spare dnodes used, try chkdsk\n");
+ 			mark_dirty(s, 0);
+ 			goto bail4;
+ 		}
+ 		hpfs_error(s, "warning: spare dnodes used, try chkdsk");
+-		if (errs == 0) printk("HPFS: Proceeding, but your filesystem could be corrupted if you delete files or directories\n");
++		if (errs == 0)
++			pr_warn("HPFS: Proceeding, but your filesystem could be corrupted if you delete files or directories\n");
+ 	}
+ 	if (chk) {
+ 		unsigned a;
+@@ -645,12 +653,13 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 			goto bail4;
+ 		}
+ 		sbi->sb_dirband_size = a;
+-	} else printk("HPFS: You really don't want any checks? You are crazy...\n");
++	} else
++		pr_warn("HPFS: You really don't want any checks? You are crazy...\n");
+ 
+ 	/* Load code page table */
+ 	if (le32_to_cpu(spareblock->n_code_pages))
+ 		if (!(sbi->sb_cp_table = hpfs_load_code_page(s, le32_to_cpu(spareblock->code_page_dir))))
+-			printk("HPFS: Warning: code page support is disabled\n");
++			pr_warn("HPFS: Warning: code page support is disabled\n");
+ 
+ 	brelse(bh2);
+ 	brelse(bh1);
+-- 
+1.8.4.5
 
