@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbaEORoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:44:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691AbaEORn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:43:58 -0400
-Message-ID: <1400175834.3289.65.camel@ul30vt.home>
-Subject: Re: [PATCH v2 00/15] PCI/iommu: Fix DMA alias problems
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andrew Cooks <acooks@gmail.com>
-Cc: "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Thu, 15 May 2014 11:43:54 -0600
-In-Reply-To: <CAJtEV7YYB4W_+nZeMgiqZVDV+M4OyFJVBic09z=KbMjOpihnTQ@mail.gmail.com>
-References: <20140509151735.8321.22017.stgit@bling.home>
-	 <CAJtEV7YYB4W_+nZeMgiqZVDV+M4OyFJVBic09z=KbMjOpihnTQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1755563AbaEORpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:45:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38482 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaEORpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:45:42 -0400
+Message-ID: <5374FD24.8000806@ti.com>
+Date: Thu, 15 May 2014 13:45:08 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware
+ core driver
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <1400169692-9677-6-git-send-email-m-karicheri2@ti.com> <6048322.x3M3sdDEWO@wuerfel>
+In-Reply-To: <6048322.x3M3sdDEWO@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-15 at 07:40 +0800, Andrew Cooks wrote:
-> Hi Alex
-> 
-> On Fri, May 9, 2014 at 11:28 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > ....
-> >
-> > Original description:
-> >
-> > This series attempts to fix a couple issues we've had outstanding in
-> > the PCI/IOMMU code for a while.  The first issue is with devices that
-> > use the wrong requester ID for DMA transactions.  We already have a
-> > sort of half-baked attempt to fix this for several Ricoh devices, but
-> > the fix only helps them be useful through IOMMU groups, not the
-> > general DMA case.  There are also several Marvell devices which use
-> > use a different wrong requester ID and don't even fit into the DMA
-> > source idea.  This series creates a DMA alias iterator that will
-> > step through each possible alias of a device, allowing IOMMUs to
-> > insert mappings for both the device and its aliases.
-> >
-> > Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
-> > function, which is known to blowup when it finds itself suddenly at
-> > a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
-> > the PCIe capability).  It also likes to make the invalid assumption
-> > that a PCIe device never has its requester ID masked by any usptream
-> > bus.  We can fix this using the above new DMA alias iterator, since
-> > that's effectively what this function was meant to do.
-> >
-> 
-> There are two cases where the DMA requester id seems to use the wrong
-> slot (as opposed to function) in the patch I attached to
-> https://bugzilla.kernel.org/show_bug.cgi?id=42679
-> The original bug reports are listed in the patch.
-> 
-> Unfortunately, I wasn't able to get test feedback on those two cases,
-> but I'm wondering...
-> Did I understand correctly that a slot alias is something that could be needed?
-> If so, is it a variation of the PCIe-to-PCI bridge case that's already
-> covered or will it require a different approach?
+Arnd,
 
-Wow, I didn't think that kind of broken was possible.  Maybe instead of
-a bitmap of function aliases we could have a single devfn alias for a
-device.  That means we'd only be able to support a single alias for a
-device, but since I don't think we've seen devices that use more than a
-single alias, maybe that's ok.  I'll see what changes we'd need to make
-for that, but I probably won't go adding the actual quirk based on those
-old reports.  Thanks,
 
-Alex
+Thanks for the review. I may have more questions as I digest the 
+comments. Here is the
+immediate one.
+
+>> +#ifdef CONFIG_PCI_KEYSTONE
+>> +/*
+>> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+>> + */
+>> +static void quirk_limit_readrequest(struct pci_dev *dev)
+>> +{
+>> +	int readrq = pcie_get_readrq(dev);
+>> +
+>> +	if (readrq > 256)
+>> +		pcie_set_readrq(dev, 256);
+>> +}
+>> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+>> +#endif /* CONFIG_PCI_KEYSTONE */
+> This doesn't work: you can't just limit do this for all devices just based
+> on PCI_KEYSTONE being enabled, you have to check if you are actually using
+> this controller.
+>
+> 	Arnd
+  I assume, I need to check if PCI controller's vendor ID/ device ID 
+match with the keystone
+  PCI controller's ID and call pcie_set_readrq() for all of the slave 
+PCI devices and do this fixup.
+Is this correct understanding?  If you can point me to an example code 
+for this that will be
+really helpful so that I can avoid re-inventing the wheel.
+
+Murali
 
