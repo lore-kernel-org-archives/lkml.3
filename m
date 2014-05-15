@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaEOJtg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:49:36 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:52658 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaEOJtd (ORCPT
+	id S1753321AbaEOJvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:51:15 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:49052 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaEOJvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:49:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <5373D8CE.6090003@nod.at>
-References: <1400093999-18703-1-git-send-email-richard@nod.at>
-	<1400093999-18703-14-git-send-email-richard@nod.at>
-	<CAMuHMdUddNc3Suq25JU7UC+YdWQHmk0nCRzCEbqmKg1+a+=FXw@mail.gmail.com>
-	<5373C36E.3020900@nod.at>
-	<CAMuHMdVWp8-aByVf+7M=8HEXXJRJBbZLdfj1v0rgDU-UEQM=8Q@mail.gmail.com>
-	<5373D8CE.6090003@nod.at>
-Date: Thu, 15 May 2014 11:49:32 +0200
-X-Google-Sender-Auth: savXQUQJC8jLtaULL00f8cQ52uc
-Message-ID: <CAMuHMdUQfa1E1aJWKU-UN+5WyVZ7LTcQDu+cTr4crjnH69+JMg@mail.gmail.com>
-Subject: Re: [PATCH 13/27] m68k: Use common bits from generic tlb.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 May 2014 05:51:14 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] kvm: increase max vcpu count
+Date: Thu, 15 May 2014 17:50:17 +0800
+Message-Id: <1400147417-22269-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 2.0.0-rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+This patch is trying to increase the maximum supported vcpu number.
 
-On Wed, May 14, 2014 at 10:57 PM, Richard Weinberger <richard@nod.at> wrote:
->> On Wed, May 14, 2014 at 9:26 PM, Richard Weinberger <richard@nod.at> wrote:
->>>> But why this sudden #ifdef checks?
->>>
->>> They are needed because in pgalloc.h you have:
->>> #ifdef CONFIG_MMU
->>> #include <asm/virtconvert.h>
->>> #if defined(CONFIG_COLDFIRE)
->>> #include <asm/mcf_pgalloc.h>
->>> #elif defined(CONFIG_SUN3)
->>> #include <asm/sun3_pgalloc.h>
->>> #else
->>> #include <asm/motorola_pgalloc.h>
->>> #endif
->>>
->>> And only asm/motorola_pgalloc.h have __pte/pmd_free_tlb as static inline functions.
->>> Therefore we need to define them such that the generic tlb.h versions will not clash
->>> with yours.
->>
->> Thanks for the clarification!
->
-> One problem which arises here is that me need to make sure that pgalloc.h is included before
-> tlb.h. Which kind of sucks.
+There has been big system supporting more than 256 logical CPUs, and vmware
+can also support guest system with more than logical 256 CPUs. So kvm should 
+also increase the maximum supported cpu number.
 
-Indeed.
+This patch only includes kernel kvm's part. The qemu support will be another 
+thread.
 
-arch/m68k/include/asm/mmu_context.h includes pgalloc.h, but not tlb.h.
-Didn't check whether it gets it indirectly.
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ arch/x86/include/asm/kvm_host.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> I'll move __pte/pmd_free_tlb from *_pgalloc.h into tlb.h to prevent this issue.
->
-> Are you fine with that?
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 7de069af..92cc83c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -31,8 +31,8 @@
+ #include <asm/msr-index.h>
+ #include <asm/asm.h>
+ 
+-#define KVM_MAX_VCPUS 255
+-#define KVM_SOFT_MAX_VCPUS 160
++#define KVM_MAX_VCPUS 4096
++#define KVM_SOFT_MAX_VCPUS 4096
+ #define KVM_USER_MEM_SLOTS 125
+ /* memory slots that are not exposed to userspace */
+ #define KVM_PRIVATE_MEM_SLOTS 3
+-- 
+2.0.0-rc0
 
-As long as it compiles, I'm happy ;-)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
