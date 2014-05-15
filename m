@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaEODSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:18:32 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45050 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaEODSa (ORCPT
+	id S1753420AbaEODS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:18:56 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:35037 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310AbaEODSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:18:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400111179.git.luto@amacapital.net>
-References: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400111179.git.luto@amacapital.net>
-Date: Thu, 15 May 2014 11:18:29 +0800
-Message-ID: <CAJd=RBC1E9x-zU-zJbNP+zbPgb=nhi39TqrxqpcGdi=OR9duXg@mail.gmail.com>
-Subject: Re: [PATCH v2 -next] x86,vdso: Fix an OOPS accessing the hpet mapping
- w/o an hpet
-From: Hillf Danton <dhillf@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 May 2014 23:18:54 -0400
+Message-ID: <1400123931.5175.38.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 15 May 2014 05:18:51 +0200
+In-Reply-To: <20140514154459.GE4570@linux.vnet.ibm.com>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Wed, 2014-05-14 at 08:44 -0700, Paul E. McKenney wrote:
 
-On Thu, May 15, 2014 at 7:46 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> The oops can be triggered in qemu using -no-hpet (but not nohpet) by
-> reading a couple of pages past the end of the vdso text.  This
-> should send SIGBUS instead of OOPSing.
->
-> The bug was introduced by:
->
-> commit 7a59ed415f5b57469e22e41fc4188d5399e0b194
-> Author: Stefani Seibold <stefani@seibold.net>
-> Date:   Mon Mar 17 23:22:09 2014 +0100
->
->     x86, vdso: Add 32 bit VDSO time support for 32 bit kernel
->
-> which is new in 3.15.
->
-> This will be fixed separately in 3.15, but that patch will not apply
-> to tip/x86/vdso.  This is the equivalent fix for tip/x86/vdso and,
-> presumably, 3.16.
->
-> Cc: Stefani Seibold <stefani@seibold.net>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/vdso/vma.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index e915eae..8ad0081 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -90,6 +90,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
->         struct vm_area_struct *vma;
->         unsigned long addr;
->         int ret = 0;
-> +       static struct page *no_pages[] = {NULL};
->
->         if (calculate_addr) {
->                 addr = vdso_addr(current->mm->start_stack,
-> @@ -125,7 +126,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
->                                        addr + image->size,
->                                        image->sym_end_mapping - image->size,
->                                        VM_READ,
-> -                                      NULL);
-> +                                      no_pages);
->
->         if (IS_ERR(vma)) {
->                 ret = PTR_ERR(vma);
-> --
-> 1.9.0
->
-As the comment says,
-/*
- * Called with mm->mmap_sem held for writing.
- * Insert a new vma covering the given region, with the given flags.
- * Its pages are supplied by the given array of struct page *.
- * The array can be shorter than len >> PAGE_SHIFT if it's null-terminated.
- * The region past the last page supplied will always produce SIGBUS.
- * The array pointer and the pages it points to are assumed to stay alive
- * for as long as this mapping might exist.
- */
-struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
-   unsigned long addr, unsigned long len,
-   unsigned long vm_flags, struct page **pages)
-{
+> In practice, not sure how much testing CONFIG_NO_HZ_FULL=y has received
+> for -rt kernels in production environments.
 
-we can send sigbus at fault time if no pages are supplied at install time.
+I took 3.14-rt out for a quick spin on my 64 core box, it didn't work at
+all with 60 cores isolated.  I didn't have time to rummage, but it looks
+like there are still bugs to squash. 
 
-thanks
-Hillf
+Biggest problem with CONFIG_NO_HZ_FULL is the price tag.  It just raped
+fast mover performance last time I measured.
+
+-Mike
+
