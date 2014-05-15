@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaEOJhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:37:04 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:56852 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158AbaEOJg6 (ORCPT
+	id S1754034AbaEOJmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:42:40 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:58471 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaEOJmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:36:58 -0400
+	Thu, 15 May 2014 05:42:38 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 4699566F636
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de 22AD6E4E8C
+Message-ID: <53748BFD.1050608@vodafone.de>
+Date: Thu, 15 May 2014 11:42:21 +0200
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Thu, 15 May 2014 11:36:33 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, swarren@wwwdotorg.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, marcel@ziswiler.com
-Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
-In-Reply-To: <20140515090814.GB6434@ulmo>
-References: <cover.1400103181.git.stefan@agner.ch>
- <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
- <20140515075102.GE5952@ulmo>
- <1400142449.4102.16.camel@paszta.hi.pengutronix.de>
- <20140515090814.GB6434@ulmo>
-Message-ID: <90bb509e9aa9c705790e2e0574d77b9f@agner.ch>
-User-Agent: Roundcube Webmail/1.0.1
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>, airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com>
+In-Reply-To: <53748AFA.8010109@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-05-15 11:08, schrieb Thierry Reding:
-> On Thu, May 15, 2014 at 10:27:29AM +0200, Philipp Zabel wrote:
->> The ETM0700G0DH6 Datasheet lists 2 lines as the typical vsync pulse
->> width, 525 lines as the vertical period, and 35 lines as the vsync -de
->> time, which is vsync len + back porch.
->> So vertical timings 480 + 10 + 2 + 33 = 525 should be valid for the
->> ET0700G0DH6 panel:
-> 
-> Shouldn't that work with 480 + 8 + 2 + 35 too? It seems to me that it
-> should still be safe for that panel. Similarily I'd expect your timings
-> to work on the ET070080DH6.
+Am 15.05.2014 11:38, schrieb Maarten Lankhorst:
+> op 15-05-14 11:21, Christian König schreef:
+>> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
+>>> op 14-05-14 17:29, Christian König schreef:
+>>>>> +    /* did fence get signaled after we enabled the sw irq? */
+>>>>> +    if 
+>>>>> (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= 
+>>>>> fence->seq) {
+>>>>> +        radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
+>>>>> +        return false;
+>>>>> +    }
+>>>>> +
+>>>>> +    fence->fence_wake.flags = 0;
+>>>>> +    fence->fence_wake.private = NULL;
+>>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
+>>>>> +    __add_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
+>>>>> +    fence_get(f);
+>>>> That looks like a race condition to me. The fence needs to be added 
+>>>> to the wait queue before the check, not after.
+>>>>
+>>>> Apart from that the whole approach looks like a really bad idea to 
+>>>> me. How for example is lockup detection supposed to happen with this? 
+>>> It's not a race condition because fence_queue.lock is held when this 
+>>> function is called.
+>> Ah, I see. That's also the reason why you moved the wake_up_all out 
+>> of the processing function.
+> Correct. :-)
+>>> Lockup's a bit of a weird problem, the changes wouldn't allow core 
+>>> ttm code to handle the lockup any more,
+>>> but any driver specific wait code would still handle this. I did 
+>>> this by design, because in future patches the wait
+>>> function may be called from outside of the radeon driver. The 
+>>> official wait function takes a timeout parameter,
+>>> so lockups wouldn't be fatal if the timeout is set to something like 
+>>> 30*HZ for example, it would still return
+>>> and report that the function timed out.
+>> Timeouts help with the detection of the lockup, but not at all with 
+>> the handling of them.
+>>
+>> What we essentially need is a wait callback into the driver that is 
+>> called in non atomic context without any locks held.
+>>
+>> This way we can block for the fence to become signaled with a timeout 
+>> and can then also initiate the reset handling if necessary.
+>>
+>> The way you designed the interface now means that the driver never 
+>> gets a chance to wait for the hardware to become idle and so never 
+>> has the opportunity to the reset the whole thing.
+> You could set up a hangcheck timer like intel does, and end up with a 
+> reliable hangcheck detection that doesn't depend on cpu waits. :-) Or 
+> override the default wait function and restore the old behavior.
 
-Am 2014-05-15 11:12, schrieb Thierry Reding:
-> Okay, so that means that the panel works for you with the same timings
-> that Philipp has in the ETM0700G0DH6 patch? If so then I definitely
-> think we should be sharing the timings in the driver by making the two
-> compatible entries point to the same driver data.
+Overriding the default wait function sounds better, please implement it 
+this way.
 
-FWIW, I checked and it works with both timings. And I bet it is really
-the same panel its just a different touch on top.
+Thanks,
+Christian.
 
-> Irrespective of that they both seem to have different capabilities so
-> two compatible values should be fine. However for the purpose of the
-> simple panel driver they could be made to share the same timings if it
-> works for both panels and devices.
-> 
-> As for the touch panel on the ETM0700G0DH6, do you happen to know how
-> that's usually connected? I suspect it needs external hardware to
-> capture the YU, XL, YD and XR pins and turn that into raw coordinates
-> and pen down interrupts.
-
-For Colibri Evaluation Board, those pins are routed to the generic
-4-wire pins of the Colibri SO-DIMM. On the Colibri T30 module, those
-pins are connected to a STMPE811. I also added that to the device tree
-once, however it does not work properly atm, I need to debug this and
-will send a patch at a later time.
-
---
-Stefan
+>
+> ~Maarten
+>
 
