@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaEORX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:23:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6642 "EHLO mx1.redhat.com"
+	id S1755205AbaEORYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:24:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53702 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754573AbaEORX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:23:56 -0400
+	id S1754940AbaEORYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:24:10 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,20 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 03/14] perf tools: Add data_fd into dso object
-Date: Thu, 15 May 2014 19:23:24 +0200
-Message-Id: <1400174615-2121-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 09/14] perf tools: Add dso__data_* interface descriptons
+Date: Thu, 15 May 2014 19:23:30 +0200
+Message-Id: <1400174615-2121-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding data_fd into dso object so we could handle caching
-of opened dso file data descriptors coming int next patches.
-
-Adding dso__data_close interface to keep the data_fd updated
-when the descriptor is closed.
+Adding descriptions/explanations for dso__data_*
+interface functions.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -41,123 +38,153 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c              | 23 +++++++++++++++++++----
- tools/perf/util/dso.h              |  3 +++
- tools/perf/util/unwind-libunwind.c |  4 ++--
- 3 files changed, 24 insertions(+), 6 deletions(-)
+ tools/perf/util/dso.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/dso.h | 41 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 1c3cdaf..5acb4b8 100644
+index 7404f67..80b54e7 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -159,6 +159,14 @@ static int open_dso(struct dso *dso, struct machine *machine)
- 	return fd;
+@@ -268,6 +268,11 @@ static bool may_cache_fd(void)
+ 	return limit > (rlim_t) dso__data_open_cnt;
  }
  
-+void dso__data_close(struct dso *dso)
-+{
-+	if (dso->data.fd >= 0) {
-+		close(dso->data.fd);
-+		dso->data.fd = -1;
-+	}
-+}
-+
++/*
++ * Check and close LRU dso if we crossed allowed limit
++ * for opened dso file descriptors. The limit is half
++ * of the RLIMIT_NOFILE files opened.
++*/
+ static void data_close(void)
+ {
+ 	bool cache_fd = may_cache_fd();
+@@ -276,12 +281,27 @@ static void data_close(void)
+ 		close_first_dso();
+ }
+ 
++/**
++ * dso__data_close - close data file
++ * @dso: dso object
++ *
++ * Calls data_close (in case current dso is open) which takes care
++ * about caching dso objects file descriptors.
++ */
+ void dso__data_close(struct dso *dso)
+ {
+ 	if (dso->data.fd >= 0)
+ 		data_close();
+ }
+ 
++/**
++ * dso__data_fd - Get dso's data file descriptor
++ * @dso: dso object
++ * @machine: machine object
++ *
++ * Find dso's file, open it and returns file descriptor,
++ * which needs to be closed later by dso__data_close.
++ */
  int dso__data_fd(struct dso *dso, struct machine *machine)
  {
  	enum dso_binary_type binary_type_data[] = {
-@@ -168,8 +176,13 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	};
- 	int i = 0;
+@@ -438,6 +458,11 @@ static ssize_t dso_cache_read(struct dso *dso, u64 offset,
+ 		return dso_cache__read(dso, offset, data, size);
+ }
  
--	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
--		return open_dso(dso, machine);
-+	if (dso->data.fd >= 0)
-+		return dso->data.fd;
-+
-+	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND) {
-+		dso->data.fd = open_dso(dso, machine);
-+		return dso->data.fd;
-+	}
++/*
++ * Reads and caches dso data DSO__DATA_CACHE_SIZE size chunks
++ * in the rb_tree. Any read to already cached data is served
++ * by cached data.
++ */
+ static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
+ {
+ 	ssize_t r = 0;
+@@ -497,6 +522,17 @@ static ssize_t data_read_offset(struct dso *dso, u64 offset,
+ 	return cached_read(dso, offset, data, size);
+ }
  
- 	do {
- 		int fd;
-@@ -178,7 +191,7 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 
- 		fd = open_dso(dso, machine);
- 		if (fd >= 0)
--			return fd;
-+			return dso->data.fd = fd;
- 
- 	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
- 
-@@ -301,7 +314,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
- 	if (ret <= 0)
- 		free(cache);
- 
--	close(fd);
-+	dso__data_close(dso);
++/**
++ * dso__data_read_offset - Read data from dso file offset
++ * @dso: dso object
++ * @machine: machine object
++ * @offset: file offset
++ * @data: buffer to store data
++ * @size: size of the @data buffer
++ *
++ * Read data from dso file offset. Opens dso data file
++ * and use cached_read to get the data.
++ */
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+@@ -515,6 +551,16 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
  	return ret;
  }
  
-@@ -474,6 +487,7 @@ struct dso *dso__new(const char *name)
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->data.cache = RB_ROOT;
-+		dso->data.fd = -1;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
-@@ -506,6 +520,7 @@ void dso__delete(struct dso *dso)
- 		dso->long_name_allocated = false;
- 	}
- 
-+	dso__data_close(dso);
- 	dso_cache__free(&dso->data.cache);
- 	dso__free_a2l(dso);
- 	zfree(&dso->symsrc_filename);
++/**
++ * dso__data_read_addr - Read data from dso address
++ * @dso: dso object
++ * @machine: machine object
++ * @offset: file offset
++ * @data: buffer to store data
++ * @size: size of the @data buffer
++ *
++ * Read data from dso address.
++ */
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size)
 diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 7637fdd..e48dcf5 100644
+index da47b13..d713184 100644
 --- a/tools/perf/util/dso.h
 +++ b/tools/perf/util/dso.h
-@@ -102,6 +102,7 @@ struct dso {
- 	/* dso data file */
- 	struct {
- 		struct rb_root	 cache;
-+		int		 fd;
- 	} data;
- 
- 	char		 name[0];
-@@ -147,6 +148,8 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
+@@ -149,6 +149,47 @@ char dso__symtab_origin(const struct dso *dso);
+ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
  				   char *root_dir, char *filename, size_t size);
  
++/*
++ * The dso__data_* interface provides following functions:
++ *   dso__data_fd
++ *   dso__data_close
++ *   dso__data_read_offset
++ *   dso__data_read_addr
++ *
++ * Please refer to the dso.c object code for each function
++ * and arguments documentation. Following text tries to
++ * explain the dso file descriptor caching.
++ *
++ * The dso__data* interface allows caching of opened file
++ * descriptors to speed up the dso data accesses. The idea
++ * is to leave the file descriptor opened/mmaped ideally
++ * for the whole life of the dso object.
++ *
++ * The current usage of the dso__data_* interface is as follows:
++ *
++ *   int fd = dso__data_fd(dso, machine);
++ *   USE 'fd' SOMEHOW
++ *   dso__data_close(dso);
++ *
++ * When the dso data file is opened/closed it's added/removed
++ * to/from the global list dso__data_open. The caching itself
++ * is done by dso__data_close(dso) and works as explained
++ * in pseudo code below:
++ *
++ * if dso is open:
++ *   if (number of opened dsos) > RLIMIT_NOFILE/2:
++ *      close/unmap first dso on dso__data_open list
++ *
++ * Both *read* functions opens dso data file and call
++ * dso__data_close(dso) before return:
++ *
++ *   n = dso__data_read_offset(dso_0, &machine, 0, buf, BUFSIZE);
++ *   n = dso__data_read_addr(dso_0, &machine, 0, buf, BUFSIZE);
++ *
++ * The dso__delete function calls close_dso function to ensure the
++ * data file descriptor gets closed/unmapped before the dso object
++ * is freed.
++*/
  int dso__data_fd(struct dso *dso, struct machine *machine);
-+void dso__data_close(struct dso *dso);
-+
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- 			      u64 offset, u8 *data, ssize_t size);
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index bd5768d..4f8dd9e 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -250,7 +250,7 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+ void dso__data_close(struct dso *dso);
  
- 	/* Check the .eh_frame section for unwinding info */
- 	offset = elf_section_offset(fd, ".eh_frame_hdr");
--	close(fd);
-+	dso__data_close(dso);
- 
- 	if (offset)
- 		ret = unwind_spec_ehframe(dso, machine, offset,
-@@ -271,7 +271,7 @@ static int read_unwind_spec_debug_frame(struct dso *dso,
- 
- 	/* Check the .debug_frame section for unwinding info */
- 	*offset = elf_section_offset(fd, ".debug_frame");
--	close(fd);
-+	dso__data_close(dso);
- 
- 	if (*offset)
- 		return 0;
 -- 
 1.8.3.1
 
