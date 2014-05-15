@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135AbaEOT5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:57:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370AbaEOT5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:57:31 -0400
-Date: Thu, 15 May 2014 15:56:55 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@ghostprotocols.net, jolsa@redhat.com, jmario@redhat.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH v2]: fix Haswell precise store data source encoding
-Message-ID: <20140515195655.GG50500@redhat.com>
-References: <20140515155644.GA3884@quad>
+	id S1753552AbaEOT70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:59:26 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:41350 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaEOT7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:59:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515155644.GA3884@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140515195320.GR28328@moon>
+References: <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+ <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+ <5373DBE4.6030907@oracle.com> <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
+ <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
+ <20140514221140.GF28328@moon> <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
+ <20140515084558.GI28328@moon> <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
+ <20140515195320.GR28328@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 15 May 2014 12:59:04 -0700
+Message-ID: <CALCETrWbf8XYvBh=zdyOBqVqRd7s8SVbbDX=O2X+zAZn83r-bw@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 05:56:44PM +0200, Stephane Eranian wrote:
-> 
-> This patch fixes a bug in  precise_store_data_hsw() whereby
-> it would set the data source memory level to the wrong value.
-> 
-> As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
-> Address Information in PEBS Record), when status bit 0 is set
-> this is a L1 hit, otherwise this is a L1 miss.
-> 
-> This patch encodes the memory level according to the specification.
-> 
-> In V2, we added the filtering on the store events.
-> Only the following events produce L1 information:
->  * MEM_UOPS_RETIRED.STLB_MISS_STORES
->  * MEM_UOPS_RETIRED.LOCK_STORES
->  * MEM_UOPS_RETIRED.SPLIT_STORES
->  * MEM_UOPS_RETIRED.ALL_STORES
+On Thu, May 15, 2014 at 12:53 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Thu, May 15, 2014 at 12:46:34PM -0700, Andy Lutomirski wrote:
+>> On Thu, May 15, 2014 at 1:45 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> > On Wed, May 14, 2014 at 03:23:27PM -0700, Andy Lutomirski wrote:
+>> >> I can summarize:
+>> >>
+>> >> On 3.14 and before, the vdso is just a bunch of ELF headers and
+>> >> executable data.  When executed by 64-bit binaries, it reads from the
+>> >> fixmap to do its thing.  That is, it reads from kernel addresses that
+>> >> don't have vmas.  When executed by 32-bit binaries, it doesn't read
+>> >> anything, since there was no 32-bit timing code.
+>> >>
+>> >> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
+>> >> a separate vma containing two pages worth of time-varying read-only
+>> >> data.  The vdso reads those pages using PIC references.
+>> >
+>> > Andy, could you please point me where is the code which creates a second vma?
+>> > latest 3.15 master branch
+>>
+>> Search for _install_special_mapping in arch/x86/vdso.  It's in a
+>> different place in 3.15-rc and -next.
+>
+> As far as I see _install_special_mapping allocates one vma from cache and
+>
+>         vma->vm_start = addr;
+>         vma->vm_end = addr + len;
+>
+> so where is the second one?
 
-This worked great on our Haswell-EX box.  I was a little surprised to find
-out it did until I realized on Ivy Bridge 'mem-store' was a 0x02cd but on
-Haswell it is now a 0x82d0.  Go generic event types! :-)
+Look at its callers in vdso32-setup.c and/or vma.c, depending on version.
 
-Looking at the SDM documentation it does say something about
-'UOPS_RETIRED.ALL' supporting stores too but can't find that event.  Is
-that a typo, much like the 0x02 umask for stores on the D0 event is
-missing from the documentation?  Just wanted to make sure we are not
-missing one more case.
+>
+>>
+>> >
+>> > [root@fc ~]# cat /proc/self/maps
+>> > ...
+>> > 7fff57b6e000-7fff57b8f000 rw-p 00000000 00:00 0                          [stack]
+>> > 7fff57bff000-7fff57c00000 r-xp 00000000 00:00 0                          [vdso]
+>> > ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+>> > [root@fc ~]#
+>> >
+>>
+>> What version and bitness is this?
+>
+> x86-64, 3.15-rc5
 
-Thanks for the quick patch Stephane!
+Aha.  Give tip/x86/vdso or -next a try or boot a 32-bit 3.15-rc kernel
+and you'll see it.
 
-Tested-and-Reviewed-by: Don Zickus <dzickus@redhat.com>
-
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index ae96cfa..980970c 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -108,15 +108,31 @@ static u64 precise_store_data(u64 status)
->  	return val;
->  }
->  
-> -static u64 precise_store_data_hsw(u64 status)
-> +static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
->  {
->  	union perf_mem_data_src dse;
-> +	u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
->  
->  	dse.val = 0;
->  	dse.mem_op = PERF_MEM_OP_STORE;
->  	dse.mem_lvl = PERF_MEM_LVL_NA;
-> +
-> +	/*
-> +	 * L1 info only valid for following events:
-> +	 *
-> +	 * MEM_UOPS_RETIRED.STLB_MISS_STORES
-> +	 * MEM_UOPS_RETIRED.LOCK_STORES
-> +	 * MEM_UOPS_RETIRED.SPLIT_STORES
-> +	 * MEM_UOPS_RETIRED.ALL_STORES
-> +	 */
-> +	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0)
-> +		return dse.mem_lvl;
-> +
->  	if (status & 1)
-> -		dse.mem_lvl = PERF_MEM_LVL_L1;
-> +		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_HIT;
-> +	else
-> +		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_MISS;
-> +
->  	/* Nothing else supported. Sorry. */
->  	return dse.val;
->  }
-> @@ -887,7 +903,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  				data.data_src.val = load_latency_data(pebs->dse);
->  			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
->  				data.data_src.val =
-> -					precise_store_data_hsw(pebs->dse);
-> +					precise_store_data_hsw(event, pebs->dse);
->  			else
->  				data.data_src.val = precise_store_data(pebs->dse);
->  		}
+--Andy
