@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaEODee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:34:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54122 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaEODed (ORCPT
+	id S1753235AbaEODiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:38:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50457 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaEODit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:34:33 -0400
-Message-ID: <1400124866.26173.19.camel@cyc>
-Subject: Re: [PATCH] mm/memory-failure.c: fix memory leak by race between
- poison and unpoison
-From: cyc <soldier.cyc81@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Thu, 15 May 2014 11:34:26 +0800
-In-Reply-To: <1400080891-5145-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1400080891-5145-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Wed, 14 May 2014 23:38:49 -0400
+Date: Wed, 14 May 2014 20:38:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>
+Subject: Re: [PATCH v2 -next] x86,vdso: Fix an OOPS accessing the hpet
+ mapping w/o an hpet
+Message-Id: <20140514203859.8c82aa3a.akpm@linux-foundation.org>
+In-Reply-To: <CAJd=RBC1E9x-zU-zJbNP+zbPgb=nhi39TqrxqpcGdi=OR9duXg@mail.gmail.com>
+References: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400111179.git.luto@amacapital.net>
+	<CAJd=RBC1E9x-zU-zJbNP+zbPgb=nhi39TqrxqpcGdi=OR9duXg@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2014-05-14三的 11:21 -0400，Naoya Horiguchi写道：
-> When a memory error happens on an in-use page or (free and in-use) hugepage,
-> the victim page is isolated with its refcount set to one. When you try to
-> unpoison it later, unpoison_memory() calls put_page() for it twice in order to
-> bring the page back to free page pool (buddy or free hugepage list.)
-> However, if another memory error occurs on the page which we are unpoisoning,
-> memory_failure() returns without releasing the refcount which was incremented
-> in the same call at first, which results in memory leak and unconsistent
-> num_poisoned_pages statistics. This patch fixes it.
+On Thu, 15 May 2014 11:18:29 +0800 Hillf Danton <dhillf@gmail.com> wrote:
 
-We assume that a new memory error occurs on the hugepage which we are
-unpoisoning. 
-
-          A   unpoisoned  B    poisoned    C          
-hugepage: |---------------+++++++++++++++++|
-
-There are two cases, so shown.
-  1. the victim page belongs to A-B, the memory_failure will be blocked
-by lock_page() until unlock_page() invoked by unpoison_memory().
-  2. the victim page belongs to B-C, the memory_failure() will return
-very soon at the beginning of this function.
-
-So the new memory error will have no effect what you say so.
-
-thx!
-cyc 
-
+> > --- a/arch/x86/vdso/vma.c
+> > +++ b/arch/x86/vdso/vma.c
+> > @@ -90,6 +90,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+> >         struct vm_area_struct *vma;
+> >         unsigned long addr;
+> >         int ret = 0;
+> > +       static struct page *no_pages[] = {NULL};
+> >
+> >         if (calculate_addr) {
+> >                 addr = vdso_addr(current->mm->start_stack,
+> > @@ -125,7 +126,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+> >                                        addr + image->size,
+> >                                        image->sym_end_mapping - image->size,
+> >                                        VM_READ,
+> > -                                      NULL);
+> > +                                      no_pages);
+> >
+> >         if (IS_ERR(vma)) {
+> >                 ret = PTR_ERR(vma);
+> > --
+> > 1.9.0
+> >
+> As the comment says,
+> /*
+>  * Called with mm->mmap_sem held for writing.
+>  * Insert a new vma covering the given region, with the given flags.
+>  * Its pages are supplied by the given array of struct page *.
+>  * The array can be shorter than len >> PAGE_SHIFT if it's null-terminated.
+>  * The region past the last page supplied will always produce SIGBUS.
+>  * The array pointer and the pages it points to are assumed to stay alive
+>  * for as long as this mapping might exist.
+>  */
+> struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
+>    unsigned long addr, unsigned long len,
+>    unsigned long vm_flags, struct page **pages)
+> {
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: <stable@vger.kernel.org>    [2.6.32+]
-> ---
->  mm/memory-failure.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git next-20140512.orig/mm/memory-failure.c next-20140512/mm/memory-failure.c
-> index 9872af1b1e9d..93a08bd78c78 100644
-> --- next-20140512.orig/mm/memory-failure.c
-> +++ next-20140512/mm/memory-failure.c
-> @@ -1153,6 +1153,8 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
->  	 */
->  	if (!PageHWPoison(p)) {
->  		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
-> +		atomic_long_sub(nr_pages, &num_poisoned_pages);
-> +		put_page(hpage);
->  		res = 0;
->  		goto out;
->  	}
+> we can send sigbus at fault time if no pages are supplied at install time.
 
+Yes, but the way to communicate "no pages" is to pass (*pages)==NULL. 
+Passing (pages)==NULL causes the code to oops at fault time.
+
+We could easily change the interface so that pages==NULL means "no
+pages" but that isn't the way it works at present.
 
