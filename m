@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaEODFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:05:13 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:26228 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181AbaEODFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:05:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgpIADMudFN5LL1sPGdsb2JhbABZDoJ4gz6FCqQDAQEBAQEBBpodAYEaFwMBAQEBODWCJQEBBTocMwgDGAklDwUlAwcaARKIQNFOFxaFPogsVYRAAQOZUJYLUiuBMSM
-Date: Thu, 15 May 2014 13:04:04 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Mateusz Guzik <mguzik@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515030404.GV26353@dastard>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
- <1400005862-3751-2-git-send-email-mguzik@redhat.com>
- <20140514215457.GC5421@dastard>
- <20140515021749.GA3123@thunk.org>
+	id S1752002AbaEODNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:13:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61129 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087AbaEODNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 23:13:46 -0400
+Message-ID: <537430B5.2060001@redhat.com>
+Date: Wed, 14 May 2014 23:12:53 -0400
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515021749.GA3123@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mtk.manpages@gmail.com, Darren Hart <dvhart@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 10:17:49PM -0400, Theodore Ts'o wrote:
-> On Thu, May 15, 2014 at 07:54:57AM +1000, Dave Chinner wrote:
-> > On Tue, May 13, 2014 at 08:31:02PM +0200, Mateusz Guzik wrote:
-> > > This helps hang troubleshooting efforts when only dmesg is available.
-> > 
-> > I really don't think that spamming dmesg every time a filesystem is
-> > frozen or thawed is a good idea. This happens a *lot* when systems
-> > are using snapshots, and for the most part nobody cares about
-> > freeze/thaw cycles because they almost always work just fine.
+On 05/14/2014 07:34 PM, Thomas Gleixner wrote:
+> On Wed, 14 May 2014, Carlos O'Donell wrote:
 > 
-> The problems people are worried about are when there is freezing and
-> unfreezing taking place in combination with a machine-level
-> suspend/resume cycle, no?  What if we only spammed dmesg when doing a
-> suspend/resume?
+>> On 05/14/2014 03:03 PM, Michael Kerrisk (man-pages) wrote:
+>>>> However, unless I'm sorely mistaken, the larger problem is that glibc
+>>>> removed the futex() call entirely, so these man pages don't describe
+>>>
+>>> I don't think futex() ever was in glibc--that's by design, and
+>>> completely understandable: no user-space application would want to
+>>> directly use futex(). (BTW, I mispoke in my earlier mail when I said I
+>>> wanted documentation suitable for "writers of library functions" -- I
+>>> meant suitable for "writers of *C library*".)
+>>
+>> I fully agree with Michael here.
+>>
+>> The futex() syscall was never exposed to userspace specifically because
+>> it was an interface we did not want to support forever with a stable ABI.
+>> The futex() syscall is an implementation detail that is shared between
+>> the kernel and the writers of core runtimes for Linux.
+> 
+> Nonsense. 
 
-Filesystems are not frozen by power management based suspend/resume
-cycles. That uses sync and then assumes that it can't race with
-with the filesystem doing metadata writeback while the suspend code
-is creating the freeze image. Hence there won't by any syslog
-spam because freeze is not used. ;)
+What is nonsense?
 
-Sure, I've been advocating that suspend should use freezing rather
-than sync for years, but that's never happened...
+I do not want to be responsible for the futex API by having glibc provide
+wrappers. That can't be nonsense since it's a glibc community decision to
+make.
+
+Perhaps the point at which we disagree is that I said "writers of core runtimes"
+and you would rather I have said "any application wishing to use raw syscalls."
+That's fine, I concede that point, I have no right to restrict raw syscall
+usage.
+ 
+> If we change that interface (aside of adding functionality or some new
+> error return) it would break the world and some more, simply because
+> out of the blue glibc-2.xx would stop to work on linux-3.yy.
+
+No disagreement from me.
+
+> Aside of that the futex syscall is used as a bare interface without
+> any glibc interaction:
+> 
+>  - It's handy to implement user space wait queues
+> 
+>  - It's (ab)used in very interesting ways by data base apps
+> 
+>  - It's (ab)used by some Java monstrosities.
+> 
+> Nothing you care about and you really don't want to see the gory
+> details, but you have to accept that there is an universe which is
+> happy to deal with the raw syscalls instead of going through some ill
+> defined posix interfaces.
+
+Sure :-)
 
 Cheers,
+Carlos.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
