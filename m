@@ -1,94 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811AbaEOOOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:14:18 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:38278 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbaEOOOO (ORCPT
+	id S1754849AbaEOOO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:14:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53547 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847AbaEOOOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:14:14 -0400
+	Thu, 15 May 2014 10:14:55 -0400
+Date: Thu, 15 May 2014 16:14:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+cc: "Carlos O'Donell" <carlos@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: futex(2) man page update help request
+In-Reply-To: <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+ <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <5374CA1C.8000207@samsung.com>
-References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>
-	<1399640410-30957-2-git-send-email-tushar.behera@linaro.org>
-	<536DA243.6000600@samsung.com>
-	<53705243.1030704@linaro.org>
-	<CAPdUM4N=k-pPxdhPQgVHh0fb+nqkgs7StwM2Pb6C8gcjx6dw-w@mail.gmail.com>
-	<5374CA1C.8000207@samsung.com>
-Date: Thu, 15 May 2014 19:44:12 +0530
-X-Google-Sender-Auth: BCVRNMmMofO2Caemw3GM-pgGIyc
-Message-ID: <CAPdUM4NcFGGNZA9fjRP9VkpN3A0Gu+5DSgZ0RPhDD=wicr4GzA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] clk: samsung: out: Add infrastructure to register CLKOUT
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, sunil joshi <joshi@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2014 19:37, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Rahul, Tushar,
->
-> On 15.05.2014 15:44, Rahul Sharma wrote:
->> Hi Tushar,
->>
->> Basically you are adding a new clock-type for Clkout. IMO clkout
->> is not a special hardware. Existing clock types can be reused to
->> support clkout. I see 3 major problem here:
->>
->> 1) Clkout -> (Mux + Gate). You clubbed mux and gate together, and
->> exposing as a single clock which is something like a composite clock.
->> IMO this is not a recommended way in CCF.
->>
->> 2) New Clock Type: Since clkout is just a combination of a simple
->> mux and gate which are already supported, it is a unnecessary
->> duplication.
->>
->> 3) Clkout registered along with CMU: which is not correct. Clkout is in PMU
->> (Separate physical IP) and should be registered as a independent Clock
->> provider which provides 1 mux and 1 gate clock (As if now). It should also be
->> well connected with main CMU.
->>
->> I understand the challenge in using regmap interface for a clock provider. But
->> we need to identify a clean solution. IMHO a independent clock provider with
->> iomap, is relatively cleaner approach till CCF is not ready with regmap based
->> reg access for clock registers.
->>
->> Experts!! please comment.
->
-> It's quite unfortunate that Tushar has duplicated the effort to create a
-> clkout driver, considering the fact that we did have such driver
-> internally at SRPOL and it was quite nice and simple.
->
-> I will post a cleaned-up version today, that is about 2 times smaller in
-> terms of lines of added code and provides the same functionality,
-> without introducing custom clock types. In addition, it models the
-> clkout properly as a feature of PMU, not CMU (CMU only provides outputs
-> of particular sub-blocks that are fed into the PMU).
+On Thu, 15 May 2014, Michael Kerrisk (man-pages) wrote:
+> And that universe would love to have your documentation of
+> FUTEX_WAKE_BITSET and FUTEX_WAIT_BITSET ;-),
 
-oh.. thats nice. Please share the implementation.
+I give you almost the full treatment, but I leave REQUEUE_PI to Darren
+and FUTEX_WAKE_OP to Jakub. :)
 
-Regards,
-Rahul Sharma.
 
->
-> Best regards,
-> Tomasz
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+FUTEX_WAIT
+
+	< Existing blurb seems ok >
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The supplied timeout argument is not normalized.
+
+	[EWOULDBLOCK] The atomic enqueueing failed. User space value
+		      at uaddr is not equal val argument.
+
+	[ETIMEDOUT] timeout expired 
+
+
+FUTEX_WAKE
+
+	< Existing blurb seems ok >
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI
+
+FUTEX_REQUEUE
+
+	Existing blurb seems ok , except for this:
+
+	The argument val contains the number of waiters on uaddr which
+	are immediately woken up.
+
+	The timeout argument is abused to transport the number of
+	waiters which are requeued to the futex at uaddr2. The pointer
+	is typecasted to u32.
+
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr or uaddr2
+
+	[EINVAL] The supplied uaddr/uaddr2 arguments do not point to a
+		 valid object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI on uaddr
+
+	[EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+FUTEX_REQUEUE_CMP
+
+	Existing blurb seems ok , except for this:
+
+	The argument val is contains the number of waiters on uaddr
+	which are immediately woken up.
+
+	The timeout argument is abused to transport the number of
+	waiters which are requeued to the futex at uaddr2. The pointer
+	is typecasted to u32.
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr or uaddr2
+
+	[EINVAL] The supplied uaddr/uaddr2 arguments do not point to a
+		 valid object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI on uaddr
+
+	[EAGAIN] uaddr1 readout is not equal the compare value in
+		 argument val3
+
+FUTEX_WAKE_OP
+
+
+Jakub, can you please explain it? I'm lost :)
+
+
+	The argument val contains the maximum number of waiters on
+	uaddr which are immediately woken up.
+
+	The timeout argument is abused to transport the maximum
+	number of waiters on uaddr2 which are woken up. The pointer
+	is typecasted to u32.
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex values at uaddr
+		 or uaddr2
+
+	[EINVAL] The supplied uaddr or uaddr2 argument does not point
+		 to a valid object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI on uaddr
+
+
+FUTEX_WAIT_BITSET
+
+	The same as FUTEX_WAIT except that val3 is used to provide a
+	32bit bitset to the kernel. This bitset is stored in the
+	kernel internal state of the waiter.
+
+	This futex op also allows to have the option bit
+	FUTEX_CLOCK_REALTIME set.
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+  	[EINVAL] The supplied bitset is zero.
+
+	[EINVAL] The supplied timeout argument is not normalized.
+
+	[ETIMEDOUT] timeout expired 
+
+
+FUTEX_WAKE_BITSET
+
+	The same as FUTEX_WAKE except that val3 is used to provide a
+	32bit bitset to the kernel. This bitset is used to select
+	waiters on the futex. The selection is done by a bitwise AND
+	of the wake side supplied bitset and the bitset which is
+	stored in the kernel internal state of the waiters. If the
+	result is non zero, the waiter is woken, otherwise left
+	waiting.
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+  	[EINVAL] The supplied bitset is zero.
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI
+
+FUTEX_LOCK_PI
+
+	This operation reads from the futex address provided by the
+	uaddr argument, which contains the namespace specific TID of
+	the lock owner. If the TID is 0, then the kernel tries to set
+	the waiters TID atomically. If the TID is nonzero or the take
+	over fails the kernel sets atomically the FUTEX_WAITERS bit
+	which signals the owner, that it cannot unlock the futex in
+	user space atomically by transitioning from TID to 0. After
+	that the kernel tries to find the task which is associated to
+	the owner TID, creates or reuses kernel state on behalf of the
+	owner and attaches the waiter to it. The enqueing of the
+	waiter is in descending priority order if more than one waiter
+	exists. The owner inherits either the priority or the
+	bandwidth of the waiter. This inheritance follows the lock
+	chain in the case of nested locking and performs deadlock
+	detection.
+
+	The timeout argument is handled as described in FUTEX_WAIT.
+	The arguments uaddr2, val, and val3 are ignored.
+
+	Related return values
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[ENOMEM] Kernel could not allocate state
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The supplied timeout argument is not normalized.
+		 
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state. Thats
+		 either state corruption or it found a waiter on uaddr
+		 which is waiting on FUTEX_WAIT[_BITSET]
+
+	[EPERM]  Caller is not allowed to attach itself to the futex.
+		 Can be a legitimate issue or a hint for state
+		 corruption in user space
+
+	[ESRCH]	 The TID in the user space value does not exist
+
+	[EAGAIN] The futex owner TID is about to exit, but has not yet
+		 handled the internal state cleanup. Try again.	 
+
+	[ETIMEDOUT] timeout expired 
+
+	[EDEADLOCK] The futex is already locked by the caller or the kernel
+		    detected a deadlock scenario in a nested lock chain
+
+	[EOWNERDIED] The owner of the futex died and the kernel made the
+		     caller the new owner. The kernel sets the
+		     FUTEX_OWNER_DIED bit in the futex userspace value.
+		     Caller is responsible for cleanup
+
+        [ENOSYS] Not implemented on all architectures and not supported
+		 on some CPU variants  (runtime detection)
+		     
+FUTEX_TRYLOCK_PI
+
+	This operation tries to acquire the futex at uaddr. It deals
+	with the situation where the TID value at uaddr is 0, but the
+	FUTEX_HAS_WAITER bit is set. User space cannot handle this
+	race free.
+
+	The arguments uaddr2, val, timeout and val3 are ignored.
+
+	Return values:
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr.
+
+	[ENOMEM] Kernel could not allocate state
+
+	[EINVAL] The supplied uaddr argument does not point to a valid
+		 object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The kernel detected inconsistent state between the user
+		 space state at uaddr and the kernel state
+
+	[EPERM]  Caller is not allowed to attach itself to the futex.
+		 Can be a legitimate issue or a hint for state
+		 corruption in user space
+
+	[ESRCH]	 The TID in the user space value does not exist
+
+	[EAGAIN] The futex owner TID is about to exit, but has not yet
+		 handled the internal state cleanup. Try again.	 
+
+	[EDEADLOCK] The futex is already locked by the caller.
+
+	[EOWNERDIED] The owner of the futex died and the kernel made the
+		     caller the new owner. The kernel sets the
+		     FUTEX_OWNER_DIED bit in the futex userspace value.
+		     Caller is responsible for cleanup
+
+        [ENOSYS] Not implemented on all architectures and not supported
+		 on some CPU variants (runtime detection)
+
+FUTEX_UNLOCK_PI
+
+	This operation wakes the top priority waiter which is waiting
+	in FUTEX_LOCK_PI on the futex address provided by the uaddr
+	argument.
+
+	This is called when the user space value at uaddr cannot be
+	changed atomically from TID (of the owner) to 0.
+
+	The arguments uaddr2, val, timeout and val3 are ignored.
+
+	Related return values:
+	
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_WAIT[_BITSET].
+
+	[EPERM]  Caller does not own the futex.
+
+        [ENOSYS] Not implemented on all architectures and not supported
+		 on some CPU variants (runtime detection)
+
+FUTEX_WAIT_REQUEUE_PI
+
+	Wait operation to wait on a non pi futex at uaddr and
+	potentially be requeued on a pi futex at uaddr2. The wait
+	operation on uaddr is the same as FUTEX_WAIT. The waiter can
+	be removed from the wait on uaddr via FUTEX_WAKE without
+	requeuing on uaddr2.
+
+	The timeout argument is handled as described in FUTEX_WAIT.
+
+Darren, can you fill in the missing details?
+
+	Return values:
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr
+		 or uaddr2
+
+	[EINVAL] The supplied uaddr or uaddr2 argument does not point
+		 to a valid object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] The supplied timeout argument is not normalized.
+
+  	[EINVAL] The supplied bitset is zero.
+
+	[EWOULDBLOCK] The atomic enqueueing failed. User space value
+		      at uaddr is not equal val argument.
+
+	[ETIMEDOUT] timeout expired 
+
+	[EOWNERDIED] The owner of the PI futex at uaddr2 died and the
+		     kernel made the caller the new owner. The kernel
+		     sets the FUTEX_OWNER_DIED bit in the uaddr2 futex
+		     userspace value.  Caller is responsible for
+		     cleanup
+
+        [ENOSYS] Not implemented on all architectures and not supported
+		 on some CPU variants (runtime detection)
+
+
+FUTEX_CMP_REQUEUE_PI
+
+	PI aware variant of FUTEX_CMP_REQUEUE. Inner futex at uaddr is
+	a non PI futex. Outer futex to which is requeued is a PI futex
+	at uaddr2.
+
+	The waiters on uaddr must wait in FUTEX_WAIT_REQUEUE_PI.
+
+	The argument val is contains the number of waiters on uaddr
+	which are immediately woken up. Must be 1 for this opcode.
+
+	The timeout argument is abused to transport the number of
+	waiters which are requeued on to the futex at uaddr2. The
+	pointer is typecasted to u32.
+
+Darren, can you fill in the missing details?
+
+	[EFAULT] Kernel was unable to access the futex value at uaddr
+		 or uaddr2
+
+	[ENOMEM] Kernel could not allocate state
+
+	[EINVAL] The supplied uaddr/uaddr2 arguments do not point to a
+		 valid object, i.e. pointer is not 4 byte aligned
+
+	[EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_LOCK_PI on uaddr
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_WAIT[_BITSET] on uaddr
+
+	[EINVAL] The kernel detected inconsistent state between the
+		 user space state at uaddr2 and the kernel state,
+		 i.e. it detected a waiter which waits in
+		 FUTEX_WAIT on uaddr2.
+
+  	[EINVAL] The supplied bitset is zero.
+
+	[EAGAIN] uaddr1 readout is not equal the compare value in
+		 argument val3
+
+	[EAGAIN] The futex owner TID of uaddr2 is about to exit, but
+		 has not yet handled the internal state cleanup. Try
+		 again.
+
+	[EPERM]  Caller is not allowed to attach the waiter to the
+		 futex at uaddr2 Can be a legitimate issue or a hint
+		 for state corruption in user space
+
+	[ESRCH]	 The TID in the user space value at uaddr2 does not exist
+
+	[EDEADLOCK] The requeuing of a waiter to the kernel representation
+		    of the PI futex at uaddr2 detected a deadlock scenario.
+
+        [ENOSYS] Not implemented on all architectures and not supported
+		 on some CPU variants (runtime detection)
+
+
+The various option bits seem to be undocumented as well
+
+FUTEX_PRIVATE_FLAG
+
+	This option bit can be ored on all futex ops.
+
+	It tells the kernel, that the futex is process private and not
+	shared with another process. That allows the kernel to chose
+	the fast path for validating the user space address and avoids
+	expensive VMA lookup, taking refcounts on file backing store
+	etc.
+
+FUTEX_CLOCK_REALTIME
+
+	This option bit can be ored on the futex ops FUTEX_WAIT_BITSET
+	and FUTEX_WAIT_REQUEUE_PI
+
+	If set the kernel treats the user space supplied timeout as
+	absolute time based on CLOCK_REALTIME.
+
+	If not set the kernel treats the user space supplied timeout
+	as relative time.
+
+	If this is set on any other op than the supported ones, kernel
+	returns ENOSYS!
+
+
+Thanks,
+
+	tglx
