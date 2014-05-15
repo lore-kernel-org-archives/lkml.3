@@ -1,39 +1,31 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397AbaEJSRR (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 10 May 2014 14:17:17 -0400
-Received: from outrelay02.libero.it ([212.52.84.102]:33874 "EHLO
-	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaEJSRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 May 2014 14:17:16 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0206.536E6CAD.0085,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <209573079.1219301399745709350.JavaMail.defaultUser@defaultHost>
-Date: Sat, 10 May 2014 20:15:09 +0200 (CEST)
-From: jenjenlove <jenjequeen@libero.it>
-Reply-To: jenjenjenlove01@yahoo.com
-Subject: Hello
+	id S932066AbaEOHsm (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 15 May 2014 03:48:42 -0400
+Received: from [203.71.70.2] ([203.71.70.2]:37788 "HELO
+	ckgshmail.ckgsh.ntpc.edu.tw" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1754093AbaEOHsh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 03:48:37 -0400
+X-Greylist: delayed 2817 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 May 2014 03:48:27 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.29.86
-X-libjamv: mxHaQu316TY=
-X-libjamsun: tK0spMFtIuQOHXcqkTg4duvUDN0S/jaSMvJldbU6ogE=
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Hello
+To: Recipients <Au@notice.org>
+From: Mrs Teresa Au <Au@notice.org>
+Date: Thu, 15 May 2014 07:32:59 +0100
+Reply-To: msteresa.au1@qq.com
+Message-Id: <20140515065258.DB18F6D9EA9@ckgshmail.ckgsh.ntpc.edu.tw>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-how are you today hope fine
-and full of life i am Jen
-by name i come across
-your account profile and i
-like it then i say let me drop a
-note so you can contact me
-back with my email (jenjenjenlove01@yahoo.com)
-so that i can send you my pics and more
-details about me the will can know
-each other very well,
-yours miss Jen
+Hello,
+
+Please can you help me reprofile fund? I am Ms Teresa Au, HSBC Hong Kong, head of corporate sustainability Asia pacific region. A sum of (USD$23,200,000.00) (Twenty three million, two Hundred Thousand dollars) Million was deposited by our Late customer who died without declaring any next of kin before his death in 2006. 
+
+My suggestion to you is to stand as the next of kin to Fadel Ahmed. We shall share in the ratio of 50% for me, 50% for you. Please contact me via this e-mail: msteresa.au1@qq.com . Thanks
+
+Regards
+Mrs Teresa Au.
