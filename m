@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaEOKkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:40:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43536 "EHLO mx1.redhat.com"
+	id S1753048AbaEOKn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:43:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751654AbaEOKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:40:45 -0400
-Date: Thu, 15 May 2014 12:40:19 +0200 (CEST)
+	id S1751445AbaEOKn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 06:43:26 -0400
+Date: Thu, 15 May 2014 12:43:17 +0200 (CEST)
 From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
 X-X-Sender: lczerner@localhost.localdomain
-To: sandeen@redhat.com
-cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+To: Jan Kara <jack@suse.cz>
+cc: Mateusz Guzik <mguzik@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>
+Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
  filesystems
-In-Reply-To: <5373F0D6.4090600@redhat.com>
-Message-ID: <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
-References: <1400018683-5565-1-git-send-email-mguzik@redhat.com> <1400018683-5565-2-git-send-email-mguzik@redhat.com> <20140514111449.GB5824@quack.suse.cz> <20140514112619.GA10637@mguzik.redhat.com> <20140514113945.GC5824@quack.suse.cz> <20140514220052.GD5421@dastard>
- <20140514223745.GF5421@dastard> <5373F0D6.4090600@redhat.com>
+In-Reply-To: <20140515100157.GB27289@quack.suse.cz>
+Message-ID: <alpine.LFD.2.00.1405151242210.2112@localhost.localdomain>
+References: <1400005862-3751-1-git-send-email-mguzik@redhat.com> <1400005862-3751-2-git-send-email-mguzik@redhat.com> <20140514215457.GC5421@dastard> <20140515094236.GE10637@mguzik.redhat.com> <20140515100157.GB27289@quack.suse.cz>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,86 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 May 2014, Eric Sandeen wrote:
+On Thu, 15 May 2014, Jan Kara wrote:
 
-> Date: Wed, 14 May 2014 17:40:22 -0500
-> From: Eric Sandeen <esandeen@redhat.com>
-> Reply-To: sandeen@redhat.com
-> To: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>
-> Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+> Date: Thu, 15 May 2014 12:01:57 +0200
+> From: Jan Kara <jack@suse.cz>
+> To: Mateusz Guzik <mguzik@redhat.com>
+> Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
 >     linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
->     Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
-> Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+>     Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+>     Eric Sandeen <esandeen@redhat.com>
+> Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
 >     filesystems
 > 
-> On 5/14/14, 5:37 PM, Dave Chinner wrote:
-> > On Thu, May 15, 2014 at 08:00:52AM +1000, Dave Chinner wrote:
-> >> On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
-> >>> On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
-> >>>> On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
-> >>>>> On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
-> >>>>>> This helps hang troubleshooting efforts when only dmesg is available.
-> >>>>>>
-> >>>>>> While here remove code duplication with MS_RDONLY case and fix a
-> >>>>>> whitespace nit.
-> >>>>>   I'm somewhat undecided here I have to say. On one hand I don't like
-> >>>>> printing to kernel log when everything is fine and kernel is operating
-> >>>>> normally. On the other hand I've seen quite a few cases where people have
-> >>>>> shot themselves in the foot with filesystem freezing so having some trace
-> >>>>> of this in the log doesn't seem like a completely bad thing either. What do
-> >>>>> other people think?
-> >>>>>
-> >>>>
-> >>>> I would like to note that the kernel already prints messages when e.g.
-> >>>> filesystems get mounted.
-> >>>   Yeah, that's a fair point.
-> >>
-> >> But filesystems choose to output that info, not the VFS. When you do
-> >> a remount,ro there is no output in syslog, because filesystems don't
-> >> need to dump any output - the state change is reflected in
-> >> /proc/self/mounts. IMO frozen should state should be communicated
-> >> the same way so that it is silent when it just works, and the state
-> >> can easily be determined when something goes wrong.
+> On Thu 15-05-14 11:42:37, Mateusz Guzik wrote:
+> > On Thu, May 15, 2014 at 07:54:57AM +1000, Dave Chinner wrote:
+> > > On Tue, May 13, 2014 at 08:31:02PM +0200, Mateusz Guzik wrote:
+> > > > This helps hang troubleshooting efforts when only dmesg is available.
+> > > 
+> > > I really don't think that spamming dmesg every time a filesystem is
+> > > frozen or thawed is a good idea. This happens a *lot* when systems
+> > > are using snapshots, and for the most part nobody cares about
+> > > freeze/thaw cycles because they almost always work just fine.
+> > > 
 > > 
-> > Say, like this:
+> > I agree it may get noisy.
 > > 
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
-> > $ sudo xfs_freeze -f /mnt/test
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,frozen,relatime,attr2,inode64,noquota 0 0
-> > $ sudo xfs_freeze -u /mnt/test
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
-> > $
-> 
-> I'm not totally convinced that including a non-mount option in what
-> has always (?) been a list of mount options is a great idea.
+> > > I'd think that /proc/self/mounts would be a much better place to
+> > > indicate that the fs is frozen. After all, that's where we tell
+> > > people whether the filesystem is ro or rw, and frozen is just
+> > > a temporary, non-invasive ro state...
+> > > 
+> > 
+> > Except you can't inspect /proc/self/mounts when the only thing you got
+> > is dmesg, so this does not really help my case.
+> > 
+> > That said, I'll try to come up with a different solution.
+> > 
+> > Poorly reported side-effects of frozen I/O are only a part of the real
+> > problem which is hung task detector being able to typically report
+> > backtraces of "victims" only. I came up with printks becuase these are
+> > a cheap way and would help us out in a lot of cases.
+>   I was tracking down a couple of times what the hell is freezing the
+> filesystem (and not unfreezing it) and I agree with Mateusz it would be
+> nice if we could tell after the fact who froze the fs. Maybe we could store
+> that information in superblock and dump it during emergency thaw?
 
-I do not like it either. Mixing this together with other mount
-options does not seem like a great idea, however we really need a
-way to report this and I guess we can not just change the
-/proc/self/mounts, or /proc/self/mountinfo format.
-
-So what about crating a new file /proc/self/frozen with the list of
-frozen file systems in the same format what mounts, or mountinfo has
-?
-
-> 
-> (Granted, some options there are defaults, and weren't actually specified
-> as a mount option, but if they had been, they'd have been accepted).
-> 
-> Maybe add a "mount -o remount,frozen" handler ?  ;)
-
-That's the neat way to work around that :), but I would prefer a new
-procfs file rather than this.
+I like that idea and if we agree to create procfs file to list
+frozen file system this might be one of the useful information to
+report there.
 
 -Lukas
 
 > 
-> -Eric
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 								Honza
 > 
