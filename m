@@ -1,62 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaEOJhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:37:19 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754402AbaEOJhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:37:13 -0400
-Message-ID: <53748AC3.9080709@nod.at>
-Date: Thu, 15 May 2014 11:37:07 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 01/27] arm64: Override defaults from generic/tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-2-git-send-email-richard@nod.at> <20140515093430.GE11117@localhost>
-In-Reply-To: <20140515093430.GE11117@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754315AbaEOJhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:37:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36457 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaEOJg6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:36:58 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2 05/14] mmc: mmci: Add register read/write wrappers.
+Date: Thu, 15 May 2014 10:36:53 +0100
+Message-Id: <1400146613-30013-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.05.2014 11:34, schrieb Catalin Marinas:
-> On Wed, May 14, 2014 at 07:59:33PM +0100, Richard Weinberger wrote:
->> --- a/arch/arm64/include/asm/tlb.h
->> +++ b/arch/arm64/include/asm/tlb.h
->> @@ -19,7 +19,14 @@
->>  #ifndef __ASM_TLB_H
->>  #define __ASM_TLB_H
->>  
->> +/* These defines are needed to override the defaults from asm-generic/tlb.h */
->>  #define  __tlb_remove_pmd_tlb_entry __tlb_remove_pmd_tlb_entry
->> +#define tlb_start_vma tlb_start_vma
->> +#define tlb_end_vma tlb_end_vma
->> +#define __tlb_remove_tlb_entry __tlb_remove_tlb_entry
->> +#define tlb_flush tlb_flush
->> +#define __pte_free_tlb __pte_free_tlb
->> +#define __pmd_free_tlb __pmd_free_tlb
->>  
->>  #include <asm-generic/tlb.h>
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> 
-> I hope subsequent series would consolidate some more of the above (for
-> example tlb_start_vma() is not really arm64 specific.
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Yes, peterz pointed me to a not jet merged series which consolidates
-much more.
-I'll revive it.
+This patch adds wrappers for readl/writel functions used in the driver. The
+reason for this wrappers is to accommodate SOCs like Qualcomm which has
+requirement for delaying the write for few cycles when writing to its SD Card
+Controller registers.
 
-Thanks,
-//richard
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+ drivers/mmc/host/mmci.c | 110 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 59 insertions(+), 51 deletions(-)
+
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 324a886..881bb24 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -173,6 +173,16 @@ static struct variant_data variant_qcom = {
+ 	.pwrreg_powerup		= MCI_PWR_UP,
+ };
+ 
++static inline u32 mmci_readl(struct mmci_host *host, u32 off)
++{
++	return readl(host->base  + off);
++}
++
++static inline void mmci_writel(struct mmci_host *host, u32 data, u32 off)
++{
++	writel(data, host->base + off);
++}
++
+ static int mmci_card_busy(struct mmc_host *mmc)
+ {
+ 	struct mmci_host *host = mmc_priv(mmc);
+@@ -182,7 +192,7 @@ static int mmci_card_busy(struct mmc_host *mmc)
+ 	pm_runtime_get_sync(mmc_dev(mmc));
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+-	if (readl(host->base + MMCISTATUS) & MCI_ST_CARDBUSY)
++	if (mmci_readl(host, MMCISTATUS) & MCI_ST_CARDBUSY)
+ 		busy = 1;
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
+@@ -232,7 +242,7 @@ static void mmci_write_clkreg(struct mmci_host *host, u32 clk)
+ {
+ 	if (host->clk_reg != clk) {
+ 		host->clk_reg = clk;
+-		writel(clk, host->base + MMCICLOCK);
++		mmci_writel(host, clk, MMCICLOCK);
+ 	}
+ }
+ 
+@@ -243,7 +253,7 @@ static void mmci_write_pwrreg(struct mmci_host *host, u32 pwr)
+ {
+ 	if (host->pwr_reg != pwr) {
+ 		host->pwr_reg = pwr;
+-		writel(pwr, host->base + MMCIPOWER);
++		mmci_writel(host, pwr, MMCIPOWER);
+ 	}
+ }
+ 
+@@ -257,7 +267,7 @@ static void mmci_write_datactrlreg(struct mmci_host *host, u32 datactrl)
+ 
+ 	if (host->datactrl_reg != datactrl) {
+ 		host->datactrl_reg = datactrl;
+-		writel(datactrl, host->base + MMCIDATACTRL);
++		mmci_writel(host, datactrl, MMCIDATACTRL);
+ 	}
+ }
+ 
+@@ -323,7 +333,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
+ static void
+ mmci_request_end(struct mmci_host *host, struct mmc_request *mrq)
+ {
+-	writel(0, host->base + MMCICOMMAND);
++	mmci_writel(host, 0, MMCICOMMAND);
+ 
+ 	BUG_ON(host->data);
+ 
+@@ -338,18 +348,16 @@ mmci_request_end(struct mmci_host *host, struct mmc_request *mrq)
+ 
+ static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
+ {
+-	void __iomem *base = host->base;
+-
+ 	if (host->singleirq) {
+-		unsigned int mask0 = readl(base + MMCIMASK0);
++		unsigned int mask0 = mmci_readl(host, MMCIMASK0);
+ 
+ 		mask0 &= ~MCI_IRQ1MASK;
+ 		mask0 |= mask;
+ 
+-		writel(mask0, base + MMCIMASK0);
++		mmci_writel(host, mask0, MMCIMASK0);
+ 	}
+ 
+-	writel(mask, base + MMCIMASK1);
++	mmci_writel(host, mask, MMCIMASK1);
+ }
+ 
+ static void mmci_stop_data(struct mmci_host *host)
+@@ -478,7 +486,7 @@ static void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *data)
+ 
+ 	/* Wait up to 1ms for the DMA to complete */
+ 	for (i = 0; ; i++) {
+-		status = readl(host->base + MMCISTATUS);
++		status = mmci_readl(host, MMCISTATUS);
+ 		if (!(status & MCI_RXDATAAVLBLMASK) || i >= 100)
+ 			break;
+ 		udelay(10);
+@@ -617,8 +625,8 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 	 * to fire next DMA request. When that happens, MMCI will
+ 	 * call mmci_data_end()
+ 	 */
+-	writel(readl(host->base + MMCIMASK0) | MCI_DATAENDMASK,
+-	       host->base + MMCIMASK0);
++	mmci_writel(host, mmci_readl(host, MMCIMASK0) | MCI_DATAENDMASK,
++		    MMCIMASK0);
+ 	return 0;
+ }
+ 
+@@ -736,8 +744,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 	timeout = data->timeout_clks + (unsigned int)clks;
+ 
+ 	base = host->base;
+-	writel(timeout, base + MMCIDATATIMER);
+-	writel(host->size, base + MMCIDATALENGTH);
++	mmci_writel(host, timeout, MMCIDATATIMER);
++	mmci_writel(host, host->size, MMCIDATALENGTH);
+ 
+ 	blksz_bits = ffs(data->blksz) - 1;
+ 	BUG_ON(1 << blksz_bits != data->blksz);
+@@ -811,20 +819,19 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 	}
+ 
+ 	mmci_write_datactrlreg(host, datactrl);
+-	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
++	mmci_writel(host, mmci_readl(host, MMCIMASK0) & ~MCI_DATAENDMASK,
++		    MMCIMASK0);
+ 	mmci_set_mask1(host, irqmask);
+ }
+ 
+ static void
+ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
+ {
+-	void __iomem *base = host->base;
+-
+ 	dev_dbg(mmc_dev(host->mmc), "op %02x arg %08x flags %08x\n",
+ 	    cmd->opcode, cmd->arg, cmd->flags);
+ 
+-	if (readl(base + MMCICOMMAND) & MCI_CPSM_ENABLE) {
+-		writel(0, base + MMCICOMMAND);
++	if (mmci_readl(host, MMCICOMMAND) & MCI_CPSM_ENABLE) {
++		mmci_writel(host, 0, MMCICOMMAND);
+ 		udelay(1);
+ 	}
+ 
+@@ -839,8 +846,8 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
+ 
+ 	host->cmd = cmd;
+ 
+-	writel(cmd->arg, base + MMCIARGUMENT);
+-	writel(c, base + MMCICOMMAND);
++	mmci_writel(host, cmd->arg, MMCIARGUMENT);
++	mmci_writel(host, c, MMCICOMMAND);
+ }
+ 
+ static void
+@@ -865,7 +872,7 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
+ 		 * can be as much as a FIFO-worth of data ahead.  This
+ 		 * matters for FIFO overruns only.
+ 		 */
+-		remain = readl(host->base + MMCIDATACNT);
++		remain = mmci_readl(host, MMCIDATACNT);
+ 		success = data->blksz * data->blocks - remain;
+ 
+ 		dev_dbg(mmc_dev(host->mmc), "MCI ERROR IRQ, status 0x%08x at 0x%08x\n",
+@@ -947,10 +954,10 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
+ 	} else if (status & MCI_CMDCRCFAIL && cmd->flags & MMC_RSP_CRC) {
+ 		cmd->error = -EILSEQ;
+ 	} else {
+-		cmd->resp[0] = readl(base + MMCIRESPONSE0);
+-		cmd->resp[1] = readl(base + MMCIRESPONSE1);
+-		cmd->resp[2] = readl(base + MMCIRESPONSE2);
+-		cmd->resp[3] = readl(base + MMCIRESPONSE3);
++		cmd->resp[0] = mmci_readl(host, MMCIRESPONSE0);
++		cmd->resp[1] = mmci_readl(host, MMCIRESPONSE1);
++		cmd->resp[2] = mmci_readl(host, MMCIRESPONSE2);
++		cmd->resp[3] = mmci_readl(host, MMCIRESPONSE3);
+ 	}
+ 
+ 	if ((!sbc && !cmd->data) || cmd->error) {
+@@ -1061,11 +1068,10 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 	struct mmci_host *host = dev_id;
+ 	struct sg_mapping_iter *sg_miter = &host->sg_miter;
+ 	struct variant_data *variant = host->variant;
+-	void __iomem *base = host->base;
+ 	unsigned long flags;
+ 	u32 status;
+ 
+-	status = readl(base + MMCISTATUS);
++	status = mmci_readl(host, MMCISTATUS);
+ 
+ 	dev_dbg(mmc_dev(host->mmc), "irq1 (pio) %08x\n", status);
+ 
+@@ -1105,7 +1111,7 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 		if (remain)
+ 			break;
+ 
+-		status = readl(base + MMCISTATUS);
++		status = mmci_readl(host, MMCISTATUS);
+ 	} while (1);
+ 
+ 	sg_miter_stop(sg_miter);
+@@ -1127,7 +1133,9 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 	 */
+ 	if (host->size == 0) {
+ 		mmci_set_mask1(host, 0);
+-		writel(readl(base + MMCIMASK0) | MCI_DATAENDMASK, base + MMCIMASK0);
++		mmci_writel(host,
++			    mmci_readl(host, MMCIMASK0) | MCI_DATAENDMASK,
++			    MMCIMASK0);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -1148,10 +1156,10 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
+ 		struct mmc_command *cmd;
+ 		struct mmc_data *data;
+ 
+-		status = readl(host->base + MMCISTATUS);
++		status = mmci_readl(host, MMCISTATUS);
+ 
+ 		if (host->singleirq) {
+-			if (status & readl(host->base + MMCIMASK1))
++			if (status & mmci_readl(host, MMCIMASK1))
+ 				mmci_pio_irq(irq, dev_id);
+ 
+ 			status &= ~MCI_IRQ1MASK;
+@@ -1162,8 +1170,8 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
+ 		 * enabled) since the HW seems to be triggering the IRQ on both
+ 		 * edges while monitoring DAT0 for busy completion.
+ 		 */
+-		status &= readl(host->base + MMCIMASK0);
+-		writel(status, host->base + MMCICLEAR);
++		status &= mmci_readl(host, MMCIMASK0);
++		mmci_writel(host, status, MMCICLEAR);
+ 
+ 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
+ 
+@@ -1561,9 +1569,9 @@ static int mmci_probe(struct amba_device *dev,
+ 
+ 	spin_lock_init(&host->lock);
+ 
+-	writel(0, host->base + MMCIMASK0);
+-	writel(0, host->base + MMCIMASK1);
+-	writel(0xfff, host->base + MMCICLEAR);
++	mmci_writel(host, 0, MMCIMASK0);
++	mmci_writel(host, 0, MMCIMASK1);
++	mmci_writel(host, 0xfff, MMCICLEAR);
+ 
+ 	/* If DT, cd/wp gpios must be supplied through it. */
+ 	if (!np && gpio_is_valid(plat->gpio_cd)) {
+@@ -1591,7 +1599,7 @@ static int mmci_probe(struct amba_device *dev,
+ 			goto clk_disable;
+ 	}
+ 
+-	writel(MCI_IRQENABLE, host->base + MMCIMASK0);
++	mmci_writel(host, MCI_IRQENABLE, MMCIMASK0);
+ 
+ 	amba_set_drvdata(dev, mmc);
+ 
+@@ -1632,11 +1640,11 @@ static int mmci_remove(struct amba_device *dev)
+ 
+ 		mmc_remove_host(mmc);
+ 
+-		writel(0, host->base + MMCIMASK0);
+-		writel(0, host->base + MMCIMASK1);
++		mmci_writel(host, 0, MMCIMASK0);
++		mmci_writel(host, 0, MMCIMASK1);
+ 
+-		writel(0, host->base + MMCICOMMAND);
+-		writel(0, host->base + MMCIDATACTRL);
++		mmci_writel(host, 0, MMCICOMMAND);
++		mmci_writel(host, 0, MMCIDATACTRL);
+ 
+ 		mmci_dma_release(host);
+ 		clk_disable_unprepare(host->clk);
+@@ -1653,11 +1661,11 @@ static void mmci_save(struct mmci_host *host)
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+-	writel(0, host->base + MMCIMASK0);
++	mmci_writel(host, 0, MMCIMASK0);
+ 	if (host->variant->pwrreg_nopower) {
+-		writel(0, host->base + MMCIDATACTRL);
+-		writel(0, host->base + MMCIPOWER);
+-		writel(0, host->base + MMCICLOCK);
++		mmci_writel(host, 0, MMCIDATACTRL);
++		mmci_writel(host, 0, MMCIPOWER);
++		mmci_writel(host, 0, MMCICLOCK);
+ 	}
+ 	mmci_reg_delay(host);
+ 
+@@ -1671,11 +1679,11 @@ static void mmci_restore(struct mmci_host *host)
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	if (host->variant->pwrreg_nopower) {
+-		writel(host->clk_reg, host->base + MMCICLOCK);
+-		writel(host->datactrl_reg, host->base + MMCIDATACTRL);
+-		writel(host->pwr_reg, host->base + MMCIPOWER);
++		mmci_writel(host, host->clk_reg, MMCICLOCK);
++		mmci_writel(host, host->datactrl_reg, MMCIDATACTRL);
++		mmci_writel(host, host->pwr_reg, MMCIPOWER);
+ 	}
+-	writel(MCI_IRQENABLE, host->base + MMCIMASK0);
++	mmci_writel(host, MCI_IRQENABLE, MMCIMASK0);
+ 	mmci_reg_delay(host);
+ 
+ 	spin_unlock_irqrestore(&host->lock, flags);
+-- 
+1.9.1
+
