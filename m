@@ -1,58 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaEOMrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:47:36 -0400
-Received: from imap.thunk.org ([74.207.234.97]:41684 "EHLO imap.thunk.org"
+	id S1752577AbaEOMtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:49:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60082 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278AbaEOMre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:47:34 -0400
-Date: Thu, 15 May 2014 08:47:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Mateusz Guzik <mguzik@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Eric Sandeen <esandeen@redhat.com>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515124725.GA8194@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Mateusz Guzik <mguzik@redhat.com>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Eric Sandeen <esandeen@redhat.com>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
- <1400005862-3751-2-git-send-email-mguzik@redhat.com>
- <20140514215457.GC5421@dastard>
- <20140515094236.GE10637@mguzik.redhat.com>
- <20140515100157.GB27289@quack.suse.cz>
+	id S1751298AbaEOMtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 08:49:31 -0400
+Message-ID: <5374B7B8.4060604@ti.com>
+Date: Thu, 15 May 2014 18:18:56 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515100157.GB27289@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v2 2/5] ARM: edma: Get IP information from HW when booting
+ with DT
+References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com> <1399977032-26469-3-git-send-email-peter.ujfalusi@ti.com> <53748070.4080706@ti.com> <5374B34D.2060904@ti.com>
+In-Reply-To: <5374B34D.2060904@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 12:01:57PM +0200, Jan Kara wrote:
->   I was tracking down a couple of times what the hell is freezing the
-> filesystem (and not unfreezing it) and I agree with Mateusz it would be
-> nice if we could tell after the fact who froze the fs. Maybe we could store
-> that information in superblock and dump it during emergency thaw?
+On Thursday 15 May 2014 06:00 PM, Peter Ujfalusi wrote:
 
-Saving it in the superblock would require changing a bunch of file
-systems.  What if we store this information in memory, and print it
-out under certain conditions (i.e., after a soft lockup detection, or
-upon request of some magic sysrq request)?
+> The second controller is not handled because in DT boot we only handle 1 cc as
+> far as I know. I don't know why, but this is how the DT support has been
+> written and used.
 
-Or we could create a tunable threshold and print a message after a
-file system has been frozen more than a particular specified duration,
-with that duration set conservatively to something like 60 or 120
-seconds by default.
+Its just because none of the platforms under heavy development use two
+controllers. Joel promised to work on it at some point ;)
 
-						- Ted
+> 
+>> I was wondering why we never read the hardware for this information
+>> before, and strangely enough cannot find any SoC where the CCCFG
+>> register does not publish this information correctly. I have tested on
+>> DA850, DA830, DM365, DM355 and DM6467.
+> 
+> Good question. I was also puzzled about this.
+> 
+>> Instead of keeping this specific to OF case, the code can be simplified
+>> much better if we read from hardware all the time. We can directly
+>> populate the equivalent variables in the internal structure 'struct
+>> edma' instead of populating them in 'struct edma_soc_info' and then
+>> copying then over.
+> 
+> Yes, we can switch the non DT boot to this mode as well, true. At first I
+> wanted to change code which I can test easily. For non DT boot I would need to
+> set up my old daVinci board ;)
+
+I can help testing (and even with writing the DaVinci platform specific
+patches).
+
+>>> +	pdata->n_cc = 1;
+>>> +
+>>> +	queue_tc_map = devm_kzalloc(dev, (n_tc + 1) * sizeof(s8), GFP_KERNEL);
+>>> +	if (!queue_tc_map)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	for (i = 0; i < n_tc; i++) {
+>>> +		queue_tc_map[i][0] = i;
+>>> +		queue_tc_map[i][1] = i;
+>>> +	}
+>>> +	queue_tc_map[i][0] = -1;
+>>> +	queue_tc_map[i][1] = -1;
+>>> +
+>>> +	pdata->queue_tc_mapping = queue_tc_map;
+>>> +
+>>> +	queue_priority_map = devm_kzalloc(dev, (n_tc + 1) * sizeof(s8),
+>>> +					  GFP_KERNEL);
+>>> +	if (!queue_priority_map)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	for (i = 0; i < n_tc; i++) {
+>>> +		queue_priority_map[i][0] = i;
+>>> +		queue_priority_map[i][1] = i;
+>>> +	}
+>>> +	queue_priority_map[i][0] = -1;
+>>> +	queue_priority_map[i][1] = -1;
+>>> +
+>>> +	pdata->queue_priority_mapping = queue_priority_map;
+>>> +
+>>> +	pdata->default_queue = 0;
+>>
+>> This is part is not really setting up from hardware (rather falling back
+>> to some sane defaults for the DT case). Could you leave them in
+>> edma_of_parse_dt()?
+> 
+> Not really since the number of tc is not know as early as edma_of_parse_dt(),
+> we used to a magic number of 3 in place for n_tc previously.
+> We are doing similar things as previously done in edma_of_parse_dt() but with
+> 'correct' number of tc.
+
+Okay. I did not notice the n_tc hardcoding. In that case to make this
+function usable on non-DT case we will have to do something like:
+
+	/* Default to 1 if nothing passed */
+	if (!pdata->n_cc)
+		pdata->n_cc = 1;
+
+	if (!pdata->queue_priority_mapping) {
+		queue_priority_map = devm_kzalloc(...)
+	}
+
+I was hoping we could avoid that.
+
+>>> @@ -1655,6 +1679,12 @@ static int edma_probe(struct platform_device *pdev)
+>>>  		if (IS_ERR(edmacc_regs_base[j]))
+>>>  			return PTR_ERR(edmacc_regs_base[j]);
+>>>  
+>>> +		if (node) {
+>>> +			/* Get eDMA3 configuration from IP */
+>>> +			ret = edma_setup_info_from_hw(dev, info[j]);
+>>> +			if (ret)
+>>> +				return ret;
+>>
+>> No need to do this only for the DT case, I think. Also, once we get rid
+>> of the edma_soc_info dependency, just pass edma_cc[] directly
+>>
+>> 		edma_setup_info_from_hw(dev, j, edma_cc[j]);
+> 
+> Yes, let's do this for DT and not DT boot as well.
+> I will keep the queue_tc_map and queue_priority_map setup in there I think to
+> be done in case of DT boot.
+
+Right.
+
+> 
+> I'll try to craft v3 as soon as I can.
+
+Thanks.
+
+Regards,
+Sekhar
+
