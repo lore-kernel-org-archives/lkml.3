@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaEOSje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:39:34 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:58813 "EHLO quartz.orcorp.ca"
+	id S1755844AbaEOSjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:39:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293AbaEOSjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:39:32 -0400
-Date: Thu, 15 May 2014 12:39:19 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on
- designware core driver
-Message-ID: <20140515183919.GC11650@obsidianresearch.com>
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
- <6048322.x3M3sdDEWO@wuerfel>
- <5374FD24.8000806@ti.com>
- <22200719.Jb5jnJylJH@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <22200719.Jb5jnJylJH@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1755392AbaEOSjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 14:39:47 -0400
+Message-ID: <1400179157.21547.147.camel@deneb.redhat.com>
+Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
+From: Mark Salter <msalter@redhat.com>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 15 May 2014 14:39:17 -0400
+In-Reply-To: <CAPvkgC2WQcvn5e01Y70cm5nzenYZ6tk_1BampHw66VoRFn7Jiw@mail.gmail.com>
+References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
+	 <20140515144424.GA23884@linaro.org>
+	 <1400171258.21547.136.camel@deneb.redhat.com>
+	 <CAPvkgC2WQcvn5e01Y70cm5nzenYZ6tk_1BampHw66VoRFn7Jiw@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 08:20:13PM +0200, Arnd Bergmann wrote:
-> On Thursday 15 May 2014 13:45:08 Murali Karicheri wrote:
-> > >> +#ifdef CONFIG_PCI_KEYSTONE
-> > >> +/*
-> > >> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
-> > >> + */
-> > >> +static void quirk_limit_readrequest(struct pci_dev *dev)
-> > >> +{
-> > >> +    int readrq = pcie_get_readrq(dev);
-> > >> +
-> > >> +    if (readrq > 256)
-> > >> +            pcie_set_readrq(dev, 256);
-> > >> +}
-> > >> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
-> > >> +#endif /* CONFIG_PCI_KEYSTONE */
-> > > This doesn't work: you can't just limit do this for all devices just based
-> > > on PCI_KEYSTONE being enabled, you have to check if you are actually using
-> > > this controller.
-> > >
-> > >       Arnd
-> >   I assume, I need to check if PCI controller's vendor ID/ device ID 
-> > match with the keystone
-> >   PCI controller's ID and call pcie_set_readrq() for all of the slave 
-> > PCI devices and do this fixup.
-> > Is this correct understanding?  If you can point me to an example code 
-> > for this that will be
-> > really helpful so that I can avoid re-inventing the wheel.
+On Thu, 2014-05-15 at 18:55 +0100, Steve Capper wrote:
+> On 15 May 2014 17:27, Mark Salter <msalter@redhat.com> wrote:
+> > On Thu, 2014-05-15 at 15:44 +0100, Steve Capper wrote:
+> >> On Thu, May 15, 2014 at 10:19:22AM -0400, Mark Salter wrote:
+> >> > The following happens when trying to run a kvm guest on a kernel
+> >> > configured for 64k pages. This doesn't happen with 4k pages:
+> >> >
+> >> >   BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+> >> >   Kernel panic - not syncing: BUG!
+> >> >   CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+> >> >   Call trace:
+> >> >   [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+> >> >   [<fffffe00000961b4>] show_stack+0x14/0x1c
+> >> >   [<fffffe000066e648>] dump_stack+0x84/0xb0
+> >> >   [<fffffe0000668678>] panic+0xf4/0x220
+> >> >   [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+> >> >   [<fffffe000018edd8>] free_pages+0x50/0x88
+> >> >   [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+> >> >   [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+> >> >   [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+> >> >   [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+> >> >   [<fffffe00001edc1c>] __fput+0xb0/0x288
+> >> >   [<fffffe00001ede4c>] ____fput+0xc/0x14
+> >> >   [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+> >> >   [<fffffe0000095c14>] do_notify_resume+0x54/0x58
+> >> >
+> >> > In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+> >> > on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+> >> > happens because a pud_huge() test in unmap_range() returns true when it
+> >> > should always be false with 2-level pages tables used by 64k pages.
+> >> > This patch removes support for huge puds if 2-level pagetables are
+> >> > being used.
+> >>
+> >> Hi Mark,
+> >> I'm still catching up with myself, sorry  (was off sick for a couple
+> >> of days)...
+> >>
+> >> I thought unmap_range was going to be changed?
+> >> Does the following help things?
+> >> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009388.html
+> >
+> > No, I get the same BUG. Regardless, pud_huge() should always return
+> > false for 2-level pagetables, right?
 > 
-> I think it would be best to move the quirk into the keystone pci driver
-> and compare compare the dev->driver pointer of the PCI controller device.
+> Okay, thanks for giving that a go.
+> 
+> Yeah I agree for 64K granule it doesn't make sense to have a huge_pud.
+> The patch looks sound now, but checking for a folded pmd may run into
+> problems if/when we get to 3-levels and 64K pages in future.
+> 
+> Perhaps checking for PAGE_SHIFT==12 (or something similar) would be a
+> bit more robust?
+> 
 
-The PCI core handles setting the maximum read request size already,
-can you figure out why the core code isn't doing what you need and
-correct the root problem?
+I don't think testing based on granule size is generally correct either.
+Maybe support for 3-level page tables with 64k granule gets added as an
+option. That would break the pagesize based test. With a folded pmd, we
+know there is no pud, so pud_huge() should always be false.
 
-I'm guessing the values in the root port bridge config space are not
-correct or something like that??
 
-Jason
+
