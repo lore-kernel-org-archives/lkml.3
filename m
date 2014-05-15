@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaEORXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:23:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33594 "EHLO mx1.redhat.com"
+	id S1754739AbaEORX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:23:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6642 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514AbaEORXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:23:51 -0400
+	id S1754573AbaEORX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:23:56 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCHv2 00/14] perf tools: Speedup DWARF unwind
-Date: Thu, 15 May 2014 19:23:21 +0200
-Message-Id: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 03/14] perf tools: Add data_fd into dso object
+Date: Thu, 15 May 2014 19:23:24 +0200
+Message-Id: <1400174615-2121-4-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-trying to speedup DWARF unwind report code by factoring
-related code:
-  - caching sample's registers access
-  - keep dso data file descriptor open for the
-    life of the dso object
-  - replace dso cache code by mapping dso data file
-    directly for the life of the dso object
+Adding data_fd into dso object so we could handle caching
+of opened dso file data descriptors coming int next patches.
 
-The speedup is mainly for libunwind unwind. The libdw will benefit
-mainly from cached registers access, because it handles dso data
-accesses by itself.. and anyway it's still faster ;-).
-
-v2 changes:
-  - adding limit for open dso objects with sort of LRU
-    mechanism to pick up and close dso objects if we
-    are over the limit
-  - file mmaping changes are omitted, because I couldn't prove
-    the improvement exactly, will resubmit later
-  - added dso close logic in case of no memory
-  - added tests
-
-On 10GB perf data file with dwarf unwind data I've got
-around 30% speed up.
-
-Also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_unwind_speedup
-
-thanks,
-jirka
+Adding dso__data_close interface to keep the data_fd updated
+when the descriptor is closed.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -65,29 +41,123 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
-Jiri Olsa (14):
-      perf tools: Cache register accesses for unwind processing
-      perf tools: Separate dso data related variables
-      perf tools: Add data_fd into dso object
-      perf tools: Add global list of opened dso objects
-      perf tools: Add global count of opened dso objects
-      perf tools: Cache dso data file descriptor
-      perf tools: Add file size check and factor dso__data_read_offset
-      perf tools: Allow to close dso fd in case of open failure
-      perf tools: Add dso__data_* interface descriptons
-      perf tests: Spawn child for each test
-      perf tests: Allow reuse of test_file function
-      perf tests: Add test interface for dso data fd limit
-      perf tests: Add test for caching dso file descriptors
-      perf tests: Add test for closing dso objects on EMFILE error
+ tools/perf/util/dso.c              | 23 +++++++++++++++++++----
+ tools/perf/util/dso.h              |  3 +++
+ tools/perf/util/unwind-libunwind.c |  4 ++--
+ 3 files changed, 24 insertions(+), 6 deletions(-)
 
- tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
- tools/perf/tests/dso-data.c        | 256 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/tests/tests.h           |   2 +
- tools/perf/util/dso.c              | 274 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
- tools/perf/util/dso.h              |  56 +++++++++++++++++++-
- tools/perf/util/event.h            |   5 ++
- tools/perf/util/perf_regs.c        |  10 +++-
- tools/perf/util/perf_regs.h        |   4 +-
- tools/perf/util/unwind-libunwind.c |   4 +-
- 9 files changed, 617 insertions(+), 36 deletions(-)
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 1c3cdaf..5acb4b8 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -159,6 +159,14 @@ static int open_dso(struct dso *dso, struct machine *machine)
+ 	return fd;
+ }
+ 
++void dso__data_close(struct dso *dso)
++{
++	if (dso->data.fd >= 0) {
++		close(dso->data.fd);
++		dso->data.fd = -1;
++	}
++}
++
+ int dso__data_fd(struct dso *dso, struct machine *machine)
+ {
+ 	enum dso_binary_type binary_type_data[] = {
+@@ -168,8 +176,13 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	};
+ 	int i = 0;
+ 
+-	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
+-		return open_dso(dso, machine);
++	if (dso->data.fd >= 0)
++		return dso->data.fd;
++
++	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND) {
++		dso->data.fd = open_dso(dso, machine);
++		return dso->data.fd;
++	}
+ 
+ 	do {
+ 		int fd;
+@@ -178,7 +191,7 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 
+ 		fd = open_dso(dso, machine);
+ 		if (fd >= 0)
+-			return fd;
++			return dso->data.fd = fd;
+ 
+ 	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
+ 
+@@ -301,7 +314,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 	if (ret <= 0)
+ 		free(cache);
+ 
+-	close(fd);
++	dso__data_close(dso);
+ 	return ret;
+ }
+ 
+@@ -474,6 +487,7 @@ struct dso *dso__new(const char *name)
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->data.cache = RB_ROOT;
++		dso->data.fd = -1;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -506,6 +520,7 @@ void dso__delete(struct dso *dso)
+ 		dso->long_name_allocated = false;
+ 	}
+ 
++	dso__data_close(dso);
+ 	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 7637fdd..e48dcf5 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -102,6 +102,7 @@ struct dso {
+ 	/* dso data file */
+ 	struct {
+ 		struct rb_root	 cache;
++		int		 fd;
+ 	} data;
+ 
+ 	char		 name[0];
+@@ -147,6 +148,8 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
+ 				   char *root_dir, char *filename, size_t size);
+ 
+ int dso__data_fd(struct dso *dso, struct machine *machine);
++void dso__data_close(struct dso *dso);
++
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size);
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index bd5768d..4f8dd9e 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -250,7 +250,7 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+ 
+ 	/* Check the .eh_frame section for unwinding info */
+ 	offset = elf_section_offset(fd, ".eh_frame_hdr");
+-	close(fd);
++	dso__data_close(dso);
+ 
+ 	if (offset)
+ 		ret = unwind_spec_ehframe(dso, machine, offset,
+@@ -271,7 +271,7 @@ static int read_unwind_spec_debug_frame(struct dso *dso,
+ 
+ 	/* Check the .debug_frame section for unwinding info */
+ 	*offset = elf_section_offset(fd, ".debug_frame");
+-	close(fd);
++	dso__data_close(dso);
+ 
+ 	if (*offset)
+ 		return 0;
+-- 
+1.8.3.1
+
