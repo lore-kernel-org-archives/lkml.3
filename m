@@ -1,74 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaEOWCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:02:12 -0400
-Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:51490
-	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751689AbaEOWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:02:11 -0400
-Date: Thu, 15 May 2014 21:57:26 +0000
-From: dwalker@fifo99.com
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: msm: remove board file for Nexus One (ie. mahimahi)
-Message-ID: <20140515215726.GA1171@fifo99.com>
-References: <1400101656.9826.4.camel@x220>
- <20140515174448.GA31159@fifo99.com>
- <1400177413.11786.11.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400177413.11786.11.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755019AbaEOWDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:03:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60436 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754323AbaEOWDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 18:03:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1062,1389772800"; 
+   d="scan'208";a="512437971"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON parsing v2
+Date: Thu, 15 May 2014 15:03:11 -0700
+Message-Id: <1400191392-11569-9-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
+References: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 08:10:13PM +0200, Paul Bolle wrote:
-> Daniel,
-> 
-> On Thu, 2014-05-15 at 17:44 +0000, dwalker@fifo99.com wrote:
-> > On Wed, May 14, 2014 at 11:07:36PM +0200, Paul Bolle wrote:
-> > > Commit 1b802ff79f03 ("arm: msm: add board file for Nexus One (ie.
-> > > mahimahi)") added just board-mahimahi.c. It did not add
-> > > board-mahimahi.h, Makefile changes or Kconfig changes.
-> > > 
-> > > Four years have passed and this file is still dangling. Remove it.
-> > > 
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > > ---
-> > > Untested. But what to test here?
-> > > 
-> > I don't mine if Sapphire gets removed,
-> 
-> Could you ACK that patch, please?
+From: Andi Kleen <ak@linux.intel.com>
 
-I don't mind if it gets removed, but I wouldn't ACK it's removal ..
+Add a simple test case to perf test that runs perf download and parses
+all the events. This needs adding an all event iterator to pmu.c
+
+v2: Rename identifiers
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Makefile.perf        |  1 +
+ tools/perf/tests/aliases.c      | 58 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |  4 +++
+ tools/perf/tests/tests.h        |  1 +
+ tools/perf/util/pmu.c           | 18 +++++++++++++
+ tools/perf/util/pmu.h           |  2 ++
+ 6 files changed, 84 insertions(+)
+ create mode 100644 tools/perf/tests/aliases.c
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 4dc1682..3e6ed5a 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -417,6 +417,7 @@ endif
+ LIB_OBJS += $(OUTPUT)tests/code-reading.o
+ LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+ LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
++LIB_OBJS += $(OUTPUT)tests/aliases.o
+ ifndef NO_DWARF_UNWIND
+ ifeq ($(ARCH),x86)
+ LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+diff --git a/tools/perf/tests/aliases.c b/tools/perf/tests/aliases.c
+new file mode 100644
+index 0000000..68396e7
+--- /dev/null
++++ b/tools/perf/tests/aliases.c
+@@ -0,0 +1,58 @@
++/* Check if we can set up all aliases and can read JSON files */
++#include <stdlib.h>
++#include "tests.h"
++#include "pmu.h"
++#include "evlist.h"
++#include "parse-events.h"
++
++static struct perf_evlist *evlist;
++
++static int num_events;
++static int failed;
++
++static int test__event(const char *name)
++{
++	int ret;
++
++	/* Not supported for now */
++	if (!strncmp(name, "energy-", 7))
++		return 0;
++
++	ret = parse_events(evlist, name);
++
++	if (ret) {
++		/*
++		 * We only print on failure because common perf setups
++		 * have events that cannot be parsed.
++		 */
++		fprintf(stderr, "invalid or unsupported event: '%s'\n", name);
++		ret = 0;
++		failed++;
++	} else
++		num_events++;
++	return ret;
++}
++
++int test__aliases(void)
++{
++	int err;
++
++	/* Download JSON files */
++	/* XXX assumes perf is installed */
++	/* For now user must manually download */
++	if (0 && system("perf download > /dev/null") < 0) {
++		/* Don't error out for this for now */
++		fprintf(stderr, "perf download failed\n");
++	}
++
++	evlist = perf_evlist__new();
++	if (evlist == NULL)
++		return -ENOMEM;
++
++	err = pmu_iterate_events(test__event);
++	fprintf(stderr, " Parsed %d events :", num_events);
++	if (failed > 0)
++		pr_debug(" %d events failed", failed);
++	perf_evlist__delete(evlist);
++	return err;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 0d5afaf..d62601c 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -115,6 +115,10 @@ static struct test {
+ 		.desc = "Test parsing with no sample_id_all bit set",
+ 		.func = test__parse_no_sample_id_all,
+ 	},
++	{
++		.desc = "Test parsing JSON aliases",
++		.func = test__aliases,
++	},
+ #if defined(__x86_64__) || defined(__i386__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+ 	{
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index a9d7cb0..38e98df 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -44,6 +44,7 @@ int test__dwarf_unwind(void);
+ int test__hists_filter(void);
+ int test__mmap_thread_lookup(void);
+ int test__thread_mg_share(void);
++int test__aliases(void);
  
-> >  but I'm working on this one now..
-> 
-> That's good to hear.
-> 
-> >  So I don't want it deleted.
-> 
-> This is not something I get to decide. Nevertheless, given that this
-> file shouldn't have been merged to begin with, I'd appreciate it if some
-> deadline could be agreed upon.
+ #if defined(__x86_64__) || defined(__i386__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8714f9a..b87f520 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -869,3 +869,21 @@ bool pmu_have_event(const char *pname, const char *name)
+ 	}
+ 	return false;
+ }
++
++int pmu_iterate_events(int (*func)(const char *name))
++{
++	int ret = 0;
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++
++	perf_pmu__find("cpu"); /* Load PMUs */
++	pmu = NULL;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			ret = func(alias->name);
++			if (ret != 0)
++				break;
++		}
++	}
++	return ret;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 583d21e..a8ed283 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -47,5 +47,7 @@ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
+ 
++int pmu_iterate_events(int (*func)(const char *name));
++
+ extern const char *json_file;
+ #endif /* __PMU_H */
+-- 
+1.9.0
 
-I think I merged it actually, but there's no rules about what gets merged. How when what order, etc.
-It's all free form.
-
-> That being said, I'm not sure how having just this file in mainline
-> helps your development efforts. It seems it did receive some updates
-> for, well, treewide stuff. But it surely didn't get build coverage or
-> runtime testing. So would you lose much if it only remains in your
-> development tree?
-
-It's effort to remove it.. Your asking for it to get removed, then re-added.. That sounds
-like a fairly large amount of effort vs just leaving it in place.
-
-Daniel
