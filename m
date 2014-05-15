@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaEOP45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:56:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45722 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921AbaEOP4y (ORCPT
+	id S1755223AbaEOP6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:58:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40160 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaEOP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:56:54 -0400
-Date: Thu, 15 May 2014 17:56:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARN in do_rt_tgsigqueueinfo()
-Message-ID: <20140515155647.GG11096@twins.programming.kicks-ass.net>
-References: <20140515133834.GN13658@twins.programming.kicks-ass.net>
- <20140515142723.GB22041@mguzik.redhat.com>
- <20140515150412.GP30445@twins.programming.kicks-ass.net>
- <20140515155415.GA326@redhat.com>
+	Thu, 15 May 2014 11:58:12 -0400
+Message-ID: <5374E410.1080203@canonical.com>
+Date: Thu, 15 May 2014 17:58:08 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TJXgsAvz6ds/es3G"
-Content-Disposition: inline
-In-Reply-To: <20140515155415.GA326@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com> <5374E1B5.2020408@vodafone.de>
+In-Reply-To: <5374E1B5.2020408@vodafone.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+op 15-05-14 17:48, Christian König schreef:
+> Am 15.05.2014 16:18, schrieb Maarten Lankhorst:
+>> op 15-05-14 15:19, Christian König schreef:
+>>> Am 15.05.2014 15:04, schrieb Maarten Lankhorst:
+>>>> op 15-05-14 11:42, Christian König schreef:
+>>>>> Am 15.05.2014 11:38, schrieb Maarten Lankhorst:
+>>>>>> op 15-05-14 11:21, Christian König schreef:
+>>>>>>> Am 15.05.2014 03:06, schrieb Maarten Lankhorst:
+>>>>>>>> op 14-05-14 17:29, Christian König schreef:
+>>>>>>>>>> +    /* did fence get signaled after we enabled the sw irq? */
+>>>>>>>>>> +    if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq) {
+>>>>>>>>>> + radeon_irq_kms_sw_irq_put(fence->rdev, fence->ring);
+>>>>>>>>>> +        return false;
+>>>>>>>>>> +    }
+>>>>>>>>>> +
+>>>>>>>>>> +    fence->fence_wake.flags = 0;
+>>>>>>>>>> +    fence->fence_wake.private = NULL;
+>>>>>>>>>> +    fence->fence_wake.func = radeon_fence_check_signaled;
+>>>>>>>>>> + __add_wait_queue(&fence->rdev->fence_queue, &fence->fence_wake);
+>>>>>>>>>> +    fence_get(f);
+>>>>>>>>> That looks like a race condition to me. The fence needs to be added to the wait queue before the check, not after.
+>>>>>>>>>
+>>>>>>>>> Apart from that the whole approach looks like a really bad idea to me. How for example is lockup detection supposed to happen with this? 
+>>>>>>>> It's not a race condition because fence_queue.lock is held when this function is called.
+>>>>>>> Ah, I see. That's also the reason why you moved the wake_up_all out of the processing function.
+>>>>>> Correct. :-)
+>>>>>>>> Lockup's a bit of a weird problem, the changes wouldn't allow core ttm code to handle the lockup any more,
+>>>>>>>> but any driver specific wait code would still handle this. I did this by design, because in future patches the wait
+>>>>>>>> function may be called from outside of the radeon driver. The official wait function takes a timeout parameter,
+>>>>>>>> so lockups wouldn't be fatal if the timeout is set to something like 30*HZ for example, it would still return
+>>>>>>>> and report that the function timed out.
+>>>>>>> Timeouts help with the detection of the lockup, but not at all with the handling of them.
+>>>>>>>
+>>>>>>> What we essentially need is a wait callback into the driver that is called in non atomic context without any locks held.
+>>>>>>>
+>>>>>>> This way we can block for the fence to become signaled with a timeout and can then also initiate the reset handling if necessary.
+>>>>>>>
+>>>>>>> The way you designed the interface now means that the driver never gets a chance to wait for the hardware to become idle and so never has the opportunity to the reset the whole thing.
+>>>>>> You could set up a hangcheck timer like intel does, and end up with a reliable hangcheck detection that doesn't depend on cpu waits. :-) Or override the default wait function and restore the old behavior.
+>>>>>
+>>>>> Overriding the default wait function sounds better, please implement it this way.
+>>>>>
+>>>>> Thanks,
+>>>>> Christian. 
+>>>>
+>>>> Does this modification look sane?
+>>> Adding the timeout is on my todo list for quite some time as well, so this part makes sense.
+>>>
+>>>> +static long __radeon_fence_wait(struct fence *f, bool intr, long timeout)
+>>>> +{
+>>>> +    struct radeon_fence *fence = to_radeon_fence(f);
+>>>> +    u64 target_seq[RADEON_NUM_RINGS] = {};
+>>>> +
+>>>> +    target_seq[fence->ring] = fence->seq;
+>>>> +    return radeon_fence_wait_seq_timeout(fence->rdev, target_seq, intr, timeout);
+>>>> +}
+>>> When this call is comming from outside the radeon driver you need to lock rdev->exclusive_lock here to make sure not to interfere with a possible reset.
+>> Ah thanks, I'll add that.
+>>
+>>>>      .get_timeline_name = radeon_fence_get_timeline_name,
+>>>>      .enable_signaling = radeon_fence_enable_signaling,
+>>>>      .signaled = __radeon_fence_signaled,
+>>> Do we still need those callback when we implemented the wait callback?
+>> .get_timeline_name is used for debugging (trace events).
+>> .signaled is the non-blocking call to check if the fence is signaled or not.
+>> .enable_signaling is used for adding callbacks upon fence completion, the default 'fence_default_wait' uses it, so
+>> when it works no separate implementation is needed unless you want to do more than just waiting.
+>> It's also used when fence_add_callback is called. i915 can be patched to use it. ;-)
+>
+> I just meant enable_signaling, the other ones are fine with me. The problem with enable_signaling is that it's called with a spin lock held, so we can't sleep.
+>
+> While resetting the GPU could be moved out into a timer the problem here is that I can't lock rdev->exclusive_lock in such situations.
+>
+> This means when i915 would call into radeon to enable signaling for a fence we can't make sure that there is not GPU reset running on another CPU. And touching the IRQ registers while a reset is going on is a really good recipe to lockup the whole system.
+If you increase the irq counter on all rings before doing a gpu reset, adjust the state and call sw_irq_put when done this race could never happen. Or am I missing something?
 
---TJXgsAvz6ds/es3G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+~Maarten
 
-On Thu, May 15, 2014 at 11:54:15AM -0400, Dave Jones wrote:
-> There's a ton of 'noise' like this that fuzzing turns up.
-> I've been collecting some of the stuff to shut it up..
->=20
-> http://codemonkey.org.uk/junk/silence-fuzz-testing-noise.patch
-> http://codemonkey.org.uk/junk/silence-noisy-deprecated-warnings-while-fuz=
-zing.patch
->=20
-> I'm of the opinion that a user-triggerable WARN is a bug, but aparently
-> not everyone else feels that way.
-
-Awesome, thanks!
-
---TJXgsAvz6ds/es3G
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdOO/AAoJEHZH4aRLwOS6kNQP/R4osGFjliysWtT8D08NSKdk
-9/WbStL3+84UZ5gRGoPn6m+pEfEfqfVFx8Y9UL2/Lu4BK/jSI20pCgZwEf8xGoMx
-42TFUVzvuqpAdcHZHIvJYtS3psKv2Qi4FXbJ+wewisEIHSPke0qaOPDnUpqlaLm0
-iIu2hQNtbzMwbynewlxvf+n3N3E62HxWMC1LWNbniXymPaRVhVM0buRnxdeH0B66
-c/owBcaC1DvYYl7tCAVL4PaZoXSlxjn3adzzMaMczpHhPqRUWmsdQtZv4E/VgaNA
-J4d/70r/2BFdSgeL7k9QofFlSKKjAdW5jmwaV1NoApVOPS6HA3Hjt7R/hhnuouVq
-3j8psWu6Rj+F0kLIJfvtN2md3/qXo/sTCzU3D/vCGWYgo8Y3vg+TDJY746em4eP5
-CgCBjYB6kaD1ZHRn0LFtKiFGb7zezlmVx5Bg1izrVv7whoDaJ3vDf/nmENwDQ1yX
-N/vIRkHhm9IX+0A7BrXMH/oCbqCRO5SEV26aMqGQ3baWDUzdYHzx/GX6Rn5RNB8A
-yh9QBxc5LdL+zsCfHPxvomz6+rVpbQG/HZT06QD6Z5buKmjB+g0m2g/4RusvQofr
-yEsnxbT3vkVTjW/dTOv+IPKXZo5PFQjvgJBTEoOxHftEEG77Fuf5CUSI4j9BX1SJ
-C3EvwaBRvoqMTQKMxeuM
-=6TvW
------END PGP SIGNATURE-----
-
---TJXgsAvz6ds/es3G--
