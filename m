@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaEOKTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:19:52 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54648 "EHLO
+	id S1755201AbaEOKTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:19:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54612 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755129AbaEOKTt (ORCPT
+	with ESMTP id S1755122AbaEOKTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:19:49 -0400
+	Thu, 15 May 2014 06:19:19 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,9 +21,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v6 17/17] ARM: mvebu: add Device Tree description of the EHCI controller on Armada 375
-Date: Thu, 15 May 2014 12:17:42 +0200
-Message-Id: <1400149062-32661-18-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v6 12/17] ARM: configs: enable XHCI mvebu support in mvebu_v7_defconfig
+Date: Thu, 15 May 2014 12:17:37 +0200
+Message-Id: <1400149062-32661-13-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1400149062-32661-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1400149062-32661-1-git-send-email-gregory.clement@free-electrons.com>
@@ -31,59 +31,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Marvell Armada 375 SoCs contains one EHCI controller. This commit
-adds the Device Tree description of this interfaces at the SoC level,
-and also enables the USB2 port on the Armada 375 DB platform.
+The Marvell Armada 38x platform needs the xhci_mvebu driver enabled
+for the xHCI USB hosts, so this commit enables the corresponding
+Kconfig option in mvebu_v7_defconfig.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
- arch/arm/boot/dts/armada-375-db.dts |  4 ++++
- arch/arm/boot/dts/armada-375.dtsi   | 16 ++++++++++++++++
- 2 files changed, 20 insertions(+)
+ arch/arm/configs/mvebu_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/armada-375-db.dts b/arch/arm/boot/dts/armada-375-db.dts
-index 0453d69e6433..01bc5e87898b 100644
---- a/arch/arm/boot/dts/armada-375-db.dts
-+++ b/arch/arm/boot/dts/armada-375-db.dts
-@@ -102,6 +102,10 @@
- 				};
- 			};
- 
-+			usb@54000 {
-+				status = "okay";
-+			};
-+
- 			usb3@58000 {
- 				status = "okay";
- 			};
-diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
-index 7b303ecc2490..53baeb2f1fe8 100644
---- a/arch/arm/boot/dts/armada-375.dtsi
-+++ b/arch/arm/boot/dts/armada-375.dtsi
-@@ -320,6 +320,22 @@
- 				clocks = <&coreclk 0>;
- 			};
- 
-+			usb@50000 {
-+				compatible = "marvell,orion-ehci";
-+				reg = <0x50000 0x500>;
-+				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&gateclk 18>;
-+				status = "disabled";
-+			};
-+
-+			usb@54000 {
-+				compatible = "marvell,orion-ehci";
-+				reg = <0x54000 0x500>;
-+				interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&gateclk 26>;
-+				status = "disabled";
-+			};
-+
- 			usb3@58000 {
- 				compatible = "marvell,armada-375-xhci";
- 				reg = <0x58000 0x20000>,<0x5b880 0x80>;
+diff --git a/arch/arm/configs/mvebu_v7_defconfig b/arch/arm/configs/mvebu_v7_defconfig
+index a34713d8db9f..e8811066b8e4 100644
+--- a/arch/arm/configs/mvebu_v7_defconfig
++++ b/arch/arm/configs/mvebu_v7_defconfig
+@@ -78,6 +78,7 @@ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_ROOT_HUB_TT=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_MVEBU=y
+ CONFIG_MMC=y
+ CONFIG_MMC_MVSDIO=y
+ CONFIG_NEW_LEDS=y
 -- 
 1.8.1.2
 
