@@ -1,126 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924AbaEOVVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:21:05 -0400
-Received: from madhathacker.net ([178.63.244.10]:60270 "EHLO madhathacker.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851AbaEOVVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:21:03 -0400
-Date: Thu, 15 May 2014 23:09:14 +0200
-From: Erik Bosman <erik@minemu.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] SROP mitigation: Architecture independent code for
- signal canaries
-Message-ID: <20140515210914.GA9536@pizzadoos.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756087AbaEOVVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:21:44 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:57714 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021AbaEOVVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:21:41 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kaber@trash.net, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, davem@davemloft.net,
+        Tom Gundersen <teg@jklm.no>
+Subject: [PATCH v2] net: tunnels - enable module autoloading
+Date: Thu, 15 May 2014 23:21:30 +0200
+Message-Id: <1400188890-2038-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140515.153721.2222505094570361361.davem@davemloft.net>
+References: <20140515.153721.2222505094570361361.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
 
-Architecture independent code for signal canaries
+This is in line with how most other netdev kinds work, and will allow userspace
+to create tunnels without having CAP_SYS_MODULE.
 
-Add support for canary values in user-space signal frames.  These canaries
-function much like stack canaries/cookies, making it harder for an attacker to
-fake a call to {rt_,}sigreturn()
-
-This patch deals with architecture independent changes needed to support
-these canaries.
-
-
-These patches are meant to make Sigreturn Oriented Programming (SROP) a much
-less attractive exploitation path.  In Sigreturn Oriented Programming, an
-attacker causes a user-space program to call the sigreturn system call in order
-to get complete control control over the entire userspace context in one go.
-
-( see: http://www.cs.vu.nl/~herbertb/papers/srop_sp14.pdf )
-
-While mitigating SROP will probably not stop determined attackers from
-exploiting a program, as there's always the much more well-known Return
-Oriented Programming, we still think SROP's relative ease warrants mitigation,
-especially since the mitigation is so cheap.
-
-
-Signed-off-by: Erik Bosman <erik@minemu.org>
-
+Signed-off-by: Tom Gundersen <teg@jklm.no>
 ---
- arch/Kconfig          | 16 ++++++++++++++++
- fs/exec.c             |  8 ++++++++
- include/linux/sched.h |  5 +++++
- 3 files changed, 29 insertions(+)
+v2: add ';'
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 97ff872..8319984 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -399,6 +399,22 @@ config CC_STACKPROTECTOR_STRONG
+Hi Dave,
+
+I must have sent out the wrong version of this patch. Sorry for the inconvenience!
+
+Cheers,
+
+Tom
+
+ net/ipv4/ipip.c       | 1 +
+ net/ipv6/ip6_tunnel.c | 1 +
+ net/ipv6/sit.c        | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 812b183..4bc508f 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -486,4 +486,5 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ipip");
+ MODULE_ALIAS_NETDEV("tunl0");
+diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
+index b05b609..fe61545 100644
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -61,6 +61,7 @@
+ MODULE_AUTHOR("Ville Nuorvala");
+ MODULE_DESCRIPTION("IPv6 tunneling device");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("ip6tnl");
+ MODULE_ALIAS_NETDEV("ip6tnl0");
  
- endchoice
- 
-+config HAVE_SIGNAL_CANARY
-+	bool
-+	help
-+	  An arch should select this symbol if:
-+	  - its struct sigframe contains a canary field
-+	  - it has implemented signal canary checking
-+
-+config SIGNAL_CANARY
-+	bool "signal canary"
-+	default y
-+	depends on HAVE_SIGNAL_CANARY
-+	help
-+	  Mitigate against a userland exploitation techinque called
-+	  sigreturn oriented programming by putting a canary value on a
-+	  signal's struct sigframe
-+
- config HAVE_CONTEXT_TRACKING
- 	bool
- 	help
-diff --git a/fs/exec.c b/fs/exec.c
-index 476f3eb..883f456 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -56,6 +56,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/compat.h>
-+#include <linux/random.h>
- 
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -1105,6 +1106,13 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	/* This is the point of no return */
- 	current->sas_ss_sp = current->sas_ss_size = 0;
- 
-+#ifdef CONFIG_SIGNAL_CANARY
-+	/* canary value to mitigate the use of sigreturn in (userland) exploits
-+	 * get_random_int() should be random enough also for 64bit
-+	 */
-+	current->signal_canary = (unsigned long)get_random_int();
-+#endif
-+
- 	if (uid_eq(current_euid(), current_uid()) && gid_eq(current_egid(), current_gid()))
- 		set_dumpable(current->mm, SUID_DUMP_USER);
- 	else
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 25f54c7..cb8b54b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1364,6 +1364,11 @@ struct task_struct {
- 
- 	unsigned long sas_ss_sp;
- 	size_t sas_ss_size;
-+
-+#ifdef CONFIG_SIGNAL_CANARY
-+	u32 signal_canary; /* sigreturn exploit mitigation */
-+#endif
-+
- 	int (*notifier)(void *priv);
- 	void *notifier_data;
- 	sigset_t *notifier_mask;
+ #ifdef IP6_TNL_DEBUG
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index e5a453c..f438004 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1828,4 +1828,5 @@ xfrm_tunnel_failed:
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_RTNL_LINK("sit");
+ MODULE_ALIAS_NETDEV("sit0");
 -- 
-1.9.1
+1.9.0
 
