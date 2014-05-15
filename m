@@ -1,272 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaEONkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:40:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61272 "EHLO mga09.intel.com"
+	id S1754654AbaEONl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:41:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34046 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985AbaEONkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:40:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="540952716"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 2/4] ACPI / LPSS: custom power domain for LPSS
-Date: Thu, 15 May 2014 16:40:24 +0300
-Message-Id: <1400161226-24067-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1752936AbaEONlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:41:55 -0400
+Message-ID: <5374C40F.3090402@ti.com>
+Date: Thu, 15 May 2014 19:11:35 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Rahul Sharma <rahul.sharma@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>	<1584926.JkD1mqdaNu@amdc1032> <CAPdUM4O2Qpf+XmtRoXNVfSBODKJqtG9uUfAJpt-zvDwBwh05oQ@mail.gmail.com>
+In-Reply-To: <CAPdUM4O2Qpf+XmtRoXNVfSBODKJqtG9uUfAJpt-zvDwBwh05oQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A power domain where we save the context of the additional
-LPSS registers. We need to do this or all LPSS devices are
-left in reset state when resuming from D3 on some Baytrails.
-The devices with the fractional clock divider also have
-zeros for N and M values after resuming unless they are
-reset.
 
-Li Aubrey found the root cause for the issue. The idea of
-using power domain for LPSS came from Mika Westerberg.
 
-Reported-by: Jin Yao <yao.jin@linux.intel.com>
-Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/acpi/acpi_lpss.c | 133 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 126 insertions(+), 7 deletions(-)
+On Thursday 15 May 2014 07:05 PM, Rahul Sharma wrote:
+> Hi,
+> 
+> On 15 May 2014 19:01, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+>>
+>> Hi,
+>>
+>> On Thursday, May 15, 2014 12:47:21 AM Rahul Sharma wrote:
+>>> From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>>>
+>>> Add exynos-simple-phy driver to support a single register
+>>> PHY interfaces present on Exynos4 SoC.
+>>>
+>>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>>> Signed-off-by: Rahul Sharma <Rahul.Sharma@samsung.com>
+>>>
+>>> ---
+>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   56 ++++++
+>>>  drivers/phy/Kconfig                                |    5 +
+>>>  drivers/phy/Makefile                               |    1 +
+>>>  drivers/phy/exynos-simple-phy.c                    |  189 ++++++++++++++++++++
+>>>  include/dt-bindings/phy/exynos-simple-phy.h        |   27 +++
+>>>  5 files changed, 278 insertions(+)
+>>>  create mode 100644 drivers/phy/exynos-simple-phy.c
+>>>  create mode 100644 include/dt-bindings/phy/exynos-simple-phy.h
+>>
+>> [...]
+>>
+>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>> index 16a2f06..2a13e0d 100644
+>>> --- a/drivers/phy/Kconfig
+>>> +++ b/drivers/phy/Kconfig
+>>> @@ -178,4 +178,9 @@ config PHY_XGENE
+>>>       help
+>>>         This option enables support for APM X-Gene SoC multi-purpose PHY.
+>>>
+>>> +config EXYNOS_SIMPLE_PHY
+>>> +     tristate "Exynos Simple PHY driver"
+>>
+>> Please limit this driver to EXYNOS platforms with:
+>>
+>>         depends on ARCH_EXYNOS
+>>
+>> or (optionally)
+>>
+>>         depends on ARCH_EXYNOS || COMPILE_TEST
+>>
+>> Moreover the generic PHY dependency is missing.  It can be fixed with:
+>>
+>>         select GENERIC_PHY
+>>
+> 
+> Yea, I will fix this part.
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 69e29f4..24e49a5 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/platform_data/clk-lpss.h>
- #include <linux/pm_runtime.h>
-+#include <linux/delay.h>
- 
- #include "internal.h"
- 
-@@ -43,6 +44,8 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_TX_INT			0x20
- #define LPSS_TX_INT_MASK		BIT(1)
- 
-+#define LPSS_PRV_REG_COUNT		9
-+
- struct lpss_shared_clock {
- 	const char *name;
- 	unsigned long rate;
-@@ -58,6 +61,7 @@ struct lpss_device_desc {
- 	unsigned int prv_offset;
- 	size_t prv_size_override;
- 	bool clk_gate;
-+	bool save_ctx;
- 	struct lpss_shared_clock *shared_clock;
- 	void (*setup)(struct lpss_private_data *pdata);
- };
-@@ -72,6 +76,7 @@ struct lpss_private_data {
- 	resource_size_t mmio_size;
- 	struct clk *clk;
- 	const struct lpss_device_desc *dev_desc;
-+	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
- };
- 
- static void lpss_uart_setup(struct lpss_private_data *pdata)
-@@ -116,6 +121,7 @@ static struct lpss_shared_clock pwm_clock = {
- 
- static struct lpss_device_desc byt_pwm_dev_desc = {
- 	.clk_required = true,
-+	.save_ctx = true,
- 	.shared_clock = &pwm_clock,
- };
- 
-@@ -128,6 +134,7 @@ static struct lpss_device_desc byt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.clk_gate = true,
-+	.save_ctx = true,
- 	.shared_clock = &uart_clock,
- 	.setup = lpss_uart_setup,
- };
-@@ -141,6 +148,7 @@ static struct lpss_device_desc byt_spi_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x400,
- 	.clk_gate = true,
-+	.save_ctx = true,
- 	.shared_clock = &spi_clock,
- };
- 
-@@ -156,6 +164,7 @@ static struct lpss_shared_clock i2c_clock = {
- static struct lpss_device_desc byt_i2c_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
-+	.save_ctx = true,
- 	.shared_clock = &i2c_clock,
- };
- 
-@@ -449,6 +458,102 @@ static void acpi_lpss_set_ltr(struct device *dev, s32 val)
- 	}
- }
- 
-+#ifdef CONFIG_PM
-+static void acpi_lpss_save_ctx(struct device *dev)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+	int i;
-+
-+	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-+		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
-+		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02x\n",
-+			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-+	}
-+}
-+
-+static void acpi_lpss_restore_ctx(struct device *dev)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+	int i;
-+
-+	/* PCI spec expects 10ms delay when resuming from D3 to D0 */
-+	msleep(10);
-+
-+	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-+		__lpss_reg_write(pdata->prv_reg_ctx[i], pdata, i * sizeof(u32));
-+		dev_dbg(dev, "restoring 0x%08x to LPSS reg at offset 0x%02x\n",
-+			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-+	}
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int acpi_lpss_suspend_late(struct device *dev)
-+{
-+	int ret = pm_generic_suspend_late(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_save_ctx(dev);
-+	return acpi_dev_suspend_late(dev);
-+}
-+
-+static int acpi_lpss_restore_early(struct device *dev)
-+{
-+	int ret = acpi_dev_resume_early(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_restore_ctx(dev);
-+	return pm_generic_resume_early(dev);
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static int acpi_lpss_runtime_suspend(struct device *dev)
-+{
-+	int ret = pm_generic_runtime_suspend(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_save_ctx(dev);
-+	return acpi_dev_runtime_suspend(dev);
-+}
-+
-+static int acpi_lpss_runtime_resume(struct device *dev)
-+{
-+	int ret = acpi_dev_runtime_resume(dev);
-+
-+	if (ret)
-+		return ret;
-+
-+	acpi_lpss_restore_ctx(dev);
-+	return pm_generic_runtime_resume(dev);
-+}
-+#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
-+
-+static struct dev_pm_domain acpi_lpss_pm_domain = {
-+	.ops = {
-+#ifdef CONFIG_PM_SLEEP
-+		.suspend_late = acpi_lpss_suspend_late,
-+		.restore_early = acpi_lpss_restore_early,
-+		.prepare = acpi_subsys_prepare,
-+		.suspend = acpi_subsys_suspend,
-+		.resume_early = acpi_subsys_resume_early,
-+		.freeze = acpi_subsys_freeze,
-+		.poweroff = acpi_subsys_suspend,
-+		.poweroff_late = acpi_subsys_suspend_late,
-+#endif
-+#ifdef CONFIG_PM_RUNTIME
-+		.runtime_suspend = acpi_lpss_runtime_suspend,
-+		.runtime_resume = acpi_lpss_runtime_resume,
-+#endif
-+	},
-+};
-+
- static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 				     unsigned long action, void *data)
- {
-@@ -456,7 +561,6 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 	struct lpss_private_data *pdata;
- 	struct acpi_device *adev;
- 	const struct acpi_device_id *id;
--	int ret = 0;
- 
- 	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
- 	if (!id || !id->driver_data)
-@@ -466,7 +570,7 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 		return 0;
- 
- 	pdata = acpi_driver_data(adev);
--	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
-+	if (!pdata || !pdata->mmio_base)
- 		return 0;
- 
- 	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
-@@ -474,12 +578,27 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 		return 0;
- 	}
- 
--	if (action == BUS_NOTIFY_ADD_DEVICE)
--		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
--	else if (action == BUS_NOTIFY_DEL_DEVICE)
--		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-+	switch (action) {
-+	case BUS_NOTIFY_BOUND_DRIVER:
-+		if (pdata->dev_desc->save_ctx)
-+			pdev->dev.pm_domain = &acpi_lpss_pm_domain;
-+		break;
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+		if (pdata->dev_desc->save_ctx)
-+			pdev->dev.pm_domain = NULL;
-+		break;
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		if (pdata->dev_desc->ltr_required)
-+			return sysfs_create_group(&pdev->dev.kobj,
-+						  &lpss_attr_group);
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		if (pdata->dev_desc->ltr_required)
-+			sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-+	default:
-+		break;
-+	}
- 
--	return ret;
-+	return 0;
- }
- 
- static struct notifier_block acpi_lpss_nb = {
--- 
-2.0.0.rc2
+While at that, change the header of the driver file to *2014*
 
+Thanks
+Kishon
+> 
+> Regards,
+> Rahul Sharma.
+> 
+>>> +     help
+>>> +       Support for 1-bit PHY controllers on SoCs from Exynos family.
+>>> +
+>>>  endmenu
+>>
+>> Best regards,
+>> --
+>> Bartlomiej Zolnierkiewicz
+>> Samsung R&D Institute Poland
+>> Samsung Electronics
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
