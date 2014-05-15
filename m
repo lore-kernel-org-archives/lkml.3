@@ -1,81 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaEOGQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:16:09 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:11876 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753594AbaEOGQG (ORCPT
+	id S1752458AbaEOG22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:28:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36887 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaEOG20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:16:06 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-16.tower-194.messagelabs.com!1400134561!11820583!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Thu, 15 May 2014 08:16:01 +0200
-Date: Thu, 15 May 2014 08:15:55 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        <linux-serial@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 14 (tty/serial/men_z135_uart.c)
-Message-ID: <20140515061555.GA13254@jtlinux>
-References: <20140514182649.33e63e49@canb.auug.org.au>
- <53739A4E.2040009@infradead.org>
+	Thu, 15 May 2014 02:28:26 -0400
+Message-ID: <53745E84.2000002@ti.com>
+Date: Thu, 15 May 2014 11:58:20 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53739A4E.2040009@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+To: Bin Liu <binmlist@gmail.com>
+CC: Daniel Mack <zonque@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        "Liu, Bin" <b-liu@ti.com>
+Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
+References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>	<5371EA01.3080307@gmail.com>	<537208A9.4020507@ti.com>	<53720E0F.3070008@gmail.com>	<537216AC.4090401@ti.com>	<53721ABF.8060705@gmail.com>	<53721D24.4090704@ti.com>	<CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>	<53730130.3000300@ti.com>	<CADYTM3YH2TJpS0z-Pb=rQPVV5ETHwfYMOOv=BohNB7UmahC9Rw@mail.gmail.com> <CADYTM3bfnhCVi8VKiypMsQOndmzG-=yPksYNV+qZ8X73LPTZog@mail.gmail.com>
+In-Reply-To: <CADYTM3bfnhCVi8VKiypMsQOndmzG-=yPksYNV+qZ8X73LPTZog@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 09:31:10AM -0700, Randy Dunlap wrote:
-> On 05/14/2014 01:26 AM, Stephen Rothwell wrote:
-> > Hi all,
-> >
-> > Changes since 20140513:
-> >
->
-> on x86_64:
->
-> CONFIG_SERIAL_CORE=m
-> but SERIAL_MEN_Z135=y.
->
-> drivers/built-in.o: In function `men_z135_remove':
-> men_z135_uart.c:(.text+0x5bc53): undefined reference to `uart_remove_one_port'
-> drivers/built-in.o: In function `men_z135_set_termios':
-> men_z135_uart.c:(.text+0x5c3b5): undefined reference to `uart_get_baud_rate'
-> men_z135_uart.c:(.text+0x5c415): undefined reference to `uart_update_timeout'
-> drivers/built-in.o: In function `men_z135_handle_tx':
-> men_z135_uart.c:(.text+0x5c8f4): undefined reference to `uart_write_wakeup'
-> drivers/built-in.o: In function `men_z135_intr':
-> men_z135_uart.c:(.text+0x5ce28): undefined reference to `uart_handle_dcd_change'
-> men_z135_uart.c:(.text+0x5ce51): undefined reference to `uart_handle_cts_change'
-> drivers/built-in.o: In function `men_z135_probe':
-> men_z135_uart.c:(.text+0x5cf96): undefined reference to `uart_add_one_port'
-> drivers/built-in.o: In function `men_z135_init':
-> men_z135_uart.c:(.init.text+0x26e9): undefined reference to `uart_register_driver'
-> men_z135_uart.c:(.init.text+0x2766): undefined reference to `uart_unregister_driver'
-> drivers/built-in.o: In function `men_z135_exit':
-> men_z135_uart.c:(.exit.text+0xe4): undefined reference to `uart_unregister_driver'
-> make[1]: *** [vmlinux] Error 1
->
+Hi Bin,
 
-Hi Randy,
+On 5/14/2014 10:13 PM, Bin Liu wrote:
+> George,
+>
+> On Wed, May 14, 2014 at 9:34 AM, Bin Liu <binmlist@gmail.com> wrote:
+>> George,
+>>
+>> On Wed, May 14, 2014 at 12:37 AM, George Cherian <george.cherian@ti.com> wrote:
+>>> On 5/14/2014 12:07 AM, Bin Liu wrote:
+>>>> Hi,
+>>>>
+>>>> On Tue, May 13, 2014 at 8:24 AM, George Cherian <george.cherian@ti.com>
+>>>> wrote:
+>>>>> Hi Daniel,
+>>>>>
+>>>>>
+>>>>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
+>>>>>> Hi George,
+>>>>>>
+>>>>>> On 05/13/2014 02:57 PM, George Cherian wrote:
+>>>>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the MUSB_BABBLE_CTL
+>>>>>>> reg.
+>>>>>>> can you try with the following patch.
+>>>>>>>
+>>>>>>> diff --git a/drivers/usb/musb/musb_dsps.c
+>>>>>>> b/drivers/usb/musb/musb_dsps.c
+>>>>>>> index 1ae6681..1160cd1 100644
+>>>>>>> --- a/drivers/usb/musb/musb_dsps.c
+>>>>>>> +++ b/drivers/usb/musb/musb_dsps.c
+>>>>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
+>>>>>>>            * logic enabled.
+>>>>>>>            */
+>>>>>>>           val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
+>>>>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
+>>>>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
+>>>>>>>                   glue->sw_babble_enabled = true;
+>>>>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
+>>>>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
+>>>>>>> +       }
+>>>>>>>           ret = dsps_musb_dbg_init(musb, glue);
+>>>>>>>           if (ret)
+>>>>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result as
+>>>>>> without the patch: a full glue reset is conducted. Do I get you right
+>>>>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions when
+>>>>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
+>>>>>>
+>>>>> Basically, there are 2 types of babble conditions.
+>>>>> 1) Transient babble condition - which could be recovered from without an
+>>>>> IP
+>>>>> reset .
+>>>>> 2) Babble condition - which could be recovered from only by doing an IP
+>>>>> reset.
+>>>>>
+>>>>> Looks like you are always hitting case 2 (Most times am also hitting the
+>>>>> same).
+>>>>> Case 1 is really hard to reproduce. I don't have a reliable method as of
+>>>>> now
+>>>>> to
+>>>>> reproduce this case consistently.
+>>>>>
+>>>>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
+>>>>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
+>>>>>> (a_wait_bcon)
+>>>>>> [   19.685815] usb 1-1: USB disconnect, device number 3
+>>>>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL value
+>>>>>> 44
+>>>>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
+>>>>>>
+>>>>>>
+>>>>>> I don't quite follow, especially as I lack documentation of the IP core.
+>>>>>> How do you test babble errors, is there any way to force them to happen
+>>>>>> reliably?
+>>>>>
+>>>>> There is no 100% reliable method to force it to happen. Following is
+>>>> I have a way to force babble happen reliably - shorting DP or DM to
+>>>> VBUS. I opened the far-end plug of the USB cable, so I can easily
+>>>> short DP or DM to VBUS.
+>>> Good to know that you have a reliable way to test babble condition.
+>>> Can you please do a quick test on 3.15.0-rc4 with the series applied?
+>>> In case of any assistance please do let me know.
+>> Sure, but could you please re-send those patches to my corporate email
+>> so that I can apply them from Thunderbird?
+> You don't have to resend the patches. Nishanth Menon showed me a way
+> to extract the patch from Gmail - Thanks Nishanth.
+>
+> But which repo do you want to me test with? The first patch ([PATCH v2
+> 1/5] usb: musb: core: Convert babble recover work to delayed work)
+> does not apply to v3.15-rc4 tag. the current musb_core.c does not have
+> the recovery work for musb. Please let me know what I missed.
+Oops I missed to mention the same.
+Please try on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git master
+> Thanks,
+> -Bin.
+>
+>> I read these linux-usb emails in Gmail, and  am not aware of any easy
+>> way to extract patches from Gmail.
+>>
+>> BTY, I tested with TI 3.12.10 kernel, in which I guess the babble
+>> handling is similar to this patch set. With TI3.12.10, MISC is always
+>> 0x64, so MUSB never restarts.
+>>
+>> Thanks,
+>> -Bin.
+>>
+>>>> But the interesting thing is that with TI 3.2 kernel, shorting DP or
+>>>> DM to VBUS causes MISC register to be 0x4, but the result is
+>>>> completely opposite in TI 3.12.10 kernel, which cause MISC to be 0x64.
+>>>>
+>>>> So in the 3.2 kernel, the babble handing resets the controller, but
+>>>> the 3.12.10 does not.
+>>>>
+>>>> Regards,
+>>>> -Bin.
+>>>>
+>>>>> my setup ,
+>>>>> I have a HUB with 4 devices connected , which gives me a Babble interrupt
+>>>>> on both connects and disconnects ( Not always though).
+>>>>>
+>>>>>> Anyway, the full glue layer solves this rare condition quite well for
+>>>>>> me. Is there any downside of this?
+>>>>>>
+>>>>>>
+>>>>>> Daniel
+>>>>>>
+>>>>> --
+>>>>> -George
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>>>>
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>> --
+>>> -George
+>>>
 
-There is a not yet merged patch from Arnd Bergmann, which can be found here:
-https://lkml.org/lkml/2014/4/29/529
 
-I've just checked and it resolves the problem at my place, can you please
-verify it as well.
+-- 
+-George
 
-Thanks,
-	Johannes
