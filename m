@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaEOGew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:34:52 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:46996 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaEOGev (ORCPT
+	id S1753198AbaEOGlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:41:36 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:55857 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaEOGlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:34:51 -0400
-Date: Thu, 15 May 2014 10:34:42 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH RFC 1/3] slub: keep full slabs on list for per memcg
- caches
-Message-ID: <20140515063441.GA32113@esperanza>
-References: <cover.1399982635.git.vdavydov@parallels.com>
- <bc70b480221f7765926c8b4d63c55fb42e85baaf.1399982635.git.vdavydov@parallels.com>
- <alpine.DEB.2.10.1405141114040.16512@gentwo.org>
+	Thu, 15 May 2014 02:41:35 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405141114040.16512@gentwo.org>
+Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1399560990-1402858-5-git-send-email-arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, "Arnd Bergmann" <arnd@arndb.de>,
+        "Linus Walleij" <linus.walleij@linaro.org>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-5-git-send-email-arnd@arndb.de>
+Message-ID: <20140515064128.9521.73638@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk/versatile: export symbols for impd1
+Date: Wed, 14 May 2014 23:41:28 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 11:16:36AM -0500, Christoph Lameter wrote:
-> On Tue, 13 May 2014, Vladimir Davydov wrote:
+Quoting Arnd Bergmann (2014-05-08 07:56:16)
+> The impd1 code on mach-integrator can be a loadable module,
+> so we have to export icst_clk_register, integrator_impd1_clk_init
+> and integrator_impd1_clk_exit.
 > 
-> > Currently full slabs are only kept on per-node lists for debugging, but
-> > we need this feature to reparent per memcg caches, so let's enable it
-> > for them too.
-> 
-> That will significantly impact the fastpaths for alloc and free.
-> 
-> Also a pretty significant change the logic of the fastpaths since they
-> were not designed to handle the full lists. In debug mode all operations
-> were only performed by the slow paths and only the slow paths so far
-> supported tracking full slabs.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-That's the minimal price we have to pay for slab re-parenting, because
-w/o it we won't be able to look up for all slabs of a particular per
-memcg cache. The question is, can it be tolerated or I'd better try some
-other way?
+Taken into clk-next.
 
-> 
-> > @@ -2587,6 +2610,9 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-> >
-> >  			} else { /* Needs to be taken off a list */
-> >
-> > +				if (kmem_cache_has_cpu_partial(s) && !prior)
-> > +					new.frozen = 1;
-> > +
-> >  	                        n = get_node(s, page_to_nid(page));
-> 
-> Make this code conditional?
+Thanks!
+Mike
 
-No problem, this patch is just a draft. Thanks to static keys, it won't
-be difficult to eliminate any overhead if there is no kmem-active
-memcgs.
-
-Thanks.
-
+> ---
+>  drivers/clk/versatile/clk-icst.c  | 1 +
+>  drivers/clk/versatile/clk-impd1.c | 2 ++
+>  2 files changed, 3 insertions(+)
 > 
-> >  				/*
-> >  				 * Speculatively acquire the list_lock.
-> > @@ -2606,6 +2632,12 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-> >  		object, new.counters,
-> >  		"__slab_free"));
-> >
-> > +	if (unlikely(n) && new.frozen && !was_frozen) {
-> > +		remove_full(s, n, page);
-> > +		spin_unlock_irqrestore(&n->list_lock, flags);
-> > +		n = NULL;
-> > +	}
-> > +
-> >  	if (likely(!n)) {
+> diff --git a/drivers/clk/versatile/clk-icst.c b/drivers/clk/versatile/clk-icst.c
+> index a820b0c..7f3868a 100644
+> --- a/drivers/clk/versatile/clk-icst.c
+> +++ b/drivers/clk/versatile/clk-icst.c
+> @@ -160,3 +160,4 @@ struct clk *icst_clk_register(struct device *dev,
+>  
+>         return clk;
+>  }
+> +EXPORT_SYMBOL_GPL(icst_clk_register);
+> diff --git a/drivers/clk/versatile/clk-impd1.c b/drivers/clk/versatile/clk-impd1.c
+> index 31b44f0..264d8d5 100644
+> --- a/drivers/clk/versatile/clk-impd1.c
+> +++ b/drivers/clk/versatile/clk-impd1.c
+> @@ -133,6 +133,7 @@ void integrator_impd1_clk_init(void __iomem *base, unsigned int id)
+>         for (i = 0; i < ARRAY_SIZE(imc->clks); i++)
+>                 clkdev_add(imc->clks[i]);
+>  }
+> +EXPORT_SYMBOL_GPL(integrator_impd1_clk_init);
+>  
+>  void integrator_impd1_clk_exit(unsigned int id)
+>  {
+> @@ -155,3 +156,4 @@ void integrator_impd1_clk_exit(unsigned int id)
+>         kfree(imc->vco2name);
+>         kfree(imc->vco1name);
+>  }
+> +EXPORT_SYMBOL_GPL(integrator_impd1_clk_exit);
+> -- 
+> 1.8.3.2
 > 
-> Here too.
