@@ -1,160 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaEOIz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:55:59 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:6150
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752673AbaEOIz4 convert rfc822-to-8bit (ORCPT
+	id S1752683AbaEOI5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:57:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55087 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaEOI5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:55:56 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Richard Lee <superlibj8301@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "robherring2@gmail.com" <robherring2@gmail.com>
-CC: "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
-Thread-Topic: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
-Thread-Index: AQHPcAmh9FEH4l+knUOpi0O5NT2h4ZtBVhOQ
-Date: Thu, 15 May 2014 08:55:52 +0000
-Message-ID: <623d49a4a07f4e5a956ccc8c2725e557@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1400133427-5653-1-git-send-email-superlibj8301@gmail.com>
-In-Reply-To: <1400133427-5653-1-git-send-email-superlibj8301@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0212BDE3BE
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(164054003)(189002)(199002)(51704005)(99396002)(74662001)(21056001)(99286001)(76482001)(2656002)(74502001)(54356999)(77096999)(87936001)(50986999)(33646001)(83072002)(31966008)(76176999)(74316001)(77982001)(4396001)(76576001)(46102001)(2201001)(81542001)(81342001)(64706001)(19580405001)(20776003)(19580395003)(83322001)(85852003)(80022001)(15975445006)(79102001)(92566001)(101416001)(86362001)(15202345003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 May 2014 04:57:30 -0400
+Date: Thu, 15 May 2014 10:57:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Bruce Allan <bruce.w.allan@intel.com>
+Subject: Re: [REGRESSION] funny sched_domain build failure during resume
+Message-ID: <20140515085721.GH30445@twins.programming.kicks-ass.net>
+References: <20140509160455.GA4486@htj.dyndns.org>
+ <20140514140034.GM30445@twins.programming.kicks-ass.net>
+ <20140514170238.GB15690@htj.dyndns.org>
+ <20140514171051.GX30445@twins.programming.kicks-ass.net>
+ <20140514223648.GH15690@htj.dyndns.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wqp2XNkat9H91DRI"
+Content-Disposition: inline
+In-Reply-To: <20140514223648.GH15690@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
-> 
-> Static vm area boundary check:
-> 
->       paddr1 --->|       |
->                  |       |
->                  |-------| <-\--- svm->vm->addr(is page aligned)
->       paddr2 --->|       |    |
->                  |     --| <--|-- svm->vm->phys_addr
->                  |       |    |
->       paddr3 --->|       |    |
->                  |       |    |
->                  |-------| <--|-- next page boundary
->                  |       |    |
->       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
->                  |       |    |
->                  |       |    |
-> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
->                  | ///// |    |
->       paddr5 --->| guard |    |
->                  | page  |    |
->                  | ///// |    |
->                   -------  <-/--- svm->vm->addr + svm->vm_size
-> 
-> <1> If the paddr == paddr1, then continue;
-> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
->     then continue;
-> <3> if the paddr >= paddr5 then continue;
-> 
-> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
-> ---
->  arch/arm/mm/ioremap.c | 44 ++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 42 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-> index be69333..2fa41f4 100644
-> --- a/arch/arm/mm/ioremap.c
-> +++ b/arch/arm/mm/ioremap.c
-> @@ -47,16 +47,56 @@ static struct static_vm *find_static_vm_paddr(phys_addr_t
-> paddr,
->  {
->  	struct static_vm *svm;
->  	struct vm_struct *vm;
-> +	size_t offset;
-> +
-> +	/*
-> +	 * Make sure the size the mapping size is page aligned.
-> +	 */
-> +	size = PAGE_ALIGN((paddr & ~PAGE_SIZE) + size);
-> +	offset = paddr & ~PAGE_SIZE;
-> 
 
-Shouldn't it be PAGE_MASK ?
+--Wqp2XNkat9H91DRI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, May 14, 2014 at 06:36:48PM -0400, Tejun Heo wrote:
+> The patches are URL encoded.=20
 
->  	list_for_each_entry(svm, &static_vmlist, list) {
-> +		phys_addr_t paddr_end, phys_addr_end;
-> +		size_t vmoff;
-> +
->  		vm = &svm->vm;
->  		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
->  			continue;
->  		if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
->  			continue;
-> 
-> -		if (vm->phys_addr > paddr ||
-> -			paddr + size - 1 > vm->phys_addr + vm->size - 1)
-> +		/* Static vm area boundary check:
-> +		 *
-> +		 *       paddr1 --->|       |
-> +		 *                  |       |
-> +		 *                  |-------| <-\--- svm->vm->addr(page aligned)
-> +		 *       paddr2 --->|       |    |
-> +		 *                  |     --| <--|-- svm->vm->phys_addr
-> +		 *                  |       |    |
-> +		 *       paddr3 --->|       |    |
-> +		 *                  |       |    |
-> +		 *                  |-------| <--|-- next page boundary
-> +		 *                  |       |    |
-> +		 *       paddr4 --->|       |    | <----- svm->vm->size,
-> +		 *                  |       |    |         including guard page
-> +		 *                  |       |    |
-> +		 * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
-> +		 *                  | ///// |    |
-> +		 *       paddr5 --->| guard |    |
-> +		 *                  | page  |    |
-> +		 *                  | ///// |    |
-> +		 *                   -------  <-/-- svm->vm->addr + svm->vm_size
-> +		 *
-> +		 * <1> If paddr == paddr1, then continue;
-> +		 * <2> If paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
-> +		 *     then continue;
-> +		 * <3> if paddr >= paddr5 then continue;
-> +		 */
-> +		vmoff = vm->phys_addr & ~PAGE_SIZE;
+*sigh*.. evo used to do that, and now I think mutt does it because I've
+set up the whole GPG thing.
 
-And here.
+All my scripts already automagically decode it so I hadn't noticed.
 
-Thanks,
-BRs
-Xiubo
+I can give you some awk that undoes it if you want?
 
-> +		phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
-> +		paddr_end = paddr + size - offset;
-> +		if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
-> +			paddr_end - 1 > phys_addr_end - 1)
->  			continue;
-> 
->  		return svm;
-> --
-> 1.8.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+--Wqp2XNkat9H91DRI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdIFxAAoJEHZH4aRLwOS6vj8P/2v4mLOBLUTDcgQxQFHF+XxH
+LIbILxux6zgCBRrBdoFkqhwiBhvXD51iBXAfTIORK30rRcjvl7pjYc7HrZaBep72
+gw9JldIlVa5yOYHerGWAGdn/B6Vn+71UlOWBODSbBCYGFs8Kf93k2mfDEBUqpIWf
+UIez/aBJQoChFe3yBNGa8D+nBdfBhJcq+BM68ifVTnBhRr7JcW2ENrmUax5TBSky
+u4u/sWZckt6L9kKJ7W7GlceHTVRTH1EIYX/Qy9RNzm8mpmTazL5Tx9bV8yKbdWwE
+oi+5BIO+yJkuvcHQBkJS4pb4JB9rxTCQWY0ts6aP8iYH1aWKSSNHz0wys5MkPGWz
+fXB+O3izvzEYLFrp7y5tGBign5XY6GIhj3D6kLh5ApjJJ2LEzM5gMh3GYz0dXtxj
+UroUC+FljeH1XBMmTsFBOCvQwG0uswY0OiJDHsAbFyfg4L5T+NWCbwFkjZS97DyE
+9Cvf459Ste1EoFv2OhESG4sAGETf5oQl8l1Ci47QICbTG3dc2ml1zVN1PhzJBUxr
+WFGu/Rx9SW5JkUNurihK7/alaYdyYB4/zap8TmgwFh/Pmo2/Aia9/lz5pjHEf7LB
+U+XrvVWKU52zPTWTgO2oEQmm/4vwQATiUIGRsYoAKID8MmISdF0fFn0QOQlR/XFP
+G3dMGlj/ANdLV/Y/ETKk
+=//ZJ
+-----END PGP SIGNATURE-----
+
+--Wqp2XNkat9H91DRI--
