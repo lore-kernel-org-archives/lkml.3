@@ -1,153 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaEOMdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:33:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51309 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaEOMdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:33:37 -0400
-Message-ID: <5374B409.3000607@ti.com>
-Date: Thu, 15 May 2014 07:33:13 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754060AbaEOMd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:33:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752826AbaEOMd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 08:33:57 -0400
+Date: Thu, 15 May 2014 14:33:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Subject: Re: [uprobes/x86] 8ad8e9d3fd6: -7.5% aim7.2000.jobs-per-min,
+	-45.7% turbostat.%c1
+Message-ID: <20140515123332.GA15139@redhat.com>
+References: <53743B03.7030404@intel.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Mike Turquette <mturquette@linaro.org>, Tero Kristo <t-kristo@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, dt list <devicetree@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>,
-        lkml <linux-kernel@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 03/17] phy: ti-pipe3: add external clock support for PCIe
- PHY
-References: <1399383244-14556-1-git-send-email-kishon@ti.com>	<1399383244-14556-4-git-send-email-kishon@ti.com>	<53736CBC.2060702@ti.com>	<5373897C.6080504@ti.com>	<CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>	<5374859F.5080902@ti.com>	<53748819.8060705@ti.com>	<CAGo_u6qbbdAbdvrB3AFXSH1qD5MaBkJbi6oJJvvTWW4xfbmd_Q@mail.gmail.com>	<5374AC0A.7070709@ti.com> <CAGo_u6r8XtGHOvsfJKQMZ2ghFRz8x8_UhzyKE9jnwO6mJ2HYpQ@mail.gmail.com> <5374B09F.2080803@ti.com>
-In-Reply-To: <5374B09F.2080803@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53743B03.7030404@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 07:18 AM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Thursday 15 May 2014 05:42 PM, Nishanth Menon wrote:
->> On Thu, May 15, 2014 at 6:59 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>> Hi Nishant,
->>>
->>> On Thursday 15 May 2014 05:16 PM, Nishanth Menon wrote:
->>>> On Thu, May 15, 2014 at 4:25 AM, Roger Quadros <rogerq@ti.com> wrote:
->>>>> On 05/15/2014 12:15 PM, Kishon Vijay Abraham I wrote:
->>>>>> Hi Nishanth,
->>>>>>
->>>>>> On Wednesday 14 May 2014 09:04 PM, Nishanth Menon wrote:
->>>>>>> On Wed, May 14, 2014 at 10:19 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>>>>>> Hi Roger,
->>>>>>>>
->>>>>>>> On Wednesday 14 May 2014 06:46 PM, Roger Quadros wrote:
->>>>>>>>> Hi Kishon,
->>>>>>>>>
->>>>>>>>> On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
->>>>>>>>>> APLL used by PCIE phy can either use external clock as input or the clock
->>>>>>>>>> from DPLL. Added support for the APLL to use external clock as input here.
->>>>>>>>>>
->>>>>>>>>> Cc: Rajendra Nayak <rnayak@ti.com>
->>>>>>>>>> Cc: Tero Kristo <t-kristo@ti.com>
->>>>>>>>>> Cc: Paul Walmsley <paul@pwsan.com>
->>>>>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>>>>>>>> ---
->>>>>>>>>>  Documentation/devicetree/bindings/phy/ti-phy.txt |    4 ++
->>>>>>>>>>  drivers/phy/phy-ti-pipe3.c                       |   75 ++++++++++++++--------
->>>>>>>>>>  2 files changed, 52 insertions(+), 27 deletions(-)
->>>>>>>>>>
->>>>>>>>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>>>>>>>> index bc9afb5..d50f8ee 100644
->>>>>>>>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>>>>>>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
->>>>>>>>>> @@ -76,6 +76,10 @@ Required properties:
->>>>>>>>>>     * "dpll_ref_m2" - external dpll ref clk
->>>>>>>>>>     * "phy-div" - divider for apll
->>>>>>>>>>     * "div-clk" - apll clock
->>>>>>>>>> +   * "apll_mux" - mux for pcie apll
->>>>>>>>>> +   * "refclk_ext" - external reference clock for pcie apll
->>>>>>>>>> + - ti,ext-clk: To specifiy if PCIE apll should use external clock. Applicable
->>>>>>>>>> +   only to PCIE PHY.
->>>>>>>>>
->>>>>>>>> Instead of specifying both clock sources "dpll_ref_clock", "refclk_ext" and then specifying a 3rd control option "ti,ext-clk" to select one of the 2 sources, why can't the DT just supply one clock source, i.e. the one that is being used in the board instance? The driver should then just configure the clock rate that is needed at that node. Shouldn't the clock framework automatically take care of muxing and parent rates?
->>>>>>>>
->>>>>>>> Want the dt to have all the clocks used by the controller. "ti,ext-clk" should
->>>>>>>> go in the board dt file (suggested by Nishanth).
->>>>>>>> The point is at some point later if some one wants to change the clock source,
->>>>>>>> it should be a simple enabling "ti,ext-clk" flag instead of finding the clock
->>>>>>>> phandle etc..
->>>>>>>
->>>>>>> Wonder if that is implicit by the presence of  "refclk_ext" in the
->>>>>>> clocks provided?
->>>>>>
->>>>>> IMO the presence of "refclk_ext" is useless unless the board indicates it
->>>>>> provides the clock source.
->>>>>>
->>>>>> refclk_ext holds phandle for *fixed-clock*, so irrespective of whether the
->>>>>> board provides a clock or not, it can have that handle for configuring in PRCM.
->>>>>> However if the board does not provide the clock source, configuring refclk_ext
->>>>>> in PRCM is useless.
->>>>>
->>>>> I think what Nishant meant is that if "refclk_ext" is provided it means that the driver
->>>>> should use that over "dpll_ref_clock" so no need of a separate "ti,ext-clk" flag.
->>>>
->>>> yes, thank you for clarifying - it does indeed redundant to have
->>>> "ti,ext-clk". and apologies on being a little obscure in the comment.
->>>
->>> Irrespective of whether external reference clock is used or not, all DRA7
->>> (apll) has an input for external reference clock (and also a PRCM register for
->>> programming it) and it has to be specified in dt no?
->>
->> Why is that a binding for ti-phy? that is a problem for the APLL clock
->> driver (selecting it's own source). PHY properties should describe
->> itself -> let the bindings of the APLL describe itself. please dont
->> mix the two up.
-> 
-> The apll clock node is like this
-> 
-> apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
->         compatible = "mux-clock";
->         clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
->         #clock-cells = <0>;
->         reg = <0x4a00821c 0x4>;
->         bit-mask = <0x80>;
-> };
-> 
-> The external reference clock is denoted by *pciesref_acs_clk_ck*.
-> 
-> refclk_ext holds the phandle to *pciesref_acs_clk_ck* and is used in
-> "clk_set_parent" to set the parent of apll mux.
+Hi Jet,
 
-So, How about this: if refclk_ext is not defined, dont do setparent,
-if it is defined, do setparent.
-in short:
-Optional Properties:
-* "refclk_ext" - external reference clock for pcie apll - if defined,
-used as the parent to "apll_mux"
+On 05/15, Jet Chen wrote:
+>
+> we noticed the below changes on
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> commit 8ad8e9d3fd64f101eed6652964670672d699e563 ("uprobes/x86: Introduce uprobe_xol_ops and arch_uprobe->ops")
+>
+> Test case: lkp-snb01/aim7/signal_test
+>
+> 34e7317d6ae8f61  8ad8e9d3fd64f101eed665296
+> ---------------  -------------------------
+>     230689 ~ 0%      -7.5%     213485 ~ 0%  TOTAL aim7.2000.jobs-per-min
+>       0.51 ~30%     -45.7%       0.28 ~10%  TOTAL turbostat.%c1
+>        430 ~17%     +27.8%        549 ~15%  TOTAL vmstat.procs.r
+>       0.83 ~14%     +38.1%       1.15 ~12%  TOTAL perf-profile.cpu-cycles.copy_pte_range.copy_page_range.copy_process.do_fork.sys_clone
+>     106076 ~ 4%     +22.4%     129816 ~ 3%  TOTAL softirqs.RCU
+>      12117 ~ 6%      -9.9%      10914 ~ 6%  TOTAL slabinfo.kmalloc-256.active_objs
+>      32163 ~17%     +39.4%      44824 ~12%  TOTAL time.voluntary_context_switches
+>     276487 ~ 1%     +16.5%     322091 ~ 1%  TOTAL time.involuntary_context_switches
+>      83.14 ~ 0%     +13.3%      94.21 ~ 0%  TOTAL time.user_time
+>     108800 ~ 2%      +9.4%     119014 ~ 3%  TOTAL time.minor_page_faults
+>       1255 ~ 0%      +9.9%       1379 ~ 0%  TOTAL time.system_time
+>       6774 ~ 1%      +8.8%       7373 ~ 1%  TOTAL vmstat.system.cs
+>      52.15 ~ 0%      +8.0%      56.34 ~ 0%  TOTAL time.elapsed_time
+>      25185 ~ 0%      +2.4%      25784 ~ 0%  TOTAL vmstat.system.in
+>      79.23 ~ 0%      +2.0%      80.80 ~ 0%  TOTAL turbostat.%c0
+>       2567 ~ 0%      +1.9%       2615 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+>        112 ~ 0%      +1.3%        113 ~ 0%  TOTAL turbostat.Cor_W
+>        138 ~ 0%      +1.0%        139 ~ 0%  TOTAL turbostat.Pkg_W
 
-That said, my problem in general with this approach(which many folks
-have taken of describing parent of clock X in hardware block binding
-for Y) is the following:
+Cough... this looks simply impossible ;)
 
-The binding now has dependency on clock tree hierarchy. What if
-towmorrow, we have a tree where refclk_ext parent of muxZ parent of
-apll_mux? the binding breaks down. Lets not forget that we consider DT
-as an ABI - we dont want to change the binding in the future.
+Not only this patch "obviously can not" cause any noticable difference
+performance-wise, the code changed by this patch is not executed unless
+you play with uprobes?
 
-I had always preferred describing parent-child relationship of clocks
-by the approach Tero posted: https://patchwork.kernel.org/patch/3871551/
+Oleg.
 
-Maybe Mike and Tero could help here?
-
--- 
-Regards,
-Nishanth Menon
