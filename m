@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861AbaEOToq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:44:46 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:62682 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544AbaEOTol (ORCPT
+	id S1755929AbaEOTp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:45:29 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40559 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaEOTp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:44:41 -0400
-Date: Thu, 15 May 2014 12:44:37 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: roundup_pow_of_two() may not handle 64-bit integers
-Message-ID: <20140515194437.GM28907@ld-irv-0074>
-References: <20140515022238.GL28907@ld-irv-0074>
- <29314.1400166189@warthog.procyon.org.uk>
+	Thu, 15 May 2014 15:45:27 -0400
+Date: Thu, 15 May 2014 15:45:23 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@kernel.org, rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        fweisbec@gmail.com, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 UPDATED 3/3] CPU hotplug, smp: Flush any pending IPI
+ callbacks before CPU offline
+Message-ID: <20140515194523.GD21306@htj.dyndns.org>
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
+ <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com>
+ <20140515191938.GB21306@htj.dyndns.org>
+ <537514D3.4060308@linux.vnet.ibm.com>
+ <20140515193656.GM4570@linux.vnet.ibm.com>
+ <537518D6.6030006@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <29314.1400166189@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <537518D6.6030006@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 04:03:09PM +0100, David Howells wrote:
-> Brian Norris <computersforpeace@gmail.com> wrote:
-> > I'm looking to use roundup_pow_of_two() (actually, order_base_2())
-> > from <linux/log2.h>, but it seems that it only supports 64-bit integers
-> > if your toolchain uses a 64-bit 'unsigned long' type. This is strange,
-> > considering that ilog2() is explicitly designed for 32-bit or 64-bit
-> > compatibility.
+On Fri, May 16, 2014 at 01:13:18AM +0530, Srivatsa S. Bhat wrote:
+> On 05/16/2014 01:06 AM, Paul E. McKenney wrote:
+> > On Fri, May 16, 2014 at 12:56:11AM +0530, Srivatsa S. Bhat wrote:
+> >> On 05/16/2014 12:49 AM, Tejun Heo wrote:
+> >>> Hello,
+> >>>
+> >>> On Fri, May 16, 2014 at 12:44:13AM +0530, Srivatsa S. Bhat wrote:
+> >>>>  /*
+> >>>> + * flush_smp_call_function_queue - Flush any pending smp-call-function
+> >>>
+> >>> Don't we need a blank line here?
+> >>
+> >> Hmm? That sentence continues on the next line, hence I didn't add any blank
+> >> line there.
+> > 
+> > Tejun might be wanting this to be a docbook comment, in which case
+> > it also needs "/**" at the beginning of the comment.
+> > 
 > 
-> ilog2() was explicitly designed for use with 'unsigned long'.  See the commit
-> description (f0d1b0b30d250a07627ad8b9fbbb5c7cc08422e8).  It may work with
-> unsigned long long, however...
+> Oh, I see. Like this?
 
-That's another confusing point; the commit description says 'unsigned
-long', but the code shows nothing of that sort, and the comments say
-nearly the reverse (mentioning '32-bit and 64-bit', not 'unsigned
-long'). The code only referenes ULL constants, and it selects a 32-bit
-or 64-bit runtime version based on the type. To me, this demonstrates an
-explicit design for "32-bit or 64-bit", regardless of the dimensions of
-your 'long'.
+Yeah, looks good to me.
 
-So this leaves me with 2 main issues:
+Thanks.
 
-(1) Can we make <linux/ilog2.h> have some sense of consistency? If so,
-    how?
-     - Enforce the 'unsigned long' design (i.e., don't support
-       ilog2(u64) when sizeof(unsigned long) == 4)?
-     - Make all high-level macros automatically support 32-bit or 64-bit,
-       regardless of type?
-     - Split out 32-bit vs. 64-bit functions for everything?
-
-    Obviously some of these options are sillier than others.
-
-(2) Powerpc (and maybe some of SH's PCI) code has a potential bug, due
-    to using roundup_pow_of_two() on type phys_addr_t, which could
-    overflow for LPAE systems with large physical memory ranges. Is this
-    a legitimate concern?
-
-Brian
+-- 
+tejun
