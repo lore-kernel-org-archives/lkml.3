@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaEOOvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:51:11 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:64267 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142AbaEOOvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:51:09 -0400
+	id S1755196AbaEOOvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:51:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312AbaEOOvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:51:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] af_rxrpc: Fix XDR length check in rxrpc key demarshalling.
+From: David Howells <dhowells@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Nathaniel Wesley Filardo <nwf@cs.jhu.edu>, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 15:51:22 +0100
+Message-ID: <20140515145122.29177.65285.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <20140422131309.9E6E1C40754@trevor.secretlab.ca>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
- <1397756521-29387-3-git-send-email-leif.lindholm@linaro.org> <20140422131309.9E6E1C40754@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 15 May 2014 15:50:48 +0100
-X-Google-Sender-Auth: dezU_rShc-vQyp0IQrY7aaIoESU
-Message-ID: <CACxGe6suKO5n0fg8dHGSwi0Esjbu6dyYdJPLH0AScKsDCABKbg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mips: dts: add device_type="memory" where missing
-To: Leif Lindholm <leif.lindholm@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: "patches@linaro.org" <patches@linaro.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        John Crispin <blogic@openwrt.org>, Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 2:13 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Thu, 17 Apr 2014 18:42:00 +0100, Leif Lindholm <leif.lindholm@linaro.org> wrote:
->> A few platforms lack a 'device_type = "memory"' for their memory
->> nodes, relying on an old ppc quirk in order to discover its memory.
->> Add this, to permit that quirk to be made ppc only.
->>
->> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
->> Cc: linux-mips@linux-mips.org
->> Cc: devicetree@vger.kernel.org
->> Cc: John Crispin <blogic@openwrt.org>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->
-> Acked-by: Grant Likely <grant.likely@linaro.org>
+From: Nathaniel W Filardo <nwf@cs.jhu.edu>
 
-Applied, thanks.
+There may be padding on the ticket contained in the key payload, so just ensure
+that the claimed token length is large enough, rather than exactly the right
+size.
 
-g.
+Signed-off-by: Nathaniel Wesley Filardo <nwf@cs.jhu.edu>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
->
->> ---
->>  arch/mips/lantiq/dts/easy50712.dts    |    1 +
->>  arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
->>  arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
->>  arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
->>  arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
->>  5 files changed, 5 insertions(+)
->>
->> diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
->> index fac1f5b..143b8a3 100644
->> --- a/arch/mips/lantiq/dts/easy50712.dts
->> +++ b/arch/mips/lantiq/dts/easy50712.dts
->> @@ -8,6 +8,7 @@
->>       };
->>
->>       memory@0 {
->> +             device_type = "memory";
->>               reg = <0x0 0x2000000>;
->>       };
->>
->> diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/ralink/dts/mt7620a_eval.dts
->> index 35eb874..709f581 100644
->> --- a/arch/mips/ralink/dts/mt7620a_eval.dts
->> +++ b/arch/mips/ralink/dts/mt7620a_eval.dts
->> @@ -7,6 +7,7 @@
->>       model = "Ralink MT7620A evaluation board";
->>
->>       memory@0 {
->> +             device_type = "memory";
->>               reg = <0x0 0x2000000>;
->>       };
->>
->> diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/ralink/dts/rt2880_eval.dts
->> index 322d700..0a685db 100644
->> --- a/arch/mips/ralink/dts/rt2880_eval.dts
->> +++ b/arch/mips/ralink/dts/rt2880_eval.dts
->> @@ -7,6 +7,7 @@
->>       model = "Ralink RT2880 evaluation board";
->>
->>       memory@0 {
->> +             device_type = "memory";
->>               reg = <0x8000000 0x2000000>;
->>       };
->>
->> diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/ralink/dts/rt3052_eval.dts
->> index 0ac73ea..ec9e9a0 100644
->> --- a/arch/mips/ralink/dts/rt3052_eval.dts
->> +++ b/arch/mips/ralink/dts/rt3052_eval.dts
->> @@ -7,6 +7,7 @@
->>       model = "Ralink RT3052 evaluation board";
->>
->>       memory@0 {
->> +             device_type = "memory";
->>               reg = <0x0 0x2000000>;
->>       };
->>
->> diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/ralink/dts/rt3883_eval.dts
->> index 2fa6b33..e8df21a 100644
->> --- a/arch/mips/ralink/dts/rt3883_eval.dts
->> +++ b/arch/mips/ralink/dts/rt3883_eval.dts
->> @@ -7,6 +7,7 @@
->>       model = "Ralink RT3883 evaluation board";
->>
->>       memory@0 {
->> +             device_type = "memory";
->>               reg = <0x0 0x2000000>;
->>       };
->>
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+ net/rxrpc/ar-key.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
+index 7633a752c65e..0ad080790a32 100644
+--- a/net/rxrpc/ar-key.c
++++ b/net/rxrpc/ar-key.c
+@@ -99,7 +99,7 @@ static int rxrpc_instantiate_xdr_rxkad(struct key *key, const __be32 *xdr,
+ 	_debug("tktlen: %x", tktlen);
+ 	if (tktlen > AFSTOKEN_RK_TIX_MAX)
+ 		return -EKEYREJECTED;
+-	if (8 * 4 + tktlen != toklen)
++	if (toklen < 8 * 4 + tktlen)
+ 		return -EKEYREJECTED;
+ 
+ 	plen = sizeof(*token) + sizeof(*token->kad) + tktlen;
+
