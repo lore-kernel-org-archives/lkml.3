@@ -1,168 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaEOQ7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:59:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37387 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaEOQ7E (ORCPT
+	id S1753215AbaEORBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:01:25 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:59270 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751587AbaEORBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:59:04 -0400
-Message-ID: <5374F253.4030004@infradead.org>
-Date: Thu, 15 May 2014 09:58:59 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
-CC: lm-sensors@lm-sensors.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: Document hwmon kernel API
-References: <1400122954-1742-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1400122954-1742-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 May 2014 13:01:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoMRAGLydFNXQwiB/2dsb2JhbABZgwaDPqhZBAEBAQEBAQUBmhkCAoERF3SCUxMcIxiBAiQTiEUB0SuFVIh6hEcBA48qiiYBiw2IB4M4Ow
+Date: Thu, 15 May 2014 19:01:21 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/hfsplus/bnode.c: replace min/casting by min_t
+Message-Id: <20140515190121.986e8999c2f305086106db86@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 08:02 PM, Guenter Roeck wrote:
-> The hwmon subsystem has been around for a while. Time to document
-> its kernel API.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  Documentation/hwmon/hwmon-kernel-api.txt | 107 +++++++++++++++++++++++++++++++
->  1 file changed, 107 insertions(+)
->  create mode 100644 Documentation/hwmon/hwmon-kernel-api.txt
-> 
-> diff --git a/Documentation/hwmon/hwmon-kernel-api.txt b/Documentation/hwmon/hwmon-kernel-api.txt
-> new file mode 100644
-> index 0000000..70889de
-> --- /dev/null
-> +++ b/Documentation/hwmon/hwmon-kernel-api.txt
-> @@ -0,0 +1,107 @@
-> +The Linux Hardware Monitoring kernel API.
-> +=========================================
-> +
-> +Guenter Roeck
-> +
-> +Introduction
-> +------------
-> +
-> +This document describes the API that can be used by hardware monitoring
-> +drivers that want to use the hardware monitoring framework.
-> +
-> +This document does not describe what a hardware monitoring (hwmon) Driver or
-> +Device is. It also does not describe the API which can be used by user space
-> +to communicate with a hardware monitoring device. If you want to know this
-> +then please read the following file: Documentation/hwmon/sysfs-interface.
-> +
-> +For additional guidelines on how to write and improve hwmon drivers, please
-> +also read Documentation/hwmon/submitting-patches.
-> +
-> +The API
-> +-------
-> +Each hardware monitoring driver must #include <linux/hwmon.h> and, in most
-> +cases, <linux/hwmon-sysfs.h>. linux/hwmon.h declares the following
-> +register/unregister functions:
-> +
-> +struct device *hwmon_device_register(struct device *dev);
-> +struct device *
-> +hwmon_device_register_with_groups(struct device *dev, const char *name,
-> +				  void *drvdata,
-> +				  const struct attribute_group **groups);
-> +
-> +struct device *
-> +devm_hwmon_device_register_with_groups(struct device *dev,
-> +				       const char *name, void *drvdata,
-> +				       const struct attribute_group **groups);
-> +
-> +void hwmon_device_unregister(struct device *dev);
-> +void devm_hwmon_device_unregister(struct device *dev);
-> +
-> +hwmon_device_register registers a hardware monitoring device. The parameter
-> +of this function is a pointer to the parent device.
-> +This function returns a pointer to the newly created hardware monitoring device
-> +or PTR_ERR for failure. If this registration function is used, hardware
-> +monitoring sysfs attributes are expected to have been created and attached to
-> +the parent device prior to calling hwmon_device_register. A name attribute must
-> +have been created by the caller.
-> +
-> +hwmon_device_register_with_groups is similar to hwmon_device_register. However,
-> +it has additional parameters. The name parameter is a pointer to the hwmon
-> +device name. The registration function wil create a name sysfs attribute
-> +pointing to this name. The drvdata parameter is the pointer to the local
-> +driver data.  hwmon_device_register_with_groups will attach this pointer
-> +to the newly allocated hwmon device. The pointer can be retrieved by the driver
-> +using dev_get_drvdata() on the hwmon device pointer. The groups parameter is
-> +a pointer to a list of sysfs attribute groups. The list must be NULL terminated.
-> +hwmon_device_register_with_groups creates the hwmon device with name attribute
-> +as well as all sysfs attributes attached to the hwmon device.
-> +
-> +devm_hwmon_device_register_with_groups is similar to
-> +hwmon_device_register_with_groups. However, it is device managed, meaning the
-> +hwmon device does not have to be removed explicitly by the removal function.
-> +
-> +hwmon_device_unregister deregisters a registered hardware monitoring device.
-> +The parameter of this function is the pointer to the registered hardware
-> +monitoring device structure. This function must be called from the driver
-> +remove function if the hardware monitoring device was registered with
-> +hwmon_device_register or with hwmon_device_register_with_groups.
-> +
-> +devm_hwmon_device_unregister does not normally have to be called. It is only
-> +needed for error handling, and only needed if the driver probe fails after
-> +the call to devm_hwmon_device_register_with_groups.
-> +
-> +The include file linux/hwmon-sysfs.h provides a number of useful macros to
+Also fixes some pr_ formats
 
-       header file
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/hfsplus/bnode.c | 32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
 
-> +declare and use hardware monitoring sysfs attributes.
-> +
-> +In many cases, you can use the exsting define DEVICE_ATTR to declare such
-> +attributes. This is feasible if an attribute has no additional context. However,
-> +in many cases there will be additional information such as a sensor index which
-> +will need to be passed to the sysfs attribute handling function.
-> +
-> +SENSOR_DEVICE_ATTR and SENSOR_DEVICE_ATTR_2 can be used to define attributes
-> +which need such additional context information. SENSOR_DEVICE_ATTR requires
-> +one additional argument, SENSOR_DEVICE_ATTR_2 requires two.
-> +
-> +SENSOR_DEVICE_ATTR defines a struct sensor_device_attribute variable.
-> +This structure has the following fields.
-> +
-> +struct sensor_device_attribute {
-> +	struct device_attribute dev_attr;
-> +	int index;
-> +};
-> +
-> +You can use to_sensor_dev_attr to get the pointer to this structure from the
-> +attribute read or write function. Parameter is the device to which the attribute
-
-                                     Its parameter is
-
-> +is attached.
-> +
-> +SENSOR_DEVICE_ATTR_2 defines a struct sensor_device_attribute_2 variable,
-> +which is defined as follows.
-> +
-> +struct sensor_device_attribute_2 {
-> +	struct device_attribute dev_attr;
-> +	u8 index;
-> +	u8 nr;
-> +};
-> +
-> +Use to_sensor_dev_attr_2 to get the pointer to this structure. Parameter is the
-
-                                                                  Its parameter is
-
-> +device to which the attribute is attached.
-> 
-
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Please merge thru the hwmon tree.
-
-thanks,
+diff --git a/fs/hfsplus/bnode.c b/fs/hfsplus/bnode.c
+index 11c8602..285502a 100644
+--- a/fs/hfsplus/bnode.c
++++ b/fs/hfsplus/bnode.c
+@@ -27,13 +27,13 @@ void hfs_bnode_read(struct hfs_bnode *node, void *buf, int off, int len)
+ 	pagep = node->page + (off >> PAGE_CACHE_SHIFT);
+ 	off &= ~PAGE_CACHE_MASK;
+ 
+-	l = min(len, (int)PAGE_CACHE_SIZE - off);
++	l = min_t(int, len, PAGE_CACHE_SIZE - off);
+ 	memcpy(buf, kmap(*pagep) + off, l);
+ 	kunmap(*pagep);
+ 
+ 	while ((len -= l) != 0) {
+ 		buf += l;
+-		l = min(len, (int)PAGE_CACHE_SIZE);
++		l = min_t(int, len, PAGE_CACHE_SIZE);
+ 		memcpy(buf, kmap(*++pagep), l);
+ 		kunmap(*pagep);
+ 	}
+@@ -80,14 +80,14 @@ void hfs_bnode_write(struct hfs_bnode *node, void *buf, int off, int len)
+ 	pagep = node->page + (off >> PAGE_CACHE_SHIFT);
+ 	off &= ~PAGE_CACHE_MASK;
+ 
+-	l = min(len, (int)PAGE_CACHE_SIZE - off);
++	l = min_t(int, len, PAGE_CACHE_SIZE - off);
+ 	memcpy(kmap(*pagep) + off, buf, l);
+ 	set_page_dirty(*pagep);
+ 	kunmap(*pagep);
+ 
+ 	while ((len -= l) != 0) {
+ 		buf += l;
+-		l = min(len, (int)PAGE_CACHE_SIZE);
++		l = min_t(int, len, PAGE_CACHE_SIZE);
+ 		memcpy(kmap(*++pagep), buf, l);
+ 		set_page_dirty(*pagep);
+ 		kunmap(*pagep);
+@@ -110,13 +110,13 @@ void hfs_bnode_clear(struct hfs_bnode *node, int off, int len)
+ 	pagep = node->page + (off >> PAGE_CACHE_SHIFT);
+ 	off &= ~PAGE_CACHE_MASK;
+ 
+-	l = min(len, (int)PAGE_CACHE_SIZE - off);
++	l = min_t(int, len, PAGE_CACHE_SIZE - off);
+ 	memset(kmap(*pagep) + off, 0, l);
+ 	set_page_dirty(*pagep);
+ 	kunmap(*pagep);
+ 
+ 	while ((len -= l) != 0) {
+-		l = min(len, (int)PAGE_CACHE_SIZE);
++		l = min_t(int, len, PAGE_CACHE_SIZE);
+ 		memset(kmap(*++pagep), 0, l);
+ 		set_page_dirty(*pagep);
+ 		kunmap(*pagep);
+@@ -142,14 +142,14 @@ void hfs_bnode_copy(struct hfs_bnode *dst_node, int dst,
+ 	dst &= ~PAGE_CACHE_MASK;
+ 
+ 	if (src == dst) {
+-		l = min(len, (int)PAGE_CACHE_SIZE - src);
++		l = min_t(int, len, PAGE_CACHE_SIZE - src);
+ 		memcpy(kmap(*dst_page) + src, kmap(*src_page) + src, l);
+ 		kunmap(*src_page);
+ 		set_page_dirty(*dst_page);
+ 		kunmap(*dst_page);
+ 
+ 		while ((len -= l) != 0) {
+-			l = min(len, (int)PAGE_CACHE_SIZE);
++			l = min_t(int, len, PAGE_CACHE_SIZE);
+ 			memcpy(kmap(*++dst_page), kmap(*++src_page), l);
+ 			kunmap(*src_page);
+ 			set_page_dirty(*dst_page);
+@@ -251,7 +251,7 @@ void hfs_bnode_move(struct hfs_bnode *node, int dst, int src, int len)
+ 		dst &= ~PAGE_CACHE_MASK;
+ 
+ 		if (src == dst) {
+-			l = min(len, (int)PAGE_CACHE_SIZE - src);
++			l = min_t(int, len, PAGE_CACHE_SIZE - src);
+ 			memmove(kmap(*dst_page) + src,
+ 				kmap(*src_page) + src, l);
+ 			kunmap(*src_page);
+@@ -259,7 +259,7 @@ void hfs_bnode_move(struct hfs_bnode *node, int dst, int src, int len)
+ 			kunmap(*dst_page);
+ 
+ 			while ((len -= l) != 0) {
+-				l = min(len, (int)PAGE_CACHE_SIZE);
++				l = min_t(int, len, PAGE_CACHE_SIZE);
+ 				memmove(kmap(*++dst_page),
+ 					kmap(*++src_page), l);
+ 				kunmap(*src_page);
+@@ -386,9 +386,8 @@ struct hfs_bnode *hfs_bnode_findhash(struct hfs_btree *tree, u32 cnid)
+ 	struct hfs_bnode *node;
+ 
+ 	if (cnid >= tree->node_count) {
+-		pr_err("request for non-existent node "
+-				"%d in B*Tree\n",
+-			cnid);
++		pr_err("request for non-existent node %d in B*Tree\n",
++		       cnid);
+ 		return NULL;
+ 	}
+ 
+@@ -409,9 +408,8 @@ static struct hfs_bnode *__hfs_bnode_create(struct hfs_btree *tree, u32 cnid)
+ 	loff_t off;
+ 
+ 	if (cnid >= tree->node_count) {
+-		pr_err("request for non-existent node "
+-				"%d in B*Tree\n",
+-			cnid);
++		pr_err("request for non-existent node %d in B*Tree\n",
++		       cnid);
+ 		return NULL;
+ 	}
+ 
+@@ -602,7 +600,7 @@ struct hfs_bnode *hfs_bnode_create(struct hfs_btree *tree, u32 num)
+ 
+ 	pagep = node->page;
+ 	memset(kmap(*pagep) + node->page_offset, 0,
+-	       min((int)PAGE_CACHE_SIZE, (int)tree->node_size));
++	       min_t(int, PAGE_CACHE_SIZE, tree->node_size));
+ 	set_page_dirty(*pagep);
+ 	kunmap(*pagep);
+ 	for (i = 1; i < tree->pages_per_bnode; i++) {
 -- 
-~Randy
+1.8.4.5
+
