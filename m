@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaEOMwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:52:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445AbaEOMwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:52:02 -0400
-Date: Thu, 15 May 2014 14:51:32 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCH 08/20] perf tools: Allow hpp fields to be sort keys
-Message-ID: <20140515125132.GC25858@krava.brq.redhat.com>
-References: <1399876133-17963-1-git-send-email-namhyung@kernel.org>
- <1399876133-17963-9-git-send-email-namhyung@kernel.org>
+	id S1753145AbaEOMyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:54:04 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:34527 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaEOMyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 08:54:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399876133-17963-9-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400076025-5103-2-git-send-email-holler@ahsoftware.de>
+References: <1400076025-5103-1-git-send-email-holler@ahsoftware.de>
+	<1400076025-5103-2-git-send-email-holler@ahsoftware.de>
+Date: Thu, 15 May 2014 15:54:00 +0300
+Message-ID: <CABBYNZLFutVy=Msz7=AAwXmo4wDHjv59GcLCedEzSrWjkLQ3cw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] bluetooth: raise HCI_CMD_TIMEOUT from 2s to 8s
+From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 03:28:41PM +0900, Namhyung Kim wrote:
+Hi Alexander,
 
-SNIP
+On Wed, May 14, 2014 at 5:00 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> The reasoning to do this is the following:
+>
+> - If a timeout occurs, the HCI-communication is broken afterwards and the
+>   dongle isn't usable anymore.
+> - If it works after e.g. waiting 4s everyone is still happy but if it
+>   just breaks after only waiting 2s nothing is gained.
+> - Having to wait some more seconds until an error occurs doesn't change
+>   anything.
+>
+> So there is no disadvantage in rasing the timeout but a great advantage
+> in case the dongle needs more than 2s to process an HCI command.
+> E.g. I had sometimes HCI command timeouts at boot (but never after the BT stack
+> was successfull started). I assume the reason might be the USB-probing which
+> happend before through the bootloader, which might have confused the dongle
+> such that it needs a bit more time, but I'm not sure.
+>
+> Together with the patch which limits the timeout only to the actual time the
+> dongle needs to process an HCI command (and doesn't include the time the
+> kernel needs to process the answer to an HCI command), my problems were gone.
+>
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> ---
+>  include/net/bluetooth/hci.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+> index be150cf..d50fd34 100644
+> --- a/include/net/bluetooth/hci.h
+> +++ b/include/net/bluetooth/hci.h
+> @@ -180,7 +180,7 @@ enum {
+>  #define HCI_DISCONN_TIMEOUT    msecs_to_jiffies(2000)  /* 2 seconds */
+>  #define HCI_PAIRING_TIMEOUT    msecs_to_jiffies(60000) /* 60 seconds */
+>  #define HCI_INIT_TIMEOUT       msecs_to_jiffies(10000) /* 10 seconds */
+> -#define HCI_CMD_TIMEOUT                msecs_to_jiffies(2000)  /* 2 seconds */
+> +#define HCI_CMD_TIMEOUT                msecs_to_jiffies(8000)  /* 8 seconds */
+>  #define HCI_ACL_TX_TIMEOUT     msecs_to_jiffies(45000) /* 45 seconds */
+>  #define HCI_AUTO_OFF_TIMEOUT   msecs_to_jiffies(2000)  /* 2 seconds */
+>  #define HCI_POWER_OFF_TIMEOUT  msecs_to_jiffies(5000)  /* 5 seconds */
+> --
+> 1.8.3.1
 
-> +static struct hpp_dimension hpp_sort_dimensions[] = {
-> +	DIM(PERF_HPP__OVERHEAD, "overhead"),
-> +	DIM(PERF_HPP__OVERHEAD_SYS, "overhead_sys"),
-> +	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
-> +	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
-> +	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
-> +	DIM(PERF_HPP__SAMPLES, "sample"),
-> +	DIM(PERF_HPP__PERIOD, "period"),
-> +};
+This timeout seems arbitrary so I suppose we can increase it if we
+feel it is necessary but we used already different timeout for
+different commands like HCI_POWER_OFF_TIMEOUT, so perhaps if we can
+identify which command is more likely to timeout.
 
-just a nit.. overhead_guest_us|sys misplace are not properly aligned
+We could perhaps auto reset if a command timeout if there is really no
+other way to recover.
 
 
-[jolsa@krava perf]$ ./perf report -s overhead_guest_us,period,dso,sym --stdio
-# To display the perf.data header info, please use --header/--header-only options.
-#
-# Samples: 9  of event 'cycles'
-# Event count (approx.): 3808201
-#
-# Overhead  guest usr        Period      Shared Object                      Symbol
-# ........  .........  ............  .................  ..........................
-#
-    43.05%     0.00%       1639423  ld-2.17.so         [.] _dl_map_object_deps   
-    36.86%     0.00%       1403626  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-
-....
-
-
-jirka
+-- 
+Luiz Augusto von Dentz
