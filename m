@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaEOKj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:39:59 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57668 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751278AbaEOKj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:39:57 -0400
-Message-ID: <1400150395.9119.3.camel@x220>
-Subject: [PATCH] ARM: msm: remove check for CONFIG_MSM_SERIAL_DEBUGGER
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 12:39:55 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 May 2014 10:39:55.0583 (UTC) FILETIME=[02DA44F0:01CF702A]
-X-RcptDomain: vger.kernel.org
+	id S1752763AbaEOKkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:40:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751654AbaEOKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 06:40:45 -0400
+Date: Thu, 15 May 2014 12:40:19 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: sandeen@redhat.com
+cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+In-Reply-To: <5373F0D6.4090600@redhat.com>
+Message-ID: <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com> <1400018683-5565-2-git-send-email-mguzik@redhat.com> <20140514111449.GB5824@quack.suse.cz> <20140514112619.GA10637@mguzik.redhat.com> <20140514113945.GC5824@quack.suse.cz> <20140514220052.GD5421@dastard>
+ <20140514223745.GF5421@dastard> <5373F0D6.4090600@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An (optional) check for CONFIG_MSM_SERIAL_DEBUGGER was added in v2.6.35.
-But the related Kconfig symbol was never added to the tree. This check
-will always evaluate to false. Remove it.
+On Wed, 14 May 2014, Eric Sandeen wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+> Date: Wed, 14 May 2014 17:40:22 -0500
+> From: Eric Sandeen <esandeen@redhat.com>
+> Reply-To: sandeen@redhat.com
+> To: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>
+> Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+>     linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+>     Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+> Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+>     filesystems
+> 
+> On 5/14/14, 5:37 PM, Dave Chinner wrote:
+> > On Thu, May 15, 2014 at 08:00:52AM +1000, Dave Chinner wrote:
+> >> On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
+> >>> On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
+> >>>> On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
+> >>>>> On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
+> >>>>>> This helps hang troubleshooting efforts when only dmesg is available.
+> >>>>>>
+> >>>>>> While here remove code duplication with MS_RDONLY case and fix a
+> >>>>>> whitespace nit.
+> >>>>>   I'm somewhat undecided here I have to say. On one hand I don't like
+> >>>>> printing to kernel log when everything is fine and kernel is operating
+> >>>>> normally. On the other hand I've seen quite a few cases where people have
+> >>>>> shot themselves in the foot with filesystem freezing so having some trace
+> >>>>> of this in the log doesn't seem like a completely bad thing either. What do
+> >>>>> other people think?
+> >>>>>
+> >>>>
+> >>>> I would like to note that the kernel already prints messages when e.g.
+> >>>> filesystems get mounted.
+> >>>   Yeah, that's a fair point.
+> >>
+> >> But filesystems choose to output that info, not the VFS. When you do
+> >> a remount,ro there is no output in syslog, because filesystems don't
+> >> need to dump any output - the state change is reflected in
+> >> /proc/self/mounts. IMO frozen should state should be communicated
+> >> the same way so that it is silent when it just works, and the state
+> >> can easily be determined when something goes wrong.
+> > 
+> > Say, like this:
+> > 
+> > $ grep /mnt/test /proc/mounts
+> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> > $ sudo xfs_freeze -f /mnt/test
+> > $ grep /mnt/test /proc/mounts
+> > /dev/vda /mnt/test xfs rw,frozen,relatime,attr2,inode64,noquota 0 0
+> > $ sudo xfs_freeze -u /mnt/test
+> > $ grep /mnt/test /proc/mounts
+> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> > $
+> 
+> I'm not totally convinced that including a non-mount option in what
+> has always (?) been a list of mount options is a great idea.
 
-There's another check for CONFIG_MSM_SERIAL_DEBUGGER in
-board-mahimahi.c. But I submitted a patch to drop that entire board file
-in https://lkml.org/lkml/2014/5/14/631 .
+I do not like it either. Mixing this together with other mount
+options does not seem like a great idea, however we really need a
+way to report this and I guess we can not just change the
+/proc/self/mounts, or /proc/self/mountinfo format.
 
- arch/arm/mach-msm/board-msm7x30.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So what about crating a new file /proc/self/frozen with the list of
+frozen file systems in the same format what mounts, or mountinfo has
+?
 
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index 46de789ad3ae..e3c646cc7765 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -125,7 +125,7 @@ struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
- static struct platform_device *devices[] __initdata = {
- 	&msm_clock_7x30,
- 	&msm_device_gpio_7x30,
--#if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
-+#if defined(CONFIG_SERIAL_MSM)
-         &msm_device_uart2,
- #endif
- 	&msm_device_smd,
--- 
-1.9.0
+> 
+> (Granted, some options there are defaults, and weren't actually specified
+> as a mount option, but if they had been, they'd have been accepted).
+> 
+> Maybe add a "mount -o remount,frozen" handler ?  ;)
 
+That's the neat way to work around that :), but I would prefer a new
+procfs file rather than this.
+
+-Lukas
+
+> 
+> -Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
