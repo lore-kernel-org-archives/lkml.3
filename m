@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaEOTOC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:14:02 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39228 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaEOTOA (ORCPT
+	id S1754887AbaEOTOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:14:40 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46615 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaEOTOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:14:00 -0400
+	Thu, 15 May 2014 15:14:38 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 0/3] CPU hotplug: Fix the long-standing "IPI to offline
- CPU" issue
+Subject: [PATCH v5 1/3] smp: Print more useful debug info upon receiving IPI
+ on an offline CPU
 To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
         rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
         hch@infradead.org
@@ -17,89 +17,79 @@ Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
         mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
         oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com
-Date: Fri, 16 May 2014 00:42:46 +0530
-Message-ID: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 16 May 2014 00:43:21 +0530
+Message-ID: <20140515191259.19811.81032.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051519-8878-0000-0000-00000C726BD3
+x-cbid: 14051519-5140-0000-0000-0000051F8FEE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Today the smp-call-function code just prints a warning if we get an IPI on
+an offline CPU. This info is sufficient to let us know that something went
+wrong, but often it is very hard to debug exactly who sent the IPI and why,
+from this info alone.
 
-Hi,
+In most cases, we get the warning about the IPI to an offline CPU, immediately
+after the CPU going offline comes out of the stop-machine phase and reenables
+interrupts. Since all online CPUs participate in stop-machine, the information
+regarding the sender of the IPI is already lost by the time we exit the
+stop-machine loop. So even if we dump the stack on each CPU at this point,
+we won't find anything useful since all of them will show the stack-trace of
+the stopper thread. So we need a better way to figure out who sent the IPI and
+why.
 
-There is a long-standing problem related to CPU hotplug which causes IPIs to
-be delivered to offline CPUs, and the smp-call-function IPI handler code
-prints out a warning whenever this is detected. Every once in a while this
-(usually harmless) warning gets reported on LKML, but so far it has not been
-completely fixed. Usually the solution involves finding out the IPI sender
-and fixing it by adding appropriate synchronization with CPU hotplug.
+To achieve this, when we detect an IPI targeted to an offline CPU, loop through
+the call-single-data linked list and print out the payload (i.e., the name
+of the function which was supposed to be executed by the target CPU). This
+would give us an insight as to who might have sent the IPI and help us debug
+this further.
 
-However, while going through one such internal bug reports, I found that
-there is a significant bug in the receiver side itself (more specifically,
-in stop-machine) that can lead to this problem even when the sender code
-is perfectly fine. This patchset fixes that synchronization problem in the
-CPU hotplug stop-machine code.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Patch 1 adds some additional debug code to the smp-call-function framework,
-to help debug such issues easily.
+ kernel/smp.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-Patch 2 modifies the stop-machine code to ensure that any IPIs that were sent
-while the target CPU was online, would be noticed and handled by that CPU
-without fail before it goes offline. Thus, this avoids scenarios where IPIs
-are received on offline CPUs (as long as the sender uses proper hotplug
-synchronization).
-
-Patch 3 adds a mechanism to flush any pending smp-call-function callbacks
-queued on the CPU going offline (including those callbacks for which the
-IPIs from the source CPUs might not have arrived in time at the outgoing CPU).
-This ensures that a CPU never goes offline with work still pending.
-
-
-In fact, I debugged the problem by using Patch 1, and found that the
-payload of the IPI was always the block layer's trigger_softirq() function.
-But I was not able to find anything wrong with the block layer code. That's
-when I started looking at the stop-machine code and realized that there is
-a race-window which makes the IPI _receiver_ the culprit, not the sender.
-Patch 2 fixes that race and hence this should put an end to most of the
-hard-to-debug IPI-to-offline-CPU issues.
-
-
-Changes in v5:
-Added Patch 3 to flush out any pending smp-call-function callbacks on the
-outgoing CPU, as suggested by Frederic Weisbecker.
-
-Changes in v4:
-Rewrote a comment in Patch 2 and reorganized the code for better readability.
-
-Changes in v3:
-Rewrote patch 2 and split the MULTI_STOP_DISABLE_IRQ state into two:
-MULTI_STOP_DISABLE_IRQ_INACTIVE and MULTI_STOP_DISABLE_IRQ_ACTIVE, and
-used this framework to ensure that the CPU going offline always disables
-its interrupts last. Suggested by Tejun Heo.
-
-v1 and v2:
-https://lkml.org/lkml/2014/5/6/474
-
-
- Srivatsa S. Bhat (3):
-      smp: Print more useful debug info upon receiving IPI on an offline CPU
-      CPU hotplug, stop-machine: Plug race-window that leads to "IPI-to-offline-CPU"
-      CPU hotplug, smp: Flush any pending IPI callbacks before CPU offline
-
-
- include/linux/smp.h   |    2 ++
- kernel/smp.c          |   48 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/stop_machine.c |   50 ++++++++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 93 insertions(+), 7 deletions(-)
-
-
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 06d574e..ae45446 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -185,14 +185,26 @@ void generic_smp_call_function_single_interrupt(void)
+ {
+ 	struct llist_node *entry;
+ 	struct call_single_data *csd, *csd_next;
++	static bool warned;
++
++	entry = llist_del_all(&__get_cpu_var(call_single_queue));
++	entry = llist_reverse_order(entry);
+ 
+ 	/*
+ 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
+ 	 */
+-	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
++	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
++		warned = true;
++		WARN_ONCE(1, "IPI on offline CPU %d\n", smp_processor_id());
+ 
+-	entry = llist_del_all(&__get_cpu_var(call_single_queue));
+-	entry = llist_reverse_order(entry);
++		/*
++		 * We don't have to use the _safe() variant here
++		 * because we are not invoking the IPI handlers yet.
++		 */
++		llist_for_each_entry(csd, entry, llist)
++			pr_warn("IPI callback %pS sent to offline CPU\n",
++				csd->func);
++	}
+ 
+ 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
+ 		csd->func(csd->info);
 
