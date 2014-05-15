@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510AbaEOGqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:46:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37223 "EHLO bear.ext.ti.com"
+	id S1754563AbaEOGrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:47:12 -0400
+Received: from ozlabs.org ([103.22.144.67]:38939 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaEOGqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:46:38 -0400
-Message-ID: <537462A2.5020607@ti.com>
-Date: Thu, 15 May 2014 12:15:54 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753627AbaEOGrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 02:47:10 -0400
+Date: Thu, 15 May 2014 16:47:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Subject: linux-next: build warning after merge of the net-next tree
+Message-ID: <20140515164703.73a1cf06@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <jszhang@marvell.com>, <tj@kernel.org>
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <20140514165722.GA18495@kwain> <5373AE9A.3050008@gmail.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com>
-In-Reply-To: <5373B908.5090904@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/h8m/DOTfu6s+AuTmazMByyL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/h8m/DOTfu6s+AuTmazMByyL
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday 15 May 2014 12:12 AM, Sebastian Hesselbarth wrote:
-> On 05/14/2014 08:12 PM, Arnd Bergmann wrote:
->> On Wednesday 14 May 2014 19:57:46 Sebastian Hesselbarth wrote:
->>> On 05/14/2014 06:57 PM, Antoine Ténart wrote:
->>>> On Wed, May 14, 2014 at 06:11:24PM +0200, Arnd Bergmann wrote:
->>>>> On Wednesday 14 May 2014 17:49:29 Antoine Ténart wrote:
->>>>>> On Wed, May 14, 2014 at 05:31:24PM +0200, Arnd Bergmann wrote:
->>>
->>> From what I understand from the conversation, we have a single PHY
->>> register set dealing with both SATA ports available on the SoC.
->>> Also, from the name of the PHY bits we assume the PHY may be able
->>> to work in different modes than just SATA. And we currently have
->>> an AHCI-compatible SATA IP that supports up to two ports, with one
->>> actually connected to a SATA plug on the DMP board.
->>>
->>> Now, thinking about the PHY binding and the (possible) multi-protocol
->>> support, it can be possible that on BG2Q there is a generic 2-lane
->>> LVDS PHY that can be configured to support SATA or PCIe. Both are
->>> electrically and bit-level compatible, so they could be internally
->>> wired-up with AHCI and PCIe controller.
->>
->> Sounds like a reasonable guess. We have other PHY drivers doing the
->> same thing already.
-> 
-> Well, I based that on what I know about FPGA LVDS transceivers, so
-> I wasn't guessing out of the blue ;)
-> 
->>> From a DT point-of-view, we need a way to (a) link each SATA or PCIe
->>> port to the PHY, (b) specify the PHY lane to be used, and (c) specify
->>> the protocol to be used on that lane. If I got it right, Arnd already
->>> mentioned to use the phy-specifier to deal with it:
->>>
->>> e.g. phy = <&genphy 0 MODE_SATA> or phy = <&genphy 1 MODE_PCIE>
->>
->> Right.
->>
->>> Let's assume we have one dual-port SATA controller and one PCIe
->>> controller with either x1 or x2 support. The only sane DT binding,
->>> I can think of then would be:
->>>
->>> berlin2q.dtsi:
->>>
->>> genphy: lvds@ea00ff {
->>> 	compatible = "marvell,berlin-lvds-phy";
->>> 	reg = <0xea00ff 0x100>;
->>> 	#phy-cells = <2>;
->>> };
->>>
->>> sata: sata@ab00ff {
->>> 	compatible = "ahci-platform";
->>> 	reg = <0xab00ff 0x100>;
->>> 	
->>> 	sata0: sata-port@0 {
->>> 		reg = <0>;
->>> 		phy = <&genphy 0 MODE_SATA>;
->>> 		status = "disabled";
->>> 	};
->>>
->>> 	sata1: sata-port@1 {
->>> 		reg = <1>;
->>> 		phy = <&genphy 1 MODE_SATA>;
->>> 		status = "disabled";
->>> 	};
->>> };
->>>
->>> pcie: pcie@ab01ff {
->>> 	compatible = "marvell,berlin-pcie";
->>> 	reg = <0xab01ff 0x100>;
->>>
->>> 	pcie0: pcie-port@0 {
->>> 		reg = <0>;
->>> 		/* set phy on a per-board basis */
->>> 		/* PCIe x1 on Lane 0 : phy = <&genphy 0 MODE_PCIE>; */
->>> 		/* PCIe x2 on Lane 0 and 1 : phy = <&genphy 0 MODE_PCIE>, <&genphy 1
->>> MODE_PCIE>; */
->>> 		status = "disabled";
->>> 	};
->>> };
->>>
->>> berlin2q-dmp.dts:
->>>
->>> &sata1 {
->>> 	status = "okay";
->>> };
->>>
->>> &pcie0 {
->>> 	phy = <&genphy 1 MODE_PCIE>;
->>> };
->>>
->>> berlin2q-foo.dts:
->>>
->>> &pcie0 {
->>> 	phy = <&genphy 0 MODE_PCIE>, <&genphy 1 MODE_PCIE>;
->>> };
->>
->> Exactly. I would also be fine with keeping the sub-nodes of the
->> phy device as in v3 and using #phy-cells=<1> instead of #phy-cells.
->> The result would be pretty much the same, it just depends on how
->> closely connected the two logical phys are.
+Hi all,
 
-huh.. even with sub-nodes you'll need #phy-cells=<2> if we use a single *PHY
-PROVIDER*. Because with just PHYs node pointer we won't be able to get the PHY.
-We'll need PHY providers node pointer.
+After merging the net-next tree, today's linux-next build (powerpc
+allnoconfig) produced this warning:
 
-However I'd prefer to have sub-nodes for each individual PHYs and register a
-single PHY PROVIDER.
 
-Thanks
-Kishon
+include/net/ip.h:211:5: warning: "CONFIG_SYSCTL" is not defined [-Wundef]
+ #if CONFIG_SYSCTL
+     ^
+
+Introduced by commit 122ff243f5f1 ("ipv4: make ip_local_reserved_ports
+per netns").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/h8m/DOTfu6s+AuTmazMByyL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTdGLrAAoJEMDTa8Ir7ZwV5dkP/1ZGvu+aLJW1Myyclf5nKEpw
+ivlunv9MhTGWyvJzyFEneE8plDGsLeUU67iRwB7s1JJYmIBztFsDS5Sqme/0IwQT
+X3G5mdg4gKZ+oZGYTPeFAkMoWJGvtNTXI1NdZ0Ca4liVNVoeFp+KPlDeh/68sFee
+gYSpoZ68CUm3DJyKs2H+YLgZ/2IRb5fwvdcX5aLE/tTc8uEid/QQOC43O8Petz4k
+kORV/f3QRgWB+JHi6Dnct4UAykEGvlCkp3EbcXKcoOYt7ynr2MBEg3epv1wdwQKI
+pYcaM/kuW/gDdz5AT7TcywelPtfbYavUqEVrBbikRqiLrYWVToch9viLoNq/5u6B
+VPT/YMj8cFQoisNQNyZbxwbdp8sbOY7CkApYs+jNRig3FnYe5b1SRqr7TEuXHexv
+/3KlPapt4t4crXevdsS+LQ5XL8c6gS+6JrEWLO//wh2orY+fbslNojyW2rm3O+iz
+RsiJvbPYO+MlLLncAKYIeVTxnTPDXRZoxncyERAUIqs3zYjMi3CLx/V45Z9+hKbH
+6SuVYNXHpdktvzlfk027zW2szn59ypGebLjsSfuAX2BPfcR7/MCRzOgU8VJLhoYE
+qJB29DX92r0BVif3gGK1Z/2tqZyPapafVHKCgWb7urLzqXWvUeJNnF/LqR6RAEvG
+x4RddWFx2sxKXhP7GrWA
+=1uaA
+-----END PGP SIGNATURE-----
+
+--Sig_/h8m/DOTfu6s+AuTmazMByyL--
