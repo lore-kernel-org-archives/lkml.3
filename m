@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaEOMiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:38:54 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:54399 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaEOMiw (ORCPT
+	id S1752639AbaEOMjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:39:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61955 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751633AbaEOMjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:38:52 -0400
-Date: Thu, 15 May 2014 14:38:47 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Ross Zwisler <ross.zwisler@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Ingo Molnar <mingo@kernel.org>,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] drm: Missed clflushopt in drm_clflush_virt_range
-Message-ID: <20140515123846.GQ8790@phenom.ffwll.local>
-Mail-Followup-To: Ross Zwisler <ross.zwisler@linux.intel.com>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Ingo Molnar <mingo@kernel.org>,
-	H Peter Anvin <h.peter.anvin@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com>
+	Thu, 15 May 2014 08:39:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
+Date: Thu, 15 May 2014 14:55:49 +0200
+Message-ID: <1798774.vz7tFfDHW5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAPDyKFry+O=HvtFtvZh=sYqq9aaFJ78C=8x2euh6MbGExLyuWw@mail.gmail.com>
+References: <16671603.abrivY8Odm@vostro.rjw.lan> <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org> <CAPDyKFry+O=HvtFtvZh=sYqq9aaFJ78C=8x2euh6MbGExLyuWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 09:41:12AM -0600, Ross Zwisler wrote:
-> With this commit:
+On Thursday, May 15, 2014 02:06:59 PM Ulf Hansson wrote:
+> > Do we want to allow ->prepare() to return > 0 if the device isn't
+> > runtime suspended?  If we do then non-suspended devices may be a common
+> > case.  We should then avoid the extra overhead of disable + enable.
+> > So I would write:
+> >
+> >         if (dev->power.direct_complete) {
+> >                 if (pm_runtime_status_suspended(dev)) {
+> >                         pm_runtime_disable(dev);
+> >                         if (dev->power.disable_depth == 1
+> >                             && pm_runtime_status_suspended(dev))
+> >                                 goto Complete;
+> >                         pm_runtime_enable(dev);
+> >                 }
+> >                 dev->power.direct_complete = false;
+> >         }
+> >
 > 
-> 2a0788dc9bc4 x86: Use clflushopt in drm_clflush_virt_range
-> 
-> If clflushopt is available on the system, we use it instead of clflush
-> in drm_clflush_virt_range.  There were two calls to clflush in this
-> function, but only one was changed to clflushopt.  This patch changes
-> the other clflush call to clflushopt.
-> 
-> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-> Reported-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> 
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: H Peter Anvin <h.peter.anvin@intel.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
+> I am wondering whether the above pm_runtime_disable|enable actually
+> belongs better in driver/subsystem in favour of the PM core?
 
-Picked to my topic/core-stuff drm branch so it doesn't get lost.
--Daniel
+No, it doesn't.
 
-> 
-> ---
->  drivers/gpu/drm/drm_cache.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_cache.c b/drivers/gpu/drm/drm_cache.c
-> index 534cb89..041b73b 100644
-> --- a/drivers/gpu/drm/drm_cache.c
-> +++ b/drivers/gpu/drm/drm_cache.c
-> @@ -138,7 +138,7 @@ drm_clflush_virt_range(char *addr, unsigned long length)
->  		char *end = addr + length;
->  		mb();
->  		for (; addr < end; addr += boot_cpu_data.x86_clflush_size)
-> -			clflush(addr);
-> +			clflushopt(addr);
->  		clflushopt(end - 1);
->  		mb();
->  		return;
-> -- 
-> 1.9.0
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> Doesn't the driver/subsystem anyway needs to be on top of what goes
+> on? Typically, while runtime PM has been disabled, that might affect
+> it's wakeup handling? Or this case are already handled due to other
+> circumstances?
+
+Yes, that's the case.
+
+Thanks!
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
