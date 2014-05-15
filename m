@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaEODou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:44:50 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:65226
+	id S1753579AbaEODoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:44:54 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:59799
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751279AbaEODot (ORCPT
+	by vger.kernel.org with ESMTP id S1752962AbaEODov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:44:49 -0400
+	Wed, 14 May 2014 23:44:51 -0400
 X-IronPort-AV: E=Sophos;i="4.97,1056,1389740400"; 
-   d="scan'208";a="61911941"
+   d="scan'208";a="61911943"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: netdev@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] drivers/net/wan: delete unneeded call to netdev_priv
-Date: Thu, 15 May 2014 05:43:18 +0200
-Message-Id: <1400125401-15512-1-git-send-email-Julia.Lawall@lip6.fr>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: kernel-janitors@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] ip_tunnel: delete unneeded call to netdev_priv
+Date: Thu, 15 May 2014 05:43:20 +0200
+Message-Id: <1400125401-15512-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,22 +41,24 @@ follows: (http://coccinelle.lip6.fr/)
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wan/sdla.c |    4 ----
- 1 file changed, 4 deletions(-)
+ net/ipv4/ip_tunnel.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/wan/sdla.c b/drivers/net/wan/sdla.c
-index de3bbf4..cdd45fb 100644
---- a/drivers/net/wan/sdla.c
-+++ b/drivers/net/wan/sdla.c
-@@ -1322,10 +1322,6 @@ NOTE:  This is rather a useless action right now, as the
- 
- static int sdla_change_mtu(struct net_device *dev, int new_mtu)
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index b3f8597..059176d 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -395,11 +395,10 @@ static struct ip_tunnel *ip_tunnel_create(struct net *net,
+ 					  struct ip_tunnel_net *itn,
+ 					  struct ip_tunnel_parm *parms)
  {
--	struct frad_local *flp;
--
--	flp = netdev_priv(dev);
--
- 	if (netif_running(dev))
- 		return -EBUSY;
+-	struct ip_tunnel *nt, *fbt;
++	struct ip_tunnel *nt;
+ 	struct net_device *dev;
  
+ 	BUG_ON(!itn->fb_tunnel_dev);
+-	fbt = netdev_priv(itn->fb_tunnel_dev);
+ 	dev = __ip_tunnel_create(net, itn->fb_tunnel_dev->rtnl_link_ops, parms);
+ 	if (IS_ERR(dev))
+ 		return ERR_CAST(dev);
 
