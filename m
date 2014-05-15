@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaEOO4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:56:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689AbaEOO4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:56:13 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Steve Capper <steve.capper@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>
-Subject: [PATCH] arm64: fix pud_huge() for 2-level pagetables
-Date: Thu, 15 May 2014 10:19:22 -0400
-Message-Id: <1400163562-7481-1-git-send-email-msalter@redhat.com>
+	id S1755282AbaEOO43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:56:29 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:48080 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755090AbaEOO41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:56:27 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1059,1389744000"; 
+   d="scan'208";a="130724529"
+Message-ID: <5374D598.8060807@citrix.com>
+Date: Thu, 15 May 2014 15:56:24 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+CC: Andrew Jones <drjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen/x86: set panic notifier priority to minimum
+References: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following happens when trying to run a kvm guest on a kernel
-configured for 64k pages. This doesn't happen with 4k pages:
+On 13/05/14 17:56, Radim Krčmář wrote:
+> Execution is not going to continue after telling Xen about the crash.
+> Let other panic notifiers run by postponing the final hypercall as much
+> as possible.
 
-  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
-  Kernel panic - not syncing: BUG!
-  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
-  Call trace:
-  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
-  [<fffffe00000961b4>] show_stack+0x14/0x1c
-  [<fffffe000066e648>] dump_stack+0x84/0xb0
-  [<fffffe0000668678>] panic+0xf4/0x220
-  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
-  [<fffffe000018edd8>] free_pages+0x50/0x88
-  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
-  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
-  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
-  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
-  [<fffffe00001edc1c>] __fput+0xb0/0x288
-  [<fffffe00001ede4c>] ____fput+0xc/0x14
-  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
-  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
+Applied to devel/for-linus-3.16
 
-In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
-on the stage2 pgd which leads to the BUG in put_page_testzero(). This
-happens because a pud_huge() test in unmap_range() returns true when it
-should always be false with 2-level pages tables used by 64k pages.
-This patch removes support for huge puds if 2-level pagetables are
-being used.
+Thanks.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- arch/arm64/mm/hugetlbpage.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-index 5e9aec3..9bed38f 100644
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
- 
- int pud_huge(pud_t pud)
- {
-+#ifndef __PAGETABLE_PMD_FOLDED
- 	return !(pud_val(pud) & PUD_TABLE_BIT);
-+#else
-+	return 0;
-+#endif
- }
- 
- int pmd_huge_support(void)
-@@ -64,8 +68,10 @@ static __init int setup_hugepagesz(char *opt)
- 	unsigned long ps = memparse(opt, &opt);
- 	if (ps == PMD_SIZE) {
- 		hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
-+#ifndef __PAGETABLE_PMD_FOLDED
- 	} else if (ps == PUD_SIZE) {
- 		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
-+#endif
- 	} else {
- 		pr_err("hugepagesz: Unsupported page size %lu M\n", ps >> 20);
- 		return 0;
--- 
-1.9.0
-
+David
