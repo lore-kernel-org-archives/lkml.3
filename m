@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaEOBnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 21:43:53 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:64616 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751056AbaEOBnw (ORCPT
+	id S1752614AbaEOBqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 21:46:45 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58366 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbaEOBqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 21:43:52 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1055,1389715200"; 
-   d="scan'208";a="30541755"
-Message-ID: <1400117956.2572.4.camel@localhost.localdomain>
-Subject: Re: [ping][PATCH v3] lib: add size unit t/p/e to memparse
-From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: <clm@fb.com>
-CC: <linux-kernel@vger.kernel.org>, linux-btrfs <linux-btrfs@vger.kernel.org>
-Date: Thu, 15 May 2014 09:39:16 +0800
-In-Reply-To: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-References: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 14 May 2014 21:46:44 -0400
+Message-ID: <53741C60.70209@ahsoftware.de>
+Date: Thu, 15 May 2014 03:46:08 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<20140514141914.446F7C4153D@trevor.secretlab.ca>	<53738580.7000902@ahsoftware.de>	<CACxGe6s4px_9CNk3bkc1OF1KGZGYdyh4gE_VufCKU5dLFBG48g@mail.gmail.com>	<53739871.9070407@ahsoftware.de>	<CAL_JsqJB4CAO60m1HTGQGHQRYVWcARxm_roOhn-PJh+ZR7OONg@mail.gmail.com>	<5373ABD2.9010508@ahsoftware.de> <CAL_JsqJ-=amrmRR9FfnOH1ELDQ1kTaG3e1n878mgpZP1FUw_jA@mail.gmail.com> <5373C2F4.50803@ahsoftware.de>
+In-Reply-To: <5373C2F4.50803@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 16:54 +0800, Gui Hecheng wrote:
-> For modern filesystems such as btrfs, t/p/e size level operations
-> are common.
-> add size unit t/p/e parsing to memparse
-> 
-> Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-> ---
-> changelog
-> 	v1->v2: replace kilobyte with kibibyte, and others
-> 	v2->v3: add missing unit "bytes" in comment
-> ---
->  lib/cmdline.c | 25 ++++++++++++++++++++-----
->  1 file changed, 20 insertions(+), 5 deletions(-)
-> 
-> diff --git a/lib/cmdline.c b/lib/cmdline.c
-> index eb67911..511b9be 100644
-> --- a/lib/cmdline.c
-> +++ b/lib/cmdline.c
-> @@ -119,11 +119,17 @@ char *get_options(const char *str, int nints, int *ints)
->   *	@retptr: (output) Optional pointer to next char after parse completes
->   *
->   *	Parses a string into a number.  The number stored at @ptr is
-> - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-> - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-> - *	1073741824).  If the number is suffixed with K, M, or G, then
-> - *	the return value is the number multiplied by one kilobyte, one
-> - *	megabyte, or one gigabyte, respectively.
-> + *	potentially suffixed with
-> + *	%K (for kibibytes, or 1024 bytes),
-> + *	%M (for mebibytes, or 1048576 bytes),
-> + *	%G (for gibibytes, or 1073741824 bytes),
-> + *	%T (for tebibytes, or 1099511627776 bytes),
-> + *	%P (for pebibytes, or 1125899906842624 bytes),
-> + *	%E (for exbibytes, or 1152921504606846976 bytes).
-> + *	If the number is suffixed with K, M, G, T, P, E, then
-> + *	the return value is the number multiplied by one kibibyte, one
-> + *	mebibyte, one gibibyte, one tebibyte, one pebibyte, one exbibyte,
-> + *	respectively.
->   */
->  
->  unsigned long long memparse(const char *ptr, char **retptr)
-> @@ -133,6 +139,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
->  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
->  
->  	switch (*endptr) {
-> +	case 'E':
-> +	case 'e':
-> +		ret <<= 10;
-> +	case 'P':
-> +	case 'p':
-> +		ret <<= 10;
-> +	case 'T':
-> +	case 't':
-> +		ret <<= 10;
->  	case 'G':
->  	case 'g':
->  		ret <<= 10;
+Am 14.05.2014 21:24, schrieb Alexander Holler:
+> Am 14.05.2014 21:06, schrieb Rob Herring:
 
+>> I still have not seen an example of A depends on B, deferred probe
+>> fails because of ? and here is the code for A that works around the
+>> problem.
+>>
+>>> Anyway, this feature is totally independ of the deferred probe stuff and
+>>> both can friendly live together.
+>>
+>> Yes, except then we get to maintain both.
+
+And just in case someone still hasn't realized what the goal of a
+deterministic initialization order is, have a look at this snippet from
+arch/arm/mach-omap2/gpio.c:
+
+--------
+/*
+ * gpio_init needs to be done before
+ * machine_init functions access gpio APIs.
+ * Hence gpio_init is a omap_postcore_initcall.
+ */
+static int __init omap2_gpio_init(void)
+{
+	/* If dtb is there, the devices will be created dynamically */
+	if (of_have_populated_dt())
+		return -ENODEV;
+
+	return omap_hwmod_for_each_by_class("gpio", omap2_gpio_dev_init, NULL);
+}
+omap_postcore_initcall(omap2_gpio_init);
+--------
+(Sorry to the OMAP guys, it isn't there fault that it has to look like
+this.)
+
+But this is ecactly what should be avoided and why the kernel is in need
+of a deterministic, easy to setup, initialization order. And deferred
+probes are in now way a help to reach that target, in fact they even
+support such stuff. Does anybody outside the OMAP crew do understand
+what that piece of code does? The answer is pretty likely no. Again
+sorry to the OMAP guys, I'm pretty sure that code was born out of
+necessity because no other mechanism is available to get things in order.
+
+Regards,
+
+Alexander Holler
 
