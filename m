@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaEODOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:14:10 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58207 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333AbaEODOH (ORCPT
+	id S1753264AbaEODPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:15:32 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:49365 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbaEODPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:14:07 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <537430F4.6020004@roeck-us.net>
-Date: Wed, 14 May 2014 20:13:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 14 May 2014 23:15:31 -0400
+Date: Wed, 14 May 2014 22:15:27 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Michael H. Warfield" <mhw@WittsEnd.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Eric Biederman <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        lxc-devel@lists.linuxcontainers.org
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140515031527.GA146352@ubuntu-hedt>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	"Michael H. Warfield" <mhw@WittsEnd.com>,
+	linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Eric Biederman <ebiederm@xmission.com>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	lxc-devel@lists.linuxcontainers.org
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+ <20140515013245.GA1764@kroah.com>
+ <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Sam Ravnborg <sam@ravnborg.org>
-CC: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 23/27] sparc: Use common bits from generic tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-24-git-send-email-richard@nod.at> <20140514195555.GA2801@ravnborg.org> <5373CC59.8070702@nod.at> <20140514202242.GA3167@ravnborg.org> <5373D1B4.5040505@nod.at>
-In-Reply-To: <5373D1B4.5040505@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 01:27 PM, Richard Weinberger wrote:
-> Am 14.05.2014 22:22, schrieb Sam Ravnborg:
->> On Wed, May 14, 2014 at 10:04:41PM +0200, Richard Weinberger wrote:
->>> Am 14.05.2014 21:55, schrieb Sam Ravnborg:
->>>> On Wed, May 14, 2014 at 08:59:55PM +0200, Richard Weinberger wrote:
->>>>> It is no longer needed to define them on our own.
->>>>>
->>>>> Cc: "David S. Miller" <davem@davemloft.net>
->>>>> Cc: Richard Weinberger <richard@nod.at>
->>>>> Cc: sparclinux@vger.kernel.org
->>>>> Cc: linux-kernel@vger.kernel.org
->>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>>> ---
->>>>>   arch/sparc/include/asm/tlb_32.h | 8 --------
->>>>>   arch/sparc/include/asm/tlb_64.h | 3 ---
->>>>>   2 files changed, 11 deletions(-)
->>>>>
->>>>> diff --git a/arch/sparc/include/asm/tlb_32.h b/arch/sparc/include/asm/tlb_32.h
->>>>> index 6d02d1c..60641a1 100644
->>>>> --- a/arch/sparc/include/asm/tlb_32.h
->>>>> +++ b/arch/sparc/include/asm/tlb_32.h
->>>>> @@ -11,14 +11,6 @@ do {								\
->>>>>   	flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
->>>>>   } while (0)
->>>>>
->>>>> -#define __tlb_remove_tlb_entry(tlb, pte, address) \
->>>>> -	do { } while (0)
->>>>> -
->>>>> -#define tlb_flush(tlb) \
->>>>> -do {								\
->>>>> -	flush_tlb_mm((tlb)->mm);				\
->>>>> -} while (0)
->>>>> -
->>>>>   #include <asm-generic/tlb.h>
->>>>>
->>>>>   #endif /* _SPARC_TLB_H */
->>>>
->>>> This part looks OK.
->>>>
->>>>> diff --git a/arch/sparc/include/asm/tlb_64.h b/arch/sparc/include/asm/tlb_64.h
->>>>> index 190e189..36fdcec 100644
->>>>> --- a/arch/sparc/include/asm/tlb_64.h
->>>>> +++ b/arch/sparc/include/asm/tlb_64.h
->>>>> @@ -22,9 +22,6 @@ extern void smp_flush_tlb_mm(struct mm_struct *mm);
->>>>>   extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
->>>>>   extern void flush_tlb_pending(void);
->>>>>
->>>>> -#define tlb_start_vma(tlb, vma) do { } while (0)
->>>>> -#define tlb_end_vma(tlb, vma)	do { } while (0)
->>>>> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
->>>>>   #define tlb_flush(tlb)	flush_tlb_pending()
->>>>>
->>>>>   #include <asm-generic/tlb.h>
->>>>
->>>> This does not fly for sparc64.
->>>> __pte_free_tlb is a static inline in pgalloc_64.h so no
->>>> define exist to teach tlb.h that an arch override exist.
->>>
->>> Okay, we need a #define __pte_free_tlb __pte_free_tlb.
->>>
->>>> Likewise for __pmd_free_tlb
->>>
->>> __pmd_free_tlb is already a macro so the generic tlb.h should handle it correctly.
->>>
->>> #define __pmd_free_tlb(tlb, pmd, addr)                \
->>>          pgtable_free_tlb(tlb, pmd, false)
->>>
->>> I'd move both __pmd_free_tlb and __pte_free_tlb into tlb.h such that the include order
->>> of tlb.h vs pgalloc.h does not matter.
->>> Are you fine with that?
->> Yes, as long as sparc64 continue to build it makes good sense
->> to define these in the same file as done by most other architectures.
->>
->> 	Sam
->
-> Will do.
-> Sadly also with my (broken) patch sparc64 builds fine.
->
-> Is there an easy way to boot a sparc64 Linux within qemu?
->
+On Wed, May 14, 2014 at 10:17:31PM -0400, Michael H. Warfield wrote:
+> > > Using devtmpfs is one possible
+> > > solution, and it would have the added benefit of making container setup
+> > > simpler. But simply letting containers mount devtmpfs isn't sufficient
+> > > since the container may need to see a different, more limited set of
+> > > devices, and because different environments making modifications to
+> > > the filesystem could lead to conflicts.
+> > > 
+> > > This series solves these problems by assigning devices to user
+> > > namespaces. Each device has an "owner" namespace which specifies which
+> > > devtmpfs mount the device should appear in as well allowing priveleged
+> > > operations on the device from that namespace. This defaults to
+> > > init_user_ns. There's also an ns_global flag to indicate a device should
+> > > appear in all devtmpfs mounts.
+> 
+> > I'd strongly argue that this isn't even a "problem" at all.  And, as I
+> > said at the Plumbers conference last year, adding namespaces to devices
+> > isn't going to happen, sorry.  Please don't continue down this path.
+> 
+> I was just mentioning that to Serge just a week or so ago reminding him
+> of what you told all of us face to face back then.  We were having a
+> discussion over loop devices into containers and this topic came up.
 
-Try rootfs/sparc64 from https://github.com/groeck/linux-build-test.git
+It was the loop device use case that got me started down this path in
+the first place, so I don't personally have any interest in physical
+devices right now (though I was sure others would).
 
-Guenter
+As things stand today, to support loop devices lxc would need to do
+something like this: grab some unused loop devices, remove them from
+/dev, and make device nodes with appropriate ownership/permissions in
+the container's /dev. Otherwise there's potential for accidental
+duplicate use of the devices, which besides having unexpected results
+could result in information leak into the container. At that point you
+have some loop devices that the container can use, but privileged
+operations such as re-reading partitions and encrypted loop aren't
+possible. Even if you can re-read partitions device nodes will appear in
+the main /dev and not in the container.
 
+With these patches the container could mount devtmpfs, and since
+loop-control is global it would appear in the mount. The
+LOOP_CTL_GET_FREE ioctl can be used to get an unused loop device which
+will owned by the container's user namespace, so it will only appear in
+that container's devtmpfs mount. Privileged operations would be allowed
+on the loop device by root in the namespace, and if partition devices
+were created they would inherit the namespace from the parent and thus
+show up in the container's devtmpfs mount.
+
+I think this use case demonstrates some real problems with only half-way
+solutions atm. I'm certainly open to other suggestions about how to
+solve them.
+
+Thanks,
+Seth
