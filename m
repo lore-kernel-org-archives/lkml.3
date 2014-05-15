@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaEOSC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:02:29 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:34793 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaEOSC0 (ORCPT
+	id S1754848AbaEOSEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:04:32 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:48491 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaEOSEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:02:26 -0400
-Date: Thu, 15 May 2014 20:02:18 +0200
-From: Robert Richter <rric@kernel.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
-Message-ID: <20140515180218.GA32115@rric.localhost>
-References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
+	Thu, 15 May 2014 14:04:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400176691-26058-3-git-send-email-elder@linaro.org>
+References: <1400176691-26058-1-git-send-email-elder@linaro.org> <1400176691-26058-3-git-send-email-elder@linaro.org>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 15 May 2014 11:03:49 -0700
+Message-ID: <CAGVrzca20+3kmJjyGv8Pr-qNNV4n0hhADL6GWvcYVDUL4q28Hg@mail.gmail.com>
+Subject: Re: [PATCH v3 RESEND 2/5] ARM: add SMP support for Broadcom mobile SoCs
+To: Alex Elder <elder@linaro.org>
+Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, sboyd@codeaurora.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.05.14 18:08:30, Alexander Shishkin wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> 
-> This patch introduces "AUX space" in the perf mmap buffer, intended for
-> exporting high bandwidth data streams to userspace, such as instruction
-> flow traces.
-> 
-> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
-> user_page structure, and read/write pointers aux_{head,tail}, which abide
-> by the same rules as data_* counterparts of the main perf buffer.
-> 
-> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
-> such an offset that will be greater than data_offset+data_size and
-> aux_size to be the desired buffer size. Both need to be page aligned.
-> The latter is not forced to be a power of 2 number of pages, so that PMU
-> drivers have to take care of this if necessary in their implementations
-> of ->alloc_aux(). Then, same aux_offset and aux_size should be passed to
-> mmap() call and if everything adds up, you should have an AUX buffer as
-> a result.
+Hi Alex,
 
-Raw data sample (PERF_SAMPLE_RAW) already allow to pass data to
-userspace. What is the reason for a separate buffer? I see the
-following:
+2014-05-15 10:58 GMT-07:00 Alex Elder <elder@linaro.org>:
+> This patch adds SMP support for BCM281XX and BCM21664 family SoCs.
+>
+> This feature is controlled with a distinct config option such that a
+> SMP-enabled multi-v7 binary can be configured to run these SoCs in
+> uniprocessor mode.  Since this SMP functionality is used for
+> multiple Broadcom mobile chip families the config option is called
+> ARCH_BCM_MOBILE_SMP (for lack of a better name).
+>
+> On SoCs of this type, the secondary core is not held in reset on
+> power-on.  Instead it loops in a ROM-based holding pen.  To release
+> it, one must write into a special register a jump address whose
+> low-order bits have been replaced with a secondary core's id, then
+> trigger an event with SEV.  On receipt of an event, the ROM code
+> will examine the register's contents, and if the low-order bits
+> match its cpu id, it will clear them and write the value back to the
+> register just prior to jumping to the address specified.
+>
+> The location of the special register is defined in the device tree
+> using a "secondary-boot-reg" property in a node whose "enable-method"
+> matches.
+>
+> Derived from code originally provided by Ray Jui <rjui@broadcom.com>
+>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+>  arch/arm/mach-bcm/Kconfig   |  18 +++-
+>  arch/arm/mach-bcm/Makefile  |   3 +
+>  arch/arm/mach-bcm/platsmp.c | 201 ++++++++++++++++++++++++++++++++++++++++++++
 
- * the buffer accessed from userspace should have a customized format
-   unrelated to perf,
+Could we make that name a little bit more specific to the mobile SoCs?
+There are other BCM SoCs either currently supported in this directory
+(BCM5310X), or making their way to be supported (brcmstb, bcm63xx),
+and those share nothing with the Mobile SoC SMP code.
 
- * zero copying (not sure if this is really possible),
-
- * data size and alignment requirements that can not be handled by raw
-   data samples.
-
-If possible, raw data samples should be a first option.
-
-On the other side there might the need of an aux buffer (I would
-better call it raw buffer analog to raw data). So here some comments
-on the implementation and the user i/f.
-
-Instead of extending the current ringbuffer I would better add a 2nd
-ring buffer. The mmap and ringbuffer handling and esp. the access from
-userspace looks much more complex now and it was already complex
-before. So with a 2nd buffer there would be less changes in the
-implementation and handling. Access from userland would remain as it
-currently is, there is no need to modify the header page layout. To
-setup a 2nd buffer, you just need to modify the mmap call in a way
-(maybe by prot, flags or offset argument) to let the kernel know an
-aux buffer should be attached to the event.
-
-Then, instead of introducing a new PERF_RECORD_AUX, just reuse
-PERF_RECORD_SAMPLE. If an aux/raw buffer is connected to the event,
-then the data is not part of the sample but passed to the raw buffer.
-
-Tools, interfaces and helper functions would work already with such
-raw samples, just the raw buffer handling need to be added.
-
-How about this?
-
--Robert
+Maybe we should create another level directory within mach-bcm...
+-- 
+Florian
