@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaEOUMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:12:47 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:52841 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbaEOUMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:12:45 -0400
+	id S1754317AbaEOUN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:13:56 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751249AbaEOUNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 16:13:55 -0400
+Message-ID: <53751FFA.5040103@nod.at>
+Date: Thu, 15 May 2014 22:13:46 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:b0d9:6664:26b8:883e]
-In-Reply-To: <CAD=FV=Vj5M_yiYZOkjzB-QjYJa9WE2fcGcwwzAF1h8gcjc9jeA@mail.gmail.com>
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
-	<1397757570-19750-8-git-send-email-dianders@chromium.org>
-	<53750A9A.8000808@wwwdotorg.org>
-	<CAD=FV=Vj5M_yiYZOkjzB-QjYJa9WE2fcGcwwzAF1h8gcjc9jeA@mail.gmail.com>
-Date: Thu, 15 May 2014 13:12:44 -0700
-Message-ID: <CAOesGMhe-STC3GUwAyC6qeEPWWmxdsWbXqdevy8b4MHDgM2v=A@mail.gmail.com>
-Subject: Re: [PATCH 7/7] ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Stephen Warren <swarren@nvidia.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "Michael H. Warfield" <mhw@wittsend.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com> <20140515013245.GA1764@kroah.com> <1400120251.7699.11.camel@canyon.ip6.wittsend.com> <20140515031527.GA146352@ubuntu-hedt> <20140515040032.GA6702@kroah.com> <1400161337.7699.33.camel@canyon.ip6.wittsend.com> <20140515140856.GA17453@kroah.com> <CAFLxGvwfbVdLUq0NrSrQNYH+bTzYLuCE2moooHH319qRfDkS6Q@mail.gmail.com> <20140515195010.GA22317@ubuntumail>
+In-Reply-To: <20140515195010.GA22317@ubuntumail>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:55 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Stephen,
->
-> On Thu, May 15, 2014 at 11:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 04/17/2014 11:59 AM, Doug Anderson wrote:
->>> This adds the EC i2c tunnel (and devices under it) to the
->>> tegra124-venice2 device tree.
+Am 15.05.2014 21:50, schrieb Serge Hallyn:
+> Quoting Richard Weinberger (richard.weinberger@gmail.com):
+>> On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>>> Then don't use a container to build such a thing, or fix the build
+>>> scripts to not do that :)
 >>
->> Did the MFD patches at the start of this series get applied yet? I was
->> hoping to apply this one patch to the Tegra tree for 3.16, and that
->> needs to happen by tomorrow morning at the latest since -rc6 is looming
->> fast. However, I'm holding off until the rest of the series is applied
->> to the MFD tree so I can be sure the DT binding is accepted first...
->
-> As far as I know, they didn't.  Lee was waiting on Wolfram's ack to
-> the i2c tunnel before landing them.  ...and I'm still eagerly awaiting
-> Wolfram's next i2c tunnel review.
+>> I second this.
+>> To me it looks like some folks try to (ab)use Linux containers
+>> for purposes where KVM would much better fit in.
+>> Please don't put more complexity into containers. They are already
+>> horrible complex
+>> and error prone.
+> 
+> I, naturally, disagree :)  The only use case which is inherently not
+> valid for containers is running a kernel.  Practically speaking there
+> are other things which likely will never be possible, but if someone
+> offers a way to do something in containers, "you can't do that in
+> containers" is not an apropos response.
+> 
+> "That abstraction is wrong" is certainly valid, as when vpids were
+> originally proposed and rejected, resulting in the development of
+> pid namespaces.  "We have to work out (x) first" can be valid (and
+> I can think of examples here), assuming it's not just trying to hide
+> behind a catch-22/chicken-egg problem.
+> 
+> Finally, saying "containers are complex and error prone" is conflating
+> several large suites of userspace code and many kernel features which
+> support them.  Being more precise would, if the argument is valid,
+> lend it a lot more weight.
 
-The i2c portion can be revisited if needed, the MFD piece should be
-possible to land sooner than that... Lee?
+We (my company) use Linux containers since 2011 in production. First LXC, now libvirt-lxc.
+To understand the internals better I also wrote my own userspace to create/start
+containers. There are so many things which can hurt you badly.
+With user namespaces we expose a really big attack surface to regular users.
+I.e. Suddenly a user is allowed to mount filesystems.
+Ask Andy, he found already lots of nasty things...
+I agree that user namespaces are the way to go, all the papering with LSM
+over security issues is much worse.
+But we have to make sure that we don't add too much features too fast.
 
+That said, I like containers a lot because they are cheap but as they are lightweight
+also therefore also isolation level is lightweight.
+IMHO containers are not a cheap replacement for KVM.
 
--Olof
+Thanks,
+//richard
