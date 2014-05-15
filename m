@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaEODS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 23:18:56 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:35037 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaEODSy (ORCPT
+	id S1752310AbaEODce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:32:34 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:56032 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaEODcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 23:18:54 -0400
-Message-ID: <1400123931.5175.38.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 15 May 2014 05:18:51 +0200
-In-Reply-To: <20140514154459.GE4570@linux.vnet.ibm.com>
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-	 <20140514154459.GE4570@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 May 2014 23:32:32 -0400
+Date: Wed, 14 May 2014 23:32:29 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+In-Reply-To: <537406FA.2040906@zytor.com>
+Message-ID: <alpine.LFD.2.11.1405142319140.17310@knanqh.ubzr>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <6202090.0OtAjefIFT@wuerfel> <CAMuHMdVxc3XRanpboWPumvQKbg-qdRBHQvYXwjTKX4CrxXPeAw@mail.gmail.com> <8399002.IIyBoyEHox@wuerfel> <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com>
+ <537406FA.2040906@zytor.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-14 at 08:44 -0700, Paul E. McKenney wrote:
+On Wed, 14 May 2014, H. Peter Anvin wrote:
 
-> In practice, not sure how much testing CONFIG_NO_HZ_FULL=y has received
-> for -rt kernels in production environments.
+> On 05/14/2014 02:33 PM, John Stultz wrote:
+> > 
+> > We can do some tricks for internal optimizations here if these are
+> > critical.  I'd be more concerned about userland divisions where moving
+> > to a 64bit time_t would cause performance issues that we cannot help
+> > optimize.
+> > 
+> 
+> Honestly, the cost of not addressing the Y2038 problem in plenty of time
+> is going to be way, way, way, way more expensive than some additional
+> arithmetic.
+> 
+> As far as converting to calendar notation (e.g. the Gregorian calendar),
+> only the first division needs to be done with full time_t width.
+> Furthermore, since the divisor is known a priori, the compiler *should*
+> be able to do it as an inverse multiply.[1]
 
-I took 3.14-rt out for a quick spin on my 64 core box, it didn't work at
-all with 60 cores isolated.  I didn't have time to rummage, but it looks
-like there are still bugs to squash. 
+The compiler is apparently not that smart.  It does it already for 32 by 
+32 bit divisions, but not for 64 by 32 divisions. Fortunately, with 
+gcc-4 at least, constant propagation on long longs works well enough to 
+do it by hand.  That's how I implemented do_div() for ARM years ago.  
+See arch/arm/include/asm/div64.h from line 65.  The same could be 
+implemented for x86 and others.
 
-Biggest problem with CONFIG_NO_HZ_FULL is the price tag.  It just raped
-fast mover performance last time I measured.
 
--Mike
-
+Nicolas
