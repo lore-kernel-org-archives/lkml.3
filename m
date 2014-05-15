@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854AbaEOSCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:02:25 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:59974 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaEOSCY (ORCPT
+	id S1755886AbaEOSC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:02:29 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:34793 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916AbaEOSC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:02:24 -0400
-Message-ID: <53750129.6060902@imgtec.com>
-Date: Thu, 15 May 2014 11:02:17 -0700
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 15 May 2014 14:02:26 -0400
+Date: Thu, 15 May 2014 20:02:18 +0200
+From: Robert Richter <rric@kernel.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
+Message-ID: <20140515180218.GA32115@rric.localhost>
+References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <linux-arch@vger.kernel.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        "John Crispin" <blogic@openwrt.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 16/27] mips: Use common bits from generic tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-17-git-send-email-richard@nod.at>
-In-Reply-To: <1400093999-18703-17-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 11:59 AM, Richard Weinberger wrote:
-> It is no longer needed to define them on our own.
->
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: John Crispin <blogic@openwrt.org>
-> Cc: Markos Chandras <markos.chandras@imgtec.com>
-> Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: linux-mips@linux-mips.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->   arch/mips/include/asm/tlb.h | 7 -------
->   1 file changed, 7 deletions(-)
->
-> diff --git a/arch/mips/include/asm/tlb.h b/arch/mips/include/asm/tlb.h
-> index 4a23493..5ea43ca 100644
-> --- a/arch/mips/include/asm/tlb.h
-> +++ b/arch/mips/include/asm/tlb.h
-> @@ -10,13 +10,6 @@
->   		if (!tlb->fullmm)				\
->   			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
->   	}  while (0)
-> -#define tlb_end_vma(tlb, vma) do { } while (0)
-> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
-> -
-> -/*
-> - * .. because we flush the whole mm when it fills up.
-> - */
-> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
->   
->   #define UNIQUE_ENTRYHI(idx)						\
->   		((CKSEG0 + ((idx) << (PAGE_SHIFT + 1))) |		\
+On 15.05.14 18:08:30, Alexander Shishkin wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> 
+> This patch introduces "AUX space" in the perf mmap buffer, intended for
+> exporting high bandwidth data streams to userspace, such as instruction
+> flow traces.
+> 
+> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
+> user_page structure, and read/write pointers aux_{head,tail}, which abide
+> by the same rules as data_* counterparts of the main perf buffer.
+> 
+> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
+> such an offset that will be greater than data_offset+data_size and
+> aux_size to be the desired buffer size. Both need to be page aligned.
+> The latter is not forced to be a power of 2 number of pages, so that PMU
+> drivers have to take care of this if necessary in their implementations
+> of ->alloc_aux(). Then, same aux_offset and aux_size should be passed to
+> mmap() call and if everything adds up, you should have an AUX buffer as
+> a result.
 
-I would like to know why these functions are eliminated (don't find any 
-clue).
-Is it just because there will be a generic one or the calls would be 
-eliminated?
-And if there are generic - can I tune it later?
+Raw data sample (PERF_SAMPLE_RAW) already allow to pass data to
+userspace. What is the reason for a separate buffer? I see the
+following:
 
-Explanation of Q:  MIPS R6 architecture has now TLBINV instruction which 
-eliminates TLB elements only for specific ASID (read here - "mm_struct") 
-and I would like to use it for efficiency in tlb_flush()/flush_tlb_mm.
-(Not sure about tlb_end_vma()/ __tlb_remove_tlb_entry() yet)
+ * the buffer accessed from userspace should have a customized format
+   unrelated to perf,
 
-- Leonid.
+ * zero copying (not sure if this is really possible),
+
+ * data size and alignment requirements that can not be handled by raw
+   data samples.
+
+If possible, raw data samples should be a first option.
+
+On the other side there might the need of an aux buffer (I would
+better call it raw buffer analog to raw data). So here some comments
+on the implementation and the user i/f.
+
+Instead of extending the current ringbuffer I would better add a 2nd
+ring buffer. The mmap and ringbuffer handling and esp. the access from
+userspace looks much more complex now and it was already complex
+before. So with a 2nd buffer there would be less changes in the
+implementation and handling. Access from userland would remain as it
+currently is, there is no need to modify the header page layout. To
+setup a 2nd buffer, you just need to modify the mmap call in a way
+(maybe by prot, flags or offset argument) to let the kernel know an
+aux buffer should be attached to the event.
+
+Then, instead of introducing a new PERF_RECORD_AUX, just reuse
+PERF_RECORD_SAMPLE. If an aux/raw buffer is connected to the event,
+then the data is not part of the sample but passed to the raw buffer.
+
+Tools, interfaces and helper functions would work already with such
+raw samples, just the raw buffer handling need to be added.
+
+How about this?
+
+-Robert
