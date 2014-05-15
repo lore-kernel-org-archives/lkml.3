@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405AbaEOQPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:15:36 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:58067 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164AbaEOQPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:15:35 -0400
-Date: Thu, 15 May 2014 12:15:33 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 0/6] sched: expel confusing usage of the term "power"
-In-Reply-To: <CAKfTPtAtiiWN9t_VswTienkBBCiUpqnZdvsnOVnTphc0PF69Rg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405151214171.17310@knanqh.ubzr>
-References: <1400101030-17717-1-git-send-email-nicolas.pitre@linaro.org> <CAKfTPtAtiiWN9t_VswTienkBBCiUpqnZdvsnOVnTphc0PF69Rg@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753375AbaEOQSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:18:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52211 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153AbaEOQR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:17:58 -0400
+Date: Thu, 15 May 2014 18:17:53 +0200
+From: chrubis@suse.cz
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140515161753.GA7959@rei.Home>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <537407ED.8050606@zytor.com>
+ <CF999CD6.90A93%dvhart@linux.intel.com>
+ <5374C54B.7040408@gmail.com>
+ <20140515154246.GC6926@rei.Home>
+ <5374E2A4.2070408@zytor.com>
+ <20140515160152.GA7529@rei.Home>
+ <5374E653.2080309@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5374E653.2080309@zytor.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Vincent Guittot wrote:
-
-> Hi Nico,
+Hi!
+> >> I really believe the proper fix is to use assembly syscall stubs.  In
+> >> klibc I build a fairly elaborate machinery to autogenerate such syscall
+> >> stubs for a variety of architectures.
+> > 
+> > Then it would be nice to share these between klibc and LTP (and possible
+> > everybody else).
+> > 
 > 
-> Thanks for doing this renaming.
-> I remember that you asked me to do this while working on cpu_power but
-> my work has not evolved as fast as expected and as it already implies
-> some renaming other than s/power/capacity/ i have postponed it to not
-> make review to complex.
-> 
-> Nevertheless, i can manage the conflicts afterward and rebase my
-> patches, depending of the review status
+> It should be quite easy to extract from klibc.
 
-OK.  Could you provide review status of your own then?
+That is not the main concern here. If I extract the code I would have to
+watch for any changes manually. If it was in a library or a separate
+repository all that would be needed is to add it as dependency/git
+submodule and I would get all updates automatically.
 
-
-Nicolas
+-- 
+Cyril Hrubis
+chrubis@suse.cz
