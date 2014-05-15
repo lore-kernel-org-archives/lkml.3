@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaEOWDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:03:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60436 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaEOWDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:03:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1062,1389772800"; 
-   d="scan'208";a="512437970"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
-Subject: [PATCH 9/9] perf, tools, record: Always allow to overide default period v2
-Date: Thu, 15 May 2014 15:03:12 -0700
-Message-Id: <1400191392-11569-10-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
-References: <1400191392-11569-1-git-send-email-andi@firstfloor.org>
+	id S1756111AbaEOWHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:07:04 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:39981 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249AbaEOWHC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 18:07:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400190998-28153-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1400190998-28153-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Thu, 15 May 2014 18:07:01 -0400
+X-Google-Sender-Auth: VKEbIFj0jJ8NnneaHMIXBmiUtI0
+Message-ID: <CAABAsM69JO2F95+uVzbSzOSbnNz2ae0kdffy8m-pGDRr_QR=+g@mail.gmail.com>
+Subject: Re: [PATCH] Fix for possible null pointer dereference in auth.c
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, May 15, 2014 at 5:56 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> There is otherwise a risk of a possible null pointer dereference.
+>
+> Was largely found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  net/sunrpc/auth.c |   10 +++++++---
+>  1 fil ändrad, 7 tillägg(+), 3 borttagningar(-)
+>
+> diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+> index 5285ead..3a55698 100644
+> --- a/net/sunrpc/auth.c
+> +++ b/net/sunrpc/auth.c
+> @@ -801,10 +801,14 @@ rpcauth_invalcred(struct rpc_task *task)
+>  {
+>         struct rpc_cred *cred = task->tk_rqstp->rq_cred;
+>
+> -       dprintk("RPC: %5u invalidating %s cred %p\n",
+> -               task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+> -       if (cred)
+> +       if (cred) {
+> +               dprintk("RPC: %5u invalidating %s cred %p\n",
+> +                       task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+> +
+>                 clear_bit(RPCAUTH_CRED_UPTODATE, &cred->cr_flags);
+> +       }
+> +       else
+> +               dprintk("RPC: %5u invalidating is NULL\n", task->tk_pid);
+>  }
+>
+>
 
-Fix the logic to allow overriding event default periods with -c or -F
-on the command line.  I'm not sure I understand this if() fully, but
-this change makes all cases I tested work (tracepoint with default, default,
-,-c, -F)
+Can you please explain how we can get to rpcauth_invalcred() without a
+valid cred pointer? I'm not seeing it...
 
-This fixed specifying -c / -F with json event list events,
-which have a default period. It should do the same
-for trace point events.
-
-Cc: fweisbec@gmail.com
-v2: Simplify, just change || to &&
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/evsel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5c28d82..d9ceede 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -592,7 +592,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	 * We default some events to a 1 default interval. But keep
- 	 * it a weak assumption overridable by the user.
- 	 */
--	if (!attr->sample_period || (opts->user_freq != UINT_MAX &&
-+	if (!attr->sample_period && (opts->user_freq != UINT_MAX &&
- 				     opts->user_interval != ULLONG_MAX)) {
- 		if (opts->freq) {
- 			perf_evsel__set_sample_bit(evsel, PERIOD);
--- 
-1.9.0
-
+Cheers
+  Trond
