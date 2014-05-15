@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567AbaEOR12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:27:28 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:39718 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaEOR10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:27:26 -0400
-Message-ID: <1400174841.18229.6.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 15 May 2014 19:27:21 +0200
-In-Reply-To: <20140515144553.GZ4570@linux.vnet.ibm.com>
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-	 <20140514154459.GE4570@linux.vnet.ibm.com>
-	 <1400123931.5175.38.camel@marge.simpson.net>
-	 <20140515144553.GZ4570@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755595AbaEOR1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:27:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754419AbaEORXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:23:53 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 02/14] perf tools: Separate dso data related variables
+Date: Thu, 15 May 2014 19:23:23 +0200
+Message-Id: <1400174615-2121-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-15 at 07:45 -0700, Paul E. McKenney wrote: 
-> On Thu, May 15, 2014 at 05:18:51AM +0200, Mike Galbraith wrote:
-> > On Wed, 2014-05-14 at 08:44 -0700, Paul E. McKenney wrote:
-> > 
-> > > In practice, not sure how much testing CONFIG_NO_HZ_FULL=y has received
-> > > for -rt kernels in production environments.
-> > 
-> > I took 3.14-rt out for a quick spin on my 64 core box, it didn't work at
-> > all with 60 cores isolated.  I didn't have time to rummage, but it looks
-> > like there are still bugs to squash. 
-> > 
-> > Biggest problem with CONFIG_NO_HZ_FULL is the price tag.  It just raped
-> > fast mover performance last time I measured.
-> 
-> I do have a report of the RCU grace-period kthreads (rcu_preempt,
-> rcu_sched, and rcu_bh) consuming excessive CPU time on large boxes,
-> but this is for workloads with lots of threads and context switches.
-> 
-> Whether relevant or not to your situation, working on it...
+Add separated structure/namespace for data related
+variables. We are going to add mode of them, so this
+way they will be clearly separated.
 
-RCU signal was swamped by accounting.
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/dso.c | 8 ++++----
+ tools/perf/util/dso.h | 7 ++++++-
+ 2 files changed, 10 insertions(+), 5 deletions(-)
 
--Mike
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 64453d6..1c3cdaf 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -292,7 +292,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 
+ 		cache->offset = cache_offset;
+ 		cache->size   = ret;
+-		dso_cache__insert(&dso->cache, cache);
++		dso_cache__insert(&dso->data.cache, cache);
+ 
+ 		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+@@ -310,7 +310,7 @@ static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
+ {
+ 	struct dso_cache *cache;
+ 
+-	cache = dso_cache__find(&dso->cache, offset);
++	cache = dso_cache__find(&dso->data.cache, offset);
+ 	if (cache)
+ 		return dso_cache__memcpy(cache, offset, data, size);
+ 	else
+@@ -473,7 +473,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name, false);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+-		dso->cache = RB_ROOT;
++		dso->data.cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -506,7 +506,7 @@ void dso__delete(struct dso *dso)
+ 		dso->long_name_allocated = false;
+ 	}
+ 
+-	dso_cache__free(&dso->cache);
++	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+ 	free(dso);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 38efe95..7637fdd 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -76,7 +76,6 @@ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+-	struct rb_root	 cache;
+ 	void		 *a2l;
+ 	char		 *symsrc_filename;
+ 	unsigned int	 a2l_fails;
+@@ -99,6 +98,12 @@ struct dso {
+ 	const char	 *long_name;
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
++
++	/* dso data file */
++	struct {
++		struct rb_root	 cache;
++	} data;
++
+ 	char		 name[0];
+ };
+ 
+-- 
+1.8.3.1
 
