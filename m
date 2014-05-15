@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaEOT2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:28:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029AbaEOT0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:26:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: x86@kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Elliott@hp.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/6 V2] x86, nmi: Various fixes and cleanups
-Date: Thu, 15 May 2014 15:25:43 -0400
-Message-Id: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
+	id S1754606AbaEOTd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:33:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60760 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaEOTd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:33:57 -0400
+Message-ID: <5375169F.3060809@wwwdotorg.org>
+Date: Thu, 15 May 2014 13:33:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH 00/10] Tegra XHCI support
+References: <1400113986-339-1-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1400113986-339-1-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I started this patch by fixing a performance problem with the GHES
-NMI handler and then things evolved to more patches as I was poking
-around in the code.
+On 05/14/2014 06:32 PM, Andrew Bresticker wrote:
+> This is a first pass at the host and PHY drivers necessary for USB3.0
+> support on Tegra114 and Tegra124.  The Tegra XHCI host controller requires
+> external firmware [1] which must be loaded before using any USB ports owned
+> by the controller.  The XUSB PHY driver handles mapping and enabling of
+> the UTMI, HSIC, and SuperSpeed pads to the XHCI controller.
+> 
+> Tested on a Venice2 with a variety of USB2.0 and USB3.0 memory sticks
+> and ethernet dongles.  
+> 
+> Notes:
+>  - I've included support for Tegra114, but since I don't have Tegra114-based
+>    hardware, it is completely untested.
+>  - The PCIe and SATA PHYs also are programmed using the XUSB_PADCTL space
+>    as well.  At least some of the code can be re-used, specifically with
+>    respect to lane programming.  I believe Thierry is working on the PCIe
+>    parts of this.
 
-The main focus was moving the GHES NMI driver to its own NMI subtype
-to avoid slowing down perf handling.  Then I decided to move the
-default external NMI handler to its own routine.  Then finally, I
-needed to see which NMI handlers were registered so I hacked up
-/proc/interrupts to show me.
+If I understand the HW correctly, there's a separate "pad control" HW
+block that provides routing/sharing of signals from USB2(?), USB3, SATA,
+and PCIe to the pads.
 
-Tested mostly on HP boxes that have GHES enabled and having the iLO
-send NMIs to panic the box (using hpwdt driver).  Ran perf on other
-GHES enabled boxes to test performance results.
-
-V2: adding irq_work items to handled possible lost NMIs (new patch 1)
-    modified output of /proc/interrupts based on feedback (patch 6)
-
-Don Zickus (5):
-  x86, nmi:  Add new nmi type 'external'
-  x86, nmi: Add boot line option 'panic_on_unrecovered_nmi' and
-    'panic_on_io_nmi'
-  x86, nmi: Remove 'reason' value from unknown nmi output
-  x86, nmi: Move default external NMI handler to its own routine
-  x86, nmi: Add better NMI stats to /proc/interrupts and show handlers
-
- Documentation/kernel-parameters.txt |    9 ++
- arch/x86/include/asm/nmi.h          |    5 +
- arch/x86/kernel/irq.c               |    3 +
- arch/x86/kernel/nmi.c               |  199 ++++++++++++++++++++++++++--------
- drivers/acpi/apei/ghes.c            |    4 +-
- drivers/watchdog/hpwdt.c            |   24 +++--
- 6 files changed, 187 insertions(+), 57 deletions(-)
-
-*** BLURB HERE ***
-
-Don Zickus (6):
-  x86, nmi:  Implement delayed irq_work mechanism to handle lost NMIs
-  x86, nmi:  Add new nmi type 'external'
-  x86, nmi: Add boot line option 'panic_on_unrecovered_nmi' and
-    'panic_on_io_nmi'
-  x86, nmi: Remove 'reason' value from unknown nmi output
-  x86, nmi: Move default external NMI handler to its own routine
-  x86, nmi: Add better NMI stats to /proc/interrupts and show handlers
-
- Documentation/kernel-parameters.txt |    9 +
- arch/x86/include/asm/nmi.h          |    5 +
- arch/x86/kernel/irq.c               |    3 +
- arch/x86/kernel/nmi.c               |  302 +++++++++++++++++++++++++++++-----
- drivers/acpi/apei/ghes.c            |    4 +-
- drivers/watchdog/hpwdt.c            |   24 ++-
- 6 files changed, 292 insertions(+), 55 deletions(-)
-
+I believe Thierry is working on exposing this block as a pinctrl driver,
+or at least something that the other drivers can call into in order to
+configure that block. It'd be good if you can co-ordinate with him to
+rebase this driver on top of that, rather than (I assume; haven't read
+the code yet...) directly manipulating the padctrl registers inside each
+of the different drivers. Co-ordinating that could turn out to be
+problematic, and presumably if each driver does its own thing, we end up
+duplicating defines, code, and DT bindings for configuring the padctrl HW.
