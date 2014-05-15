@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaEOUkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 16:40:37 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:33451 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231AbaEOUkf (ORCPT
+	id S1756138AbaEOUlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:41:11 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:34315 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaEOUis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 16:40:35 -0400
-Date: Thu, 15 May 2014 22:40:29 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] drm: Missed clflushopt in drm_clflush_virt_range
-Message-ID: <20140515204029.GU8790@phenom.ffwll.local>
-Mail-Followup-To: "H. Peter Anvin" <h.peter.anvin@intel.com>,
-	Ross Zwisler <ross.zwisler@linux.intel.com>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com>
- <20140515123846.GQ8790@phenom.ffwll.local>
- <5374D12C.9030400@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5374D12C.9030400@intel.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 15 May 2014 16:38:48 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v3 3/6] arm64: Support reboot through watchdog subsystem
+Date: Thu, 15 May 2014 13:38:21 -0700
+Message-Id: <1400186304-1691-4-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400186304-1691-1-git-send-email-linux@roeck-us.net>
+References: <1400186304-1691-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 07:37:32AM -0700, H. Peter Anvin wrote:
-> On 05/15/2014 05:38 AM, Daniel Vetter wrote:
-> > On Wed, May 14, 2014 at 09:41:12AM -0600, Ross Zwisler wrote:
-> >> With this commit:
-> >>
-> >> 2a0788dc9bc4 x86: Use clflushopt in drm_clflush_virt_range
-> >>
-> >> If clflushopt is available on the system, we use it instead of clflush
-> >> in drm_clflush_virt_range.  There were two calls to clflush in this
-> >> function, but only one was changed to clflushopt.  This patch changes
-> >> the other clflush call to clflushopt.
-> >>
-> >> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-> >> Reported-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> >>
-> >> Cc: David Airlie <airlied@linux.ie>
-> >> Cc: dri-devel@lists.freedesktop.org
-> >> Cc: H Peter Anvin <h.peter.anvin@intel.com>
-> >> Cc: Ingo Molnar <mingo@kernel.org>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> > 
-> > Picked to my topic/core-stuff drm branch so it doesn't get lost.
-> > -Daniel
-> > 
-> 
-> Does this mean you're picking this up, or do you want me to put it into
+The watchdog subsystem provides an API to perform a system reboot.
+Use it.
 
-I'll forward it eventually to Dave for 3.16. But if someone else steals it
-beforehand I don't mind ;-)
--Daniel
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3: Drop reboot mode and cmd string parameters from API
+v2: No change
+
+ arch/arm64/kernel/process.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 6391485..e30f146 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -42,6 +42,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/personality.h>
+ #include <linux/notifier.h>
++#include <linux/watchdog.h>
+ 
+ #include <asm/compat.h>
+ #include <asm/cacheflush.h>
+@@ -144,6 +145,8 @@ void machine_restart(char *cmd)
+ 	if (arm_pm_restart)
+ 		arm_pm_restart(reboot_mode, cmd);
+ 
++	watchdog_do_reboot();
++
+ 	/*
+ 	 * Whoops - the architecture was unable to reboot.
+ 	 */
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.9.1
+
