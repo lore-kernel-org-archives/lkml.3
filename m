@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171AbaEOVbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:31:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29177 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704AbaEOVbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:31:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1062,1389772800"; 
-   d="scan'208";a="541232242"
-From: Andi Kleen <andi@firstfloor.org>
-To: Erik Bosman <erik@minemu.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: SROP mitigation: implement signal canaries
-References: <20140515211004.GA9575@pizzadoos.com>
-Date: Thu, 15 May 2014 14:31:40 -0700
-In-Reply-To: <20140515211004.GA9575@pizzadoos.com> (Erik Bosman's message of
-	"Thu, 15 May 2014 23:10:04 +0200")
-Message-ID: <87vbt6rao3.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756196AbaEOVcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:32:09 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41626 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaEOVcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:32:05 -0400
+Date: Thu, 15 May 2014 14:32:02 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
+        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
+        davem@davemloft.net
+Subject: Re: [PATCH] net: tunnels - enable module autoloading
+Message-ID: <20140515143202.53ca8033@nehalam.linuxnetplumber.net>
+In-Reply-To: <1399970908-9973-1-git-send-email-teg@jklm.no>
+References: <1399970908-9973-1-git-send-email-teg@jklm.no>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Erik Bosman <erik@minemu.org> writes:
+On Tue, 13 May 2014 10:48:28 +0200
+Tom Gundersen <teg@jklm.no> wrote:
 
->  
-> diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
-> index 2206757..1a9285a 100644
-> --- a/arch/x86/ia32/ia32_signal.c
-> +++ b/arch/x86/ia32/ia32_signal.c
-> @@ -212,9 +212,18 @@ asmlinkage long sys32_sigreturn(void)
->  	struct sigframe_ia32 __user *frame = (struct sigframe_ia32 __user *)(regs->sp-8);
->  	sigset_t set;
->  	unsigned int ax;
-> +#ifdef CONFIG_SIGNAL_CANARY
-> +	u32 canary;
-> +#endif
+> Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
+> 
+> This is in line with how most other netdev kinds work, and will allow userspace
+> to create tunnels without having CAP_SYS_MODULE.
+> 
+> Signed-off-by: Tom Gundersen <teg@jklm.no>
+> Tested-by: Susant Sahani <susant@redhat.com>
+> ---
+>  net/ipv4/ipip.c       | 1 +
+>  net/ipv6/ip6_tunnel.c | 1 +
+>  net/ipv6/sit.c        | 1 +
+>  3 files changed, 3 insertions(+)
 
-Don't you completely break the ABI here? I'm sure there are programs out
-there who hard code the offset into the FP state.
+But tunnel modules are autoloaded now.
+If I create a tunnel with ip tunnel based on the existing MODULE_ALIAS_NETDEV().
 
-I think you either need to put it at the total end or somewhere
-currently unused
-
-Besides that I would remove the CONFIG_* once it works and just do it
-unconditionally.
-
--Andi
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only
