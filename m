@@ -1,126 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaEOQXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:23:13 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:55232 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaEOQXL (ORCPT
+	id S1753922AbaEOQYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:24:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49655 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaEOQYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:23:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Murali Karicheri <m-karicheri2@ti.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware core driver
-Date: Thu, 15 May 2014 18:23:05 +0200
-Message-ID: <6048322.x3M3sdDEWO@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:P4wQGpmzjcO1z3HC1j8PsVyQfJKwfWpRshJLoWX6xe+
- KoK8i8SskcRxmL/0bJyVyLhwANKh2HsVoZlHgXf2PtJu2OaxlV
- ko68QCyEZYQWC/hYSho4fvnImi3i9itklCLuCoMm5nytTnUkHd
- AOCdCyrasIY9FIsRTZxVEOEieVvyDVXz0cK5zrcFDvpsPotI+n
- KMF7WasyNZeY1FvUU5/Sg60Lp7cGNBLFsLSPAdHApahbzUTlcA
- +o8hs/gDrc7956q9hJqrCDxMJBKni+I+FWR1LeITpKNgqPJJs2
- CUEWNqihpzDqnaGYqDz3jfR2t23H9GPLgyJEXjB6YHnHowRJiX
- uuBgBqivQ6efYul8LjCE=
+	Thu, 15 May 2014 12:24:30 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-e8-5374ea3bc79a
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] thermal: exynos: remove redundant pdata checks from
+ exynos_tmu_initialize()
+Date: Thu, 15 May 2014 18:24:14 +0200
+Message-id: <2098888.ybkVo6Z2Xi@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140515144739.GA27690@developer>
+References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+ <1399288539-1793-6-git-send-email-b.zolnierkie@samsung.com>
+ <20140515144739.GA27690@developer>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jQV3rVyXBBjuWmVg0XA2xWLP/J5PF
+	/CvXWC3ONr1ht7i8aw6bxefeI4wWM87vY7I4c/oSq8WTh31sFutnvGZx4PLYOesuu8fiPS+Z
+	PLZcbWfx6NuyitHj+I3tTB6fN8kFsEVx2aSk5mSWpRbp2yVwZWxfd46l4Kt4xbpTT5gbGBcI
+	dzFyckgImEgc23iVBcIWk7hwbz1bFyMXh5DAdEaJzo7v7CAJIYEWJonvf2JAbDYBK4mJ7asY
+	QWwRAS2JE5e2M4E0MAvcZJI4/OsH0CQODmGBDIm1jYYgNSwCqhLdSw6D1fMKaEqcXLsWzBYV
+	8JTYsX0lG4jNKaAvMefBMVaIxasYJXrW/GWCaBCU+DH5Hth1zALyEvv2T2WFsLUk1u88zjSB
+	UWAWkrJZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4Gp5J72Bc1WBxiFGA
+	g1GJh5dhcnGwEGtiWXFl7iFGCQ5mJRFe8+clwUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7Za
+	BwoJpCeWpGanphakFsFkmTg4pRoYt/Kdf7AvVHHRqvYFnD/87ae9SFnju2OTZZ7DhpNLlnzu
+	tHn+wUOOpUKb7+rzc7WvE7S+GQvJ+6dsecZt6sC3UzvrGKvM2sKJ7475Xk8TdneIfGFfNJf/
+	bEHZK5fVdmJ7JjGZT9wrnq91xWnpygg277C/E0zP1Es0Bzbc0LgsV5d9yofFaCWrEktxRqKh
+	FnNRcSIAPsno8IICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 May 2014 12:01:32 Murali Karicheri wrote:
+On Thursday, May 15, 2014 10:47:40 AM Eduardo Valentin wrote:
+> Hello Bartlomiej,
 
-> +static int
-> +keystone_pcie_fault(unsigned long addr, unsigned int fsr,
-> +		struct pt_regs *regs)
-> +{
-> +	unsigned long instr = *(unsigned long *) instruction_pointer(regs);
-> +
-> +	if ((instr & 0x0e100090) == 0x00100090) {
-> +		int reg = (instr >> 12) & 15;
-> +
-> +		regs->uregs[reg] = -1;
-> +		regs->ARM_pc += 4;
-> +	}
-> +
-> +	return 0;
-> +}
+Hi,
 
-This needs to check in the PCI host registers what happened and do
-some appropriate action. If the fault was not caused by PCIe, it
-should not be ignored here but get passed on to the next handler.
+> On Mon, May 05, 2014 at 01:15:34PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> > Remove runtime checks for pdata sanity from exynos_tmu_initialize().
+> > The current values hardcoded in pdata will never trigger the checks
+> > and for the new code potential mistakes should be caught during
+> > development/review phases.
+> > 
+> > There should be no functional changes caused by this patch.
+> > 
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > ---
+> >  drivers/thermal/samsung/exynos_thermal_common.h |  1 -
+> >  drivers/thermal/samsung/exynos_tmu.c            | 13 -------------
+> >  2 files changed, 14 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+> > index 3eb2ed9..cd44719 100644
+> > --- a/drivers/thermal/samsung/exynos_thermal_common.h
+> > +++ b/drivers/thermal/samsung/exynos_thermal_common.h
+> > @@ -27,7 +27,6 @@
+> >  #define SENSOR_NAME_LEN	16
+> >  #define MAX_TRIP_COUNT	8
+> >  #define MAX_COOLING_DEVICE 4
+> > -#define MAX_THRESHOLD_LEVS 5
+> >  
+> >  #define ACTIVE_INTERVAL 500
+> >  #define IDLE_INTERVAL 10000
+> > diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> > index 903566f..789d745 100644
+> > --- a/drivers/thermal/samsung/exynos_tmu.c
+> > +++ b/drivers/thermal/samsung/exynos_tmu.c
+> > @@ -158,23 +158,10 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+> >  	    data->temp_error > pdata->max_efuse_value)
+> >  		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+> >  
+> > -	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
+> > -		dev_err(&pdev->dev, "Invalid max trigger level\n");
+> > -		ret = -EINVAL;
+> > -		goto out;
+> > -	}
+> > -
+> >  	for (i = 0; i < pdata->max_trigger_level; i++) {
+> >  		if (!pdata->trigger_levels[i])
+> >  			continue;
+> >  
+> > -		if ((pdata->trigger_type[i] == HW_TRIP) &&
+> > -		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
+> > -			dev_err(&pdev->dev, "Invalid hw trigger level\n");
+> > -			ret = -EINVAL;
+> > -			goto out;
+> > -		}
+> > -
+> 
+> Does it mean no new pdata are going to be written? i.e., no new soc is
+> going to be supported by this driver that needs proper pdata checking?
 
-> +static int __init ks_pcie_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct device *dev = &pdev->dev;
-> +	struct keystone_pcie *ks_pcie;
-> +	void __iomem *devstat;
-> +	struct pcie_port *pp;
-> +	struct resource *res;
-> +	struct phy *phy;
-> +	int ret = 0;
-> +	u32 val;
-> +
-> +	ks_pcie = devm_kzalloc(&pdev->dev, sizeof(*ks_pcie),
-> +				GFP_KERNEL);
-> +	if (!ks_pcie) {
-> +		dev_err(dev, "no memory for keystone pcie\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	/* check if serdes phy needs to be enabled */
-> +	if (of_get_property(np, "ti,init-phy", NULL) != NULL) {
-> +		phy = devm_phy_get(dev, "pcie-phy");
-> +			if (IS_ERR(phy))
-> +				return PTR_ERR(phy);
-> +
-> +		ret = phy_init(phy);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
+This is not a proper checking.  The checks in question are done at runtime
+in a production code for data that is hardcoded inside driver during
+development time and later it doesn't change.  Such data should be verified
+during development and review time (i.e. by a script parsing relevant data
+from exynos_tmu_data.c, one can also argue that verification to be done is
+so simple that the review by a maintainer should be enough).
 
-I think you can just call devm_phy_get() unconditionally here and
-get rid of the ti,init-phy property. If there is no phy, don't
-initialize it.
+> >  		/* Count trigger levels except the HW trip*/
+> >  		if (!(pdata->trigger_type[i] == HW_TRIP))
+> >  			trigger_levs++;
 
-> +
-> +	ret = add_pcie_port(ks_pcie, pdev);
-> +	if (ret < 0)
-> +		goto fail_clk;
-> +
-> +	platform_set_drvdata(pdev, ks_pcie);
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Set the platform data first, then add the port.
-
-> +	dev_info(dev, "pcie rc probe success\n");
-
-Remove this.
-
-> +#ifdef CONFIG_PCI_KEYSTONE
-> +/*
-> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
-> + */
-> +static void quirk_limit_readrequest(struct pci_dev *dev)
-> +{
-> +	int readrq = pcie_get_readrq(dev);
-> +
-> +	if (readrq > 256)
-> +		pcie_set_readrq(dev, 256);
-> +}
-> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
-> +#endif /* CONFIG_PCI_KEYSTONE */
-
-This doesn't work: you can't just limit do this for all devices just based
-on PCI_KEYSTONE being enabled, you have to check if you are actually using
-this controller.
-
-	Arnd
