@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaEOVyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:54:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaEOVyV (ORCPT
+	id S1756255AbaEOVyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:54:31 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34706 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaEOVy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:54:21 -0400
-Date: Thu, 15 May 2014 14:57:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Denis Pithon <denis.pithon@gmail.com>
-Cc: devel@driverdev.osuosl.org, himangi774@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] staging/wlan-ng: replace printk() with pr_xxx()
-Message-ID: <20140515215739.GC4642@kroah.com>
-References: <1399908167-19271-1-git-send-email-denis.pithon@gmail.com>
- <1399908167-19271-4-git-send-email-denis.pithon@gmail.com>
+	Thu, 15 May 2014 17:54:27 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=5D=20Fix=20for=20possible=20null=20pointer=20dereference=20in=20keyspan=2Ec?=
+Date: Thu, 15 May 2014 23:55:10 +0200
+Message-Id: <1400190910-28019-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399908167-19271-4-git-send-email-denis.pithon@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 05:22:47PM +0200, Denis Pithon wrote:
-> Fix some coding style issues concerning printk() usage.
-> 
-> Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
-> ---
->  drivers/staging/wlan-ng/p80211netdev.c | 17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-> index 61a3092..3577d20 100644
-> --- a/drivers/staging/wlan-ng/p80211netdev.c
-> +++ b/drivers/staging/wlan-ng/p80211netdev.c
-> @@ -384,8 +384,9 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
->  		 */
->  		if (skb->protocol != ETH_P_80211_RAW) {
->  			netif_start_queue(wlandev->netdev);
-> -			printk(KERN_NOTICE
-> -			       "Tx attempt prior to association, frame dropped.\n");
-> +			pr_notice(
-> +			   "Tx attempt prior to association, frame dropped\n"
-> +			);
+There is otherwise a risk of a possible null pointer dereference.
 
-Can't these be netdev messages, or at the least, dev_* messages?
+Was largely found by using a static code analysis program called cppcheck.
 
-thanks,
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/usb/serial/keyspan.c |    4 ++--
+ 1 fil ändrad, 2 tillägg(+), 2 borttagningar(-)
 
-greg k-h
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index d3acaea..93cb7ce 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -1535,14 +1535,14 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
+ 
+ 	this_urb = p_priv->outcont_urb;
+ 
+-	dev_dbg(&port->dev, "%s - endpoint %d\n", __func__, usb_pipeendpoint(this_urb->pipe));
+-
+ 		/* Make sure we have an urb then send the message */
+ 	if (this_urb == NULL) {
+ 		dev_dbg(&port->dev, "%s - oops no urb.\n", __func__);
+ 		return -1;
+ 	}
+ 
++	dev_dbg(&port->dev, "%s - endpoint %d\n", __func__, usb_pipeendpoint(this_urb->pipe));
++
+ 	/* Save reset port val for resend.
+ 	   Don't overwrite resend for open/close condition. */
+ 	if ((reset_port + 1) > p_priv->resend_cont)
+-- 
+1.7.10.4
+
