@@ -1,141 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbaEOLzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 07:55:11 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:44708 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974AbaEOLzH (ORCPT
+	id S1752167AbaEOL6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 07:58:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43766 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaEOL6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 07:55:07 -0400
-Message-ID: <5374AB0C.7020105@monstr.eu>
-Date: Thu, 15 May 2014 13:54:52 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 07:58:06 -0400
+Date: Thu, 15 May 2014 13:57:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+Message-ID: <20140515115751.GK30445@twins.programming.kicks-ass.net>
+References: <20140513094737.GU30445@twins.programming.kicks-ass.net>
+ <53721FD4.6060300@redhat.com>
+ <20140513142328.GE2485@laptop.programming.kicks-ass.net>
+ <53731D12.7040804@linux.vnet.ibm.com>
+ <20140514094426.GF30445@twins.programming.kicks-ass.net>
+ <5374387E.4080802@linux.vnet.ibm.com>
+ <20140515083531.GE30445@twins.programming.kicks-ass.net>
+ <53747EE4.3020605@linux.vnet.ibm.com>
+ <20140515090638.GI30445@twins.programming.kicks-ass.net>
+ <53748A5D.6070605@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Bart Tanghe <bart.tanghe@thomasmore.be>,
-        Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>
-CC: thierry.reding@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, grant.likely@linaro.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc]pwm: add xilinx pwm driver
-References: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be> <4262573.aEBTd7FzV5@wuerfel> <53747FB8.2090706@thomasmore.be> <33a1dbfc-bacb-4804-a83a-9915eca3183b@BY2FFO11FD032.protection.gbl> <5374A55A.4080906@thomasmore.be>
-In-Reply-To: <5374A55A.4080906@thomasmore.be>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="28E88AGEvL81Xrxa9uxRQ5ugIqRhvlnq4"
+	protocol="application/pgp-signature"; boundary="mMJklh8hhp8IL6EK"
+Content-Disposition: inline
+In-Reply-To: <53748A5D.6070605@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---28E88AGEvL81Xrxa9uxRQ5ugIqRhvlnq4
-Content-Type: text/plain; charset=ISO-8859-1
+
+--mMJklh8hhp8IL6EK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 05/15/2014 01:30 PM, Bart Tanghe wrote:
+On Thu, May 15, 2014 at 05:35:25PM +0800, Michael wang wrote:
+> On 05/15/2014 05:06 PM, Peter Zijlstra wrote:
+> [snip]
+> >> However, when the group level is too deep, that doesn't works any more=
+=2E..
+> >>
+> >> I'm not sure but seems like 'deep group level' and 'vruntime bonus for
+> >> sleeper' is the keep points here, will try to list the root cause after
+> >> more investigation, thanks for the hints and suggestions, really helpf=
+ul ;-)
+> >=20
+> > How deep is deep? You run into numerical problems quite quickly, esp.
+> > when you've got lots of CPUs. We've only got 64bit to play with, that
+> > said there were some patches...
 >=20
+> It's like:
 >=20
-> On 05/15/2014 12:33 PM, Michal Simek wrote:
->> On 05/15/2014 10:50 AM, Bart Tanghe wrote:
->>> On 05/15/2014 09:23 AM, Arnd Bergmann wrote:
->>>> On Wednesday 14 May 2014 13:26:13 Bart Tanghe wrote:
->>>>> @@ -0,0 +1,20 @@
->>>>> +Xilinx PWM controller
->>>>> +
->>>>> +Required properties:
->>>>> +- compatible: should be "xlnx,pwm-xlnx"
->>>>> +- add a clock source to the description
->>>>> +
->>>>> +Examples:
->>>>> +
->>>>> +               axi_timer_0: timer@42800000 {
->>>>> +                       clock-frequency =3D <100000000>;
->>>>> +                       clocks =3D <&clkc 15>;
->>>>> +                       compatible =3D "xlnx,xlnx-pwm";
->>>>> +                       reg =3D <0x42800000 0x10000>;
->>>>> +                       xlnx,count-width =3D <0x20>;
->>>>> +                       xlnx,gen0-assert =3D <0x1>;
->>>>> +                       xlnx,gen1-assert =3D <0x1>;
->>>>> +                       xlnx,one-timer-only =3D <0x0>;
->>>>> +                       xlnx,trig0-assert =3D <0x1>;
->>>>> +                       xlnx,trig1-assert =3D <0x1>;
->>>>> +               } ;
->>>>>
->>>>
->>>> It seems you are missing a mandatory "#pwm-cells" property.
->>>> How is anybody supposed to use this?
->>>>
->>>>      Arnd
->>>>
->>>
->>> I've added some additional information in the documentation
->>>
->>>
->>>
->>> Xilinx PWM controller
->>>
->>> This driver works together with the Xilinx Axi timer hardware core.
->>> The core is available for the microblaze, powerpc and arm based Xilin=
-x
->>> platforms.
->>>
->>> The axi timer core is implemented in the pl (programmable logic) of t=
-he
->>> fpga. The amount is user defined. Each core has two timers and one pw=
-m output.
->>
->> For PWM you have to have 2 timers but core itself can be configured
->> to any configuration and I expect that any output has to be used.
->>
->> Can you describe me your testing enviroment with zedboard?
->> Do you use any additional hw or are using just leds or any device
->> on zedboard?
->>
->> Thanks,
->> Michal
->>
->>
+> 	/cgroup/cpu/l1/l2/l3/l4/l5/l6/A
 >=20
-> I'm using the 2 internal timers of the axi_timer core. I've attached th=
-e pwm output of the timer core to one of the leds. The generate out0 and =
-generate out1 signals aren't attached.
-> I've added 4 axi timers to the design, so I can use the 4 leds of zedbo=
-ard to visualize and measure the pwm signal.
+> about level 7, the issue can not be solved any more.
 
-ok, that's configuration what I expected.
-Can you add or just send me this hw design? I can create it myself but
-no reason to spend time on it when you have it.
+That's pretty retarded and yeah, that's way past the point where things
+make sense. You might be lucky and have l1-5 as empty/pointless
+hierarchy so the effective depth is less and then things will work, but
+*shees*..
 
-Thanks,
-Michal
+> > -#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power us=
+age under light load  */
+> > +#if 1 /* BITS_PER_LONG > 32 -- currently broken: it increases power us=
+age under light load  */
+>=20
+> That is trying to solve the load overflow issue, correct?
+>=20
+> I'm not sure which account will turns to be huge when group get deeper,
+> the load accumulation will suffer discount when passing up, isn't it?
+>=20
 
+It'll use 20 bits for precision instead of 10, so it gives a little more
+'room' for deeper hierarchies/big cpu-count.
 
+All assuming you're running 64bit kernels of course.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---28E88AGEvL81Xrxa9uxRQ5ugIqRhvlnq4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--mMJklh8hhp8IL6EK
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlN0qwwACgkQykllyylKDCHt9wCfY1nNgmkcVc7uCzNaLFkrDcQL
-MHoAn0XBVl6mzHc0395P4iOwdLAeQOgy
-=Uxry
+iQIcBAEBAgAGBQJTdKu5AAoJEHZH4aRLwOS632oP/jONl08mE6k9NOf0D9FhhDGk
+UvkzwLm0Dg6QYc14k4kvLHcDtA72TfoYhd9C3h79LDGfQTCKRv5zQM8qEGLm+nmB
+kaUTSLxFBTzUdLwTgJFtmgSOqHEQjT01f1FfUBQU9XfN0EM5heiOs55fAqNPdH24
+by6R/Vca2P9Uu6Gr+kRRLcmMGgPCWGmvfvEcgRTbhq/mNULE5/pFvscxSns9yy44
+ooesIsPhg2PqNzjCLWa/YnVBkI6viOqDemeYGV0ZX3ugkZIIxNn4rUF6Xvx68FmF
+Xl8okQ0mpdzOE8VkVgZlXkNOaS+jxxjFUJ5n8fCTtmYI9e7ZDLczQpQHuTqDpV87
+WfJybUqH0E0QV1dhjfQWs20uoGmx3VehvZOdVYq9JC//N6cGbo7xw+UIrHD8ALAM
+8hfPtGN4OOa+f0YrYQ+Glf8et30X+AKY+eXEri16JY5RSsI3ADwWqDELWzui5hDv
+t1QSvJv9Otg2l6v40rpD2Q5LNuF6MYMxWfXyvnoN7mKxlJDQ/YH1Q0Zb2Xl2Dp0e
+6PIFwg0MueaTfbtUreh/SbxD52j0O/C/CcmKZqCLVy2c48d2FCmjN3XdwnGVuish
+ynNhYCUbT9elkbGJ+a7VeB1+5CaAN1AmpdRtvSATd+DpYbV6CLrOEw4KnHcnbBeT
+gLnkUSGg+QcagD0Pk7L+
+=jstL
 -----END PGP SIGNATURE-----
 
---28E88AGEvL81Xrxa9uxRQ5ugIqRhvlnq4--
+--mMJklh8hhp8IL6EK--
