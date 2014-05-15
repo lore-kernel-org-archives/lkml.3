@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454AbaEOOjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:39:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51949 "EHLO mx1.redhat.com"
+	id S1753687AbaEOOmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:42:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3370 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541AbaEOOjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:39:53 -0400
-Message-ID: <5374D18D.6020608@redhat.com>
-Date: Thu, 15 May 2014 10:39:09 -0400
-From: "Carlos O'Donell" <carlos@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: mtk.manpages@gmail.com, Peter Zijlstra <peterz@infradead.org>
-CC: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <20140515081444.GD11096@twins.programming.kicks-ass.net> <5374BE9E.8080408@redhat.com> <20140515132235.GM30445@twins.programming.kicks-ass.net> <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
-In-Reply-To: <CAKgNAkjrS8WWMoQzsiOkMVn1_Bf06uFCL6ECU7z=mv0fszg+gQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751255AbaEOOmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:42:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
+   d="scan'208";a="540984979"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Yao Jin <yao.jin@intel.com>, Aubrey Li <aubrey.li@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] i2c: designware: Add runtime PM hooks
+Date: Thu, 15 May 2014 17:37:23 +0300
+Message-Id: <1400164644-3222-4-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 09:49 AM, Michael Kerrisk (man-pages) wrote:
-> On Thu, May 15, 2014 at 3:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Thu, May 15, 2014 at 09:18:22AM -0400, Carlos O'Donell wrote:
->>> On 05/15/2014 04:14 AM, Peter Zijlstra wrote:
->>>> On Wed, May 14, 2014 at 04:23:38PM -0400, Carlos O'Donell wrote:
->>>>> There are other syscalls like gettid() that have a:
->>>>> NOTE: There is no glibc wrapper for this system call; see NOTES.
->>>>
->>>> Yes, can we finally fix that please? It gets tedious having to endlessly
->>>> copy/paste that thing around.
->>>
->>> What exactly would you like fixed?
->>
->> Not having gettid() in glibc.
-> 
-> Get in the line ;-).
-> http://sourceware.org/bugzilla/show_bug.cgi?id=6399
+It is possible that after entering runtime PM suspend the controller
+context is lost due the fact that its power is removed. This happens for
+example on Asus T100, an Intel Baytrail based tablet/laptop.
 
-I have no objections to this, but I absolutely object to this without
-someone documenting and gathering consensus for consistent terminology
-to be used between the kernel and glibc.
+In order to get the controller back to functional state, we need to
+implement runtime PM hooks which will re-initialize the hardware during
+runtime PM resume. We can re-use the existing system suspend hooks as the
+steps to resume/suspend the controller are the same.
 
-The relevant comment is here:
-https://sourceware.org/bugzilla/show_bug.cgi?id=6399#c26
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/i2c/busses/i2c-designware-platdrv.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-I'd like to see a glibc manual patch for the threads.texi file, which
-can be completely linux-specific, to document gettid() and nomenclature.
-It should talk about the nomenclature used to discuss these interfaces
-and explain when it is or isn't valid to use a task id and with what 
-functions.
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index f72102f389c5..402ec3970fed 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -247,7 +247,7 @@ static const struct of_device_id dw_i2c_of_match[] = {
+ MODULE_DEVICE_TABLE(of, dw_i2c_of_match);
+ #endif
+ 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ static int dw_i2c_suspend(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -269,13 +269,11 @@ static int dw_i2c_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-
+-static SIMPLE_DEV_PM_OPS(dw_i2c_dev_pm_ops, dw_i2c_suspend, dw_i2c_resume);
+-#define DW_I2C_DEV_PM_OPS	(&dw_i2c_dev_pm_ops)
+-#else
+-#define DW_I2C_DEV_PM_OPS	NULL
+ #endif
+ 
++static UNIVERSAL_DEV_PM_OPS(dw_i2c_dev_pm_ops, dw_i2c_suspend,
++			    dw_i2c_resume, NULL);
++
+ /* work with hotplug and coldplug */
+ MODULE_ALIAS("platform:i2c_designware");
+ 
+@@ -287,7 +285,7 @@ static struct platform_driver dw_i2c_driver = {
+ 		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(dw_i2c_of_match),
+ 		.acpi_match_table = ACPI_PTR(dw_i2c_acpi_match),
+-		.pm	= DW_I2C_DEV_PM_OPS,
++		.pm	= &dw_i2c_dev_pm_ops,
+ 	},
+ };
+ 
+-- 
+2.0.0.rc2
 
-For example does gettid *really* return a pid_t as considered by
-userspace? It's not a full out process...
-
-Cheers,
-Carlos.
