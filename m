@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaEONqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:46:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48611 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226AbaEONqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:46:13 -0400
-Date: Thu, 15 May 2014 15:46:10 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>, Mateusz Guzik <mguzik@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>
-Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515134610.GB660@quack.suse.cz>
-References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
- <1400005862-3751-2-git-send-email-mguzik@redhat.com>
- <20140514215457.GC5421@dastard>
- <20140515094236.GE10637@mguzik.redhat.com>
- <20140515100157.GB27289@quack.suse.cz>
- <20140515124725.GA8194@thunk.org>
+	id S1754273AbaEONrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:47:00 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:59114 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaEONq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:46:58 -0400
+Message-ID: <5374C54B.7040408@gmail.com>
+Date: Thu, 15 May 2014 15:46:51 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515124725.GA8194@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Darren Hart <dvhart@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>
+CC: mtk.manpages@gmail.com,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <537407ED.8050606@zytor.com> <CF999CD6.90A93%dvhart@linux.intel.com>
+In-Reply-To: <CF999CD6.90A93%dvhart@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-05-14 08:47:25, Ted Tso wrote:
-> On Thu, May 15, 2014 at 12:01:57PM +0200, Jan Kara wrote:
-> >   I was tracking down a couple of times what the hell is freezing the
-> > filesystem (and not unfreezing it) and I agree with Mateusz it would be
-> > nice if we could tell after the fact who froze the fs. Maybe we could store
-> > that information in superblock and dump it during emergency thaw?
+On 05/15/2014 07:21 AM, Darren Hart wrote:
+> On 5/14/14, 17:18, "H. Peter Anvin" <hpa@zytor.com> wrote:
 > 
-> Saving it in the superblock would require changing a bunch of file
-> systems.  What if we store this information in memory, and print it
-> out under certain conditions (i.e., after a soft lockup detection, or
-> upon request of some magic sysrq request)?
-  By 'superblock' I meant 'struct super_block' ;) So we are in agreement I
-believe.
+>> On 05/14/2014 09:18 AM, Darren Hart wrote:
+>>>
+>>> However, unless I'm sorely mistaken, the larger problem is that glibc
+>>> removed the futex() call entirely, so these man pages don't describe
+>>> something users even have access to anymore. I had to revert to calling
+>>> the syscalls directly in the futextest test suite because of this:
+>>>
+>>>
+>>> http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inc
+>>> lu
+>>> de/futextest.h#n67
+>>>
+>>
+>> This really comes down to the fact that we should have a libinux which
+>> contains the basic system call wrapper machinery for Linux specific
+>> things and nothing else.
+>>
+>> syscall(3) is toxic and breaks randomly on some platforms.
+> 
+> Peter Z and I have had a good time discussing this in the past.... And
+> here it is again. :-)
 
-> Or we could create a tunable threshold and print a message after a
-> file system has been frozen more than a particular specified duration,
-> with that duration set conservatively to something like 60 or 120
-> seconds by default.
-  I was thinking about this as well but all these "warn after X seconds"
-warnings tend to have quite a few false positives in practice so dumping
-this in emergency-thaw sysrq handler or exposing the information somewhere
-in proc (e.g. mountinfo) would look like a better option to me.
+People have a number of times noted that there are problems
+with syscall(), but I'm not knowledgeable on the details.
+I'd happily take a patch to the man page (which, for historical
+reasons, is actually syscall(2)) that explains the the problems 
+(and ideally notes those platforms where there are no problems).
 
-								Honza
+Thanks,
+
+Michael
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
