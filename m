@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaEOSdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:33:50 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:48078 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897AbaEOSd3 (ORCPT
+	id S1755978AbaEOSd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:33:58 -0400
+Received: from mail2.candelatech.com ([208.74.158.173]:56885 "EHLO
+	mail2.candelatech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392AbaEOSdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:33:29 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: marc.ceeeee@gmail.com, computersforpeace@gmail.com, gregory.0xf0@gmail.com,
-        arnd@arndb.de, Florian Fainelli <f.fainelli@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Huang Shijie <b32955@freescale.com>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-Subject: [PATCH v2 3/3] Documentation: sysfs: add Broadcom GISB arbiter sysfs properties
-Date: Thu, 15 May 2014 11:32:49 -0700
-Message-Id: <1400178769-10448-4-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400178769-10448-1-git-send-email-f.fainelli@gmail.com>
-References: <1400178769-10448-1-git-send-email-f.fainelli@gmail.com>
+	Thu, 15 May 2014 14:33:50 -0400
+Message-ID: <5375088D.1090009@candelatech.com>
+Date: Thu, 15 May 2014 11:33:49 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: greearb@candelatech.com
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] ath10k:  fix rssi reporting.
+References: <1400178663-25661-1-git-send-email-greearb@candelatech.com>
+In-Reply-To: <1400178663-25661-1-git-send-email-greearb@candelatech.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch documents the sysfs properties exposed by the Broadcom GISB
-bus arbiter hardware.
+Sorry, ...this and previous patch should not have gone to LKML.
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
----
-Changes in v2:
-- respin
+Will send it over to ath10k list where it was supposed to go.
 
- Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb | 8 ++++++++
- 1 file changed, 8 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb
+Thanks,
+Ben
 
-diff --git a/Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb b/Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb
-new file mode 100644
-index 000000000000..f1bad92bbe27
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb
-@@ -0,0 +1,8 @@
-+What:		/sys/devices/../../gisb_arb_timeout
-+Date:		May 2014
-+KernelVersion:	3.17
-+Contact:	Florian Fainelli <f.fainelli@gmail.com>
-+Description:
-+		Returns the currently configured raw timeout value of the
-+		Broadcom Set Top Box internal GISB bus arbiter. Minimum value
-+		is 1, and maximum value is 0xffffffff.
+On 05/15/2014 11:31 AM, greearb@candelatech.com wrote:
+> From: Ben Greear <greearb@candelatech.com>
+> 
+> When the driver cannot provide proper rssi, mark
+> status with RX_FLAG_NO_SIGNAL_VAL so that stack
+> properly ignores it.
+> 
+> Signed-off-by: Ben Greear <greearb@candelatech.com>
+> ---
+> 
+> Patch is against my tree, hopefully will apply OK against upstream
+> but have not tested that yet.
+> 
+>  drivers/net/wireless/ath/ath10k/htt_rx.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath10k/htt_rx.c b/drivers/net/wireless/ath/ath10k/htt_rx.c
+> index 0c83ffb..d8ec8dd 100644
+> --- a/drivers/net/wireless/ath/ath10k/htt_rx.c
+> +++ b/drivers/net/wireless/ath/ath10k/htt_rx.c
+> @@ -1216,11 +1216,12 @@ static void ath10k_htt_rx_handler(struct ath10k_htt *htt,
+>  	mpdu_ranges = htt_rx_ind_get_mpdu_ranges(rx);
+>  
+>  	/* Fill this once, while this is per-ppdu */
+> -	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_START_VALID) {
+> -		memset(rx_status, 0, sizeof(*rx_status));
+> +	memset(rx_status, 0, sizeof(*rx_status));
+> +	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_START_VALID)
+>  		rx_status->signal  = ATH10K_DEFAULT_NOISE_FLOOR +
+>  				     rx->ppdu.combined_rssi;
+> -	}
+> +	else
+> +		rx_status->flag |= RX_FLAG_NO_SIGNAL_VAL;
+>  
+>  	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_END_VALID) {
+>  		/* TSF available only in 32-bit */
+> 
+
+
 -- 
-1.9.1
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
