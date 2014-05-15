@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaEOOhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:37:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58061 "EHLO mga01.intel.com"
+	id S1754276AbaEOOiC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:38:02 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3351 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752632AbaEOOha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:37:30 -0400
+	id S1752632AbaEOOiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:38:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="539603730"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Yao Jin <yao.jin@intel.com>, Aubrey Li <aubrey.li@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] i2c: designware: Fixes for Asus T100 and Haswell PCI IDs
-Date: Thu, 15 May 2014 17:37:20 +0300
-Message-Id: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
+   d="scan'208";a="532453041"
+Message-ID: <5374D12C.9030400@intel.com>
+Date: Thu, 15 May 2014 07:37:32 -0700
+From: "H. Peter Anvin" <h.peter.anvin@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ross Zwisler <ross.zwisler@linux.intel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] drm: Missed clflushopt in drm_clflush_virt_range
+References: <1400082072-22482-1-git-send-email-ross.zwisler@linux.intel.com> <20140515123846.GQ8790@phenom.ffwll.local>
+In-Reply-To: <20140515123846.GQ8790@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/15/2014 05:38 AM, Daniel Vetter wrote:
+> On Wed, May 14, 2014 at 09:41:12AM -0600, Ross Zwisler wrote:
+>> With this commit:
+>>
+>> 2a0788dc9bc4 x86: Use clflushopt in drm_clflush_virt_range
+>>
+>> If clflushopt is available on the system, we use it instead of clflush
+>> in drm_clflush_virt_range.  There were two calls to clflush in this
+>> function, but only one was changed to clflushopt.  This patch changes
+>> the other clflush call to clflushopt.
+>>
+>> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+>> Reported-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+>>
+>> Cc: David Airlie <airlied@linux.ie>
+>> Cc: dri-devel@lists.freedesktop.org
+>> Cc: H Peter Anvin <h.peter.anvin@intel.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> 
+> Picked to my topic/core-stuff drm branch so it doesn't get lost.
+> -Daniel
+> 
 
-Patches 1-3 are needed in order to get runtime PM working properly on Intel
-Baytrail based tablets, like on Asus T100. We need to re-initialize the
-controller on resume.
+Does this mean you're picking this up, or do you want me to put it into
+-tip?
 
-Patch 4 adds Haswell PCI IDs to the driver. It is independent of the
-preceding patches but I decided to include it here as well. Haswell based
-chromebooks need this.
+	-hpa
 
-Mika Westerberg (4):
-  i2c: designware: No need to disable already disabled controller
-  i2c: designware: Disable device on system suspend
-  i2c: designware: Add runtime PM hooks
-  i2c: designware-pci: Add Haswell PCI IDs
-
- drivers/i2c/busses/i2c-designware-core.c    |  4 ++++
- drivers/i2c/busses/i2c-designware-pcidrv.c  | 22 ++++++++++++++++++++++
- drivers/i2c/busses/i2c-designware-platdrv.c | 13 ++++++-------
- 3 files changed, 32 insertions(+), 7 deletions(-)
-
--- 
-2.0.0.rc2
 
