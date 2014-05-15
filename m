@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaEOJBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:01:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37203 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254AbaEOJBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:01:14 -0400
-Message-ID: <53748227.3050809@ti.com>
-Date: Thu, 15 May 2014 14:30:23 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753048AbaEOJBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:01:49 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:32869 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaEOJBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 05:01:46 -0400
+Date: Thu, 15 May 2014 11:01:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com,
+        aneesh.kumar@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com,
+        aarcange@redhat.com, steve.capper@linaro.org, davidlohr@hp.com,
+        kirill.shutemov@linux.intel.com, dave.hansen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm, hugetlb: move the error handle logic out of normal
+ code path
+Message-ID: <20140515090142.GB3938@dhcp22.suse.cz>
+References: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Arnd Bergmann <arnd@arndb.de>
-CC: <joelf@ti.com>, <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>, "Mattson, Mark" <m-mattson@ti.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 3/5] dt/bindings: ti,edma: Remove redundant properties
- from documentation
-References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com> <1399977032-26469-4-git-send-email-peter.ujfalusi@ti.com> <7468082.VY82PIo3ZY@wuerfel> <5374784B.7020608@ti.com>
-In-Reply-To: <5374784B.7020608@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400051459-20578-1-git-send-email-nasa4836@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ DT bindings maintainers
+On Wed 14-05-14 15:10:59, Jianyu Zhan wrote:
+> alloc_huge_page() now mixes normal code path with error handle logic.
+> This patches move out the error handle logic, to make normal code
+> path more clean and redue code duplicate.
 
-On Thursday 15 May 2014 01:48 PM, Peter Ujfalusi wrote:
-> On 05/15/2014 11:01 AM, Arnd Bergmann wrote:
->> On Tuesday 13 May 2014 13:30:30 Peter Ujfalusi wrote:
->>> From CCCFG register of eDMA3 we can get all the needed information for the
->>> driver about the IP:
->>> Number of channels: NUM_DMACH
->>> Number of regions: NUM_REGN
->>> Number of slots (PaRAM sets): NUM_PAENTRY
->>> Number of TC/EQ: NUM_EVQUE
->>>
->>> The ti,edma-regions; ti,edma-slots and dma-channels in DT are
->>> redundant since the very same information can be obtained from the HW.
->>> The mentioned properties can be removed from the binding document.
->>>
->>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>
->> I wonder if we should keep them listed as "optional" properties so you
->> can have a dtb file that still works with older kernels which need them.
->>
->> What you do is an incompatible change to the binding, which we shouldn't
->> do lightly. Any new dts files don't need this information of course, but
->> as a general rule, I'd rather keep things like this around unless we
->> already have to enforce an ABI break that is well documented.
+I don't know. Part of the function returns and cleans up on its own and
+other part relies on clean up labels. This is not so much nicer than the
+previous state.
+
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  mm/hugetlb.c | 26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
 > 
-> We could keep them as optional, or to be precise: ignored properties since we
-> are not going to even look at them in the future.
-> But I do not really see the reason to do so. With this change new kernels will
-> boot with old DTB - if it can not be changed which I have not seen yet. Sure
-> old kernel would not boot with this change, but why would you downgrade the
-> kernel and update the DTB on a board?
-> Bisecting is not a good reason since the bug you might be hunting for could be
-> in the DTS or in the kernel code so you need to update both of them to be sure
-> you reach the commit you are looking for.
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 26b1464..e81c69e 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1246,24 +1246,17 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  			return ERR_PTR(-ENOSPC);
+>  
+>  	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
+> -	if (ret) {
+> -		if (chg || avoid_reserve)
+> -			hugepage_subpool_put_pages(spool, 1);
+> -		return ERR_PTR(-ENOSPC);
+> -	}
+> +	if (ret)
+> +		goto out_subpool_put;
+> +
+>  	spin_lock(&hugetlb_lock);
+>  	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
+>  	if (!page) {
+>  		spin_unlock(&hugetlb_lock);
+>  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> -		if (!page) {
+> -			hugetlb_cgroup_uncharge_cgroup(idx,
+> -						       pages_per_huge_page(h),
+> -						       h_cg);
+> -			if (chg || avoid_reserve)
+> -				hugepage_subpool_put_pages(spool, 1);
+> -			return ERR_PTR(-ENOSPC);
+> -		}
+> +		if (!page)
+> +			goto out_uncharge_cgroup;
+> +
+>  		spin_lock(&hugetlb_lock);
+>  		list_move(&page->lru, &h->hugepage_activelist);
+>  		/* Fall through */
+> @@ -1275,6 +1268,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  
+>  	vma_commit_reservation(h, vma, addr);
+>  	return page;
+> +
+> +out_uncharge_cgroup:
+> +	hugetlb_cgroup_uncharge_cgroup(idx, pages_per_huge_page(h), h_cg);
+> +out_subpool_put:
+> +	if (chg || avoid_reserve)
+> +		hugepage_subpool_put_pages(spool, 1);
+> +	return ERR_PTR(-ENOSPC);
+>  }
+>  
+>  /*
+> -- 
+> 2.0.0-rc3
+> 
 
-Agree with Peter here. The bisecting corner case can hopefully be
-handled by appended DTB even if the original DTB was ROMed.
-
-Thanks,
-Sekhar
+-- 
+Michal Hocko
+SUSE Labs
