@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312AbaEOPPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:15:54 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:37851 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaEOPPx (ORCPT
+	id S1755351AbaEOPQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:16:04 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:61237 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887AbaEOPP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:15:53 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 2/2] ARM: at91/dt: add NAND + DMA property for at91sam9rl
-Date: Thu, 15 May 2014 17:15:24 +0200
-Message-ID: <e1b405979615b46321a63df3f91f1998763b22fe.1400166895.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <47a342121566bca0025a20a57282fb72c990ce09.1400166895.git.nicolas.ferre@atmel.com>
-References: <47a342121566bca0025a20a57282fb72c990ce09.1400166895.git.nicolas.ferre@atmel.com>
+	Thu, 15 May 2014 11:15:59 -0400
+Date: Thu, 15 May 2014 15:15:48 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Darren Hart <dvhart@linux.intel.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+In-Reply-To: <1400101522.6897.1.camel@buesod1.americas.hpqcorp.net>
+Message-ID: <Pine.LNX.4.64.1405151510430.3155@digraph.polyomino.org.uk>
+References: <537346E5.4050407@gmail.com>  <CF98E3EF.90564%dvhart@linux.intel.com>
+ <1400101522.6897.1.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 15 May 2014 15:15:50.0466 (UTC) FILETIME=[8E54F220:01CF7050]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the "atmel,nand-has-dma" property to NAND node
+On Wed, 14 May 2014, Davidlohr Bueso wrote:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/at91sam9rl.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+> > If I'm wrong, or we can restore the futex() call, great. If not... Should
+> > we keep the man-pages and document it as syscall(SYS_futex, ..., op, ...) ?
+> 
+> +1, is there anything preventing adding a futex wrapper... glibc folks?
 
-diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
-index 412617084cfd..f21163c7dc2b 100644
---- a/arch/arm/boot/dts/at91sam9rl.dtsi
-+++ b/arch/arm/boot/dts/at91sam9rl.dtsi
-@@ -95,6 +95,7 @@
- 			      <0xffffe800 0x200>;
- 			atmel,nand-addr-offset = <21>;
- 			atmel,nand-cmd-offset = <22>;
-+			atmel,nand-has-dma;
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&pinctrl_nand>;
- 			gpios = <&pioD 17 GPIO_ACTIVE_HIGH>,
+See what I said at 
+<https://sourceware.org/bugzilla/show_bug.cgi?id=9712#c4> (with references 
+to previous discussions).  Someone needs to take the lead on pushing to 
+consensus the question of what syscalls should have wrappers in glibc, and 
+then implement the conclusions.
+
 -- 
-1.8.2.2
-
+Joseph S. Myers
+joseph@codesourcery.com
