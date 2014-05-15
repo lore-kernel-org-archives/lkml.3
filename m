@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaEONrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 09:47:00 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:59114 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaEONq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 09:46:58 -0400
-Message-ID: <5374C54B.7040408@gmail.com>
-Date: Thu, 15 May 2014 15:46:51 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754480AbaEONsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 09:48:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235AbaEONsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 09:48:17 -0400
+Date: Thu, 15 May 2014 15:47:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH 15/20] perf diff: Add missing setup_output_field()
+Message-ID: <20140515134751.GH25858@krava.brq.redhat.com>
+References: <1399876133-17963-1-git-send-email-namhyung@kernel.org>
+ <1399876133-17963-16-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>
-CC: mtk.manpages@gmail.com,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <537407ED.8050606@zytor.com> <CF999CD6.90A93%dvhart@linux.intel.com>
-In-Reply-To: <CF999CD6.90A93%dvhart@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399876133-17963-16-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 07:21 AM, Darren Hart wrote:
-> On 5/14/14, 17:18, "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Mon, May 12, 2014 at 03:28:48PM +0900, Namhyung Kim wrote:
+> The perf diff command itself doesn't make use of the --fields option,
+> it still needs to call the function since the output only work with
+> that way.
 > 
->> On 05/14/2014 09:18 AM, Darren Hart wrote:
->>>
->>> However, unless I'm sorely mistaken, the larger problem is that glibc
->>> removed the futex() call entirely, so these man pages don't describe
->>> something users even have access to anymore. I had to revert to calling
->>> the syscalls directly in the futextest test suite because of this:
->>>
->>>
->>> http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/inc
->>> lu
->>> de/futextest.h#n67
->>>
->>
->> This really comes down to the fact that we should have a libinux which
->> contains the basic system call wrapper machinery for Linux specific
->> things and nothing else.
->>
->> syscall(3) is toxic and breaks randomly on some platforms.
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-diff.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Peter Z and I have had a good time discussing this in the past.... And
-> here it is again. :-)
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index f3b10dcf6838..670d191bec31 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -1155,6 +1155,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	if (setup_sorting() < 0)
+>  		usage_with_options(diff_usage, options);
+>  
+> +	if (setup_output_field() < 0)
+> +		usage_with_options(diff_usage, options);
+> +
 
-People have a number of times noted that there are problems
-with syscall(), but I'm not knowledgeable on the details.
-I'd happily take a patch to the man page (which, for historical
-reasons, is actually syscall(2)) that explains the the problems 
-(and ideally notes those platforms where there are no problems).
+looks like this breaks perf diff even worse than it is now ;-)
 
-Thanks,
+[jolsa@krava perf]$ ./perf diff 
+# Event 'cycles'
+#
+# Baseline    Delta
+# ........  .......
+#
+    28.03%         
+            +18.93%
+    31.06%         
+            +36.86%
+    35.06%         
+     0.38%         
+     0.03%   +0.03%
+             +1.11%
+     5.44%         
+            +43.05%
 
-Michael
 
+anyway, as I said it was already broken, I plan to check/fix this soon..
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+jirka
