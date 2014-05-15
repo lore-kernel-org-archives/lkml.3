@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaEOVPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:15:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59054 "EHLO mx1.redhat.com"
+	id S1755696AbaEOVPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:15:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29546 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751524AbaEOVPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:15:12 -0400
+	id S1752715AbaEOVPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:15:32 -0400
 From: Paul Moore <pmoore@redhat.com>
 To: Dave Jones <davej@redhat.com>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>, sds@tycho.nsa.gov,
         eparis@redhat.com
-Subject: Re: [1/2] conditionally reschedule in mls_convert_context while loading selinux policy.
-Date: Thu, 15 May 2014 17:15:09 -0400
-Message-ID: <14291895.ND36WnVhTC@sifl>
+Subject: Re: [2/2] conditionally reschedule in hashtab_insert while loading selinux policy.
+Date: Thu, 15 May 2014 17:15:29 -0400
+Message-ID: <3386355.fA7X58KLEY@sifl>
 Organization: Red Hat
 User-Agent: KMail/4.13 (Linux/3.14.1-gentoo; KDE/4.13.0; x86_64; ; )
-In-Reply-To: <20140515190253.GA16816@redhat.com>
-References: <20140515190253.GA16816@redhat.com>
+In-Reply-To: <20140515190353.GB16816@redhat.com>
+References: <20140515190353.GB16816@redhat.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -24,72 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 15, 2014 03:02:53 PM Dave Jones wrote:
-> On a slow machine (with debugging enabled), upgrading selinux policy may
-> take a considerable amount of time. Long enough that the softlockup
-> detector gets triggered.
-> 
-> The backtrace looks like this..
-> 
->  > BUG: soft lockup - CPU#2 stuck for 23s! [load_policy:19045]
->  > 
->  > Call Trace:
->  >  [<ffffffff81221ddf>] symcmp+0xf/0x20
->  >  [<ffffffff81221c27>] hashtab_search+0x47/0x80
->  >  [<ffffffff8122e96c>] mls_convert_context+0xdc/0x1c0
->  >  [<ffffffff812294e8>] convert_context+0x378/0x460
->  >  [<ffffffff81229170>] ? security_context_to_sid_core+0x240/0x240
->  >  [<ffffffff812221b5>] sidtab_map+0x45/0x80
->  >  [<ffffffff8122bb9f>] security_load_policy+0x3ff/0x580
->  >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
->  >  [<ffffffff810786dd>] ? sched_clock_local+0x1d/0x80
->  >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
->  >  [<ffffffff8103096a>] ? __change_page_attr_set_clr+0x82a/0xa50
->  >  [<ffffffff810786dd>] ? sched_clock_local+0x1d/0x80
->  >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
->  >  [<ffffffff8103096a>] ? __change_page_attr_set_clr+0x82a/0xa50
->  >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
->  >  [<ffffffff81534ddc>] ? retint_restore_args+0xe/0xe
->  >  [<ffffffff8109c82d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
->  >  [<ffffffff81279a2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->  >  [<ffffffff810d28a8>] ? rcu_irq_exit+0x68/0xb0
->  >  [<ffffffff81534ddc>] ? retint_restore_args+0xe/0xe
->  >  [<ffffffff8121e947>] sel_write_load+0xa7/0x770
->  >  [<ffffffff81139633>] ? vfs_write+0x1c3/0x200
->  >  [<ffffffff81210e8e>] ? security_file_permission+0x1e/0xa0
->  >  [<ffffffff8113952b>] vfs_write+0xbb/0x200
->  >  [<ffffffff811581c7>] ? fget_light+0x397/0x4b0
->  >  [<ffffffff81139c27>] SyS_write+0x47/0xa0
->  >  [<ffffffff8153bde4>] tracesys+0xdd/0xe2
-> 
-> Stephen Smalley suggested:
->  > Maybe put a cond_resched() within the ebitmap_for_each_positive_bit()
->  > loop in mls_convert_context()?
-> 
-> That seems to do the trick. Tested by downgrading and re-upgrading
-> selinux-policy-targeted.
+On Thursday, May 15, 2014 03:03:53 PM Dave Jones wrote:
+> After silencing the sleeping warning in mls_convert_context() I started
+> seeing similar traces from hashtab_insert. Do a cond_resched there too.
 > 
 > Signed-off-by: Dave Jones <davej@redhat.com>
-> 
-> ---
->  security/selinux/ss/mls.c | 2 ++
->  1 file changed, 2 insertions(+)
 
 Merged to the SELinux #next branch, thanks.
 
-> diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
-> index c85bc1ec040c..d307b37ddc2b 100644
-> --- a/security/selinux/ss/mls.c
-> +++ b/security/selinux/ss/mls.c
-> @@ -492,6 +492,8 @@ int mls_convert_context(struct policydb *oldp,
->  			rc = ebitmap_set_bit(&bitmap, catdatum->value - 1, 1);
->  			if (rc)
->  				return rc;
+> diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
+> index 933e735bb185..2cc496149842 100644
+> --- a/security/selinux/ss/hashtab.c
+> +++ b/security/selinux/ss/hashtab.c
+> @@ -6,6 +6,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/slab.h>
+>  #include <linux/errno.h>
+> +#include <linux/sched.h>
+>  #include "hashtab.h"
+> 
+>  struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const
+> void *key), @@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void
+> *key, void *datum) u32 hvalue;
+>  	struct hashtab_node *prev, *cur, *newnode;
+> 
+> +	cond_resched();
 > +
-> +			cond_resched();
->  		}
->  		ebitmap_destroy(&c->range.level[l].cat);
->  		c->range.level[l].cat = bitmap;
+>  	if (!h || h->nel == HASHTAB_MAX_NODES)
+>  		return -EINVAL;
 
 -- 
 paul moore
