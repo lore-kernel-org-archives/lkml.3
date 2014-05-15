@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaEOJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:58:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16113 "EHLO mga09.intel.com"
+	id S1753321AbaEOKCD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:02:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43857 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaEOJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:58:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1058,1389772800"; 
-   d="scan'208";a="512067553"
-Date: Fri, 16 May 2014 05:57:57 +0800
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        david.a.cohen@linux.intel.com, Yuan@intel.com,
-        Hang <hang.yuan@intel.com>, Zhuang@intel.com,
-        Jin Can <jin.can.zhuang@intel.com>, Li@intel.com,
-        Jiebing <jiebing.li@intel.com>
-Subject: [PATCH] usb: dwc3: gadget: check link trb after free_slot is
- increased
-Message-ID: <20140515215757.GD16153@intel.com>
-Reply-To: jin.can.zhuang@intel.com
+	id S1751287AbaEOKCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 06:02:00 -0400
+Date: Thu, 15 May 2014 12:01:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>
+Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140515100157.GB27289@quack.suse.cz>
+References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
+ <1400005862-3751-2-git-send-email-mguzik@redhat.com>
+ <20140514215457.GC5421@dastard>
+ <20140515094236.GE10637@mguzik.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140515094236.GE10637@mguzik.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ISOC transfers, when free_slot points to the last TRB (i.e. Link
-TRB), and all queued requests meet Missed Interval Isoc error, busy_slot
-points to trb0.
-	busy_slot->trb0
-		   trb1
-		   ...
-	free_slot->trb31(Link TRB)
+On Thu 15-05-14 11:42:37, Mateusz Guzik wrote:
+> On Thu, May 15, 2014 at 07:54:57AM +1000, Dave Chinner wrote:
+> > On Tue, May 13, 2014 at 08:31:02PM +0200, Mateusz Guzik wrote:
+> > > This helps hang troubleshooting efforts when only dmesg is available.
+> > 
+> > I really don't think that spamming dmesg every time a filesystem is
+> > frozen or thawed is a good idea. This happens a *lot* when systems
+> > are using snapshots, and for the most part nobody cares about
+> > freeze/thaw cycles because they almost always work just fine.
+> > 
+> 
+> I agree it may get noisy.
+> 
+> > I'd think that /proc/self/mounts would be a much better place to
+> > indicate that the fs is frozen. After all, that's where we tell
+> > people whether the filesystem is ro or rw, and frozen is just
+> > a temporary, non-invasive ro state...
+> > 
+> 
+> Except you can't inspect /proc/self/mounts when the only thing you got
+> is dmesg, so this does not really help my case.
+> 
+> That said, I'll try to come up with a different solution.
+> 
+> Poorly reported side-effects of frozen I/O are only a part of the real
+> problem which is hung task detector being able to typically report
+> backtraces of "victims" only. I came up with printks becuase these are
+> a cheap way and would help us out in a lot of cases.
+  I was tracking down a couple of times what the hell is freezing the
+filesystem (and not unfreezing it) and I agree with Mateusz it would be
+nice if we could tell after the fact who froze the fs. Maybe we could store
+that information in superblock and dump it during emergency thaw?
 
-After end transfer and receiving the XferNotReady event, trb_left is
-caculated as 1 which is wrong, and no TRB will be primed to the
-endpoint.
-
-The root cause is free_slot is not increased the same way as busy_slot.
-When busy_slot is increased by one, it checks if points to a link TRB
-after increasement, but free_slot checks it before increasement.
-free_slot should behave the same as busy_slot to make the trb_left
-caculation correct.
-
-Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-Signed-off-by: Jiebing Li <jiebing.li@intel.com>
----
- drivers/usb/dwc3/gadget.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 54da8c8..2ebe82b 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -828,10 +828,6 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
- 			length, last ? " last" : "",
- 			chain ? " chain" : "");
- 
--	/* Skip the LINK-TRB on ISOC */
--	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
--			usb_endpoint_xfer_isoc(dep->endpoint.desc))
--		dep->free_slot++;
- 
- 	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
- 
-@@ -843,6 +839,10 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
- 	}
- 
- 	dep->free_slot++;
-+	/* Skip the LINK-TRB on ISOC */
-+	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
-+			usb_endpoint_xfer_isoc(dep->endpoint.desc))
-+		dep->free_slot++;
- 
- 	trb->size = DWC3_TRB_SIZE_LENGTH(length);
- 	trb->bpl = lower_32_bits(dma);
+								Honza
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
