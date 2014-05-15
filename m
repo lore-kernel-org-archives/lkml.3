@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbaEOOn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:43:58 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:24123
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752793AbaEOOn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:43:57 -0400
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>,
-        "Joe Perches" <joe@perches.com>
-CC: Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH] [checkpatch.pl] Suspicious indentation detection after conditional statement
-Date: Thu, 15 May 2014 16:43:45 +0200
-Message-ID: <1400165025-8688-1-git-send-email-meltedpianoman@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 15 May 2014 14:43:47.0461 (UTC) FILETIME=[1421AB50:01CF704C]
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130446386361211780;(ede6e1f7-176b-4c99-8942-08d118f12784);()
-X-Forefront-Antispam-Report: CIP:193.138.13.20;CTRY:DE;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(679001)(689001)(6009001)(189002)(199002)(87572001)(82202001)(50466002)(50986999)(88136002)(92566001)(48376002)(36756003)(87286001)(20776003)(99396002)(19580395003)(85852003)(102836001)(83072002)(92726001)(47776003)(62966002)(89996001)(53416003)(33646001)(87936001)(19580405001)(44976005)(86362001)(93916002)(55446002)(50226001)(31966008)(73972005)(80022001)(73392001)(79102001)(61266001)(74502001)(77156001)(46102001)(77982001)(81342001)(71816001)(81442001)(4396001)(81542001)(74662001);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB012;H:oce-exbhcs03b.oce.net;FPR:;MLV:nov;PTR:smtp02.oce.com;MX:1;A:1;LANG:en;
+	id S1754792AbaEOOof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:44:35 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62777 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaEOOoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:44:34 -0400
+Date: Thu, 15 May 2014 15:44:25 +0100
+From: Steve Capper <steve.capper@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
+Message-ID: <20140515144424.GA23884@linaro.org>
+References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0212BDE3BE
-Authentication-Results: spf=softfail (sender IP is 193.138.13.20)
- smtp.mailfrom=meltedpianoman@gmail.com; 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400163562-7481-1-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raise a SUSPICIOUS_CODE_INDENT warning when unexpected indentation is found
-after a conditional statement. This can be used to find missing braces or
-wrong indentation in/after a conditional statement.
+On Thu, May 15, 2014 at 10:19:22AM -0400, Mark Salter wrote:
+> The following happens when trying to run a kvm guest on a kernel
+> configured for 64k pages. This doesn't happen with 4k pages:
+> 
+>   BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+>   Kernel panic - not syncing: BUG!
+>   CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+>   Call trace:
+>   [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+>   [<fffffe00000961b4>] show_stack+0x14/0x1c
+>   [<fffffe000066e648>] dump_stack+0x84/0xb0
+>   [<fffffe0000668678>] panic+0xf4/0x220
+>   [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+>   [<fffffe000018edd8>] free_pages+0x50/0x88
+>   [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+>   [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+>   [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+>   [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+>   [<fffffe00001edc1c>] __fput+0xb0/0x288
+>   [<fffffe00001ede4c>] ____fput+0xc/0x14
+>   [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+>   [<fffffe0000095c14>] do_notify_resume+0x54/0x58
+> 
+> In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+> on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+> happens because a pud_huge() test in unmap_range() returns true when it
+> should always be false with 2-level pages tables used by 64k pages.
+> This patch removes support for huge puds if 2-level pagetables are
+> being used.
 
-For example the following error is caught;
+Hi Mark,
+I'm still catching up with myself, sorry  (was off sick for a couple
+of days)...
 
-	if (foo)
-		bar();
-		return;
+I thought unmap_range was going to be changed?
+Does the following help things?
+https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009388.html
 
-Which can be either intended by the programmer as:
-
-	if (foo)
-		bar();
-	return;
-
-or
-	if (foo) {
-		bar();
-		return;
-	}
-
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
----
-
-Request for comments:
-I think this is a nice warning to have, since you can get into a buggy situation
-when you want to add extra statements to a one line condition, but you forget
-to add the {} around the multiline statement block.
-
- scripts/checkpatch.pl |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e7bca89..3ca3923 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2565,6 +2565,47 @@ sub process {
- 				WARN("SUSPECT_CODE_INDENT",
- 				     "suspect code indent for conditional statements ($indent, $sindent)\n" . $herecurr . "$stat_real\n");
- 			}
-+
-+# Also check if the next statement after the previous condition has the same indent
-+			my ($stat_next, undef, $line_nr_next_next) =
-+				ctx_statement_block($line_nr_next, $remain_next, $off_next);
-+			my $s_next = $stat_next;
-+
-+			# Remove line prefixes
-+			$s_next =~ s/\n./\n/gs;
-+
-+			# Remove any comments
-+			$s_next =~ s/$;//g;
-+
-+			# Skip this check for in case next statement starts with 'else'
-+			if ($s_next !~ /\s*\belse\b/) {
-+
-+				# Remove while that belongs to a do {} while
-+				if ($stat =~ /\bdo\b/) {
-+					$s_next =~ s/^.*\bwhile\b\s*($balanced_parens)\s*?//;
-+				}
-+
-+				# Remove blank lines
-+				$s_next =~ s/\s*\\?\n//g;
-+
-+				# Get the real next lines
-+				my $next_nof_lines = $line_nr_next_next - $line_nr_next;
-+				my $stat_next_real = raw_line($line_nr_next, $next_nof_lines);
-+				if (!defined($stat_next_real)) {
-+					$stat_next_real = "";
-+				} elsif ($next_nof_lines > 1) {
-+					$stat_next_real = "[...]\n$stat_next_real";
-+				}
-+				my (undef, $nindent) = line_stats('+' . $s_next);
-+
-+				#print "stat_next<$stat_next> stat<$stat> indent<$indent> nindent<$nindent> s_next<$s_next> stat_next_real<$stat_next_real>\n";
-+
-+				if ($nindent > $indent) {
-+					WARN("SUSPICIOUS_CODE_INDENT",
-+					     "suspicious code indentation after conditional statements\n" .
-+					     $herecurr . "$stat_real\n$stat_next_real\n");
-+				}
-+			}
- 		}
- 
- 		# Track the 'values' across context and added lines.
+Cheers,
 -- 
-1.7.9.5
+Steve
 
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> ---
+>  arch/arm64/mm/hugetlbpage.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+> index 5e9aec3..9bed38f 100644
+> --- a/arch/arm64/mm/hugetlbpage.c
+> +++ b/arch/arm64/mm/hugetlbpage.c
+> @@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
+>  
+>  int pud_huge(pud_t pud)
+>  {
+> +#ifndef __PAGETABLE_PMD_FOLDED
+>  	return !(pud_val(pud) & PUD_TABLE_BIT);
+> +#else
+> +	return 0;
+> +#endif
+>  }
+>  
+>  int pmd_huge_support(void)
+> @@ -64,8 +68,10 @@ static __init int setup_hugepagesz(char *opt)
+>  	unsigned long ps = memparse(opt, &opt);
+>  	if (ps == PMD_SIZE) {
+>  		hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
+> +#ifndef __PAGETABLE_PMD_FOLDED
+>  	} else if (ps == PUD_SIZE) {
+>  		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
+> +#endif
+>  	} else {
+>  		pr_err("hugepagesz: Unsupported page size %lu M\n", ps >> 20);
+>  		return 0;
+> -- 
+> 1.9.0
+> 
