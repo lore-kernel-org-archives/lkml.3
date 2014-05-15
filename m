@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaEOVnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:43:35 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:45330 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508AbaEOVnU (ORCPT
+	id S1756239AbaEOVoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:44:23 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:55883 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755403AbaEOVoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:43:20 -0400
+	Thu, 15 May 2014 17:44:20 -0400
+Message-ID: <53753527.3000905@gmail.com>
+Date: Thu, 15 May 2014 23:44:07 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [84.208.78.118]
-In-Reply-To: <20140515143202.53ca8033@nehalam.linuxnetplumber.net>
-References: <1399970908-9973-1-git-send-email-teg@jklm.no> <20140515143202.53ca8033@nehalam.linuxnetplumber.net>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 15 May 2014 23:42:58 +0200
-Message-ID: <CAG-2HqWeJKbipVm+1oxKQYQfFyqu4SdSH15BP-4OAaUbJBCVdg@mail.gmail.com>
-Subject: Re: [PATCH] net: tunnels - enable module autoloading
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Patrick McHardy <kaber@trash.net>, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+To: Rahul Sharma <rahul.sharma@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        PANKAJ KUMAR DUBEY <pankaj.dubey@samsung.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>	<5373CBAD.2010505@gmail.com> <CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
+In-Reply-To: <CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:32 PM, Stephen Hemminger
-<stephen@networkplumber.org> wrote:
-> On Tue, 13 May 2014 10:48:28 +0200
-> Tom Gundersen <teg@jklm.no> wrote:
->
->> Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
+On 15.05.2014 06:01, Rahul Sharma wrote:
+> Thanks Tomasz,
+> 
+> On 15 May 2014 01:31, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Rahul, Tomasz,
+> [snip]
+>>> +     simplephys: simple-phys@10040000 {
+>>> +             compatible = "samsung,exynos5250-simple-phy";
 >>
->> This is in line with how most other netdev kinds work, and will allow userspace
->> to create tunnels without having CAP_SYS_MODULE.
+>> Missing reg property or unnecessary @unit-address suffix in node name.
+> 
+> I should have removed "@unit-address". I will change this.
+> 
 >>
->> Signed-off-by: Tom Gundersen <teg@jklm.no>
->> Tested-by: Susant Sahani <susant@redhat.com>
->> ---
->>  net/ipv4/ipip.c       | 1 +
->>  net/ipv6/ip6_tunnel.c | 1 +
->>  net/ipv6/sit.c        | 1 +
->>  3 files changed, 3 insertions(+)
->
-> But tunnel modules are autoloaded now.
-> If I create a tunnel with ip tunnel based on the existing MODULE_ALIAS_NETDEV().
+>>> +             samsung,pmu-syscon = <&pmu_system_controller>;
+>>> +             #phy-cells = <1>;
+>>> +     };
+>>
+>> In general, the idea is quite good, but I think this should rather bind
+>> to the main PMU node, since this is just a part of the PMU, not another
+>> device in the system. This also means that the PMU node itself should be
+>> the PHY provider.
+>>
+> 
+> Please correct me if I got you wrong. You want somthing like this:
+> 
+> pmu_system_controller: system-controller@10040000 {
+>          ...
+>           simple_phys: simple-phys {
+>                         compatible = "samsung,exynos5420-simple-phy";
+>                         ...
+>           };
+> };
 
-Hm, please correct me if I'm wrong, but this only works if you create
-a tunnel with one of the hardcoded tunnel names, right? And also, if I
-read the code correctly, it only works if you use the ioctl interface
-and not the rtnl interface?
+Not exactly.
 
-What we'd like to do is to use the rtnl interface to create tunnels
-with arbitrary names, is there a way this can already be done that I
-have missed?
+What I meant is that the PMU node itself should be the PHY provider, e.g.
 
-Cheers,
+pmu_system_controller: system-controller@10040000 {
+	/* ... */
+	#phy-cells = <1>;
+};
 
-Tom
+and then the PMU node should instantiate the Exynos simple PHY driver,
+as this is a driver for a facility existing entirely inside of the PMU.
+Moreover, the driver should be rather called Exynos PMU PHY.
+
+I know this isn't really possible at the moment, but with device tree we
+must design things carefully, so it's better to take a bit more time and
+do things properly.
+
+So my opinion on this is that there should be a central Exynos PMU
+driver that claims the IO region and instantiates necessary subdrivers,
+such as Exynos PMU PHY driver, Exynos CLKOUT driver, Exynos cpuidle
+driver and more, similar to what is being done in drivers/mfd.
+
+Now, there is already ongoing effort to convert current freestanding PMU
+configuration code in mach-exynos into a full-fledged PMU driver, but
+not exactly in the same direction as I stated above. I'll try to
+cooperate with Pankaj, who is responsible for this work to make this go
+into the right track.
+
+Best regards,
+Tomasz
