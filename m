@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaEOQGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:06:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34279 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaEOQGE (ORCPT
+	id S1753265AbaEOQGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:06:44 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:43278 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbaEOQGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:06:04 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [RESEND: PATCH v1 0/5] Add Keystone PCIe controller driver
-Date: Thu, 15 May 2014 12:05:31 -0400
-Message-ID: <1400169931-9724-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 15 May 2014 12:06:43 -0400
+Date: Thu, 15 May 2014 12:06:40 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH 3/6] sched/fair.c: disambiguate existing/remaining
+ "capacity" usage
+In-Reply-To: <CAKfTPtDueiEzqL_1kVvScvLvGmeNTMqX5mCU-2JdZ=Uth=nd-g@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405151204090.17310@knanqh.ubzr>
+References: <1400101030-17717-1-git-send-email-nicolas.pitre@linaro.org> <1400101030-17717-4-git-send-email-nicolas.pitre@linaro.org> <CAKfTPtDueiEzqL_1kVvScvLvGmeNTMqX5mCU-2JdZ=Uth=nd-g@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending with some typos fixed...
+On Thu, 15 May 2014, Vincent Guittot wrote:
 
-This patch adds a PCIe controller driver for Keystone SoCs. This
-is based on the original RFC patch series that I had sent earlier. I have
-incorporated following comments against that series:-
+> On 14 May 2014 22:57, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > We have "power" (which should actually become "capacity") and "capacity"
+> > which is a scaled down "capacity factor" in terms of possible tasks.
+> > Let's use "capa_factor" to make room for proper usage of "capacity"
+> > later.
+> >
+> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> > ---
+> >  kernel/sched/fair.c | 42 +++++++++++++++++++++---------------------
+> >  1 file changed, 21 insertions(+), 21 deletions(-)
+> >
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 0eda4c527e..2633c42692 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -5487,7 +5487,7 @@ struct sg_lb_stats {
+> >         unsigned long load_per_task;
+> >         unsigned long group_power;
+> >         unsigned int sum_nr_running; /* Nr tasks running in the group */
+> > -       unsigned int group_capacity;
+> > +       unsigned int group_capa_factor;
+> 
+> As it is mainly compared to sum_nr_running, you might rename it to
+> group_nr_capacity instead of group_capa_factor
 
- - Add an interrupt controller node for Legacy irq chip and use
-   interrupt map/map-mask property to map legacy IRQs A/B/C/D
- - Add a Phy driver to replace the original serdes driver
- - Move common application register handling code to a separate
-   file to allow re-use across other platforms that use older
-   DW PCIe h/w
- - PCI quirk for maximum read request size. Check and override only
-   if the maximum is higher than what controller can handle.
- - Converted to a module platform driver.
-
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Mohit Kumar <mohit.kumar@st.com>
-CC: Jingoo Han <jg1.han@samsung.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
+But what actual meaning would "group_nr_capacity" convey?  This could be 
+interpreted as the total number of groups possible for example.
 
 
-Murali Karicheri (5):
-  ARM: keystone: add pcie related options
-  pci: designware: enhancements to support keystone pcie
-  phy: pci serdes phy driver for keystone
-  pci: dw: add common functions to support old hw based pci driver
-  pci: keystone: add pcie driver based on designware core driver
-
- .../devicetree/bindings/pci/pcie-keystone.txt      |   68 ++++
- arch/arm/mach-keystone/Kconfig                     |    2 +
- drivers/pci/host/Kconfig                           |   12 +
- drivers/pci/host/Makefile                          |    2 +
- drivers/pci/host/pci-dw-old-msi.c                  |  150 ++++++++
- drivers/pci/host/pci-dw-old.c                      |  371 ++++++++++++++++++
- drivers/pci/host/pci-dw-old.h                      |   30 ++
- drivers/pci/host/pci-keystone.c                    |  400 ++++++++++++++++++++
- drivers/pci/host/pcie-designware.c                 |  101 +++--
- drivers/pci/host/pcie-designware.h                 |   42 +-
- drivers/pci/quirks.c                               |   13 +
- drivers/phy/Kconfig                                |    6 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-keystone.c                         |  230 +++++++++++
- 14 files changed, 1388 insertions(+), 40 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/pcie-keystone.txt
- create mode 100644 drivers/pci/host/pci-dw-old-msi.c
- create mode 100644 drivers/pci/host/pci-dw-old.c
- create mode 100644 drivers/pci/host/pci-dw-old.h
- create mode 100644 drivers/pci/host/pci-keystone.c
- create mode 100644 drivers/phy/phy-keystone.c
-
--- 
-1.7.9.5
-
+Nicolas
