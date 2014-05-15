@@ -1,158 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaEOJCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:02:14 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:51319 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaEOJCM (ORCPT
+	id S1751792AbaEOJGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:06:01 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34725 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786AbaEOJGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:02:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <623d49a4a07f4e5a956ccc8c2725e557@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1400133427-5653-1-git-send-email-superlibj8301@gmail.com>
-	<623d49a4a07f4e5a956ccc8c2725e557@BY2PR03MB505.namprd03.prod.outlook.com>
-Date: Thu, 15 May 2014 17:02:11 +0800
-Message-ID: <CAHPCO9HVZSLHuL11zGnLQuuR-TnV7MTU2GDvJpf_+Qy5Dks6BA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
-From: Richard Lee <superlibj8301@gmail.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Thu, 15 May 2014 05:06:00 -0400
+Date: Thu, 15 May 2014 10:05:35 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kyle McMartin <kyle@redhat.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH] arm64: don't set READ_IMPLIES_EXEC for EM_AARCH64
+Message-ID: <20140515090535.GB27594@arm.com>
+References: <20140514185720.GI26038@redacted.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514185720.GI26038@redacted.bos.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Thu, May 15, 2014 at 4:55 PM, Li.Xiubo@freescale.com
-<Li.Xiubo@freescale.com> wrote:
->> Subject: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
->>
->> Static vm area boundary check:
->>
->>       paddr1 --->|       |
->>                  |       |
->>                  |-------| <-\--- svm->vm->addr(is page aligned)
->>       paddr2 --->|       |    |
->>                  |     --| <--|-- svm->vm->phys_addr
->>                  |       |    |
->>       paddr3 --->|       |    |
->>                  |       |    |
->>                  |-------| <--|-- next page boundary
->>                  |       |    |
->>       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
->>                  |       |    |
->>                  |       |    |
->> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
->>                  | ///// |    |
->>       paddr5 --->| guard |    |
->>                  | page  |    |
->>                  | ///// |    |
->>                   -------  <-/--- svm->vm->addr + svm->vm_size
->>
->> <1> If the paddr == paddr1, then continue;
->> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
->>     then continue;
->> <3> if the paddr >= paddr5 then continue;
->>
->> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
->> ---
->>  arch/arm/mm/ioremap.c | 44 ++++++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 42 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
->> index be69333..2fa41f4 100644
->> --- a/arch/arm/mm/ioremap.c
->> +++ b/arch/arm/mm/ioremap.c
->> @@ -47,16 +47,56 @@ static struct static_vm *find_static_vm_paddr(phys_addr_t
->> paddr,
->>  {
->>       struct static_vm *svm;
->>       struct vm_struct *vm;
->> +     size_t offset;
->> +
->> +     /*
->> +      * Make sure the size the mapping size is page aligned.
->> +      */
->> +     size = PAGE_ALIGN((paddr & ~PAGE_SIZE) + size);
->> +     offset = paddr & ~PAGE_SIZE;
->>
->
-> Shouldn't it be PAGE_MASK ?
->
+On Wed, May 14, 2014 at 07:57:21PM +0100, Kyle McMartin wrote:
+> current->personality & READ_IMPLIES_EXEC is currently being set for
+> AArch64 binaries, resulting in an executable stack, when no explicit
+> PT_GNU_STACK header is present.
+> 
+> [kmcmarti@sedition ~]$ uname -p
+> aarch64
+> [kmcmarti@sedition ~]$ cat /proc/$$/personality 
+> 00400000
+> 
+> The reason for this is, without an explicit PT_GNU_STACK entry in the
+> binary, stk is still set to EXSTACK_DEFAULT (which should be
+> non-executable on AArch64.) As a result, elf_read_implies_exec is true,
+> and we set READ_IMPLIES_EXEC in binfmt_elf.c:load_elf_binary.
+> 
+> Fix this to return 0 in the native case, and parrot the logic from
+> arch/arm/kernel/elf.c otherwise. With this patch, binaries correctly
+> don't have READ_IMPLIES_EXEC set, and we can let PT_GNU_STACK change
+> things if it's explicitly requested.
 
-Yes, it is. I'll fix it.
+Unfortunately, my understanding is that GCC currently requires this for
+nested functions, so this is an effective ABI breakage. On the plus side,
+the GCC guys are planning to fix that, so we should see PT_GNU_STACK getting
+used more frequently in the future.
 
-Thanks,
-
-Best regards,
-Richard Lee
-
-
->
->>       list_for_each_entry(svm, &static_vmlist, list) {
->> +             phys_addr_t paddr_end, phys_addr_end;
->> +             size_t vmoff;
->> +
->>               vm = &svm->vm;
->>               if (!(vm->flags & VM_ARM_STATIC_MAPPING))
->>                       continue;
->>               if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
->>                       continue;
->>
->> -             if (vm->phys_addr > paddr ||
->> -                     paddr + size - 1 > vm->phys_addr + vm->size - 1)
->> +             /* Static vm area boundary check:
->> +              *
->> +              *       paddr1 --->|       |
->> +              *                  |       |
->> +              *                  |-------| <-\--- svm->vm->addr(page aligned)
->> +              *       paddr2 --->|       |    |
->> +              *                  |     --| <--|-- svm->vm->phys_addr
->> +              *                  |       |    |
->> +              *       paddr3 --->|       |    |
->> +              *                  |       |    |
->> +              *                  |-------| <--|-- next page boundary
->> +              *                  |       |    |
->> +              *       paddr4 --->|       |    | <----- svm->vm->size,
->> +              *                  |       |    |         including guard page
->> +              *                  |       |    |
->> +              * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
->> +              *                  | ///// |    |
->> +              *       paddr5 --->| guard |    |
->> +              *                  | page  |    |
->> +              *                  | ///// |    |
->> +              *                   -------  <-/-- svm->vm->addr + svm->vm_size
->> +              *
->> +              * <1> If paddr == paddr1, then continue;
->> +              * <2> If paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
->> +              *     then continue;
->> +              * <3> if paddr >= paddr5 then continue;
->> +              */
->> +             vmoff = vm->phys_addr & ~PAGE_SIZE;
->
-> And here.
->
-> Thanks,
-> BRs
-> Xiubo
->
->> +             phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
->> +             paddr_end = paddr + size - offset;
->> +             if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
->> +                     paddr_end - 1 > phys_addr_end - 1)
->>                       continue;
->>
->>               return svm;
->> --
->> 1.8.4
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Will
