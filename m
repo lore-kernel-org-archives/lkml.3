@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbaEOOHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:07:36 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:58411 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531AbaEOOHd (ORCPT
+	id S1754531AbaEOOI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:08:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56344 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002AbaEOOI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:07:33 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-52-5374ca210ffa
-Message-id: <5374CA1C.8000207@samsung.com>
-Date: Thu, 15 May 2014 16:07:24 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Rahul Sharma <rahul.sharma@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, sunil joshi <joshi@samsung.com>
-Subject: Re: [PATCH 1/4] clk: samsung: out: Add infrastructure to register
- CLKOUT
-References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>
- <1399640410-30957-2-git-send-email-tushar.behera@linaro.org>
- <536DA243.6000600@samsung.com> <53705243.1030704@linaro.org>
- <CAPdUM4N=k-pPxdhPQgVHh0fb+nqkgs7StwM2Pb6C8gcjx6dw-w@mail.gmail.com>
-In-reply-to: <CAPdUM4N=k-pPxdhPQgVHh0fb+nqkgs7StwM2Pb6C8gcjx6dw-w@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4NV3FUyXBBg++sFjMP3KO1aL/zUJW
-	i3OvVjJafN/1hd2id8FVNotNj6+xWlzeNYfNYsb5fUwWS69fZLJ4OuEim8WirUAlE6avZbGY
-	sugwq0Xr3iPsFu1/97I58HusmbeG0eNyXy+Tx8rlX9g8Nq3qZPO4c20Pm8fmJfUefVtWMXp8
-	3iQXwBHFZZOSmpNZllqkb5fAlTFvTTtbwW3eilPXf7A3MH7g6mLk5JAQMJE4+nYNC4QtJnHh
-	3no2EFtIYCmjxJwpoV2MXED2Z0aJNVtes4IkeAW0JM4suARWxCKgKjFl9x9GEJtNQE3ic8Mj
-	sDg/UM2aputAQzk4RAUiJB5fEIJoFZT4Mfke2C4RgXCJLRuWMoPMZxZ4zCKxf89ysISwQLDE
-	gX1zmSEW9zJJXP6xHGwoJ1Ci//FpsCJmAR2J/a3T2CBseYnNa94yT2AUnIVkySwkZbOQlC1g
-	ZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJrX3YwLj5mdYhRgINRiYe3Y39xsBBrYllx
-	Ze4hRgkOZiUR3sbpJcFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGOv/mnUl71Xq93w77wfXTMuG
-	l675npcvnJFOmHL4kUG2JFPNCuOfz2pKXBi478+bbpTkvLXmXNx7j75yI+6gDM9VCzY8u/Ku
-	d2lWYE3BqqUGGt/N5k5s///yTtsuNwaX4ocKgXuM7ZPaXv4+u+VZ7JnZSwJOHV+h96Fh/daH
-	8bnuS5gdHz5ima/EUpyRaKjFXFScCAAU7bxvkwIAAA==
+	Thu, 15 May 2014 10:08:58 -0400
+Date: Thu, 15 May 2014 07:08:56 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Michael H. Warfield" <mhw@WittsEnd.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Eric Biederman <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        lxc-devel@lists.linuxcontainers.org
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140515140856.GA17453@kroah.com>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+ <20140515013245.GA1764@kroah.com>
+ <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+ <20140515031527.GA146352@ubuntu-hedt>
+ <20140515040032.GA6702@kroah.com>
+ <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rahul, Tushar,
+On Thu, May 15, 2014 at 09:42:17AM -0400, Michael H. Warfield wrote:
+> On Wed, 2014-05-14 at 21:00 -0700, Greg Kroah-Hartman wrote:
+> > On Wed, May 14, 2014 at 10:15:27PM -0500, Seth Forshee wrote:
+> > > On Wed, May 14, 2014 at 10:17:31PM -0400, Michael H. Warfield wrote:
+> > > > > > Using devtmpfs is one possible
+> > > > > > solution, and it would have the added benefit of making container setup
+> > > > > > simpler. But simply letting containers mount devtmpfs isn't sufficient
+> > > > > > since the container may need to see a different, more limited set of
+> > > > > > devices, and because different environments making modifications to
+> > > > > > the filesystem could lead to conflicts.
+> > > > > > 
+> > > > > > This series solves these problems by assigning devices to user
+> > > > > > namespaces. Each device has an "owner" namespace which specifies which
+> > > > > > devtmpfs mount the device should appear in as well allowing priveleged
+> > > > > > operations on the device from that namespace. This defaults to
+> > > > > > init_user_ns. There's also an ns_global flag to indicate a device should
+> > > > > > appear in all devtmpfs mounts.
+> > > > 
+> > > > > I'd strongly argue that this isn't even a "problem" at all.  And, as I
+> > > > > said at the Plumbers conference last year, adding namespaces to devices
+> > > > > isn't going to happen, sorry.  Please don't continue down this path.
+> > > > 
+> > > > I was just mentioning that to Serge just a week or so ago reminding him
+> > > > of what you told all of us face to face back then.  We were having a
+> > > > discussion over loop devices into containers and this topic came up.
+> > > 
+> > > It was the loop device use case that got me started down this path in
+> > > the first place, so I don't personally have any interest in physical
+> > > devices right now (though I was sure others would).
+> 
+> > Why do you want to give access to a loop device to a container?
+> > Shouldn't you set up the loop devices before creating the container and
+> > then pass those mount points into the container?  I thought that was how
+> > things worked today, or am I missing something?
+> 
+> Ah, you keep feeding me easy ones.  I need raw access to loop devices
+> and loop-control because I'm using containers to build NST (Network
+> Security Toolkit) distribution iso images (one container is x86_64 while
+> the other is i686).  Each requires 2 loop devices.  You can't set up the
+> loop devices in advance since the containers will be creating the images
+> and building them.  NST tinkers with the base build engine
+> configuration, so I really DON'T want it running on a hard iron host. 
+> There may be other cases where I need other specialized containers for
+> building distros.  I'm also looking at custom builds of Kali (another
+> security distribution).
 
-On 15.05.2014 15:44, Rahul Sharma wrote:
-> Hi Tushar,
-> 
-> Basically you are adding a new clock-type for Clkout. IMO clkout
-> is not a special hardware. Existing clock types can be reused to
-> support clkout. I see 3 major problem here:
-> 
-> 1) Clkout -> (Mux + Gate). You clubbed mux and gate together, and
-> exposing as a single clock which is something like a composite clock.
-> IMO this is not a recommended way in CCF.
-> 
-> 2) New Clock Type: Since clkout is just a combination of a simple
-> mux and gate which are already supported, it is a unnecessary
-> duplication.
-> 
-> 3) Clkout registered along with CMU: which is not correct. Clkout is in PMU
-> (Separate physical IP) and should be registered as a independent Clock
-> provider which provides 1 mux and 1 gate clock (As if now). It should also be
-> well connected with main CMU.
-> 
-> I understand the challenge in using regmap interface for a clock provider. But
-> we need to identify a clean solution. IMHO a independent clock provider with
-> iomap, is relatively cleaner approach till CCF is not ready with regmap based
-> reg access for clock registers.
-> 
-> Experts!! please comment.
+Then don't use a container to build such a thing, or fix the build
+scripts to not do that :)
 
-It's quite unfortunate that Tushar has duplicated the effort to create a
-clkout driver, considering the fact that we did have such driver
-internally at SRPOL and it was quite nice and simple.
+That is not a "normal" use case for a container at all.  Containers are
+not for "everything", use a virtual machine for some tasks (like this
+one).
 
-I will post a cleaned-up version today, that is about 2 times smaller in
-terms of lines of added code and provides the same functionality,
-without introducing custom clock types. In addition, it models the
-clkout properly as a feature of PMU, not CMU (CMU only provides outputs
-of particular sub-blocks that are fed into the PMU).
+> Serge mentioned something to me about a loopdevfs (?) thing that someone
+> else is working on.  That would seem to be a better solution in this
+> particular case but I don't know much about it or where it's at.
 
-Best regards,
-Tomasz
+Ok, let's see those patches then.
+
+thanks,
+
+greg k-h
