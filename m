@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaEOT70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:59:26 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:41350 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaEOT7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:59:25 -0400
+	id S1753039AbaEOUFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 16:05:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51435 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249AbaEOUFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 16:05:34 -0400
+Message-ID: <53751DDF.40304@ti.com>
+Date: Thu, 15 May 2014 16:04:47 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140515195320.GR28328@moon>
-References: <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
- <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
- <5373DBE4.6030907@oracle.com> <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
- <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
- <20140514221140.GF28328@moon> <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
- <20140515084558.GI28328@moon> <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
- <20140515195320.GR28328@moon>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 15 May 2014 12:59:04 -0700
-Message-ID: <CALCETrWbf8XYvBh=zdyOBqVqRd7s8SVbbDX=O2X+zAZn83r-bw@mail.gmail.com>
-Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware
+ core driver
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <6048322.x3M3sdDEWO@wuerfel> <5374FD24.8000806@ti.com> <22200719.Jb5jnJylJH@wuerfel> <20140515183919.GC11650@obsidianresearch.com>
+In-Reply-To: <20140515183919.GC11650@obsidianresearch.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 12:53 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Thu, May 15, 2014 at 12:46:34PM -0700, Andy Lutomirski wrote:
->> On Thu, May 15, 2014 at 1:45 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> > On Wed, May 14, 2014 at 03:23:27PM -0700, Andy Lutomirski wrote:
->> >> I can summarize:
->> >>
->> >> On 3.14 and before, the vdso is just a bunch of ELF headers and
->> >> executable data.  When executed by 64-bit binaries, it reads from the
->> >> fixmap to do its thing.  That is, it reads from kernel addresses that
->> >> don't have vmas.  When executed by 32-bit binaries, it doesn't read
->> >> anything, since there was no 32-bit timing code.
->> >>
->> >> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
->> >> a separate vma containing two pages worth of time-varying read-only
->> >> data.  The vdso reads those pages using PIC references.
->> >
->> > Andy, could you please point me where is the code which creates a second vma?
->> > latest 3.15 master branch
->>
->> Search for _install_special_mapping in arch/x86/vdso.  It's in a
->> different place in 3.15-rc and -next.
+On 5/15/2014 2:39 PM, Jason Gunthorpe wrote:
+> On Thu, May 15, 2014 at 08:20:13PM +0200, Arnd Bergmann wrote:
+>> On Thursday 15 May 2014 13:45:08 Murali Karicheri wrote:
+>>>>> +#ifdef CONFIG_PCI_KEYSTONE
+>>>>> +/*
+>>>>> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+>>>>> + */
+>>>>> +static void quirk_limit_readrequest(struct pci_dev *dev)
+>>>>> +{
+>>>>> +    int readrq = pcie_get_readrq(dev);
+>>>>> +
+>>>>> +    if (readrq > 256)
+>>>>> +            pcie_set_readrq(dev, 256);
+>>>>> +}
+>>>>> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+>>>>> +#endif /* CONFIG_PCI_KEYSTONE */
+>>>> This doesn't work: you can't just limit do this for all devices just based
+>>>> on PCI_KEYSTONE being enabled, you have to check if you are actually using
+>>>> this controller.
+>>>>
+>>>>        Arnd
+>>>    I assume, I need to check if PCI controller's vendor ID/ device ID
+>>> match with the keystone
+>>>    PCI controller's ID and call pcie_set_readrq() for all of the slave
+>>> PCI devices and do this fixup.
+>>> Is this correct understanding?  If you can point me to an example code
+>>> for this that will be
+>>> really helpful so that I can avoid re-inventing the wheel.
+>> I think it would be best to move the quirk into the keystone pci driver
+>> and compare compare the dev->driver pointer of the PCI controller device.
+> The PCI core handles setting the maximum read request size already,
+> can you figure out why the core code isn't doing what you need and
+> correct the root problem?
 >
-> As far as I see _install_special_mapping allocates one vma from cache and
+> I'm guessing the values in the root port bridge config space are not
+> correct or something like that??
 >
->         vma->vm_start = addr;
->         vma->vm_end = addr + len;
->
-> so where is the second one?
+> Jason
+What you mean by "The PCI core handles setting the maximum read request 
+size already"
+I see there is function pcie_write_mrrs() in the drivers/pci/probe.c 
+that reads the mps
+using pcie_get_mps() and then set mrrs to mps. But this function is 
+called only from
+pcie_bus_configure_set() that is called by pcie_bus_configure_settings()
 
-Look at its callers in vdso32-setup.c and/or vma.c, depending on version.
+pcie_bus_configure_settings() is called by
 
->
->>
->> >
->> > [root@fc ~]# cat /proc/self/maps
->> > ...
->> > 7fff57b6e000-7fff57b8f000 rw-p 00000000 00:00 0                          [stack]
->> > 7fff57bff000-7fff57c00000 r-xp 00000000 00:00 0                          [vdso]
->> > ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
->> > [root@fc ~]#
->> >
->>
->> What version and bitness is this?
->
-> x86-64, 3.15-rc5
+0 pci-common.c pcibios_scan_phb             1676 
+pcie_bus_configure_settings(child);
+1 pci_gx.c     fixup_read_and_payload_sizes  606 
+pcie_bus_configure_settings(child);
+2 acpi.c       pci_acpi_scan_root            556 
+pcie_bus_configure_settings(child);
+3 pcihp_slot.c pci_configure_slot            164 
+pcie_bus_configure_settings(dev->bus);
 
-Aha.  Give tip/x86/vdso or -next a try or boot a 32-bit 3.15-rc kernel
-and you'll see it.
+None of them gets called on ARM platform.
 
---Andy
+What is needed for Keystone PCI is that we need to limit mrrs to 256 
+bytes for all
+of the downstream devices that talks to PCIe controller. This needs to 
+be enforced
+through a quirk. Or Is there something missing that Keystone or DW 
+driver is not
+making use of that reads the mrrs value of the RC and set the same on 
+all of the
+downstream devices connected to the bus that the controller is connected to?
+
+Murali
+
