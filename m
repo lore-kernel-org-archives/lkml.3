@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaEOPqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:46:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33488 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753665AbaEOPqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:46:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1060,1389772800"; 
-   d="scan'208";a="512239088"
-User-Agent: Microsoft-MacOutlook/14.4.1.140326
-Date: Thu, 15 May 2014 08:47:12 -0700
-Subject: Re: futex(2) man page update help request
-From: Darren Hart <dvhart@linux.intel.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>
-CC: "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Message-ID: <CF9A2F18.90E61%dvhart@linux.intel.com>
-Thread-Topic: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com>
- <CF98E3EF.90564%dvhart@linux.intel.com>
- <537407ED.8050606@zytor.com>
- <CF999CD6.90A93%dvhart@linux.intel.com>
- <5374C54B.7040408@gmail.com>
-In-Reply-To: <5374C54B.7040408@gmail.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	id S1754820AbaEOPrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:47:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40800 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753670AbaEOPrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:47:08 -0400
+Message-ID: <1400168823.7862.9.camel@dabdike>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Date: Thu, 15 May 2014 11:47:03 -0400
+In-Reply-To: <8468354.y2kUZdOz9e@wuerfel>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+	 <8399002.IIyBoyEHox@wuerfel>
+	 <CAMuHMdW5HSVyXpz9HFcrDDYq=zOFrBr6d8jOd8i_FMkXsEpr2Q@mail.gmail.com>
+	 <8468354.y2kUZdOz9e@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/14, 6:46, "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-wrote:
+On Wed, 2014-05-14 at 13:00 +0200, Arnd Bergmann wrote:
+> On Tuesday 13 May 2014 22:35:08 Geert Uytterhoeven wrote:
+> > 
+> > On Tue, May 13, 2014 at 9:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > I think we have three categories:
+> > 
+> > Thanks for the list!
+> > 
+> > > a) interfaces that uses relative time_t/timespec/timeval:
+> > > b) interfaces that don't make sense for times in the past:
+> > 
+> > > c) interfaces that require absolute times:
+> > >    - stat/lstat/fstatat/
+> > >    - utime/utimes/futimesat
+> > >
+> > > These absolutely have to use something better than time_t
+> > > both in user space and in the kernel so we can deal with
+> > > old files. A lot of file systems need to be fixed as well so
+> > > we can actually store the times, regardless of whether we
+> > > are running a 32 or 64 bit kernel.
+> > 
+> > So these are the ones we have to worry about.
+> > It looks like they all involve I/O? Apart from the case of using block data
+> > from the buffer cache, the 64-bit operations should disappear in the
+> > actual I/O noise, right?
+> 
+> Right. Also there have been proposals for a better 'stat' replacement
+> for years, which would solve half of the interface problem for the
+> file system interfaces.
+> 
+> However, we also need to find a solution for category b), I only put
+> them into a different category above because we can treat them
+> differently in the kernel. For instance, we could use ktime_t for
+> the kernel code in category b) and a new struct timespec64 for
+> the times in struct inode.
+> On the user interface side, using timespec64 would be a reasonable
+> choice for both categories, because we already have two implementations
+> of all those syscalls in order to handle 32-on-64 compat tasks,
+> and we could use the same set of syscall implementations for time64-on-32.
 
->On 05/15/2014 07:21 AM, Darren Hart wrote:
->> On 5/14/14, 17:18, "H. Peter Anvin" <hpa@zytor.com> wrote:
->> 
->>> On 05/14/2014 09:18 AM, Darren Hart wrote:
->>>>
->>>> However, unless I'm sorely mistaken, the larger problem is that glibc
->>>> removed the futex() call entirely, so these man pages don't describe
->>>> something users even have access to anymore. I had to revert to
->>>>calling
->>>> the syscalls directly in the futextest test suite because of this:
->>>>
->>>>
->>>> 
->>>>http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/tree/i
->>>>nc
->>>> lu
->>>> de/futextest.h#n67
->>>>
->>>
->>> This really comes down to the fact that we should have a libinux which
->>> contains the basic system call wrapper machinery for Linux specific
->>> things and nothing else.
->>>
->>> syscall(3) is toxic and breaks randomly on some platforms.
->> 
->> Peter Z and I have had a good time discussing this in the past.... And
->> here it is again. :-)
->
->People have a number of times noted that there are problems
->with syscall(), but I'm not knowledgeable on the details.
->I'd happily take a patch to the man page (which, for historical
->reasons, is actually syscall(2)) that explains the the problems
->(and ideally notes those platforms where there are no problems).
+To step back a bit, is a 64 bit time_t actually a good solution on 32
+bits?  Paying a 64 bit penalty on every time operation does seem a bit
+overkill.  Most eventual uses are either monotonic counting or relative
+addition/subtraction.  If we added an additional 32 bit quantity called
+epoch, this would increase once every 68 years.  Within the kernel, we
+could do intelligent interpolation about what the epoch is, so in 2039
+if we get a low 32 bit time_t value, we assume epoch == 1, conversely if
+we see a high one, we assume epoch == 0.  We could add epoch on the end
+of the syscalls and detect if it's not present and fill in an
+interpolated value.  Interfaces which truly want 64 bit time_t would get
+it from epoch + 32 bit time_t.
 
-
->From my perspective, a named interface with specific documented interfaces
-is far more usable than a vargs direct syscall. That just leaves all kinds
-of room for error - which of course is why we all write our own wrappers
-in our apps rather than use it directly... If we all do it, it seems to me
-that is a strong indicator we should provide it in some kind of common
-library. Maybe that's libc... Maybe that's libnix...
--- 
-Darren Hart					Open Source Technology Center
-darren.hart@intel.com				            Intel Corporation
-
+James
 
 
