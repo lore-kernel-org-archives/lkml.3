@@ -1,209 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaEOCOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 22:14:51 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:47477 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073AbaEOCOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 22:14:49 -0400
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: "sdu.liu@huawei.com" <sdu.liu@huawei.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "will.deacon@arm.com" <will.deacon@arm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        "liusdu@126.com" <liusdu@126.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: RE: [RFC PATCH 2/2] makedumpfile: get additional information from
- vmcore
-Thread-Topic: [RFC PATCH 2/2] makedumpfile: get additional information from
- vmcore
-Thread-Index: AQHPb3DHcN/6n3xn+0Gzd0K4c0uBxptA5G9A
-Date: Thu, 15 May 2014 02:12:44 +0000
-Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE97210DAE@BPXM01GP.gisp.nec.co.jp>
-References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
- <1399469234-54925-3-git-send-email-sdu.liu@huawei.com>
- <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
- <5371C8E6.6080700@huawei.com>
- <0910DD04CBD6DE4193FCF86B9C00BE97210997@BPXM01GP.gisp.nec.co.jp>
- <537362A0.7030803@huawei.com>
-In-Reply-To: <537362A0.7030803@huawei.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.40.240]
-Content-Type: text/plain; charset="utf-8"
+	id S1752359AbaEOCSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 22:18:04 -0400
+Received: from imap.thunk.org ([74.207.234.97]:40760 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaEOCSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 May 2014 22:18:01 -0400
+Date: Wed, 14 May 2014 22:17:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>
+Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140515021749.GA3123@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>,
+	Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+	Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+	Eric Sandeen <esandeen@redhat.com>
+References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
+ <1400005862-3751-2-git-send-email-mguzik@redhat.com>
+ <20140514215457.GC5421@dastard>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140514215457.GC5421@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4F2FAH7010244
 
->>>>> Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
->>>>> macros. So if we deal with vmcores with different values
->>>>> of these two macros. We have to recompile makedumpfile.
->>>>
->>>> There are other macros which have architecture-specific values
->>>> (e.g. __PAGE_OFFSET), and some functions are specific to each
->>>> architecture (e.g. vaddr_to_paddr()), so we need recompilation
->>>> eventually.
->>>>
->>>> OTOH, we already don't need recompilation for the same architecture
->>>> since the values of such macros are defined for each kernel version
->>>> like below:
->>>>
->>>> #ifdef __x86_64__
->>>> ...
->>>> #define _MAX_PHYSMEM_BITS_ORIG          (40)
->>>> #define _MAX_PHYSMEM_BITS_2_6_26        (44)
->>>> #define _MAX_PHYSMEM_BITS_2_6_31        (46)
->>>>
->>>> So I don't think this patch is valuable.
->>>
->>> Hi Atsushi,
->>>
->>> For x86, it is not necessory. But for arm, different venders
->>> may define different SECTION_SIZE_BITS. for example:
->>>
->>>   1 arch/arm/mach-clps711x/include/mach/memory.h
->>>     #define SECTION_SIZE_BITS 24
->>>   2 arch/arm/mach-exynos/include/mach/memory.h
->>>     #define SECTION_SIZE_BITS 28
->>>   4 arch/arm/mach-hisi/include/mach/memory.h
->>>     #define SECTION_SIZE_BITS 26
->>>   8 arch/arm/mach-sa1100/include/mach/memory.h
->>>     #define SECTION_SIZE_BITS 27
->>>
->>> Perhaps we should find another way to let the userspace tools
->>> to get the architecture-specific values.
->>
->> I see, I think this description is better than the first one.
->>
->> Now, makedumpfile can't get an appropriate values of the two macros since the
->> values are variable even if the architecture and the kernel version are fixed
->> (at least for arm), and we can't solve this without *manual code fixing*, right?
->>
->> In practice, the current code expects that all arm machines adopt Exynos
->> processors, this is an problem definitely.
->>
->>   #ifdef __arm__
->>   #define KVBASE_MASK             (0xffff)
->>   #define KVBASE                  (SYMBOL(_stext) & ~KVBASE_MASK)
->>   #define _SECTION_SIZE_BITS      (28)
->>   #define _MAX_PHYSMEM_BITS       (32)
->>
->> I think it's better to fix the descriptions to get acceptability,
->> but this patch is necessary from the view point of makedumpfile.
->> So I recommend you to repost this patch set, then I'll accept it.
->>
->Ok, Thanks for you suggest. I will repost this patch. By now no one
->relpy my kernel patch related to this issue, named "[RFC PATCH 1/2]
->kdump: add sparse memory related values to vmcore". Didn't I cc
->the right person or something else?
+On Thu, May 15, 2014 at 07:54:57AM +1000, Dave Chinner wrote:
+> On Tue, May 13, 2014 at 08:31:02PM +0200, Mateusz Guzik wrote:
+> > This helps hang troubleshooting efforts when only dmesg is available.
+> 
+> I really don't think that spamming dmesg every time a filesystem is
+> frozen or thawed is a good idea. This happens a *lot* when systems
+> are using snapshots, and for the most part nobody cares about
+> freeze/thaw cycles because they almost always work just fine.
 
-You should CC Eric Biederman (ebiederm@xmission.com) as the maintainer
-of kexec.
+The problems people are worried about are when there is freezing and
+unfreezing taking place in combination with a machine-level
+suspend/resume cycle, no?  What if we only spammed dmesg when doing a
+suspend/resume?
 
-The kernel side doesn't need that patch because they aren't in trouble
-even without it, so we had to highlight the necessity from the user space
-side. Now, it's clear, I hope it will be accepted.
-
->BTW, For patch "[PATCH] makedumpfile: ARM: get correct mem_map offset",
->Did I explain my idea clearly ? If not, I would like repost one with
->more details.
-
-I need more explanations, I'll mention it in that thread.
-
-
-Thanks
-Atsushi Kumagai
-
->>
->> Thanks
->> Atsushi Kumagai
->>
->>>>
->>>>> This patch makes makedumpfile get these two values from
->>>>> vmcore info, if existing. It makes the makedumpfile more
->>>>> compatible to vmcores with different section size.
->>>>>
->>>>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->>>>> ---
->>>>> makedumpfile.c | 17 +++++++++++++++++
->>>>> makedumpfile.h |  2 ++
->>>>> 2 files changed, 19 insertions(+)
->>>>>
->>>>> diff --git a/makedumpfile.c b/makedumpfile.c
->>>>> index 6cf6e24..3cdf323 100644
->>>>> --- a/makedumpfile.c
->>>>> +++ b/makedumpfile.c
->>>>> @@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
->>>>> 	READ_NUMBER("PG_slab", PG_slab);
->>>>> 	READ_NUMBER("PG_buddy", PG_buddy);
->>>>> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
->>>>> +	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
->>>>> +	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
->>>>>
->>>>> 	READ_SRCFILE("pud_t", pud_t);
->>>>>
->>>>> @@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
->>>>> }
->>>>>
->>>>> int
->>>>> +calibrate_machdep_info(void)
->>>>> +{
->>>>> +	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
->>>>> +		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
->>>>> +
->>>>> +	if (NUMBER(SECTION_SIZE_BITS) > 0)
->>>>> +		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
->>>>> +
->>>>> +	return TRUE;
->>>>> +}
->>>>> +
->>>>> +int
->>>>> initial(void)
->>>>> {
->>>>> 	off_t offset;
->>>>> @@ -3214,6 +3228,9 @@ out:
->>>>> 	if (debug_info && !get_machdep_info())
->>>>> 		return FALSE;
->>>>>
->>>>> +	if (debug_info && !calibrate_machdep_info())
->>>>> +		return FALSE;
->>>>> +
->>>>> 	if (is_xen_memory() && !get_dom0_mapnr())
->>>>> 		return FALSE;
->>>>>
->>>>> diff --git a/makedumpfile.h b/makedumpfile.h
->>>>> index eb03688..7acb23a 100644
->>>>> --- a/makedumpfile.h
->>>>> +++ b/makedumpfile.h
->>>>> @@ -1434,6 +1434,8 @@ struct number_table {
->>>>> 	long    PG_hwpoison;
->>>>>
->>>>> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
->>>>> +	long	SECTION_SIZE_BITS;
->>>>> +	long	MAX_PHYSMEM_BITS;
->>>>> };
->>>>>
->>>>> struct srcfile_table {
->>>>> --
->>>>> 1.9.0
->>>>
->>>> .
->>>>
->>>
->
->
->
->_______________________________________________
->kexec mailing list
->kexec@lists.infradead.org
->http://lists.infradead.org/mailman/listinfo/kexec
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+						- Ted
