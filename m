@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaEOQ2H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:28:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256AbaEOQ2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:28:04 -0400
-Message-ID: <1400171258.21547.136.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
-From: Mark Salter <msalter@redhat.com>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 12:27:38 -0400
-In-Reply-To: <20140515144424.GA23884@linaro.org>
-References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
-	 <20140515144424.GA23884@linaro.org>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754006AbaEOQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:28:23 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:49380 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaEOQ2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:28:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Murali Karicheri <m-karicheri2@ti.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware core driver
+Date: Thu, 15 May 2014 18:28 +0200
+Message-ID: <4195791.GS9XG8RaXW@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Tvi1x81Udtn1hr1tQPZKsEtTVXYnz79tFsfKReLxzUR
+ gF2DGXlMr/vvZunr6nT4Xtvpmz1YF3QRbCIUWBEaepWKyPfrgc
+ aW6qJZgjheXXh2Yk3dDZ4/6xsrx/8A3AxFyNnOSY27Xg0+gN+r
+ Qz4RdU36SAcPdeFPogWwIoz8ssj/woWS7yDAiD1DsdSNUvTK9N
+ AI5X6jGwWOL/MKZAQrjScO2+tzsAK7DASg+dRH5l3tlhouOEEY
+ 1PqmXNATnlLRDbXHbYwaaNXp8RIiK+/A7n2ACJ/lMPeY0V/2Gb
+ P1z8MEEfxYWtSlLeJ8ldKSAq5e8OxW6XlL5g2tXBviEgeRn/IU
+ sLh1M9OZ3Tw/g7yCP3vc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-15 at 15:44 +0100, Steve Capper wrote:
-> On Thu, May 15, 2014 at 10:19:22AM -0400, Mark Salter wrote:
-> > The following happens when trying to run a kvm guest on a kernel
-> > configured for 64k pages. This doesn't happen with 4k pages:
-> > 
-> >   BUG: failure at include/linux/mm.h:297/put_page_testzero()!
-> >   Kernel panic - not syncing: BUG!
-> >   CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
-> >   Call trace:
-> >   [<fffffe0000096034>] dump_backtrace+0x0/0x16c
-> >   [<fffffe00000961b4>] show_stack+0x14/0x1c
-> >   [<fffffe000066e648>] dump_stack+0x84/0xb0
-> >   [<fffffe0000668678>] panic+0xf4/0x220
-> >   [<fffffe000018ec78>] free_reserved_area+0x0/0x110
-> >   [<fffffe000018edd8>] free_pages+0x50/0x88
-> >   [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
-> >   [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
-> >   [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
-> >   [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
-> >   [<fffffe00001edc1c>] __fput+0xb0/0x288
-> >   [<fffffe00001ede4c>] ____fput+0xc/0x14
-> >   [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
-> >   [<fffffe0000095c14>] do_notify_resume+0x54/0x58
-> > 
-> > In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
-> > on the stage2 pgd which leads to the BUG in put_page_testzero(). This
-> > happens because a pud_huge() test in unmap_range() returns true when it
-> > should always be false with 2-level pages tables used by 64k pages.
-> > This patch removes support for huge puds if 2-level pagetables are
-> > being used.
-> 
-> Hi Mark,
-> I'm still catching up with myself, sorry  (was off sick for a couple
-> of days)...
-> 
-> I thought unmap_range was going to be changed?
-> Does the following help things?
-> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009388.html
+On Thursday 15 May 2014 12:01:32 Murali Karicheri wrote:
+> +Sample bindings shown below:-
+> +
+> + - Remove ti,enable-linktrain if boot loader already does Link training and do EP
+> +   configuration.
+> + - Remove ti,init-phy if boot loader already initialize the phy and sets up pcie
+> +   link
 
-No, I get the same BUG. Regardless, pud_huge() should always return
-false for 2-level pagetables, right?
+You actually have to document all the properties. Have a look at the
+other bindings for what this means.
 
+> +
+> +               pcie@21800000 {
+> +                       compatible = "ti,keystone-pcie";
+> +                       device_type = "pci";
+> +                       clocks = <&clkpcie>;
+> +                       clock-names = "pcie";
 
+The dw-pcie binding lists two clocks.
+
+> +                       #address-cells = >;
+> +                       #size-cells = <2>;
+> +                       reg =  <0x21800000 0x1000>, <0x0262014c 4>;
+> +                       reg-names = "reg_rc_app", "reg_devcfg";
+
+There should be standard names that are documented in the binding.
+
+> +                       interrupts = <GIC_SPI 30 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 31 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 32 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 33 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 34 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 35 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 36 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 37 IRQ_TYPE_EDGE_RISING>,
+> +                                       <GIC_SPI 38 IRQ_TYPE_EDGE_RISING>; /* Error IRQ */
+
+What are all these interrupts?
+
+> +                       ranges = <0x00000800 0 0x21801000 0x21801000 0 0x0002000    /* Configuration space */
+> +                                 0x81000000 0 0          0x24000000 0 0x4000       /* downstream I/O */
+> +                                 0x82000000 0 0x50000000 0x50000000 0 0x10000000>; /* non-prefetchable memory */
+
+Please move the config space into 'reg' now instead of 'ranges'.
+This was a mistake earlier, and there are already other front-ends
+doing the same thing.
+
+> +                       num-lanes = <2>;
+> +                       ti,enable-linktrain;
+> +                       ti,init-phy;
+> +
+> +                       /* PCIE phy */
+> +                       phys = <&pcie0_phy>;
+> +                       phy-names = "pcie-phy";
+> +
+> +                       #interrupt-cells = <1>;
+> +                       interrupt-map-mask = <0 0 0 0>;
+> +                       interrupt-map = <0 0 0 1 &pcie_intc 1>, // INT A
+> +                                       <0 0 0 2 &pcie_intc 2>, // INT B
+> +                                       <0 0 0 3 &pcie_intc 3>, // INT C
+> +                                       <0 0 0 4 &pcie_intc 4>; // INT D
+
+I think this is the wrong map-mask.
+
+	Arnd
