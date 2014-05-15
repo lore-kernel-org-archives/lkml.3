@@ -1,86 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaEOOxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:53:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49178 "EHLO mga09.intel.com"
+	id S1754993AbaEOOyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:54:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51764 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbaEOOxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:53:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
-   d="scan'208";a="512206388"
-Message-ID: <1400165610.3703.41.camel@smile.fi.intel.com>
-Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
- T100
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 17:53:30 +0300
-In-Reply-To: <5374D0A8.2090407@linux.intel.com>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
-	 <5374D0A8.2090407@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752823AbaEOOyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:54:39 -0400
+Date: Thu, 15 May 2014 09:53:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: davinci: remove checks for
+ CONFIG_USB_MUSB_PERIPHERAL
+Message-ID: <20140515145356.GA7360@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1400149025.20469.22.camel@x220>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Disposition: inline
+In-Reply-To: <1400149025.20469.22.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
-> On 2014/5/15 21:40, Heikki Krogerus wrote:
-> > Changes since v1:
-> > - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
-> > - NULL checks for clk_name allocation in acpi_lpss.c
-> > 
-> > This combines two patch sets for LPSS that I had already send for
-> > review separately. They conflicted with each other.
-> > 
-> > The first two patches will fix a problem were the context of the
-> > private LPSS registers is lost when entering D3. The last two will add
-> > support for the M/N dividers on LPSS by adding a new basic clock type
-> > for fractional dividers. The UART driver needs support for it in order
-> > to get clock rates that suit the requested baud rates.
-> 
-> The major issue in my mind is, this proposal makes a couple between I2C
-> designware, HSUART, or probably DMA driver as well with LPSS driver.
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-acpi_lpss driver creates platform devices for each found and enumerated
-device. If there no acpi_lpss enabled the drivers work as supposed
-without it. I didn't see any contradiction here.
+On Thu, May 15, 2014 at 12:17:05PM +0200, Paul Bolle wrote:
+> The Kconfig symbol USB_MUSB_PERIPHERAL was removed in v3.1. The last two
+> checks for its macro now always evaluate to false. So remove these
+> checks.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-> That is, currently without LPSS driver, I2C/HSUART won't work properly.
-> So we at least need to describe this dependency in Kconfig.
-> 
-> Thanks,
-> -Aubrey
-> > 
-> > 
-> > Heikki Krogerus (4):
-> >   ACPI / PM: Export rest of the subsys functions
-> >   ACPI / LPSS: custom power domain for LPSS
-> >   clk: new basic clk type for fractional divider
-> >   ACPI / LPSS: support for fractional divider clock
-> > 
-> >  drivers/acpi/acpi_lpss.c             | 204 ++++++++++++++++++++++++++++++-----
-> >  drivers/acpi/device_pm.c             |   2 +
-> >  drivers/clk/Makefile                 |   1 +
-> >  drivers/clk/clk-fractional-divider.c | 135 +++++++++++++++++++++++
-> >  include/linux/acpi.h                 |   4 +
-> >  include/linux/clk-provider.h         |  31 ++++++
-> >  6 files changed, 349 insertions(+), 28 deletions(-)
-> >  create mode 100644 drivers/clk/clk-fractional-divider.c
-> > 
-> 
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+> ---
+> Eyeball tested only.
+>=20
+> This is just a straightforward cleanup. It does remove a comment. Is
+> that comment still useful? Anyhow, I do wonder whether a proper fix is
+> possible here. Perhaps Greg or Felipe knows: it is their commit
+> 622859634a66 ("usb: musb: drop a gigantic amount of ifdeferry") that
+> removed USB_MUSB_PERIPHERAL. On the other hand I noticed that config
+> USB_MUSB_DAVINCI depends on BROKEN. So maybe properly fixing just this
+> small problem doesn't buy us much.
+>=20
+>  arch/arm/mach-davinci/board-dm355-evm.c     | 4 ----
+>  arch/arm/mach-davinci/board-dm355-leopard.c | 4 ----
+>  2 files changed, 8 deletions(-)
+>=20
+> diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davi=
+nci/board-dm355-evm.c
+> index ecdc7d44fa70..06d63d5651f3 100644
+> --- a/arch/arm/mach-davinci/board-dm355-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm355-evm.c
+> @@ -350,11 +350,7 @@ static struct davinci_mmc_config dm355evm_mmc_config=
+ =3D {
+>   * you have proper Mini-B or Mini-A cables (or Mini-A adapters)
+>   * the ID pin won't need any help.
+>   */
+> -#ifdef CONFIG_USB_MUSB_PERIPHERAL
+> -#define USB_ID_VALUE	0	/* ID pulled high; *should* float */
+> -#else
+>  #define USB_ID_VALUE	1	/* ID pulled low */
+> -#endif
+> =20
+>  static struct spi_eeprom at25640a =3D {
+>  	.byte_len	=3D SZ_64K / 8,
+> diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-=
+davinci/board-dm355-leopard.c
+> index 43bacbf15314..680a7a2d9102 100644
+> --- a/arch/arm/mach-davinci/board-dm355-leopard.c
+> +++ b/arch/arm/mach-davinci/board-dm355-leopard.c
+> @@ -208,11 +208,7 @@ static struct davinci_mmc_config dm355leopard_mmc_co=
+nfig =3D {
+>   * you have proper Mini-B or Mini-A cables (or Mini-A adapters)
+>   * the ID pin won't need any help.
+>   */
+> -#ifdef CONFIG_USB_MUSB_PERIPHERAL
+> -#define USB_ID_VALUE	0	/* ID pulled high; *should* float */
+> -#else
+>  #define USB_ID_VALUE	1	/* ID pulled low */
+> -#endif
+> =20
+>  static struct spi_eeprom at25640a =3D {
+>  	.byte_len	=3D SZ_64K / 8,
+> --=20
+> 1.9.0
+>=20
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+--=20
+balbi
 
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTdNUEAAoJEIaOsuA1yqRET0EQAIryQZnlwwkV//7yKMpzEcxi
+oLc9ZBh0Y2tI0DuUqaGxBZq3ikQ1CHWcLkJ1ON1exfGvQJKAhxTGIYEqEtOMykMD
+n4HJF5WkYYQ6YvPtz/c2gPfPGTepPI2L4yo37XAILyIlc2ltEwLhg0K/go3D9hNv
+01U5lzjamkZa+Ccfen+CfiSfIcoLzcd5hQabqigNPiKJURYg0a4OldgCGhiZheyo
+EfYLLREm7jXVBl8aPJbKU8pegom4uGCZ+PRVpzeKZKMKNilxkL4AyNDV76HLDzaH
+KPRsWQzDaV2CX9pmvI2uGClyh8rD6PEHv/YTaAwaqXdoLsntGqpi96WEn2rOte2+
+3RhO/sNNVML3MzwKDDZBNngWu4AitOjk9vs6cgfcwUzi8OFnLwKM3iOsJSvdjRrx
+S7hZQPbYcJeUie7cNeklHCOS+Ty4o2j6uW36+x0/LkXi1TG0+jWV1ovRWTqK/T2x
+nn9pgOPJkdDeZPSVoeh8VP2j3zKQB/SG48F+yz617RpFKw/TF10+SiBpClgHFk/C
+uKB+o8glUp19C68cQtICqfgmT5IEm9sLM6yUq1KyOeLJO1xZ5K68J4bUQycDCwiw
+a1yYULqMcAVE5Zq/rGysOcyppwr8t4yuGgEc+WRFO3Sui+93qX0fe7N9viYgH8KZ
+zCZWzAKivnu+r+/+7z3i
+=awZH
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
