@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaEOKpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:45:34 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:64760 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaEOKpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:45:32 -0400
+	id S1751689AbaEOKsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:48:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaEOKsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 06:48:01 -0400
+Date: Thu, 15 May 2014 12:47:48 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
+Cc: sandeen@redhat.com, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140515104746.GF10637@mguzik.redhat.com>
+References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
+ <1400018683-5565-2-git-send-email-mguzik@redhat.com>
+ <20140514111449.GB5824@quack.suse.cz>
+ <20140514112619.GA10637@mguzik.redhat.com>
+ <20140514113945.GC5824@quack.suse.cz>
+ <20140514220052.GD5421@dastard>
+ <20140514223745.GF5421@dastard>
+ <5373F0D6.4090600@redhat.com>
+ <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1405150614100.19101@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1405141012040.11670@file01.intranet.prod.int.rdu2.redhat.com>
-	<CAKohpo=h8cNbb2VbWzpDUPQDMK8QAs_sV=-SQyOaJWWFw4qKvA@mail.gmail.com>
-	<alpine.LRH.2.02.1405150614100.19101@file01.intranet.prod.int.rdu2.redhat.com>
-Date: Thu, 15 May 2014 16:15:32 +0530
-Message-ID: <CAKohponwxi96buPx=vYgY1jZhSUanOZ2G7g2CjoapE=stzJcXw@mail.gmail.com>
-Subject: Re: Format of patches (was: [PATCH 1/2] speedstep-smi: enable
- interrupts when waiting)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2014 16:07, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> On Thu, 15 May 2014, Viresh Kumar wrote:
->> On 14 May 2014 19:54, Mikulas Patocka <mpatocka@redhat.com> wrote:
->> > Hi Viresh
->> >
->> > Some times ago, I sent these two cpufreq patches to fix frequency
->> > transition problem on speedstep-smi, but you didn't put them to the
->> > upstream kernel. I am resending the patches. If you would like a different
->> > solution to this problem, please explain it.
->>
->> Probably these are just missed by Rafael. The patches are fine but the
->> above paragraph you wrote would get into kernel logs and must have
->> been placed below the three dash lines: "---"
->
-> I used "---" in the past, but some people complained that their script
-> picks the text above "---" and ignores the text below "---" - thus, it
-> does exactly the opposite of what it should do.
+On Thu, May 15, 2014 at 12:40:19PM +0200, Lukáš Czerner wrote:
+> On Wed, 14 May 2014, Eric Sandeen wrote:
+> 
+> > Date: Wed, 14 May 2014 17:40:22 -0500
+> > From: Eric Sandeen <esandeen@redhat.com>
+> > Reply-To: sandeen@redhat.com
+> > To: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>
+> > Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
+> >     linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+> >     Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+> > Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+> >     filesystems
+> > 
+> > On 5/14/14, 5:37 PM, Dave Chinner wrote:
+> > > On Thu, May 15, 2014 at 08:00:52AM +1000, Dave Chinner wrote:
+> > >> On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
+> > >>> On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
+> > >>>> On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
+> > >>>>> On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
+> > >>>>>> This helps hang troubleshooting efforts when only dmesg is available.
+> > >>>>>>
+> > >>>>>> While here remove code duplication with MS_RDONLY case and fix a
+> > >>>>>> whitespace nit.
+> > >>>>>   I'm somewhat undecided here I have to say. On one hand I don't like
+> > >>>>> printing to kernel log when everything is fine and kernel is operating
+> > >>>>> normally. On the other hand I've seen quite a few cases where people have
+> > >>>>> shot themselves in the foot with filesystem freezing so having some trace
+> > >>>>> of this in the log doesn't seem like a completely bad thing either. What do
+> > >>>>> other people think?
+> > >>>>>
+> > >>>>
+> > >>>> I would like to note that the kernel already prints messages when e.g.
+> > >>>> filesystems get mounted.
+> > >>>   Yeah, that's a fair point.
+> > >>
+> > >> But filesystems choose to output that info, not the VFS. When you do
+> > >> a remount,ro there is no output in syslog, because filesystems don't
+> > >> need to dump any output - the state change is reflected in
+> > >> /proc/self/mounts. IMO frozen should state should be communicated
+> > >> the same way so that it is silent when it just works, and the state
+> > >> can easily be determined when something goes wrong.
+> > > 
+> > > Say, like this:
+> > > 
+> > > $ grep /mnt/test /proc/mounts
+> > > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> > > $ sudo xfs_freeze -f /mnt/test
+> > > $ grep /mnt/test /proc/mounts
+> > > /dev/vda /mnt/test xfs rw,frozen,relatime,attr2,inode64,noquota 0 0
+> > > $ sudo xfs_freeze -u /mnt/test
+> > > $ grep /mnt/test /proc/mounts
+> > > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
+> > > $
+> > 
+> > I'm not totally convinced that including a non-mount option in what
+> > has always (?) been a list of mount options is a great idea.
+> 
+> I do not like it either. Mixing this together with other mount
+> options does not seem like a great idea, however we really need a
+> way to report this and I guess we can not just change the
+> /proc/self/mounts, or /proc/self/mountinfo format.
+> 
+> So what about crating a new file /proc/self/frozen with the list of
+> frozen file systems in the same format what mounts, or mountinfo has
+> ?
+> 
 
-Have you added an extra line with --- ? Probably yes.
-I haven't asked you to add another line, but move the part you don't want
-to be commited below --- already present in patch..
+As the time goes on there will be more data to present about given
+mountpoint. So either mountinfo should be extendable to support this
+(can't see why not) or new generic file with that property should be
+provided. I vote for the former.
 
-Like:
+IOW, a new column in mountinfo. For frozen filesystems it would contain
+'frozen_by=[%s]:[%d]' (escaped comm, pid).
 
-> ---
-
-Blurb here :)
-
->  drivers/cpufreq/speedstep-lib.c |    3 +++
->  drivers/cpufreq/speedstep-smi.c |   12 ++++++++++++
->  2 files changed, 15 insertions(+)
->
-
-
-> I don't know what kind of delimiter should I use. Suppose that I want to
-> send something like this:
-
-Will go through below mail of yours once we are clear on above..
+-- 
+Mateusz Guzik
