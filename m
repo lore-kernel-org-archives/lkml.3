@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaEOIdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:33:11 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54178 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaEOIdJ (ORCPT
+	id S1751904AbaEOIec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:34:32 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:63216 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751739AbaEOIea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:33:09 -0400
-Date: Thu, 15 May 2014 10:32:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: Consolidate tlb.h
-Message-ID: <20140515083258.GD30445@twins.programming.kicks-ass.net>
-References: <1400093999-18703-1-git-send-email-richard@nod.at>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y9n12KajPNdV/7DP"
-Content-Disposition: inline
-In-Reply-To: <1400093999-18703-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 15 May 2014 04:34:30 -0400
+Message-ID: <1400142868.20469.12.camel@x220>
+Subject: [PATCH] ARM: at91: remove ISI code for AT91SAM9263
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 10:34:28 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 May 2014 08:34:28.0638 (UTC) FILETIME=[7C719BE0:01CF7018]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In v2.6.25 code was added for an Image Sensor Interface (ISI) for
+AT91SAM9263. That code depended on the Kconfig macro
+CONFIG_VIDEO_AT91_ISI and its MODULE variant. The related Kconfig symbol
+has never been added to the tree. The net effect of this was that
+at91_add_device_isi() was a NOP. No one noticed because no callers of
+that function were added to the tree at that time.
 
---y9n12KajPNdV/7DP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The first caller of a function with that name was added in v3.4. But
+that caller apparently only called the function defined for AT91SAM9G45.
+(that function was also added in v3.4). So even then AT91SAM9263's NOP
+version of at91_add_device_isi() remained unused. This means that the
+ISI code for AT91SAM9263 can be removed.
 
-On Wed, May 14, 2014 at 08:59:32PM +0200, Richard Weinberger wrote:
-> While staring at an UML TLB bug I've noticed that most archs
-> copy and pasted stuff from each others tlb.h.
-> This patch series combines common stuff into the generic tlb.h.
->=20
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested!
 
-Were you aware of this series:
+Could someone please verify that this definition of
+at91_add_device_isi() really never will be called.
 
-  http://www.spinics.net/lists/linux-mm/msg37369.html
+ arch/arm/mach-at91/at91sam9263_devices.c | 57 --------------------------------
+ 1 file changed, 57 deletions(-)
 
-I've been meaning to refresh and continue with it, but somehow I never
-get time to actually do it :/
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index 43d53d6156dd..f2dab0a872a1 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -897,63 +897,6 @@ void __init at91_add_device_lcdc(struct atmel_lcdfb_pdata *data) {}
+ 
 
-At the time only s390 still have a relatively trivial problem but all
-archs were using generic code.
+ /* --------------------------------------------------------------------
+- *  Image Sensor Interface
+- * -------------------------------------------------------------------- */
+-
+-#if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
+-
+-struct resource isi_resources[] = {
+-	[0] = {
+-		.start	= AT91SAM9263_BASE_ISI,
+-		.end	= AT91SAM9263_BASE_ISI + SZ_16K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
+-		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct platform_device at91sam9263_isi_device = {
+-	.name		= "at91_isi",
+-	.id		= -1,
+-	.resource	= isi_resources,
+-	.num_resources	= ARRAY_SIZE(isi_resources),
+-};
+-
+-void __init at91_add_device_isi(struct isi_platform_data *data,
+-		bool use_pck_as_mck)
+-{
+-	at91_set_A_periph(AT91_PIN_PE0, 0);	/* ISI_D0 */
+-	at91_set_A_periph(AT91_PIN_PE1, 0);	/* ISI_D1 */
+-	at91_set_A_periph(AT91_PIN_PE2, 0);	/* ISI_D2 */
+-	at91_set_A_periph(AT91_PIN_PE3, 0);	/* ISI_D3 */
+-	at91_set_A_periph(AT91_PIN_PE4, 0);	/* ISI_D4 */
+-	at91_set_A_periph(AT91_PIN_PE5, 0);	/* ISI_D5 */
+-	at91_set_A_periph(AT91_PIN_PE6, 0);	/* ISI_D6 */
+-	at91_set_A_periph(AT91_PIN_PE7, 0);	/* ISI_D7 */
+-	at91_set_A_periph(AT91_PIN_PE8, 0);	/* ISI_PCK */
+-	at91_set_A_periph(AT91_PIN_PE9, 0);	/* ISI_HSYNC */
+-	at91_set_A_periph(AT91_PIN_PE10, 0);	/* ISI_VSYNC */
+-	at91_set_B_periph(AT91_PIN_PE12, 0);	/* ISI_PD8 */
+-	at91_set_B_periph(AT91_PIN_PE13, 0);	/* ISI_PD9 */
+-	at91_set_B_periph(AT91_PIN_PE14, 0);	/* ISI_PD10 */
+-	at91_set_B_periph(AT91_PIN_PE15, 0);	/* ISI_PD11 */
+-
+-	if (use_pck_as_mck) {
+-		at91_set_B_periph(AT91_PIN_PE11, 0);	/* ISI_MCK (PCK3) */
+-
+-		/* TODO: register the PCK for ISI_MCK and set its parent */
+-	}
+-}
+-#else
+-void __init at91_add_device_isi(struct isi_platform_data *data,
+-		bool use_pck_as_mck) {}
+-#endif
+-
+-
+-/* --------------------------------------------------------------------
+  *  Timer/Counter block
+  * -------------------------------------------------------------------- */
+ 
+-- 
+1.9.0
 
---y9n12KajPNdV/7DP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdHu6AAoJEHZH4aRLwOS66GoP/ixqHc6y/0XqrvVNlTcitRRK
-VTvtygj8V3xdjso0/z6FeE5Zbg/Ri1FsgL+mIa+5c83vsxFe5oWMlZAGIrEj1Zxq
-N9s9Jdy5qR2vwqwTmWGJiEpIW2lGhIvGTyvW+OE9j5UAcvipIMy/ArmPHM3yR6CS
-Oa7R8ICRyUvz78dBOgqHiEy0K0+EDuedmhs2kWAo+6efhrqhp0ZVflE3DhH8W2nt
-VFqDs60w5LmWoRXkNj0/sYQcv0SP5DeAR3h5WrLUknM45/Pa4TernIvUFoqfTH5U
-8FGCl2qlSHGxWie/EdT6puCukE+F1koBd+PBu4qY3YEkpjOjkC+e/hVzBJrZ7R2S
-LLg1HXHTetUQ2ei3Y/be2RGEK2lgcH3e7/dVQncWFt+36BVg7IR4u2Q113tFq47/
-mqdOcqgcouOOkp+WSJbqe+oifLYTQHXd5YYvbpAIYWQ2xAIjj9Fg8Se6iET7cNAP
-vDCm5EudD+0gmhjIg6HHw4NjKZ3C+djHYTmyTudJwHcqjW/3/nRWLoBbUk9fwiZv
-bqD5Mf7k0vmGUketMI2yE9MvnYn+k9edjlyn9l29Kmf1GpZPeuy4WgLlacxqDMIj
-2NYorI07R90MFoa/F64exYk7U3twDQrsxTw8uul7SuJx7PrzFQVKZzuv18FGd11+
-mIElMXQ6ryEqrScnka/m
-=KC9j
------END PGP SIGNATURE-----
-
---y9n12KajPNdV/7DP--
