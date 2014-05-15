@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747AbaEOW7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:59:22 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:54070 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668AbaEOW7V (ORCPT
+	id S1755666AbaEOXBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 19:01:53 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:51209 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaEOXBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:59:21 -0400
-Subject: [PATCH] sched: fix exec_start/task_hot on migrated tasks
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-From: Ben Segall <bsegall@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 15:59:20 -0700
-Message-ID: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: StGit/0.16
+	Thu, 15 May 2014 19:01:51 -0400
+Date: Fri, 16 May 2014 01:01:44 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ARM: imx: clean up error handling
+Message-ID: <20140515230144.GA10217@lianli>
+References: <1400181871-10325-1-git-send-email-emilgoode@gmail.com>
+ <20140515203212.GD8897@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515203212.GD8897@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_hot checks exec_start on any runnable task, but if it has been
-migrated since the it last ran, then exec_start is a clock_task from
-another cpu. If the old cpu's clock_task was sufficiently far ahead of
-this cpu's then the task will not be considered for another migration
-until it has run. Instead reset exec_start whenever a task is migrated,
-since it is presumably no longer hot anyway.
+Hello Dan,
 
-Signed-off-by: Ben Segall <bsegall@google.com>
----
- kernel/sched/fair.c |    3 +++
- 1 file changed, 3 insertions(+)
+Thanks for the review and sorry for the late reply.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 28ccf50..9f8dfeb 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4544,6 +4544,9 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
- 		atomic_long_add(se->avg.load_avg_contrib,
- 						&cfs_rq->removed_load);
- 	}
-+
-+	/* We have migrated, no longer consider this task hot */
-+	se.exec_start = 0;
- }
- #endif /* CONFIG_SMP */
- 
+On Thu, May 15, 2014 at 11:32:13PM +0300, Dan Carpenter wrote:
+> On Thu, May 15, 2014 at 09:24:30PM +0200, Emil Goode wrote:
+> > If we fail to allocate struct platform_device pdev we
+> > dereference it after the goto label err.
+> > 
+> > I have rearranged the error handling a bit to fix the issue
+> > and also make it more clear.
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > ---
+> >  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+> >  1 file changed, 13 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > index fc4dd7c..14d61d9 100644
+> > --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+> >  
+> >  	pdev = platform_device_alloc("mx3-camera", 0);
+> >  	if (!pdev)
+> > -		goto err;
+> > +		return ERR_PTR(ret);
+> 
+> It's more readable to say "return ERR_PTR(-ENOMEM);".
 
+I think so to, will change this one but still use the ret variable at the
+bottom of the function.
+
+> 
+> This patch is great but the subject should say "fix" and not "clean up"
+> since it fixes a NULL dereference bug.  The people who call their
+> checkpatch.pl clean ups "fixes" are also doing it wrong but those are
+> newbies and not worth educating.
+
+I agree, it's a bug fix and not a clean up.
+
+Will resend tomorrow.
+
+Best regards,
+
+Emil Goode
+
+> 
+> regards,
+> dan carpenter
+> 
