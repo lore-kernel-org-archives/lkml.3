@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaEOIYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:24:03 -0400
-Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:35339 "EHLO
-	smtp6.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556AbaEOIYA (ORCPT
+	id S1754556AbaEOIZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:25:08 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:55081 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaEOIZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:24:00 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 smtp6.sgsi.ucl.ac.be 72078183433
-Date: Thu, 15 May 2014 10:23:50 +0200
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-To: Julian Kirsch <kirschju@sec.in.tum.de>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christian Grothoff <christian@grothoff.org>
-Subject: Re: Collecting data to demonstrate TCP ISN-based port knocking
-Message-ID: <20140515082350.GC5287@cpaasch-mac>
-References: <e322ab1d41b74aa093af558cf3f081f4@UCL-MBX03.OASIS.UCLOUVAIN.BE>
+	Thu, 15 May 2014 04:25:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e322ab1d41b74aa093af558cf3f081f4@UCL-MBX03.OASIS.UCLOUVAIN.BE>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Sgsi-Spamcheck: SASL authenticated, 
-X-SGSI-MailScanner-ID: 72078183433.A9F09
-X-SGSI-MailScanner: Found to be clean
-X-SGSI-From: christoph.paasch@uclouvain.be
-X-SGSI-Spam-Status: No
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Thu, 15 May 2014 10:24:39 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: swarren@wwwdotorg.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, marcel@ziswiler.com
+Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
+In-Reply-To: <20140515075102.GE5952@ulmo>
+References: <cover.1400103181.git.stefan@agner.ch>
+ <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
+ <20140515075102.GE5952@ulmo>
+Message-ID: <4de1d09b7873e012e43525c1f8ab9c66@agner.ch>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Thierry, hi Philipp,
 
-On 14/05/14 - 21:55:36, Julian Kirsch wrote:
-> some of you might remember the proposal of a patch which implements a
-> variant of port-knocking that can be used to check the authenticity of
-> arbitrary TCP connections and even can do integrity checking of TCP
-> payload data by using a pre-shared key [0]. This patch, as well as a
-> research paper describing its inner workings are available on
-> gnunet.org under the name "Knock" [1].
+Am 2014-05-15 09:51, schrieb Thierry Reding:
+> On Wed, May 14, 2014 at 11:45:57PM +0200, stefan@agner.ch wrote:
+>> From: Stefan Agner <stefan@agner.ch>
+>>
+>> This panels are sold by Toradex for Colibri T20/T30 and Apalis T30
+>> evaluation kits.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
 > 
-> As Knock uses two fields in the TCP header in order to hide
-> information and we explicitly want to be compatible with machines
-> sitting in typical home networks, we need to make sure that this
-> information doesn't get corrupted by the majority of NAT boxes out
-> there. The lack of hard data on this also was one of the objections
-> when the patch was submitted last time. We thus created a program
-> which tests if Knock could work in your environment. It would be
-> greatly appreciated if some of you were able to execute the program on
-> their machines in order to help us to get an estimation of if Knock
-> one day could be used in a large scale.
+> Panel patches should go to the dri-devel mailing list as well.
+> 
+> Also a patch was posted only yesterday for a panel that seems to be the
+> exact same one as this, even though the name differs minimally, see:
+> 
+> 	https://patchwork.kernel.org/patch/4175251/
+> 
+> Adding Philipp on Cc so you guys can work together whether this is
+> indeed the same panel. The only differences seem to be in the vertical
+> front and back porches, but I suspect that either settings will work on
+> both Tegra and i.MX.
 
-have you looked at
-http://www.eecs.berkeley.edu/~sylvia/cs268-2014/papers/deploytcp-imc11.pdf ?
+Its etm0700g0dh6 vs. et070080dh6, Philipp's panel is with captive multi
+touch, (hence the M I guess). The panel itself really looks the same.
 
-Michio started a second larger measurement campaign 2 years ago. You might ask
-him if he has more data now.
+I found this overview of EDT displays:
+http://www.dmbtechnics.com/scripts/passthru.php?id=7
 
+There seem to be quite a lot variants with the same panel...
 
-Cheers,
-Christoph
+Regarding timings, I just checked the documentation, Philipp's timing
+really matches the documented ones, I miscalculated the vertical back
+porch.
 
+How do we resolve that?
+
+I would suggest that I split out that patch and remove the et070080dh6
+panel and send the other as a single patch to the dri-devel mailing list
+as well.
+
+Philipp, could you add my display type (et070080dh6) to the compatible
+list of your mode/panel entry?
+
+Does this sound reasonable?
+
+--
+Stefan
