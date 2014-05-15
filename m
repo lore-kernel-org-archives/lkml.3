@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaEOITE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 04:19:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49605 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345AbaEOITA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 04:19:00 -0400
-Message-ID: <5374784B.7020608@ti.com>
-Date: Thu, 15 May 2014 11:18:19 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+	id S1754014AbaEOIXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 04:23:18 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:53683 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaEOIXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 04:23:12 -0400
+Message-ID: <5374795E.5080305@synopsys.com>
+Date: Thu, 15 May 2014 13:52:54 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <nsekhar@ti.com>, <joelf@ti.com>, <linux@arm.linux.org.uk>,
-        <vinod.koul@intel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH v2 3/5] dt/bindings: ti,edma: Remove redundant properties
- from documentation
-References: <1399977032-26469-1-git-send-email-peter.ujfalusi@ti.com> <1399977032-26469-4-git-send-email-peter.ujfalusi@ti.com> <7468082.VY82PIo3ZY@wuerfel>
-In-Reply-To: <7468082.VY82PIo3ZY@wuerfel>
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.cross-arch
+To: Richard Weinberger <richard@nod.at>, <linux-arch@vger.kernel.org>,
+        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/27] arc: Use common bits from generic tlb.h
+References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-6-git-send-email-richard@nod.at>
+In-Reply-To: <1400093999-18703-6-git-send-email-richard@nod.at>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 11:01 AM, Arnd Bergmann wrote:
-> On Tuesday 13 May 2014 13:30:30 Peter Ujfalusi wrote:
->> From CCCFG register of eDMA3 we can get all the needed information for the
->> driver about the IP:
->> Number of channels: NUM_DMACH
->> Number of regions: NUM_REGN
->> Number of slots (PaRAM sets): NUM_PAENTRY
->> Number of TC/EQ: NUM_EVQUE
->>
->> The ti,edma-regions; ti,edma-slots and dma-channels in DT are
->> redundant since the very same information can be obtained from the HW.
->> The mentioned properties can be removed from the binding document.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> 
-> I wonder if we should keep them listed as "optional" properties so you
-> can have a dtb file that still works with older kernels which need them.
-> 
-> What you do is an incompatible change to the binding, which we shouldn't
-> do lightly. Any new dts files don't need this information of course, but
-> as a general rule, I'd rather keep things like this around unless we
-> already have to enforce an ABI break that is well documented.
+Hi Richard,
 
-We could keep them as optional, or to be precise: ignored properties since we
-are not going to even look at them in the future.
-But I do not really see the reason to do so. With this change new kernels will
-boot with old DTB - if it can not be changed which I have not seen yet. Sure
-old kernel would not boot with this change, but why would you downgrade the
-kernel and update the DTB on a board?
-Bisecting is not a good reason since the bug you might be hunting for could be
-in the DTS or in the kernel code so you need to update both of them to be sure
-you reach the commit you are looking for.
+On Thursday 15 May 2014 12:29 AM, Richard Weinberger wrote:
+> It is no longer needed to define them on our own.
+> 
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
--- 
-Péter
+Thx for the series.
+
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
+
+
+> ---
+>  arch/arc/include/asm/tlb.h | 6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> diff --git a/arch/arc/include/asm/tlb.h b/arch/arc/include/asm/tlb.h
+> index a9db5f6..a0fa06d 100644
+> --- a/arch/arc/include/asm/tlb.h
+> +++ b/arch/arc/include/asm/tlb.h
+> @@ -23,9 +23,7 @@ do {						\
+>   *
+>   * Note, read http://lkml.org/lkml/2004/1/15/6
+>   */
+> -#ifndef CONFIG_ARC_CACHE_VIPT_ALIASING
+> -#define tlb_start_vma(tlb, vma)
+> -#else
+> +#ifdef CONFIG_ARC_CACHE_VIPT_ALIASING
+>  #define tlb_start_vma(tlb, vma)						\
+>  do {									\
+>  	if (!tlb->fullmm)						\
+> @@ -39,8 +37,6 @@ do {									\
+>  		flush_tlb_range(vma, vma->vm_start, vma->vm_end);	\
+>  } while (0)
+>  
+> -#define __tlb_remove_tlb_entry(tlb, ptep, address)
+> -
+>  #include <linux/pagemap.h>
+>  #include <asm-generic/tlb.h>
+>  
+> 
+
