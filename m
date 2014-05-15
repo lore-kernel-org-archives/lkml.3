@@ -1,346 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315AbaEOJhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:37:06 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36457 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaEOJg6 (ORCPT
+	id S1754229AbaEOJhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:37:04 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:56852 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158AbaEOJg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 May 2014 05:36:58 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v2 05/14] mmc: mmci: Add register read/write wrappers.
-Date: Thu, 15 May 2014 10:36:53 +0100
-Message-Id: <1400146613-30013-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Thu, 15 May 2014 11:36:33 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, swarren@wwwdotorg.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, marcel@ziswiler.com
+Subject: Re: [PATCH v2 2/3] drm/panel: add support for EDT panels
+In-Reply-To: <20140515090814.GB6434@ulmo>
+References: <cover.1400103181.git.stefan@agner.ch>
+ <35c081171a3d9a9401767601c02a12e266b37dd0.1400103181.git.stefan@agner.ch>
+ <20140515075102.GE5952@ulmo>
+ <1400142449.4102.16.camel@paszta.hi.pengutronix.de>
+ <20140515090814.GB6434@ulmo>
+Message-ID: <90bb509e9aa9c705790e2e0574d77b9f@agner.ch>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Am 2014-05-15 11:08, schrieb Thierry Reding:
+> On Thu, May 15, 2014 at 10:27:29AM +0200, Philipp Zabel wrote:
+>> The ETM0700G0DH6 Datasheet lists 2 lines as the typical vsync pulse
+>> width, 525 lines as the vertical period, and 35 lines as the vsync -de
+>> time, which is vsync len + back porch.
+>> So vertical timings 480 + 10 + 2 + 33 = 525 should be valid for the
+>> ET0700G0DH6 panel:
+> 
+> Shouldn't that work with 480 + 8 + 2 + 35 too? It seems to me that it
+> should still be safe for that panel. Similarily I'd expect your timings
+> to work on the ET070080DH6.
 
-This patch adds wrappers for readl/writel functions used in the driver. The
-reason for this wrappers is to accommodate SOCs like Qualcomm which has
-requirement for delaying the write for few cycles when writing to its SD Card
-Controller registers.
+Am 2014-05-15 11:12, schrieb Thierry Reding:
+> Okay, so that means that the panel works for you with the same timings
+> that Philipp has in the ETM0700G0DH6 patch? If so then I definitely
+> think we should be sharing the timings in the driver by making the two
+> compatible entries point to the same driver data.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
----
- drivers/mmc/host/mmci.c | 110 ++++++++++++++++++++++++++----------------------
- 1 file changed, 59 insertions(+), 51 deletions(-)
+FWIW, I checked and it works with both timings. And I bet it is really
+the same panel its just a different touch on top.
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 324a886..881bb24 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -173,6 +173,16 @@ static struct variant_data variant_qcom = {
- 	.pwrreg_powerup		= MCI_PWR_UP,
- };
- 
-+static inline u32 mmci_readl(struct mmci_host *host, u32 off)
-+{
-+	return readl(host->base  + off);
-+}
-+
-+static inline void mmci_writel(struct mmci_host *host, u32 data, u32 off)
-+{
-+	writel(data, host->base + off);
-+}
-+
- static int mmci_card_busy(struct mmc_host *mmc)
- {
- 	struct mmci_host *host = mmc_priv(mmc);
-@@ -182,7 +192,7 @@ static int mmci_card_busy(struct mmc_host *mmc)
- 	pm_runtime_get_sync(mmc_dev(mmc));
- 
- 	spin_lock_irqsave(&host->lock, flags);
--	if (readl(host->base + MMCISTATUS) & MCI_ST_CARDBUSY)
-+	if (mmci_readl(host, MMCISTATUS) & MCI_ST_CARDBUSY)
- 		busy = 1;
- 	spin_unlock_irqrestore(&host->lock, flags);
- 
-@@ -232,7 +242,7 @@ static void mmci_write_clkreg(struct mmci_host *host, u32 clk)
- {
- 	if (host->clk_reg != clk) {
- 		host->clk_reg = clk;
--		writel(clk, host->base + MMCICLOCK);
-+		mmci_writel(host, clk, MMCICLOCK);
- 	}
- }
- 
-@@ -243,7 +253,7 @@ static void mmci_write_pwrreg(struct mmci_host *host, u32 pwr)
- {
- 	if (host->pwr_reg != pwr) {
- 		host->pwr_reg = pwr;
--		writel(pwr, host->base + MMCIPOWER);
-+		mmci_writel(host, pwr, MMCIPOWER);
- 	}
- }
- 
-@@ -257,7 +267,7 @@ static void mmci_write_datactrlreg(struct mmci_host *host, u32 datactrl)
- 
- 	if (host->datactrl_reg != datactrl) {
- 		host->datactrl_reg = datactrl;
--		writel(datactrl, host->base + MMCIDATACTRL);
-+		mmci_writel(host, datactrl, MMCIDATACTRL);
- 	}
- }
- 
-@@ -323,7 +333,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- static void
- mmci_request_end(struct mmci_host *host, struct mmc_request *mrq)
- {
--	writel(0, host->base + MMCICOMMAND);
-+	mmci_writel(host, 0, MMCICOMMAND);
- 
- 	BUG_ON(host->data);
- 
-@@ -338,18 +348,16 @@ mmci_request_end(struct mmci_host *host, struct mmc_request *mrq)
- 
- static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
- {
--	void __iomem *base = host->base;
--
- 	if (host->singleirq) {
--		unsigned int mask0 = readl(base + MMCIMASK0);
-+		unsigned int mask0 = mmci_readl(host, MMCIMASK0);
- 
- 		mask0 &= ~MCI_IRQ1MASK;
- 		mask0 |= mask;
- 
--		writel(mask0, base + MMCIMASK0);
-+		mmci_writel(host, mask0, MMCIMASK0);
- 	}
- 
--	writel(mask, base + MMCIMASK1);
-+	mmci_writel(host, mask, MMCIMASK1);
- }
- 
- static void mmci_stop_data(struct mmci_host *host)
-@@ -478,7 +486,7 @@ static void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *data)
- 
- 	/* Wait up to 1ms for the DMA to complete */
- 	for (i = 0; ; i++) {
--		status = readl(host->base + MMCISTATUS);
-+		status = mmci_readl(host, MMCISTATUS);
- 		if (!(status & MCI_RXDATAAVLBLMASK) || i >= 100)
- 			break;
- 		udelay(10);
-@@ -617,8 +625,8 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
- 	 * to fire next DMA request. When that happens, MMCI will
- 	 * call mmci_data_end()
- 	 */
--	writel(readl(host->base + MMCIMASK0) | MCI_DATAENDMASK,
--	       host->base + MMCIMASK0);
-+	mmci_writel(host, mmci_readl(host, MMCIMASK0) | MCI_DATAENDMASK,
-+		    MMCIMASK0);
- 	return 0;
- }
- 
-@@ -736,8 +744,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	timeout = data->timeout_clks + (unsigned int)clks;
- 
- 	base = host->base;
--	writel(timeout, base + MMCIDATATIMER);
--	writel(host->size, base + MMCIDATALENGTH);
-+	mmci_writel(host, timeout, MMCIDATATIMER);
-+	mmci_writel(host, host->size, MMCIDATALENGTH);
- 
- 	blksz_bits = ffs(data->blksz) - 1;
- 	BUG_ON(1 << blksz_bits != data->blksz);
-@@ -811,20 +819,19 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	}
- 
- 	mmci_write_datactrlreg(host, datactrl);
--	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
-+	mmci_writel(host, mmci_readl(host, MMCIMASK0) & ~MCI_DATAENDMASK,
-+		    MMCIMASK0);
- 	mmci_set_mask1(host, irqmask);
- }
- 
- static void
- mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
- {
--	void __iomem *base = host->base;
--
- 	dev_dbg(mmc_dev(host->mmc), "op %02x arg %08x flags %08x\n",
- 	    cmd->opcode, cmd->arg, cmd->flags);
- 
--	if (readl(base + MMCICOMMAND) & MCI_CPSM_ENABLE) {
--		writel(0, base + MMCICOMMAND);
-+	if (mmci_readl(host, MMCICOMMAND) & MCI_CPSM_ENABLE) {
-+		mmci_writel(host, 0, MMCICOMMAND);
- 		udelay(1);
- 	}
- 
-@@ -839,8 +846,8 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
- 
- 	host->cmd = cmd;
- 
--	writel(cmd->arg, base + MMCIARGUMENT);
--	writel(c, base + MMCICOMMAND);
-+	mmci_writel(host, cmd->arg, MMCIARGUMENT);
-+	mmci_writel(host, c, MMCICOMMAND);
- }
- 
- static void
-@@ -865,7 +872,7 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
- 		 * can be as much as a FIFO-worth of data ahead.  This
- 		 * matters for FIFO overruns only.
- 		 */
--		remain = readl(host->base + MMCIDATACNT);
-+		remain = mmci_readl(host, MMCIDATACNT);
- 		success = data->blksz * data->blocks - remain;
- 
- 		dev_dbg(mmc_dev(host->mmc), "MCI ERROR IRQ, status 0x%08x at 0x%08x\n",
-@@ -947,10 +954,10 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
- 	} else if (status & MCI_CMDCRCFAIL && cmd->flags & MMC_RSP_CRC) {
- 		cmd->error = -EILSEQ;
- 	} else {
--		cmd->resp[0] = readl(base + MMCIRESPONSE0);
--		cmd->resp[1] = readl(base + MMCIRESPONSE1);
--		cmd->resp[2] = readl(base + MMCIRESPONSE2);
--		cmd->resp[3] = readl(base + MMCIRESPONSE3);
-+		cmd->resp[0] = mmci_readl(host, MMCIRESPONSE0);
-+		cmd->resp[1] = mmci_readl(host, MMCIRESPONSE1);
-+		cmd->resp[2] = mmci_readl(host, MMCIRESPONSE2);
-+		cmd->resp[3] = mmci_readl(host, MMCIRESPONSE3);
- 	}
- 
- 	if ((!sbc && !cmd->data) || cmd->error) {
-@@ -1061,11 +1068,10 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 	struct mmci_host *host = dev_id;
- 	struct sg_mapping_iter *sg_miter = &host->sg_miter;
- 	struct variant_data *variant = host->variant;
--	void __iomem *base = host->base;
- 	unsigned long flags;
- 	u32 status;
- 
--	status = readl(base + MMCISTATUS);
-+	status = mmci_readl(host, MMCISTATUS);
- 
- 	dev_dbg(mmc_dev(host->mmc), "irq1 (pio) %08x\n", status);
- 
-@@ -1105,7 +1111,7 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 		if (remain)
- 			break;
- 
--		status = readl(base + MMCISTATUS);
-+		status = mmci_readl(host, MMCISTATUS);
- 	} while (1);
- 
- 	sg_miter_stop(sg_miter);
-@@ -1127,7 +1133,9 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
- 	 */
- 	if (host->size == 0) {
- 		mmci_set_mask1(host, 0);
--		writel(readl(base + MMCIMASK0) | MCI_DATAENDMASK, base + MMCIMASK0);
-+		mmci_writel(host,
-+			    mmci_readl(host, MMCIMASK0) | MCI_DATAENDMASK,
-+			    MMCIMASK0);
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -1148,10 +1156,10 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
- 		struct mmc_command *cmd;
- 		struct mmc_data *data;
- 
--		status = readl(host->base + MMCISTATUS);
-+		status = mmci_readl(host, MMCISTATUS);
- 
- 		if (host->singleirq) {
--			if (status & readl(host->base + MMCIMASK1))
-+			if (status & mmci_readl(host, MMCIMASK1))
- 				mmci_pio_irq(irq, dev_id);
- 
- 			status &= ~MCI_IRQ1MASK;
-@@ -1162,8 +1170,8 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
- 		 * enabled) since the HW seems to be triggering the IRQ on both
- 		 * edges while monitoring DAT0 for busy completion.
- 		 */
--		status &= readl(host->base + MMCIMASK0);
--		writel(status, host->base + MMCICLEAR);
-+		status &= mmci_readl(host, MMCIMASK0);
-+		mmci_writel(host, status, MMCICLEAR);
- 
- 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
- 
-@@ -1561,9 +1569,9 @@ static int mmci_probe(struct amba_device *dev,
- 
- 	spin_lock_init(&host->lock);
- 
--	writel(0, host->base + MMCIMASK0);
--	writel(0, host->base + MMCIMASK1);
--	writel(0xfff, host->base + MMCICLEAR);
-+	mmci_writel(host, 0, MMCIMASK0);
-+	mmci_writel(host, 0, MMCIMASK1);
-+	mmci_writel(host, 0xfff, MMCICLEAR);
- 
- 	/* If DT, cd/wp gpios must be supplied through it. */
- 	if (!np && gpio_is_valid(plat->gpio_cd)) {
-@@ -1591,7 +1599,7 @@ static int mmci_probe(struct amba_device *dev,
- 			goto clk_disable;
- 	}
- 
--	writel(MCI_IRQENABLE, host->base + MMCIMASK0);
-+	mmci_writel(host, MCI_IRQENABLE, MMCIMASK0);
- 
- 	amba_set_drvdata(dev, mmc);
- 
-@@ -1632,11 +1640,11 @@ static int mmci_remove(struct amba_device *dev)
- 
- 		mmc_remove_host(mmc);
- 
--		writel(0, host->base + MMCIMASK0);
--		writel(0, host->base + MMCIMASK1);
-+		mmci_writel(host, 0, MMCIMASK0);
-+		mmci_writel(host, 0, MMCIMASK1);
- 
--		writel(0, host->base + MMCICOMMAND);
--		writel(0, host->base + MMCIDATACTRL);
-+		mmci_writel(host, 0, MMCICOMMAND);
-+		mmci_writel(host, 0, MMCIDATACTRL);
- 
- 		mmci_dma_release(host);
- 		clk_disable_unprepare(host->clk);
-@@ -1653,11 +1661,11 @@ static void mmci_save(struct mmci_host *host)
- 
- 	spin_lock_irqsave(&host->lock, flags);
- 
--	writel(0, host->base + MMCIMASK0);
-+	mmci_writel(host, 0, MMCIMASK0);
- 	if (host->variant->pwrreg_nopower) {
--		writel(0, host->base + MMCIDATACTRL);
--		writel(0, host->base + MMCIPOWER);
--		writel(0, host->base + MMCICLOCK);
-+		mmci_writel(host, 0, MMCIDATACTRL);
-+		mmci_writel(host, 0, MMCIPOWER);
-+		mmci_writel(host, 0, MMCICLOCK);
- 	}
- 	mmci_reg_delay(host);
- 
-@@ -1671,11 +1679,11 @@ static void mmci_restore(struct mmci_host *host)
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	if (host->variant->pwrreg_nopower) {
--		writel(host->clk_reg, host->base + MMCICLOCK);
--		writel(host->datactrl_reg, host->base + MMCIDATACTRL);
--		writel(host->pwr_reg, host->base + MMCIPOWER);
-+		mmci_writel(host, host->clk_reg, MMCICLOCK);
-+		mmci_writel(host, host->datactrl_reg, MMCIDATACTRL);
-+		mmci_writel(host, host->pwr_reg, MMCIPOWER);
- 	}
--	writel(MCI_IRQENABLE, host->base + MMCIMASK0);
-+	mmci_writel(host, MCI_IRQENABLE, MMCIMASK0);
- 	mmci_reg_delay(host);
- 
- 	spin_unlock_irqrestore(&host->lock, flags);
--- 
-1.9.1
+> Irrespective of that they both seem to have different capabilities so
+> two compatible values should be fine. However for the purpose of the
+> simple panel driver they could be made to share the same timings if it
+> works for both panels and devices.
+> 
+> As for the touch panel on the ETM0700G0DH6, do you happen to know how
+> that's usually connected? I suspect it needs external hardware to
+> capture the YU, XL, YD and XR pins and turn that into raw coordinates
+> and pen down interrupts.
+
+For Colibri Evaluation Board, those pins are routed to the generic
+4-wire pins of the Colibri SO-DIMM. On the Colibri T30 module, those
+pins are connected to a STMPE811. I also added that to the device tree
+once, however it does not work properly atm, I need to debug this and
+will send a patch at a later time.
+
+--
+Stefan
 
