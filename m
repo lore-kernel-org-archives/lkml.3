@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaEOQKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:10:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21098 "EHLO mx1.redhat.com"
+	id S1754410AbaEOQKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:10:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36836 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653AbaEOQKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:10:30 -0400
-Date: Thu, 15 May 2014 18:09:51 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARN in do_rt_tgsigqueueinfo()
-Message-ID: <20140515160950.GA22846@mguzik.redhat.com>
-References: <20140515133834.GN13658@twins.programming.kicks-ass.net>
- <20140515142723.GB22041@mguzik.redhat.com>
- <20140515150412.GP30445@twins.programming.kicks-ass.net>
- <20140515155415.GA326@redhat.com>
+	id S1753119AbaEOQKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:10:42 -0400
+Message-ID: <5374E631.30208@redhat.com>
+Date: Thu, 15 May 2014 12:07:13 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140515155415.GA326@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
+Subject: Re: [PATCH v6] mm: support madvise(MADV_FREE)
+References: <1399857988-2880-1-git-send-email-minchan@kernel.org> <20140515154657.GA2720@cmpxchg.org>
+In-Reply-To: <20140515154657.GA2720@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:54:15AM -0400, Dave Jones wrote:
-> On Thu, May 15, 2014 at 05:04:12PM +0200, Peter Zijlstra wrote:
-> 
->  > > > trinity$ MALLOC_CHECK_=0 ./trinity -xinit_module -xreboot -xshutdown -xunshare -xnfsservctl -xclock_nanosleep -xuselib -xumount -xmount -m --quiet -C 400 -l off -xmremap
->  > > > 
->  > > > [watchdog] kernel became tainted! (512/0) Last seed was 4072360471
->  > > > 
->  > > > [15908.562512] ------------[ cut here ]------------
->  > > > [15908.567245] WARNING: CPU: 22 PID: 3312 at /usr/src/linux-2.6/kernel/signal.c:3060 do_rt_tgsigqueueinfo+0xb4/0xc0()
->  > > > 
->  > > > This is apparently a very common thing to hit according to google.
->  > > 
->  > > Well, it warns about an argument received from userland, so nothing fishy
->  > > going on as far as kernel consistency is concerned if that's what you mean.
->  > 
->  > I hadn't looked that far.. I just manged to hit it two times in a row
->  > while waiting for my bug to trigger.
-> 
-> There's a ton of 'noise' like this that fuzzing turns up.
-> I've been collecting some of the stuff to shut it up..
-> 
-> http://codemonkey.org.uk/junk/silence-fuzz-testing-noise.patch
-> http://codemonkey.org.uk/junk/silence-noisy-deprecated-warnings-while-fuzzing.patch
-> 
-> I'm of the opinion that a user-triggerable WARN is a bug, but aparently
-> not everyone else feels that way.
-> 
+On 05/15/2014 11:46 AM, Johannes Weiner wrote:
 
-imho warning sysadmins about userspace using deprecated stuff is fine as
-long as users are not able to spam the console with it.
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index bf9811e1321a..c69594c141a9 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -1082,6 +1082,8 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
+>>   		unsigned long size);
+>>   void zap_page_range(struct vm_area_struct *vma, unsigned long address,
+>>   		unsigned long size, struct zap_details *);
+>> +int lazyfree_single_vma(struct vm_area_struct *vma, unsigned long start_addr,
+>> +		unsigned long end_addr);
+>
+> madvise_free_single_vma?
 
-Warning reported here just looks scary and provides no information for
-sysadmins so I guess it hould be changed.
+Or just madvise_free_vma ?
 
-I see no value in removing this stuff. If it shows up in production you
-most likely want to know. Filtering this out during fuzzing should be an
-issue.
+>> @@ -251,6 +252,14 @@ static long madvise_willneed(struct vm_area_struct *vma,
+>>   	return 0;
+>>   }
+>>
+>> +static long madvise_lazyfree(struct vm_area_struct *vma,
+>
+> madvise_free?
 
-my $0,03
--- 
-Mateusz Guzik
+Agreed.
+
+It is encouraging that the review has reached nit picking
+level :)
+
+>> diff --git a/mm/memory.c b/mm/memory.c
+>> index 037b812a9531..0516c94da1a4 100644
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -1284,6 +1284,112 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
+>>   	return addr;
+>>   }
+>>
+>> +static unsigned long lazyfree_pte_range(struct mmu_gather *tlb,
+>
+> I'd prefer to have all this code directly where it's used, which is in
+> madvise.c, and also be named accordingly.  We can always rename and
+> move it later on should other code want to reuse it.
+
+Agreed.
+
+I like your other suggestions too, Johannes.
