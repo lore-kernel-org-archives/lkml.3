@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaEOFce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 01:32:34 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:46787 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaEOFcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 01:32:32 -0400
-Message-ID: <1400131949.5175.114.camel@marge.simpson.net>
-Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 15 May 2014 07:32:29 +0200
-In-Reply-To: <20140515050915.GA5539@mtj.dyndns.org>
-References: <20140501210242.GA28948@mtj.dyndns.org>
-	 <20140501210943.GB28948@mtj.dyndns.org> <537384B9.5090907@suse.cz>
-	 <20140514151501.GA24142@suse.cz> <20140514163238.GA15690@htj.dyndns.org>
-	 <1400126037.5175.55.camel@marge.simpson.net>
-	 <20140515040608.GA3825@htj.dyndns.org>
-	 <1400129178.5175.82.camel@marge.simpson.net>
-	 <20140515045011.GB3825@htj.dyndns.org>
-	 <1400130262.5175.93.camel@marge.simpson.net>
-	 <20140515050915.GA5539@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753610AbaEOFeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 01:34:12 -0400
+Received: from ozlabs.org ([103.22.144.67]:54615 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752844AbaEOFeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 01:34:10 -0400
+Date: Thu, 15 May 2014 15:33:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Amos Kong <akong@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] virtio-rng: some small tidy ups around kmalloc
+Message-ID: <20140515153342.14a5d34b@canb.auug.org.au>
+In-Reply-To: <20140515153140.49b8028b@canb.auug.org.au>
+References: <20140515153140.49b8028b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ewr4rQ8xjK_ZXhr/uZyaM1j"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-15 at 01:09 -0400, Tejun Heo wrote: 
-> Hello, Mike.
-> 
-> On Thu, May 15, 2014 at 07:04:22AM +0200, Mike Galbraith wrote:
-> > On Thu, 2014-05-15 at 00:50 -0400, Tejun Heo wrote: 
-> > > Do we know specific kthreads which need to be exposed with this way?
-> > 
-> > Soft/hard irq threads and anything having to do with IO mostly, which
-> > including workqueues.  I had to give the user a rather fugly global
-> > prioritization option to let users more or less safely do the evil deeds
-> > they want to and WILL do whether I agree with their motivation to do so
-> > or not.  I tell all users that realtime is real dangerous, but if they
-> > want to do that, it's their box, so by definition perfectly fine.
-> 
-> Frederic is working on global settings for workqueues, so that'll
-> resolve some of those issues at least.
+--Sig_/ewr4rQ8xjK_ZXhr/uZyaM1j
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, wrt what runs where for unbound workqueues, but not priority. 
+Include slab.h for kmalloc/kfree declaration and check the actual
+allocations succeed.
 
-> > > If there are good enough reasons for specific ones, sure, but I don't
-> > > think "we can't change any of the kthreads because someone might be
-> > > diddling with it" is something we can sustain in the long term.
-> > 
-> > I think the opposite.  Taking any control the user has is pure evil.
-> 
-> I'm not sure good/evil is the right frame to think about it.  Is
-> pooling worker threads evil in nature then?
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/char/hw_random/virtio-rng.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-When there may be realtime consumers, yes to some extent, because it
-inserts allocations he can't control directly into his world, but that's
-the least of his worries.  The instant userspace depends upon any kernel
-proxy the user has no control over, he instantly has a priority
-inversion he can do nothing about.  This is exactly what happened that
-prompted me to do fugly global hack.  User turned pet database piggies
-loose as realtime tasks for his own reasons, misguided or not, they
-depend upon worker threads and kjournald et al who he can control, but
-kworker threads respawn as normal tasks which can and will end up under
-high priority userspace tasks.  Worst case is box becomes dead, also
-killing pet, best case is pet collapses to the floor in a quivering
-heap.  Neither makes Joe User particularly happy.
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/v=
+irtio-rng.c
+index 6319b133b7aa..73d7fc42d1a7 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -24,6 +24,7 @@
+ #include <linux/virtio.h>
+ #include <linux/virtio_rng.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
+=20
+=20
+ struct virtrng_info {
+@@ -97,7 +98,13 @@ static int probe_common(struct virtio_device *vdev)
+ 	char *name;
+=20
+ 	vi =3D kmalloc(sizeof(struct virtrng_info), GFP_KERNEL);
++	if (!vi)
++		return -ENOMEM;
+ 	name =3D kmalloc(40, GFP_KERNEL);
++	if (!name) {
++		kfree(vi);
++		return -ENOMEM;
++	}
+ 	vi->hwrng.name =3D name;
+ 	init_completion(&vi->have_data);
+=20
+--=20
+2.0.0.rc2
 
--Mike
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/ewr4rQ8xjK_ZXhr/uZyaM1j
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTdFG6AAoJEMDTa8Ir7ZwV/pcP/j+LaTorXu88LHXy92M570fr
+1/SW1EUESb2y5DLbNCO2O3h/CFX3yqmcG+KYBSSxdpeqH7/7vPytzXr5N0/59GHs
+LifVkHMBjmSDgBgJVT2DokBKeudTeDu9/zU1pCAlbrunKEhTz+WiDtPbbLWChv1C
+Lu8iCqk7XtMqsi5EkcMICRrx0CpGbwO54sEpuEyuCM1e9l1rAlhVdODQlBW2cSLb
+hEm/D9eGbNMLVORrit+aDVvWYO0j6DhzxpVE849Id0+lSnOiZBxG3METsx8ciW/G
+lwjxfZdxy65D716gXX/OFkX0AmKxCwLex1lhD/oOIqymiyYGj7UO2xnJIbc11vrB
+QbAO2f4U2uF/THvJKnWhXshcyCQjWdBTW2BT2OJJyuHbl8ZTRUWQxTYoIckzvm+G
+5raElw64BjBwyv7clc2F2FVJG554BuhhmJjfXvhOt2VhrTSEVEQjW22lOzuiFOeh
+p/4IGBgAijbEkYBUEvik39X5VzVKWwULTqHQo9j/xkzC0TO6ynViVrCID9hAiwxS
+mLe50uEnPjfrAHIXX5C4ihmXw+ovr+72Su+UPjaGkPYpn7zpaig27fqu57gaYiIU
+NJ1bZV7DTDRcAAOTFSLvfTdqbee7OtGeuS6V8tpIIK3mNACtLkGrcl5TEjzN503j
+fWCnMvSimWTDJWDgXEu+
+=TYkq
+-----END PGP SIGNATURE-----
+
+--Sig_/ewr4rQ8xjK_ZXhr/uZyaM1j--
