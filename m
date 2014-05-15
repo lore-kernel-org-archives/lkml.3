@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaEOBqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 21:46:45 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58366 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859AbaEOBqo (ORCPT
+	id S1751660AbaEOBuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 21:50:50 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50498 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaEOBut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 21:46:44 -0400
-Message-ID: <53741C60.70209@ahsoftware.de>
-Date: Thu, 15 May 2014 03:46:08 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 14 May 2014 21:50:49 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 15 May 2014 10:53:01 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Laura Abbott <lauraa@codeaurora.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        Heesub Shin <heesub.shin@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma
+ reserved memory when not used
+Message-ID: <20140515015301.GA10116@js1304-P5Q-DELUXE>
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140513030057.GC32092@bbox>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
- order based on the DT)
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<20140514141914.446F7C4153D@trevor.secretlab.ca>	<53738580.7000902@ahsoftware.de>	<CACxGe6s4px_9CNk3bkc1OF1KGZGYdyh4gE_VufCKU5dLFBG48g@mail.gmail.com>	<53739871.9070407@ahsoftware.de>	<CAL_JsqJB4CAO60m1HTGQGHQRYVWcARxm_roOhn-PJh+ZR7OONg@mail.gmail.com>	<5373ABD2.9010508@ahsoftware.de> <CAL_JsqJ-=amrmRR9FfnOH1ELDQ1kTaG3e1n878mgpZP1FUw_jA@mail.gmail.com> <5373C2F4.50803@ahsoftware.de>
-In-Reply-To: <5373C2F4.50803@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513030057.GC32092@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.05.2014 21:24, schrieb Alexander Holler:
-> Am 14.05.2014 21:06, schrieb Rob Herring:
+On Tue, May 13, 2014 at 12:00:57PM +0900, Minchan Kim wrote:
+> Hey Joonsoo,
+> 
+> On Thu, May 08, 2014 at 09:32:23AM +0900, Joonsoo Kim wrote:
+> > CMA is introduced to provide physically contiguous pages at runtime.
+> > For this purpose, it reserves memory at boot time. Although it reserve
+> > memory, this reserved memory can be used for movable memory allocation
+> > request. This usecase is beneficial to the system that needs this CMA
+> > reserved memory infrequently and it is one of main purpose of
+> > introducing CMA.
+> > 
+> > But, there is a problem in current implementation. The problem is that
+> > it works like as just reserved memory approach. The pages on cma reserved
+> > memory are hardly used for movable memory allocation. This is caused by
+> > combination of allocation and reclaim policy.
+> > 
+> > The pages on cma reserved memory are allocated if there is no movable
+> > memory, that is, as fallback allocation. So the time this fallback
+> > allocation is started is under heavy memory pressure. Although it is under
+> > memory pressure, movable allocation easily succeed, since there would be
+> > many pages on cma reserved memory. But this is not the case for unmovable
+> > and reclaimable allocation, because they can't use the pages on cma
+> > reserved memory. These allocations regard system's free memory as
+> > (free pages - free cma pages) on watermark checking, that is, free
+> > unmovable pages + free reclaimable pages + free movable pages. Because
+> > we already exhausted movable pages, only free pages we have are unmovable
+> > and reclaimable types and this would be really small amount. So watermark
+> > checking would be failed. It will wake up kswapd to make enough free
+> > memory for unmovable and reclaimable allocation and kswapd will do.
+> > So before we fully utilize pages on cma reserved memory, kswapd start to
+> > reclaim memory and try to make free memory over the high watermark. This
+> > watermark checking by kswapd doesn't take care free cma pages so many
+> > movable pages would be reclaimed. After then, we have a lot of movable
+> > pages again, so fallback allocation doesn't happen again. To conclude,
+> > amount of free memory on meminfo which includes free CMA pages is moving
+> > around 512 MB if I reserve 512 MB memory for CMA.
+> > 
+> > I found this problem on following experiment.
+> > 
+> > 4 CPUs, 1024 MB, VIRTUAL MACHINE
+> > make -j24
+> > 
+> > CMA reserve:		0 MB		512 MB
+> > Elapsed-time:		234.8		361.8
+> > Average-MemFree:	283880 KB	530851 KB
+> > 
+> > To solve this problem, I can think following 2 possible solutions.
+> > 1. allocate the pages on cma reserved memory first, and if they are
+> >    exhausted, allocate movable pages.
+> > 2. interleaved allocation: try to allocate specific amounts of memory
+> >    from cma reserved memory and then allocate from free movable memory.
+> 
+> I love this idea but when I see the code, I don't like that.
+> In allocation path, just try to allocate pages by round-robin so it's role
+> of allocator. If one of migratetype is full, just pass mission to reclaimer
+> with hint(ie, Hey reclaimer, it's non-movable allocation fail
+> so there is pointless if you reclaim MIGRATE_CMA pages) so that
+> reclaimer can filter it out during page scanning.
+> We already have an tool to achieve it(ie, isolate_mode_t).
 
->> I still have not seen an example of A depends on B, deferred probe
->> fails because of ? and here is the code for A that works around the
->> problem.
->>
->>> Anyway, this feature is totally independ of the deferred probe stuff and
->>> both can friendly live together.
->>
->> Yes, except then we get to maintain both.
+Hello,
 
-And just in case someone still hasn't realized what the goal of a
-deterministic initialization order is, have a look at this snippet from
-arch/arm/mach-omap2/gpio.c:
+I agree with leaving fast allocation path as simple as possible.
+I will remove runtime computation for determining ratio in
+__rmqueue_cma() and, instead, will use pre-computed value calculated
+on the other path.
 
---------
-/*
- * gpio_init needs to be done before
- * machine_init functions access gpio APIs.
- * Hence gpio_init is a omap_postcore_initcall.
- */
-static int __init omap2_gpio_init(void)
-{
-	/* If dtb is there, the devices will be created dynamically */
-	if (of_have_populated_dt())
-		return -ENODEV;
+I am not sure that whether your second suggestion(Hey relaimer part)
+is good or not. In my quick thought, that could be helpful in the
+situation that many free cma pages remained. But, it would be not helpful
+when there are neither free movable and cma pages. In generally, most
+workloads mainly uses movable pages for page cache or anonymous mapping.
+Although reclaim is triggered by non-movable allocation failure, reclaimed
+pages are used mostly by movable allocation. We can handle these allocation
+request even if we reclaim the pages just in lru order. If we rotate
+the lru list for finding movable pages, it could cause more useful
+pages to be evicted.
 
-	return omap_hwmod_for_each_by_class("gpio", omap2_gpio_dev_init, NULL);
-}
-omap_postcore_initcall(omap2_gpio_init);
---------
-(Sorry to the OMAP guys, it isn't there fault that it has to look like
-this.)
+This is just my quick thought, so please let me correct if I am wrong.
 
-But this is ecactly what should be avoided and why the kernel is in need
-of a deterministic, easy to setup, initialization order. And deferred
-probes are in now way a help to reach that target, in fact they even
-support such stuff. Does anybody outside the OMAP crew do understand
-what that piece of code does? The answer is pretty likely no. Again
-sorry to the OMAP guys, I'm pretty sure that code was born out of
-necessity because no other mechanism is available to get things in order.
+> 
+> And we couldn't do it in zone_watermark_ok with set/reset ALLOC_CMA?
+> If possible, it would be better becauser it's generic function to check
+> free pages and cause trigger reclaim/compaction logic.
 
-Regards,
+I guess, your *it* means ratio computation. Right?
+I don't like putting it on zone_watermark_ok(). Although it need to
+refer to free cma pages value which are also referred in zone_watermark_ok(),
+this computation is for determining ratio, not for triggering
+reclaim/compaction. And this zone_watermark_ok() is on more hot-path, so
+putting this logic into zone_watermark_ok() looks not better to me.
 
-Alexander Holler
+I will think better place to do it.
 
+Thanks.
