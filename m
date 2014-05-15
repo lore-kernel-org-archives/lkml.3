@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802AbaEOV1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:27:06 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:47140 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaEOV1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:27:04 -0400
-Message-ID: <5375311B.2010202@gmail.com>
-Date: Thu, 15 May 2014 23:26:51 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756158AbaEOV2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:28:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57045 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704AbaEOV2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 17:28:51 -0400
+Date: Thu, 15 May 2014 23:28:48 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140515212848.GA11025@quack.suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+ <1395770101-24534-9-git-send-email-jack@suse.cz>
+ <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+ <20140326192815.GC18118@quack.suse.cz>
+ <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+ <20140422112259.5f106a44@alan.etchedpixels.co.uk>
+ <20140423110847.GB17824@quack.suse.cz>
+ <20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
 MIME-Version: 1.0
-To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: daniel.lezcano@linaro.org, lorenzo.pieralisi@arm.com, rjw@rjwysocki.net,
-        kgene.kim@samsung.com, Chander Kashyap <k.chander@samsung.com>
-Subject: Re: [PATCH v5 5/6] exynos: cpuidle: do not allow cpuidle registration
- for Exynos5420
-References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com> <1400054637-21505-1-git-send-email-chander.kashyap@linaro.org> <1400054637-21505-6-git-send-email-chander.kashyap@linaro.org>
-In-Reply-To: <1400054637-21505-6-git-send-email-chander.kashyap@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chander,
-
-On 14.05.2014 10:03, Chander Kashyap wrote:
-> Exynos5420 is big.Little Soc. It uses cpuidle-big-litle generic cpuidle driver.
-> Hence do not allow exynos cpuidle driver registration for Exynos5420.
+On Wed 23-04-14 11:17:50, Andrew Morton wrote:
+> On Wed, 23 Apr 2014 13:08:47 +0200 Jan Kara <jack@suse.cz> wrote:
 > 
-> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  arch/arm/mach-exynos/cpuidle.c |    3 +++
->  1 file changed, 3 insertions(+)
+> > > If you want reliable crash logging then we need to be able to set a
+> > > printk level mask per console and just set the serial console for
+> > > "crit/err" and the queue console for the rest, with a 'cat
+> > > >/dev/ttywhatever' running if this feature was in use ?
+> >   Ok, now I understand. Thanks for an interesting idea. IMO people
+> > definitely need messages logged directly into serial console when e.g. oops
+> > is happening because very likely they won't get logged to disk and even
+> > userspace won't have a chance to run and copy messages to the serial
+> > console. Plus for useful softlockup reports or oops messages you need also
+> > the KERN_NOTICE and KERN_INFO messages - stack traces, cpu numbers, process
+> > information - all this is printed with these levels.
+> > 
+> > These obvious places could be changed to print with lower log level I
+> > assume but still I'm somewhat worried that some KERN_INFO messages that
+> > would be useful for debugging a crash won't make it to console before the
+> > crash happens.
+> > 
+> > But if both you and Andrew think that the above problems are smaller than
+> > the complexity connected with printk offloading, I can give it a try.
+> > Andrew?
 > 
-> diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
-> index 3dd385e..807a386 100644
-> --- a/arch/arm/mach-exynos/cpuidle.c
-> +++ b/arch/arm/mach-exynos/cpuidle.c
-> @@ -218,6 +218,9 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
->  	int cpu_id, ret;
->  	struct cpuidle_device *device;
->  
-> +	if (soc_is_exynos5420())
-> +		return -ENODEV;
-> +
->  	if (soc_is_exynos5250())
->  		exynos5_core_down_clk();
->  
+> I'm curious about the idea of writing a new(?) console driver which the
+> problematic machines can use.
 > 
+> The problem of course will be in sizing the driver's queue.  Perhaps we
+> can have a driver which uses a huge queue, temporarily use that driver
+> during boot then switch over to a conventional console driver?
+  I was for some time thinking about this and I have some questions:
+1) How is this better than just stopping printing from kernel log buffer
+   early (before we write everything)? It makes no difference whether the
+   message sits in kernel log buffer or driver's buffer, does it?
+2) Serial drivers usually write like:
+   for each char
+     poll until port ready
+     write char
 
-Why not put this in exynos.c in exynos_dt_machine_init(), so
-exynos_cpuidle_init() is called only if not running on Exynos5420?
+   Hooking up something like this to a buffering layer seems as a
+non-trivial task. After all some CPU still has to do the polling and
+printing all those driver buffers so we have just moved the problem from
+console_unlock() to some drivers / another buffering layer.
 
-Best regards,
-Tomasz
+  So does this approach really bring any advantage?
+
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
