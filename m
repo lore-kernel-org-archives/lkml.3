@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223AbaEOV4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 17:56:54 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41844 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379AbaEOV4w (ORCPT
+	id S1756277AbaEOV45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 17:56:57 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53367 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379AbaEOV4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 17:56:52 -0400
-Date: Thu, 15 May 2014 14:56:46 -0700
-From: josh@joshtriplett.org
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting
- 16-bit and 32-bit ports
-Message-ID: <20140515215646.GA16326@cloud>
-References: <20140509191914.GA7286@jtriplet-mobl1>
- <9233735.5FfZoZovqP@wuerfel>
- <536D406D.2080508@zytor.com>
- <4366326.1D6xUnlac7@wuerfel>
- <536D46AD.3070608@zytor.com>
- <20140509223837.GB5725@thin>
- <53729873.2030805@zytor.com>
+	Thu, 15 May 2014 17:56:54 -0400
+Message-ID: <53753823.2090402@wwwdotorg.org>
+Date: Thu, 15 May 2014 15:56:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53729873.2030805@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>, lizefan@huawei.com
+CC: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        ARM kernel mailing list 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 9/9] cgroup: use cgroup->self.refcnt for cgroup refcnting
+References: <1399670015-23463-1-git-send-email-tj@kernel.org> <1399670015-23463-10-git-send-email-tj@kernel.org> <53751062.2050401@wwwdotorg.org>
+In-Reply-To: <53751062.2050401@wwwdotorg.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 03:10:59PM -0700, H. Peter Anvin wrote:
-> On 05/09/2014 03:38 PM, Josh Triplett wrote:
-> > On Fri, May 09, 2014 at 02:20:45PM -0700, H. Peter Anvin wrote:
-> >> On 05/09/2014 02:12 PM, Arnd Bergmann wrote:
-> >>>
-> >>>> However, if we're going to have these devices I'm wondering if having
-> >>>> /dev/portw and /dev/portl (or something like that) might not make sense,
-> >>>> rather than requiring a system call per transaction.
-> >>>
-> >>> Actually the behavior of /dev/port for >1 byte writes seems questionable
-> >>> already: There are very few devices on which writing to consecutive
-> >>> port numbers makes sense. Normally you just want to write a series
-> >>> of bytes (or 16/32 bit words) into the same port number instead,
-> >>> as the outsb()/outsw()/outsl() functions do.
-> >>>
-> >>
-> >> Indeed.  I missed the detail that it increments the port index; it is
-> >> virtually guaranteed to be bogus.
-> > 
-> > Exactly.  It might make sense to have ioport8/ioport16/ioport32 devices
-> > that accept arbitrary-length reads and writes (divisible by the size)
-> > and do the equivalent of the string I/O instructions outs/ins, but for
-> > the moment I'd like to add the single device that people always seem to
-> > want and can't get from /dev/port.  If someone's doing enough writes
-> > that doing a syscall per in/out instruction seems like too much
-> > overhead, they can write a real device driver or use ioperm/iopl.
+On 05/15/2014 01:07 PM, Stephen Warren wrote:
+> On 05/09/2014 03:13 PM, Tejun Heo wrote:
+>> Currently cgroup implements refcnting separately using atomic_t
+>> cgroup->refcnt.  The destruction paths of cgroup and css are rather
+>> complex and bear a lot of similiarities including the use of RCU and
+>> bouncing to a work item.
+>>
+>> This patch makes cgroup use the refcnt of self css for refcnting
+>> instead of using its own.  This makes cgroup refcnting use css's
+>> percpu refcnt and share the destruction mechanism.
+>> ...
 > 
-> I really have a problem with the logic "our current interface is wrong,
-> so let's introduce another wrong interface which solves a narrow use
-> case".  In some ways it would actually be *better* to use an ioctl
-> interface on /dev/port in that case...
+> In next-20150515, this patch causes silent boot failures on NVIDIA Tegra
+> ARM systems. There isn't even any earlyprintk. Reverting this one patch
+> solves this.
+> 
+> I was a bit surprised that cgroups would cause such an issue, but
+> looking at a normal kernel boot, I guess cgroup does get initialized
+> very early:
+> 
+> Uncompressing Linux... done, booting the kernel.
+> [    0.000000] Booting Linux on physical CPU 0x0
+> [    0.000000] Initializing cgroup subsys cpu
+> [    0.000000] Initializing cgroup subsys cpuacct
+> 
+> Anyway, I'll try to track down what the problem is, but if someone
+> familiar with this patch could give it a look, that'd be very useful,
+> since I'm not at all familiar with this code or feature.
 
-ioport{8,16,32} seems preferable to an ioctl on /dev/port, but in any
-case, I'd be happy to adapt this patch to whatever interface seems
-preferable.  I just don't want to let the perfect be the enemy of the
-good here; 16-bit and 32-bit port operations are currently completely
-impossible via /dev/port, and I'm primarily interested in fixing that,
-not necessarily in creating a completely generalized interface for doing
-high-performance repeated I/O operations that ought to be in the kernel
-anyway.
-
-- Josh Triplett
+It looks like this has something to do with the new code using percpu_
+functions from within cgroup_init_early, yet that function being called
+before init/main.c calls setup_per_cpu_areas() etc.? Unfortunately I
+have to run to some meetings now, so won't look at this until tomorrow.
