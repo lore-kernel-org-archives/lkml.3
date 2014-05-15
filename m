@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaEOGAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:00:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21307 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaEOGAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:00:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
-   d="scan'208";a="511963111"
-Date: Thu, 15 May 2014 14:00:26 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [cgroup] a0f9ec1f181: -4.3% will-it-scale.per_thread_ops
-Message-ID: <20140515060026.GA12710@localhost>
-References: <5374479F.3050507@intel.com>
- <20140515045517.GC3825@htj.dyndns.org>
+	id S1753752AbaEOGCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:02:01 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56856 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbaEOGB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 02:01:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515045517.GC3825@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOqmu83ptKYHECdtLgEJLxbWa-VjxjKfw4dQo2gqQJP4doS_FQ@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+	<CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+	<CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
+	<CAOqmu83ptKYHECdtLgEJLxbWa-VjxjKfw4dQo2gqQJP4doS_FQ@mail.gmail.com>
+Date: Thu, 15 May 2014 11:31:58 +0530
+Message-ID: <CAKohpo=mYH1f69B+dHwQR71Qmpi7a07rWhQ=up-9zriY9hOFng@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Inderpal Singh <inderpal.s@samsung.com>
+Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On 15 May 2014 11:16, Inderpal Singh <inderpal.s@samsung.com> wrote:
+> I think I did not make myself clear.
 
-On Thu, May 15, 2014 at 12:55:17AM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, May 15, 2014 at 12:50:39PM +0800, Jet Chen wrote:
-> > FYI, we noticed the below changes on
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kill-tree_mutex
-> > commit a0f9ec1f181534694cb5bf40b7b56515b8cabef9 ("cgroup: use cgroup_kn_lock_live() in other cgroup kernfs methods")
-> > 
-> > Test case : lkp-nex05/will-it-scale/writeseek
-> > 
-> > 2074b6e38668e62  a0f9ec1f181534694cb5bf40b
-> > ---------------  -------------------------
+Probably I was the one who got confused :)
 
-2074b6e38668e62 is the base of comparison. So "-4.3% will-it-scale.per_thread_ops"
-in the below line means a0f9ec1f18 has lower will-it-scale throughput.
+> Devfreq will have its own opp table associated with its own device. It
+> does not uses the opp table of cpus.
+> Hence there may be need to free the table if driver (at least devfreq)
+> getting un-registered.
 
-> >    1027273 ~ 0%      -4.3%     982732 ~ 0%  TOTAL will-it-scale.per_thread_ops
-> >        136 ~ 3%     -43.1%         77 ~43%  TOTAL proc-vmstat.nr_dirtied
-> >       0.51 ~ 3%     +98.0%       1.01 ~ 4%  TOTAL perf-profile.cpu-cycles.shmem_write_end.generic_perform_write.__generic_file_aio_write.generic_file_aio_write.do_sync_write
-> >       1078 ~ 9%     -16.3%        903 ~11%  TOTAL numa-meminfo.node0.Unevictable
-> >        269 ~ 9%     -16.2%        225 ~11%  TOTAL numa-vmstat.node0.nr_unevictable
-> >       1.64 ~ 1%     -14.3%       1.41 ~ 4%  TOTAL perf-profile.cpu-cycles.find_lock_entry.shmem_getpage_gfp.shmem_write_begin.generic_perform_write.__generic_file_aio_write
-> >       1.62 ~ 2%     +14.1%       1.84 ~ 1%  TOTAL perf-profile.cpu-cycles.lseek64
-
-The perf-profile.cpu-cycles.* lines are from "perf record/report".
-
-The last line shows that lseek64() takes 1.62% CPU cycles for
-commit 2074b6e38668e62 and that percent increased by +14.1% on
-a0f9ec1f181. One of the raw perf record output is
-
-     1.84%  writeseek_proce  libc-2.17.so         [.] lseek64                               
-            |
-            --- lseek64
-
-There are 5 runs and 1.62% is the average value.
-
-> I have no idea how to read the above.  Which direction is plus and
-> which is minus? Are they counting cpu cycles?  Which files is the
-> test seeking?
-
-It's tmpfs files. Because the will-it-scale test case is mean to
-measure scalability of syscalls. We do not use HDD/SSD etc. storage
-devices when running it.
-
-The will-it-scale/writeseek test code is
-
-char *testcase_description = "Separate file seek+write";
-
-void testcase(unsigned long long *iterations)
-{       
-        char buf[BUFLEN];
-        char tmpfile[] = "/tmp/willitscale.XXXXXX";
-        int fd = mkstemp(tmpfile);
-
-        memset(buf, 0, sizeof(buf));
-        assert(fd >= 0);
-        unlink(tmpfile);
-
-        while (1) {
-                lseek(fd, 0, SEEK_SET);
-                assert(write(fd, buf, BUFLEN) == BUFLEN);
-                
-                (*iterations)++;
-        }
-}
-
-Thanks,
-Fengguang
+We may have an unregister routine routine, I am not arguing about that.
+But we don't need to call that for CPU's opp, that's it.. For devices it might
+make sense to free memory.
