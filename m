@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaEOTjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:39:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37877 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262AbaEOTjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:39:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1061,1389772800"; 
-   d="scan'208";a="512372060"
-User-Agent: Microsoft-MacOutlook/14.4.1.140326
-Date: Thu, 15 May 2014 12:38:29 -0700
-Subject: Re: futex(2) man page update help request
-From: Darren Hart <dvhart@linux.intel.com>
-To: <chrubis@suse.cz>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Message-ID: <CF9A658E.91322%dvhart@linux.intel.com>
-Thread-Topic: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com>
- <CF98E3EF.90564%dvhart@linux.intel.com>
- <20140515152834.GA6926@rei.Home>
- <CF9A3521.90ECC%dvhart@linux.intel.com>
- <20140515163004.GB7959@rei.Home>
- <CF9A3A75.90F40%dvhart@linux.intel.com>
- <20140515190529.GA8887@rei.Home>
-In-Reply-To: <20140515190529.GA8887@rei.Home>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	id S1754721AbaEOTlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:41:47 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62808 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751582AbaEOTlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:41:45 -0400
+Message-ID: <1400182902.11786.21.camel@x220>
+Subject: [PATCH] ARM: OMAP: SX1: remove check for CONFIG_SX1_OLD_FLASH
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 21:41:42 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 May 2014 19:41:43.0152 (UTC) FILETIME=[B2DFA700:01CF7075]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/14, 12:05, "chrubis@suse.cz" <chrubis@suse.cz> wrote:
+A check for CONFIG_SX1_OLD_FLASH was added in v2.6.24. But the related
+Kconfig symbol was never part of the tree. So we can remove some dead
+code.
 
->Hi!
->> >> I've used LTP in the past (quite a bit), and I felt there was some
->> >> advantage to keeping futextest independent.
->> >
->> >What advantages did you have in mind?
->> 
->> Not CVS was a big one at the time ;-)
->> 
->> OK, I don't mean to be disparaging here... But since you asked, back in
->> '09 LTP had some test quality issues and I felt I could maintain
->>futextest
->> to a higher bar independently.
->
->To be honest LTP was one of the messiest codebases I've seen and it was
->hacked up by mostly clueless people (there were even tests with race
->conditions that were carefully disabled in a way that was not easy to
->see). It took me months to get to a state where it compiled fine on
->major distributions.
->
->Today we still have quite a bit of legacy code that needs to be cleaned
->up, however that gets better every day.
->
->And most of the testcases are pretty stable, etc. unfortunatelly LTP has
->a bad reputation which is lot harder to fix than the code itself.
->
->> >> Perhaps things have changed enough since then (~2009 era) that we
->> >> should reconsider.
->> >
->> >I've been working on LTP for a about three years now and we happen to
->>do
->> >quite a lot in that time. The most visible changes would be more proper
->> >development practices (git, proper build system, code review, LKML
->> >coding style, documentation, ...) and also huge number of fixes. Now we
->> >are trying to catch up in coverage too.
->> >
->> >> We can discuss the pros/cons there if you like.
->> >
->> >I would love to :).
->> 
->> Does LTP need to own the code, or can it incorporate existing projects
->>and
->> a sort of aggregator?
->
->That is possible as well but not optimal. This approach would need a
->wrapper script to convert the test exit values to be LTP compatible.
->
->> How much LTP harness type code needs to be used?
->
->Not much.
->
->For this complexity of tests you would just need to call the tst_resm()
->interface to report success/failure and, at the end of the test,
->tst_exit() to return the stored overall test status.
->
->And ideally call the standard option parsing code and call the test in
->standard loop so that the test can take advantage of standard options as
->number of iterations to run, etc.
->
->Have a look at:
->
->https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
->
->there is simple test example as well as description of the interfaces.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Also untested.
 
+ arch/arm/mach-omap1/board-sx1.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
 
-Thanks Cyril,
-
-I'll follow up with you in a couple weeks most likely. I have some urgent
-things that will be taking all my time and then some until then. Feel free
-to poke me though if I lose track of it :-)
-
+diff --git a/arch/arm/mach-omap1/board-sx1.c b/arch/arm/mach-omap1/board-sx1.c
+index 0a8d3349149c..29e526235dc2 100644
+--- a/arch/arm/mach-omap1/board-sx1.c
++++ b/arch/arm/mach-omap1/board-sx1.c
+@@ -266,31 +266,6 @@ static struct physmap_flash_data sx1_flash_data = {
+ 	.nr_parts	= ARRAY_SIZE(sx1_partitions),
+ };
+ 
+-#ifdef CONFIG_SX1_OLD_FLASH
+-/* MTD Intel StrataFlash - old flashes */
+-static struct resource sx1_old_flash_resource[] = {
+-	[0] = {
+-		.start	= OMAP_CS0_PHYS,	/* Physical */
+-		.end	= OMAP_CS0_PHYS + SZ_16M - 1,,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.start	= OMAP_CS1_PHYS,
+-		.end	= OMAP_CS1_PHYS + SZ_8M - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-};
+-
+-static struct platform_device sx1_flash_device = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-		.platform_data	= &sx1_flash_data,
+-	},
+-	.num_resources	= 2,
+-	.resource	= &sx1_old_flash_resource,
+-};
+-#else
+ /* MTD Intel 4000 flash - new flashes */
+ static struct resource sx1_new_flash_resource = {
+ 	.start		= OMAP_CS0_PHYS,
+@@ -307,7 +282,6 @@ static struct platform_device sx1_flash_device = {
+ 	.num_resources	= 1,
+ 	.resource	= &sx1_new_flash_resource,
+ };
+-#endif
+ 
+ /*----------- USB -------------------------*/
+ 
 -- 
-Darren Hart					Open Source Technology Center
-darren.hart@intel.com				            Intel Corporation
-
-
+1.9.0
 
