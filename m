@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaEOPD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 11:03:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681AbaEOPD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 11:03:26 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140515022238.GL28907@ld-irv-0074>
-References: <20140515022238.GL28907@ld-irv-0074>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: dhowells@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: roundup_pow_of_two() may not handle 64-bit integers
-Date: Thu, 15 May 2014 16:03:09 +0100
-Message-ID: <29314.1400166189@warthog.procyon.org.uk>
+	id S1755019AbaEOPDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 11:03:35 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:48098 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaEOPDc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 11:03:32 -0400
+Date: Thu, 15 May 2014 11:03:08 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] thermal: exynos: remove redundant pdata checks
+ from exynos_tmu_control()
+Message-ID: <20140515150308.GC27690@developer>
+References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+ <1399288539-1793-10-git-send-email-b.zolnierkie@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399288539-1793-10-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brian Norris <computersforpeace@gmail.com> wrote:
+Hello Bartlomiej,
 
-> I'm looking to use roundup_pow_of_two() (actually, order_base_2())
-> from <linux/log2.h>, but it seems that it only supports 64-bit integers
-> if your toolchain uses a 64-bit 'unsigned long' type. This is strange,
-> considering that ilog2() is explicitly designed for 32-bit or 64-bit
-> compatibility.
+On Mon, May 05, 2014 at 01:15:38PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> pdata->reference_voltage and pdata->gain are always defined
+> to non-zero values so remove the redundant checks from
+> exynos_tmu_control().
+> 
 
-ilog2() was explicitly designed for use with 'unsigned long'.  See the commit
-description (f0d1b0b30d250a07627ad8b9fbbb5c7cc08422e8).  It may work with
-unsigned long long, however...
+In all existing SoCs? 
+Should this be considered to any upcoming SoCs?
 
-David
+> There should be no functional changes caused by this patch.
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index a8d9524..45d7c6f 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -215,15 +215,11 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+>  	if (pdata->test_mux)
+>  		con |= (pdata->test_mux << reg->test_mux_addr_shift);
+>  
+> -	if (pdata->reference_voltage) {
+> -		con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
+> -		con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+> -	}
+> +	con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
+> +	con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+>  
+> -	if (pdata->gain) {
+> -		con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
+> -		con |= (pdata->gain << reg->buf_slope_sel_shift);
+> -	}
+> +	con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
+> +	con |= (pdata->gain << reg->buf_slope_sel_shift);
 
+The way it is put, looks like gain and reference_voltage are mandatory
+pdata fields. Should these checks be moved to initialization phase?
 
+>  
+>  	if (pdata->noise_cancel_mode) {
+>  		con &= ~(reg->therm_trip_mode_mask <<
+> -- 
+> 1.8.2.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
