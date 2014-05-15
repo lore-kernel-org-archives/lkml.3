@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaEOJPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:15:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53687 "EHLO
+	id S1753169AbaEOJPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:15:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53697 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752537AbaEOJPE (ORCPT
+	with ESMTP id S1753068AbaEOJPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:15:04 -0400
-Date: Thu, 15 May 2014 11:11:23 +0200
+	Thu, 15 May 2014 05:15:11 -0400
+Date: Thu, 15 May 2014 11:14:38 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-Message-ID: <20140515091123.GQ29258@lukather>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
- <1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
- <20140507213318.GA2105@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH RESEND v4 0/8] Add Allwinner A31 USB support
+Message-ID: <20140515091438.GR29258@lukather>
+References: <1399995862-17788-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140514123419.GK29258@lukather>
+ <20140514160520.GA4679@kroah.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VdnGiXwuH6t1Tqzo"
+	protocol="application/pgp-signature"; boundary="dQ2XShfnd5GHxhN7"
 Content-Disposition: inline
-In-Reply-To: <20140507213318.GA2105@roeck-us.net>
+In-Reply-To: <20140514160520.GA4679@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---VdnGiXwuH6t1Tqzo
+--dQ2XShfnd5GHxhN7
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
-> On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
-> > Most of the watchdog code is duplicated between the machine restart cod=
-e and
-> > the watchdog driver. Add the restart hook to the watchdog driver, to be=
- able to
-> > remove it from the machine code eventually.
+Hi Greg,
+
+On Wed, May 14, 2014 at 06:05:20PM +0200, Greg Kroah-Hartman wrote:
+> On Wed, May 14, 2014 at 02:34:19PM +0200, Maxime Ripard wrote:
+> > On Tue, May 13, 2014 at 05:44:14PM +0200, Maxime Ripard wrote:
+> > > Hi everyone,
+> > >=20
+> > > This patchset adds support for the USB controllers found in the
+> > > Allwinner A31.
+> > >=20
+> > > While the design is similar to the earlier Allwinner SoCs that are
+> > > already supported, a few details here and there change, like the fact
+> > > that the PHYs now have one clock per phy, while it used to be only one
+> > > for all the PHYs.
+> > >=20
+> > > Resent adding Alan Stern's Acked-by and puting Greg KH in the
+> > > recipients this time...
 > >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > Applied patches 2, 7 and 8.
 >=20
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> Feel free to apply patches 5 and 6 to your tree, as your branch needs
+> these, with my:
+>=20
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> Or, if you want me to take them, just let me know and I will.
 
-Wim, do you have any comment on this one?
+You can merge them, I don't need them in any of my branch.
 
+Thanks,
 Maxime
 
 --=20
@@ -58,26 +76,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---VdnGiXwuH6t1Tqzo
+--dQ2XShfnd5GHxhN7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTdIS7AAoJEBx+YmzsjxAgWgwQAJHysjX3WsE2v0U3SshRop8m
-U56t7pfLcYZutHMxSwUD4tZ45AX7X3pCOpOXhexLke/+uJ9wUalhL4EcaiOCfiGs
-BsAIDcvmJVUlxTLnkbTnLxfXV+pjbNjcdUp7rzZBjQJHGjU5z5HKx6Mbr8cUjmnA
-BVmaKNV2RUz23NnQ8HU8ew98heO+dHAMXlkMk/D1gTClNvecrhgrtyPFoCc3ITG3
-rYIH92sZlzwyR76X3gEY7Cp3E/WmCufGDOwBdWVKXdfiSNtJrvkbrHDL4gS1aCRi
-l9jzG5y6fjZbiD3eaT+N3otSpj1cxc31wLqjga9RG7sG5Hd4c/2SS4EUm/9UuYhL
-HV05TraHpDb1kpsYshcS6Vj/D+z9lZPOOw1jeSlXjP6G95NbrL/Iou+sWjuxec2x
-tjfcXlwDfuOMvFM4+eQc+lh1b/3ZOLGDm4UiQaimkN/4fYzKHUlBh/GYUUndAWcj
-KtOGoY8RZQBQpc8eBFhSLEOLzI+3JRrL38/Noy8uOhK/+++0Sz80zQtmUt9eKS1A
-E/DyAwdshbgYoxBG2lsAPiVJKjvZQzcGcbnzXhxSs1/L/UrPqh+uLJ7EUoJ1S2jR
-usxIZuFLetX/2UDBGK6g/41Ed+L2mxksCRSnEIhMwbqeH6L1waPtoslSc41JRBEL
-ScDRLVDBj6RZ6yHWrIZ4
-=dknw
+iQIcBAEBAgAGBQJTdIV+AAoJEBx+YmzsjxAgJ0kQALobMEW0hgF49rlagystwri3
+ZCsI8Sjw0uljIH3MFiMfOQrgT8Ywa07LKVn59snKF0d6MNYb54LjKKQAc6pKuItP
+6Br7DQbEBC6pE+l1uaDaTvsCo4AG/kil35WBiQ6pp+HNbXod+ZcORQTHe2K8oHHA
+o79Pu9VMKVPZtknX8cgfDx1DjufDo1zjrLG2RSYx+Kj758OTcXrec4++tTReZzAu
+x67adxjH4eimcedz94Y1Tw8ogCYEN72ZNZWUbpnKP7sE3K5ACsOEImxDxMFBiycv
+Ua8U69SXEKdJTkmn2L/Fg4N6wPm9xvQzjXU15Jc7Oo7XiDykKVqnyIXIbPJMwLi6
+n+WtLFuosG1pgoVbfPj/rIYWcGINdhXbz59F21rdi0FW4Zprjr/Xvk1f66Nc+fiV
+2b8Scx6ZnBh6gC7CpVbJUxduGYS7giL82LGibSZz7ivJf/UymoR8Q2ffNB2lRAVo
+Rpa7GTMab0NZnvAWikcmUTjrSnr2DoJ339v2Mvl8c6X2VemWjTjZ9jISdx/zyuOY
+eJeZzDAkTyMLvgdREd7/wg54NnAT2OuZhrX1secOTfeQ3U0lXJ9+J9HFBqU6zhyN
+GQ9fC7dFsHwYBxnePT9hBaAMD8dzwabUBs1rsazvECjJzbgCKl5xCoev1yMIO+rl
+mWX8krULIxyUscQSk5s8
+=tPO3
 -----END PGP SIGNATURE-----
 
---VdnGiXwuH6t1Tqzo--
+--dQ2XShfnd5GHxhN7--
