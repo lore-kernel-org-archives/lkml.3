@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335AbaEOTQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:16:24 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:49530 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751871AbaEOTQX (ORCPT
+	id S1755359AbaEOTRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:17:24 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:37830 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaEOTRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:16:23 -0400
-Message-ID: <1400181381.11786.18.camel@x220>
-Subject: [PATCH] ARM: OMAP: remove some dead code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Thu, 15 May 2014 15:17:23 -0400
+Date: Thu, 15 May 2014 15:17:20 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
+        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
+        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
         linux-kernel@vger.kernel.org
-Date: Thu, 15 May 2014 21:16:21 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 May 2014 19:16:21.0500 (UTC) FILETIME=[27E5FBC0:01CF7072]
-X-RcptDomain: vger.kernel.org
+Subject: Re: [PATCH v5 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+Message-ID: <20140515191720.GA21306@htj.dyndns.org>
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com>
+ <20140515191338.19811.72313.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515191338.19811.72313.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A check for CONFIG_CBUS_TAHVO_USB was added in v2.6.17. The related
-Kconfig symbol has never been part of the tree. Remove that check.
+On Fri, May 16, 2014 at 12:43:44AM +0530, Srivatsa S. Bhat wrote:
+> During CPU offline, stop-machine is used to take control over all the online
+> CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
+> that is to be taken offline.
+...
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Replace the while (...) loop with a simple if (...) statement, while
-we're at it.
+Reviewed-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested, as usual.
+Thanks.
 
-A quick search across the history of the tree suggests CBUS_TAHVO_USB
-was N770 related. Not that this matters much.
-
- arch/arm/mach-omap1/pm.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
-
-diff --git a/arch/arm/mach-omap1/pm.c b/arch/arm/mach-omap1/pm.c
-index dbee729e3b6d..34b4c0044961 100644
---- a/arch/arm/mach-omap1/pm.c
-+++ b/arch/arm/mach-omap1/pm.c
-@@ -123,19 +123,8 @@ void omap1_pm_idle(void)
- #warning Enable 32kHz OS timer in order to allow sleep states in idle
- 	use_idlect1 = use_idlect1 & ~(1 << 9);
- #else
--
--	while (enable_dyn_sleep) {
--
--#ifdef CONFIG_CBUS_TAHVO_USB
--		extern int vbus_active;
--		/* Clock requirements? */
--		if (vbus_active)
--			break;
--#endif
-+	if (enable_dyn_sleep)
- 		do_sleep = 1;
--		break;
--	}
--
- #endif
- 
- #ifdef CONFIG_OMAP_DM_TIMER
 -- 
-1.9.0
-
-
-
+tejun
