@@ -1,232 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaEOKyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 06:54:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54812 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751098AbaEOKyb (ORCPT
+	id S1752198AbaEOKyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 06:54:43 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49522 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbaEOKyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 06:54:31 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-Date: Thu, 15 May 2014 13:11:15 +0200
-Message-ID: <2114493.MQBIxPPRgp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140514152421.6d21b025@ultegra>
-References: <4649019.is79p6EySp@vostro.rjw.lan> <1752814.FckPkBGaUc@vostro.rjw.lan> <20140514152421.6d21b025@ultegra>
+	Thu, 15 May 2014 06:54:41 -0400
+Date: Thu, 15 May 2014 12:52:35 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: stefan@agner.ch
+Cc: swarren@wwwdotorg.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, marcel@ziswiler.com,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2] drm/panel: add support for EDT ET057090DHU panel
+Message-ID: <20140515105234.GJ6434@ulmo>
+References: <1400146725-5788-1-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2uG6jHjFLimDtBY"
+Content-Disposition: inline
+In-Reply-To: <1400146725-5788-1-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 14, 2014 03:24:21 PM Jacob Pan wrote:
-> On Tue, 13 May 2014 03:10:19 +0200
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> 
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > resume all runtime-suspended devices during system suspend, mostly
-> > because those devices may need to be reprogrammed due to different
-> > wakeup settings for system sleep and for runtime PM.
-> > 
-> > For some devices, though, it's OK to remain in runtime suspend 
-> > throughout a complete system suspend/resume cycle (if the device was
-> > in runtime suspend at the start of the cycle).  We would like to do
-> > this whenever possible, to avoid the overhead of extra power-up and
-> > power-down events.
-> > 
-> > However, problems may arise because the device's descendants may
-> > require it to be at full power at various points during the cycle.
-> > Therefore the most straightforward way to do this safely is if the
-> > device and all its descendants can remain runtime suspended until the
-> > complete stage of system resume.
-> > 
-> > To this end, introduce a new device PM flag, power.direct_complete
-> > and modify the PM core to use that flag as follows.
-> > 
-> > If the ->prepare() callback of a device returns a positive number,
-> > the PM core will regard that as an indication that it may leave the
-> > device runtime-suspended.  It will then check if the system power
-> > transition in progress is a suspend (and not hibernation in
-> > particular) and if the device is, indeed, runtime-suspended.  In that
-> > case, the PM core will set the device's power.direct_complete flag.
-> > Otherwise it will clear power.direct_complete for the device and it
-> > also will later clear it for the device's parent (if there's one).
-> > 
-> > Next, the PM core will not invoke the ->suspend() ->suspend_late(),
-> > ->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
-> > callbacks for all devices having power.direct_complete set.  It
-> > will invoke their ->complete() callbacks, however, and those
-> > callbacks are then responsible for resuming the devices as
-> > appropriate, if necessary.
-> > 
-> > Changelog partly based on an Alan Stern's description of the idea
-> > (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/base/power/main.c |   45
-> > ++++++++++++++++++++++++++++-----------------
-> > include/linux/pm.h        |    1 + 2 files changed, 29 insertions(+),
-> > 17 deletions(-)
-> > 
-> > Index: linux-pm/include/linux/pm.h
-> > ===================================================================
-> > --- linux-pm.orig/include/linux/pm.h
-> > +++ linux-pm/include/linux/pm.h
-> > @@ -546,6 +546,7 @@ struct dev_pm_info {
-> >  	bool			is_late_suspended:1;
-> >  	bool			ignore_children:1;
-> >  	bool			early_init:1;	/* Owned by
-> > the PM core */
-> > +	bool			direct_complete:1;	/*
-> > Owned by the PM core */ spinlock_t		lock;
-> >  #ifdef CONFIG_PM_SLEEP
-> >  	struct list_head	entry;
-> > Index: linux-pm/drivers/base/power/main.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/base/power/main.c
-> > +++ linux-pm/drivers/base/power/main.c
-> > @@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
-> >  	TRACE_DEVICE(dev);
-> >  	TRACE_RESUME(0);
-> >  
-> > -	if (dev->power.syscore)
-> > +	if (dev->power.syscore || dev->power.direct_complete)
-> >  		goto Out;
-> >  
-> >  	if (!dev->power.is_noirq_suspended)
-> > @@ -605,7 +605,7 @@ static int device_resume_early(struct de
-> >  	TRACE_DEVICE(dev);
-> >  	TRACE_RESUME(0);
-> >  
-> > -	if (dev->power.syscore)
-> > +	if (dev->power.syscore || dev->power.direct_complete)
-> >  		goto Out;
-> >  
-> >  	if (!dev->power.is_late_suspended)
-> > @@ -732,7 +732,7 @@ static int device_resume(struct device *
-> >  	TRACE_DEVICE(dev);
-> >  	TRACE_RESUME(0);
-> >  
-> > -	if (dev->power.syscore)
-> > +	if (dev->power.syscore || dev->power.direct_complete)
-> >  		goto Complete;
-> >  
-> >  	dpm_wait(dev->parent, async);
-> > @@ -1007,7 +1007,7 @@ static int __device_suspend_noirq(struct
-> >  		goto Complete;
-> >  	}
-> >  
-> > -	if (dev->power.syscore)
-> > +	if (dev->power.syscore || dev->power.direct_complete)
-> >  		goto Complete;
-> >  
-> >  	dpm_wait_for_children(dev, async);
-> > @@ -1146,7 +1146,7 @@ static int __device_suspend_late(struct
-> >  		goto Complete;
-> >  	}
-> >  
-> > -	if (dev->power.syscore)
-> > +	if (dev->power.syscore || dev->power.direct_complete)
-> >  		goto Complete;
-> >  
-> >  	dpm_wait_for_children(dev, async);
-> > @@ -1312,7 +1312,7 @@ static int __device_suspend(struct devic
-> >  
-> >  	dpm_wait_for_children(dev, async);
-> >  
-> > -	if (async_error || dev->power.syscore)
-> > +	if (async_error || dev->power.syscore ||
-> > dev->power.direct_complete) goto Complete;
-> >  
-> >  	dpm_watchdog_set(&wd, dev);
-> > @@ -1365,10 +1365,19 @@ static int __device_suspend(struct devic
-> >  
-> >   End:
-> >  	if (!error) {
-> > +		struct device *parent = dev->parent;
-> > +
-> >  		dev->power.is_suspended = true;
-> > -		if (dev->power.wakeup_path
-> > -		    && dev->parent
-> > && !dev->parent->power.ignore_children)
-> > -			dev->parent->power.wakeup_path = true;
-> > +		if (parent) {
-> > +			spin_lock_irq(&parent->power.lock);
-> > +
-> > +			dev->parent->power.direct_complete = false;
-> should we respect ignore_children flag here? not all parent devices
-> create children with proper .prepare() function. this allows parents
-> override children.
-> I am looking at USB, a USB device could have logical children such as
-> ep_xx, they don't go through the same subsystem .prepare().
 
-Well, I'm not sure about that.  Let me consider that for a while.
+--J2uG6jHjFLimDtBY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Alan, what do you think?
+On Thu, May 15, 2014 at 11:38:45AM +0200, stefan@agner.ch wrote:
+> From: Stefan Agner <stefan@agner.ch>
+>=20
+> This panel is sold by Toradex for Colibri T20/T30 and Apalis T30
+> evaluation kits.
+>=20
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  .../devicetree/bindings/panel/edt,et057090dhu.txt  |  7 ++++++
+>  drivers/gpu/drm/panel/panel-simple.c               | 26 ++++++++++++++++=
+++++++
+>  2 files changed, 33 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/panel/edt,et057090d=
+hu.txt
 
-> 
-> > +			if (dev->power.wakeup_path
-> > +			    && !dev->parent->power.ignore_children)
-> > +				dev->parent->power.wakeup_path =
-> > true; +
-> > +			spin_unlock_irq(&parent->power.lock);
-> > +		}
-> >  	}
-> >  
-> >  	device_unlock(dev);
-> > @@ -1470,7 +1479,7 @@ static int device_prepare(struct device
-> >  {
-> >  	int (*callback)(struct device *) = NULL;
-> >  	char *info = NULL;
-> > -	int error = 0;
-> > +	int ret = 0;
-> >  
-> >  	if (dev->power.syscore)
-> >  		return 0;
-> > @@ -1518,17 +1527,19 @@ static int device_prepare(struct device
-> >  		callback = dev->driver->pm->prepare;
-> >  	}
-> >  
-> > -	if (callback) {
-> > -		error = callback(dev);
-> > -		suspend_report_result(callback, error);
-> > -	}
-> > +	if (callback)
-> > +		ret = callback(dev);
-> >  
-> >  	device_unlock(dev);
-> >  
-> > -	if (error)
-> > +	if (ret < 0) {
-> > +		suspend_report_result(callback, ret);
-> >  		pm_runtime_put(dev);
-> > -
-> > -	return error;
-> > +		return ret;
-> > +	}
-> > +	dev->power.direct_complete = ret > 0 && state.event ==
-> > PM_EVENT_SUSPEND
-> > +					&& pm_runtime_suspended(dev);
-> > +	return 0;
-> >  }
-> >  
-> >  /**
-> > 
-> > --
+Applied, thanks.
 
-Rafael
+Thierry
 
+--J2uG6jHjFLimDtBY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdJxyAAoJEN0jrNd/PrOhaX4QAL0axTjxBEU4TgE9odqQXdZD
+DrS/uBBpjdMGi58KYJV7EBbEUN6BjgbAGrVyX+TU22RaaKsUdyYNHoHxFHDNPOJz
+793+fQPaHLGjR8i9M+x/E00tbgtVnyj5OGZTYfhh5BcOzuEFnFbuOryWNYPdzakz
+mNawbUxFvh6bGxuSPMXtbKzJ7lscUr1A5crVQIo4k//cyr1MW3rBDKcdzsYWs6kl
+aMHKLuMYsjSoLwMNy28zWPsdGL9RXI/QEt7F06gbyzLATLulDUufCXbk2rk7Iswl
+7nF7p9CdAIOLs2G0e7Emvvzn4KtAVPCN9KJXc+W79+9IsOCTm/L+AuONsLSw7c68
+W7s4MFz8ehRkVkeTgW4/1J0wR6zjE7zTt6gQSGwtMbof8i5QZ1+6GLKh+1dYfKvw
+Yg2dZeBz9h+U4xb2lO5hLe1fRZINawNyijv9psncb7ReKY2pm6eoQiHwKIBuO/F1
+hwleFU0OmoqCDXKBQjMNAHz1drM68r5KBYaBs3pLTdH/j933YCAdYv2VaFyEcwx7
+Rqldc7ijLeGAAh3jR17wdzb38GaV3TAyWSNXYQH06jTY686oZArwLuwk9EO4+Y5S
+5oye9+ogbsaIJaJdggvM2N95wQs048safVUcJoMmFcP/0YKHT67Xf/LrGmB4qtEm
+4JzWMXbdXQS62S7ryvG6
+=adqH
+-----END PGP SIGNATURE-----
+
+--J2uG6jHjFLimDtBY--
