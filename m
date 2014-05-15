@@ -1,32 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaEOSgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:36:46 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:54852 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaEOSgo (ORCPT
+	id S1755651AbaEOSht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:37:49 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:60632 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753928AbaEOShs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:36:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140515.134328.221963981846625223.davem@davemloft.net>
-References: <20140515164703.73a1cf06@canb.auug.org.au>
-	<CAM_iQpU84BD4WjTEW0Yn6-R3ocHh25quAj_F8cmkVK=CRZd9Kg@mail.gmail.com>
-	<20140515.134328.221963981846625223.davem@davemloft.net>
-Date: Thu, 15 May 2014 11:36:43 -0700
-Message-ID: <CAM_iQpWXGsbFsqnTrHc1m=pkgtmSyRVfYdyV2=hfHLaScxEP3Q@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the net-next tree
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 May 2014 14:37:48 -0400
+Message-ID: <1400179065.11786.14.camel@x220>
+Subject: [PATCH] ARM: OMAP: omap3stalker: remove two Kconfig macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 20:37:45 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 May 2014 18:37:46.0307 (UTC) FILETIME=[C3EF9130:01CF706C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 10:43 AM, David Miller <davem@davemloft.net> wrote:
->
-> I've just pushed out a fix for this, thanks everyone.
+Checks for CONFIG_OMAP2_VENC_OUT_TYPE_SVIDEO and
+CONFIG_OMAP2_VENC_OUT_TYPE_COMPOSITE were added in v2.6.35. But the
+related Kconfig symbols have never been added to the tree. Remove these
+checks.
 
-Thanks, David!
+Initialize connector_type to OMAP_DSS_VENC_TYPE_COMPOSITE explicitly.
+That's what's happening currently: OMAP_DSS_VENC_TYPE_COMPOSITE equals
+zero and connector_type remains zero since both checks currently fail.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
+
+ arch/arm/mach-omap2/board-omap3stalker.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index 119efaf5808a..a2e035e0792a 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -121,11 +121,7 @@ static struct platform_device omap3stalker_tfp410_device = {
+ static struct connector_atv_platform_data omap3stalker_tv_pdata = {
+ 	.name = "tv",
+ 	.source = "venc.0",
+-#if defined(CONFIG_OMAP2_VENC_OUT_TYPE_SVIDEO)
+-	.connector_type = OMAP_DSS_VENC_TYPE_SVIDEO,
+-#elif defined(CONFIG_OMAP2_VENC_OUT_TYPE_COMPOSITE)
+ 	.connector_type = OMAP_DSS_VENC_TYPE_COMPOSITE,
+-#endif
+ 	.invert_polarity = false,
+ };
+ 
+-- 
+1.9.0
+
