@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbaEOSbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:31:08 -0400
-Received: from mail2.candelatech.com ([208.74.158.173]:56846 "EHLO
-	mail2.candelatech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225AbaEOSbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:31:05 -0400
-From: greearb@candelatech.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, Ben Greear <greearb@candelatech.com>
-Subject: [PATCH] ath10k:  fix rssi reporting.
-Date: Thu, 15 May 2014 11:31:03 -0700
-Message-Id: <1400178663-25661-1-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1755746AbaEOSbX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:31:23 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755412AbaEOSbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 14:31:07 -0400
+Message-ID: <537507E8.1010600@nod.at>
+Date: Thu, 15 May 2014 20:31:04 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 16/27] mips: Use common bits from generic tlb.h
+References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-17-git-send-email-richard@nod.at> <53750129.6060902@imgtec.com>
+In-Reply-To: <53750129.6060902@imgtec.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Greear <greearb@candelatech.com>
+Am 15.05.2014 20:02, schrieb Leonid Yegoshin:
+> On 05/14/2014 11:59 AM, Richard Weinberger wrote:
+>> It is no longer needed to define them on our own.
+>>
+>> Cc: Ralf Baechle <ralf@linux-mips.org>
+>> Cc: John Crispin <blogic@openwrt.org>
+>> Cc: Markos Chandras <markos.chandras@imgtec.com>
+>> Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+>> Cc: Richard Weinberger <richard@nod.at>
+>> Cc: linux-mips@linux-mips.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>   arch/mips/include/asm/tlb.h | 7 -------
+>>   1 file changed, 7 deletions(-)
+>>
+>> diff --git a/arch/mips/include/asm/tlb.h b/arch/mips/include/asm/tlb.h
+>> index 4a23493..5ea43ca 100644
+>> --- a/arch/mips/include/asm/tlb.h
+>> +++ b/arch/mips/include/asm/tlb.h
+>> @@ -10,13 +10,6 @@
+>>           if (!tlb->fullmm)                \
+>>               flush_cache_range(vma, vma->vm_start, vma->vm_end); \
+>>       }  while (0)
+>> -#define tlb_end_vma(tlb, vma) do { } while (0)
+>> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+>> -
+>> -/*
+>> - * .. because we flush the whole mm when it fills up.
+>> - */
+>> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
+>>     #define UNIQUE_ENTRYHI(idx)                        \
+>>           ((CKSEG0 + ((idx) << (PAGE_SHIFT + 1))) |        \
+> 
+> I would like to know why these functions are eliminated (don't find any clue).
+> Is it just because there will be a generic one or the calls would be eliminated?
 
-When the driver cannot provide proper rssi, mark
-status with RX_FLAG_NO_SIGNAL_VAL so that stack
-properly ignores it.
+There will be a generic one.
+See [PATCH 03/27] generic/tlb.h: Move common defines into generic tlb.h
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
+> And if there are generic - can I tune it later?
 
-Patch is against my tree, hopefully will apply OK against upstream
-but have not tested that yet.
+Yes. You can always define your own and override the generic one.
 
- drivers/net/wireless/ath/ath10k/htt_rx.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath10k/htt_rx.c b/drivers/net/wireless/ath/ath10k/htt_rx.c
-index 0c83ffb..d8ec8dd 100644
---- a/drivers/net/wireless/ath/ath10k/htt_rx.c
-+++ b/drivers/net/wireless/ath/ath10k/htt_rx.c
-@@ -1216,11 +1216,12 @@ static void ath10k_htt_rx_handler(struct ath10k_htt *htt,
- 	mpdu_ranges = htt_rx_ind_get_mpdu_ranges(rx);
- 
- 	/* Fill this once, while this is per-ppdu */
--	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_START_VALID) {
--		memset(rx_status, 0, sizeof(*rx_status));
-+	memset(rx_status, 0, sizeof(*rx_status));
-+	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_START_VALID)
- 		rx_status->signal  = ATH10K_DEFAULT_NOISE_FLOOR +
- 				     rx->ppdu.combined_rssi;
--	}
-+	else
-+		rx_status->flag |= RX_FLAG_NO_SIGNAL_VAL;
- 
- 	if (rx->ppdu.info0 & HTT_RX_INDICATION_INFO0_END_VALID) {
- 		/* TSF available only in 32-bit */
--- 
-1.7.11.7
-
+Thanks,
+//richard
