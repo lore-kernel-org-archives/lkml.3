@@ -1,128 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaEOGnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:43:51 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:48816
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753870AbaEOGnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:43:49 -0400
-From: Richard Lee <superlibj8301@gmail.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <arnd@arndb.de>, <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <lauraa@codeaurora.org>,
-        Richard Lee <superlibj8301@gmail.com>
-Subject: [PATCH] ARM: ioremap: Fix static vm area boundary checking.
-Date: Thu, 15 May 2014 13:57:07 +0800
-Message-ID: <1400133427-5653-1-git-send-email-superlibj8301@gmail.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130446098265574846;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(77096999)(99396002)(86362001)(97736001)(68736004)(69596002)(21056001)(92566001)(80022001)(46102001)(2201001)(44976005)(47776003)(61266001)(62966002)(81156002)(93916002)(87936001)(102836001)(48376002)(87286001)(19580405001)(19580395003)(73392001)(4396001)(84676001)(89996001)(77156001)(81342001)(81442001)(87572001)(81542001)(87792001)(36756003)(50986999)(6806004)(50466002)(77982001)(88136002)(73972005)(83072002)(85852003)(74502001)(79102001)(20776003)(31966008)(74662001)(50226001)(64706001)(55446002)(33646001)(82202001)(92726001)(57042002)(46252002)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB406;H:az84smr01.freescale.net;FPR:;MLV:nov;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1753970AbaEOGoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:44:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39021 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753900AbaEOGoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 02:44:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1057,1389772800"; 
+   d="scan'208";a="532238200"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V6 00/11] ACPI: ACPI enumeration rework
+Date: Thu, 15 May 2014 14:44:05 +0800
+Message-Id: <1400136256-2218-1-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0212BDE3BE
-Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
- smtp.mailfrom=superlibj8301@gmail.com; 
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static vm area boundary check:
+Hi, all,
 
-      paddr1 --->|       |
-                 |       |
-                 |-------| <-\--- svm->vm->addr(is page aligned)
-      paddr2 --->|       |    |
-                 |     --| <--|-- svm->vm->phys_addr
-                 |       |    |
-      paddr3 --->|       |    |
-                 |       |    |
-                 |-------| <--|-- next page boundary
-                 |       |    |
-      paddr4 --->|       |    | <----- svm->vm->size(including guard page)
-                 |       |    |
-                 |       |    |
-max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
-                 | ///// |    |
-      paddr5 --->| guard |    |
-                 | page  |    |
-                 | ///// |    |
-                  -------  <-/--- svm->vm->addr + svm->vm_size
+Currently, PNP bus is used as the default bus for for enumerating ACPI
+devices with _HID/_CID.
+For a device that needs to be enumerated to platform bus, we need to add
+its id string to the platform scan handler white list explicitly.
 
-<1> If the paddr == paddr1, then continue;
-<2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
-    then continue;
-<3> if the paddr >= paddr5 then continue;
+This becomes a problem as more and more _HID devices need to be
+enumerated to platform bus nowadays, thus the list is continuously growing.
 
-Signed-off-by: Richard Lee <superlibj8301@gmail.com>
----
- arch/arm/mm/ioremap.c | 44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
+So, a solution that uses platform bus for _HID enumeration by default
+is preferred.
 
-diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-index be69333..2fa41f4 100644
---- a/arch/arm/mm/ioremap.c
-+++ b/arch/arm/mm/ioremap.c
-@@ -47,16 +47,56 @@ static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
- {
- 	struct static_vm *svm;
- 	struct vm_struct *vm;
-+	size_t offset;
-+
-+	/*
-+	 * Make sure the size the mapping size is page aligned.
-+	 */
-+	size = PAGE_ALIGN((paddr & ~PAGE_SIZE) + size);
-+	offset = paddr & ~PAGE_SIZE;
- 
- 	list_for_each_entry(svm, &static_vmlist, list) {
-+		phys_addr_t paddr_end, phys_addr_end;
-+		size_t vmoff;
-+
- 		vm = &svm->vm;
- 		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
- 			continue;
- 		if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
- 			continue;
- 
--		if (vm->phys_addr > paddr ||
--			paddr + size - 1 > vm->phys_addr + vm->size - 1)
-+		/* Static vm area boundary check:
-+		 *
-+		 *       paddr1 --->|       |
-+		 *                  |       |
-+		 *                  |-------| <-\--- svm->vm->addr(page aligned)
-+		 *       paddr2 --->|       |    |
-+		 *                  |     --| <--|-- svm->vm->phys_addr
-+		 *                  |       |    |
-+		 *       paddr3 --->|       |    |
-+		 *                  |       |    |
-+		 *                  |-------| <--|-- next page boundary
-+		 *                  |       |    |
-+		 *       paddr4 --->|       |    | <----- svm->vm->size,
-+		 *                  |       |    |         including guard page
-+		 *                  |       |    |
-+		 * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
-+		 *                  | ///// |    |
-+		 *       paddr5 --->| guard |    |
-+		 *                  | page  |    |
-+		 *                  | ///// |    |
-+		 *                   -------  <-/-- svm->vm->addr + svm->vm_size
-+		 *
-+		 * <1> If paddr == paddr1, then continue;
-+		 * <2> If paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
-+		 *     then continue;
-+		 * <3> if paddr >= paddr5 then continue;
-+		 */
-+		vmoff = vm->phys_addr & ~PAGE_SIZE;
-+		phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
-+		paddr_end = paddr + size - offset;
-+		if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
-+			paddr_end - 1 > phys_addr_end - 1)
- 			continue;
- 
- 		return svm;
--- 
-1.8.4
+In order to do this, this patch set
+First (Patch 1~4), changes the way of enumerating PNP devices.
+We introduce a white list to create PNP devices instead. The white list contains
+all the pnp_device_id strings in all the pnp drivers, thus this change is
+transparent to PNP core and all the PNP drivers.
+Second (Patch 5~11), changes the code to enumerate ACPI _HID devices to platform
+bus by default.
 
+Tis patch set has been tested on my desktop machine,
+and a TOSHIBA PORTEGE Z830 ultrabook.
+
+Clarification:
+Although it seems that we are introducing a much bigger white list to replace
+a small one, the benefit is that
+1. without the patch, the acpi_platform scan handler white list is
+   continuously growing.
+2. with the patch set, the PNPACPI scan handler white list will become
+   smaller and smaller by
+   a) remove the ids from the PNPACPI white list, for the devices
+      that are never enumerated via ACPI
+   b) remove the ids from the PNPACPI whilte list and convert the drivers to
+      platform bus drivers, for the devices that are not PNP devices in nature.
+   which will be done later.
+
+Known Issue:
+PNP bus does not check the device resources when adding a new PNP device,
+while Platform bus does by invoking insert_resource() in platform_device_add().
+This results in failure when creating platform device node for some ACPI
+device objects in case there is resource conflict.
+In my desktop, I can see that
+Creating PNP0C02:02 fails because its resource (IO: 0x72 ~ 0x7f)
+conflicts with "0070-0077 : PNP0B00:00" (CMOS RTC).
+
+Known Issue:
+Currently, we can't enumerate devices with _CID PNP0C01/PNP0C02 to platform bus
+because we need them in PNP bus in order to reserve mother board resources.
+
+thanks,
+rui
+
+----------------------------------------------------------------
+Changes in V6:
+1. Patch re-ordering to avoid bisect breakage.
+2. rework the patch for fixing the "redudent platform devices created for lpss
+   slaves" issue according to Rafael' comments.
+
+Changes in V5:
+1. fix a problem that ACPI tries to enumerate lpss slaves to platform bus
+2. rebased on 3.14 kernel
+
+Changes in V4:
+1. coding style cleanups, fix checkpatch warnings/errors.
+
+Changes in V3:
+1. rename enumerable_id to platform_id according to Rafael' suggestion.
+2. drop two patches to handle devices with _CID PNP0C01/PNP0C02 enumeration
+   because the code in drivers/pnp/system.c is still under discussion.
+3. make cmos rtc scan handler return 1 so that the device will not be
+   enumerated to platform bus.
+
+Changes in V2:
+1.move acpi pnp scan handler from drivers/pnp/pnpacpi/core.c to
+  drivers/acpi/acpi-pnp.c, because the scan handler needs to be always built
+  in to prevent platform devices from being created for those ACPI devices.
+2.remove the __init tag for the acpi pnp scan handler because the scan
+  handler is still needed after system initialization, for hotplug.
+3.introduce enumerable_id flag for devices that can be enumerated to platform
+  bus.
+4.introduce excluded id list for creating platform devices, because some
+  devices have _HID but they will never be associated with a platform driver.
+5.introduce dummy lpss/container/memory_hotplug scan handler to prevent
+  platform devices from being created for those ACPI device objects.
+
+----------------------------------------------------------------
+Zhang Rui (11):
+      ACPI: introduce .match() callback for ACPI scan handler
+      PNPACPI: use whilte list for pnpacpi device enumeration
+      ACPI: remove ids that does not comply with the ACPI PNP id rule
+      ACPI: remove unsupported serial PNP ids from acpi pnp scan handler id lsit
+      ACPI: introduce dummy container scan handler
+      ACPI: introduce dummy memory hotplug scan handler
+      ACPI: introduce dummy lpss scan handler
+      ACPI: introduce platform_id flag
+      ACPI: introduce flag .is_master_device
+      ACPI: use platform bus as the default bus for _HID enumeration
+      ACPI: introduce acpi platform exclude id list
+
+ drivers/acpi/Makefile          |   7 ++--
+ drivers/acpi/acpi_cmos_rtc.c   |   2 +-
+ drivers/acpi/acpi_lpss.c       |  93 ++++++++++++++++++++++++++++++++---------
+ drivers/acpi/acpi_memhotplug.c |  45 ++++++++++++++------
+ drivers/acpi/acpi_platform.c   |  39 ++++++-----------
+ drivers/acpi/acpi_pnp.c        | 382 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/container.c       |  21 ++++++++++
+ drivers/acpi/internal.h        |  15 +------
+ drivers/acpi/scan.c            |  52 +++++++++++++++++++----
+ drivers/pnp/pnpacpi/core.c     |  28 ++-----------
+ include/acpi/acpi_bus.h        |   7 +++-
+ include/linux/acpi.h           |   2 +
+ 12 files changed, 583 insertions(+), 110 deletions(-)
+ create mode 100644 drivers/acpi/acpi_pnp.c
