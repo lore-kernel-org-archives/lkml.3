@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaEOCt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 22:49:59 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54839 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaEOCt5 (ORCPT
+	id S1752993AbaEOCuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 22:50:04 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:34432 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaEOCuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 22:49:57 -0400
-Message-ID: <1400122194.5175.18.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 15 May 2014 04:49:54 +0200
-In-Reply-To: <20140514191100.GA24155@windriver.com>
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-	 <20140514154459.GE4570@linux.vnet.ibm.com>
-	 <20140514191100.GA24155@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Wed, 14 May 2014 22:50:00 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53742B55.1060507@lge.com>
+Date: Thu, 15 May 2014 11:49:57 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: =?EUC-KR?B?IsDMsMfIoy/DpcDTv6yxuL/4L1NXIFBsYXRmb3JtKL+sKUFPVMbAKGd1bmg=?=
+	 =?EUC-KR?B?by5sZWVAbGdlLmNvbSki?= <gunho.lee@lge.com>,
+        gurugio@gmail.com
+Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct
+Content-Type: text/plain; charset=EUC-KR
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-14 at 15:11 -0400, Paul Gortmaker wrote:
+Hi,
 
-> Given that, perhaps a separate change to sched_rt_runtime_exceeded()
-> that works out the CPU from the rt_rq, and returns zero if it is a
-> nohz_full cpu?  Does that make sense?  Then the nohz_full people won't
-> get the throttling message even if they go 100%.
+It's not a big deal but I've found that phy_base field of struct
+l2x0_regs is not used anywhere.
+I've removed it on my board. It seems to be working fine.
 
-I don't get it.  What reason would there be to run a hog on a dedicated
-core as realtime policy/priority?  Given no competition, there's nothing
-to prioritize, you could just as well run a critical task as SCHED_IDLE.
+Why do we need physical address of L2 cache controller?
+Is it removable?
 
-I would also expect that anyone wanting bare metal will have all of
-their critical cores isolated from the scheduler, watchdogs turned off
-as well as that noisy throttle, the whole point being to make as much
-silent as possible.  Seems to me tick_nohz_full_cpu(cpu) should be
-predicated by that cpu being isolated from the #1 noise source, the
-scheduler and its load balancing.  There's just no point to nohz_full
-without that, or if there is, I sure don't see it.
 
-When I see people trying to run a hog as a realtime task, it's because
-they are trying in vain to keep competition away from precious cores..
-and one mlockall with a realtime hog blocking flush_work() gives them a
-wakeup call.
+------------------------ 8< --------------------------
+>From cc0d98f4ef8b6f8f139a7c6179ed0b03e9ad7d07 Mon Sep 17 00:00:00 2001
+From: Gioh Kim <gioh.kim@lge.com>
+Date: Thu, 15 May 2014 11:26:20 +0900
+Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct l2x0_regs
 
--Mike
+Remove unused field, phy_base of struct l2x0_regs
 
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+---
+ arch/arm/include/asm/hardware/cache-l2x0.h |    1 -
+ arch/arm/kernel/asm-offsets.c              |    1 -
+ arch/arm/mm/cache-l2x0.c                   |    2 --
+ 3 files changed, 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h
+b/arch/arm/include/asm/hardware/cache-l2x0.h
+index 6795ff7..6dec6da 100644
+--- a/arch/arm/include/asm/hardware/cache-l2x0.h
++++ b/arch/arm/include/asm/hardware/cache-l2x0.h
+@@ -118,7 +118,6 @@ static inline int l2x0_of_init(u32 aux_val, u32
+aux_mask)
+ #endif
+
+ struct l2x0_regs {
+-       unsigned long phy_base;
+        unsigned long aux_ctrl;
+        /*
+         * Whether the following registers need to be saved/restored
+diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
+index 85598b5..9b0ff94 100644
+--- a/arch/arm/kernel/asm-offsets.c
++++ b/arch/arm/kernel/asm-offsets.c
+@@ -100,7 +100,6 @@ int main(void)
+   DEFINE(S_FRAME_SIZE,         sizeof(struct pt_regs));
+   BLANK();
+ #ifdef CONFIG_CACHE_L2X0
+-  DEFINE(L2X0_R_PHY_BASE,      offsetof(struct l2x0_regs, phy_base));
+   DEFINE(L2X0_R_AUX_CTRL,      offsetof(struct l2x0_regs, aux_ctrl));
+   DEFINE(L2X0_R_TAG_LATENCY,   offsetof(struct l2x0_regs, tag_latency));
+   DEFINE(L2X0_R_DATA_LATENCY,  offsetof(struct l2x0_regs, data_latency));
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 7abde2c..728d644 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -985,8 +985,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+        if (!l2x0_base)
+                return -ENOMEM;
+
+-       l2x0_saved_regs.phy_base = res.start;
+-
+        data = of_match_node(l2x0_ids, np)->data;
+
+        /* L2 configuration can only be changed if the cache is disabled */
+--
+1.7.9.5
