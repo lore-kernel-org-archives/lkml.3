@@ -1,144 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaEOHCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:02:49 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:40684 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaEOHCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:02:46 -0400
-Message-ID: <5374668F.4060109@gmail.com>
-Date: Thu, 15 May 2014 09:02:39 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
-CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com, tj@kernel.org
-Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
-References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <20140514165722.GA18495@kwain> <5373AE9A.3050008@gmail.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com> <537462A2.5020607@ti.com>
-In-Reply-To: <537462A2.5020607@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1753951AbaEOHDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:03:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:59233 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753799AbaEOHDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 03:03:17 -0400
+Date: Thu, 15 May 2014 17:03:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>
+Cc: Amos Kong <akong@redhat.com>
+Subject: [PATCH 3/2] virtio-rng: reinstate const to struct hwrng.name
+Message-ID: <20140515170302.087bd3e7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/BnahQ1QF30Tvrr5bTD1GDHJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 08:45 AM, Kishon Vijay Abraham I wrote:
-> On Thursday 15 May 2014 12:12 AM, Sebastian Hesselbarth wrote:
->> On 05/14/2014 08:12 PM, Arnd Bergmann wrote:
->>> On Wednesday 14 May 2014 19:57:46 Sebastian Hesselbarth wrote:
->>>> On 05/14/2014 06:57 PM, Antoine Ténart wrote:
->>>>> On Wed, May 14, 2014 at 06:11:24PM +0200, Arnd Bergmann wrote:
->>>>>> On Wednesday 14 May 2014 17:49:29 Antoine Ténart wrote:
->>>>>>> On Wed, May 14, 2014 at 05:31:24PM +0200, Arnd Bergmann wrote:
-[...]
->>>> Now, thinking about the PHY binding and the (possible) multi-protocol
->>>> support, it can be possible that on BG2Q there is a generic 2-lane
->>>> LVDS PHY that can be configured to support SATA or PCIe. Both are
->>>> electrically and bit-level compatible, so they could be internally
->>>> wired-up with AHCI and PCIe controller.
->>>
->>> Sounds like a reasonable guess. We have other PHY drivers doing the
->>> same thing already.
-[...]
->>>> From a DT point-of-view, we need a way to (a) link each SATA or PCIe
->>>> port to the PHY, (b) specify the PHY lane to be used, and (c) specify
->>>> the protocol to be used on that lane. If I got it right, Arnd already
->>>> mentioned to use the phy-specifier to deal with it:
->>>>
->>>> e.g. phy = <&genphy 0 MODE_SATA> or phy = <&genphy 1 MODE_PCIE>
->>>
->>> Right.
->>>
->>>> Let's assume we have one dual-port SATA controller and one PCIe
->>>> controller with either x1 or x2 support. The only sane DT binding,
->>>> I can think of then would be:
->>>>
->>>> berlin2q.dtsi:
->>>>
->>>> genphy: lvds@ea00ff {
->>>> 	compatible = "marvell,berlin-lvds-phy";
->>>> 	reg = <0xea00ff 0x100>;
->>>> 	#phy-cells = <2>;
->>>> };
->>>>
->>>> sata: sata@ab00ff {
->>>> 	compatible = "ahci-platform";
->>>> 	reg = <0xab00ff 0x100>;
->>>> 	
->>>> 	sata0: sata-port@0 {
->>>> 		reg = <0>;
->>>> 		phy = <&genphy 0 MODE_SATA>;
->>>> 		status = "disabled";
->>>> 	};
->>>>
->>>> 	sata1: sata-port@1 {
->>>> 		reg = <1>;
->>>> 		phy = <&genphy 1 MODE_SATA>;
->>>> 		status = "disabled";
->>>> 	};
->>>> };
->>>>
->>>> pcie: pcie@ab01ff {
->>>> 	compatible = "marvell,berlin-pcie";
->>>> 	reg = <0xab01ff 0x100>;
->>>>
->>>> 	pcie0: pcie-port@0 {
->>>> 		reg = <0>;
->>>> 		/* set phy on a per-board basis */
->>>> 		/* PCIe x1 on Lane 0 : phy = <&genphy 0 MODE_PCIE>; */
->>>> 		/* PCIe x2 on Lane 0 and 1 : phy = <&genphy 0 MODE_PCIE>, <&genphy 1
->>>> MODE_PCIE>; */
->>>> 		status = "disabled";
->>>> 	};
->>>> };
->>>>
->>>> berlin2q-dmp.dts:
->>>>
->>>> &sata1 {
->>>> 	status = "okay";
->>>> };
->>>>
->>>> &pcie0 {
->>>> 	phy = <&genphy 1 MODE_PCIE>;
->>>> };
->>>>
->>>> berlin2q-foo.dts:
->>>>
->>>> &pcie0 {
->>>> 	phy = <&genphy 0 MODE_PCIE>, <&genphy 1 MODE_PCIE>;
->>>> };
->>>
->>> Exactly. I would also be fine with keeping the sub-nodes of the
->>> phy device as in v3 and using #phy-cells=<1> instead of #phy-cells.
->>> The result would be pretty much the same, it just depends on how
->>> closely connected the two logical phys are.
-> 
-> huh.. even with sub-nodes you'll need #phy-cells=<2> if we use a single *PHY
-> PROVIDER*. Because with just PHYs node pointer we won't be able to get the PHY.
-> We'll need PHY providers node pointer.
-> 
-> However I'd prefer to have sub-nodes for each individual PHYs and register a
-> single PHY PROVIDER.
+--Sig_/BnahQ1QF30Tvrr5bTD1GDHJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Depends on what you call PHY. In the example above the PHY is what
-allows you to control both lanes.
+This was removed by commit 08e53fbdb85c ("virtio-rng: support multiple
+virtio-rng devices") in the virtio tree and can now be restored.
 
-So you want sub-nodes for each individual lane given the nomenclature
-of the example?
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/hw_random.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Or like it is used in the example above, a single PHY node with an index
-in the phy-specifier to pick an individual lane.
+diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
+index 02d9c87be54c..b4b0eef5fddf 100644
+--- a/include/linux/hw_random.h
++++ b/include/linux/hw_random.h
+@@ -31,7 +31,7 @@
+  * @priv:		Private data, for use by the RNG driver.
+  */
+ struct hwrng {
+-	char *name;
++	const char *name;
+ 	int (*init)(struct hwrng *rng);
+ 	void (*cleanup)(struct hwrng *rng);
+ 	int (*data_present)(struct hwrng *rng, int wait);
+--=20
+2.0.0.rc2
 
-IMHO, having both phy-specifier index _and_ PHY sub-node per lane
-has no benefit at all. You cannot even use the PHY sub-nodes for any
-setup properties, as they depend on the consumer claiming the lane.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Sebastian
+--Sig_/BnahQ1QF30Tvrr5bTD1GDHJ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTdGarAAoJEMDTa8Ir7ZwVd6IP/0smoJMPX3tFLZ1y9A/FScnv
+VtAILb0rVF8Iq01+TuveiDHBJveE3D7DTEQFBscsz+J319mzWK71nnYNYKLyQ3Ir
+Nv350EF1eu2VJKiJpEk3/MeVQLdfqmROcyDkBH7RnoSoLCZaQtTLkjxlxonwQqAL
+bISW/+o/vOkT5W1oln1YJ8D56dvBmXc8avIkFkzu18/6i80wJtdkRy489YwF/5mX
+1+UwZIfwnUQoWrVJ9CDWfGg4lanycbPJXGtap0CMaHOH6/ETYTFXPWi7/sCPfca5
+vbQbl4lXYKWE/GA48XftOv2aTM8VFnJ2miapm1FVu6o2w0uHawGYGrUOgJb1XNo8
+qIYgAWpdtiz2+l3X7qmBjg2AdYMdvYHRcGjzWXkroJ81TAkf4xeKp9yIVQW4Iclk
+7Y3azlT57wp4GL8JKNvgokslM2AgU8I/TB6bldHOe5pkFrxBMl7WpxtvyOHAw1Ld
+fACSAaGDa2WKmcXlGMu/8xsaBbxUMEqzBwaVqKIEUI4i3AwkNI3ALKFrG/9XwUEN
++/kSGngdwraXBeERjRghN8l7TmVQmJElGy2YPLlkfGAZCdt0bgopAFVV7UQjjWlo
+7LorMtK4PUnwhIbG75iDEaLZat0BlDsc0IYrWm2yc8fFTYXt0jbJhP8f67BYLVFr
+ao4BwWibsn9doz88FCgX
+=PcQl
+-----END PGP SIGNATURE-----
+
+--Sig_/BnahQ1QF30Tvrr5bTD1GDHJ--
