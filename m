@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaEOTwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:52:41 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36107 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377AbaEOTwj (ORCPT
+	id S1755688AbaEOTx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:53:26 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43983 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893AbaEOTxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:52:39 -0400
-Message-ID: <53751ABF.4000307@linux.vnet.ibm.com>
-Date: Fri, 16 May 2014 01:21:27 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 15 May 2014 15:53:25 -0400
+Date: Thu, 15 May 2014 23:53:20 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+Message-ID: <20140515195320.GR28328@moon>
+References: <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org>
+ <5373D509.7090207@oracle.com>
+ <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org>
+ <5373DBE4.6030907@oracle.com>
+ <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org>
+ <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com>
+ <20140514221140.GF28328@moon>
+ <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com>
+ <20140515084558.GI28328@moon>
+ <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
-        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 UPDATED 1/3] smp: Print more useful debug info upon receiving
- IPI on an offline CPU
-References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191259.19811.81032.stgit@srivatsabhat.in.ibm.com> <1400181576.5058.19.camel@joe-AO725> <537516DA.9010407@linux.vnet.ibm.com> <1400183029.5058.21.camel@joe-AO725>
-In-Reply-To: <1400183029.5058.21.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051519-2674-0000-0000-00000E4C41E1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWwWXEoNparvhx4yJB8YmiUBZCuR6yQxJOTjYKuA8AdqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 01:13 AM, Joe Perches wrote:
-[...]
-> Ah, good.
+On Thu, May 15, 2014 at 12:46:34PM -0700, Andy Lutomirski wrote:
+> On Thu, May 15, 2014 at 1:45 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > On Wed, May 14, 2014 at 03:23:27PM -0700, Andy Lutomirski wrote:
+> >> I can summarize:
+> >>
+> >> On 3.14 and before, the vdso is just a bunch of ELF headers and
+> >> executable data.  When executed by 64-bit binaries, it reads from the
+> >> fixmap to do its thing.  That is, it reads from kernel addresses that
+> >> don't have vmas.  When executed by 32-bit binaries, it doesn't read
+> >> anything, since there was no 32-bit timing code.
+> >>
+> >> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
+> >> a separate vma containing two pages worth of time-varying read-only
+> >> data.  The vdso reads those pages using PIC references.
+> >
+> > Andy, could you please point me where is the code which creates a second vma?
+> > latest 3.15 master branch
 > 
-> I was misled a bit by the WARN_ONCE that is in the
-> same block.  Perhaps because there is a guard flag
-> above the block, maybe the WARN_ONCE should just be
-> WARN.
+> Search for _install_special_mapping in arch/x86/vdso.  It's in a
+> different place in 3.15-rc and -next.
+
+As far as I see _install_special_mapping allocates one vma from cache and
+
+	vma->vm_start = addr;
+	vma->vm_end = addr + len;
+
+so where is the second one?
+
 > 
+> >
+> > [root@fc ~]# cat /proc/self/maps
+> > ...
+> > 7fff57b6e000-7fff57b8f000 rw-p 00000000 00:00 0                          [stack]
+> > 7fff57bff000-7fff57c00000 r-xp 00000000 00:00 0                          [vdso]
+> > ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+> > [root@fc ~]#
+> >
+> 
+> What version and bitness is this?
 
-Ah, right, just WARN is sufficient there. Thanks!
+x86-64, 3.15-rc5
 
--------------------------------------------------------
+> 
+> > Or you mean vsyscall area? If yes, then in criu we don't dump vsyscall zone.
+> > On restore we don't touch  vsyscall either but for vdso there are two cases
+> 
+> vsyscalls are almost gone now :)
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-[PATCH v5 UPDATED 1/3] smp: Print more useful debug info upon receiving IPI on an offline CPU
+Good to know ;)
 
-Today the smp-call-function code just prints a warning if we get an IPI on
-an offline CPU. This info is sufficient to let us know that something went
-wrong, but often it is very hard to debug exactly who sent the IPI and why,
-from this info alone.
+> 
+> >
+> >  - if there were no kernel change on vdso contents we simply use vdso provided
+> >    by the kernel at the moment of criu startup
+> >
+> >  - if vdso has been changed and looks different from one saved in image during
+> >    checkpoint, we map it from image but then patch (push jmp instruction) so
+> >    when application calls for some of vdso function it jumps into vdso code
+> >    saved in image and then jumps into vdso mapped by the kernel (ie kind of
+> >    proxy calls) This force us to do own Elf parsing inside criu to calculate
+> >    proper offsets.
+> 
+> Yuck :)
 
-In most cases, we get the warning about the IPI to an offline CPU, immediately
-after the CPU going offline comes out of the stop-machine phase and reenables
-interrupts. Since all online CPUs participate in stop-machine, the information
-regarding the sender of the IPI is already lost by the time we exit the
-stop-machine loop. So even if we dump the stack on each CPU at this point,
-we won't find anything useful since all of them will show the stack-trace of
-the stopper thread. So we need a better way to figure out who sent the IPI and
-why.
-
-To achieve this, when we detect an IPI targeted to an offline CPU, loop through
-the call-single-data linked list and print out the payload (i.e., the name
-of the function which was supposed to be executed by the target CPU). This
-would give us an insight as to who might have sent the IPI and help us debug
-this further.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/smp.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e..306f818 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -185,14 +185,26 @@ void generic_smp_call_function_single_interrupt(void)
- {
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
-+	static bool warned;
-+
-+	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-+	entry = llist_reverse_order(entry);
- 
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
--	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-+	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-+		warned = true;
-+		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
- 
--	entry = llist_del_all(&__get_cpu_var(call_single_queue));
--	entry = llist_reverse_order(entry);
-+		/*
-+		 * We don't have to use the _safe() variant here
-+		 * because we are not invoking the IPI handlers yet.
-+		 */
-+		llist_for_each_entry(csd, entry, llist)
-+			pr_warn("IPI callback %pS sent to offline CPU\n",
-+				csd->func);
-+	}
- 
- 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
- 		csd->func(csd->info);
-
-
+Yeah, I know, we simply had no choise.
