@@ -1,71 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaEOCv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 22:51:58 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:55124 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaEOCv5 (ORCPT
+	id S1752183AbaEODCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 23:02:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60074 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaEODCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 22:51:57 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 14 May 2014 22:55:40 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: perfevents: irq loop stuck!
-In-Reply-To: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.10.1405142246170.30015@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 May 2014 23:02:51 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Randy Dunlap <rdunlap@infradead.org>, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] hwmon: Document hwmon kernel API
+Date: Wed, 14 May 2014 20:02:34 -0700
+Message-Id: <1400122954-1742-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Vince Weaver wrote:
+The hwmon subsystem has been around for a while. Time to document
+its kernel API.
 
->         pe[32].sample_period=0xc0000000000000bd;
-> 
-> Should it be possible to open an event with a large negative sample_period 
-> like that? 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ Documentation/hwmon/hwmon-kernel-api.txt | 107 +++++++++++++++++++++++++++++++
+ 1 file changed, 107 insertions(+)
+ create mode 100644 Documentation/hwmon/hwmon-kernel-api.txt
 
-so this seems to be a real bug.
-
-attr->sample_period is a u64 value, but internally it gets cast to
-s64 and is added against itself and so all kinds of unexpected things 
-happen.
-
-So if you set attr->sample_period to 0xc0000000000000bd in the hopes of 
-sampling the RETIRED_INSTRUCTIONS event every 5 years or so, instead
-what happens is that in
-	x86_perf_event_set_period()
-the value is cast to a signed 64-bit value, so we are now negative.
-
-Then "left" is set to period because we are negative.
-
-Then since left is less than 0, we double the period value.
-This overflows the 64-bit integer and suddenly we are in undefined
-behavior territory and we're lucky the C compiler doesn't decide to
-format the hard drive.
-
-Anyway we are still less than 0, so then the
-
-	if (unlikely(left < 2))
-		left = 2;
-
-code kicks in and suddenly our hugely positive sample_period has changed
-to just being "2".  And so we suddenly get a storm of interrupts instead 
-of one every 5 years.
-
-So, not sure how to fix this without a total re-write, unless we want to 
-cheat and just say sample_period is capped at 62-bits or something.
-
-Also it's unclear why sometimes this can cause a stuck interrupt leading 
-to the "irq loop stuck" message.  I have a reproducible fuzzer test case 
-that will cause this to happen, but can't isolate it down to a simple test 
-case...
-
-Vince
+diff --git a/Documentation/hwmon/hwmon-kernel-api.txt b/Documentation/hwmon/hwmon-kernel-api.txt
+new file mode 100644
+index 0000000..70889de
+--- /dev/null
++++ b/Documentation/hwmon/hwmon-kernel-api.txt
+@@ -0,0 +1,107 @@
++The Linux Hardware Monitoring kernel API.
++=========================================
++
++Guenter Roeck
++
++Introduction
++------------
++
++This document describes the API that can be used by hardware monitoring
++drivers that want to use the hardware monitoring framework.
++
++This document does not describe what a hardware monitoring (hwmon) Driver or
++Device is. It also does not describe the API which can be used by user space
++to communicate with a hardware monitoring device. If you want to know this
++then please read the following file: Documentation/hwmon/sysfs-interface.
++
++For additional guidelines on how to write and improve hwmon drivers, please
++also read Documentation/hwmon/submitting-patches.
++
++The API
++-------
++Each hardware monitoring driver must #include <linux/hwmon.h> and, in most
++cases, <linux/hwmon-sysfs.h>. linux/hwmon.h declares the following
++register/unregister functions:
++
++struct device *hwmon_device_register(struct device *dev);
++struct device *
++hwmon_device_register_with_groups(struct device *dev, const char *name,
++				  void *drvdata,
++				  const struct attribute_group **groups);
++
++struct device *
++devm_hwmon_device_register_with_groups(struct device *dev,
++				       const char *name, void *drvdata,
++				       const struct attribute_group **groups);
++
++void hwmon_device_unregister(struct device *dev);
++void devm_hwmon_device_unregister(struct device *dev);
++
++hwmon_device_register registers a hardware monitoring device. The parameter
++of this function is a pointer to the parent device.
++This function returns a pointer to the newly created hardware monitoring device
++or PTR_ERR for failure. If this registration function is used, hardware
++monitoring sysfs attributes are expected to have been created and attached to
++the parent device prior to calling hwmon_device_register. A name attribute must
++have been created by the caller.
++
++hwmon_device_register_with_groups is similar to hwmon_device_register. However,
++it has additional parameters. The name parameter is a pointer to the hwmon
++device name. The registration function wil create a name sysfs attribute
++pointing to this name. The drvdata parameter is the pointer to the local
++driver data.  hwmon_device_register_with_groups will attach this pointer
++to the newly allocated hwmon device. The pointer can be retrieved by the driver
++using dev_get_drvdata() on the hwmon device pointer. The groups parameter is
++a pointer to a list of sysfs attribute groups. The list must be NULL terminated.
++hwmon_device_register_with_groups creates the hwmon device with name attribute
++as well as all sysfs attributes attached to the hwmon device.
++
++devm_hwmon_device_register_with_groups is similar to
++hwmon_device_register_with_groups. However, it is device managed, meaning the
++hwmon device does not have to be removed explicitly by the removal function.
++
++hwmon_device_unregister deregisters a registered hardware monitoring device.
++The parameter of this function is the pointer to the registered hardware
++monitoring device structure. This function must be called from the driver
++remove function if the hardware monitoring device was registered with
++hwmon_device_register or with hwmon_device_register_with_groups.
++
++devm_hwmon_device_unregister does not normally have to be called. It is only
++needed for error handling, and only needed if the driver probe fails after
++the call to devm_hwmon_device_register_with_groups.
++
++The include file linux/hwmon-sysfs.h provides a number of useful macros to
++declare and use hardware monitoring sysfs attributes.
++
++In many cases, you can use the exsting define DEVICE_ATTR to declare such
++attributes. This is feasible if an attribute has no additional context. However,
++in many cases there will be additional information such as a sensor index which
++will need to be passed to the sysfs attribute handling function.
++
++SENSOR_DEVICE_ATTR and SENSOR_DEVICE_ATTR_2 can be used to define attributes
++which need such additional context information. SENSOR_DEVICE_ATTR requires
++one additional argument, SENSOR_DEVICE_ATTR_2 requires two.
++
++SENSOR_DEVICE_ATTR defines a struct sensor_device_attribute variable.
++This structure has the following fields.
++
++struct sensor_device_attribute {
++	struct device_attribute dev_attr;
++	int index;
++};
++
++You can use to_sensor_dev_attr to get the pointer to this structure from the
++attribute read or write function. Parameter is the device to which the attribute
++is attached.
++
++SENSOR_DEVICE_ATTR_2 defines a struct sensor_device_attribute_2 variable,
++which is defined as follows.
++
++struct sensor_device_attribute_2 {
++	struct device_attribute dev_attr;
++	u8 index;
++	u8 nr;
++};
++
++Use to_sensor_dev_attr_2 to get the pointer to this structure. Parameter is the
++device to which the attribute is attached.
+-- 
+1.9.1
 
