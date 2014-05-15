@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaEOMp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 08:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61059 "EHLO mx1.redhat.com"
+	id S1752059AbaEOMrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 08:47:36 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41684 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbaEOMp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 08:45:57 -0400
-Date: Thu, 15 May 2014 08:45:53 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: Format of patches (was: [PATCH 1/2] speedstep-smi: enable
- interrupts when waiting)
-In-Reply-To: <CAKohponwxi96buPx=vYgY1jZhSUanOZ2G7g2CjoapE=stzJcXw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1405150843180.8791@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1405141012040.11670@file01.intranet.prod.int.rdu2.redhat.com> <CAKohpo=h8cNbb2VbWzpDUPQDMK8QAs_sV=-SQyOaJWWFw4qKvA@mail.gmail.com> <alpine.LRH.2.02.1405150614100.19101@file01.intranet.prod.int.rdu2.redhat.com>
- <CAKohponwxi96buPx=vYgY1jZhSUanOZ2G7g2CjoapE=stzJcXw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751278AbaEOMre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 08:47:34 -0400
+Date: Thu, 15 May 2014 08:47:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jan Kara <jack@suse.cz>
+Cc: Mateusz Guzik <mguzik@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Eric Sandeen <esandeen@redhat.com>
+Subject: Re: [PATCH 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140515124725.GA8194@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	Mateusz Guzik <mguzik@redhat.com>,
+	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Eric Sandeen <esandeen@redhat.com>
+References: <1400005862-3751-1-git-send-email-mguzik@redhat.com>
+ <1400005862-3751-2-git-send-email-mguzik@redhat.com>
+ <20140514215457.GC5421@dastard>
+ <20140515094236.GE10637@mguzik.redhat.com>
+ <20140515100157.GB27289@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515100157.GB27289@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 15, 2014 at 12:01:57PM +0200, Jan Kara wrote:
+>   I was tracking down a couple of times what the hell is freezing the
+> filesystem (and not unfreezing it) and I agree with Mateusz it would be
+> nice if we could tell after the fact who froze the fs. Maybe we could store
+> that information in superblock and dump it during emergency thaw?
 
+Saving it in the superblock would require changing a bunch of file
+systems.  What if we store this information in memory, and print it
+out under certain conditions (i.e., after a soft lockup detection, or
+upon request of some magic sysrq request)?
 
-On Thu, 15 May 2014, Viresh Kumar wrote:
+Or we could create a tunable threshold and print a message after a
+file system has been frozen more than a particular specified duration,
+with that duration set conservatively to something like 60 or 120
+seconds by default.
 
-> On 15 May 2014 16:07, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > On Thu, 15 May 2014, Viresh Kumar wrote:
-> >> On 14 May 2014 19:54, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> >> > Hi Viresh
-> >> >
-> >> > Some times ago, I sent these two cpufreq patches to fix frequency
-> >> > transition problem on speedstep-smi, but you didn't put them to the
-> >> > upstream kernel. I am resending the patches. If you would like a different
-> >> > solution to this problem, please explain it.
-> >>
-> >> Probably these are just missed by Rafael. The patches are fine but the
-> >> above paragraph you wrote would get into kernel logs and must have
-> >> been placed below the three dash lines: "---"
-> >
-> > I used "---" in the past, but some people complained that their script
-> > picks the text above "---" and ignores the text below "---" - thus, it
-> > does exactly the opposite of what it should do.
-> 
-> Have you added an extra line with --- ? Probably yes.
-> I haven't asked you to add another line, but move the part you don't want
-> to be commited below --- already present in patch..
-> 
-> Like:
-> 
-> > ---
-> 
-> Blurb here :)
-
-Sure - but if I want you to read "Blurb here :)" before reading the git 
-message, I need to place it at the top of the email, before the git 
-message.
-
-> >  drivers/cpufreq/speedstep-lib.c |    3 +++
-> >  drivers/cpufreq/speedstep-smi.c |   12 ++++++++++++
-> >  2 files changed, 15 insertions(+)
-> >
-> 
-> 
-> > I don't know what kind of delimiter should I use. Suppose that I want to
-> > send something like this:
-> 
-> Will go through below mail of yours once we are clear on above..
-
-Mikulas
+						- Ted
