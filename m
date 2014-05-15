@@ -1,97 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082AbaEOWQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:16:42 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:15382 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755938AbaEOWQk (ORCPT
+	id S1754168AbaEOWSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:18:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33076 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752291AbaEOWSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:16:40 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkHAMA7dVN5LL1s/2dsb2JhbABZgwaDPqhfAQEBAQEBBpodAYERF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIQNFaFxaFPoh6B4RABJlQkxWDSCs
-Date: Fri, 16 May 2014 08:16:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Mateusz Guzik <mguzik@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Sandeen <esandeen@redhat.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140515221624.GY26353@dastard>
-References: <1400018683-5565-1-git-send-email-mguzik@redhat.com>
- <1400018683-5565-2-git-send-email-mguzik@redhat.com>
- <20140514111449.GB5824@quack.suse.cz>
- <20140514112619.GA10637@mguzik.redhat.com>
- <20140514113945.GC5824@quack.suse.cz>
- <20140514220052.GD5421@dastard>
- <20140514223745.GF5421@dastard>
- <20140515101356.GC27289@quack.suse.cz>
+	Thu, 15 May 2014 18:18:54 -0400
+Date: Thu, 15 May 2014 18:18:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Javi Merino <javi.merino@arm.com>
+Subject: [PATCH] tools lib traceevent: Added support for __get_bitmask()
+ macro
+Message-ID: <20140515181852.11fffcda@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515101356.GC27289@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 12:13:56PM +0200, Jan Kara wrote:
-> On Thu 15-05-14 08:37:45, Dave Chinner wrote:
-> > On Thu, May 15, 2014 at 08:00:52AM +1000, Dave Chinner wrote:
-> > > On Wed, May 14, 2014 at 01:39:45PM +0200, Jan Kara wrote:
-> > > > On Wed 14-05-14 13:26:21, Mateusz Guzik wrote:
-> > > > > On Wed, May 14, 2014 at 01:14:49PM +0200, Jan Kara wrote:
-> > > > > > On Wed 14-05-14 00:04:43, Mateusz Guzik wrote:
-> > > > > > > This helps hang troubleshooting efforts when only dmesg is available.
-> > > > > > > 
-> > > > > > > While here remove code duplication with MS_RDONLY case and fix a
-> > > > > > > whitespace nit.
-> > > > > >   I'm somewhat undecided here I have to say. On one hand I don't like
-> > > > > > printing to kernel log when everything is fine and kernel is operating
-> > > > > > normally. On the other hand I've seen quite a few cases where people have
-> > > > > > shot themselves in the foot with filesystem freezing so having some trace
-> > > > > > of this in the log doesn't seem like a completely bad thing either. What do
-> > > > > > other people think?
-> > > > > > 
-> > > > > 
-> > > > > I would like to note that the kernel already prints messages when e.g.
-> > > > > filesystems get mounted.
-> > > >   Yeah, that's a fair point.
-> > > 
-> > > But filesystems choose to output that info, not the VFS. When you do
-> > > a remount,ro there is no output in syslog, because filesystems don't
-> > > need to dump any output - the state change is reflected in
-> > > /proc/self/mounts. IMO frozen should state should be communicated
-> > > the same way so that it is silent when it just works, and the state
-> > > can easily be determined when something goes wrong.
-> > 
-> > Say, like this:
-> > 
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
-> > $ sudo xfs_freeze -f /mnt/test
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,frozen,relatime,attr2,inode64,noquota 0 0
-> > $ sudo xfs_freeze -u /mnt/test
-> > $ grep /mnt/test /proc/mounts
-> > /dev/vda /mnt/test xfs rw,relatime,attr2,inode64,noquota 0 0
-> > $
-> > 
-> > Patch below does this.
->   Hum, same as Eric I'm not very enthusiastic about a fake mount option in
-> /proc/mounts. Maybe we could stuff some extra field in /proc/self/mountinfo?
 
-sure - I'd forgotten about /proc/self/mountinfo, but the way i wrote
-the patch will also dump the information into it. It's just a case
-of moving the code to show_mountinfo() rather than show_sb_opts().
+Coming in v3.16, trace events will be able to save bitmasks in raw
+format in the ring buffer and output it with the __get_bitmask() macro.
 
-If that's acceptible for everyone, then I'll update the patch to do
-that....
+In order for userspace tools to parse this, it must be able to handle
+the __get_bitmask() call and be able to convert the data that's in
+the ring buffer into a nice bitmask format. The output is similar to
+what the kernel uses to print bitmasks, with a comma separator every
+4 bytes (8 characters).
 
-Cheers,
+This allows for cpumasks to also be saved efficiently.
 
-Dave.
+The first user is the thermal:thermal_power_limit event which has the
+following output:
+
+ thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
+
+Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
+
+Suggested-by: Javi Merino <javi.merino@arm.com>
+Tested-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/lib/traceevent/event-parse.c | 113 +++++++++++++++++++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h |   7 +++
+ 2 files changed, 120 insertions(+)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index baec7d8..c76ca5c 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
+ 	case PRINT_BSTRING:
+ 		free(arg->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		free(arg->bitmask.bitmask);
++		break;
+ 	case PRINT_DYNAMIC_ARRAY:
+ 		free(arg->dynarray.index);
+ 		break;
+@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		ret = 0;
+@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		break;
+@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
+ 	return EVENT_ERROR;
+ }
+ 
++static enum event_type
++process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
++	    char **tok)
++{
++	enum event_type type;
++	char *token;
++
++	if (read_expect_type(EVENT_ITEM, &token) < 0)
++		goto out_free;
++
++	arg->type = PRINT_BITMASK;
++	arg->bitmask.bitmask = token;
++	arg->bitmask.offset = -1;
++
++	if (read_expected(EVENT_DELIM, ")") < 0)
++		goto out_err;
++
++	type = read_token(&token);
++	*tok = token;
++
++	return type;
++
++ out_free:
++	free_token(token);
++ out_err:
++	*tok = NULL;
++	return EVENT_ERROR;
++}
++
+ static struct pevent_function_handler *
+ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+ 	}
++	if (strcmp(token, "__get_bitmask") == 0) {
++		free_token(token);
++		return process_bitmask(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_dynamic_array") == 0) {
+ 		free_token(token);
+ 		return process_dynamic_array(event, arg, tok);
+@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		return eval_type(val, arg, 0);
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 		return 0;
+ 	case PRINT_FUNC: {
+ 		struct trace_seq s;
+@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
+ 		trace_seq_printf(s, format, str);
+ }
+ 
++static void print_bitmask_to_seq(struct pevent *pevent,
++				 struct trace_seq *s, const char *format,
++				 int len_arg, const void *data, int size)
++{
++	int nr_bits = size * 8;
++	int str_size = (nr_bits + 3) / 4;
++	int len = 0;
++	char buf[3];
++	char *str;
++	int index;
++	int i;
++
++	/*
++	 * The kernel likes to put in commas every 32 bits, we
++	 * can do the same.
++	 */
++	str_size += (nr_bits - 1) / 32;
++
++	str = malloc(str_size + 1);
++	if (!str) {
++		do_warning("%s: not enough memory!", __func__);
++		return;
++	}
++	str[str_size] = 0;
++
++	/* Start out with -2 for the two chars per byte */
++	for (i = str_size - 2; i >= 0; i -= 2) {
++		/*
++		 * data points to a bit mask of size bytes.
++		 * In the kernel, this is an array of long words, thus
++		 * endianess is very important.
++		 */
++		if (pevent->file_bigendian)
++			index = size - (len + 1);
++		else
++			index = len;
++
++		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
++		memcpy(str + i, buf, 2);
++		len++;
++		if (!(len & 3) && i > 0) {
++			i--;
++			str[i] = ',';
++		}
++	}
++
++	if (len_arg >= 0)
++		trace_seq_printf(s, format, len_arg, str);
++	else
++		trace_seq_printf(s, format, str);
++
++	free(str);
++}
++
+ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 			  struct event_format *event, const char *format,
+ 			  int len_arg, struct print_arg *arg)
+@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	case PRINT_BSTRING:
+ 		print_str_to_seq(s, format, len_arg, arg->string.string);
+ 		break;
++	case PRINT_BITMASK: {
++		int bitmask_offset;
++		int bitmask_size;
++
++		if (arg->bitmask.offset == -1) {
++			struct format_field *f;
++
++			f = pevent_find_any_field(event, arg->bitmask.bitmask);
++			arg->bitmask.offset = f->offset;
++		}
++		bitmask_offset = data2host4(pevent, data + arg->string.offset);
++		bitmask_size = bitmask_offset >> 16;
++		bitmask_offset &= 0xffff;
++		print_bitmask_to_seq(pevent, s, format, len_arg,
++				     data + bitmask_offset, bitmask_size);
++		break;
++	}
+ 	case PRINT_OP:
+ 		/*
+ 		 * The only op for string should be ? :
+@@ -4821,6 +4931,9 @@ static void print_args(struct print_arg *args)
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		printf("__get_bitmask(%s)", args->bitmask.bitmask);
++		break;
+ 	case PRINT_TYPE:
+ 		printf("(%s)", args->typecast.type);
+ 		print_args(args->typecast.item);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 791c539..1048f22 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -208,6 +208,11 @@ struct print_arg_string {
+ 	int			offset;
+ };
+ 
++struct print_arg_bitmask {
++	char			*bitmask;
++	int			offset;
++};
++
+ struct print_arg_field {
+ 	char			*name;
+ 	struct format_field	*field;
+@@ -274,6 +279,7 @@ enum print_arg_type {
+ 	PRINT_DYNAMIC_ARRAY,
+ 	PRINT_OP,
+ 	PRINT_FUNC,
++	PRINT_BITMASK,
+ };
+ 
+ struct print_arg {
+@@ -288,6 +294,7 @@ struct print_arg {
+ 		struct print_arg_hex		hex;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
++		struct print_arg_bitmask	bitmask;
+ 		struct print_arg_op		op;
+ 		struct print_arg_dynarray	dynarray;
+ 	};
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.4
+
