@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbaEOGJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:09:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36151 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaEOGJk (ORCPT
+	id S1751813AbaEOGK7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 02:10:59 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:51340 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaEOGK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:09:40 -0400
-Message-ID: <537459E4.5060203@ti.com>
-Date: Thu, 15 May 2014 11:38:36 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 15 May 2014 02:10:58 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <bcousson@baylibre.com>,
-        <ezequiel@vanguardiasur.com.ar>, <bigeasy@linutronix.de>,
-        <yegorslists@googlemail.com>, <balbi@ti.com>
-Subject: Re: [RFC PATCH] ARM: dts: am33xx: Re-arrange the USB dt to reflect
- the h/w configuration
-References: <1399617068-19826-1-git-send-email-george.cherian@ti.com> <20140514215034.GL27426@atomide.com>
-In-Reply-To: <20140514215034.GL27426@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKohpo=mYH1f69B+dHwQR71Qmpi7a07rWhQ=up-9zriY9hOFng@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+	<CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+	<CAKohponTH9X6AUX_0TJbRw0bUw5WQaE6oeDpGW9avTLifLGBCQ@mail.gmail.com>
+	<CAOqmu83ptKYHECdtLgEJLxbWa-VjxjKfw4dQo2gqQJP4doS_FQ@mail.gmail.com>
+	<CAKohpo=mYH1f69B+dHwQR71Qmpi7a07rWhQ=up-9zriY9hOFng@mail.gmail.com>
+Date: Thu, 15 May 2014 11:40:57 +0530
+X-Google-Sender-Auth: VUlyvXjbPmkT-qgoL0UuASgbxc4
+Message-ID: <CAOqmu82rYWomE6n=vEFk97tiS0Da4mZSFdvO5zVbApRAoS2LNA@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
-On 5/15/2014 3:20 AM, Tony Lindgren wrote:
-> * George Cherian <george.cherian@ti.com> [140508 23:34]:
->> Re arrange the USB dt for AM33xx to take it a bit closer
->> to the hardware configuration.
->>
->> The USBSS is designed as follows
->>
->> USB control Module	0x44e10_0620
->>
->> USBSS			0x4740_0000
->>
->> USB0			0x4740_1000
->> USB0_PHY		0x4740_1300
->> USB0_CORE		0x4740_1400
->>
->> USB1			0x4740_1800
->> USB1_PHY		0x4740_1b00
->> USB1_CORE		0x4740_1c00
->>
->> CPPI DMA Controller	0x4740_2000
->> CPPI DMA Scheduler	0x4740_3000
->> Queue Manager		0x4740_4000
->>
->> So model the DT as follows
->> USBSS {
->>      usb_ctrl_mod: {
->>          0x44e10_0620
->>      }
->>      usb0: {
->>      0x4740_1000
->>      0x4740_1400
->>      }
->>      usb0_phy:{
->>      0x4740_1300
->>      }
->>      usb1:{
->>      0x4740_1800
->>      0x4740_1c00
->>      }
->>      usb1_phy: {
->>      0x4740_1b00
->>      }
->>      cppi41dma: {
->>      0x4740_2000
->>      0x4740_3000
->>      0x4740_4000
->>      }
->> }
-> Is this just a cosmetic change or is this trying to workaround
-> some edma related init order issue?
-Please ignore this patch. Was trying to workaround some dma and phy 
-related issues.
-The same got fixed with following
-
-http://www.spinics.net/lists/linux-usb/msg107244.html
-
-
+On Thu, May 15, 2014 at 11:31 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 May 2014 11:16, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>> I think I did not make myself clear.
 >
-> Regards,
+> Probably I was the one who got confused :)
 >
-> Tony
+>> Devfreq will have its own opp table associated with its own device. It
+>> does not uses the opp table of cpus.
+>> Hence there may be need to free the table if driver (at least devfreq)
+>> getting un-registered.
+>
+> We may have an unregister routine routine, I am not arguing about that.
+> But we don't need to call that for CPU's opp, that's it.. For devices it might
+> make sense to free memory.
+
+Yes the provision should be there in the OPP framework and let the
+individual drivers decide whether to invoke or not.
 
 
--- 
--George
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
