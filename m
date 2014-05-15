@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaEOO43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:56:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:48080 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090AbaEOO41 (ORCPT
+	id S1755319AbaEOO4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:56:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56186 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135AbaEOO4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:56:27 -0400
-X-IronPort-AV: E=Sophos;i="4.97,1059,1389744000"; 
-   d="scan'208";a="130724529"
-Message-ID: <5374D598.8060807@citrix.com>
-Date: Thu, 15 May 2014 15:56:24 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 15 May 2014 10:56:33 -0400
+Message-ID: <5374D59E.2010502@linaro.org>
+Date: Thu, 15 May 2014 15:56:30 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-CC: Andrew Jones <drjones@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH] xen/x86: set panic notifier priority to minimum
-References: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1400000185-15148-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Kumar Gala <galak@codeaurora.org>
+CC: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: QCOM: Enable ARM_AMBA option for Qcom SOCS.
+References: <1400148535-30772-1-git-send-email-srinivas.kandagatla@linaro.org> <4FB5A6A0-B4C5-4E97-AD7D-8049CFA60393@codeaurora.org>
+In-Reply-To: <4FB5A6A0-B4C5-4E97-AD7D-8049CFA60393@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/05/14 17:56, Radim KrÄmÃ¡Å™ wrote:
-> Execution is not going to continue after telling Xen about the crash.
-> Let other panic notifiers run by postponing the final hypercall as much
-> as possible.
 
-Applied to devel/for-linus-3.16
+Hi Kumar,
+On 15/05/14 15:31, Kumar Gala wrote:
+> I’d rather have the driver have the select of ARM_AMBA and not the core support.  We clearly don’t need to build ARM_AMBA in to function.
 
-Thanks.
+Shouldn’t driver depend on it rather than selecting it?
 
-David
+Suggested approach will end up changing the way its done on other SOCs,
+Currently all the SOCs select ARM_AMBA at there machine level Kconfig 
+rather than each individual driver selecting it.
+
+Am open to do it either way but doing it the way it exists is the 
+something more acceptable I thought.
+
+
+thanks,
+srini
