@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaEOQJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:09:22 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:41282 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252AbaEOQJV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:09:21 -0400
+	id S1754237AbaEOQJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:09:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42851 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753169AbaEOQJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:09:43 -0400
+Message-ID: <5374E653.2080309@zytor.com>
+Date: Thu, 15 May 2014 09:07:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [80.246.32.33]
-In-Reply-To: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
-References: <1399935074-25167-1-git-send-email-andi@firstfloor.org>
-Date: Thu, 15 May 2014 18:09:20 +0200
-Message-ID: <CAPh34me=yxjs2LR+_eiTyrQKFzDDtr95i_3+HDwHPPxYfZDLqw@mail.gmail.com>
-Subject: Re: perf: Add support for full Intel event lists v3
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com
-Content-Type: text/plain; charset=UTF-8
+To: chrubis@suse.cz
+CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <537407ED.8050606@zytor.com> <CF999CD6.90A93%dvhart@linux.intel.com> <5374C54B.7040408@gmail.com> <20140515154246.GC6926@rei.Home> <5374E2A4.2070408@zytor.com> <20140515160152.GA7529@rei.Home>
+In-Reply-To: <20140515160152.GA7529@rei.Home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2014 00:51, Andi Kleen <andi@firstfloor.org> wrote:
+On 05/15/2014 09:01 AM, chrubis@suse.cz wrote:
+> 
+>> I really believe the proper fix is to use assembly syscall stubs.  In
+>> klibc I build a fairly elaborate machinery to autogenerate such syscall
+>> stubs for a variety of architectures.
+> 
+> Then it would be nice to share these between klibc and LTP (and possible
+> everybody else).
+> 
 
-> I implemented an automatic downloader to get the event file for the
-> current CPU.  The events are stored in ~/.events.
-> Then perf adds a parser that converts the JSON format into perf event
-> aliases, which then can be used directly as any other perf event.
+It should be quite easy to extract from klibc.
 
-Should the name of the file not more specific? I mean .events can mean
-everything? Every program may have a demand for this generic name. Why
-not ~/.perf-events? Even more standard [1]:
-$XDG_CACHE_HOME/perf/events (i.e. ~/.cache/perf/events)
+	-hpa
 
-[1] http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
