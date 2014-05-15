@@ -1,97 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaEOCuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 22:50:04 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:34432 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaEOCuA (ORCPT
+	id S1753247AbaEOCvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 22:51:37 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:46322 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaEOCvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 22:50:00 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53742B55.1060507@lge.com>
-Date: Thu, 15 May 2014 11:49:57 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: =?EUC-KR?B?IsDMsMfIoy/DpcDTv6yxuL/4L1NXIFBsYXRmb3JtKL+sKUFPVMbAKGd1bmg=?=
-	 =?EUC-KR?B?by5sZWVAbGdlLmNvbSki?= <gunho.lee@lge.com>,
-        gurugio@gmail.com
-Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+	Wed, 14 May 2014 22:51:36 -0400
+From: Joel Pelaez Jorge <joelpelaez@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Bob Copeland <me@bobcopeland.com>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        Joe Perches <joe@perches.com>, Teodora Baluta <teobaluta@gmail.com>,
+        Himangi Saraogi <himangi774@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ana Rey <anarey@gmail.com>, Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Rui Miguel Silva <rmfrfs@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joel Pelaez Jorge <joelpelaez@gmail.com>
+Subject: [PATCH] Staging: rtl8192u: Remove old WIRELESS_EXT support
+Date: Wed, 14 May 2014 21:50:31 -0500
+Message-Id: <1400122231-28752-1-git-send-email-joelpelaez@gmail.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-It's not a big deal but I've found that phy_base field of struct
-l2x0_regs is not used anywhere.
-I've removed it on my board. It seems to be working fine.
-
-Why do we need physical address of L2 cache controller?
-Is it removable?
-
-
------------------------- 8< --------------------------
->From cc0d98f4ef8b6f8f139a7c6179ed0b03e9ad7d07 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Thu, 15 May 2014 11:26:20 +0900
-Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct l2x0_regs
-
-Remove unused field, phy_base of struct l2x0_regs
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Remove support for building against ancient WIRELESS_EXT versions,
+only leaving support for the current version: 22
 ---
- arch/arm/include/asm/hardware/cache-l2x0.h |    1 -
- arch/arm/kernel/asm-offsets.c              |    1 -
- arch/arm/mm/cache-l2x0.c                   |    2 --
- 3 files changed, 4 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h    | 14 ---------
+ drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c |  5 +--
+ drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c | 38 ++---------------------
+ drivers/staging/rtl8192u/r8192U_core.c            |  6 +---
+ drivers/staging/rtl8192u/r8192U_wx.c              | 20 +-----------
+ 5 files changed, 5 insertions(+), 78 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h
-b/arch/arm/include/asm/hardware/cache-l2x0.h
-index 6795ff7..6dec6da 100644
---- a/arch/arm/include/asm/hardware/cache-l2x0.h
-+++ b/arch/arm/include/asm/hardware/cache-l2x0.h
-@@ -118,7 +118,6 @@ static inline int l2x0_of_init(u32 aux_val, u32
-aux_mask)
- #endif
-
- struct l2x0_regs {
--       unsigned long phy_base;
-        unsigned long aux_ctrl;
-        /*
-         * Whether the following registers need to be saved/restored
-diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
-index 85598b5..9b0ff94 100644
---- a/arch/arm/kernel/asm-offsets.c
-+++ b/arch/arm/kernel/asm-offsets.c
-@@ -100,7 +100,6 @@ int main(void)
-   DEFINE(S_FRAME_SIZE,         sizeof(struct pt_regs));
-   BLANK();
- #ifdef CONFIG_CACHE_L2X0
--  DEFINE(L2X0_R_PHY_BASE,      offsetof(struct l2x0_regs, phy_base));
-   DEFINE(L2X0_R_AUX_CTRL,      offsetof(struct l2x0_regs, aux_ctrl));
-   DEFINE(L2X0_R_TAG_LATENCY,   offsetof(struct l2x0_regs, tag_latency));
-   DEFINE(L2X0_R_DATA_LATENCY,  offsetof(struct l2x0_regs, data_latency));
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 7abde2c..728d644 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -985,8 +985,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
-        if (!l2x0_base)
-                return -ENOMEM;
-
--       l2x0_saved_regs.phy_base = res.start;
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index cac2056..3b40b61 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -354,12 +354,10 @@ enum	_ReasonCode{
+ #define ieee80211_wx_get_scan		ieee80211_wx_get_scan_rsl
+ #define ieee80211_wx_set_encode		ieee80211_wx_set_encode_rsl
+ #define ieee80211_wx_get_encode		ieee80211_wx_get_encode_rsl
+-#if WIRELESS_EXT >= 18
+ #define ieee80211_wx_set_mlme		ieee80211_wx_set_mlme_rsl
+ #define ieee80211_wx_set_auth		ieee80211_wx_set_auth_rsl
+ #define ieee80211_wx_set_encode_ext	ieee80211_wx_set_encode_ext_rsl
+ #define ieee80211_wx_get_encode_ext	ieee80211_wx_get_encode_ext_rsl
+-#endif
+ 
+ 
+ typedef struct ieee_param {
+@@ -392,16 +390,6 @@ typedef struct ieee_param {
+ }ieee_param;
+ 
+ 
+-#if WIRELESS_EXT < 17
+-#define IW_QUAL_QUAL_INVALID   0x10
+-#define IW_QUAL_LEVEL_INVALID  0x20
+-#define IW_QUAL_NOISE_INVALID  0x40
+-#define IW_QUAL_QUAL_UPDATED   0x1
+-#define IW_QUAL_LEVEL_UPDATED  0x2
+-#define IW_QUAL_NOISE_UPDATED  0x4
+-#endif
 -
-        data = of_match_node(l2x0_ids, np)->data;
+-
+ // linux under 2.6.9 release may not support it, so modify it for common use
+ #define MSECS(t) msecs_to_jiffies(t)
+ #define msleep_interruptible_rsl  msleep_interruptible
+@@ -2398,7 +2386,6 @@ extern int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
+ extern int ieee80211_wx_get_encode(struct ieee80211_device *ieee,
+ 				   struct iw_request_info *info,
+ 				   union iwreq_data *wrqu, char *key);
+-#if WIRELESS_EXT >= 18
+ extern int ieee80211_wx_get_encode_ext(struct ieee80211_device *ieee,
+ 			    struct iw_request_info *info,
+ 			    union iwreq_data *wrqu, char *extra);
+@@ -2411,7 +2398,6 @@ extern int ieee80211_wx_set_auth(struct ieee80211_device *ieee,
+ extern int ieee80211_wx_set_mlme(struct ieee80211_device *ieee,
+ 			       struct iw_request_info *info,
+ 			       union iwreq_data *wrqu, char *extra);
+-#endif
+ extern int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len);
+ 
+ /* ieee80211_softmac.c */
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+index a98414a..b32f965 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+@@ -950,7 +950,6 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 
+ 	//IEEE80211_DEBUG_DATA(IEEE80211_DL_DATA, skb->data, skb->len);
+ #ifdef NOT_YET
+-#if WIRELESS_EXT > 15
+ 	/* Put this code here so that we avoid duplicating it in all
+ 	 * Rx paths. - Jean II */
+ #ifdef IW_WIRELESS_SPY		/* defined in iw_handler.h */
+@@ -964,18 +963,16 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 		wireless_spy_update(dev, hdr->addr2, &wstats);
+ 	}
+ #endif /* IW_WIRELESS_SPY */
+-#endif /* WIRELESS_EXT > 15 */
+ 	hostap_update_rx_stats(local->ap, hdr, rx_stats);
+ #endif
+ 
+-#if WIRELESS_EXT > 15
+ 	if (ieee->iw_mode == IW_MODE_MONITOR) {
+ 		ieee80211_monitor_rx(ieee, skb, rx_stats);
+ 		stats->rx_packets++;
+ 		stats->rx_bytes += skb->len;
+ 		return 1;
+ 	}
+-#endif
++
+ 	if (ieee->host_decrypt) {
+ 		int idx = 0;
+ 		if (skb->len >= hdrlen + 3)
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
+index bdf67ec..b2660fe 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
+@@ -194,37 +194,7 @@ static inline char *rtl819x_translate_scan(struct ieee80211_device *ieee,
+ 	iwe.u.data.length = p - custom;
+ 	if (iwe.u.data.length)
+ 	    start = iwe_stream_add_point(info, start, stop, &iwe, custom);
+-#if (WIRELESS_EXT < 18)
+-	if (ieee->wpa_enabled && network->wpa_ie_len){
+-		char buf[MAX_WPA_IE_LEN * 2 + 30];
+-	//	printk("WPA IE\n");
+-		u8 *p = buf;
+-		p += sprintf(p, "wpa_ie=");
+-		for (i = 0; i < network->wpa_ie_len; i++) {
+-			p += sprintf(p, "%02x", network->wpa_ie[i]);
+-		}
+-
+-		memset(&iwe, 0, sizeof(iwe));
+-		iwe.cmd = IWEVCUSTOM;
+-		iwe.u.data.length = strlen(buf);
+-		start = iwe_stream_add_point(info, start, stop, &iwe, buf);
+-	}
+-
+-	if (ieee->wpa_enabled && network->rsn_ie_len){
+-		char buf[MAX_WPA_IE_LEN * 2 + 30];
+-
+-		u8 *p = buf;
+-		p += sprintf(p, "rsn_ie=");
+-		for (i = 0; i < network->rsn_ie_len; i++) {
+-			p += sprintf(p, "%02x", network->rsn_ie[i]);
+-		}
+ 
+-		memset(&iwe, 0, sizeof(iwe));
+-		iwe.cmd = IWEVCUSTOM;
+-		iwe.u.data.length = strlen(buf);
+-		start = iwe_stream_add_point(info, start, stop, &iwe, buf);
+-	}
+-#else
+ 	memset(&iwe, 0, sizeof(iwe));
+ 	if (network->wpa_ie_len)
+ 	{
+@@ -243,8 +213,6 @@ static inline char *rtl819x_translate_scan(struct ieee80211_device *ieee,
+ 		iwe.u.data.length = network->rsn_ie_len;
+ 		start = iwe_stream_add_point(info, start, stop, &iwe, buf);
+ 	}
+-#endif
+-
+ 
+ 	/* Add EXTRA: Age to display seconds since last beacon/probe response
+ 	 * for given network. */
+@@ -521,7 +489,7 @@ int ieee80211_wx_get_encode(struct ieee80211_device *ieee,
+ 
+ 	return 0;
+ }
+-#if (WIRELESS_EXT >= 18)
++
+ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
+ 			       struct iw_request_info *info,
+ 			       union iwreq_data *wrqu, char *extra)
+@@ -828,7 +796,7 @@ int ieee80211_wx_set_auth(struct ieee80211_device *ieee,
+ 	}
+ 	return 0;
+ }
+-#endif
++
+ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len)
+ {
+ 	u8 *buf;
+@@ -864,12 +832,10 @@ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len)
+ }
+ 
+ EXPORT_SYMBOL(ieee80211_wx_set_gen_ie);
+-#if (WIRELESS_EXT >= 18)
+ EXPORT_SYMBOL(ieee80211_wx_set_mlme);
+ EXPORT_SYMBOL(ieee80211_wx_set_auth);
+ EXPORT_SYMBOL(ieee80211_wx_set_encode_ext);
+ EXPORT_SYMBOL(ieee80211_wx_get_encode_ext);
+-#endif
+ EXPORT_SYMBOL(ieee80211_wx_get_scan);
+ EXPORT_SYMBOL(ieee80211_wx_set_encode);
+ EXPORT_SYMBOL(ieee80211_wx_get_encode);
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 1bb6143..7fde6e9 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -4981,12 +4981,8 @@ static int rtl8192_usb_probe(struct usb_interface *intf,
+ 
+ 	dev->netdev_ops = &rtl8192_netdev_ops;
+ 
+-#if WIRELESS_EXT >= 12
+-#if WIRELESS_EXT < 17
+-	dev->get_wireless_stats = r8192_get_wireless_stats;
+-#endif
+ 	dev->wireless_handlers = (struct iw_handler_def *) &r8192_wx_handlers_def;
+-#endif
++
+ 	dev->type = ARPHRD_ETHER;
+ 
+ 	dev->watchdog_timeo = HZ*3;	//modified by john, 0805
+diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
+index 72db773..abae163 100644
+--- a/drivers/staging/rtl8192u/r8192U_wx.c
++++ b/drivers/staging/rtl8192u/r8192U_wx.c
+@@ -319,10 +319,8 @@ static int rtl8180_wx_get_range(struct net_device *dev,
+ 	}
+ 	range->num_frequency = val;
+ 	range->num_channels = val;
+-#if WIRELESS_EXT > 17
+ 	range->enc_capa = IW_ENC_CAPA_WPA|IW_ENC_CAPA_WPA2|
+ 			  IW_ENC_CAPA_CIPHER_TKIP|IW_ENC_CAPA_CIPHER_CCMP;
+-#endif
+ 	tmp->scan_capa = 0x01;
+ 	return 0;
+ }
+@@ -732,7 +730,6 @@ exit:
+ 	return err;
+ }
+ 
+-#if (WIRELESS_EXT >= 18)
+ //hw security need to reorganized.
+ static int r8192_wx_set_enc_ext(struct net_device *dev,
+ 					struct iw_request_info *info,
+@@ -842,7 +839,7 @@ static int r8192_wx_set_mlme(struct net_device *dev,
+ 	up(&priv->wx_sem);
+ 	return ret;
+ }
+-#endif
++
+ static int r8192_wx_set_gen_ie(struct net_device *dev,
+ 					struct iw_request_info *info,
+ 					union iwreq_data *data, char *extra)
+@@ -890,11 +887,7 @@ static iw_handler r8192_wx_handlers[] =
+ 	NULL,                     /* SIOCWIWTHRSPY */
+ 	r8192_wx_set_wap,	  /* SIOCSIWAP */
+ 	r8192_wx_get_wap,         /* SIOCGIWAP */
+-#if (WIRELESS_EXT >= 18)
+ 	r8192_wx_set_mlme,                     /* MLME-- */
+-#else
+-	 NULL,
+-#endif
+ 	dummy,                     /* SIOCGIWAPLIST -- deprecated */
+ 	r8192_wx_set_scan,        /* SIOCSIWSCAN */
+ 	r8192_wx_get_scan,        /* SIOCGIWSCAN */
+@@ -923,17 +916,10 @@ static iw_handler r8192_wx_handlers[] =
+ 	r8192_wx_set_gen_ie,//NULL,			/* SIOCSIWGENIE */
+ 	NULL,			/* SIOCSIWGENIE */
+ 
+-#if (WIRELESS_EXT >= 18)
+ 	r8192_wx_set_auth,//NULL,			/* SIOCSIWAUTH */
+ 	NULL,//r8192_wx_get_auth,//NULL,			/* SIOCSIWAUTH */
+ 	r8192_wx_set_enc_ext,			/* SIOCSIWENCODEEXT */
+ 	NULL,//r8192_wx_get_enc_ext,//NULL,			/* SIOCSIWENCODEEXT */
+-#else
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-#endif
+ 	NULL,			/* SIOCSIWPMKSA */
+ 	NULL,			 /*---hole---*/
+ 
+@@ -977,7 +963,6 @@ static iw_handler r8192_private_handler[] = {
+ 	r8192_wx_force_reset,
+ };
+ 
+-//#if WIRELESS_EXT >= 17
+ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ {
+        struct r8192_priv *priv = ieee80211_priv(dev);
+@@ -1006,7 +991,6 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ 	wstats->qual.updated = IW_QUAL_ALL_UPDATED| IW_QUAL_DBM;
+ 	return wstats;
+ }
+-//#endif
+ 
+ 
+ struct iw_handler_def  r8192_wx_handlers_def={
+@@ -1015,8 +999,6 @@ struct iw_handler_def  r8192_wx_handlers_def={
+ 	.private = r8192_private_handler,
+ 	.num_private = ARRAY_SIZE(r8192_private_handler),
+ 	.num_private_args = sizeof(r8192_private_args) / sizeof(struct iw_priv_args),
+-#if WIRELESS_EXT >= 17
+ 	.get_wireless_stats = r8192_get_wireless_stats,
+-#endif
+ 	.private_args = (struct iw_priv_args *)r8192_private_args,
+ };
+-- 
+1.9.2
 
-        /* L2 configuration can only be changed if the cache is disabled */
---
-1.7.9.5
