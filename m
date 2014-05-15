@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746AbaEOSbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:31:23 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755412AbaEOSbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:31:07 -0400
-Message-ID: <537507E8.1010600@nod.at>
-Date: Thu, 15 May 2014 20:31:04 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755510AbaEOSch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:32:37 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:63289 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106AbaEOScf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 14:32:35 -0400
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH 16/27] mips: Use common bits from generic tlb.h
-References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-17-git-send-email-richard@nod.at> <53750129.6060902@imgtec.com>
-In-Reply-To: <53750129.6060902@imgtec.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140515182620.GN32082@beef>
+References: <1400176691-26058-1-git-send-email-elder@linaro.org>
+ <1400176691-26058-3-git-send-email-elder@linaro.org> <CAGVrzca20+3kmJjyGv8Pr-qNNV4n0hhADL6GWvcYVDUL4q28Hg@mail.gmail.com>
+ <20140515182620.GN32082@beef>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 15 May 2014 11:31:54 -0700
+Message-ID: <CAGVrzcafQkOxOBLX_5AJDeX1yERndu60ogZJgeA407e20N9oMg@mail.gmail.com>
+Subject: Re: [PATCH v3 RESEND 2/5] ARM: add SMP support for Broadcom mobile SoCs
+To: Matt Porter <mporter@linaro.org>
+Cc: Alex Elder <elder@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, sboyd <sboyd@codeaurora.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.05.2014 20:02, schrieb Leonid Yegoshin:
-> On 05/14/2014 11:59 AM, Richard Weinberger wrote:
->> It is no longer needed to define them on our own.
+2014-05-15 11:26 GMT-07:00 Matt Porter <mporter@linaro.org>:
+> On Thu, May 15, 2014 at 11:03:49AM -0700, Florian Fainelli wrote:
+>> Hi Alex,
 >>
->> Cc: Ralf Baechle <ralf@linux-mips.org>
->> Cc: John Crispin <blogic@openwrt.org>
->> Cc: Markos Chandras <markos.chandras@imgtec.com>
->> Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
->> Cc: Richard Weinberger <richard@nod.at>
->> Cc: linux-mips@linux-mips.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>   arch/mips/include/asm/tlb.h | 7 -------
->>   1 file changed, 7 deletions(-)
+>> 2014-05-15 10:58 GMT-07:00 Alex Elder <elder@linaro.org>:
+>> > This patch adds SMP support for BCM281XX and BCM21664 family SoCs.
+>> >
+>> > This feature is controlled with a distinct config option such that a
+>> > SMP-enabled multi-v7 binary can be configured to run these SoCs in
+>> > uniprocessor mode.  Since this SMP functionality is used for
+>> > multiple Broadcom mobile chip families the config option is called
+>> > ARCH_BCM_MOBILE_SMP (for lack of a better name).
+>> >
+>> > On SoCs of this type, the secondary core is not held in reset on
+>> > power-on.  Instead it loops in a ROM-based holding pen.  To release
+>> > it, one must write into a special register a jump address whose
+>> > low-order bits have been replaced with a secondary core's id, then
+>> > trigger an event with SEV.  On receipt of an event, the ROM code
+>> > will examine the register's contents, and if the low-order bits
+>> > match its cpu id, it will clear them and write the value back to the
+>> > register just prior to jumping to the address specified.
+>> >
+>> > The location of the special register is defined in the device tree
+>> > using a "secondary-boot-reg" property in a node whose "enable-method"
+>> > matches.
+>> >
+>> > Derived from code originally provided by Ray Jui <rjui@broadcom.com>
+>> >
+>> > Signed-off-by: Alex Elder <elder@linaro.org>
+>> > ---
+>> >  arch/arm/mach-bcm/Kconfig   |  18 +++-
+>> >  arch/arm/mach-bcm/Makefile  |   3 +
+>> >  arch/arm/mach-bcm/platsmp.c | 201 ++++++++++++++++++++++++++++++++++++++++++++
 >>
->> diff --git a/arch/mips/include/asm/tlb.h b/arch/mips/include/asm/tlb.h
->> index 4a23493..5ea43ca 100644
->> --- a/arch/mips/include/asm/tlb.h
->> +++ b/arch/mips/include/asm/tlb.h
->> @@ -10,13 +10,6 @@
->>           if (!tlb->fullmm)                \
->>               flush_cache_range(vma, vma->vm_start, vma->vm_end); \
->>       }  while (0)
->> -#define tlb_end_vma(tlb, vma) do { } while (0)
->> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
->> -
->> -/*
->> - * .. because we flush the whole mm when it fills up.
->> - */
->> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
->>     #define UNIQUE_ENTRYHI(idx)                        \
->>           ((CKSEG0 + ((idx) << (PAGE_SHIFT + 1))) |        \
-> 
-> I would like to know why these functions are eliminated (don't find any clue).
-> Is it just because there will be a generic one or the calls would be eliminated?
+>> Could we make that name a little bit more specific to the mobile SoCs?
+>> There are other BCM SoCs either currently supported in this directory
+>> (BCM5310X), or making their way to be supported (brcmstb, bcm63xx),
+>> and those share nothing with the Mobile SoC SMP code.
+>
+> Right.
+>
+>> Maybe we should create another level directory within mach-bcm...
+>
+> Let's not go that far. The general direction we need to go is to work
+> toward removing this code from mach-bcm/ completely. I don't really want
+> to see us adding directories and encouraging burying a lot of new files
+> in them.
 
-There will be a generic one.
-See [PATCH 03/27] generic/tlb.h: Move common defines into generic tlb.h
+Ok, makes sense.
 
-> And if there are generic - can I tune it later?
+>
+> A unique name will be enough and then we can work toward moving things
+> out to drivers/ over time.
 
-Yes. You can always define your own and override the generic one.
-
-Thanks,
-//richard
+Sounds good, thanks!
+-- 
+Florian
