@@ -1,147 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaEOCIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 May 2014 22:08:43 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42148 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaEOCIm (ORCPT
+	id S1751673AbaEOCOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 May 2014 22:14:51 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:47477 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaEOCOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 May 2014 22:08:42 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 15 May 2014 11:10:55 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "'Tomasz Stanislawski'" <t.stanislaws@samsung.com>
-Subject: Re: [RFC PATCH 0/3] Aggressively allocate the pages on cma reserved
- memory
-Message-ID: <20140515021055.GC10116@js1304-P5Q-DELUXE>
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
- <536CCC78.6050806@samsung.com>
- <20140513022603.GF23803@js1304-P5Q-DELUXE>
- <8738gcae4h.fsf@linux.vnet.ibm.com>
+	Wed, 14 May 2014 22:14:49 -0400
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: "sdu.liu@huawei.com" <sdu.liu@huawei.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "will.deacon@arm.com" <will.deacon@arm.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        "liusdu@126.com" <liusdu@126.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>
+Subject: RE: [RFC PATCH 2/2] makedumpfile: get additional information from
+ vmcore
+Thread-Topic: [RFC PATCH 2/2] makedumpfile: get additional information from
+ vmcore
+Thread-Index: AQHPb3DHcN/6n3xn+0Gzd0K4c0uBxptA5G9A
+Date: Thu, 15 May 2014 02:12:44 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE97210DAE@BPXM01GP.gisp.nec.co.jp>
+References: <1399469234-54925-1-git-send-email-sdu.liu@huawei.com>
+ <1399469234-54925-3-git-send-email-sdu.liu@huawei.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE97210369@BPXM01GP.gisp.nec.co.jp>
+ <5371C8E6.6080700@huawei.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE97210997@BPXM01GP.gisp.nec.co.jp>
+ <537362A0.7030803@huawei.com>
+In-Reply-To: <537362A0.7030803@huawei.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8738gcae4h.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4F2FAH7010244
 
-On Wed, May 14, 2014 at 03:14:30PM +0530, Aneesh Kumar K.V wrote:
-> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
-> 
-> > On Fri, May 09, 2014 at 02:39:20PM +0200, Marek Szyprowski wrote:
-> >> Hello,
-> >> 
-> >> On 2014-05-08 02:32, Joonsoo Kim wrote:
-> >> >This series tries to improve CMA.
-> >> >
-> >> >CMA is introduced to provide physically contiguous pages at runtime
-> >> >without reserving memory area. But, current implementation works like as
-> >> >reserving memory approach, because allocation on cma reserved region only
-> >> >occurs as fallback of migrate_movable allocation. We can allocate from it
-> >> >when there is no movable page. In that situation, kswapd would be invoked
-> >> >easily since unmovable and reclaimable allocation consider
-> >> >(free pages - free CMA pages) as free memory on the system and free memory
-> >> >may be lower than high watermark in that case. If kswapd start to reclaim
-> >> >memory, then fallback allocation doesn't occur much.
-> >> >
-> >> >In my experiment, I found that if system memory has 1024 MB memory and
-> >> >has 512 MB reserved memory for CMA, kswapd is mostly invoked around
-> >> >the 512MB free memory boundary. And invoked kswapd tries to make free
-> >> >memory until (free pages - free CMA pages) is higher than high watermark,
-> >> >so free memory on meminfo is moving around 512MB boundary consistently.
-> >> >
-> >> >To fix this problem, we should allocate the pages on cma reserved memory
-> >> >more aggressively and intelligenetly. Patch 2 implements the solution.
-> >> >Patch 1 is the simple optimization which remove useless re-trial and patch 3
-> >> >is for removing useless alloc flag, so these are not important.
-> >> >See patch 2 for more detailed description.
-> >> >
-> >> >This patchset is based on v3.15-rc4.
-> >> 
-> >> Thanks for posting those patches. It basically reminds me the
-> >> following discussion:
-> >> http://thread.gmane.org/gmane.linux.kernel/1391989/focus=1399524
-> >> 
-> >> Your approach is basically the same. I hope that your patches can be
-> >> improved
-> >> in such a way that they will be accepted by mm maintainers. I only
-> >> wonder if the
-> >> third patch is really necessary. Without it kswapd wakeup might be
-> >> still avoided
-> >> in some cases.
-> >
-> > Hello,
-> >
-> > Oh... I didn't know that patch and discussion, because I have no interest
-> > on CMA at that time. Your approach looks similar to #1
-> > approach of mine and could have same problem of #1 approach which I mentioned
-> > in patch 2/3. Please refer that patch description. :)
-> 
-> IIUC that patch also interleave right ?
-> 
-> +#ifdef CONFIG_CMA
-> +	unsigned long nr_free = zone_page_state(zone, NR_FREE_PAGES);
-> +	unsigned long nr_cma_free = zone_page_state(zone, NR_FREE_CMA_PAGES);
-> +
-> +	if (migratetype == MIGRATE_MOVABLE && nr_cma_free &&
-> +	    nr_free - nr_cma_free < 2 * low_wmark_pages(zone))
-> +		migratetype = MIGRATE_CMA;
-> +#endif /* CONFIG_CMA */
+>>>>> Now we define MAX_PHYSMEM_BITS and SECTION_SIZE_BITS as
+>>>>> macros. So if we deal with vmcores with different values
+>>>>> of these two macros. We have to recompile makedumpfile.
+>>>>
+>>>> There are other macros which have architecture-specific values
+>>>> (e.g. __PAGE_OFFSET), and some functions are specific to each
+>>>> architecture (e.g. vaddr_to_paddr()), so we need recompilation
+>>>> eventually.
+>>>>
+>>>> OTOH, we already don't need recompilation for the same architecture
+>>>> since the values of such macros are defined for each kernel version
+>>>> like below:
+>>>>
+>>>> #ifdef __x86_64__
+>>>> ...
+>>>> #define _MAX_PHYSMEM_BITS_ORIG          (40)
+>>>> #define _MAX_PHYSMEM_BITS_2_6_26        (44)
+>>>> #define _MAX_PHYSMEM_BITS_2_6_31        (46)
+>>>>
+>>>> So I don't think this patch is valuable.
+>>>
+>>> Hi Atsushi,
+>>>
+>>> For x86, it is not necessory. But for arm, different venders
+>>> may define different SECTION_SIZE_BITS. for example:
+>>>
+>>>   1 arch/arm/mach-clps711x/include/mach/memory.h
+>>>     #define SECTION_SIZE_BITS 24
+>>>   2 arch/arm/mach-exynos/include/mach/memory.h
+>>>     #define SECTION_SIZE_BITS 28
+>>>   4 arch/arm/mach-hisi/include/mach/memory.h
+>>>     #define SECTION_SIZE_BITS 26
+>>>   8 arch/arm/mach-sa1100/include/mach/memory.h
+>>>     #define SECTION_SIZE_BITS 27
+>>>
+>>> Perhaps we should find another way to let the userspace tools
+>>> to get the architecture-specific values.
+>>
+>> I see, I think this description is better than the first one.
+>>
+>> Now, makedumpfile can't get an appropriate values of the two macros since the
+>> values are variable even if the architecture and the kernel version are fixed
+>> (at least for arm), and we can't solve this without *manual code fixing*, right?
+>>
+>> In practice, the current code expects that all arm machines adopt Exynos
+>> processors, this is an problem definitely.
+>>
+>>   #ifdef __arm__
+>>   #define KVBASE_MASK             (0xffff)
+>>   #define KVBASE                  (SYMBOL(_stext) & ~KVBASE_MASK)
+>>   #define _SECTION_SIZE_BITS      (28)
+>>   #define _MAX_PHYSMEM_BITS       (32)
+>>
+>> I think it's better to fix the descriptions to get acceptability,
+>> but this patch is necessary from the view point of makedumpfile.
+>> So I recommend you to repost this patch set, then I'll accept it.
+>>
+>Ok, Thanks for you suggest. I will repost this patch. By now no one
+>relpy my kernel patch related to this issue, named "[RFC PATCH 1/2]
+>kdump: add sparse memory related values to vmcore". Didn't I cc
+>the right person or something else?
 
-Hello,
+You should CC Eric Biederman (ebiederm@xmission.com) as the maintainer
+of kexec.
 
-This is not interleave in my point of view. This logic will allocate
-free movable pages until hitting 2 * low_wmark, and then allocate free
-cma pages. Interleave that I mean is something like round-robin policy
-with no constraint like above.
+The kernel side doesn't need that patch because they aren't in trouble
+even without it, so we had to highlight the necessity from the user space
+side. Now, it's clear, I hope it will be accepted.
 
-> 
-> That doesn't always prefer CMA region. It would be nice to
-> understand why grouping in pageblock_nr_pages is beneficial. Also in
-> your patch you decrement nr_try_cma for every 'order' allocation. Why ?
+>BTW, For patch "[PATCH] makedumpfile: ARM: get correct mem_map offset",
+>Did I explain my idea clearly ? If not, I would like repost one with
+>more details.
 
-pageblock_nr_pages is just magic value with no rationale. :)
-But we need grouping, because without it, we can't get physically
-contiguous pages. When we allocate the pages for page cache, readahead
-logic will try to allocate 32 pages. If we don't use grouping, disk
-I/O for these pages can't be handled by one I/O request on some devices.
-I'm not familiar to I/O device, please let me correct.
+I need more explanations, I'll mention it in that thread.
 
-And, yes, I will consider 'order' allocation when inc/dec nr_try_cma.
 
-> 
-> +	if (zone->nr_try_cma) {
-> +		/* Okay. Now, we can try to allocate the page from cma region */
-> +		zone->nr_try_cma--;
-> +		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
-> +
-> +		/* CMA pages can vanish through CMA allocation */
-> +		if (unlikely(!page && order == 0))
-> +			zone->nr_try_cma = 0;
-> +
-> +		return page;
-> +	}
-> 
-> 
-> If we fail above MIGRATE_CMA alloc should we return failure ? Why
-> not try MOVABLE allocation on failure (ie fallthrough the code path) ?
+Thanks
+Atsushi Kumagai
 
-This patch use fallthrough logic. If we fail on __rmqueue_cma(), it will
-go __rmqueue() as usual.
-
-Thanks.
-
+>>
+>> Thanks
+>> Atsushi Kumagai
+>>
+>>>>
+>>>>> This patch makes makedumpfile get these two values from
+>>>>> vmcore info, if existing. It makes the makedumpfile more
+>>>>> compatible to vmcores with different section size.
+>>>>>
+>>>>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+>>>>> ---
+>>>>> makedumpfile.c | 17 +++++++++++++++++
+>>>>> makedumpfile.h |  2 ++
+>>>>> 2 files changed, 19 insertions(+)
+>>>>>
+>>>>> diff --git a/makedumpfile.c b/makedumpfile.c
+>>>>> index 6cf6e24..3cdf323 100644
+>>>>> --- a/makedumpfile.c
+>>>>> +++ b/makedumpfile.c
+>>>>> @@ -2111,6 +2111,8 @@ read_vmcoreinfo(void)
+>>>>> 	READ_NUMBER("PG_slab", PG_slab);
+>>>>> 	READ_NUMBER("PG_buddy", PG_buddy);
+>>>>> 	READ_NUMBER("PG_hwpoison", PG_hwpoison);
+>>>>> +	READ_NUMBER("SECTION_SIZE_BITS", SECTION_SIZE_BITS);
+>>>>> +	READ_NUMBER("MAX_PHYSMEM_BITS", MAX_PHYSMEM_BITS);
+>>>>>
+>>>>> 	READ_SRCFILE("pud_t", pud_t);
+>>>>>
+>>>>> @@ -2998,6 +3000,18 @@ initialize_bitmap_memory(void)
+>>>>> }
+>>>>>
+>>>>> int
+>>>>> +calibrate_machdep_info(void)
+>>>>> +{
+>>>>> +	if (NUMBER(MAX_PHYSMEM_BITS) > 0)
+>>>>> +		info->max_physmem_bits = NUMBER(MAX_PHYSMEM_BITS);
+>>>>> +
+>>>>> +	if (NUMBER(SECTION_SIZE_BITS) > 0)
+>>>>> +		info->section_size_bits = NUMBER(SECTION_SIZE_BITS);
+>>>>> +
+>>>>> +	return TRUE;
+>>>>> +}
+>>>>> +
+>>>>> +int
+>>>>> initial(void)
+>>>>> {
+>>>>> 	off_t offset;
+>>>>> @@ -3214,6 +3228,9 @@ out:
+>>>>> 	if (debug_info && !get_machdep_info())
+>>>>> 		return FALSE;
+>>>>>
+>>>>> +	if (debug_info && !calibrate_machdep_info())
+>>>>> +		return FALSE;
+>>>>> +
+>>>>> 	if (is_xen_memory() && !get_dom0_mapnr())
+>>>>> 		return FALSE;
+>>>>>
+>>>>> diff --git a/makedumpfile.h b/makedumpfile.h
+>>>>> index eb03688..7acb23a 100644
+>>>>> --- a/makedumpfile.h
+>>>>> +++ b/makedumpfile.h
+>>>>> @@ -1434,6 +1434,8 @@ struct number_table {
+>>>>> 	long    PG_hwpoison;
+>>>>>
+>>>>> 	long	PAGE_BUDDY_MAPCOUNT_VALUE;
+>>>>> +	long	SECTION_SIZE_BITS;
+>>>>> +	long	MAX_PHYSMEM_BITS;
+>>>>> };
+>>>>>
+>>>>> struct srcfile_table {
+>>>>> --
+>>>>> 1.9.0
+>>>>
+>>>> .
+>>>>
+>>>
+>
+>
+>
+>_______________________________________________
+>kexec mailing list
+>kexec@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/kexec
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
