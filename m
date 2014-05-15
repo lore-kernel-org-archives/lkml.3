@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaEOOb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 10:31:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33840 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583AbaEOOb5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 10:31:57 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] ARM: QCOM: Enable ARM_AMBA option for Qcom SOCS.
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1400148535-30772-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Thu, 15 May 2014 09:31:52 -0500
-Cc: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4FB5A6A0-B4C5-4E97-AD7D-8049CFA60393@codeaurora.org>
-References: <1400148535-30772-1-git-send-email-srinivas.kandagatla@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-X-Mailer: Apple Mail (2.1874)
+	id S1755180AbaEOOdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 10:33:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49429 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752759AbaEOOdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 10:33:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1059,1389772800"; 
+   d="scan'208";a="532450642"
+Date: Thu, 15 May 2014 07:32:58 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@ghostprotocols.net, jolsa@redhat.com, jmario@redhat.com,
+        dzickus@redhat.com
+Subject: Re: [PATCH] perf/x86: fix Haswell precise store data source encoding
+Message-ID: <20140515143258.GA19657@tassilo.jf.intel.com>
+References: <20140515115337.GA2855@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515115337.GA2855@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 15, 2014, at 5:08 AM, Srinivas Kandagatla <srinivas.kandagatla@linaro.org> wrote:
-
-> As some of the IPs on Qualcomm SOCs are based on ARM PrimeCell IPs.
-> For example SDCC controller is PrimeCell MCI pl180. Adding this option will
-> give flexibility to reuse the existing drivers as it is without major
-> modifications.
+On Thu, May 15, 2014 at 01:53:37PM +0200, Stephane Eranian wrote:
 > 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> ---
-> arch/arm/mach-qcom/Kconfig | 1 +
-> 1 file changed, 1 insertion(+)
+> This patches fixes a bug in  precise_store_data_hsw() whereby
+> it would set the data source memory level to the wrong value.
 > 
-> diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
-> index a028be2..5bac591 100644
-> --- a/arch/arm/mach-qcom/Kconfig
-> +++ b/arch/arm/mach-qcom/Kconfig
-> @@ -2,6 +2,7 @@ config ARCH_QCOM
-> 	bool "Qualcomm Support" if ARCH_MULTI_V7
-> 	select ARCH_REQUIRE_GPIOLIB
-> 	select ARM_GIC
-> +	select ARM_AMBA
-> 	select CLKSRC_OF
-> 	select GENERIC_CLOCKEVENTS
-> 	select HAVE_SMP
-> -- 
-> 1.9.1
+> As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
+> Address Information in PEBS Record), when status bit 0 is set
+> this is a L1 hit, otherwise this is a L1 miss. 
+> 
+> This patch encodes the memory level according to the specification.
 
-I’d rather have the driver have the select of ARM_AMBA and not the core support.  We clearly don’t need to build ARM_AMBA in to function.
+It's not enough. as I said it needs more fixes.
 
-- k
+For most events it should be _NA, _STORE can be only specified
+for the explicit _STORE events.
+
+-Andi
+
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index ae96cfa..81424f6 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -114,9 +114,13 @@ static u64 precise_store_data_hsw(u64 status)
+>  
+>  	dse.val = 0;
+>  	dse.mem_op = PERF_MEM_OP_STORE;
+> -	dse.mem_lvl = PERF_MEM_LVL_NA;
+> +	dse.mem_lvl = PERF_MEM_LVL_L1;
+> +
+>  	if (status & 1)
+> -		dse.mem_lvl = PERF_MEM_LVL_L1;
+> +		dse.mem_lvl |= PERF_MEM_LVL_HIT;
+> +	else
+> +		dse.mem_lvl |= PERF_MEM_LVL_MISS;
+> +
+>  	/* Nothing else supported. Sorry. */
+>  	return dse.val;
+>  }
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+ak@linux.intel.com -- Speaking for myself only
