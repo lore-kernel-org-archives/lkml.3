@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaEOJe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 05:34:59 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:61990 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbaEOJe4 (ORCPT
+	id S1753702AbaEOJfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 05:35:37 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57246 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650AbaEOJff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 05:34:56 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v2 00/14] Add Qualcomm SD Card Controller support
-Date: Thu, 15 May 2014 10:34:07 +0100
-Message-Id: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Thu, 15 May 2014 05:35:35 -0400
+Message-ID: <53748A5D.6070605@linux.vnet.ibm.com>
+Date: Thu, 15 May 2014 17:35:25 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+References: <537192D3.5030907@linux.vnet.ibm.com> <20140513094737.GU30445@twins.programming.kicks-ass.net> <53721FD4.6060300@redhat.com> <20140513142328.GE2485@laptop.programming.kicks-ass.net> <53731D12.7040804@linux.vnet.ibm.com> <20140514094426.GF30445@twins.programming.kicks-ass.net> <5374387E.4080802@linux.vnet.ibm.com> <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140515090638.GI30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051509-7014-0000-0000-000004E480EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On 05/15/2014 05:06 PM, Peter Zijlstra wrote:
+[snip]
+>> However, when the group level is too deep, that doesn't works any more...
+>>
+>> I'm not sure but seems like 'deep group level' and 'vruntime bonus for
+>> sleeper' is the keep points here, will try to list the root cause after
+>> more investigation, thanks for the hints and suggestions, really helpful ;-)
+> 
+> How deep is deep? You run into numerical problems quite quickly, esp.
+> when you've got lots of CPUs. We've only got 64bit to play with, that
+> said there were some patches...
 
-Thankyou everyone for reviewing both RFC and v1 patches.
+It's like:
 
-This patch series adds Qualcomm SD Card Controller support in pl180 mmci
-driver. QCom SDCC is basically a pl180, but bit more customized, some of the
-register layouts and offsets are different to the ones mentioned in pl180
-datasheet. The plan is to totally remove the standalone SDCC driver
-drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
-Qualcomm parts, as we get chance to test on other Qcom boards.
+	/cgroup/cpu/l1/l2/l3/l4/l5/l6/A
 
-To start using the existing mmci driver, a fake amba id for Qualcomm is added
-in patches:
- mmc: mmci: Add Qualcomm Id to amba id table.
+about level 7, the issue can not be solved any more.
 
-Second change is, adding a 3 clock cycle delay for register writes on QCOM SDCC
-registers, which is done in patches:
-  mmc: mmci: Add register read/write wrappers.
-  mmc: mmci: Qcomm: Add 3 clock cycle delay after register write
+> 
+> What happens if you do the below, Google has been running with that, and
+> nobody was ever able to reproduce the report that got it disabled.
+> 
+> 
+> 
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index b2cbe81308af..e40819d39c69 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -40,7 +40,7 @@ extern void update_cpu_load_active(struct rq *this_rq);
+>   * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
+>   * increased costs.
+>   */
+> -#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
+> +#if 1 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
 
-Third change is to accommodate CLK, DATCTRL and MMCICLK register layout changes
-in Qcom SDCC and provide more flexibity in driver to specify these changes via
-variant datastructure. Which are done in patches:
-  mmc: mmci: Add Qcom datactrl register variant
-  mmc: mmci: add ddrmode mask to variant data
-  mmc: mmci: add 8bit bus support in variant data
-  mmc: mmci: add edge support to data and command out in variant data.
-  mmc: mmci: add Qcom specifics of clk and datactrl registers.
-  mmc: mmci: Add support to data commands via variant structure.
-  mmc: mmci: add support for fbclk to latch data and cmd.
-  mmc: mmci: add qcom specific clk control
+That is trying to solve the load overflow issue, correct?
 
-Fourth major change was to add qcom specfic pio read function, the need for
-this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
- different to the one in pl180. This change is done in patch:
-  mmc: mmci: Add Qcom specific pio_read function.
+I'm not sure which account will turns to be huge when group get deeper,
+the load accumulation will suffer discount when passing up, isn't it?
 
-Last some Qcom unrelated changes/cleanup to driver are done in patches:
-  mmc: mmci: use NSEC_PER_SEC macro
-  mmc: mmci: convert register bits to use BIT() macro.
+Anyway, will give it a try and see what happened :)
 
-This patches are tested in PIO mode on IFC8064 board with both eMMC and
-external SD card. I would like to get this support in v3.16.
+Regards,
+Michael Wang
 
-Changes from v1:
-	- moved most of the SOC specifics to variant parameters as suggested
-	  by Linus W.
-	- renamed registers as suggested by Linus W.
-	- Added comments in the code as suggested by Linus W.
-	- moved out AMBA ID addition patch from this series.
-	- rebased the patches to 
-		git://git.linaro.org/people/ulf.hansson/mmc.git next 
-	  as suggested by Ulf H.
-
-Changes from RFC:
-	- moved out clk setup out of spinlock as pointed by Stephen B.
-	
-Thanks,
-srini
-
-Srinivas Kandagatla (14):
-  mmc: mmci: use NSEC_PER_SEC macro
-  mmc: mmci: convert register bits to use BIT() macro.
-  mmc: mmci: Add Qualcomm Id to amba id table
-  mmc: mmci: Add Qcom datactrl register variant
-  mmc: mmci: Add register read/write wrappers.
-  mmc: mmci: Qcomm: Add 3 clock cycle delay after register write
-  mmc: mmci: add ddrmode mask to variant data
-  mmc: mmci: add 8bit bus support in variant data
-  mmc: mmci: add edge support to data and command out in variant data.
-  mmc: mmci: add Qcom specifics of clk and datactrl registers.
-  mmc: mmci: Add support to data commands via variant structure.
-  mmc: mmci: add support for fbclk to latch data and cmd.
-  mmc: mmci: add qcom specific clk control
-  mmc: mmci: Add Qcom specific pio_read function.
-
- drivers/mmc/host/mmci.c | 245 ++++++++++++++++++++++++++++++++++++------------
- drivers/mmc/host/mmci.h | 232 +++++++++++++++++++++++++--------------------
- 2 files changed, 311 insertions(+), 166 deletions(-)
-
--- 
-1.9.1
+>  # define SCHED_LOAD_RESOLUTION	10
+>  # define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
+>  # define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
+> 
 
