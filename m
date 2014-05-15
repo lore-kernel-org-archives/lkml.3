@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaEOHc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:32:57 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49841 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453AbaEOHc4 (ORCPT
+	id S1754166AbaEOHhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:37:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56285 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaEOHhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:32:56 -0400
-Message-ID: <53746D32.4000708@huawei.com>
-Date: Thu, 15 May 2014 15:30:58 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 15 May 2014 03:37:45 -0400
+Date: Thu, 15 May 2014 09:37:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Carlos O'Donell" <carlos@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhart@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <darren@dvhart.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [patch 0/3] futex/rtmutex: Fix issues exposed by trinity
+Message-ID: <20140515073734.GA30445@twins.programming.kicks-ass.net>
+References: <20140512190438.314125476@linutronix.de>
+ <20140513035404.GA68181@dvhart-mac01.local>
+ <alpine.DEB.2.02.1405131100510.6261@ionos.tec.linutronix.de>
+ <53731608.3010803@redhat.com>
+ <alpine.DEB.2.02.1405141155260.6261@ionos.tec.linutronix.de>
+ <5373D94E.5030800@redhat.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>, Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Simon Horman <horms@verge.net.au>,
-        "Mika Westerberg" <ext-mika.1.westerberg@nokia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Geng Hui <hui.geng@huawei.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
-Subject: Re: [PATCH] crash_dump: arm: crash dump kernel should use strict
- pfn_valid
-References: <1400138070-24046-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1400138070-24046-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="awGZH0NYyyipry6r"
+Content-Disposition: inline
+In-Reply-To: <5373D94E.5030800@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kexec@lists.infradead.org to cc list.
 
-On 2014/5/15 15:14, Wang Nan wrote:
-> This patch makes crash dump kernel use arch pfn_valid defined in
-> arch/arm/mm/init.c instead of the one in include/linux/mmzone.h.
-> The goal of this patch is to remove some limitation when kexec loading
-> crash kernel while SPARSEMEM is enabled.
-> 
-> Before this patch, if second kernel selects both CRASH_DUMP and
-> SPARSEMEM, the second kernel will recongnize memorys at the same section
-> with itself as valid memory, and prevents ioremap (see arm ioremap code,
-> arm doesn't allow valid memory to be ioremapped again). Which introduces
-> some limitations on positioning the crash kernel. For example:
-> 
->   For a platform with SECTION_SIZE_BITS == 28 (256MiB) and
->   crashkernel=128M@0x28000000 in kernel cmdline, the second
->   kernel is loaded at 0x28000000. Kexec puts elfcorehdr at
->   0x2ff00000, and passes 'elfcorehdr=0x2ff00000 mem=130048K' to
->   second kernel. When second kernel start, it tries to use
->   ioremap to retrive its elfcorehrd. In this case, elfcodehdr is at the
->   same section of the second kernel, pfn_valid will recongnize
->   the page as valid, so ioremap will refuse to map it.
-> 
-> Even if we put crash kernel at the boundary of two sections (such as
-> 129MB@0x0x28000000 in the above situation), 0x20000000-0x28000000 used
-> by old kernel is still unable to retrived by crash kernel because they
-> are at the same section.
-> 
-> This patch makes crash dump kernel use strict (and slow) version of
-> pfn_valid(), which makes crash kernel recongnize memory correctly.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: Geng Hui <hui.geng@huawei.com>
-> Cc: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-> Cc: Simon Horman <horms@verge.net.au>
-> ---
->  arch/arm/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index db3c541..795b1d4 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1800,7 +1800,7 @@ config ARCH_SELECT_MEMORY_MODEL
->  	def_bool ARCH_SPARSEMEM_ENABLE
->  
->  config HAVE_ARCH_PFN_VALID
-> -	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
-> +	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM || CRASH_DUMP
->  
->  config HIGHMEM
->  	bool "High Memory Support"
-> 
+--awGZH0NYyyipry6r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, May 14, 2014 at 04:59:58PM -0400, Carlos O'Donell wrote:
+> Nobody has looked at this code in years, likely because all parties
+> thought they were done, but had in fact agreed to distinct expectations
+> and assumptions about the implementation.
 
+That's just not true, we've been >< close to hijacking all the
+libpthread functionality from glibc through a kernel DSO in order to get
+some movement.
+
+Glibc has been known broken and unwilling to change for years and its
+lead to immense frustration with people.
+
+> I want it fix, and I'm in a position to move resources to fix it.
+
+That's great news, and about bloody time too :-)
+
+--awGZH0NYyyipry6r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdG6+AAoJEHZH4aRLwOS6QP0P/1Sk1WRBUzoYXqDg+3/jRQ3H
+V/EE7AMTUJv56x3Swm9Nw7WOrMc74y755ew0m75W9N6uwIPLM2IRwi3EHTR13Yne
+5FbKxDcvwxmK3bi1Tyz3BrQFw0bp1IojGN0K3TKIO8Lop/nJ/RkU2ApTfDBFOSFe
+aX6u1g97AL4Y6HUpxNMWY5tZbo1RnImZqmrffQvOjagbTweR2n4EMNDLm/d5XEBd
+rAzR8B4sJRI8LdzAncj/H1XMtdssRNwYX9cKKqGmvp1M/UsghT6QrJMdpikzLUIf
+/+I1x3FBx7lRLQM/LGpfCU2sMzeF61BJXoYkS2+hayH11EntDpLpt3sMxIna99He
+FR8Vg8pvKv051k8uAxUmk2hkzLkvHzW/Fr7Xr48RDcS2Ggz1l3nxfs7U61kqAgUW
+P+OznDKXj+LOhL6kk+cxyTZBNw1Sd5Rc7G8cH8dwLhE+L8Rqzh9TteT3DBqzTUsw
+mG0LQxOOfUliAoA5f5ls/9bNXpe0BV1oxWSrD3JFeyRleidF2sTryudO+c6BB9ap
+GNWhLKRq4M+5wNwwngY9nxAUTWL9tVaHprctL1dFIfvbz5N+O+0rAyDefZGBRbHI
+OPonYQ/HALXcYA37G2TEv0QMkQ0cOE9w9rwEzqGfhSpK2iMCwztTMPUVLgxctrwe
+J2iWC4Te6Pu9grmefqyI
+=jcw2
+-----END PGP SIGNATURE-----
+
+--awGZH0NYyyipry6r--
