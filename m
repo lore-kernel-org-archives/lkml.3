@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaEOFv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 01:51:29 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:41023 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaEOFv1 (ORCPT
+	id S1752894AbaEOF4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 01:56:39 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60041 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaEOF4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 01:51:27 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net, swarren@nvidia.com
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: Tegra: drop wrapper around tegra_update_cpu_speed()
-Date: Thu, 15 May 2014 11:21:19 +0530
-Message-Id: <a38df05b91198f393b1c4b78f39110c6bece3627.1400133049.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Thu, 15 May 2014 01:56:38 -0400
+X-Original-SENDERIP: 165.186.175.39
+X-Original-MAILFROM: gioh.kim@lge.com
+From: Gioh Kim <gioh.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: gunho.lee@lge.com, gurugio@gmail.com, Gioh Kim <gioh.kim@lge.com>
+Subject: [PATCH] ARM: cache-l2x0: add error message when fail to enable cache
+Date: Thu, 15 May 2014 14:49:35 +0900
+Message-Id: <1400132976-5872-1-git-send-email-gioh.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra has implemented an unnecessary wrapper over tegra_update_cpu_speed(), i.e.
-tegra_target(), which wasn't doing anything apart of calling
-tegra_update_cpu_speed(). Get rid of that and use tegra_target() directly.
+Add error message when fail to enable cache
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 ---
- drivers/cpufreq/tegra-cpufreq.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/arm/mm/cache-l2x0.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index 63f0059..6e774c6 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -82,9 +82,9 @@ out:
- 	return ret;
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 7abde2c..5102c62 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -418,7 +418,11 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
+ 		outer_cache.disable = l2x0_disable;
+ 	}
+ 
+-	pr_info("%s cache controller enabled\n", type);
++	if (readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)
++		pr_info("l2x0: %s cache controller enabled\n", type);
++	else
++		pr_err("l2x0: failed to enable %s cache controller\n", type);
++
+ 	pr_info("l2x0: %d ways, CACHE_ID 0x%08x, AUX_CTRL 0x%08x, Cache size: %d kB\n",
+ 		ways, cache_id, aux, l2x0_size >> 10);
  }
- 
--static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
--		unsigned long rate)
-+static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
- {
-+	unsigned long rate = freq_table[index].frequency;
- 	int ret = 0;
- 
- 	/*
-@@ -106,11 +106,6 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
- 	return ret;
- }
- 
--static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
--{
--	return tegra_update_cpu_speed(policy, freq_table[index].frequency);
--}
--
- static int tegra_cpu_init(struct cpufreq_policy *policy)
- {
- 	int ret;
 -- 
-2.0.0.rc2
+1.7.9.5
 
