@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaEOW6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 18:58:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39462 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaEOW6p (ORCPT
+	id S1755747AbaEOW7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 18:59:22 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:54070 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668AbaEOW7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 18:58:45 -0400
-Date: Thu, 15 May 2014 15:58:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Add --strict test for kmalloc/kzalloc with
- multiply
-Message-Id: <20140515155844.041ee0bc17aae5f3b8eacd70@linux-foundation.org>
-In-Reply-To: <1400024929.24350.76.camel@joe-AO725>
-References: <1400024929.24350.76.camel@joe-AO725>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 15 May 2014 18:59:21 -0400
+Subject: [PATCH] sched: fix exec_start/task_hot on migrated tasks
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+From: Ben Segall <bsegall@google.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 15 May 2014 15:59:20 -0700
+Message-ID: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014 16:48:49 -0700 Joe Perches <joe@perches.com> wrote:
+task_hot checks exec_start on any runnable task, but if it has been
+migrated since the it last ran, then exec_start is a clock_task from
+another cpu. If the old cpu's clock_task was sufficiently far ahead of
+this cpu's then the task will not be considered for another migration
+until it has run. Instead reset exec_start whenever a task is migrated,
+since it is presumably no longer hot anyway.
 
-> Protect against sizeof overflows by preferring
-> kmalloc_array and kcalloc to kmalloc/kzalloc
-> with a sizeof multiply.
-> 
-> ...
->
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -4378,6 +4378,20 @@ sub process {
->  			    "Prefer $3(sizeof(*$1)...) over $3($4...)\n" . $herecurr);
->  		}
->  
-> +# check for k[mz]alloc with multiplies that could be kmalloc_array/kcalloc
-> +		if ($^V && $^V ge 5.10.0 &&
-> +		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/) {
-> +			my $oldfunc = $3;
-> +			my $a1 = $4;
-> +			my $a2 = $10;
-> +			my $newfunc = "kmalloc_array";
-> +			$newfunc = "kcalloc" if ($oldfunc eq "kzalloc");
-> +			if ($a1 =~ /^sizeof\s*\S/ || $a2 =~ /^sizeof\s*\S/) {
-> +				CHK("ALLOC_WITH_MULTIPLY",
-> +				    "Prefer $newfunc over $oldfunc with multiply\n" . $herecurr);
-> +			}
-> +		}
-> +
+Signed-off-by: Ben Segall <bsegall@google.com>
+---
+ kernel/sched/fair.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Why hide this behind --strict?
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 28ccf50..9f8dfeb 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4544,6 +4544,9 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ 		atomic_long_add(se->avg.load_avg_contrib,
+ 						&cfs_rq->removed_load);
+ 	}
++
++	/* We have migrated, no longer consider this task hot */
++	se.exec_start = 0;
+ }
+ #endif /* CONFIG_SMP */
+ 
+
