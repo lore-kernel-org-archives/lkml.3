@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaEOHVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 03:21:48 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:43735 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995AbaEOHVq (ORCPT
+	id S1754529AbaEOHYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:24:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:60699 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaEOHYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 03:21:46 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Simon Horman <horms@verge.net.au>,
-        Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Wang Nan <wangnan0@huawei.com>, Geng Hui <hui.geng@huawei.com>
-Subject: [PATCH] crash_dump: arm: crash dump kernel should use strict pfn_valid
-Date: Thu, 15 May 2014 15:14:30 +0800
-Message-ID: <1400138070-24046-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Thu, 15 May 2014 03:24:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bart Tanghe <bart.tanghe@thomasmore.be>
+Cc: thierry.reding@gmail.com, michal.simek@xilinx.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        grant.likely@linaro.org, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc]pwm: add xilinx pwm driver
+Date: Thu, 15 May 2014 09:23:59 +0200
+Message-ID: <4262573.aEBTd7FzV5@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be>
+References: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5gPFHRrE84nz/Pj9262iLUC0GU7A9z4u2oUOdQYZzRx
+ 4UFcg36Kpf8cXZHa+h9wSG2UpEmApk1Ju7AQMJ8nZrOy/nohgB
+ mwsS3j1S/ddnw328k1XQdUa8Hhcg0zimoDU2hUMFBhUiWTqxxC
+ kura64MjHW4KWCMInvgBu2HoPgGrPFJ6asegoZsz4sph+8OhXA
+ +gyp5WN+iF3xXcmOqp3AvXd5CmKwhUf18WPylFN7WzTyOiwfcY
+ o/jSr/0nlt4NihBkaID9ckyYRk8TtX97IiXf+S1XiNEOm+vQaM
+ MbonW31ChC5ep+e0nczFH1EJkrmb3ys38ChHgCWhoq5vWoqUdp
+ qHm+GaRW8vEk5cY9OJPU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes crash dump kernel use arch pfn_valid defined in
-arch/arm/mm/init.c instead of the one in include/linux/mmzone.h.
-The goal of this patch is to remove some limitation when kexec loading
-crash kernel while SPARSEMEM is enabled.
+On Wednesday 14 May 2014 13:26:13 Bart Tanghe wrote:
+> @@ -0,0 +1,20 @@
+> +Xilinx PWM controller
+> +
+> +Required properties:
+> +- compatible: should be "xlnx,pwm-xlnx"
+> +- add a clock source to the description
+> +
+> +Examples:
+> +
+> +               axi_timer_0: timer@42800000 {
+> +                       clock-frequency = <100000000>;
+> +                       clocks = <&clkc 15>;
+> +                       compatible = "xlnx,xlnx-pwm";
+> +                       reg = <0x42800000 0x10000>;
+> +                       xlnx,count-width = <0x20>;
+> +                       xlnx,gen0-assert = <0x1>;
+> +                       xlnx,gen1-assert = <0x1>;
+> +                       xlnx,one-timer-only = <0x0>;
+> +                       xlnx,trig0-assert = <0x1>;
+> +                       xlnx,trig1-assert = <0x1>;
+> +               } ;
+> 
 
-Before this patch, if second kernel selects both CRASH_DUMP and
-SPARSEMEM, the second kernel will recongnize memorys at the same section
-with itself as valid memory, and prevents ioremap (see arm ioremap code,
-arm doesn't allow valid memory to be ioremapped again). Which introduces
-some limitations on positioning the crash kernel. For example:
+It seems you are missing a mandatory "#pwm-cells" property.
+How is anybody supposed to use this?
 
-  For a platform with SECTION_SIZE_BITS == 28 (256MiB) and
-  crashkernel=128M@0x28000000 in kernel cmdline, the second
-  kernel is loaded at 0x28000000. Kexec puts elfcorehdr at
-  0x2ff00000, and passes 'elfcorehdr=0x2ff00000 mem=130048K' to
-  second kernel. When second kernel start, it tries to use
-  ioremap to retrive its elfcorehrd. In this case, elfcodehdr is at the
-  same section of the second kernel, pfn_valid will recongnize
-  the page as valid, so ioremap will refuse to map it.
-
-Even if we put crash kernel at the boundary of two sections (such as
-129MB@0x0x28000000 in the above situation), 0x20000000-0x28000000 used
-by old kernel is still unable to retrived by crash kernel because they
-are at the same section.
-
-This patch makes crash dump kernel use strict (and slow) version of
-pfn_valid(), which makes crash kernel recongnize memory correctly.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Geng Hui <hui.geng@huawei.com>
-Cc: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-Cc: Simon Horman <horms@verge.net.au>
----
- arch/arm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index db3c541..795b1d4 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1800,7 +1800,7 @@ config ARCH_SELECT_MEMORY_MODEL
- 	def_bool ARCH_SPARSEMEM_ENABLE
- 
- config HAVE_ARCH_PFN_VALID
--	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
-+	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM || CRASH_DUMP
- 
- config HIGHMEM
- 	bool "High Memory Support"
--- 
-1.8.4
-
+	Arnd
