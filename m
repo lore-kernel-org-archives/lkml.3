@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaEOTYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:24:36 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:35270 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025AbaEOTYe (ORCPT
+	id S1755520AbaEOTZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:25:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42805 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316AbaEOTZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:24:34 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] ARM: imx: clean up error handling
-Date: Thu, 15 May 2014 21:24:30 +0200
-Message-Id: <1400181871-10325-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 15 May 2014 15:25:08 -0400
+Message-ID: <5375148E.6040905@wwwdotorg.org>
+Date: Thu, 15 May 2014 13:25:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>, linux-tegra@vger.kernel.org
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH 08/10] ARM: tegra124: Bind CAR to syscon device
+References: <1400113986-339-1-git-send-email-abrestic@chromium.org> <1400113986-339-9-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1400113986-339-9-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
+> The XUSB PHY driver will be accessing the CAR registers through the
+> syscon interface.
 
-I have rearranged the error handling a bit to fix the issue
-and also make it more clear.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7c..14d61d9 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
- 
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(ret);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
--		goto err;
-+		goto put_pdev;
- 
- 	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
- 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
- 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
- 	if (ret)
--		goto err;
-+		goto free_dma_mask;
- 
- 	if (pdata) {
- 		struct mx3_camera_pdata *copied_pdata;
- 
- 		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
--		if (ret) {
--err:
--			kfree(pdev->dev.dma_mask);
--			platform_device_put(pdev);
--			return ERR_PTR(-ENODEV);
--		}
-+		if (ret)
-+			goto free_dma_mask;
-+
- 		copied_pdata = dev_get_platdata(&pdev->dev);
- 		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
- 	}
- 
- 	return pdev;
-+
-+free_dma_mask:
-+	kfree(pdev->dev.dma_mask);
-+put_pdev:
-+	platform_device_put(pdev);
-+
-+	return ERR_PTR(ret);
- }
- 
- struct platform_device *__init imx_add_mx3_sdc_fb(
--- 
-1.7.10.4
-
+I very strongly don't want to use the syscon concept on Tegra. Instead,
+I want only the CAR driver touching the CAR registers. If other drivers
+need some CAR registers manipulated, that should happen by that other
+driver calling some explicit semantic API in the CAR driver to do so.
+Take a look at how the Tegra SMMU and Tegra AHB driver communicate for
+an example.
