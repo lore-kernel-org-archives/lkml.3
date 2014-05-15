@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaEOF12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 01:27:28 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:51687 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaEOF10 (ORCPT
+	id S1753181AbaEOFaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 01:30:09 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:47144 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbaEOFaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 01:27:26 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 15 May 2014 01:31:16 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-In-Reply-To: <20140514203924.GE28328@moon>
-Message-ID: <alpine.DEB.2.10.1405150127550.30231@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu> <20140506202307.GA1458@moon> <20140508020050.GX39568@redhat.com> <20140508073756.GM8607@moon> <20140508074930.GN8607@moon> <20140508080234.GO8607@moon>
- <alpine.DEB.2.10.1405091211430.13652@vincent-weaver-1.umelst.maine.edu> <20140514203924.GE28328@moon>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 15 May 2014 01:30:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+References: <1399966890-22926-1-git-send-email-k.chander@samsung.com>
+	<20140514150255.GA8330@amd.pavel.ucw.cz>
+	<CAKohpo=MFxUHL22TxXPk4B=JX9AD3RGdgXPPGK9sD3GD6AEV+g@mail.gmail.com>
+	<CAOqmu80j2q6hQLThVt60QkjqcZTXwJ6ddwDLvqBEW1ejrVh_hw@mail.gmail.com>
+	<CAKohponWM+RxgK-50BXH-gk3-bX2no7NojT5-6ZRWJAtSizO7A@mail.gmail.com>
+	<CAOqmu81C7A-bMQY3p5fsvk-4Y=S1yGZHw_Q=RbxCKxwR9fFz-w@mail.gmail.com>
+	<CAKohpon+YbHx_P0oxkT5vSKVn30aZBddykgLLfyg5N3gPEXe6w@mail.gmail.com>
+Date: Thu, 15 May 2014 11:00:05 +0530
+X-Google-Sender-Auth: 31tXnGKLRAg-B4UHbt56P2vv7hc
+Message-ID: <CAOqmu81sUqCTw_x2HZAjfQhzdH6aRMOPAy+i_HeScp2q8zTzuQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: discard duplicate OPP additions
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        "[Chander Kashyap" <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Cyrill Gorcunov wrote:
+On Thu, May 15, 2014 at 10:34 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 15 May 2014 10:22, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>
+>> What i am saying that "what if we are not going to re-use again ? "
+>
+> That's what I said:
+>
+> Yes, it will keep occupying some space but there is only one instance
+> of that per 'cluster' and is very much affordable instead of building it again..
+>
+> So, we may not need to free it.
 
-> So I'm experiencing the same problem on latest -tip + my patches applied.
+Its not just about cpufreq. There may be others using OPPs as well.
+For example devfreq.
+The OPPs for cpu devices may be used again but for others I am not sure.
 
-glad it's not just me.
+>
+>> Also, I feel the driver who created the opp table at its registration
+>> time should free it at its unregistration. Isn't it true in general?
+>
+> Probably case to case basis. You must free resources for two reasons:
+> - They are not lost, like memory leak ..
+> - They can be used by others ..
+>
+> And both these doesn't happen in this case. OPP tables can be used
+> by any other framework and is more or less a core thing..
+>
+> Now, with this discussion I have another idea here..
+>
+> Why don't we build these tables automatically on boot from some core
+> code, rather than asking drivers to do it ? That will get rid of duplication
+> from all drivers and would also reduce confusion
+>
 
-I find the problem to be reproducible and so in theory it might be 
-possible to generate a small reproducing test case.  
-I meant to do that already but I got distracted 
-by other things.
+I also felt the same at least for OPPs of cpu devices.
 
-I think I managed to have a trace I recorded and replayed recreate the 
-issue, but narrowing things down from a 2000+ syscall trace can be 
-tedious.
-
-Let me know if you have any other issues with the perf_fuzzer.
-
-Vince
+> @Rafael/Nishanth ??
+>
+> If things look right, then I can write a patch for fixing it quickly...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
