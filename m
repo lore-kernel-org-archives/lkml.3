@@ -1,132 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473AbaEOSNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:13:17 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:59607 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390AbaEOSNP (ORCPT
+	id S1755551AbaEOSOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:14:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49021 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477AbaEOSOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:13:15 -0400
+	Thu, 15 May 2014 14:14:00 -0400
+Message-ID: <537503E3.6050108@wwwdotorg.org>
+Date: Thu, 15 May 2014 12:13:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <25738681139c04272b6d2ebeff244c6d36c893f7.1400133090.git.viresh.kumar@linaro.org>
-References: <25738681139c04272b6d2ebeff244c6d36c893f7.1400133090.git.viresh.kumar@linaro.org>
-Date: Thu, 15 May 2014 11:13:14 -0700
-X-Google-Sender-Auth: PkLg05WJJIr1kGbf3Rk9p6sFgCQ
-Message-ID: <CAD=FV=WktXavbpf0zN4=2KyF1uWXrysaRRQpAtAzqVhfDOJB5A@mail.gmail.com>
-Subject: Re: [RFC] cpufreq: send notifications for intermediate (stable) frequencies
-From: Doug Anderson <dianders@chromium.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        arvind.chauhan@arm.com, Stephen Warren <swarren@nvidia.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Agner <stefan@agner.ch>
+CC: thierry.reding@gmail.com, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        marcel@ziswiler.com
+Subject: Re: [PATCH 2/2] ARM: tegra: initial add of Colibri T30
+References: <107aeb48982529858267cb85c792b35e@agner.ch>
+In-Reply-To: <107aeb48982529858267cb85c792b35e@agner.ch>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
+On 05/14/2014 10:16 AM, Stefan Agner wrote:
+> Am 2014-05-13 21:49, schrieb Stephen Warren:
+>> On 05/13/2014 11:27 AM, stefan@agner.ch wrote:
+>>> +	/* SPI1: Colibri SSP */
+>>> +	spi@7000d400 {
+>>> +		status = "okay";
+>>> +		spi-max-frequency = <25000000>;
+>>> +		can0: can@0 {
+>>> +			compatible = "microchip,mcp2515";
+>>> +			reg = <0>;
+>>> +			clocks = <&clk16m>;
+>>> +			interrupt-parent = <&gpio>;
+>>> +			interrupts = <TEGRA_GPIO(S, 0) GPIO_ACTIVE_LOW>;
+>>> +			spi-max-frequency = <10000000>;
+>>
+>> So this chip doesn't get confused by a faster clock frequency when its
+>> chip-select line isn't asserted? I would have expected spi-max-frequency
+>> for the bus to be the minimum value that any device on the bus would
+>> tolerate.
+> 
+> And from the other mail:
+>> I'm not convinced about this. The clock signal still reaches all the
+>> chips, and hence still reaches some logic inside those chips. If the
+>> setup/hold timings aren't met (for internal parts of the chip's SPI
+>> state machine), then presumably all bets are off re: performance of the
+>> chip, irrespective of whether the CS line happens to gate how much of
+>> the chip actually does anything.
+> 
+> SPI is by default not a multi-master Bus, hence the slaves only have to
+> listen when the CS is asserted. 
 
-On Wed, May 14, 2014 at 10:56 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Douglas Anderson, recently pointed out an interesting problem due to which his
-> udelay() was expiring earlier than it should:
-> https://lkml.org/lkml/2014/5/13/766
->
-> While transitioning between frequencies few platforms may temporarily switch to
-> a stable frequency, waiting for the main PLL to stabilize.
->
-> For example: When we transition between very low frequencies on exynos, like
-> between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
-> No CPUFREQ notification is sent for that. That means there's a period of time
-> when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
-> and 300MHz. And so udelay behaves badly.
->
-> To get this fixed in a generic way, lets introduce another callback safe_freq()
-> for the cpufreq drivers.
->
-> safe_freq() should return a stable intermediate frequency a platform might want
-> to switch to, before jumping to the frequency corresponding to 'index'. Core
-> will send the 'PRE' notification for this 'stable' frequency and 'POST' for the
-> 'target' frequency. Though if ->target_index() fails, it will handle POST for
-> 'stable' frequency only.
->
-> Drivers must send 'POST' notification for 'stable' freq and 'PRE' for 'target'
-> freq. If they can't switch to target frequency, they don't need to send any
-> notification.
+That's got nothing to do with multi-master; it's got to do with the fact
+that an out-of-band /CS signal is what selects devices rather than
+in-band data on the bus.
 
-This will have the side effect of sending twice as many notifications.
- ...however it does allow for people registering for CPUFREQ
-notifications to be more generic...
+> I talked with our hardware expert, and
+> he told me that he would expect that the whole input stage (input
+> driver) is in reset/off logic when the CS line is not asserted. IMHO,
+> this makes sense, this would also save power. At least he would expect
+> that the communication state machine is resetted on CS assertion, so
+> that it doesn't matter what happend before. 
+> 
+> Wikipedia also states something similar. 
 
-Thinking about it, I think you're right that this is the way to go.
-The majority of the registrants of CPUFREQ that I see really ought to
-be moved to common clock notifications (they are dealing with the fact
-that a peripheral clock will get scaled as a side effect of CPUFREQ).
-What's left is only a very small number of cases that would most
-cleanly be dealt with by just seeing the extra notification.
+I find it much more likely that /CS would be a synchronous input to the
+SPI state machine in the HW. That way, the chip designers don't have to
+worry about issues with asynchronous resets.
 
+Anyway, both our arguments are pure conjecture. The only way to tell for
+sure is for you to go read the datasheets for the individual devices and
+find out if they document any requirements for the clock signal when /CS
+isn't active. It'd be good if you could check that.
 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Doug/Stephen,
->
-> If this doesn't look too ugly, then I would need patches from you to fix your
-> platforms as I am not well aware of clk hierarchy of your platforms.
+> But, since SPI is no real standard, devices which work differently and
+> claim to communicate through SPI could exist :-)
+> 
+> I have had not seen issues with this device when using faster clocks for
+> other devices on the same bus.
 
-It probably makes sense to wait until Thomas Abraham's patch lands,
-since he's redoing exynos cpufreq to use cpufreq-cpu0.  ...and maybe
-Thomas would be willing to write this patch?
-
-
->  drivers/cpufreq/cpufreq.c | 13 +++++++++++--
->  include/linux/cpufreq.h   | 18 ++++++++++++++++++
->  2 files changed, 29 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index a05c921..8d1cb4f 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1874,11 +1874,17 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
->
->                 if (notify) {
->                         freqs.old = policy->cur;
-> -                       freqs.new = freq_table[index].frequency;
-> +                       /* Switch to some safe intermediate freq */
-> +                       if (cpufreq_driver->safe_freq)
-
-What do you think about calling this get_safe_freq().  It took me a
-little while before I realized that this function didn't perform the
-transition to the safe frequency--it just returned it.
-
-...the comment adds extra confusion since it makes it sound like the
-switch happens right here.
-
-
-> +                               freqs.new = cpufreq_driver->safe_freq(policy,
-> +                                                                     index);
-> +                       else
-> +                               freqs.new = freq_table[index].frequency;
->                         freqs.flags = 0;
->
->                         pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
-> -                                __func__, policy->cpu, freqs.old, freqs.new);
-> +                                __func__, policy->cpu, freqs.old,
-> +                                freq_table[index].frequency);
->
->                         cpufreq_freq_transition_begin(policy, &freqs);
->                 }
-> @@ -1887,6 +1893,9 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
->                 if (retval)
->                         pr_err("%s: Failed to change cpu frequency: %d\n",
->                                __func__, retval);
-> +               else
-> +                       /* Send POST notification for the target frequency */
-> +                       freqs.new = freq_table[index].frequency;
-
-Don't you need to set freqs.old to the safe_freq?
-
--Doug
+... but I suppose that since in practice you're not seeing any issues,
+the DT is fine for now. It's not like this can't be changed later if we
+find out there is an issue.
