@@ -1,119 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaEOGz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 02:55:27 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41983 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaEOGz0 (ORCPT
+	id S1753484AbaEOHCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 03:02:49 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:40684 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaEOHCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 02:55:26 -0400
-Message-ID: <53746492.20701@linux.vnet.ibm.com>
-Date: Thu, 15 May 2014 12:24:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, peterz@infradead.org, tglx@linutronix.de,
-        mingo@kernel.org, rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        hch@infradead.org, mgorman@suse.de, riel@redhat.com, bp@suse.de,
-        rostedt@goodmis.org, mgalbraith@suse.de, ego@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, oleg@redhat.com, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140511203617.17152.21133.stgit@srivatsabhat.in.ibm.com> <20140511203657.17152.79234.stgit@srivatsabhat.in.ibm.com> <20140512205757.GA18959@mtj.dyndns.org> <5371DF88.7020409@linux.vnet.ibm.com> <20140513155717.GE13828@localhost.localdomain>
-In-Reply-To: <20140513155717.GE13828@localhost.localdomain>
+	Thu, 15 May 2014 03:02:46 -0400
+Message-ID: <5374668F.4060109@gmail.com>
+Date: Thu, 15 May 2014 09:02:39 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Kishon Vijay Abraham I <kishon@ti.com>, Arnd Bergmann <arnd@arndb.de>
+CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com, tj@kernel.org
+Subject: Re: [PATCH v3 1/6] phy: add a driver for the Berlin SATA PHY
+References: <1400060942-10588-1-git-send-email-antoine.tenart@free-electrons.com> <20140514165722.GA18495@kwain> <5373AE9A.3050008@gmail.com> <5764751.ffUj9rhnMd@wuerfel> <5373B908.5090904@gmail.com> <537462A2.5020607@ti.com>
+In-Reply-To: <537462A2.5020607@ti.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051506-5816-0000-0000-00000E05A215
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 09:27 PM, Frederic Weisbecker wrote:
-> On Tue, May 13, 2014 at 02:32:00PM +0530, Srivatsa S. Bhat wrote:
->>
->>  kernel/stop_machine.c |   39 ++++++++++++++++++++++++++++++++++-----
->>  1 file changed, 34 insertions(+), 5 deletions(-)
->>
->> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
->> index 01fbae5..288f7fe 100644
->> --- a/kernel/stop_machine.c
->> +++ b/kernel/stop_machine.c
->> @@ -130,8 +130,10 @@ enum multi_stop_state {
->>  	MULTI_STOP_NONE,
->>  	/* Awaiting everyone to be scheduled. */
->>  	MULTI_STOP_PREPARE,
->> -	/* Disable interrupts. */
->> -	MULTI_STOP_DISABLE_IRQ,
->> +	/* Disable interrupts on CPUs not in ->active_cpus mask. */
->> +	MULTI_STOP_DISABLE_IRQ_INACTIVE,
->> +	/* Disable interrupts on CPUs in ->active_cpus mask. */
->> +	MULTI_STOP_DISABLE_IRQ_ACTIVE,
->>  	/* Run the function */
->>  	MULTI_STOP_RUN,
->>  	/* Exit */
->> @@ -189,12 +191,39 @@ static int multi_cpu_stop(void *data)
->>  	do {
->>  		/* Chill out and ensure we re-read multi_stop_state. */
->>  		cpu_relax();
->> +
->> +		/*
->> +		 * We use 2 separate stages to disable interrupts, namely
->> +		 * _INACTIVE and _ACTIVE, to ensure that the inactive CPUs
->> +		 * disable their interrupts first, followed by the active CPUs.
->> +		 *
->> +		 * This is done to avoid a race in the CPU offline path, which
->> +		 * can lead to receiving IPIs on the outgoing CPU *after* it
->> +		 * has gone offline.
->> +		 *
->> +		 * During CPU offline, we don't want the other CPUs to send
->> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
->> +		 * disabled interrupts (because, then it will notice the IPIs
->> +		 * only after it has gone offline). We can prevent this by
->> +		 * making the other CPUs disable their interrupts first - that
->> +		 * way, they will run the stop-machine code with interrupts
->> +		 * disabled, and hence won't send IPIs after that point.
->> +		 */
->> +
->>  		if (msdata->state != curstate) {
->>  			curstate = msdata->state;
->>  			switch (curstate) {
->> -			case MULTI_STOP_DISABLE_IRQ:
->> -				local_irq_disable();
->> -				hard_irq_disable();
->> +			case MULTI_STOP_DISABLE_IRQ_INACTIVE:
->> +				if (!is_active) {
->> +					local_irq_disable();
->> +					hard_irq_disable();
->> +				}
->> +				break;
->> +			case MULTI_STOP_DISABLE_IRQ_ACTIVE:
->> +				if (is_active) {
->> +					local_irq_disable();
->> +					hard_irq_disable();
+On 05/15/2014 08:45 AM, Kishon Vijay Abraham I wrote:
+> On Thursday 15 May 2014 12:12 AM, Sebastian Hesselbarth wrote:
+>> On 05/14/2014 08:12 PM, Arnd Bergmann wrote:
+>>> On Wednesday 14 May 2014 19:57:46 Sebastian Hesselbarth wrote:
+>>>> On 05/14/2014 06:57 PM, Antoine Ténart wrote:
+>>>>> On Wed, May 14, 2014 at 06:11:24PM +0200, Arnd Bergmann wrote:
+>>>>>> On Wednesday 14 May 2014 17:49:29 Antoine Ténart wrote:
+>>>>>>> On Wed, May 14, 2014 at 05:31:24PM +0200, Arnd Bergmann wrote:
+[...]
+>>>> Now, thinking about the PHY binding and the (possible) multi-protocol
+>>>> support, it can be possible that on BG2Q there is a generic 2-lane
+>>>> LVDS PHY that can be configured to support SATA or PCIe. Both are
+>>>> electrically and bit-level compatible, so they could be internally
+>>>> wired-up with AHCI and PCIe controller.
+>>>
+>>> Sounds like a reasonable guess. We have other PHY drivers doing the
+>>> same thing already.
+[...]
+>>>> From a DT point-of-view, we need a way to (a) link each SATA or PCIe
+>>>> port to the PHY, (b) specify the PHY lane to be used, and (c) specify
+>>>> the protocol to be used on that lane. If I got it right, Arnd already
+>>>> mentioned to use the phy-specifier to deal with it:
+>>>>
+>>>> e.g. phy = <&genphy 0 MODE_SATA> or phy = <&genphy 1 MODE_PCIE>
+>>>
+>>> Right.
+>>>
+>>>> Let's assume we have one dual-port SATA controller and one PCIe
+>>>> controller with either x1 or x2 support. The only sane DT binding,
+>>>> I can think of then would be:
+>>>>
+>>>> berlin2q.dtsi:
+>>>>
+>>>> genphy: lvds@ea00ff {
+>>>> 	compatible = "marvell,berlin-lvds-phy";
+>>>> 	reg = <0xea00ff 0x100>;
+>>>> 	#phy-cells = <2>;
+>>>> };
+>>>>
+>>>> sata: sata@ab00ff {
+>>>> 	compatible = "ahci-platform";
+>>>> 	reg = <0xab00ff 0x100>;
+>>>> 	
+>>>> 	sata0: sata-port@0 {
+>>>> 		reg = <0>;
+>>>> 		phy = <&genphy 0 MODE_SATA>;
+>>>> 		status = "disabled";
+>>>> 	};
+>>>>
+>>>> 	sata1: sata-port@1 {
+>>>> 		reg = <1>;
+>>>> 		phy = <&genphy 1 MODE_SATA>;
+>>>> 		status = "disabled";
+>>>> 	};
+>>>> };
+>>>>
+>>>> pcie: pcie@ab01ff {
+>>>> 	compatible = "marvell,berlin-pcie";
+>>>> 	reg = <0xab01ff 0x100>;
+>>>>
+>>>> 	pcie0: pcie-port@0 {
+>>>> 		reg = <0>;
+>>>> 		/* set phy on a per-board basis */
+>>>> 		/* PCIe x1 on Lane 0 : phy = <&genphy 0 MODE_PCIE>; */
+>>>> 		/* PCIe x2 on Lane 0 and 1 : phy = <&genphy 0 MODE_PCIE>, <&genphy 1
+>>>> MODE_PCIE>; */
+>>>> 		status = "disabled";
+>>>> 	};
+>>>> };
+>>>>
+>>>> berlin2q-dmp.dts:
+>>>>
+>>>> &sata1 {
+>>>> 	status = "okay";
+>>>> };
+>>>>
+>>>> &pcie0 {
+>>>> 	phy = <&genphy 1 MODE_PCIE>;
+>>>> };
+>>>>
+>>>> berlin2q-foo.dts:
+>>>>
+>>>> &pcie0 {
+>>>> 	phy = <&genphy 0 MODE_PCIE>, <&genphy 1 MODE_PCIE>;
+>>>> };
+>>>
+>>> Exactly. I would also be fine with keeping the sub-nodes of the
+>>> phy device as in v3 and using #phy-cells=<1> instead of #phy-cells.
+>>> The result would be pretty much the same, it just depends on how
+>>> closely connected the two logical phys are.
 > 
-> I have no idea about possible IPI latencies due to hardware. But are we sure that a stop
-> machine transition state is enough to make sure we get a pending IPI? Shouldn't we have
-> some sort of IPI flush in between, like polling on call_single_queue?
+> huh.. even with sub-nodes you'll need #phy-cells=<2> if we use a single *PHY
+> PROVIDER*. Because with just PHYs node pointer we won't be able to get the PHY.
+> We'll need PHY providers node pointer.
 > 
+> However I'd prefer to have sub-nodes for each individual PHYs and register a
+> single PHY PROVIDER.
 
-That might not be actually required, but the concept of flushing out
-all pending work before going offline (irrespective of whether the
-outgoing CPU got the corresponding IPIs in time or not) sounds like
-a good idea, because we can guarantee that any late IPIs landing on
-the CPU (and thus generating the warning) will be completely harmless.
+Depends on what you call PHY. In the example above the PHY is what
+allows you to control both lanes.
 
-We can empty the call_single_queue after disabling interrupts in
-the _ACTIVE stage. That way, we can guarantee that all pending IPI
-functions have been executed by the outgoing CPU (even if the
-corresponding IPIs come a bit later). Also, no new IPI work can be
-assigned to that CPU beyond the _INACTIVE stage.
+So you want sub-nodes for each individual lane given the nomenclature
+of the example?
 
-Thanks for the suggestion, Frederic!
+Or like it is used in the example above, a single PHY node with an index
+in the phy-specifier to pick an individual lane.
 
-Regards,
-Srivatsa S. Bhat
+IMHO, having both phy-specifier index _and_ PHY sub-node per lane
+has no benefit at all. You cannot even use the PHY sub-nodes for any
+setup properties, as they depend on the consumer claiming the lane.
+
+Sebastian
 
