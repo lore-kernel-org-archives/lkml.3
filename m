@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaEOTWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:22:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55392 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaEOTWF (ORCPT
+	id S1755811AbaEOTWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:22:50 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:51250 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333AbaEOTWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:22:05 -0400
-Message-ID: <537513D8.7060203@wwwdotorg.org>
-Date: Thu, 15 May 2014 13:22:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 15:22:49 -0400
+Message-ID: <53751403.1010109@gmail.com>
+Date: Thu, 15 May 2014 20:22:43 +0100
+From: Keir Fraser <keir.xen@gmail.com>
+User-Agent: Postbox 3.0.9 (Macintosh/20140129)
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jim Lin <jilin@nvidia.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 04/10] clk: tegra: Initialize xusb clocks
-References: <1400113986-339-1-git-send-email-abrestic@chromium.org> <1400113986-339-5-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1400113986-339-5-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH 7/9] x86: skip check for spurious faults for
+ non-present faults
+References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com> <1397571337-20409-8-git-send-email-david.vrabel@citrix.com> <53750A96.2020201@zytor.com>
+In-Reply-To: <53750A96.2020201@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
-> Initialize the XUSB-related clocks with appropriate parents and rates
-> for both Tegra114 and Tegra124.
+H. Peter Anvin wrote:
+> On 04/15/2014 07:15 AM, David Vrabel wrote:
+>> If a fault on a kernel address is due to a non-present page, then it
+>> cannot be the result of stale TLB entry from a protection change (RO
+>> to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
+>> skipped.
+>
+> Erk... this code is screaming WTF to me.  The x86 architecture is such
+> that the CPU is responsible for avoiding these faults.
 
-These first 4 clock driver patches look plausible to me, although I
-didn't look that hard!
+Not in this case...
 
-Peter or Mike, if they look OK to you, can you please pick them up for
-3.16 so that by the time we apply the rest of the patches in this series
-for 3.17, the clock dependencies are already there? Thanks.
+> <dig>  <dig>  <dig>
+>
+> 5b727a3b0158a129827c21ce3bfb0ba997e8ddd0
+>
+>      x86: ignore spurious faults
+>
+>      When changing a kernel page from RO->RW, it's OK to leave stale TLB
+>      entries around, since doing a global flush is expensive and they
+>      pose no security problem.  They can, however, generate a spurious
+>      fault, which we should catch and simply return from (which will
+>      have the side-effect of reloading the TLB to the current PTE).
+>
+>      This can occur when running under Xen, because it frequently changes
+>      kernel pages from RW->RO->RW to implement Xen's pagetable semantics.
+>      It could also occur when using CONFIG_DEBUG_PAGEALLOC, since it
+>      avoids doing a global TLB flush after changing page permissions.
+>
+>      Signed-off-by: Jeremy Fitzhardinge<jeremy@xensource.com>
+>      Cc: Harvey Harrison<harvey.harrison@gmail.com>
+>      Signed-off-by: Ingo Molnar<mingo@elte.hu>
+>      Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
+>
+> Again WTF?
+>
+> Are we chasing hardware errata here?  Or did someone go off and *assume*
+> that the x86 hardware architecture work a certain way?  Or is there
+> something way more subtle going on?
+
+See Intel Developer's Manual Vol 3 Section 4.10.4.3, 3rd bullet... This 
+is expected behaviour, probably to make copy-on-write faults faster.
+
+  -- Keir
+
+> I guess next step is mailing list archaeology...
+>
+> Does anyone still have contacts with Jeremy, and if so, could they poke
+> him perhaps?
+>
+> 	-hpa
+>
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
