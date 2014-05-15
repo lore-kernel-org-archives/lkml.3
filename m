@@ -1,141 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468AbaEORZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:25:56 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:33745 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755145AbaEORYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:24:13 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnRMAMT3dFNXQwiB/2dsb2JhbABZgwaBYYFdqFoEAQEBAQEBBQGaGQICgREXdIJTExwjGIECJBOIRQHRLoVUiHqERwEDjyqKJgGLDYgHgzg7MA
-Date: Thu, 15 May 2014 19:24:09 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Subject: [PATCH 3/3] FS/HPFS: use __func__ for logging
-Message-Id: <20140515192409.c8990dd41f8d034832ee1c63@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755121AbaEORYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:24:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754940AbaEORYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:24:06 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 07/14] perf tools: Add file size check and factor dso__data_read_offset
+Date: Thu, 15 May 2014 19:23:28 +0200
+Message-Id: <1400174615-2121-8-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normalize function display fx() using __func__
+Adding file size check, because the lseek will succeed
+for any offset behind file size. Factoring the code
+the check the offset earli in the flow.
 
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- fs/hpfs/buffer.c | 12 ++++++------
- fs/hpfs/dnode.c  | 12 ++++++------
- 2 files changed, 12 insertions(+), 12 deletions(-)
+ tools/perf/util/dso.c | 78 ++++++++++++++++++++++++++++++++++++++-------------
+ tools/perf/util/dso.h |  1 +
+ 2 files changed, 59 insertions(+), 20 deletions(-)
 
-diff --git a/fs/hpfs/buffer.c b/fs/hpfs/buffer.c
-index e5f62d4..07e0b0f 100644
---- a/fs/hpfs/buffer.c
-+++ b/fs/hpfs/buffer.c
-@@ -55,7 +55,7 @@ void *hpfs_map_sector(struct super_block *s, unsigned secno, struct buffer_head
- 	if (bh != NULL)
- 		return bh->b_data;
- 	else {
--		pr_warn("hpfs_map_sector: read error\n");
-+		pr_warn("%s(): read error\n", __func__);
- 		return NULL;
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 316e087..ad0e2da 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -197,6 +197,7 @@ static void close_data_fd(struct dso *dso)
+ 	if (dso->data.fd >= 0) {
+ 		close(dso->data.fd);
+ 		dso->data.fd = -1;
++		dso->data.file_size = 0;
+ 		dso__list_del(dso);
  	}
  }
-@@ -76,7 +76,7 @@ void *hpfs_get_sector(struct super_block *s, unsigned secno, struct buffer_head
- 		set_buffer_uptodate(bh);
- 		return bh->b_data;
- 	} else {
--		pr_warn("hpfs_get_sector: getblk failed\n");
-+		pr_warn("%s(): getblk failed\n", __func__);
- 		return NULL;
- 	}
- }
-@@ -93,7 +93,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
- 	cond_resched();
- 
- 	if (secno & 3) {
--		pr_warn("hpfs_map_4sectors: unaligned read\n");
-+		pr_warn("%s(): unaligned read\n", __func__);
- 		return NULL;
- 	}
- 
-@@ -112,7 +112,7 @@ void *hpfs_map_4sectors(struct super_block *s, unsigned secno, struct quad_buffe
- 
- 	qbh->data = data = kmalloc(2048, GFP_NOFS);
- 	if (!data) {
--		pr_warn("hpfs_map_4sectors: out of memory\n");
-+		pr_warn("%s(): out of memory\n", __func__);
- 		goto bail4;
- 	}
- 
-@@ -145,7 +145,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
- 	hpfs_lock_assert(s);
- 
- 	if (secno & 3) {
--		pr_warn("hpfs_get_4sectors: unaligned read\n");
-+		pr_warn("%s(): unaligned read\n", __func__);
- 		return NULL;
- 	}
- 
-@@ -161,7 +161,7 @@ void *hpfs_get_4sectors(struct super_block *s, unsigned secno,
- 	}
- 
- 	if (!(qbh->data = kmalloc(2048, GFP_NOFS))) {
--		pr_warn("hpfs_get_4sectors: out of memory\n");
-+		pr_warn("%s(): out of memory\n", __func__);
- 		goto bail4;
- 	}
- 	return qbh->data;
-diff --git a/fs/hpfs/dnode.c b/fs/hpfs/dnode.c
-index 69554e2..d10c5e9 100644
---- a/fs/hpfs/dnode.c
-+++ b/fs/hpfs/dnode.c
-@@ -17,7 +17,7 @@ static loff_t get_pos(struct dnode *d, struct hpfs_dirent *fde)
- 		if (de == fde) return ((loff_t) le32_to_cpu(d->self) << 4) | (loff_t)i;
- 		i++;
- 	}
--	pr_info("get_pos: not_found\n");
-+	pr_info("%s(): not_found\n", __func__);
- 	return ((loff_t)le32_to_cpu(d->self) << 4) | (loff_t)1;
+@@ -366,17 +367,10 @@ dso_cache__memcpy(struct dso_cache *cache, u64 offset,
  }
  
-@@ -94,8 +94,8 @@ static void hpfs_pos_ins(loff_t *p, loff_t d, loff_t c)
- 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
- 		int n = (*p & 0x3f) + c;
- 		if (n > 0x3f)
--			pr_warn("hpfs_pos_ins: %08x + %d\n",
--				(int)*p, (int)c >> 8);
-+			pr_warn("%s(): %08x + %d\n",
-+				__func__, (int)*p, (int)c >> 8);
- 		else
- 			*p = (*p & ~0x3f) | n;
- 	}
-@@ -106,8 +106,8 @@ static void hpfs_pos_del(loff_t *p, loff_t d, loff_t c)
- 	if ((*p & ~0x3f) == (d & ~0x3f) && (*p & 0x3f) >= (d & 0x3f)) {
- 		int n = (*p & 0x3f) - c;
- 		if (n < 1)
--			pr_warn("hpfs_pos_ins: %08x - %d\n",
--				(int)*p, (int)c >> 8);
-+			pr_warn("%s(): %08x - %d\n",
-+				__func__, (int)*p, (int)c >> 8);
- 		else
- 			*p = (*p & ~0x3f) | n;
- 	}
-@@ -251,7 +251,7 @@ static int hpfs_add_to_dnode(struct inode *i, dnode_secno dno,
- 	}
- 	go_up:
- 	if (namelen >= 256) {
--		hpfs_error(i->i_sb, "hpfs_add_to_dnode: namelen == %d", namelen);
-+		hpfs_error(i->i_sb, "%s(): namelen == %d", __func__, namelen);
- 		kfree(nd);
- 		kfree(nname);
- 		return 1;
+ static ssize_t
+-dso_cache__read(struct dso *dso, struct machine *machine,
+-		 u64 offset, u8 *data, ssize_t size)
++dso_cache__read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
+ {
+-	bool new_fd = dso->data.fd == -1;
+ 	struct dso_cache *cache;
+ 	ssize_t ret;
+-	int fd;
+-
+-	fd = dso__data_fd(dso, machine);
+-	if (fd < 0)
+-		return -1;
+ 
+ 	do {
+ 		u64 cache_offset;
+@@ -390,10 +384,10 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 		cache_offset = offset & DSO__DATA_CACHE_MASK;
+ 		ret = -EINVAL;
+ 
+-		if (-1 == lseek(fd, cache_offset, SEEK_SET))
++		if (-1 == lseek(dso->data.fd, cache_offset, SEEK_SET))
+ 			break;
+ 
+-		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
++		ret = read(dso->data.fd, cache->data, DSO__DATA_CACHE_SIZE);
+ 		if (ret <= 0)
+ 			break;
+ 
+@@ -408,15 +402,11 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 	if (ret <= 0)
+ 		free(cache);
+ 
+-	/* Check the cache only if we just added new fd. */
+-	if (new_fd)
+-		data_close();
+-
+ 	return ret;
+ }
+ 
+-static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
+-			      u64 offset, u8 *data, ssize_t size)
++static ssize_t dso_cache_read(struct dso *dso, u64 offset,
++			      u8 *data, ssize_t size)
+ {
+ 	struct dso_cache *cache;
+ 
+@@ -424,11 +414,10 @@ static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
+ 	if (cache)
+ 		return dso_cache__memcpy(cache, offset, data, size);
+ 	else
+-		return dso_cache__read(dso, machine, offset, data, size);
++		return dso_cache__read(dso, offset, data, size);
+ }
+ 
+-ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+-			      u64 offset, u8 *data, ssize_t size)
++static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
+ {
+ 	ssize_t r = 0;
+ 	u8 *p = data;
+@@ -436,7 +425,7 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 	do {
+ 		ssize_t ret;
+ 
+-		ret = dso_cache_read(dso, machine, offset, p, size);
++		ret = dso_cache_read(dso, offset, p, size);
+ 		if (ret < 0)
+ 			return ret;
+ 
+@@ -456,6 +445,55 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 	return r;
+ }
+ 
++static int data_file_size(struct dso *dso)
++{
++	struct stat st;
++
++	if (!dso->data.file_size) {
++		if (fstat(dso->data.fd, &st)) {
++			pr_err("dso mmap failed, fstat: %s\n", strerror(errno));
++			return -1;
++		}
++		dso->data.file_size = st.st_size;
++	}
++
++	return 0;
++}
++
++static ssize_t data_read_offset(struct dso *dso, u64 offset,
++				u8 *data, ssize_t size)
++{
++	if (data_file_size(dso))
++		return -1;
++
++	/* Check the offset sanity. */
++	if (offset > dso->data.file_size)
++		return -1;
++
++	if (offset + size < offset)
++		return -1;
++
++	return cached_read(dso, offset, data, size);
++}
++
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	bool new_fd = dso->data.fd == -1;
++	ssize_t ret;
++
++	if (dso__data_fd(dso, machine) < 0)
++		return -1;
++
++	ret = data_read_offset(dso, offset, data, size);
++
++	/* Check the cache only if we just added new fd. */
++	if (new_fd)
++		data_close();
++
++	return ret;
++}
++
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size)
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 90988bf..da47b13 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -103,6 +103,7 @@ struct dso {
+ 	struct {
+ 		struct rb_root	 cache;
+ 		int		 fd;
++		size_t		 file_size;
+ 		struct list_head open_entry;
+ 	} data;
+ 
 -- 
-1.8.4.5
+1.8.3.1
+
