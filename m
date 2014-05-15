@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaEOSBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 14:01:44 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:46040 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216AbaEOSBm (ORCPT
+	id S1755847AbaEOSCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 14:02:09 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:48261 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471AbaEOSCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 14:01:42 -0400
-Date: Thu, 15 May 2014 18:01:37 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Chung-Lin Tang <cltang@codesourcery.com>
-CC: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-In-Reply-To: <5374F56A.3090406@codesourcery.com>
-Message-ID: <Pine.LNX.4.64.1405151748430.3155@digraph.polyomino.org.uk>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
- <8399002.IIyBoyEHox@wuerfel> <CANcMJZAOi9ctWkpEgynj6wxCrvW4oS5ZHj3Chv04D=VQDogEvw@mail.gmail.com>
- <4160991.69XaTMjMrC@wuerfel> <5374F56A.3090406@codesourcery.com>
+	Thu, 15 May 2014 14:02:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 15 May 2014 18:01:40.0956 (UTC) FILETIME=[B94939C0:01CF7067]
+In-Reply-To: <1400171258.21547.136.camel@deneb.redhat.com>
+References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
+	<20140515144424.GA23884@linaro.org>
+	<1400171258.21547.136.camel@deneb.redhat.com>
+Date: Thu, 15 May 2014 18:55:22 +0100
+Message-ID: <CAPvkgC2WQcvn5e01Y70cm5nzenYZ6tk_1BampHw66VoRFn7Jiw@mail.gmail.com>
+Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
+From: Steve Capper <steve.capper@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Chung-Lin Tang wrote:
+On 15 May 2014 17:27, Mark Salter <msalter@redhat.com> wrote:
+> On Thu, 2014-05-15 at 15:44 +0100, Steve Capper wrote:
+>> On Thu, May 15, 2014 at 10:19:22AM -0400, Mark Salter wrote:
+>> > The following happens when trying to run a kvm guest on a kernel
+>> > configured for 64k pages. This doesn't happen with 4k pages:
+>> >
+>> >   BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+>> >   Kernel panic - not syncing: BUG!
+>> >   CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+>> >   Call trace:
+>> >   [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+>> >   [<fffffe00000961b4>] show_stack+0x14/0x1c
+>> >   [<fffffe000066e648>] dump_stack+0x84/0xb0
+>> >   [<fffffe0000668678>] panic+0xf4/0x220
+>> >   [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+>> >   [<fffffe000018edd8>] free_pages+0x50/0x88
+>> >   [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+>> >   [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+>> >   [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+>> >   [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+>> >   [<fffffe00001edc1c>] __fput+0xb0/0x288
+>> >   [<fffffe00001ede4c>] ____fput+0xc/0x14
+>> >   [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+>> >   [<fffffe0000095c14>] do_notify_resume+0x54/0x58
+>> >
+>> > In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+>> > on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+>> > happens because a pud_huge() test in unmap_range() returns true when it
+>> > should always be false with 2-level pages tables used by 64k pages.
+>> > This patch removes support for huge puds if 2-level pagetables are
+>> > being used.
+>>
+>> Hi Mark,
+>> I'm still catching up with myself, sorry  (was off sick for a couple
+>> of days)...
+>>
+>> I thought unmap_range was going to be changed?
+>> Does the following help things?
+>> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009388.html
+>
+> No, I get the same BUG. Regardless, pud_huge() should always return
+> false for 2-level pagetables, right?
 
-> > c) glibc may or may not provide a way for applications to use
-> >    the extended interfaces without a user space ABI break. My
-> >    impression so far is that this is going to be too hard and
-> >    it won't be done, but this is for the glibc developers to
-> >    determine.
-> 
-> glibc does version its exported symbols, so provided new/old syscalls
-> are both provided, haveing a new version of a routine (using 64-bit
-> time_t and new syscall interfaces) and the old compat routine co-exist
-> should be possible. Of course, old binaries may still not be saved when
-> 2038 arrives.
+Okay, thanks for giving that a go.
 
-You could do it with symbol versioning, though my guess would be that it 
-would be natural to provide _TIME_BITS like _FILE_OFFSET_BITS (with the 
-combination _TIME_BITS=64, _FILE_OFFSET_BITS=32 not being supported at 
-all) and then later transition the default.  (Discussion of the 
-possibility of moving the default to _FILE_OFFSET_BITS=64 suggested that 
-in practice most libraries in distributions where this affects the ABI are 
-already built that way, though noone has followed up on that discussion to 
-try to reach a consensus that we have enough evidence to change the 
-default now.  There are a couple of issues with the way 
-_FILE_OFFSET_BITS=64 is implemented that should be avoided in any 
-implementation of _TIME_BITS=64: (a) _FILE_OFFSET_BITS=64 maps functions 
-to corresponding *64 functions in the user's namespace, when it should use 
-reserved-namespace names; (b) it's not a no-op for 64-bit platforms - it 
-still remaps function names and types.  So _TIME_BITS=64 should only map 
-to reserved-namespace names, and not do any remapping at all on platforms 
-where time_t is already 64-bit.)
+Yeah I agree for 64K granule it doesn't make sense to have a huge_pud.
+The patch looks sound now, but checking for a folded pmd may run into
+problems if/when we get to 3-levels and 64K pages in future.
 
-Obviously 64-bit time_t syscalls would be an appropriately narrow set of 
-syscalls like those in the generic ABI (so glibc would implement stat for 
-_TIME_BITS=64 using fstatat64_time64 or whatever the syscall is called, 
-just as the stat functions for generic ABI architectures are implemented 
-with newfstatat / fstatat64 rather than lots of separate syscalls.
+Perhaps checking for PAGE_SHIFT==12 (or something similar) would be a
+bit more robust?
 
+Cheers,
 -- 
-Joseph S. Myers
-joseph@codesourcery.com
+Steve
+
+>
+>
