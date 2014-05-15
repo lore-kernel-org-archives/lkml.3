@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaEORYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 13:24:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46352 "EHLO mx1.redhat.com"
+	id S1755551AbaEOR1D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 13:27:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696AbaEORX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 13:23:59 -0400
+	id S1754573AbaEORYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 13:24:01 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,17 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 04/14] perf tools: Add global list of opened dso objects
-Date: Thu, 15 May 2014 19:23:25 +0200
-Message-Id: <1400174615-2121-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 05/14] perf tools: Add global count of opened dso objects
+Date: Thu, 15 May 2014 19:23:26 +0200
+Message-Id: <1400174615-2121-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding global list of opened dso objects, so we can
-track them and use the list for caching dso data file
+Adding global count of opened dso objects so we could
+properly limit the number of opened dso data file
 descriptors.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
@@ -39,95 +39,43 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c | 41 +++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/dso.h |  1 +
- 2 files changed, 40 insertions(+), 2 deletions(-)
+ tools/perf/util/dso.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 5acb4b8..5d7c7bc 100644
+index 5d7c7bc..76e5c13 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -136,7 +136,22 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 	return ret;
+@@ -1,3 +1,4 @@
++#include <asm/bug.h>
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
+@@ -137,18 +138,23 @@ int dso__read_binary_type_filename(const struct dso *dso,
  }
  
--static int open_dso(struct dso *dso, struct machine *machine)
-+/*
-+ * Global list of open DSOs.
-+ */
-+static LIST_HEAD(dso__data_open);
-+
-+static void dso__list_add(struct dso *dso)
-+{
-+	list_add_tail(&dso->data.open_entry, &dso__data_open);
-+}
-+
-+static void dso__list_del(struct dso *dso)
-+{
-+	list_del(&dso->data.open_entry);
-+}
-+
-+static int __open_dso(struct dso *dso, struct machine *machine)
+ /*
+- * Global list of open DSOs.
++ * Global list of open DSOs and the counter.
+  */
+ static LIST_HEAD(dso__data_open);
++static long dso__data_open_cnt;
+ 
+ static void dso__list_add(struct dso *dso)
  {
- 	int fd;
- 	char *root_dir = (char *)"";
-@@ -159,14 +174,35 @@ static int open_dso(struct dso *dso, struct machine *machine)
- 	return fd;
+ 	list_add_tail(&dso->data.open_entry, &dso__data_open);
++	dso__data_open_cnt++;
  }
  
--void dso__data_close(struct dso *dso)
-+static int open_dso(struct dso *dso, struct machine *machine)
-+{
-+	int fd = __open_dso(dso, machine);
-+
-+	if (fd > 0)
-+		dso__list_add(dso);
-+
-+	return fd;
-+}
-+
-+static void close_data_fd(struct dso *dso)
+ static void dso__list_del(struct dso *dso)
  {
- 	if (dso->data.fd >= 0) {
- 		close(dso->data.fd);
- 		dso->data.fd = -1;
-+		dso__list_del(dso);
- 	}
+ 	list_del(&dso->data.open_entry);
++	WARN_ONCE(dso__data_open_cnt <= 0,
++		  "DSO data fd counter out of bounds.");
++	dso__data_open_cnt--;
  }
  
-+static void close_dso(struct dso *dso)
-+{
-+	close_data_fd(dso);
-+}
-+
-+void dso__data_close(struct dso *dso)
-+{
-+	close_dso(dso);
-+}
-+
- int dso__data_fd(struct dso *dso, struct machine *machine)
- {
- 	enum dso_binary_type binary_type_data[] = {
-@@ -499,6 +535,7 @@ struct dso *dso__new(const char *name)
- 		dso->kernel = DSO_TYPE_USER;
- 		dso->needs_swap = DSO_SWAP__UNSET;
- 		INIT_LIST_HEAD(&dso->node);
-+		INIT_LIST_HEAD(&dso->data.open_entry);
- 	}
- 
- 	return dso;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index e48dcf5..90988bf 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -103,6 +103,7 @@ struct dso {
- 	struct {
- 		struct rb_root	 cache;
- 		int		 fd;
-+		struct list_head open_entry;
- 	} data;
- 
- 	char		 name[0];
+ static int __open_dso(struct dso *dso, struct machine *machine)
 -- 
 1.8.3.1
 
