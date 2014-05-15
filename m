@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaEOTEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 15:04:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28086 "EHLO mx1.redhat.com"
+	id S1754475AbaEOTFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 15:05:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55389 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764AbaEOTEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 15:04:02 -0400
-Date: Thu, 15 May 2014 15:03:53 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: sds@tycho.nsa.gov, pmoore@redhat.com, eparis@redhat.com
-Subject: [2/2] conditionally reschedule in hashtab_insert while loading
- selinux policy.
-Message-ID: <20140515190353.GB16816@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, sds@tycho.nsa.gov,
-	pmoore@redhat.com, eparis@redhat.com
+	id S1751191AbaEOTFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 15:05:35 -0400
+Date: Thu, 15 May 2014 21:05:29 +0200
+From: chrubis@suse.cz
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140515190529.GA8887@rei.Home>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <20140515152834.GA6926@rei.Home>
+ <CF9A3521.90ECC%dvhart@linux.intel.com>
+ <20140515163004.GB7959@rei.Home>
+ <CF9A3A75.90F40%dvhart@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CF9A3A75.90F40%dvhart@linux.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After silencing the sleeping warning in mls_convert_context() I started
-seeing similar traces from hashtab_insert. Do a cond_resched there too.
+Hi!
+> >> I've used LTP in the past (quite a bit), and I felt there was some
+> >> advantage to keeping futextest independent.
+> >
+> >What advantages did you have in mind?
+> 
+> Not CVS was a big one at the time ;-)
+> 
+> OK, I don't mean to be disparaging here... But since you asked, back in
+> '09 LTP had some test quality issues and I felt I could maintain futextest
+> to a higher bar independently.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+To be honest LTP was one of the messiest codebases I've seen and it was
+hacked up by mostly clueless people (there were even tests with race
+conditions that were carefully disabled in a way that was not easy to
+see). It took me months to get to a state where it compiled fine on
+major distributions.
 
-diff --git a/security/selinux/ss/hashtab.c b/security/selinux/ss/hashtab.c
-index 933e735bb185..2cc496149842 100644
---- a/security/selinux/ss/hashtab.c
-+++ b/security/selinux/ss/hashtab.c
-@@ -6,6 +6,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
-+#include <linux/sched.h>
- #include "hashtab.h"
- 
- struct hashtab *hashtab_create(u32 (*hash_value)(struct hashtab *h, const void *key),
-@@ -40,6 +41,8 @@ int hashtab_insert(struct hashtab *h, void *key, void *datum)
- 	u32 hvalue;
- 	struct hashtab_node *prev, *cur, *newnode;
- 
-+	cond_resched();
-+
- 	if (!h || h->nel == HASHTAB_MAX_NODES)
- 		return -EINVAL;
- 
+Today we still have quite a bit of legacy code that needs to be cleaned
+up, however that gets better every day.
+
+And most of the testcases are pretty stable, etc. unfortunatelly LTP has
+a bad reputation which is lot harder to fix than the code itself.
+
+> >> Perhaps things have changed enough since then (~2009 era) that we
+> >> should reconsider.
+> >
+> >I've been working on LTP for a about three years now and we happen to do
+> >quite a lot in that time. The most visible changes would be more proper
+> >development practices (git, proper build system, code review, LKML
+> >coding style, documentation, ...) and also huge number of fixes. Now we
+> >are trying to catch up in coverage too.
+> >
+> >> We can discuss the pros/cons there if you like.
+> >
+> >I would love to :).
+> 
+> Does LTP need to own the code, or can it incorporate existing projects and
+> a sort of aggregator?
+
+That is possible as well but not optimal. This approach would need a
+wrapper script to convert the test exit values to be LTP compatible.
+
+> How much LTP harness type code needs to be used?
+
+Not much.
+
+For this complexity of tests you would just need to call the tst_resm()
+interface to report success/failure and, at the end of the test,
+tst_exit() to return the stored overall test status.
+
+And ideally call the standard option parsing code and call the test in
+standard loop so that the test can take advantage of standard options as
+number of iterations to run, etc.
+
+Have a look at:
+
+https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
+
+there is simple test example as well as description of the interfaces.
+
 -- 
-1.9.0
-
+Cyril Hrubis
+chrubis@suse.cz
