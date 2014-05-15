@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaEOQAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 12:00:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6038 "EHLO mga11.intel.com"
+	id S1753580AbaEOQB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 12:01:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51888 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551AbaEOQA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 12:00:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1060,1389772800"; 
-   d="scan'208";a="539657848"
-Message-ID: <5374E472.9030001@linux.intel.com>
-Date: Thu, 15 May 2014 23:59:46 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751874AbaEOQB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 12:01:58 -0400
+Date: Thu, 15 May 2014 18:01:53 +0200
+From: chrubis@suse.cz
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140515160152.GA7529@rei.Home>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <537407ED.8050606@zytor.com>
+ <CF999CD6.90A93%dvhart@linux.intel.com>
+ <5374C54B.7040408@gmail.com>
+ <20140515154246.GC6926@rei.Home>
+ <5374E2A4.2070408@zytor.com>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
- T100
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>	 <5374D0A8.2090407@linux.intel.com> <1400165610.3703.41.camel@smile.fi.intel.com>
-In-Reply-To: <1400165610.3703.41.camel@smile.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5374E2A4.2070408@zytor.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/15 22:53, Andy Shevchenko wrote:
-> On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
->> On 2014/5/15 21:40, Heikki Krogerus wrote:
->>> Changes since v1:
->>> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
->>> - NULL checks for clk_name allocation in acpi_lpss.c
->>>
->>> This combines two patch sets for LPSS that I had already send for
->>> review separately. They conflicted with each other.
->>>
->>> The first two patches will fix a problem were the context of the
->>> private LPSS registers is lost when entering D3. The last two will add
->>> support for the M/N dividers on LPSS by adding a new basic clock type
->>> for fractional dividers. The UART driver needs support for it in order
->>> to get clock rates that suit the requested baud rates.
->>
->> The major issue in my mind is, this proposal makes a couple between I2C
->> designware, HSUART, or probably DMA driver as well with LPSS driver.
+Hi!
+> > Have a look at this commit that tries to deal with passing 64 bit
+> > numbers to syscalls. On 32 bit ABI (but not on X32) these needs to be
+> > split up (accordingly to machine endianity).
+> > 
+> > https://github.com/linux-test-project/ltp/commit/04afb02b4280a20c262054e8f99a3fad4ad54916
+> > 
 > 
-> acpi_lpss driver creates platform devices for each found and enumerated
-> device.
+> That is wrong, too.  That assumes that there will never be padding
+> words, which isn't true in the general case, either.
 
-> If there no acpi_lpss enabled the drivers work as supposed without it.
+Well, it's still far better than the mess we had previously and it works
+in most of the cases. However I would love to fix these correctly once
+for all.
 
-This is not true.
+> I really believe the proper fix is to use assembly syscall stubs.  In
+> klibc I build a fairly elaborate machinery to autogenerate such syscall
+> stubs for a variety of architectures.
 
-Thanks,
--Aubrey
+Then it would be nice to share these between klibc and LTP (and possible
+everybody else).
 
-
-> I didn't see any contradiction here.
-> 
->> That is, currently without LPSS driver, I2C/HSUART won't work properly.
->> So we at least need to describe this dependency in Kconfig.
->>
->> Thanks,
->> -Aubrey
->>>
->>>
->>> Heikki Krogerus (4):
->>>   ACPI / PM: Export rest of the subsys functions
->>>   ACPI / LPSS: custom power domain for LPSS
->>>   clk: new basic clk type for fractional divider
->>>   ACPI / LPSS: support for fractional divider clock
->>>
->>>  drivers/acpi/acpi_lpss.c             | 204 ++++++++++++++++++++++++++++++-----
->>>  drivers/acpi/device_pm.c             |   2 +
->>>  drivers/clk/Makefile                 |   1 +
->>>  drivers/clk/clk-fractional-divider.c | 135 +++++++++++++++++++++++
->>>  include/linux/acpi.h                 |   4 +
->>>  include/linux/clk-provider.h         |  31 ++++++
->>>  6 files changed, 349 insertions(+), 28 deletions(-)
->>>  create mode 100644 drivers/clk/clk-fractional-divider.c
->>>
->>
-> 
-> 
-
+-- 
+Cyril Hrubis
+chrubis@suse.cz
