@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992517AbaEPXIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:08:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52420 "EHLO
+	id S2992503AbaEPXIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:08:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52428 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176AbaEPXHT (ORCPT
+	with ESMTP id S1756628AbaEPXHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 19:07:19 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/7] clk: qcom: Support display RCG clocks
-Date: Fri, 16 May 2014 16:07:11 -0700
-Message-Id: <1400281634-9313-5-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 7/7] clk: qcom: Return error pointers for unimplemented clocks
+Date: Fri, 16 May 2014 16:07:14 -0700
+Message-Id: <1400281634-9313-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
 References: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
@@ -21,375 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the DSI/EDP/HDMI RCG clocks. With the proper
-display driver in place this should allow us to support display
-clocks on msm8974 based devices.
+Not all clocks are implemented but client drivers can still
+request them. Currently we will return a NULL pointer to them if
+the clock isn't implemented in software but NULL pointers are
+valid clock pointers. Return an error pointer so that driver's
+don't proceed without a clock they may actually need.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/qcom/clk-rcg.h  |   3 +
- drivers/clk/qcom/clk-rcg2.c | 299 +++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 287 insertions(+), 15 deletions(-)
+ drivers/clk/qcom/common.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/qcom/clk-rcg.h b/drivers/clk/qcom/clk-rcg.h
-index 1d6b6dece328..b9ec11dfd1b4 100644
---- a/drivers/clk/qcom/clk-rcg.h
-+++ b/drivers/clk/qcom/clk-rcg.h
-@@ -155,5 +155,8 @@ struct clk_rcg2 {
- #define to_clk_rcg2(_hw) container_of(to_clk_regmap(_hw), struct clk_rcg2, clkr)
+diff --git a/drivers/clk/qcom/common.c b/drivers/clk/qcom/common.c
+index 86b45fba5f90..9b5a1cfc6b91 100644
+--- a/drivers/clk/qcom/common.c
++++ b/drivers/clk/qcom/common.c
+@@ -62,8 +62,10 @@ int qcom_cc_probe(struct platform_device *pdev, const struct qcom_cc_desc *desc)
+ 	data->clk_num = num_clks;
  
- extern const struct clk_ops clk_rcg2_ops;
-+extern const struct clk_ops clk_edp_pixel_ops;
-+extern const struct clk_ops clk_byte_ops;
-+extern const struct clk_ops clk_pixel_ops;
- 
- #endif
-diff --git a/drivers/clk/qcom/clk-rcg2.c b/drivers/clk/qcom/clk-rcg2.c
-index cbecaec30562..cd185d5cc67a 100644
---- a/drivers/clk/qcom/clk-rcg2.c
-+++ b/drivers/clk/qcom/clk-rcg2.c
-@@ -19,6 +19,7 @@
- #include <linux/clk-provider.h>
- #include <linux/delay.h>
- #include <linux/regmap.h>
-+#include <linux/math64.h>
- 
- #include <asm/div64.h>
- 
-@@ -225,31 +226,25 @@ static long clk_rcg2_determine_rate(struct clk_hw *hw, unsigned long rate,
- 	return _freq_tbl_determine_rate(hw, rcg->freq_tbl, rate, p_rate, p);
- }
- 
--static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
-+static int clk_rcg2_configure(struct clk_rcg2 *rcg, const struct freq_tbl *f)
- {
--	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
--	const struct freq_tbl *f;
- 	u32 cfg, mask;
- 	int ret;
- 
--	f = find_freq(rcg->freq_tbl, rate);
--	if (!f)
--		return -EINVAL;
--
- 	if (rcg->mnd_width && f->n) {
- 		mask = BIT(rcg->mnd_width) - 1;
--		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + M_REG,
--					 mask, f->m);
-+		ret = regmap_update_bits(rcg->clkr.regmap,
-+				rcg->cmd_rcgr + M_REG, mask, f->m);
- 		if (ret)
- 			return ret;
- 
--		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + N_REG,
--					 mask, ~(f->n - f->m));
-+		ret = regmap_update_bits(rcg->clkr.regmap,
-+				rcg->cmd_rcgr + N_REG, mask, ~(f->n - f->m));
- 		if (ret)
- 			return ret;
- 
--		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + D_REG,
--					 mask, ~f->n);
-+		ret = regmap_update_bits(rcg->clkr.regmap,
-+				rcg->cmd_rcgr + D_REG, mask, ~f->n);
- 		if (ret)
- 			return ret;
- 	}
-@@ -260,14 +255,26 @@ static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
- 	cfg |= rcg->parent_map[f->src] << CFG_SRC_SEL_SHIFT;
- 	if (rcg->mnd_width && f->n)
- 		cfg |= CFG_MODE_DUAL_EDGE;
--	ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, mask,
--			cfg);
-+	ret = regmap_update_bits(rcg->clkr.regmap,
-+			rcg->cmd_rcgr + CFG_REG, mask, cfg);
- 	if (ret)
- 		return ret;
- 
- 	return update_config(rcg);
- }
- 
-+static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	const struct freq_tbl *f;
-+
-+	f = find_freq(rcg->freq_tbl, rate);
-+	if (!f)
-+		return -EINVAL;
-+
-+	return clk_rcg2_configure(rcg, f);
-+}
-+
- static int clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate,
- 			    unsigned long parent_rate)
- {
-@@ -290,3 +297,265 @@ const struct clk_ops clk_rcg2_ops = {
- 	.set_rate_and_parent = clk_rcg2_set_rate_and_parent,
- };
- EXPORT_SYMBOL_GPL(clk_rcg2_ops);
-+
-+struct frac_entry {
-+	int num;
-+	int den;
-+};
-+
-+static const struct frac_entry frac_table_675m[] = {	/* link rate of 270M */
-+	{ 52, 295 },	/* 119 M */
-+	{ 11, 57 },	/* 130.25 M */
-+	{ 63, 307 },	/* 138.50 M */
-+	{ 11, 50 },	/* 148.50 M */
-+	{ 47, 206 },	/* 154 M */
-+	{ 31, 100 },	/* 205.25 M */
-+	{ 107, 269 },	/* 268.50 M */
-+	{ },
-+};
-+
-+static struct frac_entry frac_table_810m[] = { /* Link rate of 162M */
-+	{ 31, 211 },	/* 119 M */
-+	{ 32, 199 },	/* 130.25 M */
-+	{ 63, 307 },	/* 138.50 M */
-+	{ 11, 60 },	/* 148.50 M */
-+	{ 50, 263 },	/* 154 M */
-+	{ 31, 120 },	/* 205.25 M */
-+	{ 119, 359 },	/* 268.50 M */
-+	{ },
-+};
-+
-+static int clk_edp_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long parent_rate)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	struct freq_tbl f = *rcg->freq_tbl;
-+	const struct frac_entry *frac;
-+	int delta = 100000;
-+	s64 src_rate = parent_rate;
-+	s64 request;
-+	u32 mask = BIT(rcg->hid_width) - 1;
-+	u32 hid_div;
-+
-+	if (src_rate == 810000000)
-+		frac = frac_table_810m;
-+	else
-+		frac = frac_table_675m;
-+
-+	for (; frac->num; frac++) {
-+		request = rate;
-+		request *= frac->den;
-+		request = div_s64(request, frac->num);
-+		if ((src_rate < (request - delta)) ||
-+		    (src_rate > (request + delta)))
-+			continue;
-+
-+		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
-+				&hid_div);
-+		f.pre_div = hid_div;
-+		f.pre_div >>= CFG_SRC_DIV_SHIFT;
-+		f.pre_div &= mask;
-+		f.m = frac->num;
-+		f.n = frac->den;
-+
-+		return clk_rcg2_configure(rcg, &f);
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int clk_edp_pixel_set_rate_and_parent(struct clk_hw *hw,
-+		unsigned long rate, unsigned long parent_rate, u8 index)
-+{
-+	/* Parent index is set statically in frequency table */
-+	return clk_edp_pixel_set_rate(hw, rate, parent_rate);
-+}
-+
-+static long clk_edp_pixel_determine_rate(struct clk_hw *hw, unsigned long rate,
-+				 unsigned long *p_rate, struct clk **p)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	const struct freq_tbl *f = rcg->freq_tbl;
-+	const struct frac_entry *frac;
-+	int delta = 100000;
-+	s64 src_rate = *p_rate;
-+	s64 request;
-+	u32 mask = BIT(rcg->hid_width) - 1;
-+	u32 hid_div;
-+
-+	/* Force the correct parent */
-+	*p = clk_get_parent_by_index(hw->clk, f->src);
-+
-+	if (src_rate == 810000000)
-+		frac = frac_table_810m;
-+	else
-+		frac = frac_table_675m;
-+
-+	for (; frac->num; frac++) {
-+		request = rate;
-+		request *= frac->den;
-+		request = div_s64(request, frac->num);
-+		if ((src_rate < (request - delta)) ||
-+		    (src_rate > (request + delta)))
-+			continue;
-+
-+		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
-+				&hid_div);
-+		hid_div >>= CFG_SRC_DIV_SHIFT;
-+		hid_div &= mask;
-+
-+		return calc_rate(src_rate, frac->num, frac->den, !!frac->den,
-+				 hid_div);
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+const struct clk_ops clk_edp_pixel_ops = {
-+	.is_enabled = clk_rcg2_is_enabled,
-+	.get_parent = clk_rcg2_get_parent,
-+	.set_parent = clk_rcg2_set_parent,
-+	.recalc_rate = clk_rcg2_recalc_rate,
-+	.set_rate = clk_edp_pixel_set_rate,
-+	.set_rate_and_parent = clk_edp_pixel_set_rate_and_parent,
-+	.determine_rate = clk_edp_pixel_determine_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_edp_pixel_ops);
-+
-+static long clk_byte_determine_rate(struct clk_hw *hw, unsigned long rate,
-+			 unsigned long *p_rate, struct clk **p)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	const struct freq_tbl *f = rcg->freq_tbl;
-+	unsigned long parent_rate, div;
-+	u32 mask = BIT(rcg->hid_width) - 1;
-+
-+	if (rate == 0)
-+		return -EINVAL;
-+
-+	*p = clk_get_parent_by_index(hw->clk, f->src);
-+	*p_rate = parent_rate = __clk_round_rate(*p, rate);
-+
-+	div = DIV_ROUND_UP((2 * parent_rate), rate) - 1;
-+	div = min_t(u32, div, mask);
-+
-+	return calc_rate(parent_rate, 0, 0, 0, div);
-+}
-+
-+static int clk_byte_set_rate(struct clk_hw *hw, unsigned long rate,
-+			 unsigned long parent_rate)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	struct freq_tbl f = *rcg->freq_tbl;
-+	unsigned long div;
-+	u32 mask = BIT(rcg->hid_width) - 1;
-+
-+	div = DIV_ROUND_UP((2 * parent_rate), rate) - 1;
-+	div = min_t(u32, div, mask);
-+
-+	f.pre_div = div;
-+
-+	return clk_rcg2_configure(rcg, &f);
-+}
-+
-+static int clk_byte_set_rate_and_parent(struct clk_hw *hw,
-+		unsigned long rate, unsigned long parent_rate, u8 index)
-+{
-+	/* Parent index is set statically in frequency table */
-+	return clk_byte_set_rate(hw, rate, parent_rate);
-+}
-+
-+const struct clk_ops clk_byte_ops = {
-+	.is_enabled = clk_rcg2_is_enabled,
-+	.get_parent = clk_rcg2_get_parent,
-+	.set_parent = clk_rcg2_set_parent,
-+	.recalc_rate = clk_rcg2_recalc_rate,
-+	.set_rate = clk_byte_set_rate,
-+	.set_rate_and_parent = clk_byte_set_rate_and_parent,
-+	.determine_rate = clk_byte_determine_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_byte_ops);
-+
-+static const struct frac_entry frac_table_pixel[] = {
-+	{ 3, 8 },
-+	{ 2, 9 },
-+	{ 4, 9 },
-+	{ 1, 1 },
-+	{ }
-+};
-+
-+static long clk_pixel_determine_rate(struct clk_hw *hw, unsigned long rate,
-+				 unsigned long *p_rate, struct clk **p)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	unsigned long request, src_rate;
-+	int delta = 100000;
-+	const struct freq_tbl *f = rcg->freq_tbl;
-+	const struct frac_entry *frac = frac_table_pixel;
-+	struct clk *parent = *p = clk_get_parent_by_index(hw->clk, f->src);
-+
-+	for (; frac->num; frac++) {
-+		request = (rate * frac->den) / frac->num;
-+
-+		src_rate = __clk_round_rate(parent, request);
-+		if ((src_rate < (request - delta)) ||
-+			(src_rate > (request + delta)))
-+			continue;
-+
-+		*p_rate = src_rate;
-+		return (src_rate * frac->num) / frac->den;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int clk_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
-+		unsigned long parent_rate)
-+{
-+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
-+	struct freq_tbl f = *rcg->freq_tbl;
-+	const struct frac_entry *frac = frac_table_pixel;
-+	unsigned long request, src_rate;
-+	int delta = 100000;
-+	u32 mask = BIT(rcg->hid_width) - 1;
-+	u32 hid_div;
-+	struct clk *parent = clk_get_parent_by_index(hw->clk, f.src);
-+
-+	for (; frac->num; frac++) {
-+		request = (rate * frac->den) / frac->num;
-+
-+		src_rate = __clk_round_rate(parent, request);
-+		if ((src_rate < (request - delta)) ||
-+			(src_rate > (request + delta)))
-+			continue;
-+
-+		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
-+				&hid_div);
-+		f.pre_div = hid_div;
-+		f.pre_div >>= CFG_SRC_DIV_SHIFT;
-+		f.pre_div &= mask;
-+		f.m = frac->num;
-+		f.n = frac->den;
-+
-+		return clk_rcg2_configure(rcg, &f);
-+	}
-+	return -EINVAL;
-+}
-+
-+static int clk_pixel_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
-+		unsigned long parent_rate, u8 index)
-+{
-+	/* Parent index is set statically in frequency table */
-+	return clk_pixel_set_rate(hw, rate, parent_rate);
-+}
-+
-+const struct clk_ops clk_pixel_ops = {
-+	.is_enabled = clk_rcg2_is_enabled,
-+	.get_parent = clk_rcg2_get_parent,
-+	.set_parent = clk_rcg2_set_parent,
-+	.recalc_rate = clk_rcg2_recalc_rate,
-+	.set_rate = clk_pixel_set_rate,
-+	.set_rate_and_parent = clk_pixel_set_rate_and_parent,
-+	.determine_rate = clk_pixel_determine_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_pixel_ops);
+ 	for (i = 0; i < num_clks; i++) {
+-		if (!rclks[i])
++		if (!rclks[i]) {
++			clks[i] = ERR_PTR(-ENOENT);
+ 			continue;
++		}
+ 		clk = devm_clk_register_regmap(dev, rclks[i]);
+ 		if (IS_ERR(clk))
+ 			return PTR_ERR(clk);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
