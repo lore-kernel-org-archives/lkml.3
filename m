@@ -1,198 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701AbaEPUfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 16:35:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52287 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766AbaEPUfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 16:35:37 -0400
-Message-ID: <53767696.7050905@suse.de>
-Date: Fri, 16 May 2014 22:35:34 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754207AbaEPUiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 16:38:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59759 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751456AbaEPUiG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 16:38:06 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Status of Power Supply Subsystem
+Date: Fri, 16 May 2014 22:54:51 +0200
+Message-ID: <1946020.rieJTheGae@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140516183812.GA17752@earth.universe>
+References: <20140516183812.GA17752@earth.universe>
 MIME-Version: 1.0
-To: Michael Mueller <mimu@linux.vnet.ibm.com>
-CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 3/6] KVM: s390: use facilities and
- cpu_id per KVM
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>	<1399993114-15333-4-git-send-email-mimu@linux.vnet.ibm.com>	<5375FCBD.7010700@suse.de>	<20140516164645.57f22213@bee>	<53762581.30708@suse.de> <20140516180945.588563ec@bee>
-In-Reply-To: <20140516180945.588563ec@bee>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart1466722.ajRJWqoQ9t"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 16.05.14 18:09, Michael Mueller wrote:
-> On Fri, 16 May 2014 16:49:37 +0200
-> Alexander Graf <agraf@suse.de> wrote:
->
->> On 16.05.14 16:46, Michael Mueller wrote:
->>> On Fri, 16 May 2014 13:55:41 +0200
->>> Alexander Graf <agraf@suse.de> wrote:
->>>
->>>> On 13.05.14 16:58, Michael Mueller wrote:
->>>>> The patch introduces facilities and cpu_ids per virtual machine.
->>>>> Different virtual machines may want to expose different facilities and
->>>>> cpu ids to the guest, so let's make them per-vm instead of global.
->>>>>
->>>>> In addition this patch renames all ocurrences of *facilities to *fac_list
->>>>> smilar to the already exiting symbol stfl_fac_list in lowcore.
->>>>>
->>>>> Signed-off-by: Michael Mueller <mimu@linux.vnet.ibm.com>
->>>>> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
->>>>> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
->>>>> ---
->>>>>     arch/s390/include/asm/kvm_host.h |   7 +++
->>>>>     arch/s390/kvm/gaccess.c          |   4 +-
->>>>>     arch/s390/kvm/kvm-s390.c         | 107 +++++++++++++++++++++++++++------------
->>>>>     arch/s390/kvm/kvm-s390.h         |  23 +++++++--
->>>>>     arch/s390/kvm/priv.c             |  13 +++--
->>>>>     5 files changed, 113 insertions(+), 41 deletions(-)
->>>>>
->>>>> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
->>>>> index 38d487a..b4751ba 100644
->>>>> --- a/arch/s390/include/asm/kvm_host.h
->>>>> +++ b/arch/s390/include/asm/kvm_host.h
->>>>> @@ -414,6 +414,12 @@ struct kvm_s390_config {
->>>>>     	struct kvm_s390_attr_name name;
->>>>>     };
->>>>>     
->>>>> +struct kvm_s390_cpu_model {
->>>>> +	unsigned long *sie_fac;
->>>>> +	struct cpuid cpu_id;
->>>>> +	unsigned long *fac_list;
->>>>> +};
->>>>> +
->>>>>     struct kvm_arch{
->>>>>     	struct sca_block *sca;
->>>>>     	debug_info_t *dbf;
->>>>> @@ -427,6 +433,7 @@ struct kvm_arch{
->>>>>     	wait_queue_head_t ipte_wq;
->>>>>     	struct kvm_s390_config *cfg;
->>>>>     	spinlock_t start_stop_lock;
->>>>> +	struct kvm_s390_cpu_model model;
->>>>>     };
->>>>>     
->>>>>     #define KVM_HVA_ERR_BAD		(-1UL)
->>>>> diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
->>>>> index db608c3..4c7ca40 100644
->>>>> --- a/arch/s390/kvm/gaccess.c
->>>>> +++ b/arch/s390/kvm/gaccess.c
->>>>> @@ -358,8 +358,8 @@ static unsigned long guest_translate(struct kvm_vcpu *vcpu, unsigned
->>>>> long gva, union asce asce;
->>>>>     
->>>>>     	ctlreg0.val = vcpu->arch.sie_block->gcr[0];
->>>>> -	edat1 = ctlreg0.edat && test_vfacility(8);
->>>>> -	edat2 = edat1 && test_vfacility(78);
->>>>> +	edat1 = ctlreg0.edat && test_kvm_facility(vcpu->kvm, 8);
->>>>> +	edat2 = edat1 && test_kvm_facility(vcpu->kvm, 78);
->>>>>     	asce.val = get_vcpu_asce(vcpu);
->>>>>     	if (asce.r)
->>>>>     		goto real_address;
->>>>> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
->>>>> index 01a5212..a53652f 100644
->>>>> --- a/arch/s390/kvm/kvm-s390.c
->>>>> +++ b/arch/s390/kvm/kvm-s390.c
->>>>> @@ -1,5 +1,5 @@
->>>>>     /*
->>>>> - * hosting zSeries kernel virtual machines
->>>>> + * Hosting zSeries kernel virtual machines
->>>>>      *
->>>>>      * Copyright IBM Corp. 2008, 2009
->>>>>      *
->>>>> @@ -30,7 +30,6 @@
->>>>>     #include <asm/pgtable.h>
->>>>>     #include <asm/nmi.h>
->>>>>     #include <asm/switch_to.h>
->>>>> -#include <asm/facility.h>
->>>>>     #include <asm/sclp.h>
->>>>>     #include<asm/timex.h>
->>>>>     #include "kvm-s390.h"
->>>>> @@ -92,15 +91,33 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
->>>>>     	{ NULL }
->>>>>     };
->>>>>     
->>>>> -unsigned long *vfacilities;
->>>>> -static struct gmap_notifier gmap_notifier;
->>>>> +/* upper facilities limit for kvm */
->>>>> +unsigned long kvm_s390_fac_list_mask[] = {
->>>>> +	0xff82fff3f47c2000UL,
->>>>> +	0x005c000000000000UL,
->>>>> +};
->>>>> +
->>>>> +unsigned long kvm_s390_fac_list_mask_size(void)
->>>>> +{
->>>>> +	BUILD_BUG_ON(ARRAY_SIZE(kvm_s390_fac_list_mask) >
->>>>> +		     S390_ARCH_FAC_MASK_SIZE_U64);
->>>>> +	return ARRAY_SIZE(kvm_s390_fac_list_mask);
->>>>> +}
->>>>>     
->>>>> -/* test availability of vfacility */
->>>>> -int test_vfacility(unsigned long nr)
->>>>> +void kvm_s390_apply_fac_list_mask(unsigned long fac_list[])
->>>>>     {
->>>>> -	return __test_facility(nr, (void *) vfacilities);
->>>>> +	unsigned int i;
->>>>> +
->>>>> +	for (i = 0; i < S390_ARCH_FAC_LIST_SIZE_U64; i++) {
->>>>> +		if (i < kvm_s390_fac_list_mask_size())
->>>>> +			fac_list[i] &= kvm_s390_fac_list_mask[i];
->>>>> +		else
->>>>> +			fac_list[i] &= 0UL;
->>>>> +	}
->>>>>     }
->>>>>     
->>>>> +static struct gmap_notifier gmap_notifier;
->>>>> +
->>>>>     /* Section: not file related */
->>>>>     int kvm_arch_hardware_enable(void *garbage)
->>>>>     {
->>>>> @@ -485,6 +502,30 @@ long kvm_arch_vm_ioctl(struct file *filp,
->>>>>     	return r;
->>>>>     }
->>>>>     
->>>>> +/* make sure the memory used for fac_list is zeroed */
->>>>> +void kvm_s390_get_hard_fac_list(unsigned long *fac_list, int size)
->>>> Hard? Wouldn't "host" make more sense here?
->>> Renaming "*hard_fac_list" with "*host_fac_list" here and wherever it appears is ok with me.
->>>
->>>> I also think it makes sense to expose the native host facility list to
->>>> user space via an ioctl somehow.
->>>>
->>> In which situation do you need the full facility list. Do you have an example?
->> If you want to just implement -cpu host to get the exact feature set
->> that the host gives you, how do you know which set that is?
-> During qemu machine initalization I call:
->
-> kvm_s390_get_machine_props(&mach);
->
-> which returns the following information:
->
-> typedef struct S390MachineProps {
->      uint64_t cpuid;
->      uint32_t ibc_range;
->      uint8_t  pad[4];
->      uint64_t fac_mask[S390_ARCH_FAC_MASK_SIZE_UINT64];
->      uint64_t hard_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
->      uint64_t soft_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
-> } S390MachineProps;
+--nextPart1466722.ajRJWqoQ9t
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-Ah, ok, I missed that part. So "kvm_s390_get_machine_props()" basically 
-gets us the full facility list the host supports. That makes sense.
+On Friday, May 16, 2014 08:38:14 PM Sebastian Reichel wrote:
+> Hi,
 
-I still don't know whether we should care about hard/soft, but I suppose 
-the rest makes sense.
+Hi,
 
+> It seems the maintainer of the power supply subsystem, Dmitry, has go=
+ne missing
+> in action since about mid-Feburary. I couldn't find any mail from him=
+ on the
+> usual mailinglists, he did not reply to any of my mails and the power=
+ supply
+> subsystem git tree mentioned in the MAINTAINERS file has not been tou=
+ched since
+> 2014-02-01 [0].
+>=20
+> Is there a standard procedure to handle subsystem maintainers, who ar=
+e missing
+> in action? I have patches for the power supply subsystem and have see=
+n more
+> patches from other developers on the mailinglists.
+>=20
+> [0] git://git.infradead.org/battery-2.6.git
 
-Alex
+You can volunteer to take over the maintainership, but then I guess it =
+would
+make sense to push this through the PM tree anyway, so please feel free=
+ to
+send a pull request with those fixes to me.
+
+Thanks!
+
+=2D-=20
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+--nextPart1466722.ajRJWqoQ9t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJTdnshAAoJEILEb/54YlRxi74P/1U/D4AHf5u2VAdQMLVb2S8O
+46m757bpQijfk7d31rsjjgL4wySkMoytYm6ebMOgBUVdPYp0hmTM8ldNtS5MHdaK
+yothx2Kvl5VZ130wGv8RzP/mFtWgVdS5ifLoC7s7pg8LA67DLdp2KJGEe9pkVRqs
+bgwpO2oKq3g7M0dpjNhgs4JX+p4gGbjbpDqXXMOybVcVVjRTBRpDIWlRjxS6+AX8
+kG5ewlYugnYF3r6fobBQdQTeLaT8eNRu2NUMsNUl9WMYyQPXxaeF+HpmaIPRI92d
+xaU5DeFNx86CWFcUHCNHTmUXhXq1xAbFjxSha9l3GVZBOzFUwR9H7REQ4MJGtBp7
+22yk1u4v12WRATn+Y4m6e5hsnZfZzCW8z+CYd27fkdsSM7r0GdfWmeFc0pANjrTB
+bTI9IzytNJl3R4gSsp/db2Ay7RJPBCIkiiR9s+tydANAVTOJRCSmDLW4pJXs63pz
+L2BY2RMbHLBCpteAbEwbpysKqloK9jvcOccFFAgH01yL0vQEVNyUSdNMnw6hAtQn
+aX7atB/fQmMvFZp2jJVJLdhDaOMM7S32p7ITcuHdEFcaOnLDivOrGqtGXN6npa0w
+wDi13E20NO0HLSfsy0iJHPT7PnXN9TISqS8bv8MdJoAZQpELeMOuS1bv7u8dDTne
+Acwapt3TjUpu6nnNLyDK
+=BG4Y
+-----END PGP SIGNATURE-----
+
+--nextPart1466722.ajRJWqoQ9t--
 
