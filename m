@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaEPHE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:04:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18368 "EHLO mga09.intel.com"
+	id S1754950AbaEPHHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:07:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45413 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894AbaEPHEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:04:24 -0400
+	id S1753964AbaEPHH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 03:07:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="512626222"
-Message-ID: <1400223856.3703.44.camel@smile.fi.intel.com>
-Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
- T100
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 May 2014 10:04:16 +0300
-In-Reply-To: <53754DF4.10302@linux.intel.com>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
-	 <5374D0A8.2090407@linux.intel.com>
-	 <1400165610.3703.41.camel@smile.fi.intel.com>
-	 <5374E472.9030001@linux.intel.com>
-	 <20140515161148.GM1674@lahna.fi.intel.com> <53754DF4.10302@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="532903204"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
+In-Reply-To: <20140515180218.GA32115@rric.localhost>
+References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com> <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com> <20140515180218.GA32115@rric.localhost>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 16 May 2014 10:07:24 +0300
+Message-ID: <87egzuyzf7.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 07:29 +0800, Li, Aubrey wrote:
-> On 2014/5/16 0:11, Mika Westerberg wrote:
-> > On Thu, May 15, 2014 at 11:59:46PM +0800, Li, Aubrey wrote:
-> >> On 2014/5/15 22:53, Andy Shevchenko wrote:
-> >>> On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
-> >>>> On 2014/5/15 21:40, Heikki Krogerus wrote:
-> >>>>> Changes since v1:
-> >>>>> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
-> >>>>> - NULL checks for clk_name allocation in acpi_lpss.c
-> >>>>>
-> >>>>> This combines two patch sets for LPSS that I had already send for
-> >>>>> review separately. They conflicted with each other.
-> >>>>>
-> >>>>> The first two patches will fix a problem were the context of the
-> >>>>> private LPSS registers is lost when entering D3. The last two will add
-> >>>>> support for the M/N dividers on LPSS by adding a new basic clock type
-> >>>>> for fractional dividers. The UART driver needs support for it in order
-> >>>>> to get clock rates that suit the requested baud rates.
-> >>>>
-> >>>> The major issue in my mind is, this proposal makes a couple between I2C
-> >>>> designware, HSUART, or probably DMA driver as well with LPSS driver.
-> >>>
-> >>> acpi_lpss driver creates platform devices for each found and enumerated
-> >>> device.
-> >>
-> >>> If there no acpi_lpss enabled the drivers work as supposed without it.
-> >>
-> >> This is not true.
-> > 
-> > The drivers work fine on non-LPSS platform. If you make them depend on
-> > acpi_lpss, you break that.
-> > 
-> 
-> People don't know the relationship between LPSS driver and I2C/HSUART,
-> there is nowhere to describe that. If LPSS driver is unchecked, they
-> will encounter a weird issue which is very hard to figure out what's
-> going on.
+Robert Richter <rric@kernel.org> writes:
 
-Besides this discussion is off the topic, I could say that LPSS drivers
-are kinda optional (we won't enforce user to use them) even on some
-systems where they are present. Relationship is provided by the proper
-kernel configuration.
+> On 15.05.14 18:08:30, Alexander Shishkin wrote:
+>> From: Peter Zijlstra <peterz@infradead.org>
+>> 
+>> This patch introduces "AUX space" in the perf mmap buffer, intended for
+>> exporting high bandwidth data streams to userspace, such as instruction
+>> flow traces.
+>> 
+>> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
+>> user_page structure, and read/write pointers aux_{head,tail}, which abide
+>> by the same rules as data_* counterparts of the main perf buffer.
+>> 
+>> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
+>> such an offset that will be greater than data_offset+data_size and
+>> aux_size to be the desired buffer size. Both need to be page aligned.
+>> The latter is not forced to be a power of 2 number of pages, so that PMU
+>> drivers have to take care of this if necessary in their implementations
+>> of ->alloc_aux(). Then, same aux_offset and aux_size should be passed to
+>> mmap() call and if everything adds up, you should have an AUX buffer as
+>> a result.
+>
+> Raw data sample (PERF_SAMPLE_RAW) already allow to pass data to
+> userspace. What is the reason for a separate buffer? I see the
+> following:
+>
+>  * the buffer accessed from userspace should have a customized format
+>    unrelated to perf,
+>
+>  * zero copying (not sure if this is really possible),
+>
+>  * data size and alignment requirements that can not be handled by raw
+>    data samples.
 
-> 
-> Thanks,
-> -Aubrey
-> > 
-> 
+It is all three. What we're dealing with at the moment is a unit that
+generates instruction traces at rates like hhundreds of megabytes per
+second. So the only sensible thing to do is zero copy the data.
 
+> If possible, raw data samples should be a first option.
+>
+> On the other side there might the need of an aux buffer (I would
+> better call it raw buffer analog to raw data). So here some comments
+> on the implementation and the user i/f.
+>
+> Instead of extending the current ringbuffer I would better add a 2nd
+> ring buffer. The mmap and ringbuffer handling and esp. the access from
+> userspace looks much more complex now and it was already complex
+> before. So with a 2nd buffer there would be less changes in the
+> implementation and handling. Access from userland would remain as it
+> currently is, there is no need to modify the header page layout. To
+> setup a 2nd buffer, you just need to modify the mmap call in a way
+> (maybe by prot, flags or offset argument) to let the kernel know an
+> aux buffer should be attached to the event.
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+Tried that, didn't fly. See the full story here [1]. Though splicing
+arbitrary pages into perf buffer is less than trivial, especially so
+with hardware that doesn't do scatter-gather. So all in all, AUX area
+seems to be a sensible compromise.
 
+[1] http://marc.info/?l=linux-kernel&m=139264764530809&w=2
+
+Regards,
+--
+Alex
