@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357AbaEPOri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:47:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45164 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756595AbaEPOrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:47:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
-   d="scan'208";a="540259271"
-Date: Fri, 16 May 2014 22:47:18 +0800
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        david.a.cohen@linux.intel.com, Yuan Hang <hang.yuan@intel.com>,
-        Li Jiebing <jiebing.li@intel.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH] usb: dwc3: gadget: check link trb after free_slot is
- increased
-Message-ID: <20140516144718.GI16153@intel.com>
-Reply-To: jin.can.zhuang@intel.com
-References: <20140515215757.GD16153@intel.com>
- <20140515153757.GB7360@saruman.home>
- <20140516155013.GE16153@intel.com>
- <20140516124106.GA20386@saruman.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516124106.GA20386@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932244AbaEPOtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:49:22 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49371 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447AbaEPOtV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 10:49:21 -0400
+Date: Fri, 16 May 2014 16:49:11 +0200
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Andreas Faerber <afaerber@suse.de>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
+Subject: Re: [PATCH v1 RFC 0/6] KVM: s390: cpu model implementation
+Message-ID: <20140516164911.1e62c844@bee>
+In-Reply-To: <5375F739.2090903@de.ibm.com>
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<5375F739.2090903@de.ibm.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051614-8372-0000-0000-000009B70A25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Fri, May 16, 2014 at 07:41:06AM -0500, Felipe Balbi wrote:
-> On Fri, May 16, 2014 at 11:50:13PM +0800, Zhuang Jin Can wrote:
-> > > On Fri, May 16, 2014 at 05:57:57AM +0800, Zhuang Jin Can wrote:
-> > > > In ISOC transfers, when free_slot points to the last TRB (i.e. Link
-> > > > TRB), and all queued requests meet Missed Interval Isoc error, busy_slot
-> > > > points to trb0.
-> > > > 	busy_slot->trb0
-> > > > 		   trb1
-> > > > 		   ...
-> > > > 	free_slot->trb31(Link TRB)
-> > > > 
-> > > > After end transfer and receiving the XferNotReady event, trb_left is
-> > > > caculated as 1 which is wrong, and no TRB will be primed to the
-> > > > endpoint.
-> > > > 
-> > > > The root cause is free_slot is not increased the same way as busy_slot.
-> > > > When busy_slot is increased by one, it checks if points to a link TRB
-> > > > after increasement, but free_slot checks it before increasement.
-> > > > free_slot should behave the same as busy_slot to make the trb_left
-> > > > caculation correct.
-> > > > 
-> > > > Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-> > > > Signed-off-by: Jiebing Li <jiebing.li@intel.com>
-> > > > ---
-> > > >  drivers/usb/dwc3/gadget.c |    8 ++++----
-> > > >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> > > > index 54da8c8..2ebe82b 100644
-> > > > --- a/drivers/usb/dwc3/gadget.c
-> > > > +++ b/drivers/usb/dwc3/gadget.c
-> > > > @@ -828,10 +828,6 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
-> > > >  			length, last ? " last" : "",
-> > > >  			chain ? " chain" : "");
-> > > >  
-> > > > -	/* Skip the LINK-TRB on ISOC */
-> > > > -	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
-> > > > -			usb_endpoint_xfer_isoc(dep->endpoint.desc))
-> > > > -		dep->free_slot++;
-> > > >  
-> > > >  	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
-> > > 
-> > > I have a feeling this has a negative side effect of letting us use the
-> > > link TRB for data transfer... I mean, if we don't increment free_slot
-> > > before accessing our trb_pool, we have no way to skip link trb on this
-> > > access here.
-> > After every free_slot++ Link TRB is checked and increased if appropriate,
-> > this guarantees you next time access free_slot, it can't be a Link
-> > TRB.
-> 
-> right, next access will be fine, but you're forgetting about current
-> access.
-> 
-The current access is the next access relative to last access.
-So if the first access is fine, succeeding accesses should be fine.
-And the first access happens on when the free_slot points to slot 1
-which is not a link trb. 
+On Fri, 16 May 2014 13:32:09 +0200
+Christian Borntraeger <borntraeger@de.ibm.com> wrote:
 
-> > > How did you find the bug ? do you have good instructions on how to
-> > > reproduce it ? How did you test the patch and for how long ?
-> > The bug is reproduced on Android with f_audio_source.c enabled, which
-> > has an isoc-in endpoint keeps sending audio data to host in an interval
-> > of 1 ms. Normally, you need to run for 12+ hours to hit the issue.
-> > So I think you can just run some isoc transfers for a long time to
-> > reproduce it. To accelarte the reproducing, you can run some concurrent
-> > data transfer as well, so the possibility to meet missed interval error
-> > is larger.
+> On 13/05/14 16:58, Michael Mueller wrote:
+> > The proposed patch set implements S390 cpu model support in kvm. A cpu
+> > model is defined by a triple comprizing the cpu type , the cpu facility
+> > set and instruction blocking control. A consumer requests a feasible
+> > combination of that that triple before vcpu creation. All subsequently
+> > created vcpu's will use this cpu configuration. 
 > > 
-> > The patch is tested for basic functionality like enumeration, data
-> > transfers. For this bug, it was tested for 20+ hours.
+> > Michael Mueller (6):
+> >   s390/sclp: add sclp_get_ibc function
+> >   KVM: s390: split SIE state guest prefix field
+> >   KVM: s390: use facilities and cpu_id per KVM
+> >   KVM: s390: add ibc api
+> >   KVM: s390: initial implementation of soft facilities
+> >   KVM: s390: add cpu model support
+> > 
+> >  arch/s390/include/asm/kvm_host.h |  13 +-
+> >  arch/s390/include/asm/sclp.h     |   1 +
+> >  arch/s390/include/uapi/asm/kvm.h |  23 ++++
+> >  arch/s390/kvm/Makefile           |   2 +-
+> >  arch/s390/kvm/diag.c             |   2 +-
+> >  arch/s390/kvm/gaccess.c          |   4 +-
+> >  arch/s390/kvm/gaccess.h          |   8 +-
+> >  arch/s390/kvm/ibc.c              |  29 +++++
+> >  arch/s390/kvm/kvm-s390.c         | 263 +++++++++++++++++++++++++++++++++------
+> >  arch/s390/kvm/kvm-s390.h         |  43 ++++++-
+> >  arch/s390/kvm/priv.c             |  16 ++-
+> >  arch/s390/kvm/softfac.c          |  38 ++++++
+> >  drivers/s390/char/sclp_early.c   |  12 +-
+> >  13 files changed, 397 insertions(+), 57 deletions(-)
+> >  create mode 100644 arch/s390/kvm/ibc.c
+> >  create mode 100644 arch/s390/kvm/softfac.c
+> > 
 > 
-> thanks, g_audio loop should be fine.
+> I will add patch 1 and 2 to the next KVM: s390: pull request as there 
+> does not seem to be potential for discussion / interface changes. 
+> Everything else looks ok, but I want to wait if additional feedback 
+> about the overall design comes in. 
+
+Perfect...
+
 > 
-np.
+> Christian
 
-
-Regards
-Jincan
