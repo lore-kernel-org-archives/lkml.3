@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbaEPKDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:03:51 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51247 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258AbaEPKDt (ORCPT
+	id S1756865AbaEPKF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:05:26 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:52190 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753960AbaEPKFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:03:49 -0400
+	Fri, 16 May 2014 06:05:25 -0400
+Date: Fri, 16 May 2014 11:04:34 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Steve Capper <steve.capper@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
+Message-ID: <20140516100434.GG5624@arm.com>
+References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1400230809-11401-1-git-send-email-chander.kashyap@linaro.org>
-References: <1400230809-11401-1-git-send-email-chander.kashyap@linaro.org>
-Date: Fri, 16 May 2014 15:33:49 +0530
-Message-ID: <CAKohpokzz0xOnseM=wdyQ0_xf1G2d6=1vTvh+ztVRg-Vr0PxZw@mail.gmail.com>
-Subject: Re: [PATCH v3] PM / OPP: discard duplicate OPPs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chander Kashyap <chander.kashyap@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400163562-7481-1-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 14:30, Chander Kashyap <chander.kashyap@linaro.org> wrote:
-> From: Chander Kashyap <k.chander@samsung.com>
->
-> This patch detects the duplicate OPP entries and discards them
+On Thu, May 15, 2014 at 03:19:22PM +0100, Mark Salter wrote:
+> diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+> index 5e9aec3..9bed38f 100644
+> --- a/arch/arm64/mm/hugetlbpage.c
+> +++ b/arch/arm64/mm/hugetlbpage.c
+> @@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
+>  
+>  int pud_huge(pud_t pud)
+>  {
+> +#ifndef __PAGETABLE_PMD_FOLDED
+>  	return !(pud_val(pud) & PUD_TABLE_BIT);
+> +#else
+> +	return 0;
+> +#endif
+>  }
+>  
+>  int pmd_huge_support(void)
+> @@ -64,8 +68,10 @@ static __init int setup_hugepagesz(char *opt)
+>  	unsigned long ps = memparse(opt, &opt);
+>  	if (ps == PMD_SIZE) {
+>  		hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
+> +#ifndef __PAGETABLE_PMD_FOLDED
+>  	} else if (ps == PUD_SIZE) {
+>  		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
+> +#endif
 
-I wish this would have been a bit more explanatory :)
+Since PMD_SIZE == PUD_SIZE when __PAGETABLE_PMD_FOLDED, do we need the
+#ifndef here? Maybe the compiler is smart enough to remove it but it's
+not on a critical path anyway, so I wouldn't bother.
 
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> ---
->  Changes in v3:
->         - Modify the commit log
->  Changes in v2:
->         - Reorder check for duplicate opp
->
->  drivers/base/power/opp.c |   13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+-- 
+Catalin
