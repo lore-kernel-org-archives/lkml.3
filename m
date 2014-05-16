@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbaEPEBl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 00:01:41 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:44019 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaEPEBk (ORCPT
+	id S1752454AbaEPEMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 00:12:31 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:7290 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751106AbaEPEMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 00:01:40 -0400
+	Fri, 16 May 2014 00:12:30 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1064,1389715200"; 
+   d="scan'208";a="30601454"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: <mingo@redhat.com>, <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH] sched/fair: cleanup, clamp values with macros clamp() and max().
+Date: Fri, 16 May 2014 12:12:34 +0900
+Message-ID: <1400209954-6264-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
 MIME-Version: 1.0
-In-Reply-To: <5375311B.2010202@gmail.com>
-References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
-	<1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
-	<1400054637-21505-6-git-send-email-chander.kashyap@linaro.org>
-	<5375311B.2010202@gmail.com>
-Date: Fri, 16 May 2014 09:31:38 +0530
-Message-ID: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
-Subject: Re: [PATCH v5 5/6] exynos: cpuidle: do not allow cpuidle registration
- for Exynos5420
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Chander Kashyap <k.chander@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+Rather than use "if" to check and clamp values to allowed minmum or maxmum,
+this patch use macros clamp() and max() to clean it up.
 
-On 16 May 2014 02:56, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Chander,
->
-> On 14.05.2014 10:03, Chander Kashyap wrote:
->> Exynos5420 is big.Little Soc. It uses cpuidle-big-litle generic cpuidle driver.
->> Hence do not allow exynos cpuidle driver registration for Exynos5420.
->>
->> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
->> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>  arch/arm/mach-exynos/cpuidle.c |    3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
->> index 3dd385e..807a386 100644
->> --- a/arch/arm/mach-exynos/cpuidle.c
->> +++ b/arch/arm/mach-exynos/cpuidle.c
->> @@ -218,6 +218,9 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
->>       int cpu_id, ret;
->>       struct cpuidle_device *device;
->>
->> +     if (soc_is_exynos5420())
->> +             return -ENODEV;
->> +
->>       if (soc_is_exynos5250())
->>               exynos5_core_down_clk();
->>
->>
->
-> Why not put this in exynos.c in exynos_dt_machine_init(), so
-> exynos_cpuidle_init() is called only if not running on Exynos5420?
->
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ kernel/sched/fair.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-That makes more sense.
-I will update this
-
-Thanks
-> Best regards,
-> Tomasz
-
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7570dd9..939a7ab 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2041,10 +2041,7 @@ static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg)
+ 	if (tg_weight)
+ 		shares /= tg_weight;
+ 
+-	if (shares < MIN_SHARES)
+-		shares = MIN_SHARES;
+-	if (shares > tg->shares)
+-		shares = tg->shares;
++	shares = clamp(shares, MIN_SHARES, tg->shares);
+ 
+ 	return shares;
+ }
+@@ -4133,8 +4130,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ 		 * those are clipped to [MIN_SHARES, ...) do so now. See
+ 		 * calc_cfs_shares().
+ 		 */
+-		if (wl < MIN_SHARES)
+-			wl = MIN_SHARES;
++		wl = max(wl, MIN_SHARES);
+ 
+ 		/*
+ 		 * wl = dw_i = S * (s'_i - s_i); see (3)
 -- 
-with warm regards,
-Chander Kashyap
+1.8.2.1
+
