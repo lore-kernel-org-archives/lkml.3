@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723AbaEPINF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:13:05 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:60445 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406AbaEPIM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:12:58 -0400
-Date: Fri, 16 May 2014 04:12:51 -0400 (EDT)
-From: Jon Maxwell <jmaxwell@redhat.com>
-To: stephen@networkplumber.org
-Cc: davem@davemloft.net, makita toshiaki <makita.toshiaki@lab.ntt.co.jp>,
-        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jpirko@redhat.com
-Message-ID: <255115023.7295678.1400227971937.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1400227719-18403-1-git-send-email-jmaxwell@redhat.com>
-References: <1400227719-18403-1-git-send-email-jmaxwell@redhat.com>
-Subject: Re: [PATCH net] bridge: notify user space of fdb port change
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: bridge: notify user space of fdb port change
-Thread-Index: aHKzRqp6gc6Yk2UlydieOGf2EiRnJQ==
+	id S1756810AbaEPINw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:13:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9318 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755977AbaEPIGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:06:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
+   d="scan'208";a="540107629"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
+        linux-pm@vger.kernel.org
+Subject: [RFC Patch Part1 V1 21/30] x86, ACPI, irq: provide basic irqdomain support
+Date: Fri, 16 May 2014 16:05:41 +0800
+Message-Id: <1400227550-5935-22-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please use this patch. My bad, the previous one 
-incorrectly did the notify before fdb->added_by_user = 1.
+Enhance ACPI driver to provide basic irqdomain support for IOAPIC.
 
------ Original Message -----
-> From: "Jon Maxwell" <jmaxwell37@gmail.com>
-> To: stephen@networkplumber.org
-> Cc: davem@davemloft.net, "makita toshiaki" <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com,
-> bridge@lists.linux-foundation.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jpirko@redhat.com,
-> jmaxwell@redhat.com, "Jon Maxwell" <jmaxwell37@gmail.com>
-> Sent: Friday, May 16, 2014 6:08:39 PM
-> Subject: [PATCH net] bridge: notify user space of fdb port change
-> 
-> From: Jon Maxwell <jmaxwell37@gmail.com>
-> 
-> There has been a number incidents recently where customers running KVM have
-> reported that VM hosts on different Hypervisors are unreachable. Based on
-> pcap traces we found that the bridge was broadcasting the ARP request out
-> onto the network. However some NICs have an inbuilt switch which on occasions
-> were broadcasting the VMs ARP request back through the physical NIC on the
-> Hypervisor. This resulted in the bridge changing ports and incorrectly
-> learning
-> that the VMs mac address was external. As a result the ARP reply was directed
-> back onto the external network and VM never updated it's ARP cache. This
-> patch
-> will notify the bridge command to identify such port toggling.
-> 
-> Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
-> ---
->  net/bridge/br_fdb.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> index 9203d5a..67480c2 100644
-> --- a/net/bridge/br_fdb.c
-> +++ b/net/bridge/br_fdb.c
-> @@ -511,6 +511,8 @@ void br_fdb_update(struct net_bridge *br, struct
-> net_bridge_port *source,
->  			fdb->updated = jiffies;
->  			if (unlikely(added_by_user))
->  				fdb->added_by_user = 1;
-> +			if (unlikely(source->port_no != fdb->dst->port_no))
-> +				fdb_notify(br, fdb, RTM_NEWNEIGH);
->  		}
->  	} else {
->  		spin_lock(&br->hash_lock);
-> --
-> 1.8.3.1
-> 
-> 
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/acpi/boot.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index f70f4f318316..1ee639e74d50 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -31,6 +31,7 @@
+ #include <linux/module.h>
+ #include <linux/dmi.h>
+ #include <linux/irq.h>
++#include <linux/irqdomain.h>
+ #include <linux/slab.h>
+ #include <linux/bootmem.h>
+ #include <linux/ioport.h>
+@@ -331,6 +332,23 @@ static void  mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 			   int polarity);
+ 
++static struct irq_domain_ops acpi_irqdomain_ops;
++
++static struct irq_domain *acpi_create_irqdomain(int idx, void *arg)
++{
++	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
++
++	/*
++	 * Statically allocate IRQ number for legacy IRQs and all pins on the
++	 * first IOAPIC.
++	 */
++	if (gsi_cfg->gsi_base < NR_IRQS_LEGACY &&
++	    ioapic_dynirq_base < gsi_cfg->gsi_end)
++		ioapic_dynirq_base = gsi_cfg->gsi_end + 1;
++
++	return mp_irqdomain_create(idx, NULL, &acpi_irqdomain_ops);
++}
++
+ static int __init
+ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+ {
+@@ -345,7 +363,7 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+ 
+ 	mp_register_ioapic(ioapic->id,
+ 			   ioapic->address, ioapic->global_irq_base,
+-			   NULL, NULL);
++			   acpi_create_irqdomain, NULL);
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
+
