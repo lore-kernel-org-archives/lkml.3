@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226AbaEPXHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:07:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52401 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829AbaEPXHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:07:17 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/7] clk: qcom: Fix clk_rcg2_is_enabled() check
-Date: Fri, 16 May 2014 16:07:08 -0700
-Message-Id: <1400281634-9313-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
-References: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
+	id S2992440AbaEPXH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:07:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60744 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756171AbaEPXHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 19:07:18 -0400
+Message-ID: <537699E7.9050005@zytor.com>
+Date: Fri, 16 May 2014 16:06:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <8468354.y2kUZdOz9e@wuerfel> <1400168823.7862.9.camel@dabdike> <9176609.NChAu49t7f@wuerfel> <20140515220717.1ced0f1a@alan.etchedpixels.co.uk> <20140516074826.GB8555@infradead.org>
+In-Reply-To: <20140516074826.GB8555@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the bit is set the clock is off so we should be checking for
-a clear bit, not a set bit. Invert the logic.
+On 05/16/2014 12:48 AM, Christoph Hellwig wrote:
+> 
+> The stat(64) syscall already has stopped time_t for a long time:
+> 
+> struct stat64 {
+> 	...
+> 	int             st_atime;       /* Time of last access.  */
+> 	unsigned int    st_atime_nsec;
+> 	int             st_mtime;       /* Time of last modification.  */
+> 	unsigned int    st_mtime_nsec;
+> 	int             st_ctime;	/* Time of last status change. */
+> 	unsigned int	st_ctime_nsec;
+> };
+> 
 
-Fixes: bcd61c0f535a (clk: qcom: Add support for root clock generators (RCGs))
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/qcom/clk-rcg2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+... except that that is really a struct timespec just written weirdly,
+and userspace uses it as a struct timespec.
 
-diff --git a/drivers/clk/qcom/clk-rcg2.c b/drivers/clk/qcom/clk-rcg2.c
-index 00f878a04d3f..0996a3a39855 100644
---- a/drivers/clk/qcom/clk-rcg2.c
-+++ b/drivers/clk/qcom/clk-rcg2.c
-@@ -55,7 +55,7 @@ static int clk_rcg2_is_enabled(struct clk_hw *hw)
- 	if (ret)
- 		return ret;
- 
--	return (cmd & CMD_ROOT_OFF) != 0;
-+	return (cmd & CMD_ROOT_OFF) == 0;
- }
- 
- static u8 clk_rcg2_get_parent(struct clk_hw *hw)
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+	-hpa
+
 
