@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaEPEff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 00:35:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42475 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaEPEfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 00:35:34 -0400
-Date: Thu, 15 May 2014 21:35:32 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
- namespaces
-Message-ID: <20140516043532.GA14149@kroah.com>
-References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
- <20140515013245.GA1764@kroah.com>
- <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
- <20140515031527.GA146352@ubuntu-hedt>
- <20140515040032.GA6702@kroah.com>
- <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
- <20140515140856.GA17453@kroah.com>
- <20140515174254.GM21073@ubuntumail>
- <20140515221551.GB13306@kroah.com>
- <20140516014959.GD22591@ubuntumail>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516014959.GD22591@ubuntumail>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753900AbaEPEq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 00:46:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218AbaEPEq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 00:46:58 -0400
+Message-ID: <1400215610.3289.174.camel@ul30vt.home>
+Subject: Re: [PATCH] i915: Add module option to support VGA arbiter on HD
+ devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Date: Thu, 15 May 2014 22:46:50 -0600
+In-Reply-To: <CAKMK7uGRCQSUNjBiegkYncUiYmFfoLAqxj6UPYJNeOf2S2x-7w@mail.gmail.com>
+References: <20140509201655.2849.97478.stgit@bling.home>
+	 <20140512190812.GH25056@phenom.ffwll.local>
+	 <1399923039.6734.97.camel@bling.home>
+	 <20140512193825.GI25056@phenom.ffwll.local>
+	 <1400190194.3289.143.camel@ul30vt.home>
+	 <CAKMK7uGRCQSUNjBiegkYncUiYmFfoLAqxj6UPYJNeOf2S2x-7w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
-> > I think having to pick and choose what device nodes you want in a
-> > container is a good thing.  Becides, you would have to do the same thing
-> > in the kernel anyway, what's wrong with userspace making the decision
-> > here, especially as it knows exactly what it wants to do much more so
-> > than the kernel ever can.
+On Fri, 2014-05-16 at 00:50 +0200, Daniel Vetter wrote:
+> On Thu, May 15, 2014 at 11:43 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > I don't know what to do with this.  It seems like a lot of wishful
+> > thinking that in the best case would drag on for years.  Even if we get
+> > VGA arbitration out of Xorg, the bit about making the userspace VGA
+> > arbiter interface lie depending on current->comm sounds tricky and
+> > horrible.  If we can lie to Xorg there, why don't we do that now?  If we
+> > can't lie to Xorg now, then what deprecation event or detection of the
+> > caller is going to allow us to do so in the future?
 > 
-> For 'real' devices that sounds sensible.  The thing about loop devices
-> is that we simply want to allow a container to say "give me a loop
-> device to use" and have it receive a unique loop device (or 3), without
-> having to pre-assign them.  I think that would be cleaner to do using
-> a pseudofs and loop-control device, rather than having to have a
-> daemon in userspace on the host farming those out in response to
-> some, I don't know, dbus request?
+> Well we wouldn't necessarily need to lie to X, but could instead look
+> whether all the vga devices in a system are claimed by kms drivers. If
+> that's the case the userspace doesn't have an awful lot of business
+> touching the VGA registers and we could simply not obey a vga arb
+> request from userspace.
+> 
+> More advanced would be if we still obey it for those devices not
+> claimed by kms drivers. So not really a need to key on current->comm.
 
-I agree that loop devices would be nice to have in a container, and that
-the existing loop interface doesn't really lend itself to that.  So
-create a new type of thing that acts like a loop device in a container.
-But don't try to mess with the whole driver core just for a single type
-of device.
+This is a requirement for me, I don't really care about KMS or Xorg, the
+use case I want to enable is binding a VGA device to vfio-pci so that it
+can be assigned to a guest virtual machine.  This works on an unmodified
+kernel today so long as you don't have an Intel IGD in your system.  If
+you do, we try to switch the VGA device, but it doesn't actually get
+switched because i915 opts-out of arbitration yet still claims VGA
+accesses.
 
-greg k-h
+> > Meanwhile anyone that wants i915 to participate in arbitration like it
+> > should have from the start needs to patch their kernel with forward
+> > ports of the reverted commits.
+> >
+> > I just don't see this moving forward, which is why I thought a module
+> > option at least gives us a workaround.  Thanks,
+> 
+> I know that this is awful, but a module option means that the few
+> people interested in moving this forward will be happy enough to no
+> longer bother. Which is even worse from my pov as driver maintainer. I
+> highly consider module options used in production evil.
+
+If I had a solution, I wouldn't be sending this patch :-\  Thanks,
+
+Alex
+
