@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442AbaEPRaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:30:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48844 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaEPR37 (ORCPT
+	id S1757991AbaEPRaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:30:30 -0400
+Received: from exprod5og123.obsmtp.com ([64.18.0.198]:36985 "HELO
+	exprod5og123.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757662AbaEPRa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:29:59 -0400
+	Fri, 16 May 2014 13:30:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJfpegt4OdpZfaLjRjkLS27y_=kUeUpowHmbb_7TicsLpzYyGg@mail.gmail.com>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-	<1397211951-20549-15-git-send-email-miklos@szeredi.hu>
-	<CAJfpegt4OdpZfaLjRjkLS27y_=kUeUpowHmbb_7TicsLpzYyGg@mail.gmail.com>
-Date: Fri, 16 May 2014 21:29:59 +0400
-Message-ID: <CAMo8Bf+0g-PmLqsFeXyrFOvrbxfyVVfX_s1p_U5JqAunHd_9Yw@mail.gmail.com>
-Subject: Re: [PATCH 14/15] xtensa: add renameat2 syscall
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Chris Zankel <chris@zankel.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1400258705.21547.217.camel@deneb.redhat.com>
+References: <1399326447-2329-1-git-send-email-isubramanian@apm.com>
+	<1399326447-2329-5-git-send-email-isubramanian@apm.com>
+	<1400258705.21547.217.camel@deneb.redhat.com>
+Date: Fri, 16 May 2014 10:30:24 -0700
+Message-ID: <CAKh23FnAJZ-fa06WtCjJ+Of3_cDPypb+kgFFbWMy2-twjQhuPg@mail.gmail.com>
+Subject: Re: [PATCH v4 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>, patches <patches@apm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keyur Chudgar <kchudgar@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ravi Patel <rapatel@apm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
-
-On Thu, May 15, 2014 at 4:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->> Cc: Chris Zankel <chris@zankel.net>
->
-> Chris,
->
-> I'll be sending a batch of patches with arch support for the renameat2
-> syscall to Linus next week.  If you'd like me to send this as well,
-> could you please ACK it?
-
-not Chris, but FWIW, Acked-by: Max Filippov <jcmvbkbc@gmail.com>
-
->> ---
->>  arch/xtensa/include/uapi/asm/unistd.h | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/xtensa/include/uapi/asm/unistd.h b/arch/xtensa/include/uapi/asm/unistd.h
->> index b9395529f02d..8883fc877c5c 100644
->> --- a/arch/xtensa/include/uapi/asm/unistd.h
->> +++ b/arch/xtensa/include/uapi/asm/unistd.h
->> @@ -739,7 +739,10 @@ __SYSCALL(334, sys_sched_setattr, 2)
->>  #define __NR_sched_getattr                     335
->>  __SYSCALL(335, sys_sched_getattr, 3)
->>
->> -#define __NR_syscall_count                     336
->> +#define __NR_renameat2                         336
->> +__SYSCALL(336, sys_renameat2, 5)
+On Fri, May 16, 2014 at 9:45 AM, Mark Salter <msalter@redhat.com> wrote:
+> On Mon, 2014-05-05 at 14:47 -0700, Iyappan Subramanian wrote:
+>> +static int xgene_enet_probe(struct platform_device *pdev)
+>> +{
+>> +       struct net_device *ndev;
+>> +       struct xgene_enet_pdata *pdata;
+>> +       struct device *dev = &pdev->dev;
+>> +       struct napi_struct *napi;
+>> +       int ret = 0;
 >> +
->> +#define __NR_syscall_count                     337
->>
->>  /*
->>   * sysxtensa syscall handler
->> --
->> 1.8.1.4
+>> +       ndev = alloc_etherdev(sizeof(struct xgene_enet_pdata));
+>> +       if (!ndev)
+>> +               return -ENOMEM;
+>> +
+>> +       pdata = netdev_priv(ndev);
+>> +
+>> +       pdata->pdev = pdev;
+>> +       pdata->ndev = ndev;
+>> +       SET_NETDEV_DEV(ndev, dev);
+>> +       platform_set_drvdata(pdev, pdata);
+>> +       ndev->netdev_ops = &xgene_ndev_ops;
+>> +       ndev->features |= NETIF_F_IP_CSUM;
+>> +       ndev->features |= NETIF_F_GSO;
+>> +       ndev->features |= NETIF_F_GRO;
+>> +
+>
+> You're missing:
+>
+>          spin_lock_init(&pdata->stats_lock);
 
--- 
-Thanks.
--- Max
+I really appreciate the help.  This fixed the crash.
+
+>
+> Lockdep (if enabled) complains:
+>
+>  xgene_enet_probe: 852
+>  INFO: trying to register non-static key.
+>  the code is fine but needs lockdep annotation.
+>  turning off the locking correctness validator.
+>  CPU: 4 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc4+ #13
+>  Call trace:
+>  [<ffffffc000087ef4>] dump_backtrace+0x0/0x16c
+>  [<ffffffc000088070>] show_stack+0x10/0x1c
+>  [<ffffffc000766b04>] dump_stack+0x88/0xb8
+>  [<ffffffc00010243c>] __lock_acquire+0x1914/0x1ce0
+>  [<ffffffc000102fa0>] lock_acquire+0x9c/0x1d0
+>  [<ffffffc00076d418>] _raw_spin_lock+0x40/0x58
+>  [<ffffffc0004fced0>] xgene_enet_get_stats+0x34/0x140
+>  [<ffffffc0005fd7dc>] dev_get_stats+0x90/0xbc
+>  [<ffffffc00061736c>] rtnl_fill_ifinfo+0x388/0x8e4
+>  [<ffffffc000617938>] rtmsg_ifinfo+0x70/0x10c
+>  [<ffffffc000609e98>] register_netdevice+0x370/0x400
+>  [<ffffffc000609f3c>] register_netdev+0x14/0x2c
+>  [<ffffffc0004fd7ec>] xgene_enet_probe+0x1cc/0x618
+>  [<ffffffc0004a1928>] platform_drv_probe+0x28/0x80
+>  [<ffffffc00049fc38>] driver_probe_device+0x98/0x3ac
+>  [<ffffffc0004a0040>] __driver_attach+0xa0/0xa8
+>  [<ffffffc00049dd78>] bus_for_each_dev+0x54/0x98
+>  [<ffffffc00049f65c>] driver_attach+0x1c/0x28
+>  [<ffffffc00049f234>] bus_add_driver+0x164/0x240
+>  [<ffffffc0004a06b8>] driver_register+0x64/0x130
+>  [<ffffffc0004a187c>] __platform_driver_register+0x5c/0x68
+>  [<ffffffc000c08e14>] xgene_enet_driver_init+0x14/0x20
+>  [<ffffffc000081418>] do_one_initcall+0xc4/0x154
+>  [<ffffffc000bd2a74>] kernel_init_freeable+0x204/0x2a8
+>  [<ffffffc00075e8a0>] kernel_init+0xc/0xd4
+>
+>> +       ret = xgene_enet_get_resources(pdata);
+>> +       if (ret)
+>> +               goto err;
+>> +
+>> +       ret = register_netdev(ndev);
+>
+>
