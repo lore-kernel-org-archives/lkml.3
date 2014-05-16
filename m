@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011AbaEPOUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:20:21 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:62536 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496AbaEPOUT (ORCPT
+	id S1757315AbaEPOUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:20:31 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:52650 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757230AbaEPOU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:20:19 -0400
+	Fri, 16 May 2014 10:20:28 -0400
+Message-ID: <53761EA9.6060508@lwfinger.net>
+Date: Fri, 16 May 2014 09:20:25 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140516134904.GW618@waldemar-brodkorb.de>
-References: <20140516134904.GW618@waldemar-brodkorb.de>
-Date: Fri, 16 May 2014 16:20:18 +0200
-X-Google-Sender-Auth: oadzfgtYzCIG03pt5q7MpCftjtE
-Message-ID: <CAMuHMdVPSzYkUumqMY78zxVcoQ6=W9Vfm_tyM_T3W8DFzCztVw@mail.gmail.com>
-Subject: Re: serial console on rb532 disabled on boot (linux 3.15rc5)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Waldemar Brodkorb <wbx@openadk.org>
-Cc: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+CC: akpm@linux-foundation.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        Dmitry Semyonov <linulin@gmail.com>
+Subject: Re: [PATCH 3.2 31/34] rtl8192ce: Fix null dereference in watchdog
+References: <lsq.1400244441.849613969@decadent.org.uk>
+In-Reply-To: <lsq.1400244441.849613969@decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Waldemar,
-
-On Fri, May 16, 2014 at 3:49 PM, Waldemar Brodkorb <wbx@openadk.org> wrote:
-> I am trying to bootup my Mikrotik RB532 board with the latest
-> kernel, but my serial console is disabled after boot:
-> ..
-> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> serial8250: ttyS0 at MMIO 0x0 (irq = 104, base_baud = 12499875) is a
-> 16550A
-> console [ttyS0] enabled
-> console [ttyS0] disabled
+On 05/16/2014 07:47 AM, Ben Hutchings wrote:
+> 3.2.59-rc1 review patch.  If anyone has any objections, please let me know.
 >
-> I used git bisect to find the problematic commit:
-> commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
-> Author: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> Date:   Fri Feb 28 14:21:32 2014 +0100
+> ------------------
 >
->     serial_core: Unregister console in uart_remove_one_port()
+> From: Ben Hutchings <ben@decadent.org.uk>
 >
->     If the serial port being removed is used as a console, it must
-> also be
->     unregistered from the console subsystem using
-> unregister_console().
+> Dmitry Semyonov reported that after upgrading from 3.2.54 to
+> 3.2.57 the rtl8192ce driver will crash when its interface is brought
+> up.  The oops message shows:
 >
->     uart_ops.release_port() will release resources (e.g. iounmap()
-> the serial
->     port registers), causing a crash on subsequent kernel output if
-> the console
->     is still registered.
+> [ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> [ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
+> ...
+> [ 1833.613326] Call Trace:
+> [ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
+> [ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
+> [ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
+> [ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
+> [ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
+> [ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
+> [ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
+> [ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
 >
->     Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
+> parameter was null.  None of the changes to the rtlwifi family between
+> 3.2.54 and 3.2.57 seem to directly cause this, and reverting commit
+> f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
+> doesn't fix it.
 >
-> After reverting the change, everything is fine.
+> rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
+> rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
+> call trace as it was inlined.  That function has been completely
+> removed upstream which may explain why this crash wasn't seen there.
+>
+> I'm not sure that it is sensible to completely remove
+> rtl92c_dm_refresh_rate_adaptive_mask() without making other
+> compensating changes elsewhere, so try to work around this for 3.2 by
+> checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
+> and then skipping the call to rtl92ce_update_hal_rate_tbl().
+>
+> References: https://bugs.debian.org/745137
+> References: https://bugs.debian.org/745462
+> Reported-by: Dmitry Semyonov <linulin@gmail.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Cc: Larry Finger <Larry.Finger@lwfinger.net>
+> Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+> ---
 
-Does this patch help? https://lkml.org/lkml/2014/5/10/9
+Ben,
 
-I guess you're not using of_serial?
-Your serial driver may need to set port.type too, if it doesn't already do so
-and the type is PORT_UNKNOWN on re-registration.
+Your fix is a reasonable workaround. I have no explanation for this NULL pointer 
+dereference to suddenly appear; however, the pointer should have been checked 
+from the start.
 
-Gr{oetje,eeting}s,
+Thanks,
 
-                        Geert
+Larry
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
