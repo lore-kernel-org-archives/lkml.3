@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaEPWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:21:16 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56502 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753207AbaEPWVO (ORCPT
+	id S1756270AbaEPWWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:22:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50039 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774AbaEPWWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:21:14 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/4] clk: new basic clk type for fractional divider
-Date: Sat, 17 May 2014 00:38:05 +0200
-Message-ID: <1454520.Q33DvSH0ns@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140515165349.9521.75672@quantum>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com> <1400161226-24067-4-git-send-email-heikki.krogerus@linux.intel.com> <20140515165349.9521.75672@quantum>
+	Fri, 16 May 2014 18:22:09 -0400
+Date: Sat, 17 May 2014 01:21:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140516222108.GI8897@mwanda>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+ <20140516192451.GP16662@pengutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140516192451.GP16662@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 15, 2014 09:53:49 AM Mike Turquette wrote:
-> Quoting Heikki Krogerus (2014-05-15 06:40:25)
-> > Fractional divider clocks are fairly common. This adds basic
-> > type for them.
-> > 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> 
-> Taken into clk-next.
-> 
-> Just FYI, there was some talk at Embedded Linux Conference on providing
-> a better abstraction layer for some of these "basic" clock types. This
-> abstraction would allow the basic clock types to implement the
-> machine-agnostic logic (e.g. an incoming rate is divided by a value) and
-> then platforms and drivers could plug in the machine-specific parts
-> (e.g. divider is made up of m/n, or divider is power-of-two, or divider
-> is a simple integer with min == 1 and max == 5).
-> 
-> All of that is to say that in time this fractional divider could go away
-> once the abstraction layer allows us to fold the m/n divider stuff into
-> a core divider implementation.
-> 
-> Nothing wrong with the patch for now, so I've taken it for 3.16.
+On Fri, May 16, 2014 at 09:24:51PM +0200, Uwe Kleine-König wrote:
+> I didn't check if it is easily possible, but converting this file to use
+> platform_device_register_full might simplify it considerably.
 
-Well, OK, but I guess [4/4] depends on it and [4/4] also depends on
-[1-2/4], so how you're proposing to resolve this?
+In a separate patch, though, please.
 
-Rafael
+> 
+> I'm not sure this fix is critical, because the problem happens if an
+> allocation during boot fails. But still, if you want to get this fix
+> into a stable release, you should simplify it, i.e. don't do the code
+> reorganisations. (Also the "more clear" part seems to be subjective, I
+> like the error handling better as it is now. But that might only be me.)
+
+Emil's error handling is done exactly in the correct way...  The error
+path and success path are separate.  Unwinding in the reverse order.
+The label names describe the label locations.  Most days I spend hours
+looking at linux kernel error handling and I can assure you that
+sensible labels like this are a rare and wonderful gift.
+
+It's hard for me to imagine how anyone could defend the original error
+handling.  The label was "err".  The error handling was randomly plopped
+in the middle of the success handling.  Whenever I see new "creative"
+error handling like this it drives me nuts because obviously it's going
+to be buggy like a swamp picnic.
+
+regards,
+dan carpenter
 
