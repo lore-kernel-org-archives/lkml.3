@@ -1,116 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992456AbaEPVpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:45:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61145 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687AbaEPVnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 17:43:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1069,1389772800"; 
-   d="scan'208";a="533259471"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/8] list: Out of line INIT_LIST_HEAD and list_del
-Date: Fri, 16 May 2014 14:43:10 -0700
-Message-Id: <1400276595-6965-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
+	id S1754104AbaEPVyf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 17:54:35 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:44848 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaEPVyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 17:54:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJZ5v0inpqY5w-FE4Wvaj2W_tG3AMHNoRQfdK8iSgJUQ798O-g@mail.gmail.com>
+References: <CAJZ5v0inpqY5w-FE4Wvaj2W_tG3AMHNoRQfdK8iSgJUQ798O-g@mail.gmail.com>
+Date: Fri, 16 May 2014 23:54:32 +0200
+X-Google-Sender-Auth: XSOJEzV7sseovhh044V-dsz5DN8
+Message-ID: <CAJZ5v0iZ6eREK24fWAw7ixz=BJXMiMBcTAOJ1MdBq+pfR4zcHA@mail.gmail.com>
+Subject: Re: [GIT PULL] ACPI and power management fixes for v3.15-rc6
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi Linus,
 
-Out of lining these two inlines saves ~21k on my vmlinux
+Sorry for this last-minute update, but it's just turned out that
+one of the new ACPI video blacklist entries was added overzealously
+and added is a commit reverting it.
 
-14152713	2003976	1507328	17664017	10d8811	vmlinux-before-list
-14131431	2008136	1507328	17646895	10d452f	vmlinux-list
+Please pull from
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/list.h | 15 ++++-----------
- lib/Makefile         |  2 +-
- lib/list.c           | 22 ++++++++++++++++++++++
- 3 files changed, 27 insertions(+), 12 deletions(-)
- create mode 100644 lib/list.c
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.15-rc6
 
-diff --git a/include/linux/list.h b/include/linux/list.h
-index ef95941..8297885 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -21,11 +21,8 @@
- #define LIST_HEAD(name) \
- 	struct list_head name = LIST_HEAD_INIT(name)
- 
--static inline void INIT_LIST_HEAD(struct list_head *list)
--{
--	list->next = list;
--	list->prev = list;
--}
-+/* Out of line to save space */
-+void INIT_LIST_HEAD(struct list_head *list);
- 
- /*
-  * Insert a new entry between two known consecutive entries.
-@@ -101,12 +98,8 @@ static inline void __list_del_entry(struct list_head *entry)
- 	__list_del(entry->prev, entry->next);
- }
- 
--static inline void list_del(struct list_head *entry)
--{
--	__list_del(entry->prev, entry->next);
--	entry->next = LIST_POISON1;
--	entry->prev = LIST_POISON2;
--}
-+/* Out of line to save space */
-+void list_del(struct list_head *entry);
- #else
- extern void __list_del_entry(struct list_head *entry);
- extern void list_del(struct list_head *entry);
-diff --git a/lib/Makefile b/lib/Makefile
-index 0cd7b68..8b744f7 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o list.o
- 
- obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/lib/list.c b/lib/list.c
-new file mode 100644
-index 0000000..298768f
---- /dev/null
-+++ b/lib/list.c
-@@ -0,0 +1,22 @@
-+#include <linux/list.h>
-+#include <linux/module.h>
-+
-+/*
-+ * Out of line versions of common list.h functions that bloat the
-+ * kernel too much.
-+ */
-+
-+void INIT_LIST_HEAD(struct list_head *list)
-+{
-+	list->next = list;
-+	list->prev = list;
-+}
-+EXPORT_SYMBOL(INIT_LIST_HEAD);
-+
-+void list_del(struct list_head *entry)
-+{
-+	__list_del(entry->prev, entry->next);
-+	entry->next = LIST_POISON1;
-+	entry->prev = LIST_POISON2;
-+}
-+EXPORT_SYMBOL(list_del);
--- 
-1.9.0
+to receive ACPI and power management fixes for v3.15-rc6
+with top-most commit 658a0f4e661a6c07395de318a58f9058ba2faf8f
 
+  Merge branch 'acpi-video'
+
+on top of commit d6d211db37e75de2ddc3a4f979038c40df7cc79c
+
+  Linux 3.15-rc5
+
+Still fixing regressions (partly by reverting commits that broke
+things for people), fixing other stable-candidate bugs and adding
+some blacklist entries for ACPI video and _OSI.  Two ACPICA regression
+fixes (one recent and one for a 3.14 commit), a fix for an ACPI-related
+regression in TPM (introduced in 3.14), a revert of the ACPI AC
+driver conversion in 3.13 that went wrong for an unknown reason,
+two reverts of commits that attempted to remove an old user space
+interface in /proc and broke some utilities, in 3.13 too, a fix for
+a CPU hotplug bug in the ACPI processor driver (stable material),
+two (stable candidate) fixes for intel_pstate and a few new blacklist
+entries, mostly for systems that shipped with Windows 8.
+
+Specifics:
+
+ - ACPICA fix for a stale pointer access introduced by a recent
+   commit in the XSDT validation code from Lv Zheng.
+
+ - ACPICA fix for the default value of the command line switch
+   to favor 32-bit FADT addresses (in case there's a conflict
+   between a 64-bit and a 32-bit address).  The previous default
+   was that the 32-bit version would take precedence and we tried
+   to change it to the other way around and it didn't work.
+   From Lv Zheng.
+
+ - A TPM commit related to ACPI _DSM in 3.14 caused the driver to
+   refuse to load if a specific _DSM was missing and that broke
+   resume from system suspend on Chromebooks that require the TPM
+   hardware to be restored to a working state during resume by the
+   OS.  Restore the old behavior to load the driver if the _DSM
+   in question is not present, but prevent it from using the
+   feature the _DSM is for.
+
+ - ACPI AC driver conversion in 3.13 broke thermal management on
+   at least one machine and has to be reverted.  From Guenter Roeck.
+
+ - Two reverts of 3.13 commits that attempted to remove the old ACPI
+   battery interface in /proc, but turned out to break some utilities
+   still using that interface.  From Lan Tianyu.
+
+ - ACPI processor driver fix to prevent acpi_processor_add() from
+   modifying the CPU device's .offline field which leads to breakage
+   if the initial online of the CPU fails.  From Igor Mammedov.
+
+ - Two intel_pstate fixes, one to take a BayTrail documentation update
+   into account and one to avoid forcing the maximum P-state on init
+   which causes CPU PM trouble on systems with P-states coordination
+   when one of the CPU cores is initialized after an offline/online
+   cycle triggered by user space.  Both stable candidates, from
+   Dirk Brandewie.
+
+ - Fix for the ACPI video DMI blacklist entry for Dell Inspiron 7520
+   from Aaron Lu.
+
+ - Two new ACPI video blacklist entries for machines shipping with
+   Win8 that need to use native backlight so that it can be controlled
+   in a usual way (which doesn't work otherwise due bugs in the ACPI
+   tables) from Hans de Goede.
+
+ - Two ACPI _OSI quirks for systems that need them to work correctly
+   with Linux from Edward Lin and Hans de Goede.
+
+Thanks!
+
+
+---------------
+
+Aaron Lu (1):
+      ACPI / video: correct DMI tag for Dell Inspiron 7520
+
+Dirk Brandewie (2):
+      intel_pstate: Set turbo VID for BayTrail
+      intel_pstate: remove setting P state to MAX on init
+
+Edward Lin (1):
+      ACPI: blacklist win8 OSI for Dell Inspiron 7737
+
+Guenter Roeck (1):
+      ACPI: Revert "ACPI / AC: convert ACPI ac driver to platform bus"
+
+Hans de Goede (3):
+      ACPI / video: Add use_native_backlight quirks for more systems
+      ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
+      ACPI / video: Revert native brightness quirk for ThinkPad T530
+
+Igor Mammedov (1):
+      ACPI / processor: do not mark present at boot but not onlined
+CPU as onlined
+
+Lan Tianyu (2):
+      ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"
+      ACPI: Revert "ACPI / Battery: Remove battery's proc directory"
+
+Lv Zheng (2):
+      ACPICA: Tables: Fix invalid pointer accesses in
+acpi_tb_parse_root_table().
+      ACPICA: Tables: Restore old behavor to favor 32-bit FADT addresses.
+
+Rafael J. Wysocki (2):
+      ACPI / proc: Do not say when /proc interfaces will be deleted in Kconfig
+      ACPI / TPM: Fix resume regression on Chromebooks
+
+---------------
+
+ drivers/acpi/Kconfig           |  17 +++
+ drivers/acpi/Makefile          |   1 +
+ drivers/acpi/ac.c              | 117 ++++++++-------
+ drivers/acpi/acpi_platform.c   |   1 -
+ drivers/acpi/acpi_processor.c  |   1 -
+ drivers/acpi/acpica/acglobal.h |   4 +-
+ drivers/acpi/acpica/tbutils.c  |   7 +-
+ drivers/acpi/battery.c         | 329 ++++++++++++++++++++++++++++++++++++++++-
+ drivers/acpi/blacklist.c       |  21 +++
+ drivers/acpi/cm_sbs.c          | 105 +++++++++++++
+ drivers/acpi/video.c           |  16 +-
+ drivers/char/tpm/tpm_ppi.c     |   8 +-
+ drivers/cpufreq/intel_pstate.c |  34 ++---
+ 13 files changed, 568 insertions(+), 93 deletions(-)
