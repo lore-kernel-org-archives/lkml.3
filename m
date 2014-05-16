@@ -1,71 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477AbaEPIEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:04:36 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55373 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418AbaEPIEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:24 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH v6 1/6] driver: cpuidle-big-little: add of_device_id structure
-Date: Fri, 16 May 2014 13:33:53 +0530
-Message-Id: <1400227438-27155-2-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
-References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
- <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+	id S1756704AbaEPIZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:25:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756411AbaEPIEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:04:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
+   d="scan'208";a="540106680"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org, Jiri Kosina <trivial@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
+        linux-pm@vger.kernel.org
+Subject: [RFC Patch Part1 V1 06/30] x86, ACPI, trivial: minor improvements to arch/x86/kernel/acpi/boot.c
+Date: Fri, 16 May 2014 16:05:26 +0800
+Message-Id: <1400227550-5935-7-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver will be used by many big.Little Soc's. As of now it does
-string matching of hardcoded compatible string to init the driver. This
-comparison list will keep on growing with addition of new SoC's.
-Hence add of_device_id structure to collect the compatible strings of
-SoC's using this driver.
+1) Remove out-of-date comment
+2) Kill unused function acpi_set_irq_model_pic()
+3) Use NR_IRQS_LEGACY instead of hard-coded 16
+4) Trivial syntax improvements
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/cpuidle/cpuidle-big_little.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/kernel/acpi/boot.c |   50 ++++++++++++++-----------------------------
+ 1 file changed, 16 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-index b45fc62..4cd02bd 100644
---- a/drivers/cpuidle/cpuidle-big_little.c
-+++ b/drivers/cpuidle/cpuidle-big_little.c
-@@ -163,14 +163,23 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
- 	return 0;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 8390db1f7a93..6d65850f49e9 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -370,11 +370,6 @@ static void __init acpi_sci_ioapic_setup(u8 bus_irq, u16 polarity, u16 trigger,
+ 	if (acpi_sci_flags & ACPI_MADT_POLARITY_MASK)
+ 		polarity = acpi_sci_flags & ACPI_MADT_POLARITY_MASK;
+ 
+-	/*
+-	 * mp_config_acpi_legacy_irqs() already setup IRQs < 16
+-	 * If GSI is < 16, this will update its flags,
+-	 * else it will create a new mp_irqs[] entry.
+-	 */
+ 	mp_override_legacy_irq(bus_irq, polarity, trigger, gsi);
+ 
+ 	/*
+@@ -573,14 +568,7 @@ void acpi_unregister_gsi(u32 gsi)
  }
+ EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
  
-+static const struct of_device_id compatible_machine_match[] = {
-+	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
-+	{},
-+};
-+
- static int __init bl_idle_init(void)
+-void __init acpi_set_irq_model_pic(void)
+-{
+-	acpi_irq_model = ACPI_IRQ_MODEL_PIC;
+-	__acpi_register_gsi = acpi_register_gsi_pic;
+-	acpi_ioapic = 0;
+-}
+-
+-void __init acpi_set_irq_model_ioapic(void)
++static void __init acpi_set_irq_model_ioapic(void)
  {
- 	int ret;
-+	struct device_node *root = of_find_node_by_path("/");
-+
-+	if (!root)
-+		return -ENODEV;
- 
- 	/*
- 	 * Initialize the driver just for a compliant set of machines
+ 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+ 	__acpi_register_gsi = acpi_register_gsi_ioapic;
+@@ -819,9 +807,8 @@ static int __init early_acpi_parse_madt_lapic_addr_ovr(void)
+ 	 * and (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
  	 */
--	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
-+	if (!of_match_node(compatible_machine_match, root))
+ 
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
+-				  acpi_parse_lapic_addr_ovr, 0);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
++				      acpi_parse_lapic_addr_ovr, 0);
+ 	if (count < 0) {
+ 		printk(KERN_ERR PREFIX
+ 		       "Error parsing LAPIC address override entry\n");
+@@ -846,9 +833,8 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ 	 * and (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
+ 	 */
+ 
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
+-				  acpi_parse_lapic_addr_ovr, 0);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
++				      acpi_parse_lapic_addr_ovr, 0);
+ 	if (count < 0) {
+ 		printk(KERN_ERR PREFIX
+ 		       "Error parsing LAPIC address override entry\n");
+@@ -876,11 +862,10 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ 		return count;
+ 	}
+ 
+-	x2count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
+-				  acpi_parse_x2apic_nmi, 0);
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI, acpi_parse_lapic_nmi, 0);
++	x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
++					acpi_parse_x2apic_nmi, 0);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI,
++				      acpi_parse_lapic_nmi, 0);
+ 	if (count < 0 || x2count < 0) {
+ 		printk(KERN_ERR PREFIX "Error parsing LAPIC NMI entry\n");
+ 		/* TBD: Cleanup to allow fallback to MPS */
+@@ -947,7 +932,7 @@ static void __init mp_config_acpi_legacy_irqs(void)
+ 	 * Use the default configuration for the IRQs 0-15.  Unless
+ 	 * overridden by (MADT) interrupt source override entries.
+ 	 */
+-	for (i = 0; i < 16; i++) {
++	for (i = 0; i < NR_IRQS_LEGACY; i++) {
+ 		int ioapic, pin;
+ 		unsigned int dstapic;
+ 		int idx;
+@@ -1103,9 +1088,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
  		return -ENODEV;
- 	/*
- 	 * For now the differentiation between little and big cores
+ 	}
+ 
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_IO_APIC, acpi_parse_ioapic,
+-				  MAX_IO_APICS);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_IO_APIC, acpi_parse_ioapic,
++				      MAX_IO_APICS);
+ 	if (!count) {
+ 		printk(KERN_ERR PREFIX "No IOAPIC entries present\n");
+ 		return -ENODEV;
+@@ -1114,9 +1098,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
+ 		return count;
+ 	}
+ 
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE, acpi_parse_int_src_ovr,
+-				  nr_irqs);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE,
++				      acpi_parse_int_src_ovr, nr_irqs);
+ 	if (count < 0) {
+ 		printk(KERN_ERR PREFIX
+ 		       "Error parsing interrupt source overrides entry\n");
+@@ -1135,9 +1118,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
+ 	/* Fill in identity legacy mappings where no override */
+ 	mp_config_acpi_legacy_irqs();
+ 
+-	count =
+-	    acpi_table_parse_madt(ACPI_MADT_TYPE_NMI_SOURCE, acpi_parse_nmi_src,
+-				  nr_irqs);
++	count = acpi_table_parse_madt(ACPI_MADT_TYPE_NMI_SOURCE,
++				      acpi_parse_nmi_src, nr_irqs);
+ 	if (count < 0) {
+ 		printk(KERN_ERR PREFIX "Error parsing NMI SRC entry\n");
+ 		/* TBD: Cleanup to allow fallback to MPS */
 -- 
-1.7.9.5
+1.7.10.4
 
