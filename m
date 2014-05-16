@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193AbaEPIG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:06:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59769 "EHLO mga01.intel.com"
+	id S932210AbaEPIGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:06:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9318 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153AbaEPIGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:06:05 -0400
+	id S1754353AbaEPIGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:06:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540107403"
+   d="scan'208";a="540107607"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -17,7 +17,10 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
         x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jiang Liu <jiang.liu@linux.intel.com>
+        Pavel Machek <pavel@ucw.cz>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
+        Tony Lindgren <tony@atomide.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
@@ -26,9 +29,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
         Ingo Molnar <mingo@kernel.org>, linux-pm@vger.kernel.org
-Subject: [RFC Patch Part1 V1 18/30] x86, ACPI, irq: consolidate algorithm of mapping (ioapic, pin) to IRQ number
-Date: Fri, 16 May 2014 16:05:38 +0800
-Message-Id: <1400227550-5935-19-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC Patch Part1 V1 20/30] x86, irq: enhance mp_register_ioapic() to support irqdomain
+Date: Fri, 16 May 2014 16:05:40 +0800
+Message-Id: <1400227550-5935-21-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
@@ -36,217 +39,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently ACPI and ioapic both implement algorithms to map (ioapic, pin)
-to IRQ number. So consolidate the common part into one place, which is
-also preparing for irqdomain support.
+Add extra arguments to function mp_register_ioapic() to support
+irqdomain. When registering IOAPIC, caller may provide a callback
+and corresponding argument to create irqdomain for this IOAPIC.
+The callback will be called later when initializing IOAPIC subsystem.
 
-It introduces mp_map_pin_to_irq(), which will be used to allocate IRQ
-number IOAPIC pins when irqdomain is enabled.
+We also provide a common implementation mp_create_irqdomain()
+to create irqdomain for IOAPICs, which may be used by platform drivers.
 
-Also rename gsi_to_irq() to map_gsi_to_irq(), later we will introduce
-unmap_gsi_to_irq() when enabling IOAPIC hotplug.
+Global variable ioapic_dynirq_base is provided for platform drivers
+to override return value of arch_dynirq_lower_bound(), thus enable
+or disable dynamic IRQ allocation for IOAPIC.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/io_apic.h |    2 ++
- arch/x86/kernel/acpi/boot.c    |   52 +++++++++++++++++++++-------------------
- arch/x86/kernel/apic/io_apic.c |   30 +++++++++++++----------
- 3 files changed, 48 insertions(+), 36 deletions(-)
+ arch/x86/include/asm/io_apic.h |    9 +++++++-
+ arch/x86/kernel/acpi/boot.c    |    3 ++-
+ arch/x86/kernel/apic/io_apic.c |   48 ++++++++++++++++++++++++++++++++++++++--
+ arch/x86/kernel/devicetree.c   |    2 +-
+ arch/x86/kernel/mpparse.c      |    2 +-
+ arch/x86/platform/sfi/sfi.c    |    2 +-
+ 6 files changed, 59 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index de3d8b04cf64..f4fd0be26cec 100644
+index 13209bdf318d..f3afa86e5bb6 100644
 --- a/arch/x86/include/asm/io_apic.h
 +++ b/arch/x86/include/asm/io_apic.h
-@@ -171,6 +171,7 @@ extern u32 gsi_top;
+@@ -130,6 +130,9 @@ extern int noioapicquirk;
+ /* -1 if "noapic" boot option passed */
+ extern int noioapicreroute;
+ 
++/* Build identity mapping for GSIs below it */
++extern int ioapic_dynirq_base;
++
+ /*
+  * If we use the IO-APIC for IRQ routing, disable automatic
+  * assignment of PCI IRQ's.
+@@ -169,12 +172,16 @@ struct mp_ioapic_gsi{
+ };
+ extern u32 gsi_top;
+ 
++struct irq_domain_ops;
+ typedef struct irq_domain *(*ioapic_create_domain_fn)(int idx, void *arg);
  
  extern int mp_find_ioapic(u32 gsi);
  extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
-+extern int mp_map_pin_to_irq(int ioapic, int pin);
- extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern int mp_map_pin_to_irq(int idx, int ioapic, int pin, int alloc);
+-extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
++extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
++				      ioapic_create_domain_fn cb, void *arg);
++extern struct irq_domain *mp_irqdomain_create(int ioapic,
++		struct device_node *np, const struct irq_domain_ops *ops);
  extern void __init pre_init_apic_IRQ0(void);
  
-@@ -212,6 +213,7 @@ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- static inline void ioapic_insert_resources(void) { }
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
-+static inline int mp_map_pin_to_irq(int ioapic, int pin) { return -1; }
- 
- struct io_apic_irq_attr;
- static inline int io_apic_set_pci_routing(struct device *dev, int irq,
+ extern void mp_save_irq(struct mpc_intsrc *m);
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index dccf9e88db30..6eae9a7231c4 100644
+index cdf6908e9f75..f70f4f318316 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -99,27 +99,22 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
+@@ -344,7 +344,8 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+ 	acpi_table_print_madt_entry(header);
  
- #define	ACPI_INVALID_GSI		INT_MIN
+ 	mp_register_ioapic(ioapic->id,
+-			   ioapic->address, ioapic->global_irq_base);
++			   ioapic->address, ioapic->global_irq_base,
++			   NULL, NULL);
  
--static unsigned int gsi_to_irq(unsigned int gsi)
-+static int map_gsi_to_irq(unsigned int gsi)
- {
--	unsigned int irq = gsi + NR_IRQS_LEGACY;
--	unsigned int i;
-+	int i, ioapic, pin;
- 
--	for (i = 0; i < NR_IRQS_LEGACY; i++) {
--		if (isa_irq_to_gsi[i] == gsi) {
-+	for (i = 0; i < NR_IRQS_LEGACY; i++)
-+		if (isa_irq_to_gsi[i] == gsi)
- 			return i;
--		}
--	}
- 
--	/* Provide an identity mapping of gsi == irq
--	 * except on truly weird platforms that have
--	 * non isa irqs in the first 16 gsis.
--	 */
--	if (gsi >= NR_IRQS_LEGACY)
--		irq = gsi;
--	else
--		irq = gsi_top + gsi;
-+	ioapic = mp_find_ioapic(gsi);
-+	if (ioapic >= 0) {
-+		pin = mp_find_ioapic_pin(ioapic, gsi);
-+		return mp_map_pin_to_irq(ioapic, pin);
-+	}
- 
--	return irq;
-+	pr_err("Failed to map GSI%d to IRQ number.\n", gsi);
-+	return -1;
+ 	return 0;
  }
- 
- /*
-@@ -493,16 +488,20 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 	outb(new >> 8, 0x4d1);
- }
- 
--int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
-+int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	*irq = gsi_to_irq(gsi);
-+	int irq = map_gsi_to_irq(gsi);
- 
-+	if (irq >= 0) {
- #ifdef CONFIG_X86_IO_APIC
--	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
--		setup_IO_APIC_irq_extra(gsi);
-+		if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
-+			setup_IO_APIC_irq_extra(gsi);
- #endif
-+		*irqp = irq;
-+		return 0;
-+	}
- 
--	return 0;
-+	return -1;
- }
- EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
- 
-@@ -556,11 +555,11 @@ int (*acpi_suspend_lowlevel)(void);
-  */
- int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
--	unsigned int plat_gsi = gsi;
-+	unsigned int plat_gsi;
- 
- 	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
- 	if (plat_gsi != ACPI_INVALID_GSI)
--		return gsi_to_irq(plat_gsi);
-+		return map_gsi_to_irq(plat_gsi);
- 
- 	return -1;
- }
-@@ -1029,6 +1028,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
- static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			   int polarity)
- {
-+	int irq;
- 	int ioapic;
- 	int ioapic_pin;
- 	struct io_apic_irq_attr irq_attr;
-@@ -1041,6 +1041,10 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (acpi_gbl_FADT.sci_interrupt == gsi)
- 		return gsi;
- 
-+	irq = map_gsi_to_irq(gsi);
-+	if (irq < 0)
-+		return ACPI_INVALID_GSI;
-+
- 	ioapic = mp_find_ioapic(gsi);
- 	if (ioapic < 0) {
- 		printk(KERN_WARNING "No IOAPIC for GSI %u\n", gsi);
-@@ -1062,7 +1066,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
- 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
--	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
-+	ret = io_apic_set_pci_routing(dev, irq, &irq_attr);
- 	if (ret < 0)
- 		gsi = ACPI_INVALID_GSI;
- 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index faed9b62977d..f55357bd0e07 100644
+index fb87bdbb4307..0bdf50988d75 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -980,11 +980,22 @@ static int irq_trigger(int idx)
- 	return trigger;
- }
+@@ -166,6 +166,15 @@ DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
  
-+int mp_map_pin_to_irq(int apic, int pin)
-+{
-+	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(apic);
-+	u32 gsi = gsi_cfg->gsi_base + pin;
+ int skip_ioapic_setup;
+ 
++/*
++ * If not zero:
++ * . build identity mapping for GSIs below it.
++ * . must be bigger than or equal to max(NR_IRQS_LEGACY, pins_on_ioapic0).
++ * If zero:
++ * . build identity mapping for all GSIs
++ */
++int ioapic_dynirq_base;
 +
-+	/*
-+	 * Provide an identity mapping of gsi == irq except on truly weird
-+	 * platforms that have non isa irqs in the first 16 gsis.
-+	 */
-+	return gsi >= NR_IRQS_LEGACY ? gsi : gsi_top + gsi;
+ /**
+  * disable_ioapic_support() - disables ioapic support at runtime
+  */
+@@ -2938,15 +2947,28 @@ out:
+  */
+ #define PIC_IRQS	(1UL << PIC_CASCADE_IR)
+ 
+-void __init setup_IO_APIC(void)
++static void ioapic_create_irqdomains(void)
+ {
++	int i;
++	struct ioapic *ip;
+ 
++	for_each_ioapic(i) {
++		ip = &ioapics[i];
++		if (ip->irqdomain_cb)
++			ip->irqdomain = ip->irqdomain_cb(i, ip->irqdomain_arg);
++	}
 +}
 +
- static int pin_2_irq(int idx, int apic, int pin)
- {
- 	int irq;
- 	int bus = mp_irqs[idx].srcbus;
--	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(apic);
- 
++void __init setup_IO_APIC(void)
++{
  	/*
- 	 * Debugging check, we are in big trouble if this message pops up!
-@@ -992,17 +1003,6 @@ static int pin_2_irq(int idx, int apic, int pin)
- 	if (mp_irqs[idx].dstirq != pin)
- 		pr_err("broken BIOS or MPTABLE parser, ayiee!!\n");
+ 	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
+ 	 */
+ 	io_apic_irqs = legacy_pic->nr_legacy_irqs ? ~PIC_IRQS : ~0UL;
  
--	if (test_bit(bus, mp_bus_not_pci)) {
--		irq = mp_irqs[idx].srcbusirq;
--	} else {
--		u32 gsi = gsi_cfg->gsi_base + pin;
--
--		if (gsi >= NR_IRQS_LEGACY)
--			irq = gsi;
--		else
--			irq = gsi_top + gsi;
--	}
--
- #ifdef CONFIG_X86_32
- 	/*
- 	 * PCI IRQ command line redirection. Yes, limits are hardcoded.
-@@ -1017,11 +1017,17 @@ static int pin_2_irq(int idx, int apic, int pin)
- 				apic_printk(APIC_VERBOSE, KERN_DEBUG
- 						"using PIRQ%d -> IRQ %d\n",
- 						pin-16, irq);
-+				return irq;
- 			}
- 		}
- 	}
- #endif
- 
-+	if (test_bit(bus, mp_bus_not_pci))
-+		irq = mp_irqs[idx].srcbusirq;
-+	else
-+		irq = mp_map_pin_to_irq(apic, pin);
+ 	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
++	ioapic_create_irqdomains();
 +
- 	return irq;
+ 	/*
+          * Set up IO-APIC IRQ routing.
+          */
+@@ -3508,6 +3530,9 @@ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ {
+ 	unsigned int min = gsi_top + NR_IRQS_LEGACY;
+ 
++	if (ioapic_dynirq_base)
++		return ioapic_dynirq_base;
++
+ 	return from < min ? min : from;
  }
+ 
+@@ -3886,7 +3911,8 @@ static __init int bad_ioapic_register(int idx)
+ 	return 0;
+ }
+ 
+-void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
++void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			       ioapic_create_domain_fn cb, void *arg)
+ {
+ 	int idx = 0;
+ 	int entries;
+@@ -3900,6 +3926,9 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	ioapics[idx].mp_config.type = MP_IOAPIC;
+ 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
+ 	ioapics[idx].mp_config.apicaddr = address;
++	ioapics[idx].irqdomain_cb = cb;
++	ioapics[idx].irqdomain_arg = arg;
++	ioapics[idx].irqdomain = NULL;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+ 
+@@ -3936,6 +3965,21 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	nr_ioapics++;
+ }
+ 
++struct irq_domain *mp_irqdomain_create(int ioapic, struct device_node *np,
++				       const struct irq_domain_ops *ops)
++{
++	struct irq_domain *domain;
++	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(ioapic);
++	int hwirqs = mp_ioapic_pin_count(ioapic);
++
++	domain = irq_domain_add_linear(np, hwirqs, ops, (void *)(long)ioapic);
++	BUG_ON(!domain);
++	if (gsi_cfg->gsi_base == 0)
++		irq_set_default_host(domain);
++
++	return domain;
++}
++
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
+ {
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index d35078ea1446..1ab002c045c9 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -176,7 +176,7 @@ static void __init dtb_add_ioapic(struct device_node *dn)
+ 				dn->full_name);
+ 		return;
+ 	}
+-	mp_register_ioapic(++ioapic_id, r.start, gsi_top);
++	mp_register_ioapic(++ioapic_id, r.start, gsi_top, NULL, NULL);
+ }
+ 
+ static void __init dtb_ioapic_setup(void)
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 24da837389b7..6cb9a43ecde1 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -115,7 +115,7 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+ {
+ 	if (m->flags & MPC_APIC_USABLE)
+-		mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
++		mp_register_ioapic(m->apicid, m->apicaddr, gsi_top, NULL, NULL);
+ }
+ 
+ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index bcd1a703e3e6..3bd7cf642680 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -82,7 +82,7 @@ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
+ 	pentry = (struct sfi_apic_table_entry *)sb->pentry;
+ 
+ 	for (i = 0; i < num; i++) {
+-		mp_register_ioapic(i, pentry->phys_addr, gsi_top);
++		mp_register_ioapic(i, pentry->phys_addr, gsi_top, NULL, NULL);
+ 		pentry++;
+ 	}
  
 -- 
 1.7.10.4
