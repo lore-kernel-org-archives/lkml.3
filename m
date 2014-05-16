@@ -1,155 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068AbaEPReD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:34:03 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46647 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757735AbaEPRdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:33:45 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
-In-Reply-To: <1400233673-11477-1-git-send-email-vbabka@suse.cz>
-Organization: http://mina86.com/
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140516:akpm@linux-foundation.org::FfJwsGYxxrjJ26d4:0000000000000000000000000000000000000pSU
-X-Hashcash: 1:20:140516:vbabka@suse.cz::YnTp8+qQIBlwaBGz:0000v6u
-X-Hashcash: 1:20:140516:b.zolnierkie@samsung.com::EOYp+n25Pkhzy1i2:00000000000000000000000000000000000000HKX
-X-Hashcash: 1:20:140516:cl@linux.com::hAAUNUljMPg0Wt+k:000001aIE
-X-Hashcash: 1:20:140516:linux-kernel@vger.kernel.org::fWZA8JGb6aQ7o36A:0000000000000000000000000000000001OEV
-X-Hashcash: 1:20:140516:hughd@google.com::66iieo0zGNJnaHhC:01sZh
-X-Hashcash: 1:20:140516:riel@redhat.com::Px0QW3mGtwlhCk75:002ojT
-X-Hashcash: 1:20:140516:mgorman@suse.de::NrlXFYjsklpwtERY:0039GY
-X-Hashcash: 1:20:140516:rientjes@google.com::2EG0af9pZ9K5K0fA:0000000000000000000000000000000000000000002agN
-X-Hashcash: 1:20:140516:minchan@kernel.org::zUEri+1oed9dbpUS:00000000000000000000000000000000000000000004c/j
-X-Hashcash: 1:20:140516:linux-mm@kvack.org::bk0676C5Ee+quwy1:00000000000000000000000000000000000000000003kDM
-X-Hashcash: 1:20:140516:gthelen@google.com::cfAOOc0cv8Piwr5Q:000000000000000000000000000000000000000000054BG
-X-Hashcash: 1:20:140516:vbabka@suse.cz::XN+PD7cwrHgLpVXI:00068TR
-X-Hashcash: 1:20:140516:iamjoonsoo.kim@lge.com::inWdm8JZcJE/gT6/:0000000000000000000000000000000000000009u30
-Date: Fri, 16 May 2014 10:33:35 -0700
-Message-ID: <xa1tsio9fx1s.fsf@mina86.com>
+	id S1758089AbaEPReQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:34:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48884 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757735AbaEPReN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:34:13 -0400
+Message-ID: <53764BF2.1030805@ti.com>
+Date: Fri, 16 May 2014 12:33:38 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <nsekhar@ti.com>, <arnd@arndb.de>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v3 08/13] ARM: edma: Get IP configuration from HW (number
+ of channels, tc, etc)
+References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-9-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1400242640-9902-9-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On 05/16/2014 07:17 AM, Peter Ujfalusi wrote:
+> From CCCFG register of eDMA3 we can get all the needed information for the
+> driver about the IP:
+> Number of channels: NUM_DMACH
+> Number of regions: NUM_REGN
+> Number of slots (PaRAM sets): NUM_PAENTRY
+> Number of TC/EQ: NUM_EVQUE
+> 
+> In case when booted with DT or the queue_priority_mapping is not provided
+> set up a default priority map.
 
-On Fri, May 16 2014, Vlastimil Babka wrote:
-> Compaction uses compact_checklock_irqsave() function to periodically chec=
-k for
-> lock contention and need_resched() to either abort async compaction, or to
-> free the lock, schedule and retake the lock. When aborting, cc->contended=
- is
-> set to signal the contended state to the caller. Two problems have been
-> identified in this mechanism.
->
-> First, compaction also calls directly cond_resched() in both scanners whe=
-n no
-> lock is yet taken. This call either does not abort async compaction, or s=
-et
-> cc->contended appropriately. This patch introduces a new compact_should_a=
-bort()
-> function to achieve both. In isolate_freepages(), the check frequency is
-> reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
-> scanner does in the preliminary page checks. In case a pageblock is found
-> suitable for calling isolate_freepages_block(), the checks within there a=
-re
-> done on higher frequency.
->
-> Second, isolate_freepages() does not check if isolate_freepages_block()
-> aborted due to contention, and advances to the next pageblock. This viola=
-tes
-> the principle of aborting on contention, and might result in pageblocks n=
-ot
-> being scanned completely, since the scanning cursor is advanced. This pat=
-ch
-> makes isolate_freepages_block() check the cc->contended flag and abort.
->
-> In case isolate_freepages() has already isolated some pages before aborti=
-ng
-> due to contention, page migration will proceed, which is OK since we do n=
-ot
-> want to waste the work that has been done, and page migration has own che=
-cks
-> for contention. However, we do not want another isolation attempt by eith=
-er
-> of the scanners, so cc->contended flag check is added also to
-> compaction_alloc() and compact_finished() to make sure compaction is abor=
-ted
-> right after the migration.
->
-> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
+Thanks.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Joel Fernandes <joelf@ti.com>
 
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
+
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > ---
-> v2: update struct compact_control comment (per Naoya Horiguchi)
->     rename to compact_should_abort() and add comments (per David Rientjes)
->     add cc->contended checks in compaction_alloc() and compact_finished()
->     (per Joonsoo Kim)
->     reduce frequency of checks in isolate_freepages()=20
->
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+>  arch/arm/common/edma.c | 115 +++++++++++++++++++++++++++++++------------------
+>  1 file changed, 73 insertions(+), 42 deletions(-)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index aa9473cb0c23..485be42519b9 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -102,7 +102,13 @@
+>  #define PARM_OFFSET(param_no)	(EDMA_PARM + ((param_no) << 5))
+>  
+>  #define EDMA_DCHMAP	0x0100  /* 64 registers */
+> -#define CHMAP_EXIST	BIT(24)
+> +
+> +/* CCCFG register */
+> +#define GET_NUM_DMACH(x)	(x & 0x7) /* bits 0-2 */
+> +#define GET_NUM_PAENTRY(x)	((x & 0x7000) >> 12) /* bits 12-14 */
+> +#define GET_NUM_EVQUE(x)	((x & 0x70000) >> 16) /* bits 16-18 */
+> +#define GET_NUM_REGN(x)		((x & 0x300000) >> 20) /* bits 20-21 */
+> +#define CHMAP_EXIST		BIT(24)
+>  
+>  #define EDMA_MAX_DMACH           64
+>  #define EDMA_MAX_PARAMENTRY     512
+> @@ -1408,6 +1414,67 @@ void edma_clear_event(unsigned channel)
+>  }
+>  EXPORT_SYMBOL(edma_clear_event);
+>  
+> +static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
+> +			      struct edma *edma_cc)
+> +{
+> +	int i;
+> +	u32 value, cccfg;
+> +	s8 (*queue_priority_map)[2];
+> +
+> +	/* Decode the eDMA3 configuration from CCCFG register */
+> +	cccfg = edma_read(0, EDMA_CCCFG);
+> +
+> +	value = GET_NUM_REGN(cccfg);
+> +	edma_cc->num_region = BIT(value);
+> +
+> +	value = GET_NUM_DMACH(cccfg);
+> +	edma_cc->num_channels = BIT(value + 1);
+> +
+> +	value = GET_NUM_PAENTRY(cccfg);
+> +	edma_cc->num_slots = BIT(value + 4);
+> +
+> +	value = GET_NUM_EVQUE(cccfg);
+> +	edma_cc->num_tc = value + 1;
+> +
+> +	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
+> +	dev_dbg(dev, "num_region: %u\n", edma_cc->num_region);
+> +	dev_dbg(dev, "num_channel: %u\n", edma_cc->num_channels);
+> +	dev_dbg(dev, "num_slot: %u\n", edma_cc->num_slots);
+> +	dev_dbg(dev, "num_tc: %u\n", edma_cc->num_tc);
+> +
+> +	/* Nothing need to be done if queue priority is provided */
+> +	if (pdata->queue_priority_mapping)
+> +		return 0;
+> +
+> +	/*
+> +	 * Configure TC/queue priority as follows:
+> +	 * Q0 - priority 0
+> +	 * Q1 - priority 1
+> +	 * Q2 - priority 2
+> +	 * ...
+> +	 * The meaning of priority numbers: 0 highest priority, 7 lowest
+> +	 * priority. So Q0 is the highest priority queue and the last queue has
+> +	 * the lowest priority.
+> +	 */
+> +	queue_priority_map = devm_kzalloc(dev,
+> +					  (edma_cc->num_tc + 1) * sizeof(s8),
+> +					  GFP_KERNEL);
+> +	if (!queue_priority_map)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < edma_cc->num_tc; i++) {
+> +		queue_priority_map[i][0] = i;
+> +		queue_priority_map[i][1] = i;
+> +	}
+> +	queue_priority_map[i][0] = -1;
+> +	queue_priority_map[i][1] = -1;
+> +
+> +	pdata->queue_priority_mapping = queue_priority_map;
+> +	pdata->default_queue = 0;
+> +
+> +	return 0;
+> +}
+> +
+>  #if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
+>  
+>  static int edma_xbar_event_map(struct device *dev, struct device_node *node,
+> @@ -1458,50 +1525,16 @@ static int edma_of_parse_dt(struct device *dev,
+>  			    struct device_node *node,
+>  			    struct edma_soc_info *pdata)
+>  {
+> -	int ret = 0, i;
+> -	u32 value;
+> +	int ret = 0;
+>  	struct property *prop;
+>  	size_t sz;
+>  	struct edma_rsv_info *rsv_info;
+> -	s8 (*queue_priority_map)[2];
+> -
+> -	ret = of_property_read_u32(node, "dma-channels", &value);
+> -	if (ret < 0)
+> -		return ret;
+> -	pdata->n_channel = value;
+> -
+> -	ret = of_property_read_u32(node, "ti,edma-regions", &value);
+> -	if (ret < 0)
+> -		return ret;
+> -	pdata->n_region = value;
+> -
+> -	ret = of_property_read_u32(node, "ti,edma-slots", &value);
+> -	if (ret < 0)
+> -		return ret;
+> -	pdata->n_slot = value;
+> -
+> -	pdata->n_tc = 3;
+>  
+>  	rsv_info = devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
+>  	if (!rsv_info)
+>  		return -ENOMEM;
+>  	pdata->rsv = rsv_info;
+>  
+> -	queue_priority_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
+> -	if (!queue_priority_map)
+> -		return -ENOMEM;
+> -
+> -	for (i = 0; i < 3; i++) {
+> -		queue_priority_map[i][0] = i;
+> -		queue_priority_map[i][1] = i;
+> -	}
+> -	queue_priority_map[i][0] = -1;
+> -	queue_priority_map[i][1] = -1;
+> -
+> -	pdata->queue_priority_mapping = queue_priority_map;
+> -
+> -	pdata->default_queue = 0;
+> -
+>  	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
+>  	if (prop)
+>  		ret = edma_xbar_event_map(dev, node, pdata, sz);
+> @@ -1621,14 +1654,12 @@ static int edma_probe(struct platform_device *pdev)
+>  		if (!edma_cc[j])
+>  			return -ENOMEM;
+>  
+> -		edma_cc[j]->num_channels = min_t(unsigned, info[j]->n_channel,
+> -							EDMA_MAX_DMACH);
+> -		edma_cc[j]->num_slots = min_t(unsigned, info[j]->n_slot,
+> -							EDMA_MAX_PARAMENTRY);
+> -		edma_cc[j]->num_tc = info[j]->n_tc;
+> +		/* Get eDMA3 configuration from IP */
+> +		ret = edma_setup_from_hw(dev, info[j], edma_cc[j]);
+> +		if (ret)
+> +			return ret;
+>  
+>  		edma_cc[j]->default_queue = info[j]->default_queue;
+> -		edma_cc[j]->num_region = info[j]->n_region;
+>  
+>  		dev_dbg(&pdev->dev, "DMA REG BASE ADDR=%p\n",
+>  			edmacc_regs_base[j]);
+> 
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdkvvAAoJECBgQBJQdR/0o3MP/Rj0r/oRm/6Otfqz2rlcqW2g
-36HpqwRC0R2Mmmk7VN4IofX9GuhDUCjlQYUfKIVIapOhqm+N3buepLv2V6/Zv0KA
-KJllXOp310O2VO9KwtSpOK7K82HLPzGi/QrCRFt1Wc+0C2PJB8cIjn+myDdcCvTl
-eAR6GosGCpla72wLkuwxc6tmbMZ54Bzhrv2mE+hMdSnkmmV/gnSAFNzT1yhfDpJZ
-4/0FZs4KkqHWy9BnpxOWwiAsa3/r4G0KjHGRAdp61iv/wTUeL0QG57v7kWsFBi1b
-YrFstvmO4fXTvoGnCPf2GeWu1Y5qillXMptP3BK7Qjv058NDBeCP6rWUxii9Eu7F
-meYXmet2fmBHcIKmdrZsYQ5dcDulKeAv1ATNvU6rQ6JW4Ov/oigMbylPTNlsZ2Nw
-+vohZqm9sgpa628BwiTX1O3hv/0YG/QxWa36EezFFfIQLo09TwXYreLMy5bggpjX
-AJXW1pxY1RRDA1CRsPTRTmduIikxUYAHhSsCCLPrT2xMPuz9D+5PaCHf80XjuicQ
-JEA88a4BvNy7AMfUfgJriKFGpg+yY3gyGmftZAI5zwlrcwzWcAbkdfyykVJO9DRT
-hQjasihW31OlVofl+QtmjwokcGaJzGc2TfetP7v/XeJQvTcb6/6Qh4oF2ZqoUzVY
-e77JD7YNElAQRi2PFpzN
-=FZ3h
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
