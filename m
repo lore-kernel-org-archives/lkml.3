@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319AbaEPNg2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:36:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54341 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaEPNg0 (ORCPT
+	id S1757333AbaEPNgg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:36:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54267 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296AbaEPNgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:36:26 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 02/49] media: davinci: vpif_display: drop buf_init() callback
-Date: Fri, 16 May 2014 19:03:07 +0530
-Message-Id: <1400247235-31434-4-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
+	Fri, 16 May 2014 09:36:32 -0400
+Date: Fri, 16 May 2014 06:35:22 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-2aa799d891299457e4107d33f07a1ed5ac8849ae@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, cmetcalf@tilera.com,
+        tony.luck@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, tglx@linutronix.de
+In-Reply-To: <20140507154338.132662495@linutronix.de>
+References: <20140507154338.132662495@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] tile: pci: Use irq_alloc/free_hwirq()
+Git-Commit-ID: 2aa799d891299457e4107d33f07a1ed5ac8849ae
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Commit-ID:  2aa799d891299457e4107d33f07a1ed5ac8849ae
+Gitweb:     http://git.kernel.org/tip/2aa799d891299457e4107d33f07a1ed5ac8849ae
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 7 May 2014 15:44:16 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 16 May 2014 14:05:21 +0200
 
-this patch drops the buf_init() callback as init
-of buf list is not required.
+tile: pci: Use irq_alloc/free_hwirq()
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+No functional change. Just convert to the new interface.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Link: http://lkml.kernel.org/r/20140507154338.132662495@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/media/platform/davinci/vpif_display.c |   11 -----------
- 1 file changed, 11 deletions(-)
+ arch/tile/kernel/pci_gx.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index dbd4f0f..e2102ea 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -205,16 +205,6 @@ static void vpif_wait_finish(struct vb2_queue *vq)
- 	mutex_lock(&common->lock);
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+index 077b7bc..e39f9c5 100644
+--- a/arch/tile/kernel/pci_gx.c
++++ b/arch/tile/kernel/pci_gx.c
+@@ -350,10 +350,9 @@ static int tile_init_irqs(struct pci_controller *controller)
+ 		int cpu;
+ 
+ 		/* Ask the kernel to allocate an IRQ. */
+-		irq = create_irq();
+-		if (irq < 0) {
++		irq = irq_alloc_hwirq(-1);
++		if (!irq) {
+ 			pr_err("PCI: no free irq vectors, failed for %d\n", i);
+-
+ 			goto free_irqs;
+ 		}
+ 		controller->irq_intx_table[i] = irq;
+@@ -382,7 +381,7 @@ static int tile_init_irqs(struct pci_controller *controller)
+ 
+ free_irqs:
+ 	for (j = 0; j < i; j++)
+-		destroy_irq(controller->irq_intx_table[j]);
++		irq_free_hwirq(controller->irq_intx_table[j]);
+ 
+ 	return -1;
+ }
+@@ -1500,9 +1499,9 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+ 	int irq;
+ 	int ret;
+ 
+-	irq = create_irq();
+-	if (irq < 0)
+-		return irq;
++	irq = irq_alloc_hwirq(-1);
++	if (!irq)
++		return -ENOSPC;
+ 
+ 	/*
+ 	 * Since we use a 64-bit Mem-Map to accept the MSI write, we fail
+@@ -1601,11 +1600,11 @@ hv_msi_config_failure:
+ 	/* Free mem-map */
+ msi_mem_map_alloc_failure:
+ is_64_failure:
+-	destroy_irq(irq);
++	irq_free_hwirq(irq);
+ 	return ret;
  }
  
--static int vpif_buffer_init(struct vb2_buffer *vb)
--{
--	struct vpif_disp_buffer *buf = container_of(vb,
--					struct vpif_disp_buffer, vb);
--
--	INIT_LIST_HEAD(&buf->list);
--
--	return 0;
--}
--
- static u8 channel_first_int[VPIF_NUMOBJECTS][2] = { {1, 1} };
- 
- static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
-@@ -351,7 +341,6 @@ static struct vb2_ops video_qops = {
- 	.queue_setup		= vpif_buffer_queue_setup,
- 	.wait_prepare		= vpif_wait_prepare,
- 	.wait_finish		= vpif_wait_finish,
--	.buf_init		= vpif_buffer_init,
- 	.buf_prepare		= vpif_buffer_prepare,
- 	.start_streaming	= vpif_start_streaming,
- 	.stop_streaming		= vpif_stop_streaming,
--- 
-1.7.9.5
-
+ void arch_teardown_msi_irq(unsigned int irq)
+ {
+-	destroy_irq(irq);
++	irq_free_hwirq(irq);
+ }
