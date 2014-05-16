@@ -1,175 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaEPJkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:40:32 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:55256 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392AbaEPJk3 (ORCPT
+	id S932293AbaEPJmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:42:06 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45144 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444AbaEPJmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:40:29 -0400
+	Fri, 16 May 2014 05:42:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
-References: <20140425070459.GA9155@devel>
-	<20140425092607.GH26890@mwanda>
-	<875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
-	<535A5535.6000701@compro.net>
-	<1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
-	<535A7402.1060305@compro.net>
-	<CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
-	<20140426184721.GL26890@mwanda>
-	<CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
-Date: Fri, 16 May 2014 18:40:28 +0900
-Message-ID: <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Hounschell <markh@compro.net>
-Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <53753527.3000905@gmail.com>
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+	<5373CBAD.2010505@gmail.com>
+	<CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
+	<53753527.3000905@gmail.com>
+Date: Fri, 16 May 2014 15:12:01 +0530
+X-Google-Sender-Auth: cQTsgt9uYQ1nXGzk-3w7DFy7HCE
+Message-ID: <CAPdUM4M5k-aouSA=dyUXWOyFLBhob+o8103a=gAxo-O68i-MCw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+From: Rahul Sharma <rahul.sharma@samsung.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        PANKAJ KUMAR DUBEY <pankaj.dubey@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        sunil joshi <joshi@samsung.com>, Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
- This patch haven't been updated over the past 3 weeks.
-Will you check for me?
-
-Regards,
-Daeseok Youn.
-
-
-2014-04-28 8:21 GMT+09:00 DaeSeok Youn <daeseok.youn@gmail.com>:
-> OK. I'll make my patch based on Mark's patch.
-> Thanks.
+On 16 May 2014 03:14, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On 15.05.2014 06:01, Rahul Sharma wrote:
+>> Thanks Tomasz,
+>>
+>> On 15 May 2014 01:31, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>> Hi Rahul, Tomasz,
+>> [snip]
+>>>> +     simplephys: simple-phys@10040000 {
+>>>> +             compatible = "samsung,exynos5250-simple-phy";
+>>>
+>>> Missing reg property or unnecessary @unit-address suffix in node name.
+>>
+>> I should have removed "@unit-address". I will change this.
+>>
+>>>
+>>>> +             samsung,pmu-syscon = <&pmu_system_controller>;
+>>>> +             #phy-cells = <1>;
+>>>> +     };
+>>>
+>>> In general, the idea is quite good, but I think this should rather bind
+>>> to the main PMU node, since this is just a part of the PMU, not another
+>>> device in the system. This also means that the PMU node itself should be
+>>> the PHY provider.
+>>>
+>>
+>> Please correct me if I got you wrong. You want somthing like this:
+>>
+>> pmu_system_controller: system-controller@10040000 {
+>>          ...
+>>           simple_phys: simple-phys {
+>>                         compatible = "samsung,exynos5420-simple-phy";
+>>                         ...
+>>           };
+>> };
 >
-> Daeseok Youn.
+> Not exactly.
 >
-> 2014-04-27 3:48 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
->> On Sat, Apr 26, 2014 at 11:39:38AM +0900, DaeSeok Youn wrote:
->>> Hi,
->>>
->>> please check below my comments.
->>>
->>> 2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
->>> > On 04/25/2014 08:59 AM, Dan Carpenter wrote:
->>> >> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
->>> >>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
->>> >>>> Hi, Dan.
->>> >>>>
->>> >>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
->>> >>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
->>> >>>>> driver?
->>> >>>>>
->>> >>>
->>> >>> I'll look into this. I am clueless on what that would actually mean.
->>> >>>
->>> >>
->>> >> Just add your name with Lidza in the MAINTAINERS file so that people
->>> >> will CC you on all the patches.
->>> >>
->>> >> DIGI EPCA PCI PRODUCTS
->>> >> M:      Lidza Louina <lidza.louina@gmail.com>
->>> >> L:      driverdev-devel@linuxdriverproject.org
->>> >> S:      Maintained
->>> >> F:      drivers/staging/dgap/
->>> >>
->>> >> You don't have to do it if you don't want to, but you seem to be working
->>> >> on this driver and I'm going to refer questions to you either way.  :P
->>> >>
->>> >>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
->>> >>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
->>> >>>>>>               /* Register tty devices */
->>> >>>>>>               rc = tty_register_driver(brd->SerialDriver);
->>> >>>>>>               if (rc < 0)
->>> >>>>>> -                     return rc;
->>> >>>>>> +                     goto free_print_ttys;
->>> >>>>>> +
->>> >>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
->>> >>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
->>> >>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
->>> >>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
->>> >>>>>>               /* Register Transparent Print devices */
->>> >>>>>>               rc = tty_register_driver(brd->PrintDriver);
->>> >>>>>>               if (rc < 0)
->>> >>>>>> -                     return rc;
->>> >>>>>> +                     goto unregister_serial_drv;
->>> >>>>>> +
->>> >>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
->>> >>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
->>> >>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
->>> >>>>>>       }
->>> >>>>>>
->>> >>>>>>       return rc;
->>> >>>>>> +
->>> >>>>>> +unregister_serial_drv:
->>> >>>>>> +     tty_unregister_driver(brd->SerialDriver);
->>> >>>>>
->>> >>>>> We only register the ->SerialDriver if someone else hasn't registered it
->>> >>>>> first?  So this should be:
->>> >>>>>
->>> >>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
->>> >>>>>                 tty_unregister_driver(brd->SerialDriver);
->>> >>>>>
->>> >>>>> I haven't followed looked at this.  Who else is registering the serial
->>> >>>>> driver?  You have looked at this, what do you think?  Or Mark.
->>> >>>>
->>> >>>
->>> >>> registering the brd->XxxxxDriver is only done when a board is detected
->>> >>> and only during the firmware_load process. If we fail to
->>> >>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
->>> >>> like freeing after an alloc failure?
->>> >>
->>> >> The allocation is conditional so the free should be conditional.  If we
->>> >> didn't allocate it, then we shouldn't free it.
->>> >>
->>> >> It wouldn't have even been a question except I'm not sure the allocation
->>> >> is *really* conditional because brd->dgap_Major_Serial_Registered might
->>> >> always be "false" like you guys seem to be saying.
->>> >>
->>> >>>
->>> >>>> I think brd struct is from dgap_Board array as global static variable
->>> >>>> when this function is
->>> >>>> called. So brd->dgap_Major_Serial_Registered is always "false".
->>> >>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
->>> >>>> registered.
->>> >>>>
->>> >>>> I'm not sure..
->>> >>>>
->>> >>>
->>> >>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
->>> >>> probably should, but I do see we are calling dgap_tty_register, which
->>> >>> can fail, without actually checking the return value. Also, yes,
->>> >>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
->>> >>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
->>> >>> because the only places we can unregister is at module_cleanup or
->>> >>> "after" it is already registered.
->>> >>>
->>> >>> What is the driver _supposed_ to do if we fail something on the second
->>> >>> or later board? Is the driver supposed to cleanup and exit or are we
->>> >>> supposed to stay loaded for the board/boards that are usable?
->>> >>
->>> >> Stay loaded.
->>> >>
->>> >
->>> > Then these tests on brd->dgap_Major_Serial_Registered need to stay in
->>> > there. If I have 3 boards and the second fails in some way, if I rmmod
->>> > the driver they will protect from unregistering a never registered one.
->>> > At least in the unregister code path. There is probably no need for them
->>> > in the register code path. I'll work up a patch for this.
->>>
->>> Should I update my patch?
->>>
->>> I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
->>> function, because if tty_register_driver() is failed just set "false"
->>> to "dgap_Major_XXX_Registered".
->>
->> Mark sent a patch to remove the check.  Could you redo your patch based
->> on his?
->>
->> regards,
->> dan carpenter
->>
+> What I meant is that the PMU node itself should be the PHY provider, e.g.
+>
+> pmu_system_controller: system-controller@10040000 {
+>         /* ... */
+>         #phy-cells = <1>;
+> };
+>
+> and then the PMU node should instantiate the Exynos simple PHY driver,
+> as this is a driver for a facility existing entirely inside of the PMU.
+> Moreover, the driver should be rather called Exynos PMU PHY.
+>
+> I know this isn't really possible at the moment, but with device tree we
+> must design things carefully, so it's better to take a bit more time and
+> do things properly.
+>
+> So my opinion on this is that there should be a central Exynos PMU
+> driver that claims the IO region and instantiates necessary subdrivers,
+> such as Exynos PMU PHY driver, Exynos CLKOUT driver, Exynos cpuidle
+> driver and more, similar to what is being done in drivers/mfd.
+
+Hi Tomasz,
+
+
+
+>
+> Now, there is already ongoing effort to convert current freestanding PMU
+> configuration code in mach-exynos into a full-fledged PMU driver, but
+> not exactly in the same direction as I stated above. I'll try to
+> cooperate with Pankaj, who is responsible for this work to make this go
+> into the right track.
+>
+> Best regards,
+> Tomasz
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
