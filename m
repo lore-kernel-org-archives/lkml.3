@@ -1,95 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797AbaEPQIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:08:49 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63852 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757777AbaEPQIq (ORCPT
+	id S1757832AbaEPQJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:09:55 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:44709 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757536AbaEPQJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:08:46 -0400
-Message-ID: <5376380C.8030607@lwfinger.net>
-Date: Fri, 16 May 2014 11:08:44 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Chaoming Li <chaoming_li@realsil.com.cn>,
-        Dmitry Semyonov <linulin@gmail.com>
-Subject: Re: [PATCH 3.2 31/34] rtl8192ce: Fix null dereference in watchdog
-References: <lsq.1400244441.849613969@decadent.org.uk>	 <53761EA9.6060508@lwfinger.net> <1400254689.2647.43.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1400254689.2647.43.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 16 May 2014 12:09:53 -0400
+Date: Fri, 16 May 2014 18:09:45 +0200
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Andreas Faerber <afaerber@suse.de>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [Qemu-devel] [PATCH v1 RFC 3/6] KVM: s390: use facilities and
+ cpu_id per KVM
+Message-ID: <20140516180945.588563ec@bee>
+In-Reply-To: <53762581.30708@suse.de>
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<1399993114-15333-4-git-send-email-mimu@linux.vnet.ibm.com>
+	<5375FCBD.7010700@suse.de>
+	<20140516164645.57f22213@bee>
+	<53762581.30708@suse.de>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051616-5024-0000-0000-000000077043
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 10:38 AM, Ben Hutchings wrote:
-> On Fri, 2014-05-16 at 09:20 -0500, Larry Finger wrote:
->> On 05/16/2014 07:47 AM, Ben Hutchings wrote:
->>> 3.2.59-rc1 review patch.  If anyone has any objections, please let me know.
->>>
->>> ------------------
->>>
->>> From: Ben Hutchings <ben@decadent.org.uk>
->>>
->>> Dmitry Semyonov reported that after upgrading from 3.2.54 to
->>> 3.2.57 the rtl8192ce driver will crash when its interface is brought
->>> up.  The oops message shows:
->>>
->>> [ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
->>> [ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
->>> ...
->>> [ 1833.613326] Call Trace:
->>> [ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
->>> [ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
->>> [ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
->>> [ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
->>> [ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
->>> [ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
->>> [ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
->>> [ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
->>>
->>> Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
->>> parameter was null.  None of the changes to the rtlwifi family between
->>> 3.2.54 and 3.2.57 seem to directly cause this, and reverting commit
->>> f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
->>> doesn't fix it.
->>>
->>> rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
->>> rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
->>> call trace as it was inlined.  That function has been completely
->>> removed upstream which may explain why this crash wasn't seen there.
->>>
->>> I'm not sure that it is sensible to completely remove
->>> rtl92c_dm_refresh_rate_adaptive_mask() without making other
->>> compensating changes elsewhere, so try to work around this for 3.2 by
->>> checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
->>> and then skipping the call to rtl92ce_update_hal_rate_tbl().
->>>
->>> References: https://bugs.debian.org/745137
->>> References: https://bugs.debian.org/745462
->>> Reported-by: Dmitry Semyonov <linulin@gmail.com>
->>> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->>> Cc: Larry Finger <Larry.Finger@lwfinger.net>
->>> Cc: Chaoming Li <chaoming_li@realsil.com.cn>
->>> ---
->>
->> Ben,
->>
->> Your fix is a reasonable workaround. I have no explanation for this NULL pointer
->> dereference to suddenly appear; however, the pointer should have been checked
->> from the start.
->
-> Are you saying this is also an upstream bug?
+On Fri, 16 May 2014 16:49:37 +0200
+Alexander Graf <agraf@suse.de> wrote:
 
-It is a possible upstream bug; however, crashes of the form reported by Dmitri 
-have not been reported to me, but then I was not aware of his problem. A quick 
-check shows that the pointers returned by ieee80211_find_sta() are checked in 
-current mainline. There are some cases that need a second look. I will be 
-submitting a patch to upstream and stable for any of them where the checking was 
-missed.
+> 
+> On 16.05.14 16:46, Michael Mueller wrote:
+> > On Fri, 16 May 2014 13:55:41 +0200
+> > Alexander Graf <agraf@suse.de> wrote:
+> >
+> >> On 13.05.14 16:58, Michael Mueller wrote:
+> >>> The patch introduces facilities and cpu_ids per virtual machine.
+> >>> Different virtual machines may want to expose different facilities and
+> >>> cpu ids to the guest, so let's make them per-vm instead of global.
+> >>>
+> >>> In addition this patch renames all ocurrences of *facilities to *fac_list
+> >>> smilar to the already exiting symbol stfl_fac_list in lowcore.
+> >>>
+> >>> Signed-off-by: Michael Mueller <mimu@linux.vnet.ibm.com>
+> >>> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> >>> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> >>> ---
+> >>>    arch/s390/include/asm/kvm_host.h |   7 +++
+> >>>    arch/s390/kvm/gaccess.c          |   4 +-
+> >>>    arch/s390/kvm/kvm-s390.c         | 107 +++++++++++++++++++++++++++------------
+> >>>    arch/s390/kvm/kvm-s390.h         |  23 +++++++--
+> >>>    arch/s390/kvm/priv.c             |  13 +++--
+> >>>    5 files changed, 113 insertions(+), 41 deletions(-)
+> >>>
+> >>> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+> >>> index 38d487a..b4751ba 100644
+> >>> --- a/arch/s390/include/asm/kvm_host.h
+> >>> +++ b/arch/s390/include/asm/kvm_host.h
+> >>> @@ -414,6 +414,12 @@ struct kvm_s390_config {
+> >>>    	struct kvm_s390_attr_name name;
+> >>>    };
+> >>>    
+> >>> +struct kvm_s390_cpu_model {
+> >>> +	unsigned long *sie_fac;
+> >>> +	struct cpuid cpu_id;
+> >>> +	unsigned long *fac_list;
+> >>> +};
+> >>> +
+> >>>    struct kvm_arch{
+> >>>    	struct sca_block *sca;
+> >>>    	debug_info_t *dbf;
+> >>> @@ -427,6 +433,7 @@ struct kvm_arch{
+> >>>    	wait_queue_head_t ipte_wq;
+> >>>    	struct kvm_s390_config *cfg;
+> >>>    	spinlock_t start_stop_lock;
+> >>> +	struct kvm_s390_cpu_model model;
+> >>>    };
+> >>>    
+> >>>    #define KVM_HVA_ERR_BAD		(-1UL)
+> >>> diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
+> >>> index db608c3..4c7ca40 100644
+> >>> --- a/arch/s390/kvm/gaccess.c
+> >>> +++ b/arch/s390/kvm/gaccess.c
+> >>> @@ -358,8 +358,8 @@ static unsigned long guest_translate(struct kvm_vcpu *vcpu, unsigned
+> >>> long gva, union asce asce;
+> >>>    
+> >>>    	ctlreg0.val = vcpu->arch.sie_block->gcr[0];
+> >>> -	edat1 = ctlreg0.edat && test_vfacility(8);
+> >>> -	edat2 = edat1 && test_vfacility(78);
+> >>> +	edat1 = ctlreg0.edat && test_kvm_facility(vcpu->kvm, 8);
+> >>> +	edat2 = edat1 && test_kvm_facility(vcpu->kvm, 78);
+> >>>    	asce.val = get_vcpu_asce(vcpu);
+> >>>    	if (asce.r)
+> >>>    		goto real_address;
+> >>> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+> >>> index 01a5212..a53652f 100644
+> >>> --- a/arch/s390/kvm/kvm-s390.c
+> >>> +++ b/arch/s390/kvm/kvm-s390.c
+> >>> @@ -1,5 +1,5 @@
+> >>>    /*
+> >>> - * hosting zSeries kernel virtual machines
+> >>> + * Hosting zSeries kernel virtual machines
+> >>>     *
+> >>>     * Copyright IBM Corp. 2008, 2009
+> >>>     *
+> >>> @@ -30,7 +30,6 @@
+> >>>    #include <asm/pgtable.h>
+> >>>    #include <asm/nmi.h>
+> >>>    #include <asm/switch_to.h>
+> >>> -#include <asm/facility.h>
+> >>>    #include <asm/sclp.h>
+> >>>    #include<asm/timex.h>
+> >>>    #include "kvm-s390.h"
+> >>> @@ -92,15 +91,33 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
+> >>>    	{ NULL }
+> >>>    };
+> >>>    
+> >>> -unsigned long *vfacilities;
+> >>> -static struct gmap_notifier gmap_notifier;
+> >>> +/* upper facilities limit for kvm */
+> >>> +unsigned long kvm_s390_fac_list_mask[] = {
+> >>> +	0xff82fff3f47c2000UL,
+> >>> +	0x005c000000000000UL,
+> >>> +};
+> >>> +
+> >>> +unsigned long kvm_s390_fac_list_mask_size(void)
+> >>> +{
+> >>> +	BUILD_BUG_ON(ARRAY_SIZE(kvm_s390_fac_list_mask) >
+> >>> +		     S390_ARCH_FAC_MASK_SIZE_U64);
+> >>> +	return ARRAY_SIZE(kvm_s390_fac_list_mask);
+> >>> +}
+> >>>    
+> >>> -/* test availability of vfacility */
+> >>> -int test_vfacility(unsigned long nr)
+> >>> +void kvm_s390_apply_fac_list_mask(unsigned long fac_list[])
+> >>>    {
+> >>> -	return __test_facility(nr, (void *) vfacilities);
+> >>> +	unsigned int i;
+> >>> +
+> >>> +	for (i = 0; i < S390_ARCH_FAC_LIST_SIZE_U64; i++) {
+> >>> +		if (i < kvm_s390_fac_list_mask_size())
+> >>> +			fac_list[i] &= kvm_s390_fac_list_mask[i];
+> >>> +		else
+> >>> +			fac_list[i] &= 0UL;
+> >>> +	}
+> >>>    }
+> >>>    
+> >>> +static struct gmap_notifier gmap_notifier;
+> >>> +
+> >>>    /* Section: not file related */
+> >>>    int kvm_arch_hardware_enable(void *garbage)
+> >>>    {
+> >>> @@ -485,6 +502,30 @@ long kvm_arch_vm_ioctl(struct file *filp,
+> >>>    	return r;
+> >>>    }
+> >>>    
+> >>> +/* make sure the memory used for fac_list is zeroed */
+> >>> +void kvm_s390_get_hard_fac_list(unsigned long *fac_list, int size)
+> >> Hard? Wouldn't "host" make more sense here?
+> > Renaming "*hard_fac_list" with "*host_fac_list" here and wherever it appears is ok with me.
+> >
+> >> I also think it makes sense to expose the native host facility list to
+> >> user space via an ioctl somehow.
+> >>
+> > In which situation do you need the full facility list. Do you have an example?
+> 
+> If you want to just implement -cpu host to get the exact feature set 
+> that the host gives you, how do you know which set that is?
 
-Larry
+During qemu machine initalization I call:
+
+kvm_s390_get_machine_props(&mach);
+
+which returns the following information:
+
+typedef struct S390MachineProps {
+    uint64_t cpuid;
+    uint32_t ibc_range;
+    uint8_t  pad[4];
+    uint64_t fac_mask[S390_ARCH_FAC_MASK_SIZE_UINT64];
+    uint64_t hard_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
+    uint64_t soft_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
+} S390MachineProps;
+
+In addition, user space has a model that defines which CPU facility became available in
+regard to the CPU model (TYPE-GA#).
+
+Let Fn be the CPU facility set of an arbitrary machine type, Mh and Fh the facility mask and list
+of the current host. Then I just calculate Fn & Mh and match it with Fh (Fh is STFLE & Mh). All
+machines where Fn is a full or partial subset are allowed as cpu models, the latest/newest of them
+represents "host".
+
+That is basically all done in use space routine:
+
+s390_setup_cpu_classes(S390MachineProps *prop);
+
+> 
+> 
+> Alex
+> 
+> 
+
+Michael
 
