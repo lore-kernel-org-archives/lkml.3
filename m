@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaEPPpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:45:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40345 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790AbaEPPpo (ORCPT
+	id S1756430AbaEPPuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:50:10 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.115]:40912 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751294AbaEPPuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:45:44 -0400
-Date: Fri, 16 May 2014 17:45:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, namhyung@gmail.com, eranian@google.com,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/6] events, perf: Pass protection and flags bits through
- mmap2 interface
-Message-ID: <20140516154538.GW11096@twins.programming.kicks-ass.net>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-2-git-send-email-dzickus@redhat.com>
- <20140516122219.GQ11096@twins.programming.kicks-ass.net>
- <20140516133300.GO50500@redhat.com>
+	Fri, 16 May 2014 11:50:07 -0400
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 May 2014 11:50:06 EDT
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-11.tower-193.messagelabs.com!1400255030!14183383!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 16 May 2014 17:43:50 +0200
+Date: Fri, 16 May 2014 18:36:43 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
+        <johannes.thumshirn@men.de>, <thomas.schnuerer@men.de>,
+        <wernerandy@gmx.de>
+Subject: [PATCH 0/3] Introduce MEN 14F021P00 Board Management Controller
+ driver set
+Message-ID: <cover.1400258021.git.andreas.werner@men.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="34/PV/2fFpU6TJrn"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140516133300.GO50500@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set add support for the MEN 14F021P00 Board Management Controller called BMC.
 
---34/PV/2fFpU6TJrn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The BMC is a PIC Mikrocontroller which assembled on almost all
+of our 3U Compact PCI CPU boards and a few Box PCs.
+The main part of the BMC is to start and monitor the board,
+but there are a lot more features which can be accessed using an I2C Host interface.
 
-On Fri, May 16, 2014 at 09:33:00AM -0400, Don Zickus wrote:
-> On Fri, May 16, 2014 at 02:22:19PM +0200, Peter Zijlstra wrote:
-> > On Tue, May 13, 2014 at 12:48:12PM -0400, Don Zickus wrote:
-> > > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > >=20
-> > > The mmap2 interface was missing the protection and flags bits needed =
-to
-> > > accurately determine if a mmap memory area was shared or private and
-> > > if it was readable or not.
-> > >=20
-> > > [tweaked patch to compile and wrote changelog]
-> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > >=20
-> > > --
-> > > Peter you mentioned writing up a changelog for this patch, but you
-> > > seemed busy, so I jumped the gun a little bit.  Let me know how you
-> > > want to do this patch if this approach is wrong.
-> >=20
-> > Oh, right, totally forgot about that. yeah I think the blub you have is
-> > adequate.=20
->=20
-> I realized I didn't put your sign-off even though I said the patch is from
-> you.  Should I repost with that?  I don't know who is going to take what
-> patches from this series.
+Features supported in this Patchset:
+        - Watchdog
+        - LEDs
 
-I asked jolsa to pick the lot up since its mostly userspace, if he
-remembers he can put it in.
+The Patchset includes a MFD Core driver, Watchdog and LEDs driver.
 
---34/PV/2fFpU6TJrn
-Content-Type: application/pgp-signature
+Andreas Werner (3):
+  drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC MFD Core driver
+  drivers/watchdog/menf21bmc_wd: introduce MEN 14F021P00 BMC Watchdog
+    driver
+  drivers/leds/leds-menf21bmc: introduce MEN 14F021P00 BMC LED driver
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ drivers/leds/Kconfig            |   6 +
+ drivers/leds/Makefile           |   2 +-
+ drivers/leds/leds-menf21bmc.c   | 135 +++++++++++++++++++++
+ drivers/mfd/Kconfig             |  12 ++
+ drivers/mfd/Makefile            |   1 +
+ drivers/mfd/menf21bmc.c         | 193 +++++++++++++++++++++++++++++
+ drivers/watchdog/Kconfig        |   7 ++
+ drivers/watchdog/Makefile       |   1 +
+ drivers/watchdog/menf21bmc_wd.c | 263 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/menf21bmc.h   |  32 +++++
+ 10 files changed, 651 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/leds/leds-menf21bmc.c
+ create mode 100644 drivers/mfd/menf21bmc.c
+ create mode 100644 drivers/watchdog/menf21bmc_wd.c
+ create mode 100644 include/linux/mfd/menf21bmc.h
 
-iQIcBAEBAgAGBQJTdjKiAAoJEHZH4aRLwOS6UPAQAIeVGW3U447IgMRDrv8WexaZ
-PF+FHVzW1kxBoo/+xY+Ngvr50L1e2YbEmkGa43F36jrGK1x7nD1OGxYmlaf8dZ39
-JHJ/NvpbuGhfNcaMin1mmDBbSse/cmKcyTHEWHEK2IDLY+bhWVm7M3QRPq4g1VH+
-8HwV+nqWl6Q43kpx+YNDIZrS4P2WKWPBPjiPEugLC1wGXFOmtxjR4gJh+3eGaPYL
-X/PCb9A3oFmu7O6+xAD99H7zEZuWs1HIUefgZD6Agnu5Q6Lq8qj6MLHYqi4gC4hx
-siE18fNHlIZ7YoaEGKHfn0yexIhyjr/3tIdxZysTzZjIDijG2VTTRz3pKheeaW08
-rFVFo3qdne2P/QcK82FhYaxosXABE3jYrJFn/u6/TdD+2D7KqsIndm0JGnnYm9NM
-7lB+EVIfaragL+fUqTZBmywt+5Rn912HCPhtHoYxKCfQIC5aUpnWofkgpZ52SJyS
-pT39RVMBCKUN3WzyLY2U8aZ82ba53s7yo0kdkoF676Z5GaUhhnJJpVWV/lic7sdW
-HRfrHcHvG2F68mc4xhDgo4QrMCX2KuZh8sBvJRT0r/dAjzDeWUAuDhGZsoUHf1rP
-wVOoJkCxhxe1yMUSumW4xUhDHbILLh4vdzP9swmbGCQr6f9pBfQoupRGxOi4+3LU
-IT4cPNa7JmXkSuWPLiGg
-=n4i2
------END PGP SIGNATURE-----
+-- 
+1.9.2
 
---34/PV/2fFpU6TJrn--
