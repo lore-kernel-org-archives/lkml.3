@@ -1,199 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743AbaEPJsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:48:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35921 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756489AbaEPJsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:48:18 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
-Date: Fri, 16 May 2014 11:47:53 +0200
-Message-Id: <1400233673-11477-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+	id S1756816AbaEPJwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:52:03 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:21976 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751475AbaEPJwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 05:52:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,1066,1389715200"; 
+   d="scan'208";a="30616545"
+Message-ID: <5375E0BA.7020208@cn.fujitsu.com>
+Date: Fri, 16 May 2014 17:56:10 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <jjherne@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org> <53718119.1090000@cn.fujitsu.com> <537180B9.6080407@oracle.com> <53739F3B.4060608@linux.vnet.ibm.com> <53758B12.8060609@cn.fujitsu.com> <20140516093530.GN11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140516093530.GN11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction uses compact_checklock_irqsave() function to periodically check for
-lock contention and need_resched() to either abort async compaction, or to
-free the lock, schedule and retake the lock. When aborting, cc->contended is
-set to signal the contended state to the caller. Two problems have been
-identified in this mechanism.
+On 05/16/2014 05:35 PM, Peter Zijlstra wrote:
+> On Fri, May 16, 2014 at 11:50:42AM +0800, Lai Jiangshan wrote:
+>> After debugging, I found the hotlug-in cpu is atctive but !online in this case.
+>> the problem was introduced by 5fbd036b.
+>> Some code assumes that any cpu in cpu_active_mask is also online, but 5fbd036b breaks
+>> this assumption, so the corresponding code with this assumption should be changed too.
+> 
+> Good find, and yes it does that.
+> 
+>> The following patch is just a workaround. After it is applied, the above WARNING
+>> is gone, but I can't hit the wq problem that you found.
+> 
+> Seeing how the entirety of hotplug is basically duct tape and twigs, the
+> below isn't that bad.
 
-First, compaction also calls directly cond_resched() in both scanners when no
-lock is yet taken. This call either does not abort async compaction, or set
-cc->contended appropriately. This patch introduces a new compact_should_abort()
-function to achieve both. In isolate_freepages(), the check frequency is
-reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
-scanner does in the preliminary page checks. In case a pageblock is found
-suitable for calling isolate_freepages_block(), the checks within there are
-done on higher frequency.
+I think we need to find a more grace solution...
 
-Second, isolate_freepages() does not check if isolate_freepages_block()
-aborted due to contention, and advances to the next pageblock. This violates
-the principle of aborting on contention, and might result in pageblocks not
-being scanned completely, since the scanning cursor is advanced. This patch
-makes isolate_freepages_block() check the cc->contended flag and abort.
-
-In case isolate_freepages() has already isolated some pages before aborting
-due to contention, page migration will proceed, which is OK since we do not
-want to waste the work that has been done, and page migration has own checks
-for contention. However, we do not want another isolation attempt by either
-of the scanners, so cc->contended flag check is added also to
-compaction_alloc() and compact_finished() to make sure compaction is aborted
-right after the migration.
-
-Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
----
-v2: update struct compact_control comment (per Naoya Horiguchi)
-    rename to compact_should_abort() and add comments (per David Rientjes)
-    add cc->contended checks in compaction_alloc() and compact_finished()
-    (per Joonsoo Kim)
-    reduce frequency of checks in isolate_freepages() 
-
- mm/compaction.c | 54 ++++++++++++++++++++++++++++++++++++++++++++----------
- mm/internal.h   |  5 ++++-
- 2 files changed, 48 insertions(+), 11 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 83ca6f9..6fc9f18 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -222,6 +222,30 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
- 	return true;
- }
- 
-+/*
-+ * Aside from avoiding lock contention, compaction also periodically checks
-+ * need_resched() and either schedules in sync compaction, or aborts async
-+ * compaction. This is similar to compact_checklock_irqsave() does, but used
-+ * where no lock is concerned.
-+ *
-+ * Returns false when no scheduling was needed, or sync compaction scheduled.
-+ * Returns true when async compaction should abort.
-+ */
-+static inline bool compact_should_abort(struct compact_control *cc)
-+{
-+	/* async compaction aborts if contended */
-+	if (need_resched()) {
-+		if (cc->mode == MIGRATE_ASYNC) {
-+			cc->contended = true;
-+			return false;
-+		}
-+
-+		cond_resched();
-+	}
-+
-+	return true;
-+}
-+
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
-@@ -491,11 +515,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			return 0;
- 	}
- 
--	if (cond_resched()) {
--		/* Async terminates prematurely on need_resched() */
--		if (cc->mode == MIGRATE_ASYNC)
--			return 0;
--	}
-+	if (compact_should_abort(cc))
-+		return 0;
- 
- 	/* Time to isolate some pages for migration */
- 	for (; low_pfn < end_pfn; low_pfn++) {
-@@ -718,9 +739,11 @@ static void isolate_freepages(struct zone *zone,
- 		/*
- 		 * This can iterate a massively long zone without finding any
- 		 * suitable migration targets, so periodically check if we need
--		 * to schedule.
-+		 * to schedule, or even abort async compaction.
- 		 */
--		cond_resched();
-+		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-+						&& compact_should_abort(cc))
-+			break;
- 
- 		if (!pfn_valid(block_start_pfn))
- 			continue;
-@@ -758,6 +781,13 @@ static void isolate_freepages(struct zone *zone,
- 		 */
- 		if (isolated)
- 			cc->finished_update_free = true;
-+
-+		/*
-+		 * isolate_freepages_block() might have aborted due to async
-+		 * compaction being contended
-+		 */
-+		if (cc->contended)
-+			break;
- 	}
- 
- 	/* split_free_page does not map the pages */
-@@ -785,9 +815,13 @@ static struct page *compaction_alloc(struct page *migratepage,
- 	struct compact_control *cc = (struct compact_control *)data;
- 	struct page *freepage;
- 
--	/* Isolate free pages if necessary */
-+	/*
-+	 * Isolate free pages if necessary, and if we are not aborting due to
-+	 * contention.
-+	 */
- 	if (list_empty(&cc->freepages)) {
--		isolate_freepages(cc->zone, cc);
-+		if (!cc->contended)
-+			isolate_freepages(cc->zone, cc);
- 
- 		if (list_empty(&cc->freepages))
- 			return NULL;
-@@ -857,7 +891,7 @@ static int compact_finished(struct zone *zone,
- 	unsigned int order;
- 	unsigned long watermark;
- 
--	if (fatal_signal_pending(current))
-+	if (cc->contended || fatal_signal_pending(current))
- 		return COMPACT_PARTIAL;
- 
- 	/* Compaction run completes if the migrate and free scanner meet */
-diff --git a/mm/internal.h b/mm/internal.h
-index a25424a..ad844ab 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -144,7 +144,10 @@ struct compact_control {
- 	int order;			/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
--	bool contended;			/* True if a lock was contended */
-+	bool contended;			/* True if a lock was contended, or
-+					 * need_resched() true during async
-+					 * compaction
-+					 */
- };
- 
- unsigned long
--- 
-1.8.4.5
+> 
+>> ---
+>> diff --git a/kernel/cpu.c b/kernel/cpu.c
+>> index a9e710e..253a129 100644
+>> --- a/kernel/cpu.c
+>> +++ b/kernel/cpu.c
+>> @@ -726,9 +726,10 @@ void set_cpu_present(unsigned int cpu, bool present)
+>>  
+>>  void set_cpu_online(unsigned int cpu, bool online)
+>>  {
+>> -	if (online)
+>> +	if (online) {
+>>  		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+>> -	else
+>> +		cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
+>> +	} else
+>>  		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
+>>  }
+>>  
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 268a45e..c1a712d 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -5043,7 +5043,6 @@ static int sched_cpu_active(struct notifier_block *nfb,
+>>  				      unsigned long action, void *hcpu)
+>>  {
+>>  	switch (action & ~CPU_TASKS_FROZEN) {
+>> -	case CPU_STARTING:
+>>  	case CPU_DOWN_FAILED:
+>>  		set_cpu_active((long)hcpu, true);
+>>  		return NOTIFY_OK;
 
