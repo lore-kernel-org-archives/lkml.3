@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651AbaEPSfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:35:06 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:36262 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaEPSfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:35:03 -0400
-Date: Fri, 16 May 2014 14:35:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/5] workqueue: Create low-level unbound workqueues
- cpumask
-Message-ID: <20140516183500.GI5379@htj.dyndns.org>
-References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
- <1400257015-28222-4-git-send-email-fweisbec@gmail.com>
- <alpine.DEB.2.10.1405161250350.492@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405161250350.492@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757919AbaEPSfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:35:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757748AbaEPSfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 14:35:18 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 1/2] x86: insn decoder: create artificial 3rd byte for 2-byte VEX
+Date: Fri, 16 May 2014 20:34:38 +0200
+Message-Id: <1400265279-22503-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:52:26PM -0500, Christoph Lameter wrote:
-> On Fri, 16 May 2014, Frederic Weisbecker wrote:
-> 
-> > It works on a lower-level than the per WQ_SYSFS workqueues cpumask files
-> > such that the effective cpumask applied for a given unbound workqueue is
-> > the intersection of /sys/devices/virtual/workqueue/$WORKQUEUE/cpumask and
-> > the new /sys/devices/virtual/workqueue/cpumask_unbounds file.
-> 
-> Why is there "virtual" directory in the path? Workqueues are "virtual"
-> devices?
+Before this patch, users need to do this to fetch vex.vvvv:
 
-I ain't an actual one.  That apparently is the preferred place to
-present software constructs like workqueues in sysfs.
+        if (insn->vex_prefix.nbytes == 2) {
+                vex_vvvv = ((insn->vex_prefix.bytes[1] >> 3) & 0xf) ^ 0xf;
+        }
+        if (insn->vex_prefix.nbytes == 3) {
+                vex_vvvv = ((insn->vex_prefix.bytes[2] >> 3) & 0xf) ^ 0xf;
+        }
 
-Thanks.
+Make it so that insn->vex_prefix.bytes[2] always contains vex.wvvvvLpp bits.
 
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/lib/insn.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+index 54fcffe..829ca4c 100644
+--- a/arch/x86/lib/insn.c
++++ b/arch/x86/lib/insn.c
+@@ -163,6 +163,12 @@ found:
+ 				/* VEX.W overrides opnd_size */
+ 				insn->opnd_bytes = 8;
+ 		} else {
++			/*
++			 * For VEX2, fake VEX3-like byte#2.
++			 * Makes it easier to decode vex.W, vex.vvvv,
++			 * vex.L and vex.pp. Masking with 0x7f sets vex.W == 0.
++			 */
++			insn->vex_prefix.bytes[2] = b2 & 0x7f;
+ 			insn->vex_prefix.nbytes = 2;
+ 			insn->next_byte += 2;
+ 		}
 -- 
-tejun
+1.8.1.4
+
