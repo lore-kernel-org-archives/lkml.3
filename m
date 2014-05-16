@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220AbaEPPyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:54:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56538 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640AbaEPPyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:54:39 -0400
-Message-ID: <1400255651.21547.214.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: fix pud_huge() for 2-level pagetables
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Steve Capper <steve.capper@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1757547AbaEPPyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:54:46 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42483 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaEPPym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 11:54:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140514171309.64b49a45@canb.auug.org.au>
+References: <20140514171309.64b49a45@canb.auug.org.au>
+Date: Fri, 16 May 2014 17:54:42 +0200
+Message-ID: <CACRpkdYh+aFcEkOQ4Xti4JzprrcDK17JwNGfTp8ZN1hxcwfpHQ@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the gpio tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Lee Jones <lee.jones@linaro.org>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 16 May 2014 11:54:11 -0400
-In-Reply-To: <20140516100434.GG5624@arm.com>
-References: <1400163562-7481-1-git-send-email-msalter@redhat.com>
-	 <20140516100434.GG5624@arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 11:04 +0100, Catalin Marinas wrote:
-> On Thu, May 15, 2014 at 03:19:22PM +0100, Mark Salter wrote:
-> > diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-> > index 5e9aec3..9bed38f 100644
-> > --- a/arch/arm64/mm/hugetlbpage.c
-> > +++ b/arch/arm64/mm/hugetlbpage.c
-> > @@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
-> >  
-> >  int pud_huge(pud_t pud)
-> >  {
-> > +#ifndef __PAGETABLE_PMD_FOLDED
-> >  	return !(pud_val(pud) & PUD_TABLE_BIT);
-> > +#else
-> > +	return 0;
-> > +#endif
-> >  }
-> >  
-> >  int pmd_huge_support(void)
-> > @@ -64,8 +68,10 @@ static __init int setup_hugepagesz(char *opt)
-> >  	unsigned long ps = memparse(opt, &opt);
-> >  	if (ps == PMD_SIZE) {
-> >  		hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
-> > +#ifndef __PAGETABLE_PMD_FOLDED
-> >  	} else if (ps == PUD_SIZE) {
-> >  		hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
-> > +#endif
-> 
-> Since PMD_SIZE == PUD_SIZE when __PAGETABLE_PMD_FOLDED, do we need the
-> #ifndef here? Maybe the compiler is smart enough to remove it but it's
-> not on a critical path anyway, so I wouldn't bother.
-> 
+On Wed, May 14, 2014 at 9:13 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Yes, I think it would remove it. In any case, one less ifdef would be
-a good thing.
+> Hi Linus,
+>
+> After merging the gpio tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
+>
+> drivers/mfd/stmpe.c: In function 'stmpe_irq_init':
+> drivers/mfd/stmpe.c:1000:15: error: 'struct stmpe' has no member named 'irq_base'
+>    base = stmpe->irq_base;
+>                ^
+>
+> Caused by commit 3ba1d516d5fe ("mfd: stmpe: root out static GPIO and
+> IRQ assignments").
+>
+> I have reverted that commit for today (and e013a5148882 "gpio: stmpe:
+> switch to use gpiolib irqchip helpers" that depends on it).
+>
+> Also, that commit has no Signed-off-by for its committer (Lee).
 
+Hm I know has struggled with this series sorry if it's all my fault :-/
 
+I've un-pulled that branch from the GPIO tree, let's get the immutable
+branch in MFD right first then.
+
+Yours,
+Linus Walleij
