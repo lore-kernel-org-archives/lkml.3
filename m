@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456AbaEPSiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:38:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37141 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396AbaEPSiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:38:21 -0400
-Date: Fri, 16 May 2014 20:38:14 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Status of Power Supply Subsystem
-Message-ID: <20140516183812.GA17752@earth.universe>
+	id S1757958AbaEPSuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:50:07 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48282 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409AbaEPSuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 14:50:05 -0400
+Message-ID: <53765DD9.6040403@wwwdotorg.org>
+Date: Fri, 16 May 2014 12:50:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net
+CC: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        swarren@nvidia.com, nicolas.pitre@linaro.org, dianders@chromium.org,
+        linux@arm.linux.org.uk, thomas.abraham@linaro.org,
+        pdeschrijver@nvidia.com
+Subject: Re: [PATCH V2 2/3] cpufreq: add support for intermediate (stable)
+ frequencies
+References: <cover.1400230695.git.viresh.kumar@linaro.org> <9e1ed1bf8c3610709436fe5ef8df3a63856f8f5c.1400230695.git.viresh.kumar@linaro.org>
+In-Reply-To: <9e1ed1bf8c3610709436fe5ef8df3a63856f8f5c.1400230695.git.viresh.kumar@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/16/2014 03:07 AM, Viresh Kumar wrote:
+> Douglas Anderson, recently pointed out an interesting problem due to which
+> udelay() was expiring earlier than it should.
+> 
+> While transitioning between frequencies few platforms may temporarily switch to
+> a stable frequency, waiting for the main PLL to stabilize.
+> 
+> For example: When we transition between very low frequencies on exynos, like
+> between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
+> No CPUFREQ notification is sent for that. That means there's a period of time
+> when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
+> and 300MHz. And so udelay behaves badly.
+> 
+> To get this fixed in a generic way, lets introduce another set of callbacks
+> get_intermediate() and target_intermediate(), only for drivers with
+> target_index() and CPUFREQ_ASYNC_NOTIFICATION unset.
+> 
+> get_intermediate should return a stable intermediate frequency platform wants to
+> switch to, and target_intermediate() should set CPU to to that frequency, before
+> jumping to the frequency corresponding to 'index'. Core will take care of
+> sending notifications and driver doesn't have to handle them in
+> target_intermediate() or target_index().
+> 
+> NOTE: Once set to intermediate frequency, driver isn't expected to fail for the
+> following ->target_index() call, if it fails core will issue a WARN().
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
 
-Hi,
+> +cpufreq_driver.get_intermediate
+> +and target_intermediate		Uset to switch to stable frequency while
+> +				changing CPU frequency.
 
-It seems the maintainer of the power supply subsystem, Dmitry, has gone missing
-in action since about mid-Feburary. I couldn't find any mail from him on the
-usual mailinglists, he did not reply to any of my mails and the power supply
-subsystem git tree mentioned in the MAINTAINERS file has not been touched since
-2014-02-01 [0].
+s/Uset/Used.
 
-Is there a standard procedure to handle subsystem maintainers, who are missing
-in action? I have patches for the power supply subsystem and have seen more
-patches from other developers on the mailinglists.
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
 
-[0] git://git.infradead.org/battery-2.6.git
+> @@ -226,6 +226,21 @@ struct cpufreq_driver {
 
--- Sebastian
+> +	unsigned int (*get_intermediate)(struct cpufreq_policy *policy,
+> +					 unsigned int index);
 
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTdlsUAAoJENju1/PIO/qa51IQAIIuMIG4s0h1eJKkrA40+7xX
-y3/h317fuVROeosISHu5qjZ2gx/d/ZCIHph1DVLCyFmw484gQHNEiMP1pj9qoD98
-LQBhhpJ6yMIuPMhBdeu7nKFMePpcQfp2agjWSxKUgJz194Ri0gfJbBTAYegJtZX6
-cRU1AeMRnSVdqy58RFiYHSAWTIEFnGYPvaD/VTkS0rt8BPaTlzoaTswqrFjCPirm
-dTCTc0/TSav0AvK9Z4CC5pNC52goHcu44M/wVLLIsYLHRbc/hgVAbgf3lQoMTXUd
-Nj2fvBCScGMpKRiNdIBomXJTfq/CEvfM7mnG6SobOJu2cC7+A+XodAaLh5e3iH5u
-RK0tdloo5DpHp0cU++LpeJ2Nids+m9mJHN3CTFY6Sw4aB3fXWCXH+PTwnPK6A1OW
-dg45e+WOBeVl0Pdd3ah/QIZQBq5ktSRPsdhVVIapKNUiTq8WvwVLJFGzNAnmRbq1
-t4lXKgEmaFFV+ajrR4QlympCeMWM3m5lof14jPzFwHmk6UecZqQBPcUQ7EBQhn57
-6kyR0Mh70KJU+s3sG0zqfXgkYF9PzfP1yQduOWgPuMqW0584Mhu5aPTv++zGI4Sy
-KmleLjO230wTp6Qh8BSfx7gMXXdFB+4Dt4OGw/aKJNeRguxBdgR/ogLuv+vdK6pW
-1iCY1alDKZJ3TRNwYmSH
-=3nqy
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
+Should get_intermediate be passed a struct cpufreq_freqs freqs rather
+than just the target index? That way, if the intermediate frequency
+varies depending on old/new frequencies, then the driver won't have to
+go look up the current frequency in order to implement that logic.
