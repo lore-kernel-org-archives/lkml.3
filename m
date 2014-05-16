@@ -1,118 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031AbaEPMCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:02:53 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:59575 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756097AbaEPMCv (ORCPT
+	id S1757165AbaEPMDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:03:21 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:24371 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077AbaEPMDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 08:02:51 -0400
-Message-ID: <1400241769.20342.39.camel@x220>
-Subject: [PATCH] ARM: S3C24XX: remove checks for CONFIG_CPU_S3C2413
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 May 2014 14:02:49 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 May 2014 12:02:49.0355 (UTC) FILETIME=[C1DD65B0:01CF70FE]
-X-RcptDomain: vger.kernel.org
+	Fri, 16 May 2014 08:03:18 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-9e-5375fe836440
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: viro@zeniv.linux.org.uk, linux-security-module@vger.kernel.org,
+        eparis@redhat.com, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, jmorris@namei.org, dmitry.kasatkin@gmail.com,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCHv2 1/1] ima: re-introduce own integrity cache lock
+Date: Fri, 16 May 2014 15:03:19 +0300
+Message-id: <285e8886d5672c43037fe9ee3012559211df6818.1400241799.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xK7rN/0qDDZY9E7K49Xcvs8WXpXUW
+	E7e3sVisW7+YyeLljHnsFpd3zWGz+NDziM3i/N/jrBafVkxiduD02DnrLrvHg0ObWTx2L/jM
+	5NHzPdnj/b6rbB59W1YxenzeJOex6clbpgCOKC6blNSczLLUIn27BK6MQ2uXshYssKm4uG0D
+	SwNji1EXIweHhICJxKfvml2MnECmmMSFe+vZuhi5OIQEljJKLD7zlRXC6WSS2LdpFxNIFZuA
+	nsSG5h/sIAkRgVmMEp3b+sESzAJVEh/+7mQEsYUFHCV+nOsCs1kEVCWOH5kHVsMrECex4M0e
+	Foh1chInj01mncDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSFB92cG4+JjVIUYB
+	DkYlHt4PbqXBQqyJZcWVuYcYJTiYlUR43V4BhXhTEiurUovy44tKc1KLDzEycXBKNTDOUz/5
+	W/uK1PlNkcyrd/M4rehb8bdolpz+tgOt1t0Ld118VHG2J9XlsMU2qYafpQXf0wWe6gZF3rB1
+	7LvMH7b0qsTGjeX+en+ajEwMYk1n8kZtXSwSECZ7Jeey2N5q2VsKfZ069zycCoKO+hRcFxU6
+	+aJ6Q3Ez06YfKx+2Vk1azhXEmH9bXkOJpTgj0VCLuag4EQDgsHizCAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of checks for CONFIG_CPU_S3C2413. But there's no
-Kconfig symbol CPU_S3C2413. That symbol is not needed, as CPU_S3C2412 is
-documented to support both the S3C2412 and the S3C2413 SoCs.
+Before IMA appraisal was introduced, IMA was using own integrity cache
+lock along with i_mutex. process_measurement and ima_file_free took
+the iint->mutex first and then the i_mutex, while setxattr, chmod and
+chown took the locks in reverse order. To resolve the potential deadlock,
+i_mutex was moved to protect entire IMA functionality and the redundant
+iint->mutex was eliminated.
 
-Luckily, all these checks for CONFIG_CPU_S3C2413 are in places were we
-also checks for CONFIG_CPU_S3C2412. So these checks can safely be
-removed.
+Solution was based on the assumption that filesystem code does not take
+i_mutex further. But when file is opened with O_DIRECT flag, direct-io
+implementation takes i_mutex and produces deadlock. Furthermore, certain
+other filesystem operations, such as llseek, also take i_mutex.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+To resolve O_DIRECT related deadlock problem, this patch re-introduces
+iint->mutex. But to eliminate the original chmod() related deadlock
+problem, this patch eliminates the requirement for chmod hooks to take
+the iint->mutex by introducing additional atomic iint->attr_flags to
+indicate calling of the hooks. The allowed locking order is to take
+the iint->mutex first and then the i_mutex.
+
+Changes to v1:
+* revert taking the i_mutex in integrity_inode_get() so that iint allocation
+  could be done with i_mutex taken
+* move taking the i_mutex from appraisal code to the process_measurement()
+
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
-Tested with git grep only.
+ security/integrity/iint.c             |  2 ++
+ security/integrity/ima/ima_appraise.c | 20 ++++++--------------
+ security/integrity/ima/ima_main.c     | 32 +++++++++++++++++++++-----------
+ security/integrity/integrity.h        |  5 +++++
+ 4 files changed, 34 insertions(+), 25 deletions(-)
 
-I hope the ARM/SAMSUNG maintainers are allowed to touch s3c-i2s-v2.c in
-this case.
-
-Fun fact: the first checks for CONFIG_CPU_S3C2413 were added in commit
-68d9ab394f06 ("[ARM] 3635/1: S3C24XX: Add S3C2412 core cpu support").
-Perhaps it were leftovers of a preceding version of that patch.
-
- arch/arm/mach-s3c24xx/common.c                  | 2 +-
- arch/arm/mach-s3c24xx/include/mach/regs-clock.h | 4 ++--
- arch/arm/plat-samsung/include/plat/map-s3c.h    | 2 +-
- sound/soc/samsung/s3c-i2s-v2.c                  | 4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
-index 1bc8e73c94f9..137eea8b156a 100644
---- a/arch/arm/mach-s3c24xx/common.c
-+++ b/arch/arm/mach-s3c24xx/common.c
-@@ -184,7 +184,7 @@ static unsigned long s3c24xx_read_idcode_v5(void)
- 		return gs;
- #endif
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index a521edf..d293207 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -154,11 +154,13 @@ static void init_once(void *foo)
+ 	memset(iint, 0, sizeof(*iint));
+ 	iint->version = 0;
+ 	iint->flags = 0UL;
++	iint->attr_flags = 0;
+ 	iint->ima_file_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_mmap_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_bprm_status = INTEGRITY_UNKNOWN;
+ 	iint->ima_module_status = INTEGRITY_UNKNOWN;
+ 	iint->evm_status = INTEGRITY_UNKNOWN;
++	mutex_init(&iint->mutex);
+ }
  
--#if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_CPU_S3C2413)
-+#if defined(CONFIG_CPU_S3C2412)
- 	return __raw_readl(S3C2412_GSTATUS1);
- #else
- 	return 1UL;	/* don't look like an 2400 */
-diff --git a/arch/arm/mach-s3c24xx/include/mach/regs-clock.h b/arch/arm/mach-s3c24xx/include/mach/regs-clock.h
-index 3415b60082d7..c143319c0396 100644
---- a/arch/arm/mach-s3c24xx/include/mach/regs-clock.h
-+++ b/arch/arm/mach-s3c24xx/include/mach/regs-clock.h
-@@ -95,7 +95,7 @@
+ static int __init integrity_iintcache_init(void)
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index d3113d4..c49f8c3 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -289,7 +289,9 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
+ 	if (rc < 0)
+ 		return;
  
- #endif /* CONFIG_CPU_S3C2440 or CONFIG_CPU_S3C2442 */
++	mutex_lock(&file_inode(file)->i_mutex);
+ 	ima_fix_xattr(dentry, iint);
++	mutex_unlock(&file_inode(file)->i_mutex);
+ }
  
--#if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_CPU_S3C2413)
-+#if defined(CONFIG_CPU_S3C2412)
+ /**
+@@ -313,13 +315,8 @@ void ima_inode_post_setattr(struct dentry *dentry)
  
- #define S3C2412_OSCSET		S3C2410_CLKREG(0x18)
- #define S3C2412_CLKSRC		S3C2410_CLKREG(0x1C)
-@@ -159,7 +159,7 @@
- #define S3C2412_CLKSRC_UREFCLK_EXTCLK	(1<<12)
- #define S3C2412_CLKSRC_EREFCLK_EXTCLK	(1<<14)
+ 	must_appraise = ima_must_appraise(inode, MAY_ACCESS, POST_SETATTR);
+ 	iint = integrity_iint_find(inode);
+-	if (iint) {
+-		iint->flags &= ~(IMA_APPRAISE | IMA_APPRAISED |
+-				 IMA_APPRAISE_SUBMASK | IMA_APPRAISED_SUBMASK |
+-				 IMA_ACTION_FLAGS);
+-		if (must_appraise)
+-			iint->flags |= IMA_APPRAISE;
+-	}
++	if (iint)
++		set_bit(IMA_CHANGE_ATTR, &iint->attr_flags);
+ 	if (!must_appraise)
+ 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_IMA);
+ 	return;
+@@ -349,13 +346,8 @@ static void ima_reset_appraise_flags(struct inode *inode, int digsig)
+ 		return;
  
--#endif /* CONFIG_CPU_S3C2412 | CONFIG_CPU_S3C2413 */
-+#endif /* CONFIG_CPU_S3C2412 */
+ 	iint = integrity_iint_find(inode);
+-	if (!iint)
+-		return;
+-
+-	iint->flags &= ~IMA_DONE_MASK;
+-	if (digsig)
+-		iint->flags |= IMA_DIGSIG;
+-	return;
++	if (iint)
++		set_bit(IMA_CHANGE_XATTR, &iint->attr_flags);
+ }
  
- #define S3C2416_CLKDIV2		S3C2410_CLKREG(0x28)
+ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index bd7b4cb..fdd5320 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -88,8 +88,6 @@ static void ima_rdwr_violation_check(struct file *file)
+ 	if (!S_ISREG(inode->i_mode) || !ima_initialized)
+ 		return;
  
-diff --git a/arch/arm/plat-samsung/include/plat/map-s3c.h b/arch/arm/plat-samsung/include/plat/map-s3c.h
-index c0c70a895ca8..612c2a71fffd 100644
---- a/arch/arm/plat-samsung/include/plat/map-s3c.h
-+++ b/arch/arm/plat-samsung/include/plat/map-s3c.h
-@@ -65,7 +65,7 @@
+-	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
+-
+ 	if (mode & FMODE_WRITE) {
+ 		if (atomic_read(&inode->i_readcount) && IS_IMA(inode)) {
+ 			struct integrity_iint_cache *iint;
+@@ -104,8 +102,6 @@ static void ima_rdwr_violation_check(struct file *file)
+ 			send_writers = true;
+ 	}
  
- /* deal with the registers that move under the 2412/2413 */
+-	mutex_unlock(&inode->i_mutex);
+-
+ 	if (!send_tomtou && !send_writers)
+ 		return;
  
--#if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_CPU_S3C2413)
-+#if defined(CONFIG_CPU_S3C2412)
- #ifndef __ASSEMBLY__
- extern void __iomem *s3c24xx_va_gpio2;
- #endif
-diff --git a/sound/soc/samsung/s3c-i2s-v2.c b/sound/soc/samsung/s3c-i2s-v2.c
-index 79e7efb9283c..9eea58382ab3 100644
---- a/sound/soc/samsung/s3c-i2s-v2.c
-+++ b/sound/soc/samsung/s3c-i2s-v2.c
-@@ -30,8 +30,8 @@
+@@ -127,14 +123,14 @@ static void ima_check_last_writer(struct integrity_iint_cache *iint,
+ 	if (!(mode & FMODE_WRITE))
+ 		return;
  
- #undef S3C_IIS_V2_SUPPORTED
+-	mutex_lock(&inode->i_mutex);
++	mutex_lock(&iint->mutex);
+ 	if (atomic_read(&inode->i_writecount) == 1 &&
+ 	    iint->version != inode->i_version) {
+ 		iint->flags &= ~IMA_DONE_MASK;
+ 		if (iint->flags & IMA_APPRAISE)
+ 			ima_update_xattr(iint, file);
+ 	}
+-	mutex_unlock(&inode->i_mutex);
++	mutex_unlock(&iint->mutex);
+ }
  
--#if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_CPU_S3C2413) \
--	|| defined(CONFIG_ARCH_S3C64XX) || defined(CONFIG_CPU_S5PV210)
-+#if defined(CONFIG_CPU_S3C2412) || defined(CONFIG_ARCH_S3C64XX) \
-+	|| defined(CONFIG_CPU_S5PV210)
- #define S3C_IIS_V2_SUPPORTED
- #endif
+ /**
+@@ -187,10 +183,21 @@ static int process_measurement(struct file *file, const char *filename,
+ 	_func = (action & IMA_FILE_APPRAISE) ? FILE_CHECK : function;
  
+ 	mutex_lock(&inode->i_mutex);
+-
+ 	iint = integrity_inode_get(inode);
++	mutex_unlock(&inode->i_mutex);
+ 	if (!iint)
+-		goto out;
++		goto out_unlocked;
++
++	mutex_lock(&iint->mutex);
++
++	if (test_and_clear_bit(IMA_CHANGE_ATTR, &iint->attr_flags))
++		/* reset appraisal flags if ima_inode_post_setattr was called */
++		iint->flags &= ~(IMA_APPRAISE | IMA_APPRAISED |
++				 IMA_APPRAISE_SUBMASK | IMA_APPRAISED_SUBMASK);
++
++	if (test_and_clear_bit(IMA_CHANGE_XATTR, &iint->attr_flags))
++		/* reset all flags if ima_inode_setxattr was called */
++		iint->flags &= ~IMA_DONE_MASK;
+ 
+ 	/* Determine if already appraised/measured based on bitmask
+ 	 * (IMA_MEASURE, IMA_MEASURED, IMA_XXXX_APPRAISE, IMA_XXXX_APPRAISED,
+@@ -225,18 +232,21 @@ static int process_measurement(struct file *file, const char *filename,
+ 	if (action & IMA_MEASURE)
+ 		ima_store_measurement(iint, file, pathname,
+ 				      xattr_value, xattr_len);
+-	if (action & IMA_APPRAISE_SUBMASK)
++	if (action & IMA_APPRAISE_SUBMASK) {
++		mutex_lock(&inode->i_mutex);
+ 		rc = ima_appraise_measurement(_func, iint, file, pathname,
+ 					      xattr_value, xattr_len);
++		mutex_unlock(&inode->i_mutex);
++	}
+ 	if (action & IMA_AUDIT)
+ 		ima_audit_measurement(iint, pathname);
+ 	kfree(pathbuf);
+ out_digsig:
+ 	if ((mask & MAY_WRITE) && (iint->flags & IMA_DIGSIG))
+ 		rc = -EACCES;
+-out:
+-	mutex_unlock(&inode->i_mutex);
++	mutex_unlock(&iint->mutex);
+ 	kfree(xattr_value);
++out_unlocked:
+ 	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE))
+ 		return -EACCES;
+ 	return 0;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 2fb5e53..f73cd06 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -50,6 +50,9 @@
+ #define IMA_APPRAISED_SUBMASK	(IMA_FILE_APPRAISED | IMA_MMAP_APPRAISED | \
+ 				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED)
+ 
++#define IMA_CHANGE_XATTR	0
++#define IMA_CHANGE_ATTR		1
++
+ enum evm_ima_xattr_type {
+ 	IMA_XATTR_DIGEST = 0x01,
+ 	EVM_XATTR_HMAC,
+@@ -96,9 +99,11 @@ struct signature_v2_hdr {
+ /* integrity data associated with an inode */
+ struct integrity_iint_cache {
+ 	struct rb_node rb_node;	/* rooted in integrity_iint_tree */
++	struct mutex mutex;	/* protects: version, flags, digest */
+ 	struct inode *inode;	/* back pointer to inode in question */
+ 	u64 version;		/* track inode changes */
+ 	unsigned long flags;
++	unsigned long attr_flags;
+ 	enum integrity_status ima_file_status:4;
+ 	enum integrity_status ima_mmap_status:4;
+ 	enum integrity_status ima_bprm_status:4;
 -- 
-1.9.0
+1.9.1
 
