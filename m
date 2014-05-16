@@ -1,169 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218AbaEPJkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:40:12 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:55769 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaEPJkH (ORCPT
+	id S932276AbaEPJkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:40:32 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:55256 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392AbaEPJk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:40:07 -0400
+	Fri, 16 May 2014 05:40:29 -0400
 MIME-Version: 1.0
-X-Originating-IP: [5.150.199.142]
-Date: Fri, 16 May 2014 11:40:05 +0200
-Message-ID: <CABt9es9BZoy24cdULeutpi4wU_99iAbtu53nzYLnrzQ2JYCWYA@mail.gmail.com>
-Subject: deadlock in fsnotify, inotify broken in 3.14.1?
-From: Hannes Landeholm <hannes@jumpstarter.io>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
+References: <20140425070459.GA9155@devel>
+	<20140425092607.GH26890@mwanda>
+	<875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
+	<535A5535.6000701@compro.net>
+	<1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
+	<535A7402.1060305@compro.net>
+	<CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
+	<20140426184721.GL26890@mwanda>
+	<CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
+Date: Fri, 16 May 2014 18:40:28 +0900
+Message-ID: <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Hounschell <markh@compro.net>
+Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are heavily relying on inotify to buffer data that is transferred
-between one and more processes. Recently we've been seeing production
-servers being deadlocked under light to moderate load with the same
-problem signature. It's happened 3 times now in about 24 hours on
-different servers. Example extract from system log:
+Hi,
 
-kernel: INFO: task fsnotify_mark:42 blocked for more than 120 seconds.
-kernel:       Not tainted 3.14.1-1-js #1
-kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-this message.
-kernel: fsnotify_mark   D 0000000000000000     0    42      2 0x00000000
-kernel:  ffff88039d81fcc0 0000000000000246 ffff88039ee7c4b0 ffff88039d81ffd8
-kernel:  00000000000142c0 00000000000142c0 ffff88039ee7c4b0 ffff88039d81fc80
-kernel:  ffff88039ee2f800 ffff88039ee41600 ffff88039d81fd00 ffffffff810a4664
-kernel: Call Trace:
-kernel:  [<ffffffff810a4664>] ? load_balance+0x174/0x890
-kernel:  [<ffffffff8109477a>] ? update_rq_clock.part.78+0x1a/0x100
-kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-kernel:  [<ffffffff814da649>] schedule_timeout+0x1e9/0x270
-kernel:  [<ffffffff810728ab>] ? lock_timer_base.isra.35+0x2b/0x50
-kernel:  [<ffffffff81072067>] ? internal_add_timer+0x17/0x40
-kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-kernel:  [<ffffffff81072d15>] ? mod_timer+0x115/0x260
-kernel:  [<ffffffff814dbe93>] wait_for_common+0xd3/0x180
-kernel:  [<ffffffff81098420>] ? wake_up_process+0x40/0x40
-kernel:  [<ffffffff814dbf5d>] wait_for_completion+0x1d/0x20
-kernel:  [<ffffffff810c672d>] __synchronize_srcu+0xdd/0x110
-kernel:  [<ffffffff810c6260>] ? call_srcu+0x70/0x70
-kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-kernel:  [<ffffffff810c677d>] synchronize_srcu+0x1d/0x20
-kernel:  [<ffffffff811e7e27>] fsnotify_mark_destroy+0x87/0x150
-kernel:  [<ffffffff810aa930>] ? __wake_up_sync+0x20/0x20
-kernel:  [<ffffffff811e7da0>] ? fsnotify_put_mark+0x40/0x40
-kernel:  [<ffffffff81087762>] kthread+0xd2/0xf0
-kernel:  [<ffffffff81087690>] ? kthread_create_on_node+0x180/0x180
-kernel:  [<ffffffff814e663c>] ret_from_fork+0x7c/0xb0
-kernel:  [<ffffffff81087690>] ? kthread_create_on_node+0x180/0x180
+ This patch haven't been updated over the past 3 weeks.
+Will you check for me?
 
-kernel: INFO: task jhost:411 blocked for more than 120 seconds.
-kernel:       Not tainted 3.14.1-1-js #1
-kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-this message.
-kernel: jhost           D 0000000000000000     0   411    399 0x00000000
-kernel:  ffff8803985b1e90 0000000000000282 ffff8800ff93b110 ffff8803985b1fd8
-kernel:  00000000000142c0 00000000000142c0 ffff8800ff93b110 ffffffff81283ae0
-kernel:  ffff8802bf663300 ffff8802bf663300 ffff8803985b1e00 ffffffff8108a245
-kernel: Call Trace:
-kernel:  [<ffffffff81283ae0>] ? timerqueue_add+0x60/0xb0
-kernel:  [<ffffffff8108a245>] ? enqueue_hrtimer+0x25/0xb0
-kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-kernel:  [<ffffffff8108ac34>] ? __hrtimer_start_range_ns+0x1e4/0x3d0
-kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
+Regards,
+Daeseok Youn.
 
-kernel: INFO: task jhost:412 blocked for more than 120 seconds.
-kernel:       Not tainted 3.14.1-1-js #1
-kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-this message.
-kernel: jhost           D 0000000000000000     0   412    399 0x00000000
-kernel:  ffff8803985b3c00 0000000000000282 ffff88039d114e80 ffff8803985b3fd8
-kernel:  00000000000142c0 00000000000142c0 ffff88039d114e80 ffffffff814de216
-kernel:  ffff8803985b3b70 ffffffff810aa4d4 ffffffff81b07770 ffffffff810c9996
-kernel: Call Trace:
-kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-kernel:  [<ffffffff810aa4d4>] ? __wake_up+0x44/0x50
-kernel:  [<ffffffff810c9996>] ? __call_rcu.constprop.61+0x116/0x270
-kernel:  [<ffffffff811ec270>] ? ep_send_events_proc+0x1c0/0x1c0
-kernel:  [<ffffffff814e7f4e>] ? xen_hypervisor_callback+0x1e/0x30
-kernel:  [<ffffffff814def9a>] ? error_exit+0x2a/0x60
-kernel:  [<ffffffff814dea3f>] ? retint_restore_args+0x5/0x6
-kernel:  [<ffffffff811e948f>] ? inotify_handle_event+0x6f/0x180
-kernel:  [<ffffffff810ca8e2>] ? rcu_read_unlock_special+0x182/0x200
-kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-kernel:  [<ffffffff811e7ff2>] fsnotify_destroy_mark_locked+0x102/0x180
-kernel:  [<ffffffff811e809b>] fsnotify_destroy_mark+0x2b/0x40
-kernel:  [<ffffffff811e954c>] inotify_handle_event+0x12c/0x180
-kernel:  [<ffffffff811e6c71>] send_to_group+0xd1/0x1b0
-kernel:  [<ffffffff811e6ffc>] fsnotify+0x2ac/0x2f0
-kernel:  [<ffffffff811a7669>] do_readv_writev+0x199/0x220
-kernel:  [<ffffffff81136a50>] ? __generic_file_aio_write+0x3b0/0x3b0
-kernel:  [<ffffffff811a60b0>] ? do_sync_read+0x90/0x90
-kernel:  [<ffffffff811f36d7>] ? locks_insert_lock+0x87/0x90
-kernel:  [<ffffffff811f5583>] ? flock_lock_file_wait+0x2d3/0x310
-kernel:  [<ffffffff811c239e>] ? __fget+0x6e/0xb0
-kernel:  [<ffffffff811a7770>] vfs_writev+0x30/0x60
-kernel:  [<ffffffff811a78ca>] SyS_writev+0x4a/0xe0
-kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
 
-kernel: INFO: task jhost:413 blocked for more than 120 seconds.
-kernel:       Not tainted 3.14.1-1-js #1
-kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-this message.
-kernel: jhost           D ffff88039ebeb480     0   413    399 0x00000000
-kernel:  ffff88039d11de90 0000000000000282 ffff88039d112740 ffff88039d11dfd8
-kernel:  00000000000142c0 00000000000142c0 ffff88039d112740 00007ff9567ecd88
-kernel:  ffff88039d11df50 0000000000000070 00007ff9567ecd88 ffff88039d11de70
-kernel: Call Trace:
-kernel:  [<ffffffff813d10c0>] ? sock_aio_read.part.27+0xc0/0xd0
-kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-
-kernel: INFO: task jhost:414 blocked for more than 120 seconds.
-kernel:       Not tainted 3.14.1-1-js #1
-kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-this message.
-kernel: jhost           D 0000000000000000     0   414    399 0x00000000
-kernel:  ffff88039d11fe90 0000000000000282 ffff88039d1175c0 ffff88039d11ffd8
-kernel:  00000000000142c0 00000000000142c0 ffff88039d1175c0 00000000007ec4b8
-kernel:  0000000000000000 ffff88039d11fe30 ffffffff810d74c1 ffff88039d11fe70
-kernel: Call Trace:
-kernel:  [<ffffffff810d74c1>] ? futex_wake+0x71/0x140
-kernel:  [<ffffffff813d10c0>] ? sock_aio_read.part.27+0xc0/0xd0
-kernel:  [<ffffffff810d9139>] ? do_futex+0x109/0xac0
-kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-
-All messages above happened at the exact same point in time so it's
-unknown if they are sequentially ordered in some way.
-
-uname: Linux localhost 3.14.1-1-js #1 SMP PREEMPT Tue Apr 15 17:59:05
-CEST 2014 x86_64 GNU/Linux
-
-config: http://pastebin.com/Z0T6eKmy
-
-We are using a "stock" Arch kernel without any custom patches.
-
-Any ideas? Is it an inotify issue or possibly a xen issue?
-
-Thank you for your time,
-Hannes
+2014-04-28 8:21 GMT+09:00 DaeSeok Youn <daeseok.youn@gmail.com>:
+> OK. I'll make my patch based on Mark's patch.
+> Thanks.
+>
+> Daeseok Youn.
+>
+> 2014-04-27 3:48 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>> On Sat, Apr 26, 2014 at 11:39:38AM +0900, DaeSeok Youn wrote:
+>>> Hi,
+>>>
+>>> please check below my comments.
+>>>
+>>> 2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
+>>> > On 04/25/2014 08:59 AM, Dan Carpenter wrote:
+>>> >> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
+>>> >>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
+>>> >>>> Hi, Dan.
+>>> >>>>
+>>> >>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>>> >>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
+>>> >>>>> driver?
+>>> >>>>>
+>>> >>>
+>>> >>> I'll look into this. I am clueless on what that would actually mean.
+>>> >>>
+>>> >>
+>>> >> Just add your name with Lidza in the MAINTAINERS file so that people
+>>> >> will CC you on all the patches.
+>>> >>
+>>> >> DIGI EPCA PCI PRODUCTS
+>>> >> M:      Lidza Louina <lidza.louina@gmail.com>
+>>> >> L:      driverdev-devel@linuxdriverproject.org
+>>> >> S:      Maintained
+>>> >> F:      drivers/staging/dgap/
+>>> >>
+>>> >> You don't have to do it if you don't want to, but you seem to be working
+>>> >> on this driver and I'm going to refer questions to you either way.  :P
+>>> >>
+>>> >>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
+>>> >>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
+>>> >>>>>>               /* Register tty devices */
+>>> >>>>>>               rc = tty_register_driver(brd->SerialDriver);
+>>> >>>>>>               if (rc < 0)
+>>> >>>>>> -                     return rc;
+>>> >>>>>> +                     goto free_print_ttys;
+>>> >>>>>> +
+>>> >>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
+>>> >>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
+>>> >>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
+>>> >>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
+>>> >>>>>>               /* Register Transparent Print devices */
+>>> >>>>>>               rc = tty_register_driver(brd->PrintDriver);
+>>> >>>>>>               if (rc < 0)
+>>> >>>>>> -                     return rc;
+>>> >>>>>> +                     goto unregister_serial_drv;
+>>> >>>>>> +
+>>> >>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+>>> >>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
+>>> >>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
+>>> >>>>>>       }
+>>> >>>>>>
+>>> >>>>>>       return rc;
+>>> >>>>>> +
+>>> >>>>>> +unregister_serial_drv:
+>>> >>>>>> +     tty_unregister_driver(brd->SerialDriver);
+>>> >>>>>
+>>> >>>>> We only register the ->SerialDriver if someone else hasn't registered it
+>>> >>>>> first?  So this should be:
+>>> >>>>>
+>>> >>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
+>>> >>>>>                 tty_unregister_driver(brd->SerialDriver);
+>>> >>>>>
+>>> >>>>> I haven't followed looked at this.  Who else is registering the serial
+>>> >>>>> driver?  You have looked at this, what do you think?  Or Mark.
+>>> >>>>
+>>> >>>
+>>> >>> registering the brd->XxxxxDriver is only done when a board is detected
+>>> >>> and only during the firmware_load process. If we fail to
+>>> >>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
+>>> >>> like freeing after an alloc failure?
+>>> >>
+>>> >> The allocation is conditional so the free should be conditional.  If we
+>>> >> didn't allocate it, then we shouldn't free it.
+>>> >>
+>>> >> It wouldn't have even been a question except I'm not sure the allocation
+>>> >> is *really* conditional because brd->dgap_Major_Serial_Registered might
+>>> >> always be "false" like you guys seem to be saying.
+>>> >>
+>>> >>>
+>>> >>>> I think brd struct is from dgap_Board array as global static variable
+>>> >>>> when this function is
+>>> >>>> called. So brd->dgap_Major_Serial_Registered is always "false".
+>>> >>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
+>>> >>>> registered.
+>>> >>>>
+>>> >>>> I'm not sure..
+>>> >>>>
+>>> >>>
+>>> >>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
+>>> >>> probably should, but I do see we are calling dgap_tty_register, which
+>>> >>> can fail, without actually checking the return value. Also, yes,
+>>> >>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
+>>> >>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
+>>> >>> because the only places we can unregister is at module_cleanup or
+>>> >>> "after" it is already registered.
+>>> >>>
+>>> >>> What is the driver _supposed_ to do if we fail something on the second
+>>> >>> or later board? Is the driver supposed to cleanup and exit or are we
+>>> >>> supposed to stay loaded for the board/boards that are usable?
+>>> >>
+>>> >> Stay loaded.
+>>> >>
+>>> >
+>>> > Then these tests on brd->dgap_Major_Serial_Registered need to stay in
+>>> > there. If I have 3 boards and the second fails in some way, if I rmmod
+>>> > the driver they will protect from unregistering a never registered one.
+>>> > At least in the unregister code path. There is probably no need for them
+>>> > in the register code path. I'll work up a patch for this.
+>>>
+>>> Should I update my patch?
+>>>
+>>> I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
+>>> function, because if tty_register_driver() is failed just set "false"
+>>> to "dgap_Major_XXX_Registered".
+>>
+>> Mark sent a patch to remove the check.  Could you redo your patch based
+>> on his?
+>>
+>> regards,
+>> dan carpenter
+>>
