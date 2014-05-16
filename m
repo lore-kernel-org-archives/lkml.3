@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998AbaEPNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:40:25 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36105 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757518AbaEPNkT (ORCPT
+	id S933026AbaEPNkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:40:31 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:34011 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933002AbaEPNk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:40:19 -0400
+	Fri, 16 May 2014 09:40:26 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 17/49] media: davinci: vpif_display: initialize the video device in single place
-Date: Fri, 16 May 2014 19:03:22 +0530
-Message-Id: <1400247235-31434-19-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 18/49] media: davinci: vpif_display: drop unneeded module params
+Date: Fri, 16 May 2014 19:03:23 +0530
+Message-Id: <1400247235-31434-20-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,98 +24,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-this patch moves the initalization of video device to a
-single place and uses macro to define the driver name and
-use it appropraitely in required places.
+this pacth drops unneeded module params and vpif_config_params.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpif_display.c |   29 ++++++++++---------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ drivers/media/platform/davinci/vpif_display.c |   69 +------------------------
+ drivers/media/platform/davinci/vpif_display.h |    8 ---
+ 2 files changed, 1 insertion(+), 76 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index aa487a6..1e0a162 100644
+index 1e0a162..fef03be 100644
 --- a/drivers/media/platform/davinci/vpif_display.c
 +++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -62,6 +62,7 @@ static struct vpif_config_params config_params = {
- 	.channel_bufsize[1]	= 720 * 576 * 2,
- };
+@@ -35,32 +35,10 @@ MODULE_VERSION(VPIF_DISPLAY_VERSION);
+ 		v4l2_dbg(level, debug, &vpif_obj.v4l2_dev, fmt, ## arg)
  
-+#define VPIF_DRIVER_NAME	"vpif_display"
+ static int debug = 1;
+-static u32 ch2_numbuffers = 3;
+-static u32 ch3_numbuffers = 3;
+-static u32 ch2_bufsize = 1920 * 1080 * 2;
+-static u32 ch3_bufsize = 720 * 576 * 2;
  
- /* Is set to 1 in case of SDTV formats, 2 in case of HDTV formats. */
- static int ycmux_mode;
-@@ -652,7 +653,7 @@ static int vpif_querycap(struct file *file, void  *priv,
+ module_param(debug, int, 0644);
+-module_param(ch2_numbuffers, uint, S_IRUGO);
+-module_param(ch3_numbuffers, uint, S_IRUGO);
+-module_param(ch2_bufsize, uint, S_IRUGO);
+-module_param(ch3_bufsize, uint, S_IRUGO);
  
- 	cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
- 	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
--	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-+	strlcpy(cap->driver, VPIF_DRIVER_NAME, sizeof(cap->driver));
- 	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
- 		 dev_name(vpif_dev));
- 	strlcpy(cap->card, config->card_name, sizeof(cap->card));
-@@ -1116,12 +1117,6 @@ static const struct v4l2_file_operations vpif_fops = {
- 	.poll		= vb2_fop_poll
- };
- 
--static struct video_device vpif_video_template = {
--	.name		= "vpif",
--	.fops		= &vpif_fops,
--	.ioctl_ops	= &vpif_ioctl_ops,
--};
+ MODULE_PARM_DESC(debug, "Debug level 0-1");
+-MODULE_PARM_DESC(ch2_numbuffers, "Channel2 buffer count (default:3)");
+-MODULE_PARM_DESC(ch3_numbuffers, "Channel3 buffer count (default:3)");
+-MODULE_PARM_DESC(ch2_bufsize, "Channel2 buffer size (default:1920 x 1080 x 2)");
+-MODULE_PARM_DESC(ch3_bufsize, "Channel3 buffer size (default:720 x 576 x 2)");
 -
- /*Configure the channels, buffer sizei, request irq */
+-static struct vpif_config_params config_params = {
+-	.min_numbuffers		= 3,
+-	.numbuffers[0]		= 3,
+-	.numbuffers[1]		= 3,
+-	.min_bufsize[0]		= 720 * 480 * 2,
+-	.min_bufsize[1]		= 720 * 480 * 2,
+-	.channel_bufsize[0]	= 1920 * 1080 * 2,
+-	.channel_bufsize[1]	= 720 * 576 * 2,
+-};
+ 
+ #define VPIF_DRIVER_NAME	"vpif_display"
+ 
+@@ -571,8 +549,6 @@ static void vpif_config_format(struct channel_obj *ch)
+ 	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
+ 
+ 	common->fmt.fmt.pix.field = V4L2_FIELD_ANY;
+-	common->fmt.fmt.pix.sizeimage =
+-			config_params.channel_bufsize[ch->channel_id];
+ 	common->fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV422P;
+ 	common->fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+ }
+@@ -758,13 +734,6 @@ static int vpif_s_std(struct file *file, void *priv, v4l2_std_id std_id)
+ 	if (vpif_update_resolution(ch))
+ 		return -EINVAL;
+ 
+-	if ((ch->vpifparams.std_info.width *
+-		ch->vpifparams.std_info.height * 2) >
+-		config_params.channel_bufsize[ch->channel_id]) {
+-		vpif_err("invalid std for this size\n");
+-		return -EINVAL;
+-	}
+-
+ 	common->fmt.fmt.pix.bytesperline = common->fmt.fmt.pix.width;
+ 	/* Configure the default format information */
+ 	vpif_config_format(ch);
+@@ -1121,39 +1090,7 @@ static const struct v4l2_file_operations vpif_fops = {
  static int initialize_vpif(void)
  {
-@@ -1273,7 +1268,14 @@ static int vpif_probe_complete(void)
- 		vpif_dbg(1, debug, "channel=%x,channel->video_dev=%x\n",
- 			 (int)ch, (int)&ch->video_dev);
- 
-+		/* Initialize the video_device structure */
- 		vdev = ch->video_dev;
-+		strlcpy(vdev->name, VPIF_DRIVER_NAME, sizeof(vdev->name));
-+		vdev->release = video_device_release;
-+		vdev->fops = &vpif_fops;
-+		vdev->ioctl_ops = &vpif_ioctl_ops;
-+		vdev->v4l2_dev = &vpif_obj.v4l2_dev;
-+		vdev->vfl_dir = VFL_DIR_TX;
- 		vdev->queue = q;
- 		vdev->lock = &common->lock;
- 		set_bit(V4L2_FL_USE_FH_PRIO, &vdev->flags);
-@@ -1334,7 +1336,7 @@ static __init int vpif_probe(struct platform_device *pdev)
- 
- 	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
- 		err = devm_request_irq(&pdev->dev, res->start, vpif_channel_isr,
--					IRQF_SHARED, "VPIF_Display",
-+					IRQF_SHARED, VPIF_DRIVER_NAME,
- 					(void *)(&vpif_obj.dev[res_idx]->
- 					channel_id));
- 		if (err) {
-@@ -1360,15 +1362,6 @@ static __init int vpif_probe(struct platform_device *pdev)
- 			goto vpif_unregister;
- 		}
- 
--		/* Initialize field of video device */
--		*vfd = vpif_video_template;
--		vfd->v4l2_dev = &vpif_obj.v4l2_dev;
--		vfd->release = video_device_release;
--		vfd->vfl_dir = VFL_DIR_TX;
--		snprintf(vfd->name, sizeof(vfd->name),
--			 "VPIF_Display_DRIVER_V%s",
--			 VPIF_DISPLAY_VERSION);
+ 	int free_channel_objects_index;
+-	int free_buffer_channel_index;
+-	int free_buffer_index;
+-	int err = 0, i, j;
 -
- 		/* Set video_dev to the video device */
- 		ch->video_dev = vfd;
- 	}
-@@ -1533,7 +1526,7 @@ static const struct dev_pm_ops vpif_pm = {
+-	/* Default number of buffers should be 3 */
+-	if ((ch2_numbuffers > 0) &&
+-	    (ch2_numbuffers < config_params.min_numbuffers))
+-		ch2_numbuffers = config_params.min_numbuffers;
+-	if ((ch3_numbuffers > 0) &&
+-	    (ch3_numbuffers < config_params.min_numbuffers))
+-		ch3_numbuffers = config_params.min_numbuffers;
+-
+-	/* Set buffer size to min buffers size if invalid buffer size is
+-	 * given */
+-	if (ch2_bufsize < config_params.min_bufsize[VPIF_CHANNEL2_VIDEO])
+-		ch2_bufsize =
+-		    config_params.min_bufsize[VPIF_CHANNEL2_VIDEO];
+-	if (ch3_bufsize < config_params.min_bufsize[VPIF_CHANNEL3_VIDEO])
+-		ch3_bufsize =
+-		    config_params.min_bufsize[VPIF_CHANNEL3_VIDEO];
+-
+-	config_params.numbuffers[VPIF_CHANNEL2_VIDEO] = ch2_numbuffers;
+-
+-	if (ch2_numbuffers) {
+-		config_params.channel_bufsize[VPIF_CHANNEL2_VIDEO] =
+-							ch2_bufsize;
+-	}
+-	config_params.numbuffers[VPIF_CHANNEL3_VIDEO] = ch3_numbuffers;
+-
+-	if (ch3_numbuffers) {
+-		config_params.channel_bufsize[VPIF_CHANNEL3_VIDEO] =
+-							ch3_bufsize;
+-	}
++	int err, i, j;
  
- static __refdata struct platform_driver vpif_driver = {
- 	.driver	= {
--			.name	= "vpif_display",
-+			.name	= VPIF_DRIVER_NAME,
- 			.owner	= THIS_MODULE,
- 			.pm	= vpif_pm_ops,
- 	},
+ 	/* Allocate memory for six channel objects */
+ 	for (i = 0; i < VPIF_DISPLAY_MAX_DEVICES; i++) {
+@@ -1167,10 +1104,6 @@ static int initialize_vpif(void)
+ 		}
+ 	}
+ 
+-	free_channel_objects_index = VPIF_DISPLAY_MAX_DEVICES;
+-	free_buffer_channel_index = VPIF_DISPLAY_NUM_CHANNELS;
+-	free_buffer_index = config_params.numbuffers[i - 1];
+-
+ 	return 0;
+ 
+ vpif_init_free_channel_objects:
+diff --git a/drivers/media/platform/davinci/vpif_display.h b/drivers/media/platform/davinci/vpif_display.h
+index 029e0c5..089e860 100644
+--- a/drivers/media/platform/davinci/vpif_display.h
++++ b/drivers/media/platform/davinci/vpif_display.h
+@@ -128,12 +128,4 @@ struct vpif_device {
+ 	struct vpif_display_config *config;
+ };
+ 
+-struct vpif_config_params {
+-	u32 min_bufsize[VPIF_DISPLAY_NUM_CHANNELS];
+-	u32 channel_bufsize[VPIF_DISPLAY_NUM_CHANNELS];
+-	u8 numbuffers[VPIF_DISPLAY_NUM_CHANNELS];
+-	u32 video_limit[VPIF_DISPLAY_NUM_CHANNELS];
+-	u8 min_numbuffers;
+-};
+-
+ #endif				/* DAVINCIHD_DISPLAY_H */
 -- 
 1.7.9.5
 
