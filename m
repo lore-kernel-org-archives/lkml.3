@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775AbaEPM5v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:57:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49548 "EHLO
+	id S1756652AbaEPM5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:57:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49545 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753215AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1753232AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tristan Bruns" <tristan@tristanbruns.de>,
-        "Johan Hovold" <jhovold@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Jeff Layton" <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.169398333@decadent.org.uk>
+Message-ID: <lsq.1400244441.288832352@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 11/34] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
+Subject: [PATCH 3.2 14/34] nfsd: set timeparms.to_maxval in
+ setup_callback_client
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,26 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Bruns <tristan@tristanbruns.de>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
+commit 3758cf7e14b753838fe754ede3862af10b35fdac upstream.
 
-Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+...otherwise the logic in the timeout handling doesn't work correctly.
+
+Spotted-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[bwh: Backported to 3.2: max_cb_time() takes no parameters]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfs4callback.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -110,6 +110,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
- 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
- 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
-+	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
- 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
- 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
- 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -633,9 +633,11 @@ static int max_cb_time(void)
+ 
+ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn, struct nfsd4_session *ses)
+ {
++	int maxtime = max_cb_time();
+ 	struct rpc_timeout	timeparms = {
+-		.to_initval	= max_cb_time(),
++		.to_initval	= maxtime,
+ 		.to_retries	= 0,
++		.to_maxval	= maxtime,
+ 	};
+ 	struct rpc_create_args args = {
+ 		.net		= &init_net,
 
