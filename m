@@ -1,93 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754AbaEPQSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:18:09 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:55607 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757306AbaEPQSH convert rfc822-to-8bit (ORCPT
+	id S1757781AbaEPQSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:18:34 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:33573 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaEPQRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:18:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140516115737.GP11096@twins.programming.kicks-ass.net>
-References: <537119EF.2060102@oracle.com>
-	<20140512200135.GL1421@htj.dyndns.org>
-	<53718119.1090000@cn.fujitsu.com>
-	<537180B9.6080407@oracle.com>
-	<53739F3B.4060608@linux.vnet.ibm.com>
-	<53758B12.8060609@cn.fujitsu.com>
-	<20140516115737.GP11096@twins.programming.kicks-ass.net>
-Date: Sat, 17 May 2014 00:18:06 +0800
-X-Google-Sender-Auth: RYVjzXXcEJl4RIk8Z7AZmq7twnU
-Message-ID: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: jjherne@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 May 2014 12:17:04 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 1/5] workqueue: Allow changing attributions of ordered workqueues
+Date: Fri, 16 May 2014 18:16:51 +0200
+Message-Id: <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 7:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, May 16, 2014 at 11:50:42AM +0800, Lai Jiangshan wrote:
->> Hi, Peter and other scheduler Gurus:
->>
->> When I was trying to test wq-VS-hotplug, I always hit a problem in scheduler
->> with the following WARNING:
->>
->> [   74.765519] WARNING: CPU: 1 PID: 13 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x2d/0x4b()
->> [   74.765520] Modules linked in: wq_hotplug(O) fuse cpufreq_ondemand ipv6 kvm_intel kvm uinput snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi e1000e snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer ptp iTCO_wdt iTCO_vendor_support lpc_ich snd mfd_core pps_core soundcore acpi_cpufreq i2c_i801 microcode wmi radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core
->> [   74.765545] CPU: 1 PID: 13 Comm: migration/1 Tainted: G           O  3.15.0-rc3+ #153
->> [   74.765546] Hardware name: LENOVO ThinkCentre M8200T/  , BIOS 5JKT51AUS 11/02/2010
->> [   74.765547]  000000000000007c ffff880236199c88 ffffffff814d7d2c 0000000000000000
->> [   74.765550]  0000000000000000 ffff880236199cc8 ffffffff8103add4 ffff880236199cb8
->> [   74.765552]  ffffffff81023e1b ffff8802361861c0 0000000000000001 ffff88023fd92b40
->> [   74.765555] Call Trace:
->> [   74.765559]  [<ffffffff814d7d2c>] dump_stack+0x51/0x75
->> [   74.765562]  [<ffffffff8103add4>] warn_slowpath_common+0x81/0x9b
->> [   74.765564]  [<ffffffff81023e1b>] ? native_smp_send_reschedule+0x2d/0x4b
->> [   74.765566]  [<ffffffff8103ae08>] warn_slowpath_null+0x1a/0x1c
->> [   74.765568]  [<ffffffff81023e1b>] native_smp_send_reschedule+0x2d/0x4b
->> [   74.765571]  [<ffffffff8105c2ea>] smp_send_reschedule+0xa/0xc
->> [   74.765574]  [<ffffffff8105fe46>] resched_task+0x5e/0x62
->> [   74.765576]  [<ffffffff81060238>] check_preempt_curr+0x43/0x77
->> [   74.765578]  [<ffffffff81060680>] __migrate_task+0xda/0x100
->> [   74.765580]  [<ffffffff810606a6>] ? __migrate_task+0x100/0x100
->> [   74.765582]  [<ffffffff810606c3>] migration_cpu_stop+0x1d/0x22
->> [   74.765585]  [<ffffffff810a33c6>] cpu_stopper_thread+0x84/0x116
->> [   74.765587]  [<ffffffff814d8642>] ? __schedule+0x559/0x581
->> [   74.765590]  [<ffffffff814dae3c>] ? _raw_spin_lock_irqsave+0x12/0x3c
->> [   74.765592]  [<ffffffff8105bd75>] ? __smpboot_create_thread+0x109/0x109
->> [   74.765594]  [<ffffffff8105bf46>] smpboot_thread_fn+0x1d1/0x1d6
->> [   74.765598]  [<ffffffff81056665>] kthread+0xad/0xb5
->> [   74.765600]  [<ffffffff810565b8>] ? kthread_freezable_should_stop+0x41/0x41
->> [   74.765603]  [<ffffffff814e0e2c>] ret_from_fork+0x7c/0xb0
->> [   74.765605]  [<ffffffff810565b8>] ? kthread_freezable_should_stop+0x41/0x41
->> [   74.765607] ---[ end trace 662efb362b4e8ed0 ]---
->>
->> After debugging, I found the hotlug-in cpu is atctive but !online in this case.
->> the problem was introduced by 5fbd036b.
->> Some code assumes that any cpu in cpu_active_mask is also online, but 5fbd036b breaks
->> this assumption, so the corresponding code with this assumption should be changed too.
->>
->
-> This of course leaves the question how the workqueue code manages to
-> call set_cpu_allowed_ptr() on a cpu _before_ its online.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-create_worker().
+Changing the attributions of a workqueue imply the addition of new pwqs
+to replace the old ones. But the current implementation doesn't handle
+ordered workqueues because they can't carry multi-pwqs without breaking
+ordering. Hence ordered workqueues currently aren't allowed to call
+apply_workqueue_attrs().
 
->
-> That too sounds fishy.. with the proposed patch the
-> set_cpus_allowed_ptr() will 'gracefully' fail, but calling it in the
-> first place is of course dubious too.
+This result in several special cases in the workqueue code to handle
+ordered workqueues. And with the addition of global workqueue cpumask,
+these special cases are going to spread out even further as the number
+of callers of apply_workqueue_attrs() will be increasing.
 
-Not all set_cpus_allowed_ptr() in the kernel is protected by get_cpu_online(),
-these set_cpus_allowed_ptr()s can also hit this problem when race.
+So we want apply_workqueue_attrs() to be smarter and to be able to
+handle all sort of unbound workqueues.
 
-so the scheduler/set_cpus_allowed_ptr()/cpu_active_mask should be the first
-place to fix.
+This solution propose to create new pwqs on ordered workqueues with
+max_active initialized as zero. Then when the older pwq is finally
+released, the new one becomes active and its max_active value is set to 1.
+This way we make sure that a only a single pwq ever run at a given time
+on an ordered workqueue.
+
+This enforces ordering and non-reentrancy on higher level.
+Note that ordered works then become exceptions and aren't subject to
+previous pool requeue that usually guarantees reentrancy while works
+requeue themselves back-to-back. Otherwise it could prevent a pool switch
+from ever happening by delaying the release of the old pool forever and
+never letting the new one in.
+
+Now that we can change ordered workqueue attributes, lets allow them
+to be registered as WQ_SYSFS and allow to change their nice and cpumask
+values. Note that in order to preserve ordering guarantee, we still
+disallow changing their max_active and no_numa values.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/workqueue.c | 69 +++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 27 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index c3f076f..c68e84f 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1355,8 +1355,16 @@ retry:
+ 	 * If @work was previously on a different pool, it might still be
+ 	 * running there, in which case the work needs to be queued on that
+ 	 * pool to guarantee non-reentrancy.
++	 *
++	 * We guarantee that only one pwq is active on an ordered workqueue.
++	 * That alone enforces non-reentrancy for works. So ordered works don't
++	 * need to be requeued to their previous pool. Not to mention that
++	 * an ordered work requeing itself over and over on the same pool may
++	 * prevent a pwq from being released in case of a pool switch. The
++	 * newest pool in that case couldn't switch in and its pending works
++	 * would starve.
+ 	 */
+-	last_pool = get_work_pool(work);
++	last_pool = wq->flags & __WQ_ORDERED ? NULL : get_work_pool(work);
+ 	if (last_pool && last_pool != pwq->pool) {
+ 		struct worker *worker;
+ 
+@@ -3319,6 +3327,10 @@ static ssize_t wq_numa_store(struct device *dev, struct device_attribute *attr,
+ 	struct workqueue_attrs *attrs;
+ 	int v, ret;
+ 
++	/* Creating per-node pwqs breaks ordering guarantee. Keep no_numa = 1 */
++	if (WARN_ON(wq->flags & __WQ_ORDERED))
++		return -EINVAL;
++
+ 	attrs = wq_sysfs_prep_attrs(wq);
+ 	if (!attrs)
+ 		return -ENOMEM;
+@@ -3379,14 +3391,6 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
+ 	struct wq_device *wq_dev;
+ 	int ret;
+ 
+-	/*
+-	 * Adjusting max_active or creating new pwqs by applyting
+-	 * attributes breaks ordering guarantee.  Disallow exposing ordered
+-	 * workqueues.
+-	 */
+-	if (WARN_ON(wq->flags & __WQ_ORDERED))
+-		return -EINVAL;
+-
+ 	wq->wq_dev = wq_dev = kzalloc(sizeof(*wq_dev), GFP_KERNEL);
+ 	if (!wq_dev)
+ 		return -ENOMEM;
+@@ -3708,6 +3712,13 @@ static void rcu_free_pwq(struct rcu_head *rcu)
+ 			container_of(rcu, struct pool_workqueue, rcu));
+ }
+ 
++static struct pool_workqueue *oldest_pwq(struct workqueue_struct *wq)
++{
++	return list_last_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
++}
++
++static void pwq_adjust_max_active(struct pool_workqueue *pwq);
++
+ /*
+  * Scheduled on system_wq by put_pwq() when an unbound pwq hits zero refcnt
+  * and needs to be destroyed.
+@@ -3723,14 +3734,12 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+ 	if (WARN_ON_ONCE(!(wq->flags & WQ_UNBOUND)))
+ 		return;
+ 
+-	/*
+-	 * Unlink @pwq.  Synchronization against wq->mutex isn't strictly
+-	 * necessary on release but do it anyway.  It's easier to verify
+-	 * and consistent with the linking path.
+-	 */
+ 	mutex_lock(&wq->mutex);
+ 	list_del_rcu(&pwq->pwqs_node);
+ 	is_last = list_empty(&wq->pwqs);
++	/* try to activate the oldest pwq when needed */
++	if (!is_last && (wq->flags & __WQ_ORDERED))
++		pwq_adjust_max_active(oldest_pwq(wq));
+ 	mutex_unlock(&wq->mutex);
+ 
+ 	mutex_lock(&wq_pool_mutex);
+@@ -3749,6 +3758,16 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+ 	}
+ }
+ 
++static bool pwq_active(struct pool_workqueue *pwq)
++{
++	/* Only the oldest pwq is active in the ordered wq */
++	if (pwq->wq->flags & __WQ_ORDERED)
++		return pwq == oldest_pwq(pwq->wq);
++
++	/* All pwqs in the non-ordered wq are active */
++	return true;
++}
++
+ /**
+  * pwq_adjust_max_active - update a pwq's max_active to the current setting
+  * @pwq: target pool_workqueue
+@@ -3771,7 +3790,8 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+ 
+ 	spin_lock_irq(&pwq->pool->lock);
+ 
+-	if (!freezable || !(pwq->pool->flags & POOL_FREEZING)) {
++	if ((!freezable || !(pwq->pool->flags & POOL_FREEZING)) &&
++	     pwq_active(pwq)) {
+ 		pwq->max_active = wq->saved_max_active;
+ 
+ 		while (!list_empty(&pwq->delayed_works) &&
+@@ -3825,11 +3845,11 @@ static void link_pwq(struct pool_workqueue *pwq)
+ 	 */
+ 	pwq->work_color = wq->work_color;
+ 
++	/* link in @pwq on the head of &wq->pwqs */
++	list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
++
+ 	/* sync max_active to the current setting */
+ 	pwq_adjust_max_active(pwq);
+-
+-	/* link in @pwq */
+-	list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
+ }
+ 
+ /* obtain a pool matching @attr and create a pwq associating the pool and @wq */
+@@ -3955,8 +3975,8 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 	if (WARN_ON(!(wq->flags & WQ_UNBOUND)))
+ 		return -EINVAL;
+ 
+-	/* creating multiple pwqs breaks ordering guarantee */
+-	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
++	/* creating multiple per-node pwqs breaks ordering guarantee */
++	if (WARN_ON((wq->flags & __WQ_ORDERED) && !attrs->no_numa))
+ 		return -EINVAL;
+ 
+ 	pwq_tbl = kzalloc(wq_numa_tbl_len * sizeof(pwq_tbl[0]), GFP_KERNEL);
+@@ -4146,7 +4166,7 @@ out_unlock:
+ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+ {
+ 	bool highpri = wq->flags & WQ_HIGHPRI;
+-	int cpu, ret;
++	int cpu;
+ 
+ 	if (!(wq->flags & WQ_UNBOUND)) {
+ 		wq->cpu_pwqs = alloc_percpu(struct pool_workqueue);
+@@ -4167,12 +4187,7 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+ 		}
+ 		return 0;
+ 	} else if (wq->flags & __WQ_ORDERED) {
+-		ret = apply_workqueue_attrs(wq, ordered_wq_attrs[highpri]);
+-		/* there should only be single pwq for ordering guarantee */
+-		WARN(!ret && (wq->pwqs.next != &wq->dfl_pwq->pwqs_node ||
+-			      wq->pwqs.prev != &wq->dfl_pwq->pwqs_node),
+-		     "ordering guarantee broken for workqueue %s\n", wq->name);
+-		return ret;
++		return apply_workqueue_attrs(wq, ordered_wq_attrs[highpri]);
+ 	} else {
+ 		return apply_workqueue_attrs(wq, unbound_std_wq_attrs[highpri]);
+ 	}
+-- 
+1.8.3.1
+
