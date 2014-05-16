@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaEPIZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:25:29 -0400
+	id S932176AbaEPI0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:26:07 -0400
 Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756411AbaEPIEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:34 -0400
+	id S1756434AbaEPIEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:04:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540106680"
+   d="scan'208";a="540106522"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,8 +16,7 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org, Jiri Kosina <trivial@kernel.org>
+        x86@kernel.org
 Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -25,11 +24,10 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC Patch Part1 V1 06/30] x86, ACPI, trivial: minor improvements to arch/x86/kernel/acpi/boot.c
-Date: Fri, 16 May 2014 16:05:26 +0800
-Message-Id: <1400227550-5935-7-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
+Subject: [RFC Patch Part1 V1 04/30] x86, PCI, ACPI: use kmalloc_node() to optimize for performance
+Date: Fri, 16 May 2014 16:05:24 +0800
+Message-Id: <1400227550-5935-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,133 +35,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) Remove out-of-date comment
-2) Kill unused function acpi_set_irq_model_pic()
-3) Use NR_IRQS_LEGACY instead of hard-coded 16
-4) Trivial syntax improvements
+Use kmalloc_node() instead of kmalloc() when possible to optimize
+for performance on NUMA platforms.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   50 ++++++++++++++-----------------------------
- 1 file changed, 16 insertions(+), 34 deletions(-)
+ arch/x86/pci/acpi.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 8390db1f7a93..6d65850f49e9 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -370,11 +370,6 @@ static void __init acpi_sci_ioapic_setup(u8 bus_irq, u16 polarity, u16 trigger,
- 	if (acpi_sci_flags & ACPI_MADT_POLARITY_MASK)
- 		polarity = acpi_sci_flags & ACPI_MADT_POLARITY_MASK;
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 01edac6c5e18..91bef49df228 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -448,7 +448,7 @@ static void probe_pci_root_info(struct pci_root_info *info,
+ 		return;
  
--	/*
--	 * mp_config_acpi_legacy_irqs() already setup IRQs < 16
--	 * If GSI is < 16, this will update its flags,
--	 * else it will create a new mp_irqs[] entry.
--	 */
- 	mp_override_legacy_irq(bus_irq, polarity, trigger, gsi);
+ 	size = sizeof(*info->res) * info->res_num;
+-	info->res = kzalloc(size, GFP_KERNEL);
++	info->res = kzalloc_node(size, GFP_KERNEL, info->sd.node);
+ 	if (!info->res) {
+ 		info->res_num = 0;
+ 		return;
+@@ -456,7 +456,7 @@ static void probe_pci_root_info(struct pci_root_info *info,
  
- 	/*
-@@ -573,14 +568,7 @@ void acpi_unregister_gsi(u32 gsi)
- }
- EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
+ 	size = sizeof(*info->res_offset) * info->res_num;
+ 	info->res_num = 0;
+-	info->res_offset = kzalloc(size, GFP_KERNEL);
++	info->res_offset = kzalloc_node(size, GFP_KERNEL, info->sd.node);
+ 	if (!info->res_offset) {
+ 		kfree(info->res);
+ 		info->res = NULL;
+@@ -495,7 +495,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	if (node != NUMA_NO_NODE && !node_online(node))
+ 		node = NUMA_NO_NODE;
  
--void __init acpi_set_irq_model_pic(void)
--{
--	acpi_irq_model = ACPI_IRQ_MODEL_PIC;
--	__acpi_register_gsi = acpi_register_gsi_pic;
--	acpi_ioapic = 0;
--}
--
--void __init acpi_set_irq_model_ioapic(void)
-+static void __init acpi_set_irq_model_ioapic(void)
- {
- 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
- 	__acpi_register_gsi = acpi_register_gsi_ioapic;
-@@ -819,9 +807,8 @@ static int __init early_acpi_parse_madt_lapic_addr_ovr(void)
- 	 * and (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
- 	 */
- 
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
--				  acpi_parse_lapic_addr_ovr, 0);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
-+				      acpi_parse_lapic_addr_ovr, 0);
- 	if (count < 0) {
- 		printk(KERN_ERR PREFIX
- 		       "Error parsing LAPIC address override entry\n");
-@@ -846,9 +833,8 @@ static int __init acpi_parse_madt_lapic_entries(void)
- 	 * and (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
- 	 */
- 
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
--				  acpi_parse_lapic_addr_ovr, 0);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE,
-+				      acpi_parse_lapic_addr_ovr, 0);
- 	if (count < 0) {
- 		printk(KERN_ERR PREFIX
- 		       "Error parsing LAPIC address override entry\n");
-@@ -876,11 +862,10 @@ static int __init acpi_parse_madt_lapic_entries(void)
- 		return count;
- 	}
- 
--	x2count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
--				  acpi_parse_x2apic_nmi, 0);
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI, acpi_parse_lapic_nmi, 0);
-+	x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
-+					acpi_parse_x2apic_nmi, 0);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI,
-+				      acpi_parse_lapic_nmi, 0);
- 	if (count < 0 || x2count < 0) {
- 		printk(KERN_ERR PREFIX "Error parsing LAPIC NMI entry\n");
- 		/* TBD: Cleanup to allow fallback to MPS */
-@@ -947,7 +932,7 @@ static void __init mp_config_acpi_legacy_irqs(void)
- 	 * Use the default configuration for the IRQs 0-15.  Unless
- 	 * overridden by (MADT) interrupt source override entries.
- 	 */
--	for (i = 0; i < 16; i++) {
-+	for (i = 0; i < NR_IRQS_LEGACY; i++) {
- 		int ioapic, pin;
- 		unsigned int dstapic;
- 		int idx;
-@@ -1103,9 +1088,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
- 		return -ENODEV;
- 	}
- 
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_IO_APIC, acpi_parse_ioapic,
--				  MAX_IO_APICS);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_IO_APIC, acpi_parse_ioapic,
-+				      MAX_IO_APICS);
- 	if (!count) {
- 		printk(KERN_ERR PREFIX "No IOAPIC entries present\n");
- 		return -ENODEV;
-@@ -1114,9 +1098,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
- 		return count;
- 	}
- 
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE, acpi_parse_int_src_ovr,
--				  nr_irqs);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_INTERRUPT_OVERRIDE,
-+				      acpi_parse_int_src_ovr, nr_irqs);
- 	if (count < 0) {
- 		printk(KERN_ERR PREFIX
- 		       "Error parsing interrupt source overrides entry\n");
-@@ -1135,9 +1118,8 @@ static int __init acpi_parse_madt_ioapic_entries(void)
- 	/* Fill in identity legacy mappings where no override */
- 	mp_config_acpi_legacy_irqs();
- 
--	count =
--	    acpi_table_parse_madt(ACPI_MADT_TYPE_NMI_SOURCE, acpi_parse_nmi_src,
--				  nr_irqs);
-+	count = acpi_table_parse_madt(ACPI_MADT_TYPE_NMI_SOURCE,
-+				      acpi_parse_nmi_src, nr_irqs);
- 	if (count < 0) {
- 		printk(KERN_ERR PREFIX "Error parsing NMI SRC entry\n");
- 		/* TBD: Cleanup to allow fallback to MPS */
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = kzalloc_node(sizeof(*info), GFP_KERNEL, node);
+ 	if (!info) {
+ 		printk(KERN_WARNING "pci_bus %04x:%02x: "
+ 		       "ignored (out of memory)\n", domain, busnum);
 -- 
 1.7.10.4
 
