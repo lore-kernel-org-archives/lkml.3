@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaEPGEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 02:04:38 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:33904 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894AbaEPGEh (ORCPT
+	id S1754592AbaEPGGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 02:06:50 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:60805 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873AbaEPGGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 02:04:37 -0400
+	Fri, 16 May 2014 02:06:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <537512E0.7000102@wwwdotorg.org>
-References: <25738681139c04272b6d2ebeff244c6d36c893f7.1400133090.git.viresh.kumar@linaro.org>
-	<537512E0.7000102@wwwdotorg.org>
-Date: Fri, 16 May 2014 11:34:36 +0530
-Message-ID: <CAKohponZhkxyaWcbaFzd0K1UtW3ytwjRT3+vKtbYLMwds01y4g@mail.gmail.com>
-Subject: Re: [RFC] cpufreq: send notifications for intermediate (stable) frequencies
+In-Reply-To: <53750B27.4020708@wwwdotorg.org>
+References: <a38df05b91198f393b1c4b78f39110c6bece3627.1400133049.git.viresh.kumar@linaro.org>
+	<53750B27.4020708@wwwdotorg.org>
+Date: Fri, 16 May 2014 11:36:48 +0530
+Message-ID: <CAKohponB_wiJZ9jq+JrJGxe7Y-447FpEjSZRZ+snXpxmOP=Erg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Tegra: drop wrapper around tegra_update_cpu_speed()
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Stephen Warren <swarren@wwwdotorg.org>
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Warren <swarren@nvidia.com>,
         Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+        Arvind Chauhan <arvind.chauhan@arm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 00:47, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> This seems rather complex. Can't either the driver or the cpufreq core
-> be responsible for all of the notifications? Otherwise, the logic gets
-> rather complex, and spread between the core and the driver.
+On 16 May 2014 00:14, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/14/2014 11:51 PM, Viresh Kumar wrote:
+>> Tegra has implemented an unnecessary wrapper over tegra_update_cpu_speed(), i.e.
+>> tegra_target(), which wasn't doing anything apart of calling
+>> tegra_update_cpu_speed(). Get rid of that and use tegra_target() directly.
+>
+> I think it used to do something until some refactoring happened? Anyway,
 
-I do agree about that and that's why added that 'ugly' statement.
+Yep..
 
-> Perhaps the core should make separate calls into the driver to switch to
-> the temporary frequency and the final frequency, so it can manage all
-> the notifications. Probably best to use a separate function pointer for
-> the temporary change so the driver can easily know what it's doing.
-
-Hmm, that sounds like a much better approach. Let me try to code it.
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+>
