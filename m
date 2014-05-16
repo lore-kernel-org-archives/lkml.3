@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810AbaEPWyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:54:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51698 "EHLO
+	id S1756850AbaEPWye (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:54:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51692 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237AbaEPWwX (ORCPT
+	with ESMTP id S1756046AbaEPWwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:52:23 -0400
+	Fri, 16 May 2014 18:52:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 3.4 4/9] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
-Date: Fri, 16 May 2014 15:55:27 -0700
-Message-Id: <20140516225458.777837218@linuxfoundation.org>
+        Roman Pen <r.peniaev@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.4 3/9] blktrace: fix accounting of partially completed requests
+Date: Fri, 16 May 2014 15:55:26 -0700
+Message-Id: <20140516225458.750510113@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -32,54 +30,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Roman Pen <r.peniaev@gmail.com>
 
-commit 223b02d923ecd7c84cf9780bb3686f455d279279 upstream.
+commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
 
-"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
-case it can contain all extensions. Bellow you can find sizes for all
-types of extensions. Their sum is definitely bigger than 256.
+trace_block_rq_complete does not take into account that request can
+be partially completed, so we can get the following incorrect output
+of blkparser:
 
-nf_ct_ext_types[0]->len = 24
-nf_ct_ext_types[1]->len = 32
-nf_ct_ext_types[2]->len = 24
-nf_ct_ext_types[3]->len = 32
-nf_ct_ext_types[4]->len = 152
-nf_ct_ext_types[5]->len = 2
-nf_ct_ext_types[6]->len = 16
-nf_ct_ext_types[7]->len = 8
+  C   R 232 + 240 [0]
+  C   R 240 + 232 [0]
+  C   R 248 + 224 [0]
+  C   R 256 + 216 [0]
 
-I have seen "len" up to 280 and my host has crashes w/o this patch.
+but should be:
 
-The right way to fix this problem is reducing the size of the ecache
-extension (4) and Florian is going to do this, but these changes will
-be quite large to be appropriate for a stable tree.
+  C   R 232 + 8 [0]
+  C   R 240 + 8 [0]
+  C   R 248 + 8 [0]
+  C   R 256 + 8 [0]
 
-Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Also, the whole output summary statistics of completed requests and
+final throughput will be incorrect.
+
+This patch takes into account real completion size of the request and
+fixes wrong completion accounting.
+
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/netfilter/nf_conntrack_extend.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-core.c             |    2 +-
+ include/trace/events/block.h |   33 ++++++++++++++++++++++++++++++---
+ kernel/trace/blktrace.c      |   20 +++++++++++---------
+ 3 files changed, 42 insertions(+), 13 deletions(-)
 
---- a/include/net/netfilter/nf_conntrack_extend.h
-+++ b/include/net/netfilter/nf_conntrack_extend.h
-@@ -37,8 +37,8 @@ enum nf_ct_ext_id {
- /* Extensions: optional stuff which isn't permanently in struct. */
- struct nf_ct_ext {
- 	struct rcu_head rcu;
--	u8 offset[NF_CT_EXT_NUM];
--	u8 len;
-+	u16 offset[NF_CT_EXT_NUM];
-+	u16 len;
- 	char data[0];
- };
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2104,7 +2104,7 @@ bool blk_update_request(struct request *
+ 	if (!req->bio)
+ 		return false;
  
+-	trace_block_rq_complete(req->q, req);
++	trace_block_rq_complete(req->q, req, nr_bytes);
+ 
+ 	/*
+ 	 * For fs requests, rq is just carrier of independent bio's
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -81,6 +81,7 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * block_rq_complete - block IO operation completed by device driver
+  * @q: queue containing the block operation request
+  * @rq: block operations request
++ * @nr_bytes: number of completed bytes
+  *
+  * The block_rq_complete tracepoint event indicates that some portion
+  * of operation request has been completed by the device driver.  If
+@@ -88,11 +89,37 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * do for the request. If @rq->bio is non-NULL then there is
+  * additional work required to complete the request.
+  */
+-DEFINE_EVENT(block_rq_with_error, block_rq_complete,
++TRACE_EVENT(block_rq_complete,
+ 
+-	TP_PROTO(struct request_queue *q, struct request *rq),
++	TP_PROTO(struct request_queue *q, struct request *rq,
++		 unsigned int nr_bytes),
+ 
+-	TP_ARGS(q, rq)
++	TP_ARGS(q, rq, nr_bytes),
++
++	TP_STRUCT__entry(
++		__field(  dev_t,	dev			)
++		__field(  sector_t,	sector			)
++		__field(  unsigned int,	nr_sector		)
++		__field(  int,		errors			)
++		__array(  char,		rwbs,	RWBS_LEN	)
++		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
++	),
++
++	TP_fast_assign(
++		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
++		__entry->sector    = blk_rq_pos(rq);
++		__entry->nr_sector = nr_bytes >> 9;
++		__entry->errors    = rq->errors;
++
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
++		blk_dump_cmd(__get_str(cmd), rq);
++	),
++
++	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs, __get_str(cmd),
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->errors)
+ );
+ 
+ DECLARE_EVENT_CLASS(block_rq,
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -685,6 +685,7 @@ void blk_trace_shutdown(struct request_q
+  * blk_add_trace_rq - Add a trace for a request oriented action
+  * @q:		queue the io is for
+  * @rq:		the source request
++ * @nr_bytes:	number of completed bytes
+  * @what:	the action
+  *
+  * Description:
+@@ -692,7 +693,7 @@ void blk_trace_shutdown(struct request_q
+  *
+  **/
+ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
+-			     u32 what)
++			     unsigned int nr_bytes, u32 what)
+ {
+ 	struct blk_trace *bt = q->blk_trace;
+ 
+@@ -701,11 +702,11 @@ static void blk_add_trace_rq(struct requ
+ 
+ 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		what |= BLK_TC_ACT(BLK_TC_PC);
+-		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
++		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
+ 				what, rq->errors, rq->cmd_len, rq->cmd);
+ 	} else  {
+ 		what |= BLK_TC_ACT(BLK_TC_FS);
+-		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
++		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
+ 				rq->cmd_flags, what, rq->errors, 0, NULL);
+ 	}
+ }
+@@ -713,33 +714,34 @@ static void blk_add_trace_rq(struct requ
+ static void blk_add_trace_rq_abort(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
+ }
+ 
+ static void blk_add_trace_rq_insert(void *ignore,
+ 				    struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
+ }
+ 
+ static void blk_add_trace_rq_issue(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
+ }
+ 
+ static void blk_add_trace_rq_requeue(void *ignore,
+ 				     struct request_queue *q,
+ 				     struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
+ }
+ 
+ static void blk_add_trace_rq_complete(void *ignore,
+ 				      struct request_queue *q,
+-				      struct request *rq)
++				      struct request *rq,
++				      unsigned int nr_bytes)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
++	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
+ }
+ 
+ /**
 
 
