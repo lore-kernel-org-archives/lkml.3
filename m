@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591AbaEPI07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:26:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756445AbaEPIEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540106538"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC Patch Part1 V1 05/30] x86, acpi, irq: kill static function irq_to_gsi()
-Date: Fri, 16 May 2014 16:05:25 +0800
-Message-Id: <1400227550-5935-6-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1756676AbaEPI1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:27:31 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:49402 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756431AbaEPIE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:04:28 -0400
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
+        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: [PATCH v6 2/6] arm: exynos: add generic function to calculate cpu number
+Date: Fri, 16 May 2014 13:33:54 +0530
+Message-Id: <1400227438-27155-3-git-send-email-chander.kashyap@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+ <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static function irq_to_gsi() is only called by acpi_isa_irq_to_gsi(),
-so kill function irq_to_gsi() and simplify acpi_isa_irq_to_gsi().
+The address of cpu power registers in pmu is based on cpu number
+offsets. This function calculate the same. This is essentially
+required in case of multi-cluster SoC's e.g Exynos5420.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
 ---
- arch/x86/kernel/acpi/boot.c |   26 ++++++--------------------
- 1 file changed, 6 insertions(+), 20 deletions(-)
+ arch/arm/mach-exynos/regs-pmu.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b41b47021f53..8390db1f7a93 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -120,22 +120,6 @@ static unsigned int gsi_to_irq(unsigned int gsi)
- 	return irq;
- }
+diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
+index 4179f6a..485aefd 100644
+--- a/arch/arm/mach-exynos/regs-pmu.h
++++ b/arch/arm/mach-exynos/regs-pmu.h
+@@ -325,4 +325,13 @@
  
--static u32 irq_to_gsi(int irq)
--{
--	unsigned int gsi;
--
--	if (irq < NR_IRQS_LEGACY)
--		gsi = isa_irq_to_gsi[irq];
--	else if (irq < gsi_top)
--		gsi = irq;
--	else if (irq < (gsi_top + NR_IRQS_LEGACY))
--		gsi = irq - gsi_top;
--	else
--		gsi = 0xffffffff;
--
--	return gsi;
--}
--
- /*
-  * This is just a simple wrapper around early_ioremap(),
-  * with sanity checks for phys == 0 and size == 0.
-@@ -527,10 +511,12 @@ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+ #define EXYNOS5420_SWRESET_KFC_SEL				0x3
  
- int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
- {
--	if (isa_irq >= 16)
--		return -1;
--	*gsi = irq_to_gsi(isa_irq);
--	return 0;
-+	if (isa_irq < NR_IRQS_LEGACY) {
-+		*gsi = isa_irq_to_gsi[isa_irq];
-+		return 0;
-+	}
++#include <asm/cputype.h>
++#define MAX_CPUS_IN_CLUSTER	4
 +
-+	return -1;
- }
- 
- static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
++static inline unsigned int exynos_pmu_cpunr(unsigned int mpidr)
++{
++	return ((MPIDR_AFFINITY_LEVEL(mpidr, 1) * MAX_CPUS_IN_CLUSTER)
++		 + MPIDR_AFFINITY_LEVEL(mpidr, 0));
++}
++
+ #endif /* __ASM_ARCH_REGS_PMU_H */
 -- 
-1.7.10.4
+1.7.9.5
 
