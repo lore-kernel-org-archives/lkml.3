@@ -1,158 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaEPAc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 20:32:56 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52992 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751256AbaEPAbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 20:31:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3/3][Resend] ACPI / PM: Avoid resuming devices in ACPI PM domain during system suspend
-Date: Fri, 16 May 2014 02:48:18 +0200
-Message-ID: <1523744.XGJjEBjYbG@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1596386.YnYCCm2UQG@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1405141041360.1432-100000@iolanthe.rowland.org> <1495375.YeObBhD5SE@vostro.rjw.lan> <1596386.YnYCCm2UQG@vostro.rjw.lan>
+	id S1752034AbaEPAjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 20:39:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbaEPAjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 20:39:42 -0400
+Date: Fri, 16 May 2014 02:39:27 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>, sandeen@redhat.com,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140516003926.GC24089@mguzik.redhat.com>
+References: <20140514220052.GD5421@dastard>
+ <20140514223745.GF5421@dastard>
+ <5373F0D6.4090600@redhat.com>
+ <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
+ <20140515104746.GF10637@mguzik.redhat.com>
+ <20140515222135.GZ26353@dastard>
+ <20140515223439.GA24089@mguzik.redhat.com>
+ <20140515225141.GA26353@dastard>
+ <20140515231908.GB24089@mguzik.redhat.com>
+ <20140516001156.GI5421@dastard>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140516001156.GI5421@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, May 16, 2014 at 10:11:56AM +1000, Dave Chinner wrote:
+> On Fri, May 16, 2014 at 01:19:09AM +0200, Mateusz Guzik wrote:
+> > Except there is no log entry if /var got frozen (and this is not an
+> > imaginary example).
+> 
+> Freezing the filesystem that the freezing daemon logs to is, well, a
+> major application architecture fail. Sorry, catering for the lowest
+> common denominator (i.e. stupidity) is not an valid argument for
+> adding stuff to the kernel....
+> 
 
-Rework the ACPI PM domain's PM callbacks to avoid resuming devices
-during system suspend (in order to modify their wakeup settings etc.)
-if that isn't necessary.
+I'm only saying what you can encounter in varous companies. If aiding this
+problem the way I proposed is not a good idea (and it turns out there is
+a much better way), I'm not insisting.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |   46 ++++++++++++++++++++++++++++++++++++++++++----
- drivers/acpi/scan.c      |    4 ++++
- include/acpi/acpi_bus.h  |    3 ++-
- 3 files changed, 48 insertions(+), 5 deletions(-)
+> > Grabbig a debugger to inspect daemon's state is not
+> > exactly what your typical support associate can or should do.
+> 
+> No, but they can read /proc/self/mountinfo, and grab sysrq-w output.
+> And they should be able to read that and tell that there is a freeze
+> hang from that info. This "filesystem hang triage 101" stuff....
+> 
+> > But this was a side request, I'm not going to argue about including
+> > this since turns out there is a better way.
+> > 
+> > Somewhere in the thread an idea to log long-standing freezes was
+> > mentioned which would provide sufficient information as far as
+> 
+> You've already got the hung task timer firing when a fs is frozen
+> for too long. You'll see processes hung in sb_write_wait(), and that
+> tells you the filesystem is frozen. Then look at
+> /proc/self/mountinfo to find which fs is frozen....
+> 
 
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -907,20 +907,44 @@ int acpi_subsys_prepare(struct device *d
- 	if (dev->power.ignore_children)
- 		pm_runtime_resume(dev);
- 
-+	pm_set_direct_resume(dev, true);
- 	return pm_generic_prepare(dev);
- }
- EXPORT_SYMBOL_GPL(acpi_subsys_prepare);
- 
- /**
-- * acpi_subsys_suspend - Run the device driver's suspend callback.
-+ * acpi_subsys_suspend - Handle device suspend stage of system suspend.
-  * @dev: Device to handle.
-- *
-- * Follow PCI and resume devices suspended at run time before running their
-- * system suspend callbacks.
-  */
- int acpi_subsys_suspend(struct device *dev)
- {
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
-+	u32 sys_target;
-+
-+	if (!adev || !pm_runtime_enabled_and_suspended(dev)) {
-+		pm_set_direct_resume(dev, false);
-+		goto out;
-+	}
-+	if (!pm_direct_resume_is_set(dev)
-+	    || device_may_wakeup(dev) != !!adev->wakeup.prepare_count)
-+		goto resume;
-+
-+	sys_target = acpi_target_system_state();
-+	if (sys_target != ACPI_STATE_S0) {
-+		int ret, state;
-+
-+		if (adev->power.flags.dsw_present)
-+			goto resume;
-+
-+		ret = acpi_dev_pm_get_state(dev, adev, sys_target, NULL, &state);
-+		if (!ret && state == adev->power.state)
-+			return 0;
-+	}
-+
-+ resume:
- 	pm_runtime_resume(dev);
-+
-+ out:
- 	return pm_generic_suspend(dev);
- }
- 
-@@ -954,6 +978,19 @@ int acpi_subsys_resume_early(struct devi
- EXPORT_SYMBOL_GPL(acpi_subsys_resume_early);
- 
- /**
-+ * acpi_subsys_resume - Handle device resume stage of system resume.
-+ * @dev: Device to handle.
-+ */
-+int acpi_subsys_resume(struct device *dev)
-+{
-+	if (pm_direct_resume_is_set(dev)) {
-+		pm_runtime_resume(dev);
-+		return 0;
-+	}
-+	return pm_generic_resume(dev);
-+}
-+
-+/**
-  * acpi_subsys_freeze - Run the device driver's freeze callback.
-  * @dev: Device to handle.
-  */
-@@ -982,6 +1019,7 @@ static struct dev_pm_domain acpi_general
- 		.suspend = acpi_subsys_suspend,
- 		.suspend_late = acpi_subsys_suspend_late,
- 		.resume_early = acpi_subsys_resume_early,
-+		.resume = acpi_subsys_resume,
- 		.freeze = acpi_subsys_freeze,
- 		.poweroff = acpi_subsys_suspend,
- 		.poweroff_late = acpi_subsys_suspend_late,
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -261,7 +261,8 @@ struct acpi_device_power_flags {
- 	u32 inrush_current:1;	/* Serialize Dx->D0 */
- 	u32 power_removed:1;	/* Optimize Dx->D0 */
- 	u32 ignore_parent:1;	/* Power is independent of parent power state */
--	u32 reserved:27;
-+	u32 dsw_present:1;	/* _DSW present? */
-+	u32 reserved:26;
- };
- 
- struct acpi_device_power_state {
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1551,9 +1551,13 @@ static void acpi_bus_get_power_flags(str
- 	 */
- 	if (acpi_has_method(device->handle, "_PSC"))
- 		device->power.flags.explicit_get = 1;
-+
- 	if (acpi_has_method(device->handle, "_IRC"))
- 		device->power.flags.inrush_current = 1;
- 
-+	if (acpi_has_method(device->handle, "_DSW"))
-+		device->power.flags.dsw_present = 1;
-+
- 	/*
- 	 * Enumerate supported power management states
- 	 */
+But additional question was what initiated the freeze and it is not
+answered by this. Hopefully a warning for long-standing freezes will be
+implemented and that will answer the question.
 
+Once more, I'm fine with mere 'frozen' in mountinfo, so I suggest we
+drop this now side subject. If you really want to continue we can
+discuss this in private. :->
+
+-- 
+Mateusz Guzik
