@@ -1,160 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaEPBWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 21:22:51 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42065 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaEPBWt (ORCPT
+	id S1752339AbaEPBYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 21:24:10 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:59934 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaEPBYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 21:22:49 -0400
-Date: Thu, 15 May 2014 18:22:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/6] watchdog: Add API to trigger reboots
-Message-ID: <20140516012234.GA16592@roeck-us.net>
-References: <1400186304-1691-1-git-send-email-linux@roeck-us.net>
- <1400186304-1691-2-git-send-email-linux@roeck-us.net>
+	Thu, 15 May 2014 21:24:09 -0400
+Message-ID: <537568B5.9060208@gmail.com>
+Date: Thu, 15 May 2014 20:24:05 -0500
+From: David Hagood <david.hagood@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400186304-1691-2-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Bug? Older 32 bit program (CivCTP) no longer works under 64 bit kernel
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some hardware implements reboot through its watchdog hardware,
-for example by triggering a watchdog timeout. Platform specific
-code starts to spread into watchdog drivers, typically by setting
-pointers to a callback functions which is then called from the
-platform reset handler.
+I have an old native Linux 32 bit copy of Civilization: Call to Power. 
+It used to work under a 64 bit environment back in the 3.0.x days. 
+However, under recent versions (>3.5) it no longer runs - it complains 
+that it cannot find certain files in the directory. The exact same code 
+will run just fine under a 32 bit version of 3.11. I have a Pentium II 
+as well as the Core 2 Duo, both running Ubuntu 14.04, same version of 
+the kernel other than one is 32 bit and one is 64 bit. I've copied the 
+files over from the 32 bit machine, where it runs, to the 64 bit 
+machine, where it does not. I've even gone so far as to copy all the 
+system 32 bit libraries into the CivCTP directory, and forced the 
+program to use them (including using the ld-linux.so loader from that 
+directory) - so in theory it's all the same user space libraries running 
+- the only difference that I can see is that one kernel is 64 bit and 
+one is 32 bit.
 
-To simplify code and provide a unified API to trigger reboots by
-watchdog drivers, provide a single API to trigger such reboots
-through the watchdog subsystem.
+Running strace on the program shows that the directories being searched 
+for game assets are corrupted:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v4: Protect accesses to wdd_reboot_dev with spinlock to avoid potential
-    race conditions.
-    Drop Acked-by and Tested-by tags because changes are too significant
-    and warrant re-evaluation and re-testing.
-v3: Drop reboot mode and cmd string parameters from API
-v2: Remove unnecessary check for ops in reboot function
+16218 stat64("/home/wowbaggr/CivCTP/ctdata/englisish/uidata/keymap.txt", 
+  <unfinished ...>
 
- drivers/watchdog/watchdog_core.c | 27 +++++++++++++++++++++++++++
- include/linux/watchdog.h         |  8 ++++++++
- 2 files changed, 35 insertions(+)
+Note the "englisish" rather than "english".
 
-diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-index cec9b55..e61f4ed 100644
---- a/drivers/watchdog/watchdog_core.c
-+++ b/drivers/watchdog/watchdog_core.c
-@@ -37,12 +37,27 @@
- #include <linux/idr.h>		/* For ida_* macros */
- #include <linux/err.h>		/* For IS_ERR macros */
- #include <linux/of.h>		/* For of_get_timeout_sec */
-+#include <linux/spinlock.h>	/* For spinlock */
- 
- #include "watchdog_core.h"	/* For watchdog_dev_register/... */
- 
- static DEFINE_IDA(watchdog_ida);
- static struct class *watchdog_class;
- 
-+static DEFINE_SPINLOCK(wdd_reboot_lock);
-+static struct watchdog_device *wdd_reboot_dev;
-+
-+void watchdog_do_reboot(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&wdd_reboot_lock, flags);
-+	if (wdd_reboot_dev)
-+		wdd_reboot_dev->ops->reboot(wdd_reboot_dev);
-+	spin_unlock_irqrestore(&wdd_reboot_lock, flags);
-+}
-+EXPORT_SYMBOL(watchdog_do_reboot);
-+
- static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
- {
- 	/*
-@@ -111,6 +126,7 @@ EXPORT_SYMBOL_GPL(watchdog_init_timeout);
- int watchdog_register_device(struct watchdog_device *wdd)
- {
- 	int ret, id, devno;
-+	unsigned long flags;
- 
- 	if (wdd == NULL || wdd->info == NULL || wdd->ops == NULL)
- 		return -EINVAL;
-@@ -162,6 +178,11 @@ int watchdog_register_device(struct watchdog_device *wdd)
- 		return ret;
- 	}
- 
-+	spin_lock_irqsave(&wdd_reboot_lock, flags);
-+	if (wdd->ops->reboot && !wdd_reboot_dev)
-+		wdd_reboot_dev = wdd;
-+	spin_unlock_irqrestore(&wdd_reboot_lock, flags);
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(watchdog_register_device);
-@@ -177,10 +198,16 @@ void watchdog_unregister_device(struct watchdog_device *wdd)
- {
- 	int ret;
- 	int devno;
-+	unsigned long flags;
- 
- 	if (wdd == NULL)
- 		return;
- 
-+	spin_lock_irqsave(&wdd_reboot_lock, flags);
-+	if (wdd == wdd_reboot_dev)
-+		wdd_reboot_dev = NULL;
-+	spin_unlock_irqrestore(&wdd_reboot_lock, flags);
-+
- 	devno = wdd->cdev.dev;
- 	ret = watchdog_dev_unregister(wdd);
- 	if (ret)
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index 2a3038e..1e9da0a 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -23,6 +23,7 @@ struct watchdog_device;
-  * @start:	The routine for starting the watchdog device.
-  * @stop:	The routine for stopping the watchdog device.
-  * @ping:	The routine that sends a keepalive ping to the watchdog device.
-+ * @reboot:	The routine for rebooting the system
-  * @status:	The routine that shows the status of the watchdog device.
-  * @set_timeout:The routine for setting the watchdog devices timeout value.
-  * @get_timeleft:The routine that get's the time that's left before a reset.
-@@ -42,6 +43,7 @@ struct watchdog_ops {
- 	int (*stop)(struct watchdog_device *);
- 	/* optional operations */
- 	int (*ping)(struct watchdog_device *);
-+	void (*reboot)(struct watchdog_device *);
- 	unsigned int (*status)(struct watchdog_device *);
- 	int (*set_timeout)(struct watchdog_device *, unsigned int);
- 	unsigned int (*get_timeleft)(struct watchdog_device *);
-@@ -142,4 +144,10 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
- extern int watchdog_register_device(struct watchdog_device *);
- extern void watchdog_unregister_device(struct watchdog_device *);
- 
-+#ifdef CONFIG_WATCHDOG_CORE
-+extern void watchdog_do_reboot(void);
-+#else
-+static inline void watchdog_do_reboot(void) { }
-+#endif
-+
- #endif  /* ifndef _LINUX_WATCHDOG_H */
--- 
-1.9.1
-
+I'm looking for any suggestions on where to look for what might cause 
+such an issue - what can I do to start tracking this down.
