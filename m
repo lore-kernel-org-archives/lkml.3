@@ -1,103 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaEPLwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:52:45 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54609 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295AbaEPLwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:52:43 -0400
+	id S1756575AbaEPLxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:53:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2086 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754897AbaEPLxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 07:53:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
+   d="scan'208";a="512729487"
+Date: Fri, 16 May 2014 14:53:46 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
+Message-ID: <20140516115346.GO27580@intel.com>
+References: <20140509170335.GZ18465@intel.com>
+ <CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
+ <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
+ <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
+ <20140512190300.GF25056@phenom.ffwll.local>
+ <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
+ <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
+ <20140513132200.GC3908@phenom.ffwll.local>
+ <CADDKRnADucv7wMRgEDZ_DKRJqkPPZdgymL6VJhtG_JD9MkiJhA@mail.gmail.com>
+ <20140513163832.GM3908@phenom.ffwll.local>
 MIME-Version: 1.0
-In-Reply-To: <20140516105814.3EA3FC403C2@trevor.secretlab.ca>
-References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
-	<20140514100856.5198DC4153D@trevor.secretlab.ca>
-	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
-	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
-	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
-Date: Fri, 16 May 2014 13:52:42 +0200
-X-Google-Sender-Auth: 6eVzT1mpK1ABib0NAyjq09AHMAs
-Message-ID: <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140513163832.GM3908@phenom.ffwll.local>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Tue, May 13, 2014 at 06:38:32PM +0200, Daniel Vetter wrote:
+> On Tue, May 13, 2014 at 05:21:49PM +0200, Jörg Otte wrote:
+> > 2014-05-13 15:22 GMT+02:00 Daniel Vetter <daniel@ffwll.ch>:
+> > > On Tue, May 13, 2014 at 12:38:41PM +0200, Daniel Vetter wrote:
+> > >> On Tue, May 13, 2014 at 12:29 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
+> > >> >>> Branch drm-intel-nightly as of
+> > >> >>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
+> > >> >>> looks badly:
+> > >> >>>    - KDE splash screen on boot-up is not visible
+> > >> >>>    - x-windows don't have title and menu bars
+> > >> >>>    - KDE system menu is not visible
+> > >> >>>    - moving windows around destroys its content
+> > >> >>
+> > >> >> Ugh, that's ugly. Nothing else change like e.g. the version of
+> > >> >> xfree-video-intel?
+> > >> >
+> > >> >  (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
+> > >> >  (II) Module intel: vendor="X.Org Foundation"
+> > >> >  compiled for 1.11.3, module version = 2.17.0
+> > >> >  Module class: X.Org Video Driver
+> > >> >  ABI class: X.Org Video Driver, version 11.0
+> > >>
+> > >> Chris, any ideas? It's an ivybridge apparently.
+> > >>
+> > >> For the fifo underruns I think we've fully confirmed that they only
+> > >> happen on boot-up. I'll try to come up with some ideas what could have
+> > >> gone wrong there.
+> > >
+> > > Please test the below patch.
+> > > -Daniel
+> > >
+> > > diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+> > > index b10fbde1d5ee..63ced2dee027 100644
+> > > --- a/drivers/gpu/drm/i915/i915_irq.c
+> > > +++ b/drivers/gpu/drm/i915/i915_irq.c
+> > > @@ -427,9 +427,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
+> > >
+> > >         ret = !intel_crtc->cpu_fifo_underrun_disabled;
+> > >
+> > > -       if (enable == ret)
+> > > -               goto done;
+> > > -
+> > >         intel_crtc->cpu_fifo_underrun_disabled = !enable;
+> > >
+> > >         if (enable && (INTEL_INFO(dev)->gen < 5 || IS_VALLEYVIEW(dev)))
+> > > @@ -441,7 +438,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
+> > >         else if (IS_GEN8(dev))
+> > >                 broadwell_set_fifo_underrun_reporting(dev, pipe, enable);
+> > >
+> > > -done:
+> > >         return ret;
+> > >  }
+> > >
+> > > --
+> > 
+> > Doesn't work for me, I still have an underrun at boot-up.
+> 
+> I'm at a loss tbh with ideas. We successfully disable both pipes, then
+> enable pipe A and it all works.
+> 
+> Then we enable pipe B and _both_ pipes underrun immediately afterwards.
+> Really strange. Can you please reproduce the issue again on
+> drm-intel-nightly (latest -nightly should also have the display
+> corruptions fixed, so good to retest anyway) and attach a new dmesg with
+> drm.debug=0xe.
 
-On Fri, May 16, 2014 at 12:58 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Thu, 15 May 2014 09:20:24 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Thu, May 15, 2014 at 9:12 AM, Pantelis Antoniou
->> <pantelis.antoniou@konsulko.com> wrote:
->> >> We also need to think about kexec. Kexec works by sucking the live tree
->> >> out of the kernel and creating a .dtb from it to pass to the new kernel.
->> >> What will the rules be when kexecing? Do all the overlays need to be
->> >> removed, or does the kernel get the tree with all the overlays applied
->> >> (in which case none of the overlays can be removed on the other side of
->> >> kexec).
->> >
->> > We can add a sysfs attribute that configures whether overlays are reverted before
->> > kexec or not. I can't really tell which is the correct option, so let's allow the
->> > policy up to user-space.
->>
->> Kexec'ing into a new kernel doesn't change the hardware, so IMHO the
->> in-kernel DT should not change.
->
-> Conceptually though, if overlays are applied then the new kernel has a
-> different tree from the old one. If the overlay is hotpluggable, then
-> after the kexec, the new kernel would no longer be able to unplug the
-> overlay if it uses the current state of the tree instead of pulling the
-> overlays off first.
+I see a few underrun on my IVB as well. But it seems to be limited to
+cases that involve the VGA connector, which doesn't actually exist on
+this machine so I can't be sure if it's really properly set up on the
+PCH. But so far with just two HDMI connectors I was unable to reproduce
+it.
 
-Which brings me to another question...
+> 
+> Meanwhile I'll try to come up with new theories and ideas.
 
-Why has the overlay system been designed for plugging and unpluging whole
-overlays?
-That means the kernel has to remember the full stack, causing issues with
-e.g. kexec.
+I was thinking that we might frob with the PCH refclk during driver init
+and that might cause the PCH underrun for Jörg, but it looks like the
+underruns really happen at the modeset time which is much later than the
+PCH refclock init.
 
-Why not allowing the addition of removal of subtrees of the full device
-tree?
-This is similar to other hotpluggable subsystems (which are not necessarily
-DT-based), like PCI Express. That way the kernel can pass a
-DT-representation of the actual current device tree to a kexec'ed kernel.
+For the 1<->n pipe transition, I don't think we handle it correctly at
+the moment. I have a fix as part of my remaining watermark patches. I
+rebased those and I'll repost them soon. In the meantime I pushed them
+to [1]. Jörg, can you give that branch a go?
 
-I missed the initial design discussions, so forgive me if this has been
-beaten to death before.
+[1] git://gitorious.org/vsyrjala/linux.git watermarks_intm_31_notrace
 
-Thanks for your answers!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Ville Syrjälä
+Intel OTC
