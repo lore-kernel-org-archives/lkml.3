@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014AbaEPQZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:25:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29865 "EHLO mx1.redhat.com"
+	id S1757618AbaEPQ1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:27:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48597 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757650AbaEPQZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:25:23 -0400
-Date: Fri, 16 May 2014 12:24:41 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140516162441.GA50500@redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <CABPqkBQE-HLV3JLo4-sXBJos38SY0RUhC-gLeauawrf3Cgojtw@mail.gmail.com>
- <20140516155958.GX11096@twins.programming.kicks-ass.net>
- <CABPqkBS+jx6sR3BNjwGkaG9hZFtfwmLKKiD86Li4hAY_YsTDdA@mail.gmail.com>
+	id S1754838AbaEPQ1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 12:27:30 -0400
+Date: Fri, 16 May 2014 18:27:27 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+In-Reply-To: <20140506082604.31928cb9@gandalf.local.home>
+Message-ID: <alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
+References: <cover.1398958771.git.jpoimboe@redhat.com> <20140505085537.GA32196@gmail.com> <20140505132638.GA14432@treble.redhat.com> <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com> <5368CB6E.3090105@hitachi.com>
+ <20140506082604.31928cb9@gandalf.local.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS+jx6sR3BNjwGkaG9hZFtfwmLKKiD86Li4hAY_YsTDdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 06:02:43PM +0200, Stephane Eranian wrote:
-> On Fri, May 16, 2014 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, May 16, 2014 at 04:09:59PM +0200, Stephane Eranian wrote:
-> >> > +#define CACHE_LINESIZE       64
-> >> I had something similar to your patch here in my original series for
-> >> perf mem, but I never pushed it.
-> >> I think this is a useful feature to have.
-> >> However, I don't think you can hardcode the cache line size to 64.
-> >> This is generic
-> >> code. There may be architectures where the line size is different from 64.
-> >> So I think you should add an option to change the default line size or provide
-> >> an arch-specific definition.
-> >
-> > # cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
-> > 64
-> Excellent, then we should use that!
+On Tue, 6 May 2014, Steven Rostedt wrote:
 
-Would it make sense to create an accessory function that sets the size in
-util/cpumap.c and provides it as an inline from util/cpumap.h?
+> > However, I also think if users can accept such freezing wait-time,
+> > it means they can also accept kexec based "checkpoint-restart" patching.
+> > So, I think the final goal of the kpatch will be live patching without
+> > stopping the machine. I'm discussing the issue on github #138, but that is
+> > off-topic. :)
+> 
+> I agree with Ingo too. Being conservative at first is the right
+> approach here. We should start out with a stop_machine making sure that
+> everything is sane before we continue. Sure, that's not much different
+> than a kexec, but lets take things one step at a time.
+> 
+> ftrace did the stop_machine (and still does for some archs), and slowly
+> moved to a more efficient method. kpatch/kgraft should follow suit.
 
-Cheers,
-Don
+I don't really agree here.
 
+I actually believe that "lazy" switching kgraft is doing provides a little 
+bit more in the sense of consistency than stop_machine()-based aproach.
+
+Consider this scenario:
+
+	void foo()
+	{
+		for (i=0; i<10000; i++) {
+			bar(i);
+			something_else(i);
+		}
+	}
+
+Let's say you want to live-patch bar(). With stop_machine()-based aproach, 
+you can easily end-up with old bar() and new bar() being called in two 
+consecutive iterations before the loop is even exited, right? (especially 
+on preemptible kernel, or if something_else() goes to sleep).
+
+With lazy-switching implemented in kgraft, this can never happen.
+
+So I'd like to ask for a little bit more explanation why you think the 
+stop_machine()-based patching provides more sanity/consistency assurance 
+than the lazy switching we're doing.
+
+Thanks a lot,
+
+-- 
+Jiri Kosina
+SUSE Labs
