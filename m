@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075AbaEPKjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:39:32 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64680 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982AbaEPKj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:39:28 -0400
+	id S1757129AbaEPKkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:40:37 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:16343 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756900AbaEPKkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 06:40:36 -0400
+Message-ID: <5375EB13.8000200@bfs.de>
+Date: Fri, 16 May 2014 12:40:19 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1400175151-27779-4-git-send-email-t.figa@samsung.com>
-References: <1400175151-27779-1-git-send-email-t.figa@samsung.com>
-	<1400175151-27779-4-git-send-email-t.figa@samsung.com>
-Date: Fri, 16 May 2014 16:09:26 +0530
-X-Google-Sender-Auth: gvTRaU7OzZeeSUfw5uQv09SEXD8
-Message-ID: <CAPdUM4P7Z1eLVKuc0N1iPaekM_7kNv7KCve2MgrEziszfnzz7A@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line
- on Exynos SoCs
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Emil Goode <emilgoode@gmail.com>
+CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[snip]
-> +       gate->lock = &clkout_lock;
-> +
-> +       mux->reg = reg + EXYNOS_PMU_DEBUG_REG;
-> +       mux->mask = EXYNOS_CLKOUT_MUX_MASK;
-> +       mux->shift = EXYNOS_CLKOUT_MUX_SHIFT;
-> +       mux->lock = &clkout_lock;
-> +
-> +       clk = clk_register_composite(NULL, "clkout", parent_names,
-> +                                       parent_count, &mux->hw,
-> +                                       &clk_mux_ops, NULL, NULL, &gate->hw,
-> +                                       &clk_gate_ops, 0);
-> +       if (IS_ERR(clk))
-> +               goto err_unmap;
-> +
 
-Hi Tomasz,
 
-Do we really need a composite clock here? How about registering
-a mux and a gate separately?
+Am 16.05.2014 11:54, schrieb Emil Goode:
+> If we fail to allocate struct platform_device pdev we
+> dereference it after the goto label err.
+> 
+> I have rearranged the error handling a bit to fix the issue
+> and also make it more clear.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+> v2: Changed to return -ENOMEM instead of ret where possible and
+>     updated the subject line.
+> 
+>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> index fc4dd7c..68f2a4a 100644
+> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+>  
+>  	pdev = platform_device_alloc("mx3-camera", 0);
+>  	if (!pdev)
+> -		goto err;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+>  	if (!pdev->dev.dma_mask)
+> -		goto err;
+> +		goto put_pdev;
+>  
+>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>  
+>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+>  	if (ret)
+> -		goto err;
+> +		goto free_dma_mask;
+>  
+>  	if (pdata) {
+>  		struct mx3_camera_pdata *copied_pdata;
+>  
+>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+> -		if (ret) {
+> -err:
+> -			kfree(pdev->dev.dma_mask);
+> -			platform_device_put(pdev);
+> -			return ERR_PTR(-ENODEV);
+> -		}
+> +		if (ret)
+> +			goto free_dma_mask;
+> +
+>  		copied_pdata = dev_get_platdata(&pdev->dev);
+>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
 
-Regards,
-Rahul Sharma.
 
-> +       of_clk_add_provider(node, of_clk_src_simple_get, clk);
+the patch is fine, but what use is this copied_pdata ?
+It scope ends next line ?
+
+re,
+ wh
+
+>  	}
+>  
+>  	return pdev;
 > +
-> +       return;
+> +free_dma_mask:
+> +	kfree(pdev->dev.dma_mask);
+> +put_pdev:
+> +	platform_device_put(pdev);
 > +
-> +err_unmap:
-> +       iounmap(reg);
-> +clks_put:
-> +       for (i = 0; i < EXYNOS_CLKOUT_PARENTS; ++i)
-> +               if (!IS_ERR(parents[i]))
-> +                       clk_put(parents[i]);
-> +free_gate:
-> +       kfree(gate);
-> +free_mux:
-> +       kfree(mux);
-> +
-> +       pr_err("%s: failed to register clkout clock\n", __func__);
-> +}
-> +CLK_OF_DECLARE(exynos4210_clkout, "samsung,exynos4210-pmu", exynos_clkout_init);
-> +CLK_OF_DECLARE(exynos4412_clkout, "samsung,exynos4x12-pmu", exynos_clkout_init);
-> +CLK_OF_DECLARE(exynos5250_clkout, "samsung,exynos5250-pmu", exynos_clkout_init);
-> +CLK_OF_DECLARE(exynos5420_clkout, "samsung,exynos5420-pmu", exynos_clkout_init);
-> --
-> 1.9.2
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> +	return ERR_PTR(ret);
+>  }
+>  
+>  struct platform_device *__init imx_add_mx3_sdc_fb(
