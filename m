@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007AbaEPP0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:26:21 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:46561 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445AbaEPP0T (ORCPT
+	id S932726AbaEPP2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:28:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34963 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932582AbaEPP2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:26:19 -0400
+	Fri, 16 May 2014 11:28:30 -0400
+Date: Fri, 16 May 2014 17:28:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
+Subject: Re: [RFC Patch Part1 V1 00/30] use irqdomain to dynamically allocate
+ IRQ for IOAPIC pin
+In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.02.1405161601060.4039@ionos.tec.linutronix.de>
+References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=XHy1jZ6EL8M+KByA1fhZkNc2Afvn2+QKaMe=0wyEo7Pg@mail.gmail.com>
-References: <cover.1400230695.git.viresh.kumar@linaro.org>
-	<CAJuA9aitMu_=OLT+=6pX=us03HVfrPZ1zCYFXfNg58W+-nzm3g@mail.gmail.com>
-	<CAKohpokUP6rnV=UyES1GY0yqwiUndBrJFtw7fwJScsRigbE7tA@mail.gmail.com>
-	<CAD=FV=XHy1jZ6EL8M+KByA1fhZkNc2Afvn2+QKaMe=0wyEo7Pg@mail.gmail.com>
-Date: Fri, 16 May 2014 20:56:18 +0530
-Message-ID: <CAKohpo=VKsAdSJLL+cvGnBMFLj8JDecd2ZRKfQtEc9ZmqkC1eg@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] cpufreq: add support for intermediate (stable)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Thomas Abraham <ta.omasab@gmail.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arvind Chauhan <arvind.chauhan@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 20:50, Doug Anderson <dianders@chromium.org> wrote:
-> Right, so I think on exynos no functionality will be broken once
-> Thomas's cpufreq-cpu0 change lands (udelay will only run long, never
-> short).  ...but from the purist standpoint we will be transitioning
-> from 1.6 GHz => 800 MHz => 1.7 GHz without any notification about the
-> 800 MHz.   You could imagine someone registering for cpufreq
-> notifications that would care about the 800MHz transition.
->
-> ...so it seems like we could wait for Thomas's patches to land as-is
-> (since they make things better) and then atop that see about adding
-> support for intermediate frequencies to cpufreq-cpu0.
+Jiang,
 
-Hmm, don't know. I think these patches aren't aimed at solving exynos's
-problem but rather a general solution which must have already been there.
+On Fri, 16 May 2014, Jiang Liu wrote:
 
-If some platform can work without it then its fine, but otherwise they should
-use it, even if udelay does work for them..
+> On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
+> There are two issues with this design. First it causes trouble to IOAPIC
+> hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
+> Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
+> IRQ numbers are statically assigned.
+> 
+> This patchset tries to enable dynamic IRQ number allocation for IOAPIC
+> by adopting the irqdomain framework, it solves the two issues mentioned
+> above. It also simplifies the IOAPIC driver by consolidating ways to
+> program IOAPIC pins with the irqdomain map interface.
+> 
+> We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
+> once the IOAPIC driver has been converted to irqdomain.
 
-So, I would propose to go ahead with these patches in linux-next and lets
-see who all would use it.
+Thanks for tackling this!
+ 
+> This patchset applies to v3.15-rc4-260-g38583f095c5a and has been tested
+
+That's a bit unfortunate, as there are conflicting changes in the tip
+tree irq/core branch. Can you please rebase on top of that.
+
+> TODO list:
+> 1) check whether it affects Xen or not
+> 
+> Patch 1-17 are trivial code improvements, bugfixes and preparation.
+
+Can you please move the bugfixes before the other changes, so we can
+pick them up independently from the outcome?
+ 
+> Patch 18-24 enable basic irqdomain support and IRQ number dynamic
+> allocation.
+> 
+> Patch 25-29 consoldate the way to program IOAPIC pins by using
+> irqdomain map() interface.
+> 
+> Patch 30 cleans up unused interfaces and functions in IOAPIC driver.
+> 
+> Tests and comments are warmly welcomed!
+
+I like the general approach, but we have now a mixture of legacy irq
+handling and irq domains. We really want to cleanup the legacy PIC no
+ioapic case as well. That will cleanup the code further.
+
+The other thing we discussed here: https://lkml.org/lkml/2014/5/7/901
+in several places of the thread is to move the vector allocation into
+a irqdomain with a generic matrix allocator as well. We have other use
+cases for this as well. It would be nice if you could look at that as
+well.
+
+Thanks,
+
+	tglx
+
+
+
+
