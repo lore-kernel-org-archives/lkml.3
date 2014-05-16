@@ -1,71 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644AbaEPUMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 16:12:32 -0400
-Received: from smtprelay0002.hostedemail.com ([216.40.44.2]:45562 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755179AbaEPUM3 (ORCPT
+	id S1757552AbaEPUMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 16:12:31 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:51513 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047AbaEPUM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 16:12:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2551:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3873:3874:4250:4321:5007:7576:7652:7903:9040:9545:10004:10400:10848:11232:11658:11914:12050:12517:12519:12740:13069:13071:13072:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: jelly78_1546bf0baaf63
-X-Filterd-Recvd-Size: 2069
-Message-ID: <1400271144.12373.21.camel@joe-AO725>
-Subject: Re: [PATCH] bnx2x: Convert return 0 to return rc
-From: Joe Perches <joe@perches.com>
-To: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Cc: Ariel Elior <ariel.elior@qlogic.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 16 May 2014 13:12:24 -0700
-In-Reply-To: <87B4DDAD5EAFA041BDC28F314593782D0172ECD7@avmb3.qlogic.org>
-References: <1400223103.30884.5.camel@joe-AO725>
-	 <87B4DDAD5EAFA041BDC28F314593782D0172ECD7@avmb3.qlogic.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Fri, 16 May 2014 16:12:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
+ workqueues
+Message-ID: <20140516201225.GL5379@htj.dyndns.org>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+ <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 12:02 +0000, Dmitry Kravkov wrote:
-> > -----Original Message-----
-> > From: netdev-owner@vger.kernel.org [mailto:netdev-
-> > owner@vger.kernel.org] On Behalf Of Joe Perches
-> > Sent: Friday, May 16, 2014 9:52 AM
-> > To: Ariel Elior; Dmitry Kravkov
-> > Cc: netdev; linux-kernel
-> > Subject: [PATCH] bnx2x: Convert return 0 to return rc
-> >
-> > These "return 0;" uses seem wrong as there are
-> > rc variables where error return values are set
-> > but unused.
-[]
-> Thanks Joe for catching this!
+Hello,
+
+On Fri, May 16, 2014 at 06:16:51PM +0200, Frederic Weisbecker wrote:
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
 > 
-> Acked-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+> Changing the attributions of a workqueue imply the addition of new pwqs
+> to replace the old ones. But the current implementation doesn't handle
+> ordered workqueues because they can't carry multi-pwqs without breaking
+> ordering. Hence ordered workqueues currently aren't allowed to call
+> apply_workqueue_attrs().
+...
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Mike Galbraith <bitbucket@online.de>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-Hello Dmitry.
+Do you mind touching up the description and comment a bit as it's
+going through you?  They have gotten a lot better (kudos to Lai :) but
+I still feel the need to touch them up a bit before applying.  I'd
+really appreciate if you can do it as part of your series.
 
-Couple things actually:
-o Could you please update the MAINTAINER entry for
-  BNX2X?  Ariel Elior's email address is still listed
-  as @broadcom and that seems to bounce.
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index c3f076f..c68e84f 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1355,8 +1355,16 @@ retry:
+>  	 * If @work was previously on a different pool, it might still be
+>  	 * running there, in which case the work needs to be queued on that
+>  	 * pool to guarantee non-reentrancy.
+> +	 *
+> +	 * We guarantee that only one pwq is active on an ordered workqueue.
+> +	 * That alone enforces non-reentrancy for works. So ordered works don't
 
-o I found this via coccinelle actually.
-  Julia Lawall submitted a patch to remove unused
-  netdev_priv calls.  I modified that to check for
-  any expression that returns an unused value and
-  found this and many others.  There are a lot of
-  false positives though.
+Let's use "work items" instead of "works".
 
-@@
-local idexpression x;
-expression E;
-@@
--x = E;
-    ... when != x
+> +	 * need to be requeued to their previous pool. Not to mention that
+> +	 * an ordered work requeing itself over and over on the same pool may
+> +	 * prevent a pwq from being released in case of a pool switch. The
+> +	 * newest pool in that case couldn't switch in and its pending works
+> +	 * would starve.
+>  	 */
+> -	last_pool = get_work_pool(work);
+> +	last_pool = wq->flags & __WQ_ORDERED ? NULL : get_work_pool(work);
+>  	if (last_pool && last_pool != pwq->pool) {
+>  		struct worker *worker;
 
+I'm not a big fan of the fact that ordered queues need to be handled
+differently when queueing, but as the code is currently written, this
+is pretty much necessary to maintain execution order, right?
+Otherwise, you end up with requeueing work items targeting the pwq it
+was executing on and new ones targeting the newest one screwing up the
+ordering.  I think that'd be a lot more important to note in the
+comment.  This is a correctness measure.  Back-to-back requeueing
+being affected by this is just a side-effect.
 
+Also, can you please use plain if/else instead of "?:"?  This isn't a
+simple logic and I don't think compressing it with ?: is a good idea.
+
+> @@ -3708,6 +3712,13 @@ static void rcu_free_pwq(struct rcu_head *rcu)
+>  			container_of(rcu, struct pool_workqueue, rcu));
+>  }
+>  
+> +static struct pool_workqueue *oldest_pwq(struct workqueue_struct *wq)
+> +{
+> +	return list_last_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
+> +}
+> +
+> +static void pwq_adjust_max_active(struct pool_workqueue *pwq);
+> +
+>  /*
+>   * Scheduled on system_wq by put_pwq() when an unbound pwq hits zero refcnt
+>   * and needs to be destroyed.
+> @@ -3723,14 +3734,12 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>  	if (WARN_ON_ONCE(!(wq->flags & WQ_UNBOUND)))
+>  		return;
+>  
+> -	/*
+> -	 * Unlink @pwq.  Synchronization against wq->mutex isn't strictly
+> -	 * necessary on release but do it anyway.  It's easier to verify
+> -	 * and consistent with the linking path.
+> -	 */
+>  	mutex_lock(&wq->mutex);
+>  	list_del_rcu(&pwq->pwqs_node);
+>  	is_last = list_empty(&wq->pwqs);
+> +	/* try to activate the oldest pwq when needed */
+> +	if (!is_last && (wq->flags & __WQ_ORDERED))
+
+Why bother with @is_last when it's used only once and the test is
+trivial?  Is the test even necessary?  Invoking
+pwq_adjust_max_active() directly should work, no?  Also, this needs
+whole lot more comment explaining what's going on.
+
+> +		pwq_adjust_max_active(oldest_pwq(wq));
+>  	mutex_unlock(&wq->mutex);
+>  
+>  	mutex_lock(&wq_pool_mutex);
+> @@ -3749,6 +3758,16 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>  	}
+>  }
+>  
+> +static bool pwq_active(struct pool_workqueue *pwq)
+> +{
+> +	/* Only the oldest pwq is active in the ordered wq */
+> +	if (pwq->wq->flags & __WQ_ORDERED)
+> +		return pwq == oldest_pwq(pwq->wq);
+> +
+> +	/* All pwqs in the non-ordered wq are active */
+> +	return true;
+> +}
+
+Just collapse it into the calling function.  This obfuscates more than
+helps.
+
+Thanks.
+
+-- 
+tejun
