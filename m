@@ -1,119 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992445AbaEPTYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 15:24:03 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62119 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932446AbaEPTX6 (ORCPT
+	id S2992469AbaEPTY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 15:24:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52245 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992449AbaEPTY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 15:23:58 -0400
+	Fri, 16 May 2014 15:24:58 -0400
+Date: Fri, 16 May 2014 21:24:51 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140516192451.GP16662@pengutronix.de>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140430231307.GA10250@e106331-lin.cambridge.arm.com>
-References: <CANCKTBuOK41=ZxHcDRthc0uc81-nDr_66veeQvUDNjsKq85OSw@mail.gmail.com>
- <20140430231307.GA10250@e106331-lin.cambridge.arm.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Fri, 16 May 2014 12:23:37 -0700
-Message-ID: <CAPtuhTissRRQ6bPG0pp_e-NZ+ReaMtxWefAGq2kjFEcdmh_LEg@mail.gmail.com>
-Subject: Re: [RFC] Linux common clock framework: device with many clocks
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Jim Quinlan <jim2101024@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 4:13 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> Hi,
+Hello Emil,
 
-Thanks for Cc'ing me Mark.
+IMHO the subject is too general. Maybe better use:
 
->
-> On Wed, Apr 30, 2014 at 09:39:11PM +0100, Jim Quinlan wrote:
->> In most examples of .dtsi files I have perused, a device is associated with
->> typically one clock, maybe two.  In the SoC I'm working on, some devices
->> need to turn off multiple clocks for PM, as many as 13.   The driver gets
->> the clocks from the device tree, and when the driver wants to turn off
->> clocks to the device, it loops through all 13 clocks.
->>
->> I'm wondering if is possible to abstract a group of many clocks into one
->> "software clock". Invoking clk_disable() on said software clock would
->> effect the iteration of clk_disable() on all 13 of the clocks it governs.
->>  Enabling would effect clk_enable() on all 13.  This would make the driver
->> writer's life a little simpler.
->>
->> I've looked at the Linux Common Clock Framework, and it doesn't really
->> accommodate multiple active parents as it's somewhat contrary to its
->> design.  Also, playing with the innards of clk.c is ill-advised.  Should I
->> just stick to putting iteration over the clocks in all my drivers, or is
->> there a better way?
->
-> This doesn't strike me as a DT issue. The DT should describe all the
-> clocks that a given block takes, and the representation of said clocks
-> in the DT is completely separate matter from the management of said
-> clocks in any given driver.
->
-> If you want a helpful abstraction for combining clocks for management
-> purposes you'd be better off talking to Mike Turquette (CC'd), as he's
-> in charge of the common clock framework.
+	ARM: imx: fix error handling in ipu device registration
 
-Jim emailed me privately. Here is my response for posterity:
+On Fri, May 16, 2014 at 11:54:05AM +0200, Emil Goode wrote:
+> If we fail to allocate struct platform_device pdev we
+> dereference it after the goto label err.
+> 
+> I have rearranged the error handling a bit to fix the issue
+> and also make it more clear.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+> v2: Changed to return -ENOMEM instead of ret where possible and
+>     updated the subject line.
+> 
+>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> index fc4dd7c..68f2a4a 100644
+> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+>  
+>  	pdev = platform_device_alloc("mx3-camera", 0);
+>  	if (!pdev)
+> -		goto err;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+>  	if (!pdev->dev.dma_mask)
+> -		goto err;
+> +		goto put_pdev;
+>  
+>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>  
+>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+>  	if (ret)
+> -		goto err;
+> +		goto free_dma_mask;
+>  
+>  	if (pdata) {
+>  		struct mx3_camera_pdata *copied_pdata;
+>  
+>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+> -		if (ret) {
+> -err:
+> -			kfree(pdev->dev.dma_mask);
+> -			platform_device_put(pdev);
+> -			return ERR_PTR(-ENODEV);
+> -		}
+> +		if (ret)
+> +			goto free_dma_mask;
+> +
+>  		copied_pdata = dev_get_platdata(&pdev->dev);
+>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
+>  	}
+>  
+>  	return pdev;
+> +
+> +free_dma_mask:
+> +	kfree(pdev->dev.dma_mask);
+> +put_pdev:
+> +	platform_device_put(pdev);
+> +
+> +	return ERR_PTR(ret);
+>  }
+I didn't check if it is easily possible, but converting this file to use
+platform_device_register_full might simplify it considerably.
 
+I'm not sure this fix is critical, because the problem happens if an
+allocation during boot fails. But still, if you want to get this fix
+into a stable release, you should simplify it, i.e. don't do the code
+reorganisations. (Also the "more clear" part seems to be subjective, I
+like the error handling better as it is now. But that might only be me.)
 
+Are you using this code? I thought arch/arm/mach-imx/devices to be dead
+as it is unused on dt platforms.
 
-On Wed, May 7, 2014 at 8:59 AM, Jim Quinlan <jquinlan@broadcom.com> wrote:
-> Hi Mike,
+Best regards
+Uwe
 
-Hi Jim,
-
-<snip>
-
-> In most examples of .dtsi files I have perused, a device is associated with
-> typically one clock, maybe two.  In the SoC I'm working on, some devices
-> need to turn off multiple clocks for PM, as many as 13.   The driver gets
-> the clocks from the device tree, and when the driver wants to turn on/off
-> clocks to the device, it loops through all 13 clocks.
-
-Is it possible for you to share a data sheet or TRM for this part? I'd
-like to better understand your 13 clock requirement.
-
-Is your device driver upstream? If not, can you share a link to bcom's
-public vendor git tree with the driver in question?
-
-> I'm wondering if is possible to abstract a group of many clocks into one
-> "software clock". Invoking clk_disable() on said software clock would
-> effect the iteration of clk_disable() on all 13 of the clocks it governs.
-
-I oppose "software clocks", "virtual clocks" or any kind of struct clk
-that doesn't map onto real clock hardware directly.
-
-> Enabling would effect clk_enable() on all 13.  This would make the driver
-> writer's life a little simpler.
-
-What you are asking for is an abstraction. We already have this in the
-form of Runtime PM where a driver calls pm_runtime_get() and
-pm_runtime_put() without having to worry about the details of enabling
-and disabling those 13 clocks. Runtime PM is *the* abstraction you are
-looking for.
-
-You should check out the RPM stuff as well as the power_domain and
-gen_pd stuff. OMAP, SH-Mobile and Ux500 have interesting
-implementations of all of this stuff for rather complex SoCs.
-
-> I've looked at the Linux Common Clock Framework, and it doesn't really
-> accommodate multiple active parents as it's somewhat contrary to its
-> design.  Also, playing with the innards of clk.c is ill-advised.  Should I
-> just stick to putting iteration over the clocks in all my drivers, or is
-> there a better way?
-
-Can you elaborate on "multiple active parents"? What does that mean?
-
-Regards,
-Mike
-
-
-
->
-> Cheers,
-> Mark.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
