@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491AbaEPH3C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:29:02 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42536 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaEPH3A (ORCPT
+	id S1755651AbaEPH3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:29:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38229 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751231AbaEPH3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:29:00 -0400
-X-Google-Original-From: Jon Maxwell <jmaxwell@redhat.com>
-From: Jon Maxwell <jmaxwell37@gmail.com>
-To: stephen@networkplumber.org
-Cc: davem@davemloft.net, makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com,
-        Jon Maxwell <jmaxwell37@gmail.com>
-Subject: [PATCH net] bridge: notify user space of fdb port change
-Date: Fri, 16 May 2014 17:28:44 +1000
-Message-Id: <1400225324-17748-1-git-send-email-jmaxwell@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 16 May 2014 03:29:46 -0400
+Message-ID: <5375BE67.8000103@free-electrons.com>
+Date: Fri, 16 May 2014 09:29:43 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] drm/panel: add simple-panel description using
+ DT
+References: <1399645002-18000-1-git-send-email-boris.brezillon@free-electrons.com> <20140513075148.GF6754@ulmo>
+In-Reply-To: <20140513075148.GF6754@ulmo>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Maxwell <jmaxwell37@gmail.com>
 
-There has been a number incidents recently where customers running KVM have 
-reported that VM hosts on different Hypervisors are unreachable. Based on 
-pcap traces we found that the bridge was broadcasting the ARP request out 
-onto the network. However some NICs have an inbuilt switch which on occasions 
-were broadcasting the VMs ARP request back through the physical NIC on the 
-Hypervisor. This resulted in the bridge changing ports and incorrectly learning
-that the VMs mac address was external. As a result the ARP reply was directed 
-back onto the external network and VM never updated it's ARP cache. This patch 
-will notify the bridge command to identify such port toggling.
+On 13/05/2014 09:51, Thierry Reding wrote:
+> On Fri, May 09, 2014 at 04:16:40PM +0200, Boris BREZILLON wrote:
+>> Hello Thierry,
+>>
+>> I noticed you're describing each new panel with a new entry in the
+>> of_platform_match table and a new compatible string.
+>> I guess you have a good reason to do it this way, because retrieving
+>> panel description from DT would be pretty easy (see this series ;-)).
+>>
+>> Could tell me why you chose this approach ?
+> The reason is that devicetree mandates that a device be identified using
+> a compatible value and that compatible value should be as specific as
+> possible. That compatible value should give the device driver enough
+> information to know everything it needs (resolution, timings, physical
+> dimension).
+>
+> Having all of that data in the device tree is redundant.
 
-Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
----
- net/bridge/br_fdb.c | 2 ++
- 1 file changed, 2 insertions(+)
+Okay, thanks for your answer.
 
-diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-index 9203d5a..c2642f5 100644
---- a/net/bridge/br_fdb.c
-+++ b/net/bridge/br_fdb.c
-@@ -509,6 +509,8 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
- 			/* fastpath: update of existing entry */
- 			fdb->dst = source;
- 			fdb->updated = jiffies;
-+			if (unlikely(source->port_no != fdb->dst->port_no))
-+				fdb_notify(br, fdb, RTM_NEWNEIGH);
- 			if (unlikely(added_by_user))
- 				fdb->added_by_user = 1;
- 		}
+As a result, you'll see a patch adding support for the FL500WVR00-A0T
+(foxlink) panel soon ;-).
+
+Best Regards,
+
+Boris
+
 -- 
-1.8.3.1
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
