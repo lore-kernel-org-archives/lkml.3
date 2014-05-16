@@ -1,153 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaEPICl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:02:41 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:59313 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353AbaEPICi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:02:38 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <5375C619.8010501@lge.com>
-Date: Fri, 16 May 2014 17:02:33 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Laura Abbott <lauraa@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        Heesub Shin <heesub.shin@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com
-Subject: [RFC][PATCH] CMA: drivers/base/Kconfig: restrict CMA size to non-zero
- value
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <20140513030057.GC32092@bbox> <20140515015301.GA10116@js1304-P5Q-DELUXE>
-In-Reply-To: <20140515015301.GA10116@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756198AbaEPIDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:03:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12263 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755986AbaEPIDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:03:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
+   d="scan'208";a="540106037"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
+Subject: [RFC Patch Part1 V1 00/30] use irqdomain to dynamically allocate IRQ for IOAPIC pin
+Date: Fri, 16 May 2014 16:05:20 +0800
+Message-Id: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
+There are two issues with this design. First it causes trouble to IOAPIC
+hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
+Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
+IRQ numbers are statically assigned.
 
-I've been trying to apply CMA into my platform.
-USB host driver generated kernel panic like below when USB mouse is connected,
-because I turned on CMA and set the CMA_SIZE_MBYTES value into zero by mistake.
+This patchset tries to enable dynamic IRQ number allocation for IOAPIC
+by adopting the irqdomain framework, it solves the two issues mentioned
+above. It also simplifies the IOAPIC driver by consolidating ways to
+program IOAPIC pins with the irqdomain map interface.
 
-I think the panic is cuased by atomic_pool in arch/arm/mm/dma-mapping.c.
-Zero CMA_SIZE_MBYTES value skips CMA initialization and then atomic_pool is not initialized also
-because __alloc_from_contiguous is failed in atomic_pool_init().
+We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
+once the IOAPIC driver has been converted to irqdomain.
 
-If CMA_SIZE_MBYTES_MAX is allowed to be zero, there should be defense code to check
-CMA is initlaized correctly. And atomic_pool initialization should be done by __alloc_remap_buffer
-instead of __alloc_from_contiguous if __alloc_from_contiguous is failed.
+This patchset applies to v3.15-rc4-260-g38583f095c5a and has been tested
+on a two socket 64 bit Intel platforms with:
+1) ACPI and mpparse enabled (boot successfully)
+2) Mpparse enabled with ACPI disabled (boot successfully)
+3) ACPI enabled with Mpparse disabled (boot successfully)
 
-IMPO, it is more simple and powerful to restrict CMA_SIZE_MBYTES_MAX configuration to be larger than zero.
+It also builds successfully (but without booting due to hardware resource
+constraints) for 32 bit platforms with following configuraitons:
+1) IOAPIC diabled
+2) SFI enabled
+3) devicetree (CE4100) enabled
 
+TODO list:
+1) check whether it affects Xen or not
 
-[    1.474523] ------------[ cut here ]------------
-[    1.479150] WARNING: at arch/arm/mm/dma-mapping.c:496 __dma_alloc.isra.19+0x1b8/0x1e0()
-[    1.487160] coherent pool not initialised!
-[    1.491249] Modules linked in:
-[    1.494317] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.10.19+ #55
-[    1.500521] [<80013e20>] (unwind_backtrace+0x0/0xf8) from [<80011c60>] (show_stack+0x10/0x14)
-[    1.509064] [<80011c60>] (show_stack+0x10/0x14) from [<8001eedc>] (warn_slowpath_common+0x4c/0x6c)
-[    1.518038] [<8001eedc>] (warn_slowpath_common+0x4c/0x6c) from [<8001ef90>] (warn_slowpath_fmt+0x30/0x40)
-[    1.527616] [<8001ef90>] (warn_slowpath_fmt+0x30/0x40) from [<80017c28>] (__dma_alloc.isra.19+0x1b8/0x1e0)
-[    1.537282] [<80017c28>] (__dma_alloc.isra.19+0x1b8/0x1e0) from [<80017d7c>] (arm_dma_alloc+0x90/0x98)
-[    1.546608] [<80017d7c>] (arm_dma_alloc+0x90/0x98) from [<8034a860>] (ohci_init+0x1b0/0x278)
-[    1.555062] [<8034a860>] (ohci_init+0x1b0/0x278) from [<80332b0c>] (usb_add_hcd+0x184/0x5b8)
-[    1.563500] [<80332b0c>] (usb_add_hcd+0x184/0x5b8) from [<8034b5e0>] (ohci_platform_probe+0xd0/0x174)
-[    1.572729] [<8034b5e0>] (ohci_platform_probe+0xd0/0x174) from [<802f196c>] (platform_drv_probe+0x14/0x18)
-[    1.582401] [<802f196c>] (platform_drv_probe+0x14/0x18) from [<802f0714>] (driver_probe_device+0x6c/0x1f8)
-[    1.592064] [<802f0714>] (driver_probe_device+0x6c/0x1f8) from [<802f092c>] (__driver_attach+0x8c/0x90)
-[    1.601465] [<802f092c>] (__driver_attach+0x8c/0x90) from [<802eeec8>] (bus_for_each_dev+0x54/0x88)
-[    1.610518] [<802eeec8>] (bus_for_each_dev+0x54/0x88) from [<802efef0>] (bus_add_driver+0xd8/0x230)
-[    1.619572] [<802efef0>] (bus_add_driver+0xd8/0x230) from [<802f0de4>] (driver_register+0x78/0x14c)
-[    1.628632] [<802f0de4>] (driver_register+0x78/0x14c) from [<806ff018>] (ohci_hcd_mod_init+0x34/0x64)
-[    1.637859] [<806ff018>] (ohci_hcd_mod_init+0x34/0x64) from [<8000879c>] (do_one_initcall+0xec/0x14c)
-[    1.647088] [<8000879c>] (do_one_initcall+0xec/0x14c) from [<806dab30>] (kernel_init_freeable+0x150/0x220)
-[    1.656754] [<806dab30>] (kernel_init_freeable+0x150/0x220) from [<80509f54>] (kernel_init+0x8/0xf8)
-[    1.665895] [<80509f54>] (kernel_init+0x8/0xf8) from [<8000e398>] (ret_from_fork+0x14/0x3c)
-[    1.674264] ---[ end trace 6f1857db5ef45cb9 ]---
-[    1.678880] ohci-platform ohci-platform.0: can't setup
-[    1.684027] ohci-platform ohci-platform.0: USB bus 1 deregistered
-[    1.690362] ohci-platform: probe of ohci-platform.0 failed with error -12
-[    1.697188] ohci-platform ohci-platform.1: Generic Platform OHCI Controller
-[    1.704365] ohci-platform ohci-platform.1: new USB bus registered, assigned bus number 1
-[    1.712457] ------------[ cut here ]------------
-[    1.717096] WARNING: at arch/arm/mm/dma-mapping.c:496 __dma_alloc.isra.19+0x1b8/0x1e0()
-[    1.725105] coherent pool not initialised!
-[    1.729194] Modules linked in:
-[    1.732247] CPU: 1 PID: 1 Comm: swapper/0 Tainted: G        W    3.10.19+ #55
-[    1.739404] [<80013e20>] (unwind_backtrace+0x0/0xf8) from [<80011c60>] (show_stack+0x10/0x14)
-[    1.747949] [<80011c60>] (show_stack+0x10/0x14) from [<8001eedc>] (warn_slowpath_common+0x4c/0x6c)
-[    1.756923] [<8001eedc>] (warn_slowpath_common+0x4c/0x6c) from [<8001ef90>] (warn_slowpath_fmt+0x30/0x40)
-[    1.766502] [<8001ef90>] (warn_slowpath_fmt+0x30/0x40) from [<80017c28>] (__dma_alloc.isra.19+0x1b8/0x1e0)
-[    1.776168] [<80017c28>] (__dma_alloc.isra.19+0x1b8/0x1e0) from [<80017d7c>] (arm_dma_alloc+0x90/0x98)
-[    1.785484] [<80017d7c>] (arm_dma_alloc+0x90/0x98) from [<8034a860>] (ohci_init+0x1b0/0x278)
-[    1.793933] [<8034a860>] (ohci_init+0x1b0/0x278) from [<80332b0c>] (usb_add_hcd+0x184/0x5b8)
-[    1.802370] [<80332b0c>] (usb_add_hcd+0x184/0x5b8) from [<8034b5e0>] (ohci_platform_probe+0xd0/0x174)
-[    1.811597] [<8034b5e0>] (ohci_platform_probe+0xd0/0x174) from [<802f196c>] (platform_drv_probe+0x14/0x18)
-[    1.821263] [<802f196c>] (platform_drv_probe+0x14/0x18) from [<802f0714>] (driver_probe_device+0x6c/0x1f8)
-[    1.830926] [<802f0714>] (driver_probe_device+0x6c/0x1f8) from [<802f092c>] (__driver_attach+0x8c/0x90)
-[    1.840326] [<802f092c>] (__driver_attach+0x8c/0x90) from [<802eeec8>] (bus_for_each_dev+0x54/0x88)
-[    1.849379] [<802eeec8>] (bus_for_each_dev+0x54/0x88) from [<802efef0>] (bus_add_driver+0xd8/0x230)
-[    1.858432] [<802efef0>] (bus_add_driver+0xd8/0x230) from [<802f0de4>] (driver_register+0x78/0x14c)
-[    1.867488] [<802f0de4>] (driver_register+0x78/0x14c) from [<806ff018>] (ohci_hcd_mod_init+0x34/0x64)
-[    1.876714] [<806ff018>] (ohci_hcd_mod_init+0x34/0x64) from [<8000879c>] (do_one_initcall+0xec/0x14c)
-[    1.885940] [<8000879c>] (do_one_initcall+0xec/0x14c) from [<806dab30>] (kernel_init_freeable+0x150/0x220)
-[    1.895601] [<806dab30>] (kernel_init_freeable+0x150/0x220) from [<80509f54>] (kernel_init+0x8/0xf8)
-[    1.904741] [<80509f54>] (kernel_init+0x8/0xf8) from [<8000e398>] (ret_from_fork+0x14/0x3c)
-[    1.913085] ---[ end trace 6f1857db5ef45cba ]---
+Patch 1-17 are trivial code improvements, bugfixes and preparation.
 
+Patch 18-24 enable basic irqdomain support and IRQ number dynamic
+allocation.
 
-I'm adding my patch to restrict CMA_SIZE_MBYTES.
-This patch is based on 3.15.0-rc5
+Patch 25-29 consoldate the way to program IOAPIC pins by using
+irqdomain map() interface.
 
--------------------------------- 8< --------------------------------------
- From 9f8e6d3c1f4bdeeeb7af3df7898b773a612c62e8 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Fri, 16 May 2014 16:15:43 +0900
-Subject: [PATCH] drivers/base/Kconfig: restrict CMA size to non-zero value
+Patch 30 cleans up unused interfaces and functions in IOAPIC driver.
 
-The size of CMA area must be larger than zero.
-If the size is zero, CMA canno be initialized.
+Tests and comments are warmly welcomed!
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.c>
----
-  drivers/base/Kconfig |    7 ++++++-
-  1 file changed, 6 insertions(+), 1 deletion(-)
+Jiang Liu (30):
+  genirq, trivial: improve documentation to match current
+    implementation
+  x86, mpparse: use pr_lvl() helper utilities to replace
+    printk(KERN_LVL)
+  x86, mpparse: simplify arch/x86/include/asm/mpspec.h
+  x86, PCI, ACPI: use kmalloc_node() to optimize for performance
+  x86, acpi, irq: kill static function irq_to_gsi()
+  x86, ACPI, trivial: minor improvements to arch/x86/kernel/acpi/boot.c
+  x86, ACPI, irq: enhance error handling in function
+    acpi_register_gsi()
+  x86, ACPI, irq: fix possible eror in GSI to IRQ mapping for legacy
+    IRQ
+  x86, irq, trivial: minor improvements of IRQ related code
+  x86, ioapic: kill unused global variable timer_through_8259
+  x86, ioapic: replace get_nr_irqs_gsi() with
+    arch_dynirq_lower_bound(0)
+  x86, ioapic: kill static variable nr_irqs_gsi
+  x86, ioapic: introduce helper utilities to walk ioapics and pins
+  x86, ioapic: use irq_cfg() instead of irq_get_chip_data() for better
+    readability
+  x86, irq: update high address field when updating affinity for MSI
+    IRQ
+  x86, irq: reorganize IO_APIC_get_PCI_irq_vector() to prepare for
+    irqdomain
+  x86, irq: introduce some helper utilities to improve readability
+  x86, ACPI, irq: consolidate algorithm of mapping (ioapic, pin) to IRQ
+    number
+  x86, irq: introduce mechanisms to support dynamically allocate IRQ
+    for IOAPIC
+  x86, irq: enhance mp_register_ioapic() to support irqdomain
+  x86, ACPI, irq: provide basic irqdomain support
+  x86, mpparse, irq: provide basic irqdomain support
+  x86, devicetree, irq: use common mechanism to support irqdomain
+  x86, SFI, irq: provide basic irqdomain support
+  x86, irq: introduce two helper functions to support irqdomain map
+    operation
+  x86, irq, ACPI: use common irqdomain map interface to program IOAPIC
+    pins
+  x86, irq, mpparse: use common irqdomain map interface to program
+    IOAPIC pins
+  x86, irq, SFI: use common irqdomain map interface to program IOAPIC
+    pins
+  x86, irq, devicetree: use common irqdomain map interface to program
+    IOAPIC pins
+  x86, irq: clean up unused IOAPIC interface
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 4b7b452..19b3578 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -222,13 +222,18 @@ config DMA_CMA
-  if  DMA_CMA
-  comment "Default contiguous memory area size:"
+ Documentation/IRQ-domain.txt      |    3 +-
+ arch/x86/include/asm/apic.h       |    4 +-
+ arch/x86/include/asm/hardirq.h    |    3 -
+ arch/x86/include/asm/io_apic.h    |   44 ++-
+ arch/x86/include/asm/mpspec.h     |   13 -
+ arch/x86/include/asm/prom.h       |    2 -
+ arch/x86/kernel/acpi/boot.c       |  205 ++++++------
+ arch/x86/kernel/apic/apic.c       |    2 +-
+ arch/x86/kernel/apic/io_apic.c    |  623 +++++++++++++++++++++----------------
+ arch/x86/kernel/devicetree.c      |   92 +-----
+ arch/x86/kernel/irqinit.c         |    6 -
+ arch/x86/kernel/mpparse.c         |   97 +++---
+ arch/x86/pci/acpi.c               |    6 +-
+ arch/x86/pci/intel_mid_pci.c      |   17 +-
+ arch/x86/pci/irq.c                |    2 -
+ arch/x86/platform/intel-mid/sfi.c |   18 +-
+ arch/x86/platform/sfi/sfi.c       |   12 +-
+ drivers/iommu/irq_remapping.c     |    4 +-
+ drivers/xen/events/events_base.c  |    2 +-
+ kernel/irq/internals.h            |    2 +-
+ kernel/irq/irqdomain.c            |    6 +-
+ 21 files changed, 581 insertions(+), 582 deletions(-)
 
-+config CMA_SIZE_MBYTES_MAX
-+       int
-+       default 1024
-+
-  config CMA_SIZE_MBYTES
-         int "Size in Mega Bytes"
-         depends on !CMA_SIZE_SEL_PERCENTAGE
-+       range 1 CMA_SIZE_MBYTES_MAX
-         default 16
-         help
-           Defines the size (in MiB) of the default memory area for Contiguous
--         Memory Allocator.
-+         Memory Allocator. This value must be larger than zero.
-
-  config CMA_SIZE_PERCENTAGE
-         int "Percentage of total memory"
---
-1.7.9.5
-
+-- 
+1.7.10.4
 
