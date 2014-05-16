@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309AbaEPNls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:41:48 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:50209 "EHLO
+	id S933355AbaEPNl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:41:57 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:46790 "EHLO
 	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933242AbaEPNlp (ORCPT
+	with ESMTP id S933242AbaEPNlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:41:45 -0400
+	Fri, 16 May 2014 09:41:53 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 32/49] media: davinci: vpif_capture: improve vpif_buffer_queue_setup() function
-Date: Fri, 16 May 2014 19:03:38 +0530
-Message-Id: <1400247235-31434-35-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 34/49] media: davinci: vpif_capture: use vb2_fop_mmap/poll
+Date: Fri, 16 May 2014 19:03:40 +0530
+Message-Id: <1400247235-31434-37-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,88 +24,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-this patch sets the sizes[0] of plane according to the fmt passed
-or which is being set in the channel, in both MMAP and USERPTR buffer
-type.
-
-This patch also move the calculation of offests(vpif_calculate_offsets())
-to queue_setup() callback as after queue_setup() callback the
-application is no longer allowed to change format, and prepares to
-removal of config_params.
-
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpif_capture.c |   40 +++++--------------------
- 1 file changed, 8 insertions(+), 32 deletions(-)
+ drivers/media/platform/davinci/vpif_capture.c |   53 +++----------------------
+ 1 file changed, 6 insertions(+), 47 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 025eb24..c77c176 100644
+index 58dddf6..a50e392 100644
 --- a/drivers/media/platform/davinci/vpif_capture.c
 +++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -134,45 +134,24 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
- {
- 	struct channel_obj *ch = vb2_get_drv_priv(vq);
- 	struct common_obj *common;
--	unsigned long size;
- 
- 	common = &ch->common[VPIF_VIDEO_INDEX];
- 
- 	vpif_dbg(2, debug, "vpif_buffer_setup\n");
- 
--	/* If memory type is not mmap, return */
--	if (V4L2_MEMORY_MMAP == common->memory) {
--		/* Calculate the size of the buffer */
--		size = config_params.channel_bufsize[ch->channel_id];
--		/*
--		 * Checking if the buffer size exceeds the available buffer
--		 * ycmux_mode = 0 means 1 channel mode HD and
--		 * ycmux_mode = 1 means 2 channels mode SD
--		 */
--		if (ch->vpifparams.std_info.ycmux_mode == 0) {
--			if (config_params.video_limit[ch->channel_id])
--				while (size * *nbuffers >
--					(config_params.video_limit[0]
--						+ config_params.video_limit[1]))
--					(*nbuffers)--;
--		} else {
--			if (config_params.video_limit[ch->channel_id])
--				while (size * *nbuffers >
--				config_params.video_limit[ch->channel_id])
--					(*nbuffers)--;
--		}
--
--	} else {
--		size = common->fmt.fmt.pix.sizeimage;
--	}
-+	if (fmt && fmt->fmt.pix.sizeimage < common->fmt.fmt.pix.sizeimage)
-+		return -EINVAL;
- 
--	if (*nbuffers < config_params.min_numbuffers)
--		*nbuffers = config_params.min_numbuffers;
-+	if (vq->num_buffers + *nbuffers < 3)
-+		*nbuffers = 3 - vq->num_buffers;
- 
- 	*nplanes = 1;
--	sizes[0] = size;
-+	sizes[0] = fmt ? fmt->fmt.pix.sizeimage : common->fmt.fmt.pix.sizeimage;
- 	alloc_ctxs[0] = common->alloc_ctx;
- 
-+	/* Calculate the offset for Y and C data in the buffer */
-+	vpif_calculate_offsets(ch);
-+
- 	return 0;
+@@ -751,50 +751,6 @@ static void vpif_config_addr(struct channel_obj *ch, int muxmode)
  }
  
-@@ -214,9 +193,6 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	ch->field_id = 0;
- 	common->started = 1;
- 
--	/* Calculate the offset for Y and C data in the buffer */
--	vpif_calculate_offsets(ch);
+ /**
+- * vpif_mmap : It is used to map kernel space buffers into user spaces
+- * @filep: file pointer
+- * @vma: ptr to vm_area_struct
+- */
+-static int vpif_mmap(struct file *filep, struct vm_area_struct *vma)
+-{
+-	/* Get the channel object and file handle object */
+-	struct vpif_fh *fh = filep->private_data;
+-	struct channel_obj *ch = fh->channel;
+-	struct common_obj *common = &(ch->common[VPIF_VIDEO_INDEX]);
+-	int ret;
 -
- 	if ((vpif->std_info.frm_fmt &&
- 	    ((common->fmt.fmt.pix.field != V4L2_FIELD_NONE) &&
- 	     (common->fmt.fmt.pix.field != V4L2_FIELD_ANY))) ||
+-	vpif_dbg(2, debug, "vpif_mmap\n");
+-
+-	if (mutex_lock_interruptible(&common->lock))
+-		return -ERESTARTSYS;
+-	ret = vb2_mmap(&common->buffer_queue, vma);
+-	mutex_unlock(&common->lock);
+-	return ret;
+-}
+-
+-/**
+- * vpif_poll: It is used for select/poll system call
+- * @filep: file pointer
+- * @wait: poll table to wait
+- */
+-static unsigned int vpif_poll(struct file *filep, poll_table * wait)
+-{
+-	struct vpif_fh *fh = filep->private_data;
+-	struct channel_obj *channel = fh->channel;
+-	struct common_obj *common = &(channel->common[VPIF_VIDEO_INDEX]);
+-	unsigned int res = 0;
+-
+-	vpif_dbg(2, debug, "vpif_poll\n");
+-
+-	if (common->started) {
+-		mutex_lock(&common->lock);
+-		res = vb2_poll(&common->buffer_queue, filep, wait);
+-		mutex_unlock(&common->lock);
+-	}
+-	return res;
+-}
+-
+-/**
+  * vpif_open : vpif open handler
+  * @filep: file ptr
+  *
+@@ -1797,8 +1753,8 @@ static struct v4l2_file_operations vpif_fops = {
+ 	.open = vpif_open,
+ 	.release = vpif_release,
+ 	.unlocked_ioctl = video_ioctl2,
+-	.mmap = vpif_mmap,
+-	.poll = vpif_poll
++	.mmap = vb2_fop_mmap,
++	.poll = vb2_fop_poll
+ };
+ 
+ /* vpif video template */
+@@ -1884,6 +1840,7 @@ static int vpif_async_bound(struct v4l2_async_notifier *notifier,
+ static int vpif_probe_complete(void)
+ {
+ 	struct common_obj *common;
++	struct video_device *vdev;
+ 	struct channel_obj *ch;
+ 	struct vb2_queue *q;
+ 	int i, j, err, k;
+@@ -1931,7 +1888,9 @@ static int vpif_probe_complete(void)
+ 
+ 		INIT_LIST_HEAD(&common->dma_queue);
+ 
+-		err = video_register_device(ch->video_dev,
++		vdev = ch->video_dev;
++		vdev->queue = q;
++		err = video_register_device(vdev,
+ 					    VFL_TYPE_GRABBER, (j ? 1 : 0));
+ 		if (err)
+ 			goto probe_out;
 -- 
 1.7.9.5
 
