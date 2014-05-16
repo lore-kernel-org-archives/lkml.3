@@ -1,153 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314AbaEPXPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:15:21 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52291 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563AbaEPXPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:15:01 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@kernel.org, Michael Lentine <mlentine@google.com>
-Subject: [PATCH 2/2] perf tools: add automatic remapping of Android libraries
-Date: Sat, 17 May 2014 01:14:47 +0200
-Message-Id: <1400282087-4616-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400282087-4616-1-git-send-email-eranian@google.com>
-References: <1400282087-4616-1-git-send-email-eranian@google.com>
+	id S2992480AbaEPXQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:16:00 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:57087 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932143AbaEPXP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 19:15:59 -0400
+Message-ID: <53769C2A.8050803@ispras.ru>
+Date: Sat, 17 May 2014 03:15:54 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+CC: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ldv-project@linuxtesting.org
+Subject: [BUG] might sleep functions in atomic context in stmmac_resume()
+In-Reply-To: 1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Lentine <mlentine@google.com>
+There are calls to might sleep functions in atomic context in
+stmmac_resume():
+- the first one is clk_prepare_enable(priv->stmmac_clk);
+- the second one is stmmac_hw_setup()
+-> init_dma_desc_rings()
+  -> ﻿stmmac_init_rx_buffers()
+    -> __netdev_alloc_skb(GFP_KERNEL)
 
-This patch automtically adjusts the path of MMAP records
-associated with Android system libraries. It enables running
-perf reporting tools directly on the Android system natively.
+What is the purpose of spin_lock_irqsave(&priv->lock, flags) section?
+What does it protect against?
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Michael Lentine <mlentine@google.com>
----
- tools/perf/util/map.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 88 insertions(+), 1 deletion(-)
+Found by Linux Driver Verification project (linuxtesting.org).
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index ba5f5c0c..1960883 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -32,6 +32,86 @@ static inline int is_no_dso_memory(const char *filename)
- 	       !strcmp(filename, "[heap]");
- }
- 
-+static inline int is_android_lib(const char *filename)
-+{
-+	return !strncmp(filename, "/data/app-lib", 13) ||
-+	       !strncmp(filename, "/system/lib", 11);
-+}
-+
-+static inline bool replace_android_lib(const char *filename, char **newfilename)
-+{
-+	const char *libname;
-+	char *app_abi;
-+	size_t app_abi_length, new_length;
-+	size_t lib_length = 0;
-+
-+	libname  = strrchr(filename, '/');
-+	if (libname)
-+		lib_length = strlen(libname);
-+
-+	app_abi = getenv("APP_ABI");
-+	if (!app_abi)
-+		return false;
-+
-+	app_abi_length = strlen(app_abi);
-+
-+	if (!strncmp(filename, "/data/app-lib", 13)) {
-+		char *apk_path;
-+
-+		if (!app_abi_length)
-+			return false;
-+
-+		new_length = 7 + app_abi_length + lib_length;
-+
-+		apk_path = getenv("APK_PATH");
-+		if(apk_path) {
-+			snprintf(*newfilename, new_length + strlen(apk_path) + 1,
-+				 "%s/libs/%s/%s", apk_path, app_abi, libname);
-+		} else {
-+			snprintf(*newfilename, new_length,
-+				 "libs/%s/%s", app_abi, libname);
-+		}
-+		return true;
-+	}
-+
-+	if (!strncmp(filename, "/system/lib/", 11)) {
-+		char *ndk, *app;
-+		const char *arch;
-+		size_t ndk_length;
-+		size_t app_length;
-+
-+		ndk = getenv("NDK_ROOT");
-+		app = getenv("APP_PLATFORM");
-+
-+		if (!(ndk && app))
-+			return false;
-+
-+		ndk_length = strlen(ndk);
-+		app_length = strlen(app);
-+
-+		if (!(ndk_length && app_length && app_abi_length))
-+			return false;
-+
-+		arch = !strncmp(app_abi, "arm", 3) ? "arm" :
-+		       !strncmp(app_abi, "mips", 4) ? "mips" :
-+		       !strncmp(app_abi, "x86", 3) ? "x86" : NULL;
-+
-+		if (!arch)
-+			return false;
-+
-+		new_length = 27 + ndk_length +
-+			     app_length + lib_length
-+			   + strlen(arch);
-+
-+		snprintf(*newfilename, new_length,
-+			"%s/platforms/%s/arch-%s/usr/lib/%s",
-+			ndk, app, arch, libname);
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
- void map__init(struct map *map, enum map_type type,
- 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
- {
-@@ -59,8 +139,9 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 	if (map != NULL) {
- 		char newfilename[PATH_MAX];
- 		struct dso *dso;
--		int anon, no_dso, vdso;
-+		int anon, no_dso, vdso, android;
- 
-+		android = is_android_lib(filename);
- 		anon = is_anon_memory(filename);
- 		vdso = is_vdso_map(filename);
- 		no_dso = is_no_dso_memory(filename);
-@@ -75,6 +156,12 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			filename = newfilename;
- 		}
- 
-+		if (android) {
-+			char *newfilename_ptr = newfilename;
-+			if (replace_android_lib(filename, &newfilename_ptr))
-+				filename = newfilename;
-+		}
-+
- 		if (vdso) {
- 			pgoff = 0;
- 			dso = vdso__dso_findnew(dsos__list);
--- 
-1.9.1.423.g4596e3a
-
+--
+Alexey Khoroshilov
+Linux Verification Center, ISPRAS
+web: http://linuxtesting.org
