@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992476AbaEPXI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:08:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52424 "EHLO
+	id S2992517AbaEPXIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:08:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52420 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756633AbaEPXHU (ORCPT
+	with ESMTP id S1756176AbaEPXHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:07:20 -0400
+	Fri, 16 May 2014 19:07:19 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 6/7] clk: qcom: Support msm8974pro global clock control hardware
-Date: Fri, 16 May 2014 16:07:13 -0700
-Message-Id: <1400281634-9313-7-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 4/7] clk: qcom: Support display RCG clocks
+Date: Fri, 16 May 2014 16:07:11 -0700
+Message-Id: <1400281634-9313-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
 References: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
@@ -21,241 +21,375 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new PLL (gpll4) is added on msm8974 PRO devices to support a
-faster sdc1 clock rate. Add support for this and the two new sdcc
-cal clocks.
+Add support for the DSI/EDP/HDMI RCG clocks. With the proper
+display driver in place this should allow us to support display
+clocks on msm8974 based devices.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../devicetree/bindings/clock/qcom,gcc.txt         |   2 +
- drivers/clk/qcom/gcc-msm8974.c                     | 130 ++++++++++++++++++++-
- include/dt-bindings/clock/qcom,gcc-msm8974.h       |   4 +
- 3 files changed, 130 insertions(+), 6 deletions(-)
+ drivers/clk/qcom/clk-rcg.h  |   3 +
+ drivers/clk/qcom/clk-rcg2.c | 299 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 287 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/qcom,gcc.txt b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-index 7b7104e8cb1e..9cfcb4f2bc97 100644
---- a/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-+++ b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-@@ -8,6 +8,8 @@ Required properties :
- 			"qcom,gcc-msm8660"
- 			"qcom,gcc-msm8960"
- 			"qcom,gcc-msm8974"
-+			"qcom,gcc-msm8974pro"
-+			"qcom,gcc-msm8974pro-ac"
+diff --git a/drivers/clk/qcom/clk-rcg.h b/drivers/clk/qcom/clk-rcg.h
+index 1d6b6dece328..b9ec11dfd1b4 100644
+--- a/drivers/clk/qcom/clk-rcg.h
++++ b/drivers/clk/qcom/clk-rcg.h
+@@ -155,5 +155,8 @@ struct clk_rcg2 {
+ #define to_clk_rcg2(_hw) container_of(to_clk_regmap(_hw), struct clk_rcg2, clkr)
  
- - reg : shall contain base register location and length
- - #clock-cells : shall contain 1
-diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
-index 0d1edc1e9b31..33eb051d7255 100644
---- a/drivers/clk/qcom/gcc-msm8974.c
-+++ b/drivers/clk/qcom/gcc-msm8974.c
-@@ -35,6 +35,7 @@
- #define P_XO	0
- #define P_GPLL0	1
- #define P_GPLL1	1
-+#define P_GPLL4	2
+ extern const struct clk_ops clk_rcg2_ops;
++extern const struct clk_ops clk_edp_pixel_ops;
++extern const struct clk_ops clk_byte_ops;
++extern const struct clk_ops clk_pixel_ops;
  
- static const u8 gcc_xo_gpll0_map[] = {
- 	[P_XO]		= 0,
-@@ -46,6 +47,18 @@ static const char *gcc_xo_gpll0[] = {
- 	"gpll0_vote",
+ #endif
+diff --git a/drivers/clk/qcom/clk-rcg2.c b/drivers/clk/qcom/clk-rcg2.c
+index cbecaec30562..cd185d5cc67a 100644
+--- a/drivers/clk/qcom/clk-rcg2.c
++++ b/drivers/clk/qcom/clk-rcg2.c
+@@ -19,6 +19,7 @@
+ #include <linux/clk-provider.h>
+ #include <linux/delay.h>
+ #include <linux/regmap.h>
++#include <linux/math64.h>
+ 
+ #include <asm/div64.h>
+ 
+@@ -225,31 +226,25 @@ static long clk_rcg2_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 	return _freq_tbl_determine_rate(hw, rcg->freq_tbl, rate, p_rate, p);
+ }
+ 
+-static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
++static int clk_rcg2_configure(struct clk_rcg2 *rcg, const struct freq_tbl *f)
+ {
+-	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
+-	const struct freq_tbl *f;
+ 	u32 cfg, mask;
+ 	int ret;
+ 
+-	f = find_freq(rcg->freq_tbl, rate);
+-	if (!f)
+-		return -EINVAL;
+-
+ 	if (rcg->mnd_width && f->n) {
+ 		mask = BIT(rcg->mnd_width) - 1;
+-		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + M_REG,
+-					 mask, f->m);
++		ret = regmap_update_bits(rcg->clkr.regmap,
++				rcg->cmd_rcgr + M_REG, mask, f->m);
+ 		if (ret)
+ 			return ret;
+ 
+-		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + N_REG,
+-					 mask, ~(f->n - f->m));
++		ret = regmap_update_bits(rcg->clkr.regmap,
++				rcg->cmd_rcgr + N_REG, mask, ~(f->n - f->m));
+ 		if (ret)
+ 			return ret;
+ 
+-		ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + D_REG,
+-					 mask, ~f->n);
++		ret = regmap_update_bits(rcg->clkr.regmap,
++				rcg->cmd_rcgr + D_REG, mask, ~f->n);
+ 		if (ret)
+ 			return ret;
+ 	}
+@@ -260,14 +255,26 @@ static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
+ 	cfg |= rcg->parent_map[f->src] << CFG_SRC_SEL_SHIFT;
+ 	if (rcg->mnd_width && f->n)
+ 		cfg |= CFG_MODE_DUAL_EDGE;
+-	ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, mask,
+-			cfg);
++	ret = regmap_update_bits(rcg->clkr.regmap,
++			rcg->cmd_rcgr + CFG_REG, mask, cfg);
+ 	if (ret)
+ 		return ret;
+ 
+ 	return update_config(rcg);
+ }
+ 
++static int __clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	const struct freq_tbl *f;
++
++	f = find_freq(rcg->freq_tbl, rate);
++	if (!f)
++		return -EINVAL;
++
++	return clk_rcg2_configure(rcg, f);
++}
++
+ static int clk_rcg2_set_rate(struct clk_hw *hw, unsigned long rate,
+ 			    unsigned long parent_rate)
+ {
+@@ -290,3 +297,265 @@ const struct clk_ops clk_rcg2_ops = {
+ 	.set_rate_and_parent = clk_rcg2_set_rate_and_parent,
  };
- 
-+static const u8 gcc_xo_gpll0_gpll4_map[] = {
-+	[P_XO]		= 0,
-+	[P_GPLL0]	= 1,
-+	[P_GPLL4]	= 5,
+ EXPORT_SYMBOL_GPL(clk_rcg2_ops);
++
++struct frac_entry {
++	int num;
++	int den;
 +};
 +
-+static const char *gcc_xo_gpll0_gpll4[] = {
-+	"xo",
-+	"gpll0_vote",
-+	"gpll4_vote",
++static const struct frac_entry frac_table_675m[] = {	/* link rate of 270M */
++	{ 52, 295 },	/* 119 M */
++	{ 11, 57 },	/* 130.25 M */
++	{ 63, 307 },	/* 138.50 M */
++	{ 11, 50 },	/* 148.50 M */
++	{ 47, 206 },	/* 154 M */
++	{ 31, 100 },	/* 205.25 M */
++	{ 107, 269 },	/* 268.50 M */
++	{ },
 +};
 +
- #define F(f, s, h, m, n) { (f), (s), (2 * (h) - 1), (m), (n) }
- 
- static struct clk_pll gpll0 = {
-@@ -138,6 +151,33 @@ static struct clk_regmap gpll1_vote = {
- 	},
- };
- 
-+static struct clk_pll gpll4 = {
-+	.l_reg = 0x1dc4,
-+	.m_reg = 0x1dc8,
-+	.n_reg = 0x1dcc,
-+	.config_reg = 0x1dd4,
-+	.mode_reg = 0x1dc0,
-+	.status_reg = 0x1ddc,
-+	.status_bit = 17,
-+	.clkr.hw.init = &(struct clk_init_data){
-+		.name = "gpll4",
-+		.parent_names = (const char *[]){ "xo" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_ops,
-+	},
++static struct frac_entry frac_table_810m[] = { /* Link rate of 162M */
++	{ 31, 211 },	/* 119 M */
++	{ 32, 199 },	/* 130.25 M */
++	{ 63, 307 },	/* 138.50 M */
++	{ 11, 60 },	/* 148.50 M */
++	{ 50, 263 },	/* 154 M */
++	{ 31, 120 },	/* 205.25 M */
++	{ 119, 359 },	/* 268.50 M */
++	{ },
 +};
 +
-+static struct clk_regmap gpll4_vote = {
-+	.enable_reg = 0x1480,
-+	.enable_mask = BIT(4),
-+	.hw.init = &(struct clk_init_data){
-+		.name = "gpll4_vote",
-+		.parent_names = (const char *[]){ "gpll4" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_vote_ops,
-+	},
-+};
++static int clk_edp_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
++			      unsigned long parent_rate)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	struct freq_tbl f = *rcg->freq_tbl;
++	const struct frac_entry *frac;
++	int delta = 100000;
++	s64 src_rate = parent_rate;
++	s64 request;
++	u32 mask = BIT(rcg->hid_width) - 1;
++	u32 hid_div;
 +
- static const struct freq_tbl ftbl_gcc_usb30_master_clk[] = {
- 	F(125000000, P_GPLL0, 1, 5, 24),
- 	{ }
-@@ -812,18 +852,33 @@ static const struct freq_tbl ftbl_gcc_sdcc1_4_apps_clk[] = {
- 	{ }
- };
- 
-+static const struct freq_tbl ftbl_gcc_sdcc1_apps_clk_pro[] = {
-+	F(144000, P_XO, 16, 3, 25),
-+	F(400000, P_XO, 12, 1, 4),
-+	F(20000000, P_GPLL0, 15, 1, 2),
-+	F(25000000, P_GPLL0, 12, 1, 2),
-+	F(50000000, P_GPLL0, 12, 0, 0),
-+	F(100000000, P_GPLL0, 6, 0, 0),
-+	F(192000000, P_GPLL4, 4, 0, 0),
-+	F(200000000, P_GPLL0, 3, 0, 0),
-+	F(384000000, P_GPLL4, 2, 0, 0),
++	if (src_rate == 810000000)
++		frac = frac_table_810m;
++	else
++		frac = frac_table_675m;
++
++	for (; frac->num; frac++) {
++		request = rate;
++		request *= frac->den;
++		request = div_s64(request, frac->num);
++		if ((src_rate < (request - delta)) ||
++		    (src_rate > (request + delta)))
++			continue;
++
++		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
++				&hid_div);
++		f.pre_div = hid_div;
++		f.pre_div >>= CFG_SRC_DIV_SHIFT;
++		f.pre_div &= mask;
++		f.m = frac->num;
++		f.n = frac->den;
++
++		return clk_rcg2_configure(rcg, &f);
++	}
++
++	return -EINVAL;
++}
++
++static int clk_edp_pixel_set_rate_and_parent(struct clk_hw *hw,
++		unsigned long rate, unsigned long parent_rate, u8 index)
++{
++	/* Parent index is set statically in frequency table */
++	return clk_edp_pixel_set_rate(hw, rate, parent_rate);
++}
++
++static long clk_edp_pixel_determine_rate(struct clk_hw *hw, unsigned long rate,
++				 unsigned long *p_rate, struct clk **p)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	const struct freq_tbl *f = rcg->freq_tbl;
++	const struct frac_entry *frac;
++	int delta = 100000;
++	s64 src_rate = *p_rate;
++	s64 request;
++	u32 mask = BIT(rcg->hid_width) - 1;
++	u32 hid_div;
++
++	/* Force the correct parent */
++	*p = clk_get_parent_by_index(hw->clk, f->src);
++
++	if (src_rate == 810000000)
++		frac = frac_table_810m;
++	else
++		frac = frac_table_675m;
++
++	for (; frac->num; frac++) {
++		request = rate;
++		request *= frac->den;
++		request = div_s64(request, frac->num);
++		if ((src_rate < (request - delta)) ||
++		    (src_rate > (request + delta)))
++			continue;
++
++		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
++				&hid_div);
++		hid_div >>= CFG_SRC_DIV_SHIFT;
++		hid_div &= mask;
++
++		return calc_rate(src_rate, frac->num, frac->den, !!frac->den,
++				 hid_div);
++	}
++
++	return -EINVAL;
++}
++
++const struct clk_ops clk_edp_pixel_ops = {
++	.is_enabled = clk_rcg2_is_enabled,
++	.get_parent = clk_rcg2_get_parent,
++	.set_parent = clk_rcg2_set_parent,
++	.recalc_rate = clk_rcg2_recalc_rate,
++	.set_rate = clk_edp_pixel_set_rate,
++	.set_rate_and_parent = clk_edp_pixel_set_rate_and_parent,
++	.determine_rate = clk_edp_pixel_determine_rate,
++};
++EXPORT_SYMBOL_GPL(clk_edp_pixel_ops);
++
++static long clk_byte_determine_rate(struct clk_hw *hw, unsigned long rate,
++			 unsigned long *p_rate, struct clk **p)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	const struct freq_tbl *f = rcg->freq_tbl;
++	unsigned long parent_rate, div;
++	u32 mask = BIT(rcg->hid_width) - 1;
++
++	if (rate == 0)
++		return -EINVAL;
++
++	*p = clk_get_parent_by_index(hw->clk, f->src);
++	*p_rate = parent_rate = __clk_round_rate(*p, rate);
++
++	div = DIV_ROUND_UP((2 * parent_rate), rate) - 1;
++	div = min_t(u32, div, mask);
++
++	return calc_rate(parent_rate, 0, 0, 0, div);
++}
++
++static int clk_byte_set_rate(struct clk_hw *hw, unsigned long rate,
++			 unsigned long parent_rate)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	struct freq_tbl f = *rcg->freq_tbl;
++	unsigned long div;
++	u32 mask = BIT(rcg->hid_width) - 1;
++
++	div = DIV_ROUND_UP((2 * parent_rate), rate) - 1;
++	div = min_t(u32, div, mask);
++
++	f.pre_div = div;
++
++	return clk_rcg2_configure(rcg, &f);
++}
++
++static int clk_byte_set_rate_and_parent(struct clk_hw *hw,
++		unsigned long rate, unsigned long parent_rate, u8 index)
++{
++	/* Parent index is set statically in frequency table */
++	return clk_byte_set_rate(hw, rate, parent_rate);
++}
++
++const struct clk_ops clk_byte_ops = {
++	.is_enabled = clk_rcg2_is_enabled,
++	.get_parent = clk_rcg2_get_parent,
++	.set_parent = clk_rcg2_set_parent,
++	.recalc_rate = clk_rcg2_recalc_rate,
++	.set_rate = clk_byte_set_rate,
++	.set_rate_and_parent = clk_byte_set_rate_and_parent,
++	.determine_rate = clk_byte_determine_rate,
++};
++EXPORT_SYMBOL_GPL(clk_byte_ops);
++
++static const struct frac_entry frac_table_pixel[] = {
++	{ 3, 8 },
++	{ 2, 9 },
++	{ 4, 9 },
++	{ 1, 1 },
 +	{ }
 +};
 +
-+static struct clk_init_data sdcc1_apps_clk_src_init = {
-+	.name = "sdcc1_apps_clk_src",
-+	.parent_names = gcc_xo_gpll0,
-+	.num_parents = 2,
-+	.ops = &clk_rcg2_ops,
-+};
-+
- static struct clk_rcg2 sdcc1_apps_clk_src = {
- 	.cmd_rcgr = 0x04d0,
- 	.mnd_width = 8,
- 	.hid_width = 5,
- 	.parent_map = gcc_xo_gpll0_map,
- 	.freq_tbl = ftbl_gcc_sdcc1_4_apps_clk,
--	.clkr.hw.init = &(struct clk_init_data){
--		.name = "sdcc1_apps_clk_src",
--		.parent_names = gcc_xo_gpll0,
--		.num_parents = 2,
--		.ops = &clk_rcg2_ops,
--	},
-+	.clkr.hw.init = &sdcc1_apps_clk_src_init,
- };
- 
- static struct clk_rcg2 sdcc2_apps_clk_src = {
-@@ -1995,6 +2050,38 @@ static struct clk_branch gcc_sdcc1_apps_clk = {
- 	},
- };
- 
-+static struct clk_branch gcc_sdcc1_cdccal_ff_clk = {
-+	.halt_reg = 0x04e8,
-+	.clkr = {
-+		.enable_reg = 0x04e8,
-+		.enable_mask = BIT(0),
-+		.hw.init = &(struct clk_init_data){
-+			.name = "gcc_sdcc1_cdccal_ff_clk",
-+			.parent_names = (const char *[]){
-+				"xo"
-+			},
-+			.num_parents = 1,
-+			.ops = &clk_branch2_ops,
-+		},
-+	},
-+};
-+
-+static struct clk_branch gcc_sdcc1_cdccal_sleep_clk = {
-+	.halt_reg = 0x04e4,
-+	.clkr = {
-+		.enable_reg = 0x04e4,
-+		.enable_mask = BIT(0),
-+		.hw.init = &(struct clk_init_data){
-+			.name = "gcc_sdcc1_cdccal_sleep_clk",
-+			.parent_names = (const char *[]){
-+				"sleep_clk_src"
-+			},
-+			.num_parents = 1,
-+			.ops = &clk_branch2_ops,
-+		},
-+	},
-+};
-+
- static struct clk_branch gcc_sdcc2_ahb_clk = {
- 	.halt_reg = 0x0508,
- 	.clkr = {
-@@ -2484,6 +2571,10 @@ static struct clk_regmap *gcc_msm8974_clocks[] = {
- 	[GCC_USB_HSIC_IO_CAL_SLEEP_CLK] = &gcc_usb_hsic_io_cal_sleep_clk.clkr,
- 	[GCC_USB_HSIC_SYSTEM_CLK] = &gcc_usb_hsic_system_clk.clkr,
- 	[GCC_MMSS_GPLL0_CLK_SRC] = &gcc_mmss_gpll0_clk_src,
-+	[GPLL4] = NULL,
-+	[GPLL4_VOTE] = NULL,
-+	[GCC_SDCC1_CDCCAL_SLEEP_CLK] = NULL,
-+	[GCC_SDCC1_CDCCAL_FF_CLK] = NULL,
- };
- 
- static const struct qcom_reset_map gcc_msm8974_resets[] = {
-@@ -2585,14 +2676,41 @@ static const struct qcom_cc_desc gcc_msm8974_desc = {
- 
- static const struct of_device_id gcc_msm8974_match_table[] = {
- 	{ .compatible = "qcom,gcc-msm8974" },
-+	{ .compatible = "qcom,gcc-msm8974pro" , .data = (void *)1UL },
-+	{ .compatible = "qcom,gcc-msm8974pro-ac", .data = (void *)1UL },
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, gcc_msm8974_match_table);
- 
-+static void msm8974_pro_clock_override(void)
++static long clk_pixel_determine_rate(struct clk_hw *hw, unsigned long rate,
++				 unsigned long *p_rate, struct clk **p)
 +{
-+	sdcc1_apps_clk_src_init.parent_names = gcc_xo_gpll0_gpll4;
-+	sdcc1_apps_clk_src_init.num_parents = 3;
-+	sdcc1_apps_clk_src.freq_tbl = ftbl_gcc_sdcc1_apps_clk_pro;
-+	sdcc1_apps_clk_src.parent_map = gcc_xo_gpll0_gpll4_map;
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	unsigned long request, src_rate;
++	int delta = 100000;
++	const struct freq_tbl *f = rcg->freq_tbl;
++	const struct frac_entry *frac = frac_table_pixel;
++	struct clk *parent = *p = clk_get_parent_by_index(hw->clk, f->src);
 +
-+	gcc_msm8974_clocks[GPLL4] = &gpll4.clkr;
-+	gcc_msm8974_clocks[GPLL4_VOTE] = &gpll4_vote;
-+	gcc_msm8974_clocks[GCC_SDCC1_CDCCAL_SLEEP_CLK] =
-+		&gcc_sdcc1_cdccal_sleep_clk.clkr;
-+	gcc_msm8974_clocks[GCC_SDCC1_CDCCAL_FF_CLK] =
-+		&gcc_sdcc1_cdccal_ff_clk.clkr;
++	for (; frac->num; frac++) {
++		request = (rate * frac->den) / frac->num;
++
++		src_rate = __clk_round_rate(parent, request);
++		if ((src_rate < (request - delta)) ||
++			(src_rate > (request + delta)))
++			continue;
++
++		*p_rate = src_rate;
++		return (src_rate * frac->num) / frac->den;
++	}
++
++	return -EINVAL;
 +}
 +
- static int gcc_msm8974_probe(struct platform_device *pdev)
- {
- 	struct clk *clk;
- 	struct device *dev = &pdev->dev;
-+	bool pro;
-+	const struct of_device_id *id;
++static int clk_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
++		unsigned long parent_rate)
++{
++	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
++	struct freq_tbl f = *rcg->freq_tbl;
++	const struct frac_entry *frac = frac_table_pixel;
++	unsigned long request, src_rate;
++	int delta = 100000;
++	u32 mask = BIT(rcg->hid_width) - 1;
++	u32 hid_div;
++	struct clk *parent = clk_get_parent_by_index(hw->clk, f.src);
 +
-+	id = of_match_device(gcc_msm8974_match_table, dev);
-+	if (!id)
-+		return -ENODEV;
-+	pro = !!(id->data);
++	for (; frac->num; frac++) {
++		request = (rate * frac->den) / frac->num;
 +
-+	if (pro)
-+		msm8974_pro_clock_override();
- 
- 	/* Temporary until RPM clocks supported */
- 	clk = clk_register_fixed_rate(dev, "xo", NULL, CLK_IS_ROOT, 19200000);
-diff --git a/include/dt-bindings/clock/qcom,gcc-msm8974.h b/include/dt-bindings/clock/qcom,gcc-msm8974.h
-index 223ca174d9d3..51e51c860fe6 100644
---- a/include/dt-bindings/clock/qcom,gcc-msm8974.h
-+++ b/include/dt-bindings/clock/qcom,gcc-msm8974.h
-@@ -316,5 +316,9 @@
- #define GCC_CE2_CLK_SLEEP_ENA					299
- #define GCC_CE2_AXI_CLK_SLEEP_ENA				300
- #define GCC_CE2_AHB_CLK_SLEEP_ENA				301
-+#define GPLL4							302
-+#define GPLL4_VOTE						303
-+#define GCC_SDCC1_CDCCAL_SLEEP_CLK				304
-+#define GCC_SDCC1_CDCCAL_FF_CLK					305
- 
- #endif
++		src_rate = __clk_round_rate(parent, request);
++		if ((src_rate < (request - delta)) ||
++			(src_rate > (request + delta)))
++			continue;
++
++		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
++				&hid_div);
++		f.pre_div = hid_div;
++		f.pre_div >>= CFG_SRC_DIV_SHIFT;
++		f.pre_div &= mask;
++		f.m = frac->num;
++		f.n = frac->den;
++
++		return clk_rcg2_configure(rcg, &f);
++	}
++	return -EINVAL;
++}
++
++static int clk_pixel_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
++		unsigned long parent_rate, u8 index)
++{
++	/* Parent index is set statically in frequency table */
++	return clk_pixel_set_rate(hw, rate, parent_rate);
++}
++
++const struct clk_ops clk_pixel_ops = {
++	.is_enabled = clk_rcg2_is_enabled,
++	.get_parent = clk_rcg2_get_parent,
++	.set_parent = clk_rcg2_set_parent,
++	.recalc_rate = clk_rcg2_recalc_rate,
++	.set_rate = clk_pixel_set_rate,
++	.set_rate_and_parent = clk_pixel_set_rate_and_parent,
++	.determine_rate = clk_pixel_determine_rate,
++};
++EXPORT_SYMBOL_GPL(clk_pixel_ops);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
