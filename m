@@ -1,153 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaEPLtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:49:06 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41931 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898AbaEPLtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:49:03 -0400
-Message-ID: <5375FAE7.1080700@linux.vnet.ibm.com>
-Date: Fri, 16 May 2014 17:17:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1757179AbaEPLt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:49:26 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:6703 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757148AbaEPLtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 07:49:24 -0400
+Message-ID: <5375FB36.8020004@bfs.de>
+Date: Fri, 16 May 2014 13:49:10 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [REGRESSION] funny sched_domain build failure during resume
-References: <20140509160455.GA4486@htj.dyndns.org> <20140514140034.GM30445@twins.programming.kicks-ass.net> <20140514170238.GB15690@htj.dyndns.org> <20140514171051.GX30445@twins.programming.kicks-ass.net> <20140514223648.GH15690@htj.dyndns.org> <20140515144113.GA2886@cmpxchg.org>
-In-Reply-To: <20140515144113.GA2886@cmpxchg.org>
+To: Emil Goode <emilgoode@gmail.com>
+CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com> <5375EB13.8000200@bfs.de> <20140516111646.GC4366@lianli>
+In-Reply-To: <20140516111646.GC4366@lianli>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051611-3864-0000-0000-00000E3CFD8C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 08:11 PM, Johannes Weiner wrote:
-> On Wed, May 14, 2014 at 06:36:48PM -0400, Tejun Heo wrote:
->> On Wed, May 14, 2014 at 07:10:51PM +0200, Peter Zijlstra wrote:
->>> On Wed, May 14, 2014 at 01:02:38PM -0400, Tejun Heo wrote:
->>>> On Wed, May 14, 2014 at 04:00:34PM +0200, Peter Zijlstra wrote:
->>>>> Does something like the below help any? I noticed those things (cpudl
->>>>> and cpupri) had [NR_CPUS] arrays, which is always 'fun'.
->>>>>
->>>>> The below is a mostly no thought involved conversion of cpudl which
->>>>> boots, I'll also do cpupri and then actually stare at the algorithms to
->>>>> see if I didn't make any obvious fails.
->>>>
->>>> Yeah, should avoid large allocation on reasonably sized machines and I
->>>> don't think 2k CPU machines suspend regularly.  Prolly good / safe
->>>> enough for -stable port?  
+
+
+Am 16.05.2014 13:16, schrieb Emil Goode:
+> Hello Walter,
+> 
+> On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
+>>
+>>
+>> Am 16.05.2014 11:54, schrieb Emil Goode:
+>>> If we fail to allocate struct platform_device pdev we
+>>> dereference it after the goto label err.
 >>>
->>> Yeah, its certainly -stable material. Esp. if this cures the immediate
->>> problem.
+>>> I have rearranged the error handling a bit to fix the issue
+>>> and also make it more clear.
+>>>
+>>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+>>> ---
+>>> v2: Changed to return -ENOMEM instead of ret where possible and
+>>>     updated the subject line.
+>>>
+>>>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+>>>  1 file changed, 13 insertions(+), 9 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+>>> index fc4dd7c..68f2a4a 100644
+>>> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+>>> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+>>> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+>>>  
+>>>  	pdev = platform_device_alloc("mx3-camera", 0);
+>>>  	if (!pdev)
+>>> -		goto err;
+>>> +		return ERR_PTR(-ENOMEM);
+>>>  
+>>>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+>>>  	if (!pdev->dev.dma_mask)
+>>> -		goto err;
+>>> +		goto put_pdev;
+>>>  
+>>>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+>>>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>>>  
+>>>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+>>>  	if (ret)
+>>> -		goto err;
+>>> +		goto free_dma_mask;
+>>>  
+>>>  	if (pdata) {
+>>>  		struct mx3_camera_pdata *copied_pdata;
+>>>  
+>>>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+>>> -		if (ret) {
+>>> -err:
+>>> -			kfree(pdev->dev.dma_mask);
+>>> -			platform_device_put(pdev);
+>>> -			return ERR_PTR(-ENODEV);
+>>> -		}
+>>> +		if (ret)
+>>> +			goto free_dma_mask;
+>>> +
+>>>  		copied_pdata = dev_get_platdata(&pdev->dev);
+>>>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
 >>
->> The patches are URL encoded.  Tried to reproduce the problem but
->> haven't succeeded but I'm quite confident about the analysis, so
->> verifying that the high order allocation goes away should be enough.
 >>
->> I instrumented the allocator and it looks like we also have other
->> sources of high order allocation during resume before GFP_IOFS is
->> cleared.  Some kthread creations (order 2, probably okay) and on my
->> test setup a series of order 3 allocations from e1000.
+>> the patch is fine, but what use is this copied_pdata ?
+>> It scope ends next line ?
 >>
->> Cc'ing Bruce for e1000.  Is it necessary to free and re-allocate
->> buffers across suspend/resume?  The driver ends up allocating multiple
->> order-3 regions during resume where mm doesn't have access to backing
->> devices and thus can't compact or reclaim and it's not too unlikely
->> for those allocations to fail.
+>> re,
+>>  wh
+> 
+> I also thought that looked a bit odd, but copied_pdata is a temporary
+> pointer to platform_data of the dev struct.
+> 
+> dev_get_platdata looks like this:
+> 
+> static inline void *dev_get_platdata(const struct device *dev)
+> {
+>         return dev->platform_data;
+> }
+> 
+> So I believe it's a more compact way of writing:
+> 
+> pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
+
+ok i see ...
+
+Both ways are horrible to read, but the second is at least
+understandable. fortunately i am not the maintainer.
+
+thx,
+
+re,
+ wh
+
+> Best regards,
+> 
+> Emil Goode
+> 
 >>
->> I wonder whether we need some generic solution to address the issue.
->> Unfortunately, I don't think it'd be possible to order device
->> initialization to bring up backing devices earlier.  We don't really
->> have that kind of knowledge easily accessible.  Also, I don't think
->> it's realistic to require drivers to avoid high order allocations
->> during resume.
->>
->> Maybe we should pre-reclaim and set aside some amount of memory to be
->> used during resume?  It's a mushy solution but could be good enough.
->> Rafael, Johannes, what do you guys think?
+>>>  	}
+>>>  
+>>>  	return pdev;
+>>> +
+>>> +free_dma_mask:
+>>> +	kfree(pdev->dev.dma_mask);
+>>> +put_pdev:
+>>> +	platform_device_put(pdev);
+>>> +
+>>> +	return ERR_PTR(ret);
+>>>  }
+>>>  
+>>>  struct platform_device *__init imx_add_mx3_sdc_fb(
 > 
-> Is it necessary that resume paths allocate at all?  Freeing at suspend
-> what you have to reallocate at resume is asking for trouble.  It's not
-> just higher order allocations, either, even order-0 allocations are
-> less reliable without GFP_IOFS.  So I think this should be avoided as
-> much as possible.
->
-
->From the discussion on this thread, what I understand is that certain
-drivers and some subsystems like the scheduler free memory during suspend
-and allocate them back during resume. But why does that pose a problem
-to the MM subsystem? I mean, the memory freed and the memory requested
-later is not substantially different either in terms of quantity or the
-order of the allocation, right?
-
-If that's the case, then what happened to the freed memory? Did the
-page-cache or other caching mechanism launder most of that so soon, that
-we are forced to rely on reclaim to allocate memory during resume? Isn't
-that somewhat suspicious?
-
-I might be missing something obvious here, but given the fact that tasks
-are frozen during suspend and not a whole lot of things (allocations etc)
-happen in the suspend path, I would expect that whatever memory was freed
-during suspend would naturally remain available during resume as well.
-
-Thoughts?
-
-Regards,
-Srivatsa S. Bhat
-
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: page_alloc: warn about higher-order allocations during
->  suspend
-> 
-> Higher-order allocations require compaction to work reliably, and
-> compaction requires the ability to do IO.  Unfortunately, backing
-> storage infrastructure is disabled during suspend & resume, and so
-> higher-order allocations can not be supported during that time.
-> 
-> Drivers should refrain from freeing and allocating data structures
-> during suspend and resume entirely, and fall back to order-0 pages if
-> strictly necessary.
-> 
-> Add an extra line of warning to the allocation failure dump when a
-> higher-order allocation fails while backing storage is suspended.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/page_alloc.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba2933c9c0..3acc12c0e093 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2122,6 +2122,16 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
->  	pr_warn("%s: page allocation failure: order:%d, mode:0x%x\n",
->  		current->comm, order, gfp_mask);
-> 
-> +	/*
-> +	 * Compaction doesn't work while backing storage is suspended
-> +	 * in the resume path.  Drivers should refrain from managing
-> +	 * kernel objects during suspend/resume, and leave this task
-> +	 * to init/exit as much as possible.
-> +	 */
-> +	if (order && pm_suspended_storage())
-> +		pr_warn("Higher-order allocations during resume "
-> +			"are unsupported\n");
-> +
->  	dump_stack();
->  	if (!should_suppress_show_mem())
->  		show_mem(filter);
-> 
-
-
