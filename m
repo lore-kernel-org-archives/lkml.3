@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242AbaEPMur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:50:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49599 "EHLO
+	id S1757219AbaEPMuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:50:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754028AbaEPMsW (ORCPT
+	by vger.kernel.org with ESMTP id S1754047AbaEPMsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stefan Behrens" <sbehrens@giantdisaster.de>,
-        "Chris Mason" <chris.mason@fusionio.com>,
-        "Jan Schmidt" <list.btrfs@jan-o-sch.net>,
-        "Josef Bacik" <jbacik@fusionio.com>
+CC: akpm@linux-foundation.org, "Amir Vadai" <amirv@mellanox.com>,
+        "Chris Mason" <clm@fb.com>, "David S. Miller" <davem@davemloft.net>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.950740516@decadent.org.uk>
+Message-ID: <lsq.1400244441.324282050@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 22/34] Btrfs: Don't allocate inode that is already in use
+Subject: [PATCH 3.2 06/34] mlx4_en: don't use napi_synchronize inside
+ mlx4_en_netpoll
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,98 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Behrens <sbehrens@giantdisaster.de>
+From: Chris Mason <clm@fb.com>
 
-commit ff76b0565523319d7c1c0b51d5a5a8915d33efab upstream.
+commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
 
-Due to an off-by-one error, it is possible to reproduce a bug
-when the inode cache is used.
+The mlx4 driver is triggering schedules while atomic inside
+mlx4_en_netpoll:
 
-The same inode number is assigned twice, the second time this
-leads to an EEXIST in btrfs_insert_empty_items().
+	spin_lock_irqsave(&cq->lock, flags);
+	napi_synchronize(&cq->napi);
+		^^^^^ msleep here
+	mlx4_en_process_rx_cq(dev, cq, 0);
+	spin_unlock_irqrestore(&cq->lock, flags);
 
-The issue can happen when a file is removed right after a subvolume
-is created and then a new inode number is created before the
-inodes in free_inode_pinned are processed.
-unlink() calls btrfs_return_ino() which calls start_caching() in this
-case which adds [highest_ino + 1, BTRFS_LAST_FREE_OBJECTID] by
-searching for the highest inode (which already cannot find the
-unlinked one anymore in btrfs_find_free_objectid()). So if this
-unlinked inode's number is equal to the highest_ino + 1 (or >= this value
-instead of > this value which was the off-by-one error), we mustn't add
-the inode number to free_ino_pinned (caching_thread() does it right).
-In this case we need to try directly to add the number to the inode_cache
-which will fail in this case.
+This was part of a patch by Alexander Guller from Mellanox in 2011,
+but it still isn't upstream.
 
-When this inode number is allocated while it is still in free_ino_pinned,
-it is allocated and still added to the free inode cache when the
-pinned inodes are processed, thus one of the following inode number
-allocations will get an inode that is already in use and fail with EEXIST
-in btrfs_insert_empty_items().
-
-One example which was created with the reproducer below:
-Create a snapshot, work in the newly created snapshot for the rest.
-In unlink(inode 34284) call btrfs_return_ino() which calls start_caching().
-start_caching() calls add_free_space [34284, 18446744073709517077].
-In btrfs_return_ino(), call start_caching pinned [34284, 1] which is wrong.
-mkdir() call btrfs_find_ino_for_alloc() which returns the number 34284.
-btrfs_unpin_free_ino calls add_free_space [34284, 1].
-mkdir() call btrfs_find_ino_for_alloc() which returns the number 34284.
-EEXIST when the new inode is inserted.
-
-One possible reproducer is this one:
- #!/bin/sh
- # preparation
-TEST_DEV=/dev/sdc1
-TEST_MNT=/mnt
-umount ${TEST_MNT} 2>/dev/null || true
-mkfs.btrfs -f ${TEST_DEV}
-mount ${TEST_DEV} ${TEST_MNT} -o \
- rw,relatime,compress=lzo,space_cache,inode_cache
-btrfs subv create ${TEST_MNT}/s1
-for i in `seq 34027`; do touch ${TEST_MNT}/s1/${i}; done
-btrfs subv snap ${TEST_MNT}/s1 ${TEST_MNT}/s2
-FILENAME=`find ${TEST_MNT}/s1/ -inum 4085 | sed 's|^.*/\([^/]*\)$|\1|'`
-rm ${TEST_MNT}/s2/$FILENAME
-touch ${TEST_MNT}/s2/$FILENAME
- # the following steps can be repeated to reproduce the issue again and again
-[ -e ${TEST_MNT}/s3 ] && btrfs subv del ${TEST_MNT}/s3
-btrfs subv snap ${TEST_MNT}/s2 ${TEST_MNT}/s3
-rm ${TEST_MNT}/s3/$FILENAME
-touch ${TEST_MNT}/s3/$FILENAME
-ls -alFi ${TEST_MNT}/s?/$FILENAME
-touch ${TEST_MNT}/s3/_1 || logger FAILED
-ls -alFi ${TEST_MNT}/s?/_1
-touch ${TEST_MNT}/s3/_2 || logger FAILED
-ls -alFi ${TEST_MNT}/s?/_2
-touch ${TEST_MNT}/s3/__1 || logger FAILED
-ls -alFi ${TEST_MNT}/s?/__1
-touch ${TEST_MNT}/s3/__2 || logger FAILED
-ls -alFi ${TEST_MNT}/s?/__2
- # if the above is not enough, add the following loop:
-for i in `seq 3 9`; do touch ${TEST_MNT}/s3/__${i} || logger FAILED; done
- #for i in `seq 3 34027`; do touch ${TEST_MNT}/s3/__${i} || logger FAILED; done
- # one of the touch(1) calls in s3 fail due to EEXIST because the inode is
- # already in use that btrfs_find_ino_for_alloc() returns.
-
-Signed-off-by: Stefan Behrens <sbehrens@giantdisaster.de>
-Reviewed-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Acked-By: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/inode-map.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     | 1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 6 +-----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   | 1 -
+ 3 files changed, 1 insertion(+), 7 deletions(-)
 
---- a/fs/btrfs/inode-map.c
-+++ b/fs/btrfs/inode-map.c
-@@ -237,7 +237,7 @@ again:
- 		start_caching(root);
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -58,7 +58,6 @@ int mlx4_en_create_cq(struct mlx4_en_pri
  
- 		if (objectid <= root->cache_progress ||
--		    objectid > root->highest_objectid)
-+		    objectid >= root->highest_objectid)
- 			__btrfs_add_free_space(ctl, objectid, 1);
- 		else
- 			__btrfs_add_free_space(pinned, objectid, 1);
+ 	cq->ring = ring;
+ 	cq->is_tx = mode;
+-	spin_lock_init(&cq->lock);
+ 
+ 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
+ 				cq->buf_size, 2 * PAGE_SIZE);
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -355,15 +355,11 @@ static void mlx4_en_netpoll(struct net_d
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_cq *cq;
+-	unsigned long flags;
+ 	int i;
+ 
+ 	for (i = 0; i < priv->rx_ring_num; i++) {
+ 		cq = &priv->rx_cq[i];
+-		spin_lock_irqsave(&cq->lock, flags);
+-		napi_synchronize(&cq->napi);
+-		mlx4_en_process_rx_cq(dev, cq, 0);
+-		spin_unlock_irqrestore(&cq->lock, flags);
++		napi_schedule(&cq->napi);
+ 	}
+ }
+ #endif
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -300,7 +300,6 @@ struct mlx4_en_cq {
+ 	struct mlx4_cq          mcq;
+ 	struct mlx4_hwq_resources wqres;
+ 	int                     ring;
+-	spinlock_t              lock;
+ 	struct net_device      *dev;
+ 	struct napi_struct	napi;
+ 	/* Per-core Tx cq processing support */
 
