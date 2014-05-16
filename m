@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbaEPJxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:53:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47778 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859AbaEPJxJ (ORCPT
+	id S1756909AbaEPJyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:54:06 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:61605 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730AbaEPJyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:53:09 -0400
-Date: Fri, 16 May 2014 12:52:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: dgap: implement error handling in
- dgap_tty_register()
-Message-ID: <20140516095247.GD16255@mwanda>
-References: <20140425070459.GA9155@devel>
- <20140425092607.GH26890@mwanda>
- <875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
- <535A5535.6000701@compro.net>
- <1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
- <535A7402.1060305@compro.net>
- <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
- <20140426184721.GL26890@mwanda>
- <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
- <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 16 May 2014 05:54:03 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] ARM: imx: fix error handling
+Date: Fri, 16 May 2014 11:54:05 +0200
+Message-Id: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 06:40:28PM +0900, DaeSeok Youn wrote:
-> Hi,
-> 
->  This patch haven't been updated over the past 3 weeks.
-> Will you check for me?
+If we fail to allocate struct platform_device pdev we
+dereference it after the goto label err.
 
-Greg was trying to travel around the world in one month like Jackie
-Chan.  http://www.imdb.com/title/tt0327437/  He is back to work since
-yesterday.
+I have rearranged the error handling a bit to fix the issue
+and also make it more clear.
 
-regards,
-dan carpenter
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+v2: Changed to return -ENOMEM instead of ret where possible and
+    updated the subject line.
+
+ arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+index fc4dd7c..68f2a4a 100644
+--- a/arch/arm/mach-imx/devices/platform-ipu-core.c
++++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+@@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+ 
+ 	pdev = platform_device_alloc("mx3-camera", 0);
+ 	if (!pdev)
+-		goto err;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+ 	if (!pdev->dev.dma_mask)
+-		goto err;
++		goto put_pdev;
+ 
+ 	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+ 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+ 
+ 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+ 	if (ret)
+-		goto err;
++		goto free_dma_mask;
+ 
+ 	if (pdata) {
+ 		struct mx3_camera_pdata *copied_pdata;
+ 
+ 		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+-		if (ret) {
+-err:
+-			kfree(pdev->dev.dma_mask);
+-			platform_device_put(pdev);
+-			return ERR_PTR(-ENODEV);
+-		}
++		if (ret)
++			goto free_dma_mask;
++
+ 		copied_pdata = dev_get_platdata(&pdev->dev);
+ 		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
+ 	}
+ 
+ 	return pdev;
++
++free_dma_mask:
++	kfree(pdev->dev.dma_mask);
++put_pdev:
++	platform_device_put(pdev);
++
++	return ERR_PTR(ret);
+ }
+ 
+ struct platform_device *__init imx_add_mx3_sdc_fb(
+-- 
+1.7.10.4
 
