@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaEPSgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:36:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41529 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbaEPSgs (ORCPT
+	id S932389AbaEPShq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:37:46 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:50430 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813AbaEPShp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:36:48 -0400
-Message-ID: <53765ABB.50602@infradead.org>
-Date: Fri, 16 May 2014 11:36:43 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 16 May 2014 14:37:45 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+Subject: Dell Latitude E6440 & i8k
+Date: Fri, 16 May 2014 20:37:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>
-CC: x86-ml <x86@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Cleanup console loglevels
-References: <20140516174921.GA18778@pd.tnic> <20140516175154.GA18834@pd.tnic>
-In-Reply-To: <20140516175154.GA18834@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart1792207.ZIRLJkuO5B";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201405162037.41782@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 10:51 AM, Borislav Petkov wrote:
-> On Fri, May 16, 2014 at 07:49:21PM +0200, Borislav Petkov wrote:
->> Hi,
->>
->> so I was staring at
->>
->> 12544697f12e ("x86_64: be less annoying on boot, v2")
->>
->> and how naked numbers mean sh*t and how I have to grep sources to find
->> out what this 10 thing means. So how about the following cleanup? We can
->> do it this way, we can do accessors and stuff, whatever. But the naked
->> numbers are plain misleading.
->>
->> So how about it? I'm asking whether it makes sense first before I go
->> and replace all tests of console_loglevel with naked numbers around the
->> tree.
->>
->> Thanks.
->>
->> ---
->> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
->> index 068054f4bf20..0029d974e431 100644
->> --- a/arch/x86/kernel/head64.c
->> +++ b/arch/x86/kernel/head64.c
->> @@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
->>  	 */
->>  	load_ucode_bsp();
->>  
->> -	if (console_loglevel == 10)
->> +	if (console_loglevel >= CONSOLE_LOGLEVEL_QUIET)
-> 
-> That's CONSOLE_LOGLEVEL_DEBUG, of course.
-> 
-> See, misleading. :-P
-> 
+--nextPart1792207.ZIRLJkuO5B
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Absolutely.  I'll ack it with that change.
+Hello,
 
--- 
-~Randy
+on Dell Latitude E6440 driver i8k reporting total nonsense values
+
+$ sensors
+i8k-virtual-0
+Adapter: Virtual device
+Right Fan:   93450 RPM
+CPU:          +57.0=C2=B0C =20
+temp2:        +57.0=C2=B0C =20
+temp3:        +40.0=C2=B0C =20
+temp4:       +127.0=C2=B0C
+
+Right Fan and temp4 are for sure incorrect.
+
+Value temp4 is always 127 and is never changing, but value for=20
+Right Fan is increasing when fan is more noisy. So it looks like=20
+value for Right Fan is not correctly normalized or multiplier is=20
+incorrect.
+
+And name "Right" is incorrect too. Fan is on left side of this=20
+notebook, not right as reported by driver.
+
+It is possible to fix these problems?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1792207.ZIRLJkuO5B
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlN2WvUACgkQi/DJPQPkQ1LR2wCgrZZrmtYWMnpGjG704DDhjzt1
+PSsAn1OaYOxI9IAc6hqLHB2HQxQ4lzEl
+=Q5Yy
+-----END PGP SIGNATURE-----
+
+--nextPart1792207.ZIRLJkuO5B--
