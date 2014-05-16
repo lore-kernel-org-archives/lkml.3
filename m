@@ -1,103 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920AbaEPRIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:08:53 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:46336 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaEPRIv (ORCPT
+	id S1757420AbaEPRKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:10:06 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:48954 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbaEPRKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:08:51 -0400
+	Fri, 16 May 2014 13:10:03 -0400
+Date: Fri, 16 May 2014 13:09:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        ARM kernel mailing list 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 cgroup/for-3.16] cgroup: introduce CSS_NO_REF and skip
+ refcnting on normal root csses
+Message-ID: <20140516170959.GG5379@htj.dyndns.org>
+References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+ <1399670015-23463-10-git-send-email-tj@kernel.org>
+ <53751062.2050401@wwwdotorg.org>
+ <53753823.2090402@wwwdotorg.org>
+ <20140516143718.GA5379@htj.dyndns.org>
+ <20140516154330.GB5379@htj.dyndns.org>
+ <537643F9.1030303@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <CAKohponY6Nn5kYGyps2SLm5uBbH1JWuJBpzzVD=QOc=oM7crAg@mail.gmail.com>
-References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
-	<CAKohponY6Nn5kYGyps2SLm5uBbH1JWuJBpzzVD=QOc=oM7crAg@mail.gmail.com>
-Date: Fri, 16 May 2014 22:38:50 +0530
-X-Google-Sender-Auth: RozTqom6zU6LHFmox8Dr-ykzw6E
-Message-ID: <CAOqmu82GQ2qsm0c7fq8n5ovR7+4j5t_Y3=03S=nWtR+bH3yhdg@mail.gmail.com>
-Subject: Re: [PATCH] PM / OPP: Implement free_opp_table function
-From: Inderpal Singh <inderpal.s@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Pavel Machek <pavel@ucw.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537643F9.1030303@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+9395a4500404 ("cgroup: enable refcnting for root csses") enabled
+reference counting for root csses (cgroup_subsys_states) so that
+cgroup's self csses can be used to manage the lifetime of the
+containing cgroups.
 
-Thanks for the review.
+Unfortunately, this change was incorrect.  During early init,
+cgrp_dfl_root self css refcnt is used.  percpu_ref can't initialized
+during early init and its initialization is deferred till
+cgroup_init() time.  This means that cpu was using percpu_ref which
+wasn't properly initialized.  Due to the way percpu variables are laid
+out on x86, this didn't blow up immediately on x86 but ended up
+incrementing and decrementing the percpu variable at offset zero,
+whatever it may be; however, on other archs, this caused fault and
+early boot failure.
 
-On Fri, May 16, 2014 at 3:36 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 16 May 2014 14:39, Inderpal Singh <inderpal.s@samsung.com> wrote:
->> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
->> +void dev_pm_opp_free_opp_table(struct device *dev)
->> +{
->> +       struct device_opp *dev_opp = NULL;
->> +       struct dev_pm_opp *opp;
->> +
->> +       /* Hold our list modification lock here */
->> +       mutex_lock(&dev_opp_list_lock);
->> +
->> +       /* Check for existing list for 'dev' */
->> +       dev_opp = find_device_opp(dev);
->> +       if (IS_ERR(dev_opp)) {
->> +               mutex_unlock(&dev_opp_list_lock);
->> +               return;
->> +       }
->> +
->> +       while (!list_empty(&dev_opp->opp_list)) {
->> +               opp = list_entry_rcu(dev_opp->opp_list.next,
->> +                                       struct dev_pm_opp, node);
->
-> list_for_each_entry_rcu ?
->
+As cgroup self csses for root cgroups of non-dfl hierarchies need
+working refcounting, we can't revert 9395a4500404.  This patch adds
+CSS_NO_REF which explicitly inhibits reference counting on the css and
+sets it on all normal (non-self) csses and cgroup_dfl_root self css.
 
-list_for_each_entry_rcu can not be used as opp is being deleted in the loop.
+v2: cgrp_dfl_root.self is the offending one.  Set the flag on it.
 
-Thanks,
-Inder
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+Fixes: 9395a4500404 ("cgroup: enable refcnting for root csses")
+---
+Hello,
 
->> +               list_del_rcu(&opp->node);
->> +               kfree_rcu(opp, head);
->> +       }
->> +
->> +       list_del_rcu(&dev_opp->node);
->> +       mutex_unlock(&dev_opp_list_lock);
->> +       synchronize_rcu();
->> +       kfree(dev_opp);
->> +}
->> +EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
->>  #endif
->> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
->> index 0330217..3c29620 100644
->> --- a/include/linux/pm_opp.h
->> +++ b/include/linux/pm_opp.h
->> @@ -50,6 +50,8 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
->>  int dev_pm_opp_disable(struct device *dev, unsigned long freq);
->>
->>  struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
->> +
->> +void dev_pm_opp_free_opp_table(struct device *dev);
->>  #else
->>  static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
->>  {
->> @@ -105,6 +107,10 @@ static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
->>  {
->>         return ERR_PTR(-EINVAL);
->>  }
->> +
->> +void dev_pm_opp_free_opp_table(struct device *dev)
->> +{
->> +}
->>  #endif         /* CONFIG_PM_OPP */
->>
->>  #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
->
-> Otherwise looks fine.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Can you try this one instead?
+
+Thanks.
+
+ include/linux/cgroup.h |   11 ++++++++---
+ kernel/cgroup.c        |   11 +++++++++--
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -77,6 +77,7 @@ struct cgroup_subsys_state {
+ 
+ /* bits in struct cgroup_subsys_state flags field */
+ enum {
++	CSS_NO_REF	= (1 << 0), /* no reference counting for this css */
+ 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
+ };
+ 
+@@ -88,7 +89,8 @@ enum {
+  */
+ static inline void css_get(struct cgroup_subsys_state *css)
+ {
+-	percpu_ref_get(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		percpu_ref_get(&css->refcnt);
+ }
+ 
+ /**
+@@ -103,7 +105,9 @@ static inline void css_get(struct cgroup
+  */
+ static inline bool css_tryget_online(struct cgroup_subsys_state *css)
+ {
+-	return percpu_ref_tryget_live(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		return percpu_ref_tryget_live(&css->refcnt);
++	return true;
+ }
+ 
+ /**
+@@ -114,7 +118,8 @@ static inline bool css_tryget_online(str
+  */
+ static inline void css_put(struct cgroup_subsys_state *css)
+ {
+-	percpu_ref_put(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		percpu_ref_put(&css->refcnt);
+ }
+ 
+ /* bits in struct cgroup flags field */
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4593,11 +4593,17 @@ static void __init cgroup_init_subsys(st
+ 	/* We don't handle early failures gracefully */
+ 	BUG_ON(IS_ERR(css));
+ 	init_and_link_css(css, ss, &cgrp_dfl_root.cgrp);
++
++	/*
++	 * Root csses are never destroyed and we can't initialize
++	 * percpu_ref during early init.  Disable refcnting.
++	 */
++	css->flags |= CSS_NO_REF;
++
+ 	if (early) {
+ 		/* allocation can't be done safely during early init */
+ 		css->id = 1;
+ 	} else {
+-		BUG_ON(percpu_ref_init(&css->refcnt, css_release));
+ 		css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2, GFP_KERNEL);
+ 		BUG_ON(css->id < 0);
+ 	}
+@@ -4636,6 +4642,8 @@ int __init cgroup_init_early(void)
+ 	int i;
+ 
+ 	init_cgroup_root(&cgrp_dfl_root, &opts);
++	cgrp_dfl_root.cgrp.self.flags |= CSS_NO_REF;
++
+ 	RCU_INIT_POINTER(init_task.cgroups, &init_css_set);
+ 
+ 	for_each_subsys(ss, i) {
+@@ -4684,7 +4692,6 @@ int __init cgroup_init(void)
+ 			struct cgroup_subsys_state *css =
+ 				init_css_set.subsys[ss->id];
+ 
+-			BUG_ON(percpu_ref_init(&css->refcnt, css_release));
+ 			css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2,
+ 						   GFP_KERNEL);
+ 			BUG_ON(css->id < 0);
