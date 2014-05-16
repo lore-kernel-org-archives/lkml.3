@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375AbaEPTvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 15:51:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754787AbaEPTvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 15:51:39 -0400
-Date: Fri, 16 May 2014 21:29:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Ingo Molnar <mingo@elte.hu>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: uprobes && shmem (Was: uprobes: Shift ->readpage check from
-	__copy_insn() to uprobe_register())
-Message-ID: <20140516192949.GA16446@redhat.com>
-References: <20140516152919.GA30659@redhat.com> <20140516153058.GA30667@redhat.com> <alpine.LSU.2.11.1405161120410.3604@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1405161120410.3604@eggly.anvils>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S2992480AbaEPTw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 15:52:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46237 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755462AbaEPTw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 15:52:26 -0400
+Message-ID: <1400269941.2221.98.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [lxc-devel] Mount and other notifiers, was: [RFC PATCH 00/11]
+ Add support for devtmpfs in user namespaces
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: mhw@WittsEnd.com
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        Pavel Emelianov <xemul@parallels.com>
+Date: Fri, 16 May 2014 12:52:21 -0700
+In-Reply-To: <1400269360.3540.26.camel@canyon.ip6.wittsend.com>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+	 <20140515013245.GA1764@kroah.com>
+	 <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+	 <20140515031527.GA146352@ubuntu-hedt> <20140515040032.GA6702@kroah.com>
+	 <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+	 <20140515140856.GA17453@kroah.com> <20140515174254.GM21073@ubuntumail>
+	 <20140515221551.GB13306@kroah.com>
+	 <1400204545.7699.128.camel@canyon.ip6.wittsend.com>
+	 <1400268008.2221.84.camel@dabdike.int.hansenpartnership.com>
+	 <1400269360.3540.26.camel@canyon.ip6.wittsend.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Hugh Dickins wrote:
->
-> On Fri, 16 May 2014, Oleg Nesterov wrote:
-> > On 05/16, Oleg Nesterov wrote:
-> > >
-> > > copy_insn() fails with -EIO if ->readpage == NULL
-> >
-> > In particular, this means that we can not probe the binaries on tmpfs.
-> > This is pity.
->
-> Yes, that is a pity: thanks for noticing.
+On Fri, 2014-05-16 at 15:42 -0400, Michael H. Warfield wrote:
+> > As an aside (probably requiring a new thread) we were wondering about
+> > some type of notifier on the mount call that we could vector into the
+> > host to perform the action.  The main issue for us is mount of procfs,
+> > which really needs to be a bind mount in a container.  All of this led
+> > me to speculate that we could use some type of syscall notifier
+> > mechanism to manage capabilities in the host and even intercept and
+> > complete the syscall action within the host rather than having to keep
+> > evolving more an more complex kernel drivers to do this.
+> 
+> Interesting.  That could be very useful.  That might even help with the
+> loop device case where the mounts have to go through loop devices for
+> things like file system images and builds.  Very interesting...
 
-Thanks to Denys ;)
+Right, it might even make the loop case go away because now we can
+present a dummy device in the container and when the host sees and
+attempted mount on this, it just projects a bind mount into the
+container and says I've *wink* mounted your "device" for you.
 
-> > It seems that the potential fix is trivial, copy_insn() could use
-> > shmem_getpage_gfp(). But, is there any way to figure out that this
->
-> shmem_getpage_gfp() itself is static: please use
-> shmem_read_mapping_page(mapping, pgoff): inline in linux/shmem_fs.h,
-> calls shmem_read_mapping_page_gfp() in mm/shmem.c (a very few places
-> need to override gfp_mask too: you do not), calls shmem_getpage_gfp().
+This idea is extremely rough, it came from a conversation I had with
+Pavel (cc'd) just before OpenStack about how we might go about
+eliminating our OpenVZ interception of the mount system call which
+currently does all of this in kernel, so we have no code and no proof
+that it's actually feasible (yet).
 
-Even better, thanks,
+James
 
-> > inode/mapping/aops/whatever is actually shmem?
-> >
-> > I am looking at shmem_get_inode() and I see nothing which could help,
-> > and shmem_aops/etc are all static.
->
-> On 3.15 and later, you're in luck: Hannes added bool shmem_mapping(mapping)
-> in his 0cd6144aadd2 "mm + fs: prepare for non-page entries in page cache
-> radix trees"; and I just checked, it builds for "tiny" !CONFIG_SHMEM too.
-
-Heh. I need to do git pull more often, I guess. Great.
-
-> If you're backporting to an earlier kernel, it would probably be best
-> to add in a very small patch, extracting just shmem_mapping() and its
-> linux/mm.h declarations from 0cd6144aadd2.
->
-> I notice shmem_mapping() checks backing_dev_info,
-> whereas shmem_get_mapping_page_gfp() checks a_ops: no problem in that.
-> But it reminds me that you should test uprobe on SysV SHM when you're
-> done: again I think no problem, but there's an incestuous relationship
-> between shm and shmem that can catch us out when adding such checks.
-
-Hugh, thanks a lot!
-
-Oleg.
 
