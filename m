@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074AbaEPOfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:35:17 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:51353 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145AbaEPOfO (ORCPT
+	id S1757247AbaEPOhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:37:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36144 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166AbaEPOhJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:35:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <5375EDFD.1020708@samsung.com>
-References: <1400175151-27779-1-git-send-email-t.figa@samsung.com>
-	<1400175151-27779-4-git-send-email-t.figa@samsung.com>
-	<CAPdUM4P7Z1eLVKuc0N1iPaekM_7kNv7KCve2MgrEziszfnzz7A@mail.gmail.com>
-	<5375EDFD.1020708@samsung.com>
-Date: Fri, 16 May 2014 20:05:12 +0530
-X-Google-Sender-Auth: 76PWVqGM1i7jGD_33wu79rCAZRg
-Message-ID: <CAPdUM4O4RKFZFR_tcwG4pd7E6KMkneG9R_VbZPt+m4fGG_UFVg@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line
- on Exynos SoCs
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
+	Fri, 16 May 2014 10:37:09 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Tushar Behera <tushar.behera@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>
+Subject: RE: [PATCH v1 1/5] ARM: keystone: add pcie related options
+Thread-Topic: [PATCH v1 1/5] ARM: keystone: add pcie related options
+Thread-Index: Ac9wV22VEP7cn5uSRMOaZ+kpTceLowARZZCAAB3MHnA=
+Date: Fri, 16 May 2014 14:36:37 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7047413F8@DFLE11.ent.ti.com>
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
+ <1400169692-9677-2-git-send-email-m-karicheri2@ti.com>
+ <004e01cf709d$a48b4240$eda1c6c0$%han@samsung.com>
+In-Reply-To: <004e01cf709d$a48b4240$eda1c6c0$%han@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 16:22, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Rahul,
+>-----Original Message-----
+>From: Jingoo Han [mailto:jg1.han@samsung.com]
+>Sent: Thursday, May 15, 2014 8:28 PM
+>To: Karicheri, Muralidharan
+>Cc: linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org; linux-arm-
+>kernel@lists.infradead.org; Shilimkar, Santosh; 'Russell King'; 'Jingoo Han'
+>Subject: Re: [PATCH v1 1/5] ARM: keystone: add pcie related options
 >
-> On 16.05.2014 12:39, Rahul Sharma wrote:
->> [snip]
->>> +       gate->lock = &clkout_lock;
->>> +
->>> +       mux->reg = reg + EXYNOS_PMU_DEBUG_REG;
->>> +       mux->mask = EXYNOS_CLKOUT_MUX_MASK;
->>> +       mux->shift = EXYNOS_CLKOUT_MUX_SHIFT;
->>> +       mux->lock = &clkout_lock;
->>> +
->>> +       clk = clk_register_composite(NULL, "clkout", parent_names,
->>> +                                       parent_count, &mux->hw,
->>> +                                       &clk_mux_ops, NULL, NULL, &gate->hw,
->>> +                                       &clk_gate_ops, 0);
->>> +       if (IS_ERR(clk))
->>> +               goto err_unmap;
->>> +
+>On Friday, May 16, 2014 1:01 AM, Murali Karicheri wrote:
 >>
->> Hi Tomasz,
+>> Add pcie related options by default for keystone architecture
 >>
->> Do we really need a composite clock here? How about registering
->> a mux and a gate separately?
+>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> CC: Russell King <linux@arm.linux.org.uk>
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> ---
+>>  arch/arm/mach-keystone/Kconfig |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-keystone/Kconfig
+>> b/arch/arm/mach-keystone/Kconfig index f50bc93..f87844d 100644
+>> --- a/arch/arm/mach-keystone/Kconfig
+>> +++ b/arch/arm/mach-keystone/Kconfig
+>> @@ -8,6 +8,8 @@ config ARCH_KEYSTONE
+>>  	select COMMON_CLK_KEYSTONE
+>>  	select ARCH_SUPPORTS_BIG_ENDIAN
+>>  	select ZONE_DMA if ARM_LPAE
+>> +	select MIGHT_HAVE_PCI
+>> +	select ARCH_SUPPORTS_MSI
 >
-> What's wrong with a composite clock? It simplifies the code as just a
-> single clock needs to be registered. I don't see any drawbacks compared
-> to registering two clocks separately.
+>Please, don't select ARCH_SUPPORTS_MSI, because this kconfig option was already
+>removed in v3.12 by the commit ebd97be635
+>('PCI: remove ARCH_SUPPORTS_MSI kconfig option'). So. there is NO need to select
+>'ARCH_SUPPORTS_MSI'.
 >
 
-I always took it as a thumb rule to not to use composite clocks if you
-can easily represent the block using basic clocks structures.
+Will do. Thanks.
 
-There can be a problem when drivers using such clocks assume that such
-clock continue to offer composite functionality for all futures SoCs and
-write code around it. This is what we faced when fixing drivers during
-CCF migration.
-
-> Best regards,
-> Tomasz
+>Best regards,
+>Jingoo Han
 >
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>  	help
+>>  	  Support for boards based on the Texas Instruments Keystone family of
+>>  	  SoCs.
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci"
+>> in the body of a message to majordomo@vger.kernel.org More majordomo
+>> info at  http://vger.kernel.org/majordomo-info.html
+
