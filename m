@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043AbaEPRwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:52:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47874 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaEPRwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:52:09 -0400
-Date: Fri, 16 May 2014 19:51:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: x86-ml <x86@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Cleanup console loglevels
-Message-ID: <20140516175154.GA18834@pd.tnic>
-References: <20140516174921.GA18778@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140516174921.GA18778@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758079AbaEPRwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:52:30 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:55048 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756949AbaEPRw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:52:28 -0400
+Date: Fri, 16 May 2014 12:52:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/5] workqueue: Create low-level unbound workqueues
+ cpumask
+In-Reply-To: <1400257015-28222-4-git-send-email-fweisbec@gmail.com>
+Message-ID: <alpine.DEB.2.10.1405161250350.492@gentwo.org>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com> <1400257015-28222-4-git-send-email-fweisbec@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 07:49:21PM +0200, Borislav Petkov wrote:
-> Hi,
-> 
-> so I was staring at
-> 
-> 12544697f12e ("x86_64: be less annoying on boot, v2")
-> 
-> and how naked numbers mean sh*t and how I have to grep sources to find
-> out what this 10 thing means. So how about the following cleanup? We can
-> do it this way, we can do accessors and stuff, whatever. But the naked
-> numbers are plain misleading.
-> 
-> So how about it? I'm asking whether it makes sense first before I go
-> and replace all tests of console_loglevel with naked numbers around the
-> tree.
-> 
-> Thanks.
-> 
-> ---
-> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> index 068054f4bf20..0029d974e431 100644
-> --- a/arch/x86/kernel/head64.c
-> +++ b/arch/x86/kernel/head64.c
-> @@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
->  	 */
->  	load_ucode_bsp();
->  
-> -	if (console_loglevel == 10)
-> +	if (console_loglevel >= CONSOLE_LOGLEVEL_QUIET)
+On Fri, 16 May 2014, Frederic Weisbecker wrote:
 
-That's CONSOLE_LOGLEVEL_DEBUG, of course.
+> It works on a lower-level than the per WQ_SYSFS workqueues cpumask files
+> such that the effective cpumask applied for a given unbound workqueue is
+> the intersection of /sys/devices/virtual/workqueue/$WORKQUEUE/cpumask and
+> the new /sys/devices/virtual/workqueue/cpumask_unbounds file.
 
-See, misleading. :-P
+Why is there "virtual" directory in the path? Workqueues are "virtual"
+devices?
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
