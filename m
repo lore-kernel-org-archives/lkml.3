@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaEPDuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 23:50:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7337 "EHLO mga03.intel.com"
+	id S1753822AbaEPDz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 23:55:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188AbaEPDuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 23:50:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1064,1389772800"; 
-   d="scan'208";a="432890550"
-Date: Fri, 16 May 2014 23:50:13 +0800
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        david.a.cohen@linux.intel.com, Yuan Hang <hang.yuan@intel.com>,
-        Li Jiebing <jiebing.li@intel.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH] usb: dwc3: gadget: check link trb after free_slot is
- increased
-Message-ID: <20140516155013.GE16153@intel.com>
-Reply-To: jin.can.zhuang@intel.com
-References: <20140515215757.GD16153@intel.com>
- <20140515153757.GB7360@saruman.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515153757.GB7360@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753218AbaEPDzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 23:55:25 -0400
+Message-ID: <1400212520.3289.156.camel@ul30vt.home>
+Subject: Re: [PATCH v2 00/15] PCI/iommu: Fix DMA alias problems
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Andrew Cooks <acooks@gmail.com>
+Cc: "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Thu, 15 May 2014 21:55:20 -0600
+In-Reply-To: <CAJtEV7ZETiGMpPhR=drGArMyqpnGFZoR3CkKEELApP+86=Oyfw@mail.gmail.com>
+References: <20140509151735.8321.22017.stgit@bling.home>
+	 <CAJtEV7YYB4W_+nZeMgiqZVDV+M4OyFJVBic09z=KbMjOpihnTQ@mail.gmail.com>
+	 <1400175834.3289.65.camel@ul30vt.home>
+	 <CAJtEV7ZETiGMpPhR=drGArMyqpnGFZoR3CkKEELApP+86=Oyfw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Thu, May 15, 2014 at 10:37:57AM -0500, Felipe Balbi wrote:
-> Hi
+On Fri, 2014-05-16 at 07:45 +0800, Andrew Cooks wrote:
+> Hi Alex
 > 
-> On Fri, May 16, 2014 at 05:57:57AM +0800, Zhuang Jin Can wrote:
-> > In ISOC transfers, when free_slot points to the last TRB (i.e. Link
-> > TRB), and all queued requests meet Missed Interval Isoc error, busy_slot
-> > points to trb0.
-> > 	busy_slot->trb0
-> > 		   trb1
-> > 		   ...
-> > 	free_slot->trb31(Link TRB)
-> > 
-> > After end transfer and receiving the XferNotReady event, trb_left is
-> > caculated as 1 which is wrong, and no TRB will be primed to the
-> > endpoint.
-> > 
-> > The root cause is free_slot is not increased the same way as busy_slot.
-> > When busy_slot is increased by one, it checks if points to a link TRB
-> > after increasement, but free_slot checks it before increasement.
-> > free_slot should behave the same as busy_slot to make the trb_left
-> > caculation correct.
-> > 
-> > Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-> > Signed-off-by: Jiebing Li <jiebing.li@intel.com>
-> > ---
-> >  drivers/usb/dwc3/gadget.c |    8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> > index 54da8c8..2ebe82b 100644
-> > --- a/drivers/usb/dwc3/gadget.c
-> > +++ b/drivers/usb/dwc3/gadget.c
-> > @@ -828,10 +828,6 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
-> >  			length, last ? " last" : "",
-> >  			chain ? " chain" : "");
-> >  
-> > -	/* Skip the LINK-TRB on ISOC */
-> > -	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
-> > -			usb_endpoint_xfer_isoc(dep->endpoint.desc))
-> > -		dep->free_slot++;
-> >  
-> >  	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
+> On Fri, May 16, 2014 at 1:43 AM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Thu, 2014-05-15 at 07:40 +0800, Andrew Cooks wrote:
+> >> Hi Alex
+> >>
+> >> On Fri, May 9, 2014 at 11:28 PM, Alex Williamson
+> >> <alex.williamson@redhat.com> wrote:
+> >> > ....
+> >> >
+> >> > Original description:
+> >> >
+> >> > This series attempts to fix a couple issues we've had outstanding in
+> >> > the PCI/IOMMU code for a while.  The first issue is with devices that
+> >> > use the wrong requester ID for DMA transactions.  We already have a
+> >> > sort of half-baked attempt to fix this for several Ricoh devices, but
+> >> > the fix only helps them be useful through IOMMU groups, not the
+> >> > general DMA case.  There are also several Marvell devices which use
+> >> > use a different wrong requester ID and don't even fit into the DMA
+> >> > source idea.  This series creates a DMA alias iterator that will
+> >> > step through each possible alias of a device, allowing IOMMUs to
+> >> > insert mappings for both the device and its aliases.
+> >> >
+> >> > Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
+> >> > function, which is known to blowup when it finds itself suddenly at
+> >> > a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
+> >> > the PCIe capability).  It also likes to make the invalid assumption
+> >> > that a PCIe device never has its requester ID masked by any usptream
+> >> > bus.  We can fix this using the above new DMA alias iterator, since
+> >> > that's effectively what this function was meant to do.
+> >> >
+> >>
+> >> There are two cases where the DMA requester id seems to use the wrong
+> >> slot (as opposed to function) in the patch I attached to
+> >> https://bugzilla.kernel.org/show_bug.cgi?id=42679
+> >> The original bug reports are listed in the patch.
+> >>
+> >> Unfortunately, I wasn't able to get test feedback on those two cases,
+> >> but I'm wondering...
+> >> Did I understand correctly that a slot alias is something that could be needed?
+> >> If so, is it a variation of the PCIe-to-PCI bridge case that's already
+> >> covered or will it require a different approach?
+> >
+> > Wow, I didn't think that kind of broken was possible.  Maybe instead of
+> > a bitmap of function aliases we could have a single devfn alias for a
+> > device.  That means we'd only be able to support a single alias for a
+> > device, but since I don't think we've seen devices that use more than a
+> > single alias, maybe that's ok.
 > 
-> I have a feeling this has a negative side effect of letting us use the
-> link TRB for data transfer... I mean, if we don't increment free_slot
-> before accessing our trb_pool, we have no way to skip link trb on this
-> access here.
-After every free_slot++ Link TRB is checked and increased if appropriate,
-this guarantees you next time access free_slot, it can't be a Link
-TRB.
+> The current patch creates a context entry for the reported device
+> (function 0), plus it's alias (function 1). Is there reason to always
+> add a context entry for the reported devfn and define 'alias' to mean
+> 'one additional devfn'? That will work for all the Marvell cases.
 
-> 
-> How did you find the bug ? do you have good instructions on how to
-> reproduce it ? How did you test the patch and for how long ?
-The bug is reproduced on Android with f_audio_source.c enabled, which
-has an isoc-in endpoint keeps sending audio data to host in an interval
-of 1 ms. Normally, you need to run for 12+ hours to hit the issue.
-So I think you can just run some isoc transfers for a long time to
-reproduce it. To accelarte the reproducing, you can run some concurrent
-data transfer as well, so the possibility to meet missed interval error
-is larger.
+Right, that's effectively what it would become, probably making use of a
+flag bit to indicate whether the alias devfn is valid.  The
+pci_for_each_dma_alias() would just drop the loop over the
+dma_alias_funcs bitmap at replace it with a test of the flag and single
+dma alias devfn.  I need to think about whether the IOMMU group code can
+is such a simple replacement.
 
-The patch is tested for basic functionality like enumeration, data
-transfers. For this bug, it was tested for 20+ hours.
+I think it makes sense to always include both the actual devfn and, if
+it exists, an alias devfn.  Otherwise we'd just end up with more quirks
+to add later.
 
-Thanks
-Jincan
+> In the testing I did, the Marvell controllers needed context entries
+> for both function 0 and 1. It would be nice if someone could confirm
+> or debunk this. I tested with a 88SE9172 with both ports of the
+> controller in use.
+
+I think 0 needs to be quirked to 1, but I don't think 1 needs to be
+quirked to 0.  Unfortunately intel-iommu doesn't do any of the reference
+counting that amd_iommu does, so if we have 0 aliased to 1 and we unbind
+function 0 from the driver, intel-iommu will also teardown the mapping
+for function 1.  It's horrible.  That's a problem beyond what I'm trying
+to do here though, it already exists if you have two devices behind a
+PCIe-to-PCI bridge.  Thanks,
+
+Alex
 
