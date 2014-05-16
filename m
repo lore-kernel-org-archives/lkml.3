@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970AbaEPPZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:25:14 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62115 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932347AbaEPPZM (ORCPT
+	id S932995AbaEPPZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:25:37 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:52191 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932510AbaEPPZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:25:12 -0400
-Message-ID: <1400253910.20342.52.camel@x220>
-Subject: [PATCH] ARM: remove check for CONFIG_CPU_ICACHE_STREAMING_DISABLE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 16 May 2014 17:25:10 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 May 2014 15:25:10.0619 (UTC) FILETIME=[069F42B0:01CF711B]
-X-RcptDomain: vger.kernel.org
+	Fri, 16 May 2014 11:25:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAVeFuLqF6d+-BHhFzL+w9bFNxbxWV97dsx1Kbd2GD1PNf3UFg@mail.gmail.com>
+References: <1399175125-6430-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkdYM5W2oVT0y25u+BhWHpVma5fRP8MgmEH46dAyu8L8-2g@mail.gmail.com>
+	<CAAVeFuLqF6d+-BHhFzL+w9bFNxbxWV97dsx1Kbd2GD1PNf3UFg@mail.gmail.com>
+Date: Fri, 16 May 2014 17:25:35 +0200
+Message-ID: <CACRpkdYPcG-16aeMRKdbqGiz+coXE68p3u_tZNV2cYJgdp6j0g@mail.gmail.com>
+Subject: Re: [PATCH] gpio: make of_get_named_gpiod_flags() private
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A check for CONFIG_CPU_ICACHE_STREAMING_DISABLE was added in v2.6.4. But
-the related Kconfig symbol was never added to the tree. So that check
-has evaluated to false for a decade. Let's remove that check and the
-single line it guards.
+On Tue, May 13, 2014 at 3:23 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, May 13, 2014 at 10:17 PM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+>>> This results in all references to gpiod_* functions in of_gpio.h being
+>>> gone, which is the way it should be since this file is part of the old
+>>> integer GPIO interface.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>
+>> This patch broke a lot of drivers so I had to take it out again...
+>
+> That's unexpected - what happens with it?
 
- arch/arm/mm/proc-arm925.S | 3 ---
- 1 file changed, 3 deletions(-)
+I got a horde of mails from Fengguang's autobuilder, I think you got
+them as well ... else tell me and I'll dig them up.
 
-diff --git a/arch/arm/mm/proc-arm925.S b/arch/arm/mm/proc-arm925.S
-index 97448c3acf38..3c31f32153ad 100644
---- a/arch/arm/mm/proc-arm925.S
-+++ b/arch/arm/mm/proc-arm925.S
-@@ -441,9 +441,6 @@ ENTRY(cpu_arm925_set_pte_ext)
- 	.type	__arm925_setup, #function
- __arm925_setup:
- 	mov	r0, #0
--#if defined(CONFIG_CPU_ICACHE_STREAMING_DISABLE)
--        orr     r0,r0,#1 << 7
--#endif
- 
- 	/* Transparent on, D-cache clean & flush mode. See  NOTE2 above */
-         orr     r0,r0,#1 << 1			@ transparent mode on
--- 
-1.9.0
-
+Yours,
+Linus Walleij
