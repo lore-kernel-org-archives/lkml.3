@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913AbaEPK62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:58:28 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:64269 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756583AbaEPK60 (ORCPT
+	id S932285AbaEPLAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:00:21 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:52708 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133AbaEPLAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:58:26 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
-References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
-	<20140514100856.5198DC4153D@trevor.secretlab.ca>
-	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
-	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
-Date: Fri, 16 May 2014 11:58:14 +0100
-Message-Id: <20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+	Fri, 16 May 2014 07:00:19 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
+To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Rob Herring <robh+dt@kernel.org>
+In-Reply-To: <5373DBCF.1080503@ahsoftware.de>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+	<1399913280-6915-3-git-send-email-holler@ahsoftware.de>
+	<20140514140534.897F8C4153D@trevor.secretlab.ca>
+	<53738261.4000000@ahsoftware.de>
+	<20140514200645.15984C4095B@trevor.secretlab.ca>
+	<5373DBCF.1080503@ahsoftware.de>
+Date: Fri, 16 May 2014 12:00:08 +0100
+Message-Id: <20140516110008.E2AC9C403C2@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014 09:20:24 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Pantelis,
+On Wed, 14 May 2014 23:10:39 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 14.05.2014 22:06, schrieb Grant Likely:
+> > On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+> >> Am 14.05.2014 16:05, schrieb Grant Likely:
+> >>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
 > 
-> On Thu, May 15, 2014 at 9:12 AM, Pantelis Antoniou
-> <pantelis.antoniou@konsulko.com> wrote:
-> >> We also need to think about kexec. Kexec works by sucking the live tree
-> >> out of the kernel and creating a .dtb from it to pass to the new kernel.
-> >> What will the rules be when kexecing? Do all the overlays need to be
-> >> removed, or does the kernel get the tree with all the overlays applied
-> >> (in which case none of the overlays can be removed on the other side of
-> >> kexec).
-> >
-> > We can add a sysfs attribute that configures whether overlays are reverted before
-> > kexec or not. I can't really tell which is the correct option, so let's allow the
-> > policy up to user-space.
+> >> Hmm, I don't really care if that will be merged. I have no motivation to 
+> >> fight with Linux kernel maintainers and I don't know if I will spend the 
+> >> necessary time to do so.
+> > 
+> > The people you need to convince are Rob, Greg, and me, and you've got my
+> > attention. If I'm convinced, then I can probably convince Greg also.
+> > You've got an interesting approach, and I hope you won't give up on it.
 > 
-> Kexec'ing into a new kernel doesn't change the hardware, so IMHO the
-> in-kernel DT should not change.
+> Sorry, but that point of the view is already a problem. Why do I have to
+> convince you people?
+> 
+> To summarize:
+> 
+> Linux kernel maintainers
+> 
+> - don't like code they haven't written theirself,
+> - don't like code which doesn't look like they have written it theirself,
+> - don't like ideas they haven't had themself,
+> - do feel good in their closed group they have formed,
 
-Conceptually though, if overlays are applied then the new kernel has a
-different tree from the old one. If the overlay is hotpluggable, then
-after the kexec, the new kernel would no longer be able to unplug the
-overlay if it uses the current state of the tree instead of pulling the
-overlays off first.
+I'm sorry that you feel that way and that you don't want to continue
+with this. Best wishes.
 
 g.
 
