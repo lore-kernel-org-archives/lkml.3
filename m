@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028AbaEPSXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:23:43 -0400
-Received: from ns.gsystem.sk ([62.176.172.50]:34777 "EHLO ns.gsystem.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757880AbaEPSXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:23:41 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Samuel Chessman <chessman@tux.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] tlan: Enable activity LED on Olicom OC-2325 and OC-2326
-Date: Fri, 16 May 2014 20:00:29 +0200
-Message-Id: <1400263230-2599-1-git-send-email-linux@rainbow-software.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757941AbaEPSXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:23:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49759 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757880AbaEPSXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 14:23:38 -0400
+Date: Fri, 16 May 2014 11:26:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: jslaby@suse.cz, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: question about hvc_opal.c
+Message-ID: <20140516182657.GA15475@kroah.com>
+References: <CAB78YHynbQ=cR-jDTHpwwVGgDO24fjXETO1Zp88QD=Vkjf+6GQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAB78YHynbQ=cR-jDTHpwwVGgDO24fjXETO1Zp88QD=Vkjf+6GQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olicom OC-2325 and OC-2326 ethernet cards have an activity LED but it does not
-work with tlan driver as it's not enabled. Enable it.
-Tested with OC-2326.
+On Fri, May 16, 2014 at 11:34:13PM +0530, Himangi Saraogi wrote:
+> Hi,
+>  
+> In function hvc_opal_probe I find :
+> 
+>         hp = hvc_alloc(termno, 0, ops, MAX_VIO_PUT_CHARS);
+>         if (IS_ERR(hp))
+>                 return PTR_ERR(hp);
+> 
+> Earlier, hpc_opal_privs[termno] is assigned pv which is allocated using
+> kzalloc. Shouldn't there be a kfree(pv) and the array element (which is global)
+> be made NULL before the return. Also, if array element is set to NULL on the
+> failure, then some cleanup must be done to undo the effect of hvc_instantiate
+> as well. Please let me know if the change is desirable.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- drivers/net/ethernet/ti/tlan.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
-index 591437e..e7449cb 100644
---- a/drivers/net/ethernet/ti/tlan.c
-+++ b/drivers/net/ethernet/ti/tlan.c
-@@ -107,8 +107,10 @@ static struct board {
- 	{ "Compaq Netelligent 10/100 TX Embedded UTP",
- 	  TLAN_ADAPTER_NONE, 0x83 },
- 	{ "Olicom OC-2183/2185", TLAN_ADAPTER_USE_INTERN_10, 0x83 },
--	{ "Olicom OC-2325", TLAN_ADAPTER_UNMANAGED_PHY, 0xf8 },
--	{ "Olicom OC-2326", TLAN_ADAPTER_USE_INTERN_10, 0xf8 },
-+	{ "Olicom OC-2325", TLAN_ADAPTER_ACTIVITY_LED |
-+	  TLAN_ADAPTER_UNMANAGED_PHY, 0xf8 },
-+	{ "Olicom OC-2326", TLAN_ADAPTER_ACTIVITY_LED |
-+	  TLAN_ADAPTER_USE_INTERN_10, 0xf8 },
- 	{ "Compaq Netelligent 10/100 TX UTP", TLAN_ADAPTER_ACTIVITY_LED, 0x83 },
- 	{ "Compaq Netelligent 10 T/2 PCI UTP/coax", TLAN_ADAPTER_NONE, 0x83 },
- 	{ "Compaq NetFlex-3/E",
--- 
-Ondrej Zary
-
+Sounds reasonable, please send a patch.
