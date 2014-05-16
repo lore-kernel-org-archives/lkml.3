@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273AbaEPMvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:51:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49577 "EHLO
+	id S932392AbaEPMvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:51:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49579 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753936AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1753913AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,12 +14,16 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "=?UTF-8?q?Bj=C3=B8rn=20Mork?=" <bjorn@mork.no>
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Cornel Panceac" <cpanceac@gmail.com>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Jani Nikula" <jani.nikula@intel.com>, "Greg KH" <greg@kroah.com>,
+        "" <annndddrr@gmail.com>, "Daniel Vetter" <daniel.vetter@ffwll.ch>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.799918515@decadent.org.uk>
+Message-ID: <lsq.1400244441.367797689@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 29/34] usb: option: add Alcatel L800MA
+Subject: [PATCH 3.2 17/34] dmi: add support for exact DMI matches in
+ addition to substring matching
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,40 +36,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
+commit 5017b2851373ee15c7035151853bb1448800cae2 upstream.
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
+dmi_match() considers a substring match to be a successful match.  This is
+not always sufficient to distinguish between DMI data for different
+systems.  Add support for exact string matching using strcmp() in addition
+to the substring matching using strstr().
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The specific use case in the i915 driver is to allow us to use an exact
+match for D510MO, without also incorrectly matching D510MOV:
+
+  {
+	.ident = "Intel D510MO",
+	.matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+		DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
+	},
+  }
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Cc: <annndddrr@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Cornel Panceac <cpanceac@gmail.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/firmware/dmi_scan.c     | 12 +++++++++---
+ include/linux/mod_devicetable.h |  6 ++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -292,6 +292,7 @@ static void option_instat_callback(struc
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
- #define ALCATEL_PRODUCT_L100V			0x011e
-+#define ALCATEL_PRODUCT_L800MA			0x0203
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -534,9 +534,15 @@ static bool dmi_matches(const struct dmi
+ 		int s = dmi->matches[i].slot;
+ 		if (s == DMI_NONE)
+ 			break;
+-		if (dmi_ident[s]
+-		    && strstr(dmi_ident[s], dmi->matches[i].substr))
+-			continue;
++		if (dmi_ident[s]) {
++			if (!dmi->matches[i].exact_match &&
++			    strstr(dmi_ident[s], dmi->matches[i].substr))
++				continue;
++			else if (dmi->matches[i].exact_match &&
++				 !strcmp(dmi_ident[s], dmi->matches[i].substr))
++				continue;
++		}
++
+ 		/* No match */
+ 		return false;
+ 	}
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -461,7 +461,8 @@ enum dmi_field {
+ };
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1521,6 +1522,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ struct dmi_strmatch {
+-	unsigned char slot;
++	unsigned char slot:7;
++	unsigned char exact_match:1;
+ 	char substr[79];
+ };
+ 
+@@ -489,7 +490,8 @@ struct dmi_system_id {
+ #define dmi_device_id dmi_system_id
+ #endif
+ 
+-#define DMI_MATCH(a, b)	{ a, b }
++#define DMI_MATCH(a, b)	{ .slot = a, .substr = b }
++#define DMI_EXACT_MATCH(a, b)	{ .slot = a, .substr = b, .exact_match = 1 }
+ 
+ #define PLATFORM_NAME_SIZE	20
+ #define PLATFORM_MODULE_PREFIX	"platform:"
 
