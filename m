@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372AbaEPWwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:52:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51686 "EHLO
+	id S1756723AbaEPWxR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:53:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaEPWwW (ORCPT
+	with ESMTP id S1756333AbaEPWwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:52:22 -0400
+	Fri, 16 May 2014 18:52:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sumit Saxena <sumit.saxena@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 1/9] SCSI: megaraid: missing bounds check in mimd_to_kioc()
-Date: Fri, 16 May 2014 15:55:24 -0700
-Message-Id: <20140516225458.642634316@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.4 6/9] netfilter: Cant fail and free after table replacement
+Date: Fri, 16 May 2014 15:55:29 -0700
+Message-Id: <20140516225458.834116074@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -31,34 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Thomas Graf <tgraf@suug.ch>
 
-commit 3de2260140417759c669d391613d583baf03b0cf upstream.
+commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
 
-pthru32->dataxferlen comes from the user so we need to check that it's
-not too large so we don't overflow the buffer.
+All xtables variants suffer from the defect that the copy_to_user()
+to copy the counters to user memory may fail after the table has
+already been exchanged and thus exposed. Return an error at this
+point will result in freeing the already exposed table. Any
+subsequent packet processing will result in a kernel panic.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+We can't copy the counters before exposing the new tables as we
+want provide the counter state after the old table has been
+unhooked. Therefore convert this into a silent error.
+
+Cc: Florian Westphal <fw@strlen.de>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_mm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bridge/netfilter/ebtables.c |    5 ++---
+ net/ipv4/netfilter/arp_tables.c |    6 ++++--
+ net/ipv4/netfilter/ip_tables.c  |    6 ++++--
+ net/ipv6/netfilter/ip6_tables.c |    6 ++++--
+ 4 files changed, 14 insertions(+), 9 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_mm.c
-+++ b/drivers/scsi/megaraid/megaraid_mm.c
-@@ -486,6 +486,8 @@ mimd_to_kioc(mimd_t __user *umimd, mraid
+--- a/net/bridge/netfilter/ebtables.c
++++ b/net/bridge/netfilter/ebtables.c
+@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net
+ 	if (repl->num_counters &&
+ 	   copy_to_user(repl->counters, counterstmp,
+ 	   repl->num_counters * sizeof(struct ebt_counter))) {
+-		ret = -EFAULT;
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
+ 	}
+-	else
+-		ret = 0;
  
- 	pthru32->dataxferaddr	= kioc->buf_paddr;
- 	if (kioc->data_dir & UIOC_WR) {
-+		if (pthru32->dataxferlen > kioc->xferlen)
-+			return -EINVAL;
- 		if (copy_from_user(kioc->buf_vaddr, kioc->user_data,
- 						pthru32->dataxferlen)) {
- 			return (-EFAULT);
+ 	/* decrease module count and free resources */
+ 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net,
+ 
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -1227,8 +1227,10 @@ __do_replace(struct net *net, const char
+ 
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char
+ 
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
 
 
