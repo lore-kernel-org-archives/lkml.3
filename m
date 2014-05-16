@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307AbaEPMxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:53:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49572 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753763AbaEPMsV (ORCPT
+	id S1756328AbaEPM5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:57:21 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50890 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755234AbaEPM5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 08:48:21 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 16 May 2014 08:57:17 -0400
+Date: Fri, 16 May 2014 13:55:46 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
+Message-ID: <20140516125545.GO3693@n2100.arm.linux.org.uk>
+References: <1364507176.1345.45.camel@x61.thuisdomein> <8309592.drxAj71PnZ@wuerfel> <1400059550.31197.12.camel@x220> <4305975.PvMXZQ020k@wuerfel> <1400232598.20342.16.camel@x220>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "Jes Sorensen" <Jes.Sorensen@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.423624393@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 07/34] staging: r8712u: Fix case where ethtype was
- never obtained and always be checked against 0
-In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400232598.20342.16.camel@x220>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.59-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, May 16, 2014 at 11:29:58AM +0200, Paul Bolle wrote:
+> Support for ARM710 CPUs was removed in v3.5. But a few lines of ARM710
+> specific assembler code were left in the tree. Remove these too.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> This minor cleanup was suggested by Arnd. This patch is mostly
+> guesswork, as I already told Arnd, since I have never touched ARM
+> assembler before (as far as I can remember). Untested too! And this does
+> need testing.
 
-------------------
+NAK.
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+There was a CPU called the ARM710, it was ARMv3 and it had no Thumb support.
 
-commit f764cd68d9036498f08fe8834deb6a367b5c2542 upstream.
+There is also a CPU called the ARM710T, which is ARMv4 and has Thumb support.
 
-Zero-initializing ether_type masked that the ether type would never be
-obtained for 8021x packets and the comparison against eapol_type
-would always fail.
+These are two completely different CPUs, the former was removed along with
+the removal of ARMv3 support.  The latter remains because we still support
+ARMv4.
 
-Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/staging/rtl8712/rtl871x_recv.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+This is a nice instance of arm-soc people thinking that they are somehow
+authoritive for core ARM stuff...
 
---- a/drivers/staging/rtl8712/rtl871x_recv.c
-+++ b/drivers/staging/rtl8712/rtl871x_recv.c
-@@ -254,7 +254,7 @@ union recv_frame *r8712_portctrl(struct
- 	struct sta_info *psta;
- 	struct	sta_priv *pstapriv;
- 	union recv_frame *prtnframe;
--	u16 ether_type = 0;
-+	u16 ether_type;
- 
- 	pstapriv = &adapter->stapriv;
- 	ptr = get_recvframe_data(precv_frame);
-@@ -263,15 +263,14 @@ union recv_frame *r8712_portctrl(struct
- 	psta = r8712_get_stainfo(pstapriv, psta_addr);
- 	auth_alg = adapter->securitypriv.AuthAlgrthm;
- 	if (auth_alg == 2) {
-+		/* get ether_type */
-+		ptr = ptr + pfhdr->attrib.hdrlen + LLC_HEADER_SIZE;
-+		memcpy(&ether_type, ptr, 2);
-+		ether_type = ntohs((unsigned short)ether_type);
-+
- 		if ((psta != NULL) && (psta->ieee8021x_blocked)) {
- 			/* blocked
- 			 * only accept EAPOL frame */
--			prtnframe = precv_frame;
--			/*get ether_type */
--			ptr = ptr + pfhdr->attrib.hdrlen +
--			      pfhdr->attrib.iv_len + LLC_HEADER_SIZE;
--			memcpy(&ether_type, ptr, 2);
--			ether_type = ntohs((unsigned short)ether_type);
- 			if (ether_type == 0x888e)
- 				prtnframe = precv_frame;
- 			else {
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
