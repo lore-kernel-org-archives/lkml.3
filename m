@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537AbaEPMtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:49:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49636 "EHLO
+	id S1756357AbaEPMtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:49:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49646 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754550AbaEPMsY (ORCPT
+	by vger.kernel.org with ESMTP id S1754856AbaEPMsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,19 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Wu" <wuquanming@huawei.com>,
-        "Xiangyu Lu" <luxiangyu@huawei.com>,
-        "Dave Martin" <Dave.Martin@arm.com>, "Nicolas Pitre" <nico@linaro.org>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>
+CC: akpm@linux-foundation.org,
+        "Aneesh Kumar" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Joonsoo Kim" <iamjoonsoo.kim@lge.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.696163662@decadent.org.uk>
+Message-ID: <lsq.1400244441.232726135@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 20/34] ARM: 8027/1: fix do_div() bug in big-endian systems
+Subject: [PATCH 3.2 16/34] mm/hugetlb.c: add cond_resched_lock() in
+ return_unused_surplus_pages()
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +38,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiangyu Lu <luxiangyu@huawei.com>
+From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
 
-commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
+commit 7848a4bf51b34f41fcc9bd77e837126d99ae84e3 upstream.
 
-In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
+soft lockup in freeing gigantic hugepage fixed in commit 55f67141a892 "mm:
+hugetlb: fix softlockup when a large number of hugepages are freed." can
+happen in return_unused_surplus_pages(), so let's fix it.
 
-When viewing ftrace record in big-endian ARM systems, we found that
-the timestamp errors:
-
-swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
-events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
-swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
-swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
-swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
-swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
-
-When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
-
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Alex Wu <wuquanming@huawei.com>
-Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/div64.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/include/asm/div64.h
-+++ b/arch/arm/include/asm/div64.h
-@@ -156,7 +156,7 @@
- 		/* Select the best insn combination to perform the   */	\
- 		/* actual __m * __n / (__p << 64) operation.         */	\
- 		if (!__c) {						\
--			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
-+			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
- 				"mov	%Q0, #0"			\
- 				: "=&r" (__res)				\
- 				: "r" (__m), "r" (__n)			\
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1078,6 +1078,7 @@ static void return_unused_surplus_pages(
+ 	while (nr_pages--) {
+ 		if (!free_pool_huge_page(h, &node_states[N_HIGH_MEMORY], 1))
+ 			break;
++		cond_resched_lock(&hugetlb_lock);
+ 	}
+ }
+ 
 
