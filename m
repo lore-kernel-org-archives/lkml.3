@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726AbaEPP2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:28:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34963 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaEPP2a (ORCPT
+	id S932817AbaEPP2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:28:44 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:48468 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932582AbaEPP2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:28:30 -0400
-Date: Fri, 16 May 2014 17:28:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
-Subject: Re: [RFC Patch Part1 V1 00/30] use irqdomain to dynamically allocate
- IRQ for IOAPIC pin
-In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1405161601060.4039@ionos.tec.linutronix.de>
-References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 16 May 2014 11:28:41 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, gleb@kernel.org
+Subject: [GIT PULL] KVM fixes for 3.15-rc6
+Date: Fri, 16 May 2014 17:28:32 +0200
+Message-Id: <1400254112-4662-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiang,
+Linus,
 
-On Fri, 16 May 2014, Jiang Liu wrote:
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-> On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
-> There are two issues with this design. First it causes trouble to IOAPIC
-> hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
-> Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
-> IRQ numbers are statically assigned.
-> 
-> This patchset tries to enable dynamic IRQ number allocation for IOAPIC
-> by adopting the irqdomain framework, it solves the two issues mentioned
-> above. It also simplifies the IOAPIC driver by consolidating ways to
-> program IOAPIC pins with the irqdomain map interface.
-> 
-> We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
-> once the IOAPIC driver has been converted to irqdomain.
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-Thanks for tackling this!
- 
-> This patchset applies to v3.15-rc4-260-g38583f095c5a and has been tested
+are available in the git repository at:
 
-That's a bit unfortunate, as there are conflicting changes in the tip
-tree irq/core branch. Can you please rebase on top of that.
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
-> TODO list:
-> 1) check whether it affects Xen or not
-> 
-> Patch 1-17 are trivial code improvements, bugfixes and preparation.
+for you to fetch changes up to a4e91d04b86504f145cc5f766c2609357a68b186:
 
-Can you please move the bugfixes before the other changes, so we can
-pick them up independently from the outcome?
- 
-> Patch 18-24 enable basic irqdomain support and IRQ number dynamic
-> allocation.
-> 
-> Patch 25-29 consoldate the way to program IOAPIC pins by using
-> irqdomain map() interface.
-> 
-> Patch 30 cleans up unused interfaces and functions in IOAPIC driver.
-> 
-> Tests and comments are warmly welcomed!
+  Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/pub/scm/linux/kernel/git/kvms390/linux into kvm-master (2014-05-15 14:46:57 +0200)
 
-I like the general approach, but we have now a mixture of legacy irq
-handling and irq domains. We really want to cleanup the legacy PIC no
-ioapic case as well. That will cleanup the code further.
+----------------------------------------------------------------
 
-The other thing we discussed here: https://lkml.org/lkml/2014/5/7/901
-in several places of the thread is to move the vector allocation into
-a irqdomain with a generic matrix allocator as well. We have other use
-cases for this as well. It would be nice if you could look at that as
-well.
+Small fixes for x86, slightly larger fixes for PPC, and a forgotten s390 patch.
+The PPC fixes are important because they fix breakage that is new in 3.15.
 
-Thanks,
+----------------------------------------------------------------
+Alexander Graf (2):
+      KVM: PPC: Book3S: ifdef on CONFIG_KVM_BOOK3S_32_HANDLER for 32bit
+      KVM guest: Make pv trampoline code executable
 
-	tglx
+Cornelia Huck (1):
+      KVM: s390: announce irqfd capability
 
+Marcelo Tosatti (1):
+      KVM: x86: disable master clock if TSC is reset during suspend
 
+Paolo Bonzini (3):
+      KVM: vmx: disable APIC virtualization in nested guests
+      Merge tag 'signed-for-3.15' of git://github.com/agraf/linux-2.6 into kvm-master
+      Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/.../kvms390/linux into kvm-master
 
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Add missing code for transaction reclaim on guest exit
 
+pingfank@linux.vnet.ibm.com (1):
+      KVM: PPC: Book3S: HV: make _PAGE_NUMA take effect
+
+ Documentation/virtual/kvm/api.txt       |   2 +-
+ arch/powerpc/include/asm/sections.h     |  11 ++++
+ arch/powerpc/kernel/kvm.c               |   2 +-
+ arch/powerpc/kvm/book3s.c               |   6 +-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c     |   2 +-
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S | 104 ++++++++++++++++++++++++++++++++
+ arch/powerpc/kvm/book3s_pr.c            |   6 +-
+ arch/powerpc/mm/hash_utils_64.c         |   4 ++
+ arch/s390/kvm/kvm-s390.c                |   1 +
+ arch/x86/kvm/vmx.c                      |   7 ++-
+ arch/x86/kvm/x86.c                      |   6 +-
+ 11 files changed, 139 insertions(+), 12 deletions(-)
