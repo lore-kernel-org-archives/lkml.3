@@ -1,28 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaEPA2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 20:28:44 -0400
-Received: from webmail.iiti.ac.in ([14.139.35.15]:55556 "EHLO
-	webmail.iiti.ac.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaEPA2n convert rfc822-to-8bit (ORCPT
+	id S1752301AbaEPAby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 20:31:54 -0400
+Received: from [208.0.9.180] ([208.0.9.180]:25116 "EHLO
+	ccxlate180.co.chesterfield.va.us" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750927AbaEPAbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 20:28:43 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 May 2014 20:28:42 EDT
-Date: Fri, 16 May 2014 05:47:47 +0530 (IST)
-From: Western Union Money Transfer <cs1100109@iiti.ac.in>
-Reply-To: "money.transfer55@qq.com" <money.transfer55@qq.com>
-Message-ID: <364167550.22077.1400199467919.JavaMail.zimbra@iiti.ac.in>
-Subject: Alert...
+	Thu, 15 May 2014 20:31:53 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 May 2014 20:31:52 EDT
+From: "Hill, Joyce" <HillJo@chesterfield.gov>
+To: "Hill, Joyce" <HillJo@chesterfield.gov>
+Subject: RE: ATTN
+Thread-Topic: ATTN
+Thread-Index: Ac9wlplBlJKzKkWoRa2WiycUWLbQZAAAfkHgAAEmflA=
+Date: Fri, 16 May 2014 00:26:25 +0000
+Message-ID: <1121BB47B310094C9FBA36B7C5197EC401110240@Hubbard.chesterfield.gov>
+References: <1121BB47B310094C9FBA36B7C5197EC40110ECED@Hubbard.chesterfield.gov>,<1121BB47B310094C9FBA36B7C5197EC40110F276@Hubbard.chesterfield.gov>
+In-Reply-To: <1121BB47B310094C9FBA36B7C5197EC40110F276@Hubbard.chesterfield.gov>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.19.50.101]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.220.69.117]
-X-Mailer: Zimbra 8.0.7_GA_6021 (zclient/8.0.7_GA_6021)
-Thread-Topic: Alert...
-Thread-Index: N5nL/qUNz0M9diuBzTvPCMGS6b7kYw==
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4G0VwgN018620
 
-Congrats:You have won ( Â£500,000.00 Pounds )Contact Mr Andrew James:money.transfer55@qq.com ,Mobile:+447509531953
+
+2million USD donation to you from Evelyn,Conâ€‹tact her on (  cu36ery22@rogers.com ) For more info
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
