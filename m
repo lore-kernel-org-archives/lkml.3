@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193AbaEPOFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:05:15 -0400
+	id S933053AbaEPOFM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:05:12 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:28851 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757154AbaEPOFK (ORCPT
+	by vger.kernel.org with ESMTP id S1757244AbaEPOFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:05:10 -0400
-Message-Id: <20140516140502.628373326@goodmis.org>
+	Fri, 16 May 2014 10:05:09 -0400
+Message-Id: <20140516140502.340008258@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 16 May 2014 10:02:19 -0400
+Date: Fri, 16 May 2014 10:02:17 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Javi Merino <javi.merino@arm.com>
-Subject: [PATCH 4/4] tools lib traceevent: Added support for __get_bitmask() macro
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/4] tools lib traceevent: Add options to plugins
 References: <20140516140215.149535442@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-tools-lib-traceevent-Added-support-for-__get_bitmask.patch
+Content-Disposition: inline; filename=0002-tools-lib-traceevent-Add-options-to-plugins.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,270 +28,299 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Coming in v3.16, trace events will be able to save bitmasks in raw
-format in the ring buffer and output it with the __get_bitmask() macro.
+The traceevent plugins allows developers to have their events print out
+information that is more advanced than what can be achieved by the
+trace event format files.
 
-In order for userspace tools to parse this, it must be able to handle
-the __get_bitmask() call and be able to convert the data that's in
-the ring buffer into a nice bitmask format. The output is similar to
-what the kernel uses to print bitmasks, with a comma separator every
-4 bytes (8 characters).
+As these plugins are used on the userspace side of the tracing tools, it
+is only logical that the tools should be able to produce different types
+of output for the events. The types of events still need to be defined by
+the plugins thus we need a way to pass information from the tool to the
+plugin to specify what type of information to be shown.
 
-This allows for cpumasks to also be saved efficiently.
+Not only does the information need to be passed by the tool to plugin, but
+the plugin also requires a way to notify the tool of what options it can
+provide.
 
-The first user is the thermal:thermal_power_limit event which has the
-following output:
+This builds the plugin option infrastructure that is taken from trace-cmd
+that is used to allow plugins to produce different output based on the
+options specified by the tool.
 
- thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
-
-Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
-
-Suggested-by: Javi Merino <javi.merino@arm.com>
-Tested-by: Javi Merino <javi.merino@arm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
- tools/lib/traceevent/event-parse.h                 |   7 ++
- .../perf/util/scripting-engines/trace-event-perl.c |   1 +
- .../util/scripting-engines/trace-event-python.c    |   1 +
- 4 files changed, 122 insertions(+)
+ tools/lib/traceevent/event-parse.h  |  16 ++-
+ tools/lib/traceevent/event-plugin.c | 197 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 209 insertions(+), 4 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index b83184f2d484..2d6aa92bcd1f 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
- 	case PRINT_BSTRING:
- 		free(arg->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		free(arg->bitmask.bitmask);
-+		break;
- 	case PRINT_DYNAMIC_ARRAY:
- 		free(arg->dynarray.index);
- 		break;
-@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		ret = 0;
-@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		break;
-@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
- 	return EVENT_ERROR;
- }
- 
-+static enum event_type
-+process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
-+	    char **tok)
-+{
-+	enum event_type type;
-+	char *token;
-+
-+	if (read_expect_type(EVENT_ITEM, &token) < 0)
-+		goto out_free;
-+
-+	arg->type = PRINT_BITMASK;
-+	arg->bitmask.bitmask = token;
-+	arg->bitmask.offset = -1;
-+
-+	if (read_expected(EVENT_DELIM, ")") < 0)
-+		goto out_err;
-+
-+	type = read_token(&token);
-+	*tok = token;
-+
-+	return type;
-+
-+ out_free:
-+	free_token(token);
-+ out_err:
-+	*tok = NULL;
-+	return EVENT_ERROR;
-+}
-+
- static struct pevent_function_handler *
- find_func_handler(struct pevent *pevent, char *func_name)
- {
-@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_str(event, arg, tok);
- 	}
-+	if (strcmp(token, "__get_bitmask") == 0) {
-+		free_token(token);
-+		return process_bitmask(event, arg, tok);
-+	}
- 	if (strcmp(token, "__get_dynamic_array") == 0) {
- 		free_token(token);
- 		return process_dynamic_array(event, arg, tok);
-@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		return eval_type(val, arg, 0);
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 		return 0;
- 	case PRINT_FUNC: {
- 		struct trace_seq s;
-@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
- 		trace_seq_printf(s, format, str);
- }
- 
-+static void print_bitmask_to_seq(struct pevent *pevent,
-+				 struct trace_seq *s, const char *format,
-+				 int len_arg, const void *data, int size)
-+{
-+	int nr_bits = size * 8;
-+	int str_size = (nr_bits + 3) / 4;
-+	int len = 0;
-+	char buf[3];
-+	char *str;
-+	int index;
-+	int i;
-+
-+	/*
-+	 * The kernel likes to put in commas every 32 bits, we
-+	 * can do the same.
-+	 */
-+	str_size += (nr_bits - 1) / 32;
-+
-+	str = malloc(str_size + 1);
-+	if (!str) {
-+		do_warning("%s: not enough memory!", __func__);
-+		return;
-+	}
-+	str[str_size] = 0;
-+
-+	/* Start out with -2 for the two chars per byte */
-+	for (i = str_size - 2; i >= 0; i -= 2) {
-+		/*
-+		 * data points to a bit mask of size bytes.
-+		 * In the kernel, this is an array of long words, thus
-+		 * endianess is very important.
-+		 */
-+		if (pevent->file_bigendian)
-+			index = size - (len + 1);
-+		else
-+			index = len;
-+
-+		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
-+		memcpy(str + i, buf, 2);
-+		len++;
-+		if (!(len & 3) && i > 0) {
-+			i--;
-+			str[i] = ',';
-+		}
-+	}
-+
-+	if (len_arg >= 0)
-+		trace_seq_printf(s, format, len_arg, str);
-+	else
-+		trace_seq_printf(s, format, str);
-+
-+	free(str);
-+}
-+
- static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			  struct event_format *event, const char *format,
- 			  int len_arg, struct print_arg *arg)
-@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	case PRINT_BSTRING:
- 		print_str_to_seq(s, format, len_arg, arg->string.string);
- 		break;
-+	case PRINT_BITMASK: {
-+		int bitmask_offset;
-+		int bitmask_size;
-+
-+		if (arg->bitmask.offset == -1) {
-+			struct format_field *f;
-+
-+			f = pevent_find_any_field(event, arg->bitmask.bitmask);
-+			arg->bitmask.offset = f->offset;
-+		}
-+		bitmask_offset = data2host4(pevent, data + arg->string.offset);
-+		bitmask_size = bitmask_offset >> 16;
-+		bitmask_offset &= 0xffff;
-+		print_bitmask_to_seq(pevent, s, format, len_arg,
-+				     data + bitmask_offset, bitmask_size);
-+		break;
-+	}
- 	case PRINT_OP:
- 		/*
- 		 * The only op for string should be ? :
-@@ -4822,6 +4932,9 @@ static void print_args(struct print_arg *args)
- 	case PRINT_BSTRING:
- 		printf("__get_str(%s)", args->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		printf("__get_bitmask(%s)", args->bitmask.bitmask);
-+		break;
- 	case PRINT_TYPE:
- 		printf("(%s)", args->typecast.type);
- 		print_args(args->typecast.item);
 diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index d6c610a66006..025627f55426 100644
+index a68ec3d8289f..d6c610a66006 100644
 --- a/tools/lib/traceevent/event-parse.h
 +++ b/tools/lib/traceevent/event-parse.h
-@@ -208,6 +208,11 @@ struct print_arg_string {
- 	int			offset;
+@@ -107,8 +107,8 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
+ typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
+ typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
+ 
+-struct plugin_option {
+-	struct plugin_option		*next;
++struct pevent_plugin_option {
++	struct pevent_plugin_option	*next;
+ 	void				*handle;
+ 	char				*file;
+ 	char				*name;
+@@ -135,7 +135,7 @@ struct plugin_option {
+  * PEVENT_PLUGIN_OPTIONS:  (optional)
+  *   Plugin options that can be set before loading
+  *
+- *   struct plugin_option PEVENT_PLUGIN_OPTIONS[] = {
++ *   struct pevent_plugin_option PEVENT_PLUGIN_OPTIONS[] = {
+  *	{
+  *		.name = "option-name",
+  *		.plugin_alias = "overide-file-name", (optional)
+@@ -355,7 +355,7 @@ enum pevent_func_arg_type {
+ enum pevent_flag {
+ 	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
+ 	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
+-	PEVENT_DISABLE_PLUGINS		= 1 << 2,
++	PEVENT_DISABLE_PLUGINS		= 1 << 2
  };
  
-+struct print_arg_bitmask {
-+	char			*bitmask;
-+	int			offset;
-+};
+ #define PEVENT_ERRORS 							      \
+@@ -415,6 +415,14 @@ struct plugin_list;
+ struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
+ void traceevent_unload_plugins(struct plugin_list *plugin_list,
+ 			       struct pevent *pevent);
++char **traceevent_plugin_list_options(void);
++void traceevent_plugin_free_options_list(char **list);
++int traceevent_plugin_add_options(const char *name,
++				  struct pevent_plugin_option *options);
++void traceevent_plugin_remove_options(struct pevent_plugin_option *options);
++void traceevent_print_plugins(struct trace_seq *s,
++			      const char *prefix, const char *suffix,
++			      const struct plugin_list *list);
+ 
+ struct cmdline;
+ struct cmdline_list;
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index 317466bd1a37..a24479426d58 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -18,6 +18,7 @@
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+ 
++#include <stdio.h>
+ #include <string.h>
+ #include <dlfcn.h>
+ #include <stdlib.h>
+@@ -30,12 +31,208 @@
+ 
+ #define LOCAL_PLUGIN_DIR ".traceevent/plugins"
+ 
++static struct registered_plugin_options {
++	struct registered_plugin_options	*next;
++	struct pevent_plugin_option		*options;
++} *registered_options;
 +
- struct print_arg_field {
++static struct trace_plugin_options {
++	struct trace_plugin_options	*next;
++	char				*plugin;
++	char				*option;
++	char				*value;
++} *trace_plugin_options;
++
+ struct plugin_list {
+ 	struct plugin_list	*next;
  	char			*name;
- 	struct format_field	*field;
-@@ -274,6 +279,7 @@ enum print_arg_type {
- 	PRINT_DYNAMIC_ARRAY,
- 	PRINT_OP,
- 	PRINT_FUNC,
-+	PRINT_BITMASK,
+ 	void			*handle;
  };
  
- struct print_arg {
-@@ -288,6 +294,7 @@ struct print_arg {
- 		struct print_arg_hex		hex;
- 		struct print_arg_func		func;
- 		struct print_arg_string		string;
-+		struct print_arg_bitmask	bitmask;
- 		struct print_arg_op		op;
- 		struct print_arg_dynarray	dynarray;
- 	};
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index e108207c5de0..af7da565a750 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -215,6 +215,7 @@ static void define_event_symbols(struct event_format *event,
- 	case PRINT_BSTRING:
- 	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_STRING:
-+	case PRINT_BITMASK:
- 		break;
- 	case PRINT_TYPE:
- 		define_event_symbols(event, ev_name, args->typecast.item);
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cd9774df3750..c3de0971bfdd 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -197,6 +197,7 @@ static void define_event_symbols(struct event_format *event,
- 	case PRINT_BSTRING:
- 	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_FUNC:
-+	case PRINT_BITMASK:
- 		/* we should warn... */
- 		return;
- 	}
++/**
++ * traceevent_plugin_list_options - get list of plugin options
++ *
++ * Returns an array of char strings that list the currently registered
++ * plugin options in the format of <plugin>:<option>. This list can be
++ * used by toggling the option.
++ *
++ * Returns NULL if there's no options registered. On error it returns
++ * an (char **)-1 (must check for that)
++ *
++ * Must be freed with traceevent_plugin_free_options_list().
++ */
++char **traceevent_plugin_list_options(void)
++{
++	struct registered_plugin_options *reg;
++	struct pevent_plugin_option *op;
++	char **list = NULL;
++	char *name;
++	int count = 0;
++
++	for (reg = registered_options; reg; reg = reg->next) {
++		for (op = reg->options; op->name; op++) {
++			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
++
++			name = malloc(strlen(op->name) + strlen(alias) + 2);
++			if (!name)
++				goto err;
++
++			sprintf(name, "%s:%s", alias, op->name);
++			list = realloc(list, count + 2);
++			if (!list) {
++				free(name);
++				goto err;
++			}
++			list[count++] = name;
++			list[count] = NULL;
++		}
++	}
++	if (!count)
++		return NULL;
++	return list;
++
++ err:
++	while (--count > 0)
++		free(list[count]);
++	free(list);
++
++	return (char **)((unsigned long)-1);
++}
++
++void traceevent_plugin_free_options_list(char **list)
++{
++	int i;
++
++	if (!list)
++		return;
++
++	if (list == (char **)((unsigned long)-1))
++		return;
++
++	for (i = 0; list[i]; i++)
++		free(list[i]);
++
++	free(list);
++}
++
++static int
++update_option(const char *file, struct pevent_plugin_option *option)
++{
++	struct trace_plugin_options *op;
++	char *plugin;
++
++	if (option->plugin_alias) {
++		plugin = strdup(option->plugin_alias);
++		if (!plugin)
++			return -1;
++	} else {
++		char *p;
++		plugin = strdup(file);
++		if (!plugin)
++			return -1;
++		p = strstr(plugin, ".");
++		if (p)
++			*p = '\0';
++	}
++
++	/* first look for named options */
++	for (op = trace_plugin_options; op; op = op->next) {
++		if (!op->plugin)
++			continue;
++		if (strcmp(op->plugin, plugin) != 0)
++			continue;
++		if (strcmp(op->option, option->name) != 0)
++			continue;
++
++		option->value = op->value;
++		option->set ^= 1;
++		goto out;
++	}
++
++	/* first look for unnamed options */
++	for (op = trace_plugin_options; op; op = op->next) {
++		if (op->plugin)
++			continue;
++		if (strcmp(op->option, option->name) != 0)
++			continue;
++
++		option->value = op->value;
++		option->set ^= 1;
++		break;
++	}
++
++ out:
++	free(plugin);
++	return 0;
++}
++
++/**
++ * traceevent_plugin_add_options - Add a set of options by a plugin
++ * @name: The name of the plugin adding the options
++ * @options: The set of options being loaded
++ *
++ * Sets the options with the values that have been added by user.
++ */
++int traceevent_plugin_add_options(const char *name,
++				  struct pevent_plugin_option *options)
++{
++	struct registered_plugin_options *reg;
++
++	reg = malloc(sizeof(*reg));
++	if (!reg)
++		return -1;
++	reg->next = registered_options;
++	reg->options = options;
++	registered_options = reg;
++
++	while (options->name) {
++		update_option(name, options);
++		options++;
++	}
++	return 0;
++}
++
++/**
++ * traceevent_plugin_remove_options - remove plugin options that were registered
++ * @options: Options to removed that were registered with traceevent_plugin_add_options
++ */
++void traceevent_plugin_remove_options(struct pevent_plugin_option *options)
++{
++	struct registered_plugin_options **last;
++	struct registered_plugin_options *reg;
++
++	for (last = &registered_options; *last; last = &(*last)->next) {
++		if ((*last)->options == options) {
++			reg = *last;
++			*last = reg->next;
++			free(reg);
++			return;
++		}
++	}
++			
++}
++
++/**
++ * traceevent_print_plugins - print out the list of plugins loaded
++ * @s: the trace_seq descripter to write to
++ * @prefix: The prefix string to add before listing the option name
++ * @suffix: The suffix string ot append after the option name
++ * @list: The list of plugins (usually returned by traceevent_load_plugins()
++ *
++ * Writes to the trace_seq @s the list of plugins (files) that is
++ * returned by traceevent_load_plugins(). Use @prefix and @suffix for formating:
++ * @prefix = "  ", @suffix = "\n".
++ */
++void traceevent_print_plugins(struct trace_seq *s,
++			      const char *prefix, const char *suffix,
++			      const struct plugin_list *list)
++{
++	while (list) {
++		trace_seq_printf(s, "%s%s%s", prefix, list->name, suffix);
++		list = list->next;
++	}
++}
++
+ static void
+ load_plugin(struct pevent *pevent, const char *path,
+ 	    const char *file, void *data)
 -- 
 1.8.5.3
 
