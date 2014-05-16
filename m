@@ -1,372 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032AbaEPRdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:33:47 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:46386 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757575AbaEPRdp (ORCPT
+	id S1758068AbaEPReD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:34:03 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46647 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757735AbaEPRdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 13:33:45 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
+In-Reply-To: <1400233673-11477-1-git-send-email-vbabka@suse.cz>
+Organization: http://mina86.com/
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140516:akpm@linux-foundation.org::FfJwsGYxxrjJ26d4:0000000000000000000000000000000000000pSU
+X-Hashcash: 1:20:140516:vbabka@suse.cz::YnTp8+qQIBlwaBGz:0000v6u
+X-Hashcash: 1:20:140516:b.zolnierkie@samsung.com::EOYp+n25Pkhzy1i2:00000000000000000000000000000000000000HKX
+X-Hashcash: 1:20:140516:cl@linux.com::hAAUNUljMPg0Wt+k:000001aIE
+X-Hashcash: 1:20:140516:linux-kernel@vger.kernel.org::fWZA8JGb6aQ7o36A:0000000000000000000000000000000001OEV
+X-Hashcash: 1:20:140516:hughd@google.com::66iieo0zGNJnaHhC:01sZh
+X-Hashcash: 1:20:140516:riel@redhat.com::Px0QW3mGtwlhCk75:002ojT
+X-Hashcash: 1:20:140516:mgorman@suse.de::NrlXFYjsklpwtERY:0039GY
+X-Hashcash: 1:20:140516:rientjes@google.com::2EG0af9pZ9K5K0fA:0000000000000000000000000000000000000000002agN
+X-Hashcash: 1:20:140516:minchan@kernel.org::zUEri+1oed9dbpUS:00000000000000000000000000000000000000000004c/j
+X-Hashcash: 1:20:140516:linux-mm@kvack.org::bk0676C5Ee+quwy1:00000000000000000000000000000000000000000003kDM
+X-Hashcash: 1:20:140516:gthelen@google.com::cfAOOc0cv8Piwr5Q:000000000000000000000000000000000000000000054BG
+X-Hashcash: 1:20:140516:vbabka@suse.cz::XN+PD7cwrHgLpVXI:00068TR
+X-Hashcash: 1:20:140516:iamjoonsoo.kim@lge.com::inWdm8JZcJE/gT6/:0000000000000000000000000000000000000009u30
+Date: Fri, 16 May 2014 10:33:35 -0700
+Message-ID: <xa1tsio9fx1s.fsf@mina86.com>
 MIME-Version: 1.0
-In-Reply-To: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com>
-Date: Fri, 16 May 2014 19:33:44 +0200
-Message-ID: <CACRpkdZ67KoaMWUzpPm5g7yvQ-_q9zxuS+4wcXP0u18MW=XovA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bin.yang@intel.com, Darren Hart <dvhart@linux.intel.com>,
-        "Holmberg, Hans" <hans.holmberg@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 5:44 PM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-> Devices based on Intel SoC products such as Baytrail have a Power
-> Management IC. In the PMIC there are subsystems for voltage regulation,
-> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
-> Crystal Cove.
+On Fri, May 16 2014, Vlastimil Babka wrote:
+> Compaction uses compact_checklock_irqsave() function to periodically chec=
+k for
+> lock contention and need_resched() to either abort async compaction, or to
+> free the lock, schedule and retake the lock. When aborting, cc->contended=
+ is
+> set to signal the contended state to the caller. Two problems have been
+> identified in this mechanism.
 >
-> This patch adds support for the GPIO function in Crystal Cove.
+> First, compaction also calls directly cond_resched() in both scanners whe=
+n no
+> lock is yet taken. This call either does not abort async compaction, or s=
+et
+> cc->contended appropriately. This patch introduces a new compact_should_a=
+bort()
+> function to achieve both. In isolate_freepages(), the check frequency is
+> reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
+> scanner does in the preliminary page checks. In case a pageblock is found
+> suitable for calling isolate_freepages_block(), the checks within there a=
+re
+> done on higher frequency.
 >
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> Second, isolate_freepages() does not check if isolate_freepages_block()
+> aborted due to contention, and advances to the next pageblock. This viola=
+tes
+> the principle of aborting on contention, and might result in pageblocks n=
+ot
+> being scanned completely, since the scanning cursor is advanced. This pat=
+ch
+> makes isolate_freepages_block() check the cc->contended flag and abort.
+>
+> In case isolate_freepages() has already isolated some pages before aborti=
+ng
+> due to contention, page migration will proceed, which is OK since we do n=
+ot
+> want to waste the work that has been done, and page migration has own che=
+cks
+> for contention. However, we do not want another isolation attempt by eith=
+er
+> of the scanners, so cc->contended flag check is added also to
+> compaction_alloc() and compact_finished() to make sure compaction is abor=
+ted
+> right after the migration.
+>
+> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
 
-(...)
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-> +config GPIO_INTEL_SOC_PMIC
-> +       bool "GPIO on Intel SoC PMIC"
-> +       depends on INTEL_SOC_PMIC
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+> v2: update struct compact_control comment (per Naoya Horiguchi)
+>     rename to compact_should_abort() and add comments (per David Rientjes)
+>     add cc->contended checks in compaction_alloc() and compact_finished()
+>     (per Joonsoo Kim)
+>     reduce frequency of checks in isolate_freepages()=20
+>
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
 
-select GPIOLIB_IRQCHIP
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 
-and use the infrastructure from commit
-1425052097b53de841e064dc190a9009480c208c
-"gpio: add IRQ chip helpers in gpiolib"
+--==-=-=
+Content-Type: text/plain
 
-Some fixes for sleeping chips have been merged and are available
-on the "devel" branch in the GPIO tree, so you may need to base
-your development on that.
 
-Adding some kerneldoc to the below struct will maybe make you
-realize whether you actually need it or not.
+--==-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
 
-> +struct crystalcove_gpio {
-> +       struct mutex            buslock; /* irq_bus_lock */
-> +       struct gpio_chip        chip;
-> +       int                     irq;
-> +       int                     irq_base;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-You should not have hardcoded IRQ bases around. Use an irqdomain
-to map IRQs, and even better: use the one provided in
-chip->irqdomain by GPIOLIB_IRQCHIP. (It's a requirement.)
+iQIcBAEBAgAGBQJTdkvvAAoJECBgQBJQdR/0o3MP/Rj0r/oRm/6Otfqz2rlcqW2g
+36HpqwRC0R2Mmmk7VN4IofX9GuhDUCjlQYUfKIVIapOhqm+N3buepLv2V6/Zv0KA
+KJllXOp310O2VO9KwtSpOK7K82HLPzGi/QrCRFt1Wc+0C2PJB8cIjn+myDdcCvTl
+eAR6GosGCpla72wLkuwxc6tmbMZ54Bzhrv2mE+hMdSnkmmV/gnSAFNzT1yhfDpJZ
+4/0FZs4KkqHWy9BnpxOWwiAsa3/r4G0KjHGRAdp61iv/wTUeL0QG57v7kWsFBi1b
+YrFstvmO4fXTvoGnCPf2GeWu1Y5qillXMptP3BK7Qjv058NDBeCP6rWUxii9Eu7F
+meYXmet2fmBHcIKmdrZsYQ5dcDulKeAv1ATNvU6rQ6JW4Ov/oigMbylPTNlsZ2Nw
++vohZqm9sgpa628BwiTX1O3hv/0YG/QxWa36EezFFfIQLo09TwXYreLMy5bggpjX
+AJXW1pxY1RRDA1CRsPTRTmduIikxUYAHhSsCCLPrT2xMPuz9D+5PaCHf80XjuicQ
+JEA88a4BvNy7AMfUfgJriKFGpg+yY3gyGmftZAI5zwlrcwzWcAbkdfyykVJO9DRT
+hQjasihW31OlVofl+QtmjwokcGaJzGc2TfetP7v/XeJQvTcb6/6Qh4oF2ZqoUzVY
+e77JD7YNElAQRi2PFpzN
+=FZ3h
+-----END PGP SIGNATURE-----
+--==-=-=--
 
-> +       int                     update;
-> +       int                     trigger_type;
-> +       int                     irq_mask;
-
-Should this be a bool since you just set it to 0 or 1?
-
-> +};
-> +static struct crystalcove_gpio gpio_info;
-> +
-> +static void __crystalcove_irq_mask(int gpio, int mask)
-
-I don't really like __doubleunderscore specifiers, can you use a
-unique name or something instead.
-
-> +{
-> +       u8 mirqs0 = gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0;
-> +       int offset = gpio < 8 ? gpio : gpio - 8;
-
-Meh.
-unsigned int offset = gpio%8;
-
-> +
-> +       if (mask)
-> +               intel_soc_pmic_setb(mirqs0, 1 << offset);
-
-Use
-#include <linux/bitops.h>
-
-intel_soc_pmic_setb(mirqs0, BIT(offset));
-
-I really like the BIT() macros.
-
-> +       else
-> +               intel_soc_pmic_clearb(mirqs0, 1 << offset);
-
-Dito.
-
-> +static void __crystalcove_irq_type(int gpio, int type)
-> +{
-> +       u8 ctli = gpio < 8 ? GPIO0P0CTLI + gpio : GPIO1P0CTLI + (gpio - 8);
-
-Do it like the first time instead, this is hard to read.
-
-> +       type &= IRQ_TYPE_EDGE_BOTH;
-> +       intel_soc_pmic_clearb(ctli, CTLI_INTCNT_BE);
-> +
-> +       if (type == IRQ_TYPE_EDGE_BOTH)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_BE);
-> +       else if (type == IRQ_TYPE_EDGE_RISING)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_PE);
-> +       else if (type & IRQ_TYPE_EDGE_FALLING)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_NE);
-> +}
-> +
-> +static int crystalcove_gpio_direction_input(struct gpio_chip *chip,
-> +                                           unsigned gpio)
-> +{
-> +       u8 ctlo = gpio < 8 ? GPIO0P0CTLO + gpio : GPIO1P0CTLO + (gpio - 8);
-
-Dito.
-
-> +
-> +       intel_soc_pmic_writeb(ctlo, CTLO_INPUT_DEF);
-> +       return 0;
-> +}
-> +
-> +static int crystalcove_gpio_direction_output(struct gpio_chip *chip,
-> +                                            unsigned gpio, int value)
-> +{
-> +       u8 ctlo = gpio < 8 ? GPIO0P0CTLO + gpio : GPIO1P0CTLO + (gpio - 8);
-
-Dito. (etc for all)
-
-> +
-> +       intel_soc_pmic_writeb(ctlo, CTLO_OUTPUT_DEF | value);
-> +       return 0;
-> +}
-> +
-> +static int crystalcove_gpio_get(struct gpio_chip *chip, unsigned gpio)
-> +{
-> +       u8 ctli = gpio < 8 ? GPIO0P0CTLI + gpio : GPIO1P0CTLI + (gpio - 8);
-> +
-> +       return intel_soc_pmic_readb(ctli) & 0x1;
-> +}
-> +
-> +static void crystalcove_gpio_set(struct gpio_chip *chip,
-> +                                unsigned gpio, int value)
-> +{
-> +       u8 ctlo = gpio < 8 ? GPIO0P0CTLO + gpio : GPIO1P0CTLO + (gpio - 8);
-> +
-> +       if (value)
-> +               intel_soc_pmic_setb(ctlo, 1);
-> +       else
-> +               intel_soc_pmic_clearb(ctlo, 1);
-> +}
-> +
-> +static int crystalcove_irq_type(struct irq_data *data, unsigned type)
-> +{
-> +       struct crystalcove_gpio *cg = irq_data_get_irq_chip_data(data);
-> +
-> +       cg->trigger_type = type;
-> +       cg->update |= UPDATE_TYPE;
-> +
-> +       return 0;
-> +}
-> +
-> +static int crystalcove_gpio_to_irq(struct gpio_chip *chip, unsigned gpio)
-> +{
-> +       struct crystalcove_gpio *cg =
-> +               container_of(chip, struct crystalcove_gpio, chip);
-> +
-> +       return cg->irq_base + gpio;
-> +}
-
-Nope. Use the irqdomain in chip->irqdomain.
-
-> +static void crystalcove_bus_lock(struct irq_data *data)
-> +{
-> +       struct crystalcove_gpio *cg = irq_data_get_irq_chip_data(data);
-
-This and all IRQ function callbacks needs to use a construct like
-this:
-
-struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
-struct crystalcove_gpio *cg = container_of(gc, struct crystalcove_gpio, chip);
-
-> +
-> +       mutex_lock(&cg->buslock);
-> +}
-> +
-> +static void crystalcove_bus_sync_unlock(struct irq_data *data)
-> +{
-
-The same here and for each irq function, as the irqchip helpers pass
-struct gpio_chip* as irq_chip_data.
-
-> +       struct crystalcove_gpio *cg = irq_data_get_irq_chip_data(data);
-> +       int gpio = data->irq - cg->irq_base;
-> +
-> +       if (cg->update & UPDATE_TYPE)
-> +               __crystalcove_irq_type(gpio, cg->trigger_type);
-> +       if (cg->update & UPDATE_MASK)
-> +               __crystalcove_irq_mask(gpio, cg->irq_mask);
-> +       cg->update = 0;
-> +
-> +       mutex_unlock(&cg->buslock);
-> +}
-> +
-> +static void crystalcove_irq_unmask(struct irq_data *data)
-> +{
-> +       struct crystalcove_gpio *cg = irq_data_get_irq_chip_data(data);
-> +
-> +       cg->irq_mask = 0;
-> +       cg->update |= UPDATE_MASK;
-> +}
-> +
-> +static void crystalcove_irq_mask(struct irq_data *data)
-> +{
-> +       struct crystalcove_gpio *cg = irq_data_get_irq_chip_data(data);
-> +
-> +       cg->irq_mask = 1;
-> +       cg->update |= UPDATE_MASK;
-> +}
-> +
-> +static struct irq_chip crystalcove_irqchip = {
-> +       .name                   = "PMIC-GPIO",
-> +       .irq_mask               = crystalcove_irq_mask,
-> +       .irq_unmask             = crystalcove_irq_unmask,
-> +       .irq_set_type           = crystalcove_irq_type,
-> +       .irq_bus_lock           = crystalcove_bus_lock,
-> +       .irq_bus_sync_unlock    = crystalcove_bus_sync_unlock,
-> +};
-> +
-> +static irqreturn_t crystalcove_gpio_irq_handler(int irq, void *data)
-> +{
-> +       struct crystalcove_gpio *cg = data;
-
-If you also use gpiochip_set_chained_irqchip() you need something like
-this here:
-
-struct gpio_chip *gc = data;
-then  the container_of() construction.
-
-> +       int pending;
-> +       int gpio;
-> +
-> +       pending = intel_soc_pmic_readb(GPIO0IRQ) & 0xff;
-> +       pending |= (intel_soc_pmic_readb(GPIO1IRQ) & 0xff) << 8;
-> +       intel_soc_pmic_writeb(GPIO0IRQ, pending & 0xff);
-> +       intel_soc_pmic_writeb(GPIO1IRQ, (pending >> 8) & 0xff);
-> +
-> +       local_irq_disable();
-> +       for (gpio = 0; gpio < cg->chip.ngpio; gpio++)
-> +               if (pending & (1 << gpio))
-> +                       generic_handle_irq(cg->irq_base + gpio);
-> +       local_irq_enable();
-> +
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static void crystalcove_gpio_dbg_show(struct seq_file *s,
-> +                                     struct gpio_chip *chip)
-> +{
-> +       struct crystalcove_gpio *cg =
-> +               container_of(chip, struct crystalcove_gpio, chip);
-> +       int gpio, offset;
-> +       u8 ctlo, ctli, mirqs0, mirqsx, irq;
-> +
-> +       for (gpio = 0; gpio < cg->chip.ngpio; gpio++) {
-> +               offset = gpio < 8 ? gpio : gpio - 8;
-> +               ctlo = intel_soc_pmic_readb(
-> +                       (gpio < 8 ? GPIO0P0CTLO : GPIO1P0CTLO) + offset);
-> +               ctli = intel_soc_pmic_readb(
-> +                       (gpio < 8 ? GPIO0P0CTLI : GPIO1P0CTLI) + offset);
-> +               mirqs0 = intel_soc_pmic_readb(
-> +                       gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0);
-> +               mirqsx = intel_soc_pmic_readb(
-> +                       gpio < 8 ? MGPIO0IRQSX : MGPIO1IRQSX);
-> +               irq = intel_soc_pmic_readb(
-> +                       gpio < 8 ? GPIO0IRQ : GPIO1IRQ);
-> +               seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
-> +                          gpio, ctlo & CTLO_DIR_OUT ? "out" : "in ",
-> +                          ctli & 0x1 ? "hi" : "lo",
-> +                          ctli & CTLI_INTCNT_NE ? "fall" : "    ",
-> +                          ctli & CTLI_INTCNT_PE ? "rise" : "    ",
-> +                          ctlo,
-> +                          mirqs0 & (1 << offset) ? "s0 mask  " : "s0 unmask",
-> +                          mirqsx & (1 << offset) ? "sx mask  " : "sx unmask",
-> +                          irq & (1 << offset) ? "pending" : "       ");
-> +       }
-> +}
-
-Looks helpful!
-
-> +static int crystalcove_gpio_probe(struct platform_device *pdev)
-> +{
-> +       int irq = platform_get_irq(pdev, 0);
-> +       struct crystalcove_gpio *cg = &gpio_info;
-> +       int retval;
-> +       int i;
-> +       struct device *dev = intel_soc_pmic_dev();
-> +
-> +       mutex_init(&cg->buslock);
-> +       cg->chip.label = "intel_crystalcove";
-> +       cg->chip.direction_input = crystalcove_gpio_direction_input;
-> +       cg->chip.direction_output = crystalcove_gpio_direction_output;
-> +       cg->chip.get = crystalcove_gpio_get;
-> +       cg->chip.set = crystalcove_gpio_set;
-> +       cg->chip.to_irq = crystalcove_gpio_to_irq;
-
-You don't define to_irq when using GPIOLIB_IRQCHIP.
-
-> +       cg->chip.base = -1;
-> +       cg->chip.ngpio = NUM_GPIO;
-> +       cg->chip.can_sleep = 1;
-
-true. Set it to true. This is a bool.
-
-> +       cg->chip.dev = dev;
-> +       cg->chip.dbg_show = crystalcove_gpio_dbg_show;
-> +
-> +       retval = gpiochip_add(&cg->chip);
-> +       if (retval) {
-> +               dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
-> +               goto out;
-> +       }
-
-Skip from here:
-
-> +       cg->irq_base = irq_alloc_descs(-1, 0, NUM_GPIO, 0);
-> +       if (cg->irq_base < 0) {
-> +               retval = cg->irq_base;
-> +               cg->irq_base = 0;
-> +               dev_warn(&pdev->dev, "irq_alloc_descs error: %d\n", retval);
-> +               goto out_remove_gpio;
-> +       }
-> +
-> +       for (i = 0; i < NUM_GPIO; i++) {
-> +               irq_set_chip_data(i + cg->irq_base, cg);
-> +               irq_set_chip_and_handler_name(i + cg->irq_base,
-> +                                             &crystalcove_irqchip,
-> +                                             handle_simple_irq, "demux");
-> +       }
-
-To here, replace with:
-
-gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, cg->irq_base,
-handle_simple_irq, IRQ_TYPE_NONE);
-
-> +       retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
-> +                                     IRQF_ONESHOT, "crystalcove_gpio", cg);
-> +
-> +       if (retval) {
-> +               dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
-> +               goto out_free_desc;
-> +       }
-
-Maybe use
-gpiochip_set_chained_irqchip() here.
-
-Yours,
-Linus Walleij
+--=-=-=--
