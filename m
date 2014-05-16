@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575AbaEPWwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:52:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51728 "EHLO
+	id S932293AbaEPWw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:52:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428AbaEPWw0 (ORCPT
+	with ESMTP id S1756395AbaEPWw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 18:52:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.4 2/9] n_tty: Fix n_tty_write crash when echoing in raw mode
-Date: Fri, 16 May 2014 15:55:25 -0700
-Message-Id: <20140516225458.704630668@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.4 9/9] tgafb: fix mode setting with fbset
+Date: Fri, 16 May 2014 15:55:32 -0700
+Message-Id: <20140516225458.916227326@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -31,78 +29,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-The tty atomic_write_lock does not provide an exclusion guarantee for
-the tty driver if the termios settings are LECHO & !OPOST.  And since
-it is unexpected and not allowed to call TTY buffer helpers like
-tty_insert_flip_string concurrently, this may lead to crashes when
-concurrect writers call pty_write. In that case the following two
-writers:
-* the ECHOing from a workqueue and
-* pty_write from the process
-race and can overflow the corresponding TTY buffer like follows.
+commit 624966589041deb32a2626ee2e176e8274581101 upstream.
 
-If we look into tty_insert_flip_string_fixed_flag, there is:
-  int space = __tty_buffer_request_room(port, goal, flags);
-  struct tty_buffer *tb = port->buf.tail;
-  ...
-  memcpy(char_buf_ptr(tb, tb->used), chars, space);
-  ...
-  tb->used += space;
+Mode setting in the TGA driver is broken for these reasons:
 
-so the race of the two can result in something like this:
-              A                                B
-__tty_buffer_request_room
-                                  __tty_buffer_request_room
-memcpy(buf(tb->used), ...)
-tb->used += space;
-                                  memcpy(buf(tb->used), ...) ->BOOM
+- info->fix.line_length is set just once in tgafb_init_fix function. If
+  we change videomode, info->fix.line_length is not recalculated - so
+  the video mode is changed but the screen is corrupted because of wrong
+  info->fix.line_length.
 
-B's memcpy is past the tty_buffer due to the previous A's tb->used
-increment.
+- info->fix.smem_len is set in tgafb_init_fix to the size of the default
+  video mode (640x480). If we set a higher resolution,
+  info->fix.smem_len is smaller than the current screen size, preventing
+  the userspace program from mapping the framebuffer.
 
-Since the N_TTY line discipline input processing can output
-concurrently with a tty write, obtain the N_TTY ldisc output_lock to
-serialize echo output with normal tty writes.  This ensures the tty
-buffer helper tty_insert_flip_string is not called concurrently and
-everything is fine.
+This patch fixes it:
 
-Note that this is nicely reproducible by an ordinary user using
-forkpty and some setup around that (raw termios + ECHO). And it is
-present in kernels at least after commit
-d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
-use the normal buffering logic) in 2.6.31-rc3.
+- info->fix.line_length initialization is moved to tgafb_set_par so that
+  it is recalculated with each mode change.
 
-js: add more info to the commit log
-js: switch to bool
-js: lock unconditionally
-js: lock only the tty->ops->write call
+- info->fix.smem_len is set to a fixed value representing the real
+  amount of video ram (the values are taken from xfree86 driver).
 
-References: CVE-2014-0196
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+- add a check to tgafb_check_var to prevent us from setting a videomode
+  that doesn't fit into videoram.
+
+- in tgafb_register, tgafb_init_fix is moved upwards, to be called
+  before fb_find_mode (because fb_find_mode already needs the videoram
+  size set in tgafb_init_fix).
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: output_lock is a member of struct tty_struct]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/tty/n_tty.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1996,7 +1996,9 @@ static ssize_t n_tty_write(struct tty_st
- 				tty->ops->flush_chars(tty);
- 		} else {
- 			while (nr > 0) {
-+				mutex_lock(&tty->output_lock);
- 				c = tty->ops->write(tty, b, nr);
-+				mutex_unlock(&tty->output_lock);
- 				if (c < 0) {
- 					retval = c;
- 					goto break_out;
+
+---
+ drivers/video/tgafb.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -192,6 +192,8 @@ tgafb_check_var(struct fb_var_screeninfo
+ 
+ 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
+ 		return -EINVAL;
++	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
++		return -EINVAL;
+ 	if (var->nonstd)
+ 		return -EINVAL;
+ 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
+@@ -272,6 +274,7 @@ tgafb_set_par(struct fb_info *info)
+ 	par->yres = info->var.yres;
+ 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
+ 	par->bits_per_pixel = info->var.bits_per_pixel;
++	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+ 
+ 	tga_type = par->tga_type;
+ 
+@@ -1318,6 +1321,7 @@ tgafb_init_fix(struct fb_info *info)
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 	u8 tga_type = par->tga_type;
+ 	const char *tga_type_name = NULL;
++	unsigned memory_size;
+ 
+ 	switch (tga_type) {
+ 	case TGA_TYPE_8PLANE:
+@@ -1325,21 +1329,25 @@ tgafb_init_fix(struct fb_info *info)
+ 			tga_type_name = "Digital ZLXp-E1";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E1";
++		memory_size = 2097152;
+ 		break;
+ 	case TGA_TYPE_24PLANE:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E2";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E2";
++		memory_size = 8388608;
+ 		break;
+ 	case TGA_TYPE_24PLUSZ:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E3";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E3";
++		memory_size = 16777216;
+ 		break;
+ 	default:
+ 		tga_type_name = "Unknown";
++		memory_size = 16777216;
+ 		break;
+ 	}
+ 
+@@ -1351,9 +1359,8 @@ tgafb_init_fix(struct fb_info *info)
+ 			    ? FB_VISUAL_PSEUDOCOLOR
+ 			    : FB_VISUAL_DIRECTCOLOR);
+ 
+-	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+ 	info->fix.smem_start = (size_t) par->tga_fb_base;
+-	info->fix.smem_len = info->fix.line_length * par->yres;
++	info->fix.smem_len = memory_size;
+ 	info->fix.mmio_start = (size_t) par->tga_regs_base;
+ 	info->fix.mmio_len = 512;
+ 
+@@ -1478,6 +1485,9 @@ tgafb_register(struct device *dev)
+ 		modedb_tga = &modedb_tc;
+ 		modedbsize_tga = 1;
+ 	}
++
++	tgafb_init_fix(info);
++
+ 	ret = fb_find_mode(&info->var, info,
+ 			   mode_option ? mode_option : mode_option_tga,
+ 			   modedb_tga, modedbsize_tga, NULL,
+@@ -1495,7 +1505,6 @@ tgafb_register(struct device *dev)
+ 	}
+ 
+ 	tgafb_set_par(info);
+-	tgafb_init_fix(info);
+ 
+ 	if (register_framebuffer(info) < 0) {
+ 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
 
 
