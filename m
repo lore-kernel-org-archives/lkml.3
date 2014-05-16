@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945899AbaEPVoX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:44:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61145 "EHLO mga01.intel.com"
+	id S1756223AbaEPVoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 17:44:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20987 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347AbaEPVnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754452AbaEPVnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 17:43:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1069,1389772800"; 
-   d="scan'208";a="533259474"
+   d="scan'208";a="512987832"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>,
-        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org
-Subject: [PATCH 4/8] e1000e: Out of line __ew32_prepare/__ew32
-Date: Fri, 16 May 2014 14:43:11 -0700
-Message-Id: <1400276595-6965-5-git-send-email-andi@firstfloor.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH 2/8] radeonfb: Out of line errata workarounds
+Date: Fri, 16 May 2014 14:43:09 -0700
+Message-Id: <1400276595-6965-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
 References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
@@ -25,103 +26,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Out of lining these two common inlines saves about 30k text size,
-due to their errata workarounds.
+Out of lining _radeon_msleep and radeon_pll_errata_* saves about 40k text.
 
-14131431	2008136	1507328	17646895	10d452f	vmlinux-before-e1000e
-14101415	2004040	1507328	17612783	10cbfef	vmlinux-e1000e
+14193673	2003976	1507328	17704977	10e2811	vmlinux-before-radeon
+14152713	2003976	1507328	17664017	10d8811	vmlinux-radeon
 
-Cc: jeffrey.t.kirsher@intel.com
-Cc: netdev@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-fbdev@vger.kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/net/ethernet/intel/e1000e/e1000.h  | 31 ++----------------------------
- drivers/net/ethernet/intel/e1000e/netdev.c | 30 +++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 29 deletions(-)
+ drivers/video/fbdev/aty/radeon_base.c | 57 ++++++++++++++++++++++++++++++++++
+ drivers/video/fbdev/aty/radeonfb.h    | 58 ++---------------------------------
+ 2 files changed, 60 insertions(+), 55 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/e1000.h b/drivers/net/ethernet/intel/e1000e/e1000.h
-index 1471c54..cbe25bb 100644
---- a/drivers/net/ethernet/intel/e1000e/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000e/e1000.h
-@@ -573,35 +573,8 @@ static inline u32 __er32(struct e1000_hw *hw, unsigned long reg)
+diff --git a/drivers/video/fbdev/aty/radeon_base.c b/drivers/video/fbdev/aty/radeon_base.c
+index 26d80a4..abd89a9 100644
+--- a/drivers/video/fbdev/aty/radeon_base.c
++++ b/drivers/video/fbdev/aty/radeon_base.c
+@@ -282,6 +282,63 @@ static int backlight = 1;
+ static int backlight = 0;
+ #endif
  
- #define er32(reg)	__er32(hw, E1000_##reg)
- 
--/**
-- * __ew32_prepare - prepare to write to MAC CSR register on certain parts
-- * @hw: pointer to the HW structure
-- *
-- * When updating the MAC CSR registers, the Manageability Engine (ME) could
-- * be accessing the registers at the same time.  Normally, this is handled in
-- * h/w by an arbiter but on some parts there is a bug that acknowledges Host
-- * accesses later than it should which could result in the register to have
-- * an incorrect value.  Workaround this by checking the FWSM register which
-- * has bit 24 set while ME is accessing MAC CSR registers, wait if it is set
-- * and try again a number of times.
-- **/
--static inline s32 __ew32_prepare(struct e1000_hw *hw)
--{
--	s32 i = E1000_ICH_FWSM_PCIM2PCI_COUNT;
--
--	while ((er32(FWSM) & E1000_ICH_FWSM_PCIM2PCI) && --i)
--		udelay(50);
--
--	return i;
--}
--
--static inline void __ew32(struct e1000_hw *hw, unsigned long reg, u32 val)
--{
--	if (hw->adapter->flags2 & FLAG2_PCIM2PCI_ARBITER_WA)
--		__ew32_prepare(hw);
--
--	writel(val, hw->hw_addr + reg);
--}
-+s32 __ew32_prepare(struct e1000_hw *hw);
-+void __ew32(struct e1000_hw *hw, unsigned long reg, u32 val);
- 
- #define ew32(reg, val)	__ew32(hw, E1000_##reg, (val))
- 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 3e69386..9b6cd9a 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -124,6 +124,36 @@ static const struct e1000_reg_info e1000_reg_info_tbl[] = {
- };
- 
- /**
-+ * __ew32_prepare - prepare to write to MAC CSR register on certain parts
-+ * @hw: pointer to the HW structure
++/* Note about this function: we have some rare cases where we must not schedule,
++ * this typically happen with our special "wake up early" hook which allows us to
++ * wake up the graphic chip (and thus get the console back) before everything else
++ * on some machines that support that mechanism. At this point, interrupts are off
++ * and scheduling is not permitted
++ */
++void _radeon_msleep(struct radeonfb_info *rinfo, unsigned long ms)
++{
++	if (rinfo->no_schedule || oops_in_progress)
++		mdelay(ms);
++	else
++		msleep(ms);
++}
++
++/*
++ * Note about PLL register accesses:
 + *
-+ * When updating the MAC CSR registers, the Manageability Engine (ME) could
-+ * be accessing the registers at the same time.  Normally, this is handled in
-+ * h/w by an arbiter but on some parts there is a bug that acknowledges Host
-+ * accesses later than it should which could result in the register to have
-+ * an incorrect value.  Workaround this by checking the FWSM register which
-+ * has bit 24 set while ME is accessing MAC CSR registers, wait if it is set
-+ * and try again a number of times.
-+ **/
-+s32 __ew32_prepare(struct e1000_hw *hw)
++ * I have removed the spinlock on them on purpose. The driver now
++ * expects that it will only manipulate the PLL registers in normal
++ * task environment, where radeon_msleep() will be called, protected
++ * by a semaphore (currently the console semaphore) so that no conflict
++ * will happen on the PLL register index.
++ *
++ * With the latest changes to the VT layer, this is guaranteed for all
++ * calls except the actual drawing/blits which aren't supposed to use
++ * the PLL registers anyway
++ *
++ * This is very important for the workarounds to work properly. The only
++ * possible exception to this rule is the call to unblank(), which may
++ * be done at irq time if an oops is in progress.
++ */
++void radeon_pll_errata_after_index(struct radeonfb_info *rinfo)
 +{
-+	s32 i = E1000_ICH_FWSM_PCIM2PCI_COUNT;
++	if (!(rinfo->errata & CHIP_ERRATA_PLL_DUMMYREADS))
++		return;
 +
-+	while ((er32(FWSM) & E1000_ICH_FWSM_PCIM2PCI) && --i)
-+		udelay(50);
-+
-+	return i;
++	(void)INREG(CLOCK_CNTL_DATA);
++	(void)INREG(CRTC_GEN_CNTL);
 +}
 +
-+void __ew32(struct e1000_hw *hw, unsigned long reg, u32 val)
++void radeon_pll_errata_after_data(struct radeonfb_info *rinfo)
 +{
-+	if (hw->adapter->flags2 & FLAG2_PCIM2PCI_ARBITER_WA)
-+		__ew32_prepare(hw);
-+
-+	writel(val, hw->hw_addr + reg);
++	if (rinfo->errata & CHIP_ERRATA_PLL_DELAY) {
++		/* we can't deal with posted writes here ... */
++		_radeon_msleep(rinfo, 5);
++	}
++	if (rinfo->errata & CHIP_ERRATA_R300_CG) {
++		u32 save, tmp;
++		save = INREG(CLOCK_CNTL_INDEX);
++		tmp = save & ~(0x3f | PLL_WR_EN);
++		OUTREG(CLOCK_CNTL_INDEX, tmp);
++		tmp = INREG(CLOCK_CNTL_DATA);
++		OUTREG(CLOCK_CNTL_INDEX, save);
++	}
 +}
 +
-+/**
-  * e1000_regdump - register printout routine
-  * @hw: pointer to the HW structure
-  * @reginfo: pointer to the register info table
++
+ /*
+  * prototypes
+  */
+diff --git a/drivers/video/fbdev/aty/radeonfb.h b/drivers/video/fbdev/aty/radeonfb.h
+index cb84604..bb73446 100644
+--- a/drivers/video/fbdev/aty/radeonfb.h
++++ b/drivers/video/fbdev/aty/radeonfb.h
+@@ -370,20 +370,7 @@ struct radeonfb_info {
+  * IO macros
+  */
+ 
+-/* Note about this function: we have some rare cases where we must not schedule,
+- * this typically happen with our special "wake up early" hook which allows us to
+- * wake up the graphic chip (and thus get the console back) before everything else
+- * on some machines that support that mechanism. At this point, interrupts are off
+- * and scheduling is not permitted
+- */
+-static inline void _radeon_msleep(struct radeonfb_info *rinfo, unsigned long ms)
+-{
+-	if (rinfo->no_schedule || oops_in_progress)
+-		mdelay(ms);
+-	else
+-		msleep(ms);
+-}
+-
++void _radeon_msleep(struct radeonfb_info *rinfo, unsigned long ms);
+ 
+ #define INREG8(addr)		readb((rinfo->mmio_base)+addr)
+ #define OUTREG8(addr,val)	writeb(val, (rinfo->mmio_base)+addr)
+@@ -408,47 +395,8 @@ static inline void _OUTREGP(struct radeonfb_info *rinfo, u32 addr,
+ 
+ #define OUTREGP(addr,val,mask)	_OUTREGP(rinfo, addr, val,mask)
+ 
+-/*
+- * Note about PLL register accesses:
+- *
+- * I have removed the spinlock on them on purpose. The driver now
+- * expects that it will only manipulate the PLL registers in normal
+- * task environment, where radeon_msleep() will be called, protected
+- * by a semaphore (currently the console semaphore) so that no conflict
+- * will happen on the PLL register index.
+- *
+- * With the latest changes to the VT layer, this is guaranteed for all
+- * calls except the actual drawing/blits which aren't supposed to use
+- * the PLL registers anyway
+- *
+- * This is very important for the workarounds to work properly. The only
+- * possible exception to this rule is the call to unblank(), which may
+- * be done at irq time if an oops is in progress.
+- */
+-static inline void radeon_pll_errata_after_index(struct radeonfb_info *rinfo)
+-{
+-	if (!(rinfo->errata & CHIP_ERRATA_PLL_DUMMYREADS))
+-		return;
+-
+-	(void)INREG(CLOCK_CNTL_DATA);
+-	(void)INREG(CRTC_GEN_CNTL);
+-}
+-
+-static inline void radeon_pll_errata_after_data(struct radeonfb_info *rinfo)
+-{
+-	if (rinfo->errata & CHIP_ERRATA_PLL_DELAY) {
+-		/* we can't deal with posted writes here ... */
+-		_radeon_msleep(rinfo, 5);
+-	}
+-	if (rinfo->errata & CHIP_ERRATA_R300_CG) {
+-		u32 save, tmp;
+-		save = INREG(CLOCK_CNTL_INDEX);
+-		tmp = save & ~(0x3f | PLL_WR_EN);
+-		OUTREG(CLOCK_CNTL_INDEX, tmp);
+-		tmp = INREG(CLOCK_CNTL_DATA);
+-		OUTREG(CLOCK_CNTL_INDEX, save);
+-	}
+-}
++void radeon_pll_errata_after_index(struct radeonfb_info *rinfo);
++void radeon_pll_errata_after_data(struct radeonfb_info *rinfo);
+ 
+ static inline u32 __INPLL(struct radeonfb_info *rinfo, u32 addr)
+ {
 -- 
 1.9.0
 
