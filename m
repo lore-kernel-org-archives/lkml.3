@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990AbaEPHsP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:48:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36966 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333AbaEPHsO (ORCPT
+	id S1756051AbaEPHso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:48:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58401 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848AbaEPHsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:48:14 -0400
-Date: Fri, 16 May 2014 09:48:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-Message-ID: <20140516074804.GK11096@twins.programming.kicks-ass.net>
-References: <20140513142328.GE2485@laptop.programming.kicks-ass.net>
- <53731D12.7040804@linux.vnet.ibm.com>
- <20140514094426.GF30445@twins.programming.kicks-ass.net>
- <5374387E.4080802@linux.vnet.ibm.com>
- <20140515083531.GE30445@twins.programming.kicks-ass.net>
- <53747EE4.3020605@linux.vnet.ibm.com>
- <20140515090638.GI30445@twins.programming.kicks-ass.net>
- <53748A5D.6070605@linux.vnet.ibm.com>
- <20140515115751.GK30445@twins.programming.kicks-ass.net>
- <5375768F.1010000@linux.vnet.ibm.com>
+	Fri, 16 May 2014 03:48:42 -0400
+Date: Fri, 16 May 2014 00:48:26 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+Message-ID: <20140516074826.GB8555@infradead.org>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+ <8468354.y2kUZdOz9e@wuerfel>
+ <1400168823.7862.9.camel@dabdike>
+ <9176609.NChAu49t7f@wuerfel>
+ <20140515220717.1ced0f1a@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="doRsZBpDQ+I4/+/t"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5375768F.1010000@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140515220717.1ced0f1a@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 15, 2014 at 10:07:17PM +0100, One Thousand Gnomes wrote:
+> True sort of for the kernel (except you've got problems with file system
+> compatibility and I believe stuff like NFS and that fact some file
+> systems just break).
 
---doRsZBpDQ+I4/+/t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+modern filesystems including NFS don't use anything that corresponds to
+a time_t on disk or on the wire, so we'd just need to adjust the few
+places the conert time representations.
 
-On Fri, May 16, 2014 at 10:23:11AM +0800, Michael wang wrote:
-> On 05/15/2014 07:57 PM, Peter Zijlstra wrote:
-> [snip]
-> >>
-> >> It's like:
-> >>
-> >> 	/cgroup/cpu/l1/l2/l3/l4/l5/l6/A
-> >>
-> >> about level 7, the issue can not be solved any more.
-> >=20
-> > That's pretty retarded and yeah, that's way past the point where things
-> > make sense. You might be lucky and have l1-5 as empty/pointless
-> > hierarchy so the effective depth is less and then things will work, but
-> > *shees*..
->=20
-> Exactly, that's the simulation of cgroup topology setup by libvirt,
-> really doesn't make sense... rather torture than deployment, but they do
-> make things like that...
+> > The main advantage that I see with 64-bit time_t is that a lot of user
+> > space already works with it, because NetBSD and OpenBSD use this, and
+> > all 64-bit Linux systems already work with this without changing the ABI.
+> > If we want a POSIX extension to cover a new ABI, this would be the most
+> > likely candidate.
+> 
+> The main advantage IMHO of just using 64bit on 32bit boxes is getting it
+> right. I'd go so far as to consider changing userspace time_t to be a
+> struct. Yes it'll break lots of code but at least you'll know about it.
 
-I'm calling it broken and unfit for purpose if it does crazy shit like
-that.
+I think we're attacking that from the wrong angle.  We'll need to work
+with the glibc and other libc folks to what can be implemented as the
+library API/ABI and then ensure the kernel provides proper support for
+it.
 
-There's really not much we can do to fix it either, barring softfloat in
-the load-balancer and I'm sure everybody but virt wankers will complain
-about _that_.
+Chaning the size of time_t in the library seems like the only feasible
+approach that keeps existing programs compatible.  If we support this
+with a time64_, a shifted epoch or structures at the kernel ABI is a
+question of balaning what libc needs and what we can use efficiently
+internally.
 
---doRsZBpDQ+I4/+/t
-Content-Type: application/pgp-signature
+> > As mentioned earlier, between kernel and user space it's probably best
+> > to avoid time_t and timeval completely and just use timespec64 or some
+> > other safe type, but there has to be a way to port user space that relies
+> > on time_t or timespec.
+> 
+> This I think is bang on. We've already got lots of cases where we can't
+> shoehorn useful info into syscalls due to time_t, including stuff like
+> exposing accurate stamps in stat(). On an 8MHz 68000 not much happened in
+> the same second, on a 32 core x86 it's a bit different.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The stat(64) syscall already has stopped time_t for a long time:
 
-iQIcBAEBAgAGBQJTdcK0AAoJEHZH4aRLwOS6LMsP/jJBZTfPRr4NUEXCks0aemCU
-dtqK+n6hGy02clUPIL0peE2/ptIZvHJizg9B21aTKJKOBna8q9FxbkUTW177HLdt
-zUNCvjBw/VopPacBOpWNuhowP48AlTzx/ftKIE7tiGyIdJt+c8acHDQRKUV491WP
-fQfFS3Ge59Oc2XuT023+rNPJ9MgnKOG3OUPip2eLPbztEJVXpBVKX/NXg+97vTRG
-vuRG+nV1Gh7t5Sz64jrCCLcAUQvJnT5QoFnpPt7iGRlJ2ybOcls5TTVtTY7WV4fs
-3EDpWPK6FJDny3JgH6DLaqos4R2tUd8hWW/BJKtBOYsfYfXgqJPq7B/8RRkq7lsn
-iPPTZTh/au4YU8xN6sDK4Hga9YHZDxLi0Y38UNZ3YZRy8OewIK8Gs40OKvkxQ004
-OlX6kwCy7koLF+w2d8dQpC8z8EnxutBCXVNa4jnxOGRK9kI5Dg85CEvadawKvCfS
-GCMtPDJ3kgNJNFp3HnnOP/Ou3katSI5qvObYTSHZs1JtB4cBOcFKC5gSPv4u4Dxg
-8InsUDsAz9TbjjF9aLgzQlg7aUgCNP1PbkCrU1VmART7D9McF0dN+vy51wz6Z0tP
-mSe7OMA/shNAC0eq5tD0863iUF6eB58pAFeFI7TUpZmkw4UbIJsG0G1HPTBDWNyz
-qCXJUaWPxC8lBKuS7HzD
-=W2Af
------END PGP SIGNATURE-----
+struct stat64 {
+	...
+	int             st_atime;       /* Time of last access.  */
+	unsigned int    st_atime_nsec;
+	int             st_mtime;       /* Time of last modification.  */
+	unsigned int    st_mtime_nsec;
+	int             st_ctime;	/* Time of last status change. */
+	unsigned int	st_ctime_nsec;
+};
 
---doRsZBpDQ+I4/+/t--
