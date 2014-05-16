@@ -1,126 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895AbaEPNit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:38:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54381 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757480AbaEPNip (ORCPT
+	id S1757554AbaEPNxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:53:40 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43329 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757539AbaEPNxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:38:45 -0400
-Date: Fri, 16 May 2014 06:37:55 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-d8179bc0db8d0c9654d5de43de2874bf6d0a58fa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        tony.luck@intel.com
-In-Reply-To: <20140507154341.012847637@linutronix.de>
-References: <20140507154341.012847637@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Remove dynamic_irq mess
-Git-Commit-ID: d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 16 May 2014 09:53:37 -0400
+Message-ID: <1400248411.5877.10.camel@marge.simpson.net>
+Subject: [patch] rt/sched: fix resursion when CONTEXT_TRACKING and
+ PREEMPT_LAZY are enabled
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Date: Fri, 16 May 2014 15:53:31 +0200
+In-Reply-To: <20140513154002.GD15049@linutronix.de>
+References: <20140509181214.GK29014@linutronix.de>
+	 <1399695303.5146.21.camel@marge.simpson.net>
+	 <20140513154002.GD15049@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
-Gitweb:     http://git.kernel.org/tip/d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 7 May 2014 15:44:23 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 16 May 2014 14:05:22 +0200
+On Tue, 2014-05-13 at 17:40 +0200, Sebastian Andrzej Siewior wrote: 
+> * Mike Galbraith | 2014-05-10 06:15:03 [+0200]:
+> 
+> >On Fri, 2014-05-09 at 20:12 +0200, Sebastian Andrzej Siewior wrote:
+> >
+> >> Known issues:
+> >> 
+> >>       - bcache is disabled.
+> >> 
+> >>       - lazy preempt on x86_64 leads to a crash with some load.
+> >
+> >That is only with NO_HZ_FUL enabled here.  Box blows the stack during
+> >task exit, eyeballing hasn't spotted the why.
+> 
+> Even if I disable NO_HZ_FULL it explodes as soon as hackbench starts.
 
-genirq: Remove dynamic_irq mess
+Ah, you didn't turn CONTEXT_TRACKING off too.  The below made the dirty
+little SOB die here.
 
-No more users. Get rid of the cruft.
+If context tracking is enabled, we can recurse, and explode violently.
+Add missing checks to preempt_schedule_context().
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Tested-by: Tony Luck <tony.luck@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140507154341.012847637@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fix other inconsistencies spotted while searching.
+
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 ---
- include/linux/irq.h  | 10 ----------
- kernel/irq/irqdesc.c | 23 +++++++----------------
- 2 files changed, 7 insertions(+), 26 deletions(-)
+ arch/x86/include/asm/thread_info.h |    1 +
+ include/linux/preempt.h            |    2 +-
+ include/linux/preempt_mask.h       |   10 ++++++++--
+ kernel/context_tracking.c          |    2 +-
+ kernel/fork.c                      |    1 +
+ kernel/sched/core.c                |   16 +++++-----------
+ kernel/sched/fair.c                |    2 +-
+ 7 files changed, 18 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 8ff71d1..0d998d8 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -525,16 +525,6 @@ static inline void irq_set_percpu_devid_flags(unsigned int irq)
- 			     IRQ_NOPROBE | IRQ_PER_CPU_DEVID);
- }
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -51,6 +51,7 @@ struct thread_info {
+ 	.flags		= 0,			\
+ 	.cpu		= 0,			\
+ 	.saved_preempt_count = INIT_PREEMPT_COUNT,	\
++	.preempt_lazy_count = 0,		\
+ 	.addr_limit	= KERNEL_DS,		\
+ 	.restart_block = {			\
+ 		.fn = do_no_restart_syscall,	\
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -91,8 +91,8 @@ do { \
  
--/*
-- * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
-- * irq_free_desc instead.
-- */
--extern void dynamic_irq_cleanup(unsigned int irq);
--static inline void dynamic_irq_init(unsigned int irq)
--{
--	dynamic_irq_cleanup(irq);
--}
--
- /* Set/get chip/data for an IRQ: */
- extern int irq_set_chip(unsigned int irq, struct irq_chip *chip);
- extern int irq_set_handler_data(unsigned int irq, void *data);
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 7f26779..7339e42 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -278,7 +278,12 @@ EXPORT_SYMBOL(irq_to_desc);
+ #define preempt_lazy_enable() \
+ do { \
+-	dec_preempt_lazy_count(); \
+ 	barrier(); \
++	dec_preempt_lazy_count(); \
+ 	preempt_check_resched(); \
+ } while (0)
  
- static void free_desc(unsigned int irq)
- {
--	dynamic_irq_cleanup(irq);
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	desc_set_defaults(irq, desc, desc_node(desc), NULL);
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
- }
+--- a/include/linux/preempt_mask.h
++++ b/include/linux/preempt_mask.h
+@@ -118,9 +118,15 @@ extern int in_serving_softirq(void);
+ 		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
  
- static inline int alloc_descs(unsigned int start, unsigned int cnt, int node,
-@@ -309,7 +314,7 @@ void irq_mark_irq(unsigned int irq)
- #ifdef CONFIG_GENERIC_IRQ_LEGACY
- void irq_init_desc(unsigned int irq)
- {
--	dynamic_irq_cleanup(irq);
-+	free_desc(irq);
- }
+ #ifdef CONFIG_PREEMPT_COUNT
+-# define preemptible()	(preempt_count() == 0 && !irqs_disabled())
++# define preemptible()		(preempt_count() == 0 && !irqs_disabled())
++#ifdef CONFIG_PREEMPT_LAZY
++# define preemptible_lazy()	(preempt_lazy_count() !=0 && !need_resched_now())
+ #else
+-# define preemptible()	0
++# define preemptible_lazy()	1
++#endif
++#else
++# define preemptible()		0
++# define preemptible_lazy()	0
  #endif
  
-@@ -522,20 +527,6 @@ int irq_set_percpu_devid(unsigned int irq)
- 	return 0;
- }
- 
--/**
-- * dynamic_irq_cleanup - cleanup a dynamically allocated irq
-- * @irq:	irq number to initialize
-- */
--void dynamic_irq_cleanup(unsigned int irq)
--{
--	struct irq_desc *desc = irq_to_desc(irq);
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&desc->lock, flags);
--	desc_set_defaults(irq, desc, desc_node(desc), NULL);
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
--}
--
- void kstat_incr_irq_this_cpu(unsigned int irq)
+ #endif /* LINUX_PREEMPT_MASK_H */
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -124,7 +124,7 @@ asmlinkage void __sched notrace preempt_
  {
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
+ 	enum ctx_state prev_ctx;
+ 
+-	if (likely(!preemptible()))
++	if (likely(!preemptible() || !preemptible_lazy()))
+ 		return;
+ 
+ 	/*
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -329,6 +329,7 @@ static struct task_struct *dup_task_stru
+ 	setup_thread_stack(tsk, orig);
+ 	clear_user_return_notifier(tsk);
+ 	clear_tsk_need_resched(tsk);
++	clear_tsk_need_resched_lazy(tsk);
+ 	stackend = end_of_stack(tsk);
+ 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
+ 
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2861,8 +2861,8 @@ void migrate_enable(void)
+ 		p->migrate_disable = 0;
+ 
+ 	unpin_current_cpu();
+-	preempt_enable();
+ 	preempt_lazy_enable();
++	preempt_enable();
+ }
+ EXPORT_SYMBOL(migrate_enable);
+ #else
+@@ -3096,19 +3096,13 @@ asmlinkage void __sched notrace preempt_
+ {
+ 	/*
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+-	 * we do not want to preempt the current task. Just return..
++	 * we do not want to preempt the current task. Just return.  For
++	 * lazy preemption we also check for non-zero preempt_count_lazy,
++	 * and bail if no immediate preemption is required.
+ 	 */
+-	if (likely(!preemptible()))
++	if (likely(!preemptible() || !preemptible_lazy()))
+ 		return;
+ 
+-#ifdef CONFIG_PREEMPT_LAZY
+-	/*
+-	 * Check for lazy preemption
+-	 */
+-	if (current_thread_info()->preempt_lazy_count &&
+-			!test_thread_flag(TIF_NEED_RESCHED))
+-		return;
+-#endif
+ 	do {
+ 		__preempt_count_add(PREEMPT_ACTIVE);
+ 		/*
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4446,7 +4446,7 @@ static void check_preempt_wakeup(struct
+ 	 * prevents us from potentially nominating it as a false LAST_BUDDY
+ 	 * below.
+ 	 */
+-	if (test_tsk_need_resched(curr))
++	if (test_tsk_need_resched(curr) || test_tsk_need_resched_lazy(curr))
+ 		return;
+ 
+ 	/* Idle tasks are by definition preempted by non-idle tasks. */
+
+
