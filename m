@@ -1,57 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaEPPnT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:43:19 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:47412 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaEPPnS (ORCPT
+	id S1753025AbaEPPnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:43:37 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:38987 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaEPPne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:43:18 -0400
+	Fri, 16 May 2014 11:43:34 -0400
+Date: Fri, 16 May 2014 11:43:30 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        ARM kernel mailing list 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH cgroup/for-3.16] cgroup: introduce CSS_NO_REF and skip
+ refcnting on normal root csses
+Message-ID: <20140516154330.GB5379@htj.dyndns.org>
+References: <1399670015-23463-1-git-send-email-tj@kernel.org>
+ <1399670015-23463-10-git-send-email-tj@kernel.org>
+ <53751062.2050401@wwwdotorg.org>
+ <53753823.2090402@wwwdotorg.org>
+ <20140516143718.GA5379@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <53762FA5.6040203@kernel.dk>
-References: <1400254281-11294-1-git-send-email-tom.leiming@gmail.com>
-	<53762FA5.6040203@kernel.dk>
-Date: Fri, 16 May 2014 23:43:17 +0800
-Message-ID: <CACVXFVNki7os1BAS-vARmiGXuWktr_-U5T_6N6f8u_COMp9CLw@mail.gmail.com>
-Subject: Re: [PATCH v1] virtio_blk: fix race between start and stop queue
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516143718.GA5379@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 11:32 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-05-16 09:31, Ming Lei wrote:
->>
->> When there isn't enough vring descriptor for adding to vq,
->> blk-mq will be put as stopped state until some of pending
->> descriptors are completed & freed.
->>
->> Unfortunately, the vq's interrupt may come just before
->> blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
->> still be kept as stopped even though lots of descriptors
->> are completed and freed in the interrupt handler. The worst
->> case is that all pending descriptors are freed in the
->> interrupt handler, and the queue is kept as stopped forever.
->>
->> This patch fixes the problem by starting/stopping blk-mq
->> with holding vq_lock.
->
->
-> Thanks, this looks good, I'll apply it for 3.16 (with a stable marker, even
-> if it is an unlikely event).
+>From 49035d695d8f1c4bbe4e37480e5d06812818947c Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 16 May 2014 11:40:33 -0400
+
+9395a4500404 ("cgroup: enable refcnting for root csses") enabled
+reference counting for root csses (cgroup_subsys_states) so that
+cgroup's self csses can be used to manage the lifetime of the
+containing cgroups.
+
+Unfortunately, this change was incorrect.  cpu controller uses
+early_init and starts using css reference counts on its root css from
+then on.  percpu_ref can't initialized during early init and its
+initialization is deferred till cgroup_init() time.  This means that
+cpu was using percpu_ref which wasn't properly initialized.  Due to
+the way percpu variables are laid out on x86, this didn't blow up
+immediately on x86 but ended up incrementing and decrementing the
+percpu variable at offset zero, whatever it may be; however, on other
+archs, this caused fault and early boot failure.
+
+As cgroup self csses still need working refcounting, we can't revert
+9395a4500404.  This patch adds CSS_NO_REF which explicitly inhibits
+reference counting on the css and sets it on all normal (non-self)
+csses.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+Fixes: 9395a4500404 ("cgroup: enable refcnting for root csses")
+---
+Patch applied to cgroup/for-3.16.
 
 Thanks.
 
-It shouldn't be very difficult to happen in case of
-non-indirect descriptor, and it is easy to reproduce
-when module parameter of 'virtblk_queue_depth'
-is bigger than vq->num_free for non-indirect case.
+ include/linux/cgroup.h | 11 ++++++++---
+ kernel/cgroup.c        |  9 +++++++--
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-
-Thanks,
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 76dadd77..1737db0 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -77,6 +77,7 @@ struct cgroup_subsys_state {
+ 
+ /* bits in struct cgroup_subsys_state flags field */
+ enum {
++	CSS_NO_REF	= (1 << 0), /* no reference counting for this css */
+ 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
+ };
+ 
+@@ -88,7 +89,8 @@ enum {
+  */
+ static inline void css_get(struct cgroup_subsys_state *css)
+ {
+-	percpu_ref_get(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		percpu_ref_get(&css->refcnt);
+ }
+ 
+ /**
+@@ -103,7 +105,9 @@ static inline void css_get(struct cgroup_subsys_state *css)
+  */
+ static inline bool css_tryget_online(struct cgroup_subsys_state *css)
+ {
+-	return percpu_ref_tryget_live(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		return percpu_ref_tryget_live(&css->refcnt);
++	return true;
+ }
+ 
+ /**
+@@ -114,7 +118,8 @@ static inline bool css_tryget_online(struct cgroup_subsys_state *css)
+  */
+ static inline void css_put(struct cgroup_subsys_state *css)
+ {
+-	percpu_ref_put(&css->refcnt);
++	if (!(css->flags & CSS_NO_REF))
++		percpu_ref_put(&css->refcnt);
+ }
+ 
+ /* bits in struct cgroup flags field */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index c01e8e8..ad15bb7 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4593,11 +4593,17 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
+ 	/* We don't handle early failures gracefully */
+ 	BUG_ON(IS_ERR(css));
+ 	init_and_link_css(css, ss, &cgrp_dfl_root.cgrp);
++
++	/*
++	 * Root csses are never destroyed and we can't initialize
++	 * percpu_ref during early init.  Disable refcnting.
++	 */
++	css->flags |= CSS_NO_REF;
++
+ 	if (early) {
+ 		/* allocation can't be done safely during early init */
+ 		css->id = 1;
+ 	} else {
+-		BUG_ON(percpu_ref_init(&css->refcnt, css_release));
+ 		css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2, GFP_KERNEL);
+ 		BUG_ON(css->id < 0);
+ 	}
+@@ -4684,7 +4690,6 @@ int __init cgroup_init(void)
+ 			struct cgroup_subsys_state *css =
+ 				init_css_set.subsys[ss->id];
+ 
+-			BUG_ON(percpu_ref_init(&css->refcnt, css_release));
+ 			css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2,
+ 						   GFP_KERNEL);
+ 			BUG_ON(css->id < 0);
 -- 
-Ming Lei
+1.9.0
+
