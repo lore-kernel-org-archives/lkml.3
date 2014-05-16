@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424AbaEPOup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:50:45 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:58914 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757109AbaEPOun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:50:43 -0400
-Message-ID: <1400251841.20342.50.camel@x220>
-Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 May 2014 16:50:41 +0200
-In-Reply-To: <20140516125545.GO3693@n2100.arm.linux.org.uk>
-References: <1364507176.1345.45.camel@x61.thuisdomein>
-	 <8309592.drxAj71PnZ@wuerfel> <1400059550.31197.12.camel@x220>
-	 <4305975.PvMXZQ020k@wuerfel> <1400232598.20342.16.camel@x220>
-	 <20140516125545.GO3693@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 May 2014 14:50:41.0387 (UTC) FILETIME=[354383B0:01CF7116]
-X-RcptDomain: vger.kernel.org
+	id S1757430AbaEPOvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:51:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756343AbaEPOvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 10:51:17 -0400
+Date: Fri, 16 May 2014 10:51:15 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [git pull] device mapper fixes for 3.15-rc6
+Message-ID: <20140516145115.GA29451@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 13:55 +0100, Russell King - ARM Linux wrote:
-> There was a CPU called the ARM710, it was ARMv3 and it had no Thumb support.
-> 
-> There is also a CPU called the ARM710T, which is ARMv4 and has Thumb support.
-> 
-> These are two completely different CPUs, the former was removed along with
-> the removal of ARMv3 support.  The latter remains because we still support
-> ARMv4.
+The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
 
-Thanks for taking the time to explain this. Next time I hope to be more
-aware of the possibility of important differences between ARM CPUs that
-have rather similar names.
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
 
+are available in the git repository at:
 
-Paul Bolle
+  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.15-fixes-2
 
+for you to fetch changes up to 4cdd2ad78098244c1bc9ec4374ea1c225fd1cd6f:
+
+  dm mpath: fix lock order inconsistency in multipath_ioctl (2014-05-14 16:12:17 -0400)
+
+Please pull, thanks.
+Mike
+
+----------------------------------------------------------------
+A dm-crypt fix for a cpu hotplug crash that switches from using per-cpu
+data to a mempool allocation (which offers allocation with cpu locality,
+and there is no inter-cpu communication on slab allocation).
+
+A couple dm-thinp stable fixes to address "out-of-data-space" issues.
+
+A dm-multipath fix for a LOCKDEP warning introduced in 3.15-rc1.
+
+----------------------------------------------------------------
+Joe Thornber (2):
+      dm thin: allow metadata commit if pool is in PM_OUT_OF_DATA_SPACE mode
+      dm thin: add timeout to stop out-of-data-space mode holding IO forever
+
+Mike Snitzer (1):
+      dm mpath: fix lock order inconsistency in multipath_ioctl
+
+Mikulas Patocka (1):
+      dm crypt: fix cpu hotplug crash by removing per-cpu structure
+
+ drivers/md/dm-crypt.c | 61 ++++++++++-----------------------------------------
+ drivers/md/dm-mpath.c |  2 +-
+ drivers/md/dm-thin.c  | 23 ++++++++++++++++++-
+ 3 files changed, 35 insertions(+), 51 deletions(-)
