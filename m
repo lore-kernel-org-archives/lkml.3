@@ -1,265 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528AbaEPOKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:10:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45902 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944AbaEPOKA (ORCPT
+	id S932370AbaEPORx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:17:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496AbaEPORw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:10:00 -0400
+	Fri, 16 May 2014 10:17:52 -0400
+Date: Fri, 16 May 2014 16:17:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+Cc: Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH] sched: fix exec_start/task_hot on migrated tasks
+Message-ID: <20140516141745.GU11096@twins.programming.kicks-ass.net>
+References: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com>
+ <20140516080424.GM11096@twins.programming.kicks-ass.net>
+ <CAM4v1pPNfpB+DumFHhi2UZS97zgfBFHEwQYsmQ5E1c2gZFbBww@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1399999697-65875-7-git-send-email-dzickus@redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
-	<1399999697-65875-7-git-send-email-dzickus@redhat.com>
-Date: Fri, 16 May 2014 16:09:59 +0200
-Message-ID: <CABPqkBQE-HLV3JLo4-sXBJos38SY0RUhC-gLeauawrf3Cgojtw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-From: Stephane Eranian <eranian@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+hZM3YBJafcqGfHn"
+Content-Disposition: inline
+In-Reply-To: <CAM4v1pPNfpB+DumFHhi2UZS97zgfBFHEwQYsmQ5E1c2gZFbBww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 6:48 PM, Don Zickus <dzickus@redhat.com> wrote:
-> In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
-> particular sample instruction.  A bunch of those details relate to the data
-> address.
->
-> One interesting thing you can do with data addresses is to convert them into a unique
-> cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
-> them can reveal cache contention.
->
-> This patch creates an alogorithm based on various sample details that can help group
-> entries together into data cachelines and allows 'perf report' to sort on it.
->
-> The algorithm relies on having proper mmap2 support in the kernel to help determine
-> if the memory map the data address belongs to is private to a pid or globally shared.
->
-> The alogortithm is as follows:
->
-> o group cpumodes together
-> o group entries with discovered maps together
-> o sort on major, minor, inode and inode generation numbers
-> o if userspace anon, then sort on pid
-> o sort on cachelines based on data addresses
->
-> The 'dcacheline' sort option in 'perf report' only works in 'mem-mode'.
->
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  tools/perf/Documentation/perf-report.txt |   3 +-
->  tools/perf/builtin-report.c              |   2 +-
->  tools/perf/util/hist.h                   |   1 +
->  tools/perf/util/sort.c                   | 105 +++++++++++++++++++++++++++++++
->  tools/perf/util/sort.h                   |   1 +
->  5 files changed, 110 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-> index bea1c83..9115d02 100644
-> --- a/tools/perf/Documentation/perf-report.txt
-> +++ b/tools/perf/Documentation/perf-report.txt
-> @@ -100,7 +100,7 @@ OPTIONS
->
->         If --mem-mode option is used, following sort keys are also available
->         (incompatible with --branch-stack):
-> -       symbol_daddr, dso_daddr, locked, tlb, mem, snoop.
-> +       symbol_daddr, dso_daddr, locked, tlb, mem, snoop, dcacheline.
->
->         - symbol_daddr: name of data symbol being executed on at the time of sample
->         - dso_daddr: name of library or module containing the data being executed
-> @@ -109,6 +109,7 @@ OPTIONS
->         - tlb: type of tlb access for the data at the time of sample
->         - mem: type of memory access for the data at the time of sample
->         - snoop: type of snoop (if any) for the data at the time of sample
-> +       - dcacheline: the cacheline the data address is on at the time of sample
->
->         And default sort keys are changed to local_weight, mem, sym, dso,
->         symbol_daddr, dso_daddr, snoop, tlb, locked, see '--mem-mode'.
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 89c9528..387459f 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -702,7 +702,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
->                    "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
->                    " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
->                    " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
-> -                  "snoop, locked, abort, in_tx, transaction"),
-> +                  "snoop, locked, abort, in_tx, transaction, dcacheline"),
->         OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
->                     "Show sample percentage for different cpu modes"),
->         OPT_STRING('p', "parent", &parent_pattern, "regex",
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index 38c3e87..14d1dc1 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -72,6 +72,7 @@ enum hist_column {
->         HISTC_MEM_TLB,
->         HISTC_MEM_LVL,
->         HISTC_MEM_SNOOP,
-> +       HISTC_MEM_DCACHELINE,
->         HISTC_TRANSACTION,
->         HISTC_NR_COLS, /* Last entry */
->  };
-> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-> index 635cd8f..0e91ba9 100644
-> --- a/tools/perf/util/sort.c
-> +++ b/tools/perf/util/sort.c
-> @@ -1,3 +1,4 @@
-> +#include <sys/mman.h>
->  #include "sort.h"
->  #include "hist.h"
->  #include "comm.h"
-> @@ -764,6 +765,102 @@ static int hist_entry__snoop_snprintf(struct hist_entry *he, char *bf,
->         return repsep_snprintf(bf, size, "%-*s", width, out);
->  }
->
-> +#define CACHE_LINESIZE       64
-I had something similar to your patch here in my original series for
-perf mem, but I never pushed it.
-I think this is a useful feature to have.
-However, I don't think you can hardcode the cache line size to 64.
-This is generic
-code. There may be architectures where the line size is different from 64.
-So I think you should add an option to change the default line size or provide
-an arch-specific definition.
 
-> +#define CLINE_OFFSET_MSK     (CACHE_LINESIZE - 1)
-> +#define CLADRS(a)            ((a) & ~(CLINE_OFFSET_MSK))
-> +
-> +static int64_t
-> +sort__dcacheline_cmp(struct hist_entry *left, struct hist_entry *right)
-> +{
-> +       u64 l, r;
-> +       struct map *l_map, *r_map;
-> +
-> +       if (!left->mem_info)  return -1;
-> +       if (!right->mem_info) return 1;
-> +
-> +       /* group event types together */
-> +       if (left->cpumode > right->cpumode) return -1;
-> +       if (left->cpumode < right->cpumode) return 1;
-> +
-> +       l_map = left->mem_info->daddr.map;
-> +       r_map = right->mem_info->daddr.map;
-> +
-> +       /* if both are NULL, jump to sort on al_addr instead */
-> +       if (!l_map && !r_map)
-> +               goto addr;
-> +
-> +       if (!l_map) return -1;
-> +       if (!r_map) return 1;
-> +
-> +       if (l_map->maj > r_map->maj) return -1;
-> +       if (l_map->maj < r_map->maj) return 1;
-> +
-> +       if (l_map->min > r_map->min) return -1;
-> +       if (l_map->min < r_map->min) return 1;
-> +
-> +       if (l_map->ino > r_map->ino) return -1;
-> +       if (l_map->ino < r_map->ino) return 1;
-> +
-> +       if (l_map->ino_generation > r_map->ino_generation) return -1;
-> +       if (l_map->ino_generation < r_map->ino_generation) return 1;
-> +
-> +       /*
-> +        * Addresses with no major/minor numbers are assumed to be
-> +        * anonymous in userspace.  Sort those on pid then address.
-> +        *
-> +        * The kernel and non-zero major/minor mapped areas are
-> +        * assumed to be unity mapped.  Sort those on address.
-> +        */
-> +
-> +       if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
-> +           (!(l_map->flags & MAP_SHARED)) &&
-> +           !l_map->maj && !l_map->min && !l_map->ino &&
-> +           !l_map->ino_generation) {
-> +               /* userspace anonymous */
-> +
-> +               if (left->thread->pid_ > right->thread->pid_) return -1;
-> +               if (left->thread->pid_ < right->thread->pid_) return 1;
-> +       }
-> +
-> +addr:
-> +       /* al_addr does all the right addr - start + offset calculations */
-> +       l = CLADRS(left->mem_info->daddr.al_addr);
-> +       r = CLADRS(right->mem_info->daddr.al_addr);
-> +
-> +       if (l > r) return -1;
-> +       if (l < r) return 1;
-> +
-> +       return 0;
-> +}
-> +
-> +static int hist_entry__dcacheline_snprintf(struct hist_entry *he, char *bf,
-> +                                         size_t size, unsigned int width)
-> +{
-> +
-> +       uint64_t addr = 0;
-> +       struct map *map = NULL;
-> +       struct symbol *sym = NULL;
-> +       char level = he->level;
-> +
-> +       if (he->mem_info) {
-> +               addr = CLADRS(he->mem_info->daddr.al_addr);
-> +               map = he->mem_info->daddr.map;
-> +               sym = he->mem_info->daddr.sym;
-> +
-> +               /* print [s] for shared data mmaps */
-> +               if ((he->cpumode != PERF_RECORD_MISC_KERNEL) &&
-> +                    map && (map->type == MAP__VARIABLE) &&
-> +                   (map->flags & MAP_SHARED) &&
-> +                   (map->maj || map->min || map->ino ||
-> +                    map->ino_generation))
-> +                       level = 's';
-> +               else if (!map)
-> +                       level = 'X';
-> +       }
-> +       return _hist_entry__sym_snprintf(map, sym, addr, level, bf, size,
-> +                                        width);
-> +}
-> +
->  struct sort_entry sort_mispredict = {
->         .se_header      = "Branch Mispredicted",
->         .se_cmp         = sort__mispredict_cmp,
-> @@ -856,6 +953,13 @@ struct sort_entry sort_mem_snoop = {
->         .se_width_idx   = HISTC_MEM_SNOOP,
->  };
->
-> +struct sort_entry sort_mem_dcacheline = {
-> +       .se_header      = "Data Cacheline         ",
-> +       .se_cmp         = sort__dcacheline_cmp,
-> +       .se_snprintf    = hist_entry__dcacheline_snprintf,
-> +       .se_width_idx   = HISTC_MEM_DCACHELINE,
-> +};
-> +
->  static int64_t
->  sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
->  {
-> @@ -1023,6 +1127,7 @@ static struct sort_dimension memory_sort_dimensions[] = {
->         DIM(SORT_MEM_TLB, "tlb", sort_mem_tlb),
->         DIM(SORT_MEM_LVL, "mem", sort_mem_lvl),
->         DIM(SORT_MEM_SNOOP, "snoop", sort_mem_snoop),
-> +       DIM(SORT_MEM_DCACHELINE, "dcacheline", sort_mem_dcacheline),
->  };
->
->  #undef DIM
-> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-> index 22cf912..460ec9c 100644
-> --- a/tools/perf/util/sort.h
-> +++ b/tools/perf/util/sort.h
-> @@ -167,6 +167,7 @@ enum sort_type {
->         SORT_MEM_TLB,
->         SORT_MEM_LVL,
->         SORT_MEM_SNOOP,
-> +       SORT_MEM_DCACHELINE,
->  };
->
->  /*
-> --
-> 1.7.11.7
->
+--+hZM3YBJafcqGfHn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, May 16, 2014 at 07:27:32PM +0530, Preeti Murthy wrote:
+> > 0 isn't strictly the right thing to do here, since the clock can wrap,
+> > but being wrong every ~585 years isn't too big an issue for this.
+>=20
+> I don't understand this. Will setting it to 0 not indicate beginning
+> of ticking?=20
+
+In modular spaces there is no beginnings nor endings.
+
+> So when you find out for how long the task has run, the
+> difference would be larger than what would have been had you
+> let exec_start be at its previous value of the old cpu's clock_task right?
+
+Nope, see the modular space thing, once every ~585 years we'll wrap the
+clock and 0 is within range of recently ran.
+
+> Will not setting exec_start to the clock_task of the destination rq
+> during migration be better? This would be the closest we could
+> come to estimating the amount of time the task has run on this new
+> cpu while deciding task_hot or not no?
+
+Setting it to the exact clock_task of the destination rq would make it
+hot on that rq, even though it hasn't yet ran there, so you'd have to do
+something like: rq_clock_task(dst_rq) - sysctl_sched_migration_cost.
+
+But seeing as how that is far more work, and all this is heuristics
+anyhow and an extra fail term of 1/585 years is far below the current
+fail rate, all is well.
+
+--+hZM3YBJafcqGfHn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdh4JAAoJEHZH4aRLwOS6pyAP/2iDPu+NObd526OEgpiQPy8x
+iMa1W2UJ1fX175Xa8yrRwTJLTbjRkBqPb3xxY45LxqESUyBpiM9VgRz1K2Ep6ooS
+qeC7Mj9XOP1IZK92sxJC3EefWY808bWmsxt/Jd659+ZG0NlvFGhqzqZIQ1gHOIEZ
+M34Uc1jewa1HxfxMziv+2xweWqfY9NJunFHnHO8shY0AxLAHoIQahk22KATwdyt4
+qvuYekdGZ8uZJb924Sdfw9ePlB+vJ5triVpeVQGMSg/waPf/7fx9aBINWxeAQ0V4
+Vii0zKI3aPL6lK+2EoSxUeT4dDDUdsONV9zw2O5ZG9edV62iKh60/LpafdJCKZWf
+SIp767jufe4H+deNc6a9H8tkRJIpviE0N7D28pMHqsp9mVhrdQ1+ucOqM9+HuGEp
+wyrEAqhQSO0ORTbK1hKcbTNc+wsqDCn5oB2hogz5bEoQKMSsWhdRBSbLR/P4BcMN
+oiWQB1foaWF9Q2X5cAa32pjaQuyMSpjSPdA4p2oNAdYTTKzkv1K7EK3MhRpC/qXP
+TKy+t82cLCc64hviVzo3IontZNnKSZCgTMRL9qFjY1ZdPnC9qDO7byM4mxlAqNJ2
+FCQVRDgjyyp7WCJYncJsubQfmbwUXZtOPgBy1ykhmaC45p7KceC7T5ABNjp/pM/z
+K0hdL0RTg2Z5mOTdYahJ
+=YSH2
+-----END PGP SIGNATURE-----
+
+--+hZM3YBJafcqGfHn--
