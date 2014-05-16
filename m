@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaEPMvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:51:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49590 "EHLO
+	id S1757323AbaEPMxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:53:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49557 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753970AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1753497AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chris Mason" <clm@fb.com>,
-        "Wang Shilong" <wangsl.fnst@cn.fujitsu.com>,
-        "Miao Xie" <miaox@cn.fujitsu.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.403076712@decadent.org.uk>
+Message-ID: <lsq.1400244441.674693709@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 23/34] Btrfs: fix inode caching vs tree log
+Subject: [PATCH 3.2 21/34] USB: serial: fix sysfs-attribute removal deadlock
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,95 +31,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 1c70d8fb4dfa95bee491816b2a6767b5ca1080e7 upstream.
+commit 10164c2ad6d2c16809f6c09e278f946e47801b3a upstream.
 
-Currently, with inode cache enabled, we will reuse its inode id immediately
-after unlinking file, we may hit something like following:
+Fix driver new_id sysfs-attribute removal deadlock by making sure to
+not hold any locks that the attribute operations grab when removing the
+attribute.
 
-|->iput inode
-|->return inode id into inode cache
-|->create dir,fsync
-|->power off
+Specifically, usb_serial_deregister holds the table mutex when
+deregistering the driver, which includes removing the new_id attribute.
+This can lead to a deadlock as writing to new_id increments the
+attribute's active count before trying to grab the same mutex in
+usb_serial_probe.
 
-An easy way to reproduce this problem is:
+The deadlock can easily be triggered by inserting a sleep in
+usb_serial_deregister and writing the id of an unbound device to new_id
+during module unload.
 
-mkfs.btrfs -f /dev/sdb
-mount /dev/sdb /mnt -o inode_cache,commit=100
-dd if=/dev/zero of=/mnt/data bs=1M count=10 oflag=sync
-inode_id=`ls -i /mnt/data | awk '{print $1}'`
-rm -f /mnt/data
+As the table mutex (in this case) is used to prevent subdriver unload
+during probe, it should be sufficient to only hold the lock while
+manipulating the usb-serial driver list during deregister. A racing
+probe will then either fail to find a matching subdriver or fail to get
+the corresponding module reference.
 
-i=1
-while [ 1 ]
-do
-        mkdir /mnt/dir_$i
-        test1=`stat /mnt/dir_$i | grep Inode: | awk '{print $4}'`
-        if [ $test1 -eq $inode_id ]
-        then
-		dd if=/dev/zero of=/mnt/dir_$i/data bs=1M count=1 oflag=sync
-		echo b > /proc/sysrq-trigger
-	fi
-	sleep 1
-        i=$(($i+1))
-done
+Since v3.15-rc1 this also triggers the following lockdep warning:
 
-mount /dev/sdb /mnt
-umount /dev/sdb
-btrfs check /dev/sdb
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.15.0-rc2 #123 Tainted: G        W
+-------------------------------------------------------
+modprobe/190 is trying to acquire lock:
+ (s_active#4){++++.+}, at: [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
 
-We fix this problem by adding unlinked inode's id into pinned tree,
-and we can not reuse them until committing transaction.
+but task is already holding lock:
+ (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
 
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #1 (table_lock){+.+.+.}:
+       [<c0075f84>] __lock_acquire+0x1694/0x1ce4
+       [<c0076de8>] lock_acquire+0xb4/0x154
+       [<c03af3cc>] _raw_spin_lock+0x4c/0x5c
+       [<c02bbc24>] usb_store_new_id+0x14c/0x1ac
+       [<bf007eb4>] new_id_store+0x68/0x70 [usbserial]
+       [<c025f568>] drv_attr_store+0x30/0x3c
+       [<c01690e0>] sysfs_kf_write+0x5c/0x60
+       [<c01682c0>] kernfs_fop_write+0xd4/0x194
+       [<c010881c>] vfs_write+0xbc/0x198
+       [<c0108e4c>] SyS_write+0x4c/0xa0
+       [<c000f880>] ret_fast_syscall+0x0/0x48
+
+-> #0 (s_active#4){++++.+}:
+       [<c03a7a28>] print_circular_bug+0x68/0x2f8
+       [<c0076218>] __lock_acquire+0x1928/0x1ce4
+       [<c0076de8>] lock_acquire+0xb4/0x154
+       [<c0166b70>] __kernfs_remove+0x254/0x310
+       [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
+       [<c0169fb8>] remove_files.isra.1+0x48/0x84
+       [<c016a2fc>] sysfs_remove_group+0x58/0xac
+       [<c016a414>] sysfs_remove_groups+0x34/0x44
+       [<c02623b8>] driver_remove_groups+0x1c/0x20
+       [<c0260e9c>] bus_remove_driver+0x3c/0xe4
+       [<c026235c>] driver_unregister+0x38/0x58
+       [<bf007fb4>] usb_serial_bus_deregister+0x84/0x88 [usbserial]
+       [<bf004db4>] usb_serial_deregister+0x6c/0x78 [usbserial]
+       [<bf005330>] usb_serial_deregister_drivers+0x2c/0x4c [usbserial]
+       [<bf016618>] usb_serial_module_exit+0x14/0x1c [sierra]
+       [<c009d6cc>] SyS_delete_module+0x184/0x210
+       [<c000f880>] ret_fast_syscall+0x0/0x48
+
+other info that might help us debug this:
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(table_lock);
+                               lock(s_active#4);
+                               lock(table_lock);
+  lock(s_active#4);
+
+ *** DEADLOCK ***
+
+1 lock held by modprobe/190:
+ #0:  (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
+
+stack backtrace:
+CPU: 0 PID: 190 Comm: modprobe Tainted: G        W     3.15.0-rc2 #123
+[<c0015e10>] (unwind_backtrace) from [<c0013728>] (show_stack+0x20/0x24)
+[<c0013728>] (show_stack) from [<c03a9a54>] (dump_stack+0x24/0x28)
+[<c03a9a54>] (dump_stack) from [<c03a7cac>] (print_circular_bug+0x2ec/0x2f8)
+[<c03a7cac>] (print_circular_bug) from [<c0076218>] (__lock_acquire+0x1928/0x1ce4)
+[<c0076218>] (__lock_acquire) from [<c0076de8>] (lock_acquire+0xb4/0x154)
+[<c0076de8>] (lock_acquire) from [<c0166b70>] (__kernfs_remove+0x254/0x310)
+[<c0166b70>] (__kernfs_remove) from [<c0167aa0>] (kernfs_remove_by_name_ns+0x4c/0x94)
+[<c0167aa0>] (kernfs_remove_by_name_ns) from [<c0169fb8>] (remove_files.isra.1+0x48/0x84)
+[<c0169fb8>] (remove_files.isra.1) from [<c016a2fc>] (sysfs_remove_group+0x58/0xac)
+[<c016a2fc>] (sysfs_remove_group) from [<c016a414>] (sysfs_remove_groups+0x34/0x44)
+[<c016a414>] (sysfs_remove_groups) from [<c02623b8>] (driver_remove_groups+0x1c/0x20)
+[<c02623b8>] (driver_remove_groups) from [<c0260e9c>] (bus_remove_driver+0x3c/0xe4)
+[<c0260e9c>] (bus_remove_driver) from [<c026235c>] (driver_unregister+0x38/0x58)
+[<c026235c>] (driver_unregister) from [<bf007fb4>] (usb_serial_bus_deregister+0x84/0x88 [usbserial])
+[<bf007fb4>] (usb_serial_bus_deregister [usbserial]) from [<bf004db4>] (usb_serial_deregister+0x6c/0x78 [usbserial])
+[<bf004db4>] (usb_serial_deregister [usbserial]) from [<bf005330>] (usb_serial_deregister_drivers+0x2c/0x4c [usbserial])
+[<bf005330>] (usb_serial_deregister_drivers [usbserial]) from [<bf016618>] (usb_serial_module_exit+0x14/0x1c [sierra])
+[<bf016618>] (usb_serial_module_exit [sierra]) from [<c009d6cc>] (SyS_delete_module+0x184/0x210)
+[<c009d6cc>] (SyS_delete_module) from [<c000f880>] (ret_fast_syscall+0x0/0x48)
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/inode-map.c | 18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+ drivers/usb/serial/usb-serial.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/inode-map.c
-+++ b/fs/btrfs/inode-map.c
-@@ -207,24 +207,14 @@ again:
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1400,10 +1400,12 @@ void usb_serial_deregister(struct usb_se
+ 	/* must be called with BKL held */
+ 	printk(KERN_INFO "USB Serial deregistering driver %s\n",
+ 	       device->description);
++
+ 	mutex_lock(&table_lock);
+ 	list_del(&device->driver_list);
+-	usb_serial_bus_deregister(device);
+ 	mutex_unlock(&table_lock);
++
++	usb_serial_bus_deregister(device);
+ }
+ EXPORT_SYMBOL_GPL(usb_serial_deregister);
  
- void btrfs_return_ino(struct btrfs_root *root, u64 objectid)
- {
--	struct btrfs_free_space_ctl *ctl = root->free_ino_ctl;
- 	struct btrfs_free_space_ctl *pinned = root->free_ino_pinned;
- 
- 	if (!btrfs_test_opt(root, INODE_MAP_CACHE))
- 		return;
--
- again:
- 	if (root->cached == BTRFS_CACHE_FINISHED) {
--		__btrfs_add_free_space(ctl, objectid, 1);
-+		__btrfs_add_free_space(pinned, objectid, 1);
- 	} else {
--		/*
--		 * If we are in the process of caching free ino chunks,
--		 * to avoid adding the same inode number to the free_ino
--		 * tree twice due to cross transaction, we'll leave it
--		 * in the pinned tree until a transaction is committed
--		 * or the caching work is done.
--		 */
--
- 		mutex_lock(&root->fs_commit_mutex);
- 		spin_lock(&root->cache_lock);
- 		if (root->cached == BTRFS_CACHE_FINISHED) {
-@@ -236,11 +226,7 @@ again:
- 
- 		start_caching(root);
- 
--		if (objectid <= root->cache_progress ||
--		    objectid >= root->highest_objectid)
--			__btrfs_add_free_space(ctl, objectid, 1);
--		else
--			__btrfs_add_free_space(pinned, objectid, 1);
-+		__btrfs_add_free_space(pinned, objectid, 1);
- 
- 		mutex_unlock(&root->fs_commit_mutex);
- 	}
 
