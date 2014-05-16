@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854AbaEPUsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 16:48:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50238 "EHLO comal.ext.ti.com"
+	id S1755854AbaEPUsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 16:48:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50255 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754419AbaEPUsF convert rfc822-to-8bit (ORCPT
+	id S1754443AbaEPUs3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 16:48:05 -0400
+	Fri, 16 May 2014 16:48:29 -0400
 From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
 To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -19,17 +19,18 @@ To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
         "marex@denx.de" <marex@denx.de>
 CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
         Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: RE: [PATCH v1 4/5] pci: dw: add common functions to support old hw
- based pci driver
-Thread-Topic: [PATCH v1 4/5] pci: dw: add common functions to support old hw
- based pci driver
-Thread-Index: AQHPcFbzWcLuW2DExUK45mZ6zDwrqJtDr06w
-Date: Fri, 16 May 2014 20:47:27 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7047421D3@DFLE11.ent.ti.com>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: RE: [PATCH v1 5/5] pci: keystone: add pcie driver based on
+ designware core driver
+Thread-Topic: [PATCH v1 5/5] pci: keystone: add pcie driver based on
+ designware core driver
+Thread-Index: AQHPcFbztypDCmZvGUCN81SEYe7oaptDr24w
+Date: Fri, 16 May 2014 20:47:54 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7047421F0@DFLE11.ent.ti.com>
 References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
- <1400169692-9677-5-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1400169692-9677-5-git-send-email-m-karicheri2@ti.com>
+ <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1400169692-9677-6-git-send-email-m-karicheri2@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -43,20 +44,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Adding more people to the list for review.
+
 >-----Original Message-----
 >From: Karicheri, Muralidharan
 >Sent: Thursday, May 15, 2014 12:02 PM
 >To: linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org; linux-arm-
 >kernel@lists.infradead.org
->Cc: Karicheri, Muralidharan; Shilimkar, Santosh; Mohit Kumar; Jingoo Han; Bjorn Helgaas
->Subject: [PATCH v1 4/5] pci: dw: add common functions to support old hw based pci driver
+>Cc: Karicheri, Muralidharan; Shilimkar, Santosh; Mohit Kumar; Jingoo Han; Bjorn Helgaas;
+>Strashko, Grygorii
+>Subject: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware core driver
 >
->The older version of DW hw has application space registers for MSI controller and
->inbound/outbound access configuration. Also the legacy interrupt has registers in the
->application space. Drivers such as keystone pci uses these common functions to implement
+>keystone pcie hardware is based on designware version 3.65.
+>This driver make use of the functions from pci-dw-old.c and pci-dw-old-msi.c to implement
 >the driver.
->These are re-factored from the original driver to separate files to allow re-use for the next
->driver that is based on old dw pci hw such as that found on keystone.
+>
+>Driver mainly handle the platform specific part of the PCI driver and depends on DW Old
+>driver to configure application specific registers. Also routes the irq events and ack the
+>interrupt after the same is acked by the end point device driver. This requires irqchip
+>implementation for legacy and MSI irq handling. This patch adds a quirks to override the
+>max read request size as PCI controller has a limit of 256 bytes.
 >
 >CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 >CC: Mohit Kumar <mohit.kumar@st.com>
@@ -64,593 +70,537 @@ Adding more people to the list for review.
 >CC: Bjorn Helgaas <bhelgaas@google.com>
 >
 >Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 >---
-> drivers/pci/host/Kconfig          |    6 +-
-> drivers/pci/host/Makefile         |    1 +
-> drivers/pci/host/pci-dw-old-msi.c |  150 +++++++++++++++
-> drivers/pci/host/pci-dw-old.c     |  371
->+++++++++++++++++++++++++++++++++++++
-> drivers/pci/host/pci-dw-old.h     |   30 +++
-> 5 files changed, 557 insertions(+), 1 deletion(-)  create mode 100644 drivers/pci/host/pci-
->dw-old-msi.c  create mode 100644 drivers/pci/host/pci-dw-old.c  create mode 100644
->drivers/pci/host/pci-dw-old.h
+> .../devicetree/bindings/pci/pcie-keystone.txt      |   68 ++++
+> drivers/pci/host/Kconfig                           |    8 +
+> drivers/pci/host/Makefile                          |    1 +
+> drivers/pci/host/pci-keystone.c                    |  400 ++++++++++++++++++++
+> drivers/pci/quirks.c                               |   13 +
+> 5 files changed, 490 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/pci/pcie-keystone.txt
+> create mode 100644 drivers/pci/host/pci-keystone.c
 >
->diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig index a6f67ec..c4f4732
+>diff --git a/Documentation/devicetree/bindings/pci/pcie-keystone.txt
+>b/Documentation/devicetree/bindings/pci/pcie-keystone.txt
+>new file mode 100644
+>index 0000000..17cf261
+>--- /dev/null
+>+++ b/Documentation/devicetree/bindings/pci/pcie-keystone.txt
+>@@ -0,0 +1,68 @@
+>+Keystone PCIE Root complex device tree bindings
+>+-----------------------------------------------
+>+
+>+Sample bindings shown below:-
+>+
+>+ - Remove ti,enable-linktrain if boot loader already does Link training and do EP
+>+   configuration.
+>+ - Remove ti,init-phy if boot loader already initialize the phy and sets up pcie
+>+   link
+>+
+>+		pcie0_phy: pciephy@2320000 {
+>+			#address-cells = <1>;
+>+			#size-cells = <1>;
+>+			#phy-cells = <0>;
+>+			compatible = "ti,keystone-phy";
+>+			reg = <0x02320000 0x4000>;
+>+			reg-names = "reg_serdes";
+>+		};
+>+
+>+		pcie@21800000 {
+>+			compatible = "ti,keystone-pcie";
+>+			device_type = "pci";
+>+			clocks = <&clkpcie>;
+>+			clock-names = "pcie";
+>+			#address-cells = <3>;
+>+			#size-cells = <2>;
+>+			reg =  <0x21800000 0x1000>, <0x0262014c 4>;
+>+			reg-names = "reg_rc_app", "reg_devcfg";
+>+			interrupts = <GIC_SPI 30 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 31 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 32 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 33 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 34 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 35 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 36 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 37 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 38 IRQ_TYPE_EDGE_RISING>; /* Error IRQ */
+>+
+>+			ranges = <0x00000800 0 0x21801000 0x21801000 0 0x0002000    /*
+>Configuration space */
+>+				  0x81000000 0 0          0x24000000 0 0x4000       /* downstream
+>I/O */
+>+				  0x82000000 0 0x50000000 0x50000000 0 0x10000000>; /*
+>+non-prefetchable memory */
+>+
+>+			num-lanes = <2>;
+>+			ti,enable-linktrain;
+>+			ti,init-phy;
+>+
+>+			/* PCIE phy */
+>+			phys = <&pcie0_phy>;
+>+			phy-names = "pcie-phy";
+>+
+>+			#interrupt-cells = <1>;
+>+			interrupt-map-mask = <0 0 0 0>;
+>+			interrupt-map = <0 0 0 1 &pcie_intc 1>, // INT A
+>+					<0 0 0 2 &pcie_intc 2>, // INT B
+>+					<0 0 0 3 &pcie_intc 3>, // INT C
+>+					<0 0 0 4 &pcie_intc 4>; // INT D
+>+
+>+			pcie_intc: legacy-interrupt-controller {
+>+				interrupt-controller;
+>+				#interrupt-cells = <1>;
+>+				interrupt-parent = <&gic>;
+>+				interrupts = <GIC_SPI 26 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 27 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 28 IRQ_TYPE_EDGE_RISING>,
+>+					<GIC_SPI 29 IRQ_TYPE_EDGE_RISING>;
+>+			};
+>+		};
+>+
+>diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig index c4f4732..066d611
 >100644
 >--- a/drivers/pci/host/Kconfig
 >+++ b/drivers/pci/host/Kconfig
->@@ -9,6 +9,11 @@ config PCI_MVEBU
-> config PCIE_DW
-> 	bool
->
->+config PCI_DW_OLD
->+	bool "Designware Old PCIe h/w"
->+	help
->+	   Say Y here if the DW h/w is old version (3.65)
->+
-> config PCI_EXYNOS
-> 	bool "Samsung Exynos PCIe controller"
-> 	depends on SOC_EXYNOS5440
->@@ -32,5 +37,4 @@ config PCI_RCAR_GEN2
+>@@ -37,4 +37,12 @@ config PCI_RCAR_GEN2
 > 	  Say Y here if you want internal PCI support on R-Car Gen2 SoC.
 > 	  There are 3 internal PCI controllers available with a single
 > 	  built-in EHCI/OHCI host controller present on each one.
->-
+>+
+>+config PCI_KEYSTONE
+>+	bool "TI Keystone PCIe controller"
+>+	depends on ARCH_KEYSTONE
+>+	select PCIE_DW
+>+	select PCI_DW_OLD
+>+	select PCIEPORTBUS
+>+	select PHY_TI_KEYSTONE
 > endmenu
->diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile index 13fb333..be5d939
+>diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile index be5d939..10e02f9
 >100644
 >--- a/drivers/pci/host/Makefile
 >+++ b/drivers/pci/host/Makefile
->@@ -4,3 +4,4 @@ obj-$(CONFIG_PCI_IMX6) += pci-imx6.o
-> obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
+>@@ -5,3 +5,4 @@ obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
 > obj-$(CONFIG_PCI_TEGRA) += pci-tegra.o
 > obj-$(CONFIG_PCI_RCAR_GEN2) += pci-rcar-gen2.o
->+obj-$(CONFIG_PCI_DW_OLD) += pci-dw-old-msi.o pci-dw-old.o
->diff --git a/drivers/pci/host/pci-dw-old-msi.c b/drivers/pci/host/pci-dw-old-msi.c
->new file mode 100644
->index 0000000..450bb2f
+> obj-$(CONFIG_PCI_DW_OLD) += pci-dw-old-msi.o pci-dw-old.o
+>+obj-$(CONFIG_PCI_KEYSTONE) += pci-keystone.o
+>diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c new file mode
+>100644 index 0000000..2636717
 >--- /dev/null
->+++ b/drivers/pci/host/pci-dw-old-msi.c
->@@ -0,0 +1,150 @@
+>+++ b/drivers/pci/host/pci-keystone.c
+>@@ -0,0 +1,400 @@
 >+/*
->+ * Designware(dw) old MSI controller (v3.65 or similar)
+>+ * PCIe host controller driver for Texas Instruments Keystone SoCs
 >+ *
 >+ * Copyright (C) 2013-2014 Texas Instruments., Ltd.
 >+ *		http://www.ti.com
 >+ *
 >+ * Author: Murali Karicheri <m-karicheri2@ti.com>
->+ *
+>+ * Implementation based on pci-exynos.c and pcie-designware.c
 >+ *
 >+ * This program is free software; you can redistribute it and/or modify
 >+ * it under the terms of the GNU General Public License version 2 as
 >+ * published by the Free Software Foundation.
 >+ */
 >+
->+#include <linux/of_irq.h>
->+#include <linux/kernel.h>
->+#include <linux/msi.h>
->+#include <linux/pci.h>
->+
->+#include "pcie-designware.h"
->+#include "pci-dw-old.h"
->+
->+#define MSI_IRQ				0x054
->+#define MSI0_IRQ_STATUS			0x104
->+#define MSI0_IRQ_ENABLE_SET		0x108
->+#define MSI0_IRQ_ENABLE_CLR		0x10c
->+#define IRQ_STATUS			0x184
->+#define IRQ_EOI                         0x050
->+#define MSI_IRQ_OFFSET			4
->+
->+static inline struct pcie_port *sys_to_pcie(struct pci_sys_data *sys) {
->+	return sys->private_data;
->+}
->+
->+static inline void update_reg_offset_bit_pos(u32 offset, u32 *reg_offset,
->+					u32 *bit_pos)
->+{
->+	*reg_offset = offset % 8;
->+	*bit_pos = offset >> 3;
->+}
->+
->+inline u32 dw_old_get_msi_data(struct pcie_port *pp) {
->+	return pp->app_base + MSI_IRQ;
->+}
->+
->+void dw_old_handle_msi_irq(struct pcie_port *pp, int offset) {
->+	u32 pending, vector;
->+	int src, virq;
->+
->+	pending = readl(pp->va_app_base + MSI0_IRQ_STATUS + (offset << 4));
->+	/*
->+	 * MSI0, Status bit 0-3 shows vectors 0, 8, 16, 24, MSI1 status bit
->+	 * shows 1, 9, 17, 25 and so forth
->+	 */
->+	for (src = 0; src < 4; src++) {
->+		if (BIT(src) & pending) {
->+			vector = offset + (src << 3);
->+			virq = irq_linear_revmap(pp->irq_domain, vector);
->+			dev_dbg(pp->dev,
->+				"irq: bit %d, vector %d, virq %d\n",
->+				 src, vector, virq);
->+			generic_handle_irq(virq);
->+		}
->+	}
->+}
->+
->+static void dw_old_msi_irq_ack(struct irq_data *d) {
->+	u32 offset, reg_offset, bit_pos;
->+	unsigned int irq = d->irq;
->+	struct msi_desc *msi;
->+	struct pcie_port *pp;
->+
->+	msi = irq_get_msi_desc(irq);
->+	pp = sys_to_pcie(msi->dev->bus->sysdata);
->+	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
->+	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
->+
->+	writel(BIT(bit_pos),
->+		pp->va_app_base + MSI0_IRQ_STATUS + (reg_offset << 4));
->+	writel(reg_offset + MSI_IRQ_OFFSET, pp->va_app_base + IRQ_EOI); }
->+
->+static void dw_old_msi_irq_mask(struct irq_data *d) {
->+	u32 offset, reg_offset, bit_pos;
->+	unsigned int irq = d->irq;
->+	struct msi_desc *msi;
->+	struct pcie_port *pp;
->+
->+	msi = irq_get_msi_desc(irq);
->+	pp = sys_to_pcie(msi->dev->bus->sysdata);
->+	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
->+	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
->+
->+	/* mask the end point if PVM implemented */
->+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
->+		if (msi->msi_attrib.maskbit)
->+			mask_msi_irq(d);
->+	}
->+
->+	writel(BIT(bit_pos),
->+		pp->va_app_base + MSI0_IRQ_ENABLE_CLR + (reg_offset << 4)); }
->+
->+static void dw_old_msi_irq_unmask(struct irq_data *d) {
->+	u32 offset, reg_offset, bit_pos;
->+	unsigned int irq = d->irq;
->+	struct msi_desc *msi;
->+	struct pcie_port *pp;
->+
->+	msi = irq_get_msi_desc(irq);
->+	pp = sys_to_pcie(msi->dev->bus->sysdata);
->+	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
->+	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
->+
->+	/* mask the end point if PVM implemented */
->+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
->+		if (msi->msi_attrib.maskbit)
->+			unmask_msi_irq(d);
->+	}
->+
->+	writel(BIT(bit_pos),
->+		pp->va_app_base + MSI0_IRQ_ENABLE_SET + (reg_offset << 4)); }
->+
->+static struct irq_chip dw_old_msi_chip = {
->+	.name = "PCI-DW-MSI-OLD",
->+	.irq_ack = dw_old_msi_irq_ack,
->+	.irq_mask = dw_old_msi_irq_mask,
->+	.irq_unmask = dw_old_msi_irq_unmask,
->+};
->+
->+static int dw_old_msi_map(struct irq_domain *domain, unsigned int irq,
->+			irq_hw_number_t hwirq)
->+{
->+	irq_set_chip_and_handler(irq, &dw_old_msi_chip, handle_level_irq);
->+	irq_set_chip_data(irq, domain->host_data);
->+	set_irq_flags(irq, IRQF_VALID);
->+
->+	return 0;
->+}
->+
->+const struct irq_domain_ops dw_old_msi_domain_ops = {
->+	.map = dw_old_msi_map,
->+};
->diff --git a/drivers/pci/host/pci-dw-old.c b/drivers/pci/host/pci-dw-old.c new file mode
->100644 index 0000000..b805013
->--- /dev/null
->+++ b/drivers/pci/host/pci-dw-old.c
->@@ -0,0 +1,371 @@
->+/*
->+ * Designware(dw) old common functions (v3.65 or similar)
->+ *
->+ * Copyright (C) 2013-2014 Texas Instruments., Ltd.
->+ *		http://www.ti.com
->+ *
->+ * Author: Murali Karicheri <m-karicheri2@ti.com>
->+ *
->+ *
->+ * This program is free software; you can redistribute it and/or modify
->+ * it under the terms of the GNU General Public License version 2 as
->+ * published by the Free Software Foundation.
->+ */
->+
->+#include <linux/irq.h>
+>+#include <linux/irqchip/chained_irq.h>
+>+#include <linux/clk.h>
+>+#include <linux/delay.h>
 >+#include <linux/irqdomain.h>
 >+#include <linux/module.h>
+>+#include <linux/msi.h>
+>+#include <linux/of_irq.h>
+>+#include <linux/of.h>
 >+#include <linux/of_pci.h>
->+#include <linux/pci.h>
+>+#include <linux/platform_device.h>
+>+#include <linux/phy/phy.h>
+>+#include <linux/resource.h>
+>+#include <linux/signal.h>
 >+
 >+#include "pcie-designware.h"
 >+#include "pci-dw-old.h"
 >+
->+/* Application register defines */
->+#define LTSSM_EN_VAL		        BIT(0)
->+#define LTSSM_STATE_MASK	        0x1f
->+#define LTSSM_STATE_L0		        0x11
->+#define DIR_SPD				(1 << 17)
->+#define DBI_CS2_EN_VAL		        BIT(5)
->+#define OB_XLAT_EN_VAL		        BIT(1)
+>+#define DRIVER_NAME	"keystone-pcie"
 >+
->+/* Application registers */
->+#define CMD_STATUS			0x004
->+#define CFG_SETUP			0x008
->+#define OB_SIZE				0x030
->+#define CFG_PCIM_WIN_SZ_IDX	        3
->+#define CFG_PCIM_WIN_CNT	        32
->+#define SPACE0_REMOTE_CFG_OFFSET	0x1000
->+#define OB_OFFSET_INDEX(n)		(0x200 + (8 * n))
->+#define OB_OFFSET_HI(n)			(0x204 + (8 * n))
->+#define IRQ_EOI                         0x050
->+#define IRQ_STATUS			0x184
->+#define IRQ_ENABLE_SET			0x188
->+#define IRQ_ENABLE_CLR			0x18c
+>+/* driver specific constants */
+>+#define MAX_MSI_HOST_IRQS		8
+>+#define MAX_LEGACY_HOST_IRQS		4
 >+
->+/* Config space registers */
->+#define DEBUG0			        0x728
->+#define PL_GEN2			        0x80c
+>+/* RC mode settings */
+>+#define PCIE_RC_MODE		(BIT(2))
+>+#define PCIE_MODE_MASK		(BIT(1) | BIT(2))
 >+
 >+static inline struct pcie_port *sys_to_pcie(struct pci_sys_data *sys) {
 >+	return sys->private_data;
 >+}
 >+
->+void dw_old_enable_legacy_irqs(struct pcie_port *pp) {
->+	int i;
+>+struct keystone_pcie {
+>+	struct	clk		*clk;
+>+	int			en_link_train;
+>+	struct	pcie_port	pp;
 >+
->+	for (i = 0; i < MAX_LEGACY_IRQS; i++)
->+		writel(0x1, pp->va_app_base + IRQ_ENABLE_SET + (i << 4)); }
+>+	int			num_legacy_host_irqs;
+>+	int			legacy_host_irqs[MAX_LEGACY_HOST_IRQS];
+>+	struct			device_node *np_intc;
 >+
->+void dw_old_handle_legacy_irq(struct pcie_port *pp, int offset) {
->+	u32 pending;
->+	int virq;
->+
->+	pending = readl(pp->va_app_base + IRQ_STATUS + (offset << 4));
->+
->+	if (BIT(0) & pending) {
->+		virq = irq_linear_revmap(pp->legacy_irq_domain, offset);
->+		dev_dbg(pp->dev,
->+			": irq: irq_offset %d, virq %d\n", offset, virq);
->+		generic_handle_irq(virq);
->+	}
->+
->+	/* EOI the INTx interrupt */
->+	writel(offset, pp->va_app_base + IRQ_EOI); }
->+
->+static void dw_old_ack_irq(struct irq_data *d) { }
->+
->+static void dw_old_mask_irq(struct irq_data *d) { }
->+
->+static void dw_old_unmask_irq(struct irq_data *d) { }
->+
->+struct irq_chip dw_old_legacy_irq_chip = {
->+	.name = "PCI-DW-LEGACY-old-irq",
->+	.irq_ack = dw_old_ack_irq,
->+	.irq_mask = dw_old_mask_irq,
->+	.irq_unmask = dw_old_unmask_irq,
+>+	int			num_msi_host_irqs;
+>+	int			msi_host_irqs[MAX_MSI_HOST_IRQS];
 >+};
 >+
->+static int dw_old_init_legacy_irq_map(struct irq_domain *d, unsigned int irq,
->+				      irq_hw_number_t hw)
->+{
->+	irq_set_chip_and_handler(irq, &dw_old_legacy_irq_chip,
->+				handle_level_irq);
->+	irq_set_chip_data(irq, d->host_data);
->+	set_irq_flags(irq, IRQF_VALID);
+>+#define to_keystone_pcie(x)	container_of(x, struct keystone_pcie, pp)
+>+
+>+static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie) {
+>+	struct pcie_port *pp = &ks_pcie->pp;
+>+	int count = 200;
+>+
+>+	dw_pcie_setup_rc(pp);
+>+
+>+	/* check if the link is up or not */
+>+	while (!dw_pcie_link_up(pp)) {
+>+		usleep_range(100, 1000);
+>+		if (--count)
+>+			continue;
+>+		dev_err(pp->dev, "phy link never came up\n");
+>+		return -EINVAL;
+>+	}
 >+
 >+	return 0;
 >+}
 >+
->+static const struct irq_domain_ops dw_old_legacy_irq_domian_ops = {
->+	.map = dw_old_init_legacy_irq_map,
->+	.xlate = irq_domain_xlate_onetwocell,
->+};
+>+static void ks_pcie_msi_irq_handler(unsigned int irq, struct irq_desc
+>+*desc) {
+>+	struct keystone_pcie *ks_pcie = irq_desc_get_handler_data(desc);
+>+	u32 offset = irq - ks_pcie->msi_host_irqs[0];
+>+	struct pcie_port *pp = &ks_pcie->pp;
+>+	struct irq_chip *chip = irq_desc_get_chip(desc);
+>+
+>+	dev_dbg(pp->dev, "ks_pcie_msi_irq_handler, irq %d\n", irq);
+>+
+>+	/*
+>+	 * The chained irq handler installation would have replaced normal
+>+	 * interrupt driver handler so we need to take care of mask/unmask and
+>+	 * ack operation.
+>+	 */
+>+	chained_irq_enter(chip, desc);
+>+	dw_old_handle_msi_irq(pp, offset);
+>+	chained_irq_exit(chip, desc);
+>+}
 >+
 >+/**
->+ * dw_old_set_outbound_trans() - Set PHYADDR <-> BUSADDR
->+ * mapping for outbound
+>+ * ks_pcie_legacy_irq_handler() - Handle legacy interrupt
+>+ * @irq: IRQ line for legacy interrupts
+>+ * @desc: Pointer to irq descriptor
+>+ *
+>+ * Traverse through pending legacy interrupts and invoke handler for
+>+each. Also
+>+ * takes care of interrupt controller level mask/ack operation.
 >+ */
->+void dw_old_setup_ob_regs(struct pcie_port *pp) {
->+	u32 start = pp->mem.start, end = pp->mem.end;
->+	int i, tr_size;
+>+static void ks_pcie_legacy_irq_handler(unsigned int irq, struct
+>+irq_desc *desc) {
+>+	struct keystone_pcie *ks_pcie = irq_desc_get_handler_data(desc);
+>+	u32 irq_offset = irq - ks_pcie->legacy_host_irqs[0];
+>+	struct irq_chip *chip = irq_desc_get_chip(desc);
+>+	struct pcie_port *pp = &ks_pcie->pp;
 >+
->+	dev_dbg(pp->dev, "Setting outbound translation for %#x-%#x\n",
->+		start, end);
+>+	dev_dbg(ks_pcie->pp.dev, ": Handling legacy irq %d\n", irq);
 >+
->+	/* Set outbound translation size per window division */
->+	writel(CFG_PCIM_WIN_SZ_IDX & 0x7, pp->va_app_base + OB_SIZE);
+>+	/*
+>+	 * The chained irq handler installation would have replaced normal
+>+	 * interrupt driver handler so we need to take care of mask/unmask and
+>+	 * ack operation.
+>+	 */
+>+	chained_irq_enter(chip, desc);
+>+	dw_old_handle_legacy_irq(pp, irq_offset);
+>+	chained_irq_exit(chip, desc);
+>+}
 >+
->+	tr_size = (1 << (CFG_PCIM_WIN_SZ_IDX & 0x7)) * SZ_1M;
+>+static int ks_pcie_init_legacy_irqs(struct keystone_pcie *ks_pcie) {
+>+	struct device *dev = ks_pcie->pp.dev;
+>+	struct device_node *np_pcie = dev->of_node;
+>+	int num_legacy_irqs;
+>+	int ret = 0;
+>+	int i;
 >+
->+	/* Using Direct 1:1 mapping of RC <-> PCI memory space */
->+	for (i = 0; (i < CFG_PCIM_WIN_CNT) && (start < end); i++) {
->+		writel(start | 1, pp->va_app_base + OB_OFFSET_INDEX(i));
->+		writel(0, pp->va_app_base + OB_OFFSET_HI(i));
->+		start += tr_size;
+>+	/* get node */
+>+	ks_pcie->np_intc = of_find_node_by_name(np_pcie,
+>+						"legacy-interrupt-controller");
+>+	if (!ks_pcie->np_intc) {
+>+		dev_err(dev,
+>+			"Node for legacy-interrupt-controller is absent\n");
+>+		goto out;
 >+	}
 >+
->+	/* Enable OB translation */
->+	writel(OB_XLAT_EN_VAL | readl(pp->va_app_base + CMD_STATUS),
->+		pp->va_app_base + CMD_STATUS);
->+}
+>+	/* get number of IRQs */
+>+	num_legacy_irqs = of_irq_count(ks_pcie->np_intc);
+>+	if (!num_legacy_irqs)
+>+		goto out;
 >+
->+/**
->+ * dw_old_set_dbi_mode() - Set DBI mode to access overlaid BAR mask
->+registers
->+ *
->+ * Since modification of dbi_cs2 involves different clock domain, read
->+the
->+ * status back to ensure the transition is complete.
->+ */
->+static inline void dw_old_set_dbi_mode(void __iomem *reg_virt) {
->+	u32 val;
->+
->+	writel(DBI_CS2_EN_VAL | readl(reg_virt + CMD_STATUS),
->+		     reg_virt + CMD_STATUS);
->+
->+	do {
->+		val = readl(reg_virt + CMD_STATUS);
->+	} while (!(val & DBI_CS2_EN_VAL));
->+}
->+
->+/**
->+ * dw_old_clear_dbi_mode() - Disable DBI mode
->+ *
->+ * Since modification of dbi_cs2 involves different clock domain, read
->+the
->+ * status back to ensure the transition is complete.
->+ */
->+static inline void dw_old_clear_dbi_mode(void __iomem *reg_virt) {
->+	u32 val;
->+
->+	writel(~DBI_CS2_EN_VAL & readl(reg_virt + CMD_STATUS),
->+		     reg_virt + CMD_STATUS);
->+
->+	do {
->+		val = readl(reg_virt + CMD_STATUS);
->+	} while (val & DBI_CS2_EN_VAL);
->+}
->+
->+void dw_old_disable_bars(struct pcie_port *pp) {
->+	dw_old_set_dbi_mode(pp->va_app_base);
->+	writel(0, pp->dbi_base + PCI_BASE_ADDRESS_0);
->+	writel(0, pp->dbi_base + PCI_BASE_ADDRESS_1);
->+	dw_old_clear_dbi_mode(pp->va_app_base);
->+}
->+
->+/**
->+ * dw_old_setup_config_addr() - Set up configuration space address for
->+a
->+ * device
->+ *
->+ * @pp: ptr to pcie_port structure
->+ * @bus: Bus number the device is residing on
->+ * @device: Device number
->+ * @function: Function number in device
->+ *
->+ * Forms and returns the address of configuration space mapped in
->+PCIESS
->+ * address space 0. Also configures CFG_SETUP for remote configuration
->+space
->+ * access.
->+ *
->+ * The address space has two regions to access configuration - local and remote.
->+ * We access local region for bus 0 (as RC is attached on bus 0) and
->+remote
->+ * region for others with TYPE 1 access when bus > 1. As for device on
->+bus = 1,
->+ * we will do TYPE 0 access as it will be on our secondary bus (logical).
->+ * CFG_SETUP is needed only for remote configuration access.
->+ */
->+static inline void __iomem *
->+dw_old_setup_config_addr(struct pcie_port *pp, u8 bus, u8 device, u8
->+function) {
->+	u32 regval;
->+
->+	if (bus == 0)
->+		return pp->dbi_base;
->+
->+	regval = (bus << 16) | (device << 8) | function;
+>+	if (num_legacy_irqs > MAX_LEGACY_HOST_IRQS) {
+>+		dev_err(dev, "Too many legacy interrupts defined %u\n",
+>+			num_legacy_irqs);
+>+		num_legacy_irqs = MAX_LEGACY_HOST_IRQS;
+>+	}
 >+	/*
->+	 * Since Bus#1 will be a virtual bus, we need to have TYPE0
->+	 * access only.
->+	 * TYPE 1
+>+	 * support upto MAX_LEGACY_HOST_IRQS host and legacy IRQs.
+>+	 * In dt from index 0 to 3
 >+	 */
->+	if (bus != 1)
->+		regval |= BIT(24);
+>+	for (i = 0; i < num_legacy_irqs; i++) {
+>+		ks_pcie->legacy_host_irqs[i] =
+>+			irq_of_parse_and_map(ks_pcie->np_intc, i);
+>+		if (ks_pcie->legacy_host_irqs[i] < 0)
+>+			break;
+>+		ks_pcie->num_legacy_host_irqs++;
+>+	}
 >+
->+	writel(regval, pp->va_app_base + CFG_SETUP);
+>+	if (!ks_pcie->num_legacy_host_irqs) {
+>+		dev_err(dev, "Failed to get legacy interrupts\n");
+>+		goto out;
+>+	}
 >+
->+	return pp->dbi_base + SPACE0_REMOTE_CFG_OFFSET; }
+>+out:
+>+	return ret;
+>+}
 >+
->+int dw_old_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->+		unsigned int devfn, int where, int size, u32 *val) {
->+	u8 bus_num = bus->number;
->+	void __iomem *addr;
->+	int ret;
+>+static void ks_pcie_enable_interrupts(struct keystone_pcie *ks_pcie) {
+>+	struct pcie_port *pp = &ks_pcie->pp;
+>+	int i;
 >+
->+	addr = dw_old_setup_config_addr(pp, bus_num, PCI_SLOT(devfn),
->+				 PCI_FUNC(devfn));
+>+	/* Legacy IRQ */
+>+	for (i = 0; i < ks_pcie->num_legacy_host_irqs; i++) {
+>+		irq_set_handler_data(ks_pcie->legacy_host_irqs[i], ks_pcie);
+>+		irq_set_chained_handler(ks_pcie->legacy_host_irqs[i],
+>+					ks_pcie_legacy_irq_handler);
+>+	}
+>+	dw_old_enable_legacy_irqs(pp);
 >+
->+	ret = dw_pcie_cfg_read(addr + (where & ~0x3), where, size, val);
+>+	/* MSI IRQ */
+>+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+>+		for (i = 0; i < ks_pcie->num_msi_host_irqs; i++) {
+>+			irq_set_chained_handler(ks_pcie->msi_host_irqs[i],
+>+				ks_pcie_msi_irq_handler);
+>+			irq_set_handler_data(ks_pcie->msi_host_irqs[i],
+>+						ks_pcie);
+>+
+>+		}
+>+	}
+>+
+>+	return;
+>+}
+>+
+>+static int
+>+keystone_pcie_fault(unsigned long addr, unsigned int fsr,
+>+		struct pt_regs *regs)
+>+{
+>+	unsigned long instr = *(unsigned long *) instruction_pointer(regs);
+>+
+>+	if ((instr & 0x0e100090) == 0x00100090) {
+>+		int reg = (instr >> 12) & 15;
+>+
+>+		regs->uregs[reg] = -1;
+>+		regs->ARM_pc += 4;
+>+	}
+>+
+>+	return 0;
+>+}
+>+
+>+static void __init ks_pcie_host_init(struct pcie_port *pp) {
+>+	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
+>+
+>+	ks_pcie_establish_link(ks_pcie);
+>+	dw_old_disable_bars(pp);
+>+	dw_old_setup_ob_regs(pp);
+>+	ks_pcie_enable_interrupts(ks_pcie);
+>+	writew(PCI_IO_RANGE_TYPE_32 | (PCI_IO_RANGE_TYPE_32 << 8),
+>+			pp->dbi_base + PCI_IO_BASE);
+>+	/*
+>+	 * PCIe access errors that result into OCP errors are caught by ARM as
+>+	 * "External aborts" (Precise).
+>+	 */
+>+	hook_fault_code(17, keystone_pcie_fault, SIGBUS, 0,
+>+			"external abort on linefetch");
+>+}
+>+
+>+int ks_pcie_link_up(struct pcie_port *pp) {
+>+	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
+>+
+>+	return dw_old_pcie_link_up(pp, ks_pcie->en_link_train); }
+>+
+>+static struct pcie_host_ops keystone_pcie_host_ops = {
+>+	.rd_other_conf = dw_old_rd_other_conf,
+>+	.wr_other_conf = dw_old_wr_other_conf,
+>+	.link_up = ks_pcie_link_up,
+>+	.host_init = ks_pcie_host_init,
+>+	.get_msi_data = dw_old_get_msi_data,
+>+};
+>+
+>+static int add_pcie_port(struct keystone_pcie *ks_pcie,
+>+			 struct platform_device *pdev)
+>+{
+>+	struct device_node *np = pdev->dev.of_node;
+>+	struct pcie_port *pp = &ks_pcie->pp;
+>+	struct resource *res;
+>+	int ret, i;
+>+
+>+	ret = ks_pcie_init_legacy_irqs(ks_pcie);
+>+	if (ret)
+>+		return ret;
+>+
+>+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+>+		/*
+>+		 * support upto 32 MSI irqs mapped to 8 host IRQs.
+>+		 * In dt from index 4 to 11
+>+		 */
+>+		for (i = 0; i < MAX_MSI_HOST_IRQS; i++) {
+>+			ks_pcie->msi_host_irqs[i] = irq_of_parse_and_map(np, i);
+>+			if (ks_pcie->msi_host_irqs[i] < 0)
+>+				break;
+>+			ks_pcie->num_msi_host_irqs++;
+>+		}
+>+	}
+>+
+>+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg_rc_app");
+>+	pp->va_app_base = devm_ioremap_resource(&pdev->dev, res);
+>+	if (IS_ERR(pp->va_app_base))
+>+		return PTR_ERR(pp->va_app_base);
+>+	pp->app_base = res->start;
+>+
+>+	pp->root_bus_nr = -1;
+>+	pp->version = DW_VERSION_OLD;
+>+	pp->ops = &keystone_pcie_host_ops;
+>+	spin_lock_init(&pp->conf_lock);
+>+	ret = dw_old_pcie_host_init(pp, ks_pcie->np_intc);
+>+	if (ret) {
+>+		dev_err(&pdev->dev, "failed to initialize host\n");
+>+		return ret;
+>+	}
 >+
 >+	return ret;
 >+}
 >+
->+int dw_old_wr_other_conf(struct pcie_port *pp,
->+		struct pci_bus *bus, unsigned int devfn, int where,
->+		int size, u32 val)
->+{
->+	u8 bus_num = bus->number;
->+	void __iomem *addr;
+>+static const struct of_device_id ks_pcie_of_match[] = {
+>+	{
+>+		.type = "pci",
+>+		.compatible = "ti,keystone-pcie",
+>+	},
+>+	{ },
+>+};
+>+MODULE_DEVICE_TABLE(of, ks_pcie_of_match);
 >+
->+	addr = dw_old_setup_config_addr(pp, bus_num, PCI_SLOT(devfn),
->+				PCI_FUNC(devfn));
->+	return dw_pcie_cfg_write(addr + (where & ~0x3), where, size, val); }
+>+static int __exit ks_pcie_remove(struct platform_device *pdev) {
+>+	struct keystone_pcie *ks_pcie = platform_get_drvdata(pdev);
 >+
->+/**
->+ * dw_old_set_ib_access() - Setup inbound access
->+ *
->+ * Configure BAR0 for inbound access. BAR0 is set up in h/w to have
->+ * access to PCIESS application register space and just needs to set up
->+ * inbound address (mainly used for MSI).
->+ */
->+static void dw_old_set_ib_access(struct pcie_port *pp) {
->+	/* Configure and set up BAR0 */
->+	dw_old_set_dbi_mode(pp->va_app_base);
+>+	clk_disable_unprepare(ks_pcie->clk);
 >+
->+	/* Enable BAR0 */
->+	writel(1, pp->dbi_base + PCI_BASE_ADDRESS_0);
->+	writel(SZ_4K - 1, pp->dbi_base + PCI_BASE_ADDRESS_0);
->+
->+	dw_old_clear_dbi_mode(pp->va_app_base);
->+	 /*
->+	  * For BAR0, just setting bus address for inbound writes (MSI) should
->+	  * be sufficient. Use physical address to avoid any conflicts.
->+	  */
->+	writel(pp->app_base, pp->dbi_base + PCI_BASE_ADDRESS_0); }
->+
->+/**
->+ * dw_old_pcie_scan_bus() - common function to scan bus
->+ *
->+ * common functin to scan old dw based pci bus. This also sets inbound
->+access
->+ * after scan.
->+ */
->+static struct pci_bus *dw_old_pcie_scan_bus(int nr, struct pci_sys_data
->+*sys) {
->+	struct pcie_port *pp = sys_to_pcie(sys);
->+	struct pci_bus *bus;
->+
->+	bus = dw_pcie_scan_bus(nr, sys);
->+	if (bus)
->+		dw_old_set_ib_access(pp);
->+
->+	return bus;
+>+	return 0;
 >+}
 >+
->+/**
->+ * dw_old_pcie_link_up() - Check if link up
->+ *
->+ * optionally enable link train using link_train option and check if link is up.
->+ */
->+int dw_old_pcie_link_up(struct pcie_port *pp, int link_train) {
+>+static int __init ks_pcie_probe(struct platform_device *pdev) {
+>+	struct device_node *np = pdev->dev.of_node;
+>+	struct device *dev = &pdev->dev;
+>+	struct keystone_pcie *ks_pcie;
+>+	void __iomem *devstat;
+>+	struct pcie_port *pp;
+>+	struct resource *res;
+>+	struct phy *phy;
+>+	int ret = 0;
 >+	u32 val;
 >+
->+	if (link_train) {
->+		/*
->+		 * KeyStone devices do not support h/w autonomous
->+		 * link up-training to GEN2 from GEN1 in either EP/RC modes.
->+		 * The software needs to initiate speed change.
->+		 */
->+		val = readl(pp->dbi_base + PL_GEN2);
->+		writel(val | DIR_SPD, pp->dbi_base + PL_GEN2);
->+		/*
->+		 * Initiate Link Training. We will delay for L0 as specified by
->+		 * standard, but will still proceed and return success
->+		 * irrespective of L0 status as this will be handled by explicit
->+		 * L0 state checks during enumeration.
->+		 */
->+		val = readl(pp->va_app_base + CMD_STATUS);
->+		writel(LTSSM_EN_VAL | val,  pp->va_app_base + CMD_STATUS);
->+
+>+	ks_pcie = devm_kzalloc(&pdev->dev, sizeof(*ks_pcie),
+>+				GFP_KERNEL);
+>+	if (!ks_pcie) {
+>+		dev_err(dev, "no memory for keystone pcie\n");
+>+		return -ENOMEM;
 >+	}
 >+
->+	val = readl(pp->dbi_base + DEBUG0);
+>+	/* check if serdes phy needs to be enabled */
+>+	if (of_get_property(np, "ti,init-phy", NULL) != NULL) {
+>+		phy = devm_phy_get(dev, "pcie-phy");
+>+			if (IS_ERR(phy))
+>+				return PTR_ERR(phy);
 >+
->+	return (val & LTSSM_STATE_MASK) == LTSSM_STATE_L0; }
->+
->+static struct hw_pci dw_old_pcie_hw = {
->+	.nr_controllers	= 1,
->+	.setup		= dw_pcie_setup,
->+	.scan		= dw_old_pcie_scan_bus,
->+	.swizzle        = pci_common_swizzle,
->+	.add_bus	= dw_pcie_add_bus,
->+	.map_irq	= of_irq_parse_and_map_pci,
->+};
->+
->+
->+/**
->+ * dw_old_pcie_host_init() - initialize host for old dw hardware
->+ *
->+ * Parse the pcie resources from DT bindings and then call common
->+ * dw function to do host initialization.
->+ */
->+int __init dw_old_pcie_host_init(struct pcie_port *pp, struct
->+device_node *np) {
->+	int ret;
->+
->+	if (!pp->va_app_base)
->+		return -EINVAL;
->+
->+	/* create legacy domain */
->+	pp->legacy_irq_domain = irq_domain_add_linear(np,
->+				MAX_LEGACY_IRQS,
->+				&dw_old_legacy_irq_domian_ops, NULL);
->+
->+	if (!pp->legacy_irq_domain) {
->+		dev_err(pp->dev, "Failed to add irq domain for legacy irqs\n");
->+		return -EINVAL;
+>+		ret = phy_init(phy);
+>+		if (ret < 0)
+>+			return ret;
 >+	}
 >+
->+	ret = dw_pcie_parse_resource(pp);
+>+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>+					   "reg_devcfg");
+>+	devstat = devm_ioremap_resource(dev, res);
+>+	if (IS_ERR(devstat))
+>+		return PTR_ERR(devstat);
+>+
+>+	/* enable RC mode in devcfg */
+>+	val = readl(devstat);
+>+	val &= ~PCIE_MODE_MASK;
+>+	val |= PCIE_RC_MODE;
+>+	writel(val, devstat);
+>+
+>+	/* check if we need to enable link training */
+>+	ks_pcie->en_link_train =
+>+		(of_get_property(np, "ti,enable-linktrain", NULL) != NULL);
+>+
+>+	pp = &ks_pcie->pp;
+>+	pp->dev = dev;
+>+
+>+	ks_pcie->clk = devm_clk_get(dev, "pcie");
+>+	if (IS_ERR(ks_pcie->clk)) {
+>+		dev_err(dev, "Failed to get pcie rc clock\n");
+>+		return PTR_ERR(ks_pcie->clk);
+>+	}
+>+	ret = clk_prepare_enable(ks_pcie->clk);
 >+	if (ret)
 >+		return ret;
 >+
->+	return dw_pcie_common_host_init(pp, &dw_old_pcie_hw,
->+					&dw_old_msi_domain_ops);
+>+	ret = add_pcie_port(ks_pcie, pdev);
+>+	if (ret < 0)
+>+		goto fail_clk;
+>+
+>+	platform_set_drvdata(pdev, ks_pcie);
+>+	dev_info(dev, "pcie rc probe success\n");
+>+
+>+	return 0;
+>+
+>+fail_clk:
+>+	clk_disable_unprepare(ks_pcie->clk);
+>+
+>+	return ret;
 >+}
->diff --git a/drivers/pci/host/pci-dw-old.h b/drivers/pci/host/pci-dw-old.h new file mode
->100644 index 0000000..6e1af50
->--- /dev/null
->+++ b/drivers/pci/host/pci-dw-old.h
->@@ -0,0 +1,30 @@
+>+
+>+static struct platform_driver ks_pcie_driver __refdata = {
+>+	.probe  = ks_pcie_probe,
+>+	.remove = __exit_p(ks_pcie_remove),
+>+	.driver = {
+>+		.name	= "keystone-pcie",
+>+		.owner	= THIS_MODULE,
+>+		.of_match_table = of_match_ptr(ks_pcie_of_match),
+>+	},
+>+};
+>+
+>+module_platform_driver(ks_pcie_driver);
+>+
+>+MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
+>+MODULE_DESCRIPTION("Keystone PCIe host controller driver");
+>+MODULE_LICENSE("GPL v2");
+>diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index e729206..b3e12c2 100644
+>--- a/drivers/pci/quirks.c
+>+++ b/drivers/pci/quirks.c
+>@@ -3651,3 +3651,16 @@ void pci_dev_specific_enable_acs(struct pci_dev *dev)
+> 		}
+> 	}
+> }
+>+#ifdef CONFIG_PCI_KEYSTONE
 >+/*
->+ * Designware(dw) old MSI controller (v3.65 or similar) common includes
->+ *
->+ * Copyright (C) 2013-2014 Texas Instruments., Ltd.
->+ *		http://www.ti.com
->+ *
->+ * Author: Murali Karicheri <m-karicheri2@ti.com>
->+ *
->+ *
->+ * This program is free software; you can redistribute it and/or modify
->+ * it under the terms of the GNU General Public License version 2 as
->+ * published by the Free Software Foundation.
+>+ * The KeyStone PCIe controller has maximum read request size of 256 bytes.
 >+ */
+>+static void quirk_limit_readrequest(struct pci_dev *dev) {
+>+	int readrq = pcie_get_readrq(dev);
 >+
->+#define MAX_LEGACY_IRQS		4
->+
->+extern const struct irq_domain_ops dw_old_msi_domain_ops;
->+
->+void dw_old_handle_msi_irq(struct pcie_port *pp, int offset);
->+u32 dw_old_get_msi_data(struct pcie_port *pp); void
->+dw_old_enable_legacy_irqs(struct pcie_port *pp); void
->+dw_old_handle_legacy_irq(struct pcie_port *pp, int offset); int
->+dw_old_pcie_host_init(struct pcie_port *pp, struct device_node *np);
->+int dw_old_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->+		unsigned int devfn, int where, int size, u32 val); int
->+dw_old_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->+		unsigned int devfn, int where, int size, u32 *val); void
->+dw_old_disable_bars(struct pcie_port *pp); void
->+dw_old_setup_ob_regs(struct pcie_port *pp); int
->+dw_old_pcie_link_up(struct pcie_port *pp, int link_train);
+>+	if (readrq > 256)
+>+		pcie_set_readrq(dev, 256);
+>+}
+>+DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID,
+>+quirk_limit_readrequest); #endif /* CONFIG_PCI_KEYSTONE */
 >--
 >1.7.9.5
 
