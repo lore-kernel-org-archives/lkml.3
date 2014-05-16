@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765AbaEPNdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:33:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54085 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaEPNdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:33:17 -0400
-Date: Fri, 16 May 2014 06:32:23 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-499c2b75e9c695b57faaf6a63fde391ff9e523a3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        tony.luck@intel.com
-In-Reply-To: <20140507154334.991589924@linutronix.de>
-References: <20140507154334.991589924@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86: hpet: Use irq_alloc/free_hwirq()
-Git-Commit-ID: 499c2b75e9c695b57faaf6a63fde391ff9e523a3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756977AbaEPNdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755192AbaEPNdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 09:33:38 -0400
+Date: Fri, 16 May 2014 09:33:00 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, namhyung@gmail.com, eranian@google.com,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/6] events, perf: Pass protection and flags bits through
+ mmap2 interface
+Message-ID: <20140516133300.GO50500@redhat.com>
+References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
+ <1399999697-65875-2-git-send-email-dzickus@redhat.com>
+ <20140516122219.GQ11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140516122219.GQ11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  499c2b75e9c695b57faaf6a63fde391ff9e523a3
-Gitweb:     http://git.kernel.org/tip/499c2b75e9c695b57faaf6a63fde391ff9e523a3
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 7 May 2014 15:44:07 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 16 May 2014 14:05:18 +0200
+On Fri, May 16, 2014 at 02:22:19PM +0200, Peter Zijlstra wrote:
+> On Tue, May 13, 2014 at 12:48:12PM -0400, Don Zickus wrote:
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > The mmap2 interface was missing the protection and flags bits needed to
+> > accurately determine if a mmap memory area was shared or private and
+> > if it was readable or not.
+> > 
+> > [tweaked patch to compile and wrote changelog]
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > 
+> > --
+> > Peter you mentioned writing up a changelog for this patch, but you
+> > seemed busy, so I jumped the gun a little bit.  Let me know how you
+> > want to do this patch if this approach is wrong.
+> 
+> Oh, right, totally forgot about that. yeah I think the blub you have is
+> adequate. 
 
-x86: hpet: Use irq_alloc/free_hwirq()
+I realized I didn't put your sign-off even though I said the patch is from
+you.  Should I repost with that?  I don't know who is going to take what
+patches from this series.
 
-Use the new interfaces. No functional change.
+Cheers,
+Don
 
-This does not replace the requirement to move x86 to irq domains, but
-it limits the mess to some degree.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20140507154334.991589924@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/hpet.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 4177bfb..5f5a147 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -479,7 +479,7 @@ static int hpet_msi_next_event(unsigned long delta,
- static int hpet_setup_msi_irq(unsigned int irq)
- {
- 	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
--		destroy_irq(irq);
-+		irq_free_hwirq(irq);
- 		return -EINVAL;
- 	}
- 	return 0;
-@@ -487,9 +487,8 @@ static int hpet_setup_msi_irq(unsigned int irq)
- 
- static int hpet_assign_irq(struct hpet_dev *dev)
- {
--	unsigned int irq;
-+	unsigned int irq = irq_alloc_hwirq(-1);
- 
--	irq = create_irq_nr(0, -1);
- 	if (!irq)
- 		return -EINVAL;
- 
