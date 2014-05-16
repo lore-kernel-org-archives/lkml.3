@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909AbaEPJyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:54:06 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:61605 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730AbaEPJyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:54:03 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] ARM: imx: fix error handling
-Date: Fri, 16 May 2014 11:54:05 +0200
-Message-Id: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756925AbaEPJyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:54:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756489AbaEPJyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 05:54:14 -0400
+Date: Fri, 16 May 2014 11:53:40 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 8/9] tools, perf: Make srcline output address with -v
+Message-ID: <20140516095340.GB19475@krava.brq.redhat.com>
+References: <1399936829-28194-1-git-send-email-andi@firstfloor.org>
+ <1399936829-28194-9-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399936829-28194-9-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+On Mon, May 12, 2014 at 04:20:28PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Requested by Jiri.
+> 
 
-I have rearranged the error handling a bit to fix the issue
-and also make it more clear.
+need more description, I can't send out patch with changelog like this
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-v2: Changed to return -ENOMEM instead of ret where possible and
-    updated the subject line.
+thanks,
+jirka
 
- arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7c..68f2a4a 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
- 
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
--		goto err;
-+		goto put_pdev;
- 
- 	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
- 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
- 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
- 	if (ret)
--		goto err;
-+		goto free_dma_mask;
- 
- 	if (pdata) {
- 		struct mx3_camera_pdata *copied_pdata;
- 
- 		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
--		if (ret) {
--err:
--			kfree(pdev->dev.dma_mask);
--			platform_device_put(pdev);
--			return ERR_PTR(-ENODEV);
--		}
-+		if (ret)
-+			goto free_dma_mask;
-+
- 		copied_pdata = dev_get_platdata(&pdev->dev);
- 		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
- 	}
- 
- 	return pdev;
-+
-+free_dma_mask:
-+	kfree(pdev->dev.dma_mask);
-+put_pdev:
-+	platform_device_put(pdev);
-+
-+	return ERR_PTR(ret);
- }
- 
- struct platform_device *__init imx_add_mx3_sdc_fb(
--- 
-1.7.10.4
-
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/util/srcline.c | 18 +++++++++++++++---
+>  1 file changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+> index 36a7aff..a22be7c 100644
+> --- a/tools/perf/util/srcline.c
+> +++ b/tools/perf/util/srcline.c
+> @@ -258,6 +258,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+>  	unsigned line = 0;
+>  	char *srcline;
+>  	const char *dso_name;
+> +	char astr[50];
+> +
+> +	if (verbose)
+> +		snprintf(astr, sizeof astr, " %#lx", addr);
+> +	else
+> +		astr[0] = 0;
+>  
+>  	if (!dso->has_srcline)
+>  		goto out;
+> @@ -276,7 +282,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+>  	if (!addr2line(dso_name, addr, &file, &line, dso))
+>  		goto out;
+>  
+> -	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
+> +	if (line == 0) {
+> +		free(file);
+> +		goto fallback;
+> +	}
+> +
+> +	if (asprintf(&srcline, "%s:%u%s", basename(file), line, astr) < 0) {
+>  		free(file);
+>  		goto out;
+>  	}
+> @@ -291,9 +302,10 @@ out:
+>  		dso->has_srcline = 0;
+>  		dso__free_a2l(dso);
+>  	}
+> +fallback:
+>  	if (sym) {
+> -		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
+> -					addr - sym->start) < 0)
+> +		if (asprintf(&srcline, "%s+%ld%s", show_sym ? sym->name : "",
+> +					addr - sym->start, astr) < 0)
+>  			return SRCLINE_UNKNOWN;
+>  	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
+>  		return SRCLINE_UNKNOWN;
+> -- 
+> 1.9.0
+> 
