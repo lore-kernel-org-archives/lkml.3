@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129AbaEPKkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:40:37 -0400
-Received: from mx01-fr.bfs.de ([193.174.231.67]:16343 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900AbaEPKkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:40:36 -0400
-Message-ID: <5375EB13.8000200@bfs.de>
-Date: Fri, 16 May 2014 12:40:19 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: imx: fix error handling
-References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
-In-Reply-To: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1757153AbaEPKko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:40:44 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58092 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757137AbaEPKkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 06:40:43 -0400
+Message-ID: <1400236840.20342.30.camel@x220>
+Subject: [PATCH] ARM: pxa: fix typo 'CONFIG_SPI_PXA2XX_MASTER'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 May 2014 12:40:40 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2014 10:40:41.0119 (UTC) FILETIME=[486842F0:01CF70F3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CONFIG_SPI_PXA2XX_MASTER was used were it was surely meant to use
+CONFIG_SPI_PXA2XX_MODULE. Use the IS_ENABLED() macro here, as it guards
+against typos like this one.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested, and (hardware) testing for the modular case might be needed.
+This typo was introduced in v2.6.28.
 
-Am 16.05.2014 11:54, schrieb Emil Goode:
-> If we fail to allocate struct platform_device pdev we
-> dereference it after the goto label err.
-> 
-> I have rearranged the error handling a bit to fix the issue
-> and also make it more clear.
-> 
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
-> v2: Changed to return -ENOMEM instead of ret where possible and
->     updated the subject line.
-> 
->  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
->  1 file changed, 13 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> index fc4dd7c..68f2a4a 100644
-> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
->  
->  	pdev = platform_device_alloc("mx3-camera", 0);
->  	if (!pdev)
-> -		goto err;
-> +		return ERR_PTR(-ENOMEM);
->  
->  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
->  	if (!pdev->dev.dma_mask)
-> -		goto err;
-> +		goto put_pdev;
->  
->  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
->  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->  
->  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
->  	if (ret)
-> -		goto err;
-> +		goto free_dma_mask;
->  
->  	if (pdata) {
->  		struct mx3_camera_pdata *copied_pdata;
->  
->  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> -		if (ret) {
-> -err:
-> -			kfree(pdev->dev.dma_mask);
-> -			platform_device_put(pdev);
-> -			return ERR_PTR(-ENODEV);
-> -		}
-> +		if (ret)
-> +			goto free_dma_mask;
-> +
->  		copied_pdata = dev_get_platdata(&pdev->dev);
->  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
+ arch/arm/mach-pxa/corgi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/mach-pxa/corgi.c b/arch/arm/mach-pxa/corgi.c
+index 57d60542f982..ccff8d82cc27 100644
+--- a/arch/arm/mach-pxa/corgi.c
++++ b/arch/arm/mach-pxa/corgi.c
+@@ -513,7 +513,7 @@ static struct pxa2xx_udc_mach_info udc_info __initdata = {
+ 	.gpio_pullup		= CORGI_GPIO_USB_PULLUP,
+ };
+ 
+-#if defined(CONFIG_SPI_PXA2XX) || defined(CONFIG_SPI_PXA2XX_MASTER)
++#if IS_ENABLED(CONFIG_SPI_PXA2XX)
+ static struct pxa2xx_spi_master corgi_spi_info = {
+ 	.num_chipselect	= 3,
+ };
+-- 
+1.9.0
 
-the patch is fine, but what use is this copied_pdata ?
-It scope ends next line ?
-
-re,
- wh
-
->  	}
->  
->  	return pdev;
-> +
-> +free_dma_mask:
-> +	kfree(pdev->dev.dma_mask);
-> +put_pdev:
-> +	platform_device_put(pdev);
-> +
-> +	return ERR_PTR(ret);
->  }
->  
->  struct platform_device *__init imx_add_mx3_sdc_fb(
