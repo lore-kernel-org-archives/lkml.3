@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208AbaEPLtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:49:52 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53785 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754246AbaEPLtu (ORCPT
+	id S1755716AbaEPLwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:52:45 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:54609 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295AbaEPLwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:49:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] ACPICA: Cleanups for <acpi/platform/acenv.h> and <acpi/platform/aclinux.h>.
-Date: Fri, 16 May 2014 14:06:39 +0200
-Message-ID: <2469705.A2qBHcTP2j@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <cover.1399880022.git.lv.zheng@intel.com>
-References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1399880022.git.lv.zheng@intel.com>
+	Fri, 16 May 2014 07:52:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
+	<20140514100856.5198DC4153D@trevor.secretlab.ca>
+	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
+	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
+	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+Date: Fri, 16 May 2014 13:52:42 +0200
+X-Google-Sender-Auth: 6eVzT1mpK1ABib0NAyjq09AHMAs
+Message-ID: <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 12, 2014 03:44:37 PM Lv Zheng wrote:
-> This patch series cleans up <acpi/platform/acenv.h> and
-> <acpi/platform/aclinux.h>.  it also fixes some mis-ordered inclusions for
-> Linux resident ACPICA.
-> 
-> There is no real issue in the Linux kernel, but this can help to cleanup
-> the code so that (benefits):
-> 1. Redundant environment definitions can be removed from <asm/acpi.h> and
->    <acpi/platform/aclinux.h>.
-> 2. Lift a burden off the ACPICA release automation - copying default ACPICA
->    environment setting to all <asm/acpi.h> file each time a new environment
->    is introduced just in order to avoid build errors.
-> 3. The wrong <acpi/actypes.h> inclusion can be removed from
->    <acpi/platform/aclinux.h>.
-> 4. Using ACPICA defined types in <asm/acpi.h> is possible.
-> 5. Using "static inline" to define ACPICA OSL functions is still possible
->    and won't cause build errors any longer.
-> 6. All non back ported prototypes are collected in a single file.
-> 
-> The patch set has passed the following build/boot tests.
-> Build tests are performed as follows:
-> 1. i386 + default + COFNIG_ACPI=y
-> 2. i386 + default + COFNIG_ACPI=n
-> 3. x86_64 + default + COFNIG_ACPI=y
-> 4. x86_64 + default + COFNIG_ACPI=n
-> Boot tests are performed as follows:
-> 1. i386 + default + COFNIG_ACPI=y
-> 2. x86_64 + default + COFNIG_ACPI=y
-> Where:
-> 1. i386: machine named as "Dell Inspiron Mini 1010"
-> 2. x86_64: machine named as "HP Compaq 8200 Elite SFF PC"
-> 3. default: kernel configuration with following items enabled:
->    All hardware drivers related to the machines of i386/x86_64
->    All drivers/acpi configurations
->    All platform drivers
->    All ACPI drivers
->    4 DRM drivers that implement ACPI opregion
->    All buses with ACPI bindings
->    All cpufreq configurations
->    All xen configurations
->    All ACPI table drivers
-> 
-> Lv Zheng (4):
->   ACPICA: Linux headers: Remove ACPI_PREEMPTION_POINT() due to no
->     usages.
->   ACPICA: Linux headers: Add <acpi/platform/aclinuxex.h> to remove
->     mis-ordered inclusion of <acpi/actypes.h> from
->     <acpi/platform/aclinux.h>.
->   ACPICA: Linux headers: Add <asm/acenv.h> to remove mis-ordered
->     inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
->   ACPICA: Cleanup redudant definitions that already have defaults in
->     <acpi/platform/acenv.h>.
-> 
->  arch/ia64/include/asm/acenv.h     |   56 ++++++++++++
->  arch/ia64/include/asm/acpi.h      |   50 -----------
->  arch/x86/include/asm/acenv.h      |   49 +++++++++++
->  arch/x86/include/asm/acpi.h       |   45 ----------
->  include/acpi/acpi.h               |    4 +-
->  include/acpi/platform/acenvex.h   |   63 ++++++++++++++
->  include/acpi/platform/aclinux.h   |  171 ++++++++-----------------------------
->  include/acpi/platform/aclinuxex.h |  116 +++++++++++++++++++++++++
->  8 files changed, 322 insertions(+), 232 deletions(-)
->  create mode 100644 arch/ia64/include/asm/acenv.h
->  create mode 100644 arch/x86/include/asm/acenv.h
->  create mode 100644 include/acpi/platform/acenvex.h
->  create mode 100644 include/acpi/platform/aclinuxex.h
+Hi Grant,
 
-All four applied to bleeding-edge, thanks Lv!
+On Fri, May 16, 2014 at 12:58 PM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Thu, 15 May 2014 09:20:24 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Thu, May 15, 2014 at 9:12 AM, Pantelis Antoniou
+>> <pantelis.antoniou@konsulko.com> wrote:
+>> >> We also need to think about kexec. Kexec works by sucking the live tree
+>> >> out of the kernel and creating a .dtb from it to pass to the new kernel.
+>> >> What will the rules be when kexecing? Do all the overlays need to be
+>> >> removed, or does the kernel get the tree with all the overlays applied
+>> >> (in which case none of the overlays can be removed on the other side of
+>> >> kexec).
+>> >
+>> > We can add a sysfs attribute that configures whether overlays are reverted before
+>> > kexec or not. I can't really tell which is the correct option, so let's allow the
+>> > policy up to user-space.
+>>
+>> Kexec'ing into a new kernel doesn't change the hardware, so IMHO the
+>> in-kernel DT should not change.
+>
+> Conceptually though, if overlays are applied then the new kernel has a
+> different tree from the old one. If the overlay is hotpluggable, then
+> after the kexec, the new kernel would no longer be able to unplug the
+> overlay if it uses the current state of the tree instead of pulling the
+> overlays off first.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Which brings me to another question...
+
+Why has the overlay system been designed for plugging and unpluging whole
+overlays?
+That means the kernel has to remember the full stack, causing issues with
+e.g. kexec.
+
+Why not allowing the addition of removal of subtrees of the full device
+tree?
+This is similar to other hotpluggable subsystems (which are not necessarily
+DT-based), like PCI Express. That way the kernel can pass a
+DT-representation of the actual current device tree to a kexec'ed kernel.
+
+I missed the initial design discussions, so forgive me if this has been
+beaten to death before.
+
+Thanks for your answers!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
