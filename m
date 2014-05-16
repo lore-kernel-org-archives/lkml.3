@@ -1,141 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179AbaEPLt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:49:26 -0400
-Received: from mx01-fr.bfs.de ([193.174.231.67]:6703 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757148AbaEPLtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:49:24 -0400
-Message-ID: <5375FB36.8020004@bfs.de>
-Date: Fri, 16 May 2014 13:49:10 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757208AbaEPLtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:49:52 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53785 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754246AbaEPLtu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 07:49:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] ACPICA: Cleanups for <acpi/platform/acenv.h> and <acpi/platform/aclinux.h>.
+Date: Fri, 16 May 2014 14:06:39 +0200
+Message-ID: <2469705.A2qBHcTP2j@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1399880022.git.lv.zheng@intel.com>
+References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1399880022.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: imx: fix error handling
-References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com> <5375EB13.8000200@bfs.de> <20140516111646.GC4366@lianli>
-In-Reply-To: <20140516111646.GC4366@lianli>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, May 12, 2014 03:44:37 PM Lv Zheng wrote:
+> This patch series cleans up <acpi/platform/acenv.h> and
+> <acpi/platform/aclinux.h>.  it also fixes some mis-ordered inclusions for
+> Linux resident ACPICA.
+> 
+> There is no real issue in the Linux kernel, but this can help to cleanup
+> the code so that (benefits):
+> 1. Redundant environment definitions can be removed from <asm/acpi.h> and
+>    <acpi/platform/aclinux.h>.
+> 2. Lift a burden off the ACPICA release automation - copying default ACPICA
+>    environment setting to all <asm/acpi.h> file each time a new environment
+>    is introduced just in order to avoid build errors.
+> 3. The wrong <acpi/actypes.h> inclusion can be removed from
+>    <acpi/platform/aclinux.h>.
+> 4. Using ACPICA defined types in <asm/acpi.h> is possible.
+> 5. Using "static inline" to define ACPICA OSL functions is still possible
+>    and won't cause build errors any longer.
+> 6. All non back ported prototypes are collected in a single file.
+> 
+> The patch set has passed the following build/boot tests.
+> Build tests are performed as follows:
+> 1. i386 + default + COFNIG_ACPI=y
+> 2. i386 + default + COFNIG_ACPI=n
+> 3. x86_64 + default + COFNIG_ACPI=y
+> 4. x86_64 + default + COFNIG_ACPI=n
+> Boot tests are performed as follows:
+> 1. i386 + default + COFNIG_ACPI=y
+> 2. x86_64 + default + COFNIG_ACPI=y
+> Where:
+> 1. i386: machine named as "Dell Inspiron Mini 1010"
+> 2. x86_64: machine named as "HP Compaq 8200 Elite SFF PC"
+> 3. default: kernel configuration with following items enabled:
+>    All hardware drivers related to the machines of i386/x86_64
+>    All drivers/acpi configurations
+>    All platform drivers
+>    All ACPI drivers
+>    4 DRM drivers that implement ACPI opregion
+>    All buses with ACPI bindings
+>    All cpufreq configurations
+>    All xen configurations
+>    All ACPI table drivers
+> 
+> Lv Zheng (4):
+>   ACPICA: Linux headers: Remove ACPI_PREEMPTION_POINT() due to no
+>     usages.
+>   ACPICA: Linux headers: Add <acpi/platform/aclinuxex.h> to remove
+>     mis-ordered inclusion of <acpi/actypes.h> from
+>     <acpi/platform/aclinux.h>.
+>   ACPICA: Linux headers: Add <asm/acenv.h> to remove mis-ordered
+>     inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+>   ACPICA: Cleanup redudant definitions that already have defaults in
+>     <acpi/platform/acenv.h>.
+> 
+>  arch/ia64/include/asm/acenv.h     |   56 ++++++++++++
+>  arch/ia64/include/asm/acpi.h      |   50 -----------
+>  arch/x86/include/asm/acenv.h      |   49 +++++++++++
+>  arch/x86/include/asm/acpi.h       |   45 ----------
+>  include/acpi/acpi.h               |    4 +-
+>  include/acpi/platform/acenvex.h   |   63 ++++++++++++++
+>  include/acpi/platform/aclinux.h   |  171 ++++++++-----------------------------
+>  include/acpi/platform/aclinuxex.h |  116 +++++++++++++++++++++++++
+>  8 files changed, 322 insertions(+), 232 deletions(-)
+>  create mode 100644 arch/ia64/include/asm/acenv.h
+>  create mode 100644 arch/x86/include/asm/acenv.h
+>  create mode 100644 include/acpi/platform/acenvex.h
+>  create mode 100644 include/acpi/platform/aclinuxex.h
 
+All four applied to bleeding-edge, thanks Lv!
 
-Am 16.05.2014 13:16, schrieb Emil Goode:
-> Hello Walter,
-> 
-> On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
->>
->>
->> Am 16.05.2014 11:54, schrieb Emil Goode:
->>> If we fail to allocate struct platform_device pdev we
->>> dereference it after the goto label err.
->>>
->>> I have rearranged the error handling a bit to fix the issue
->>> and also make it more clear.
->>>
->>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
->>> ---
->>> v2: Changed to return -ENOMEM instead of ret where possible and
->>>     updated the subject line.
->>>
->>>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
->>>  1 file changed, 13 insertions(+), 9 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
->>> index fc4dd7c..68f2a4a 100644
->>> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
->>> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
->>> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
->>>  
->>>  	pdev = platform_device_alloc("mx3-camera", 0);
->>>  	if (!pdev)
->>> -		goto err;
->>> +		return ERR_PTR(-ENOMEM);
->>>  
->>>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
->>>  	if (!pdev->dev.dma_mask)
->>> -		goto err;
->>> +		goto put_pdev;
->>>  
->>>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
->>>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->>>  
->>>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
->>>  	if (ret)
->>> -		goto err;
->>> +		goto free_dma_mask;
->>>  
->>>  	if (pdata) {
->>>  		struct mx3_camera_pdata *copied_pdata;
->>>  
->>>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
->>> -		if (ret) {
->>> -err:
->>> -			kfree(pdev->dev.dma_mask);
->>> -			platform_device_put(pdev);
->>> -			return ERR_PTR(-ENODEV);
->>> -		}
->>> +		if (ret)
->>> +			goto free_dma_mask;
->>> +
->>>  		copied_pdata = dev_get_platdata(&pdev->dev);
->>>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
->>
->>
->> the patch is fine, but what use is this copied_pdata ?
->> It scope ends next line ?
->>
->> re,
->>  wh
-> 
-> I also thought that looked a bit odd, but copied_pdata is a temporary
-> pointer to platform_data of the dev struct.
-> 
-> dev_get_platdata looks like this:
-> 
-> static inline void *dev_get_platdata(const struct device *dev)
-> {
->         return dev->platform_data;
-> }
-> 
-> So I believe it's a more compact way of writing:
-> 
-> pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
-
-ok i see ...
-
-Both ways are horrible to read, but the second is at least
-understandable. fortunately i am not the maintainer.
-
-thx,
-
-re,
- wh
-
-> Best regards,
-> 
-> Emil Goode
-> 
->>
->>>  	}
->>>  
->>>  	return pdev;
->>> +
->>> +free_dma_mask:
->>> +	kfree(pdev->dev.dma_mask);
->>> +put_pdev:
->>> +	platform_device_put(pdev);
->>> +
->>> +	return ERR_PTR(ret);
->>>  }
->>>  
->>>  struct platform_device *__init imx_add_mx3_sdc_fb(
-> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
