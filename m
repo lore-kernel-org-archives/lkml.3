@@ -1,177 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781AbaEPHpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:45:38 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:36988 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaEPHph (ORCPT
+	id S1755990AbaEPHsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:48:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36966 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333AbaEPHsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:45:37 -0400
+	Fri, 16 May 2014 03:48:14 -0400
+Date: Fri, 16 May 2014 09:48:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+Message-ID: <20140516074804.GK11096@twins.programming.kicks-ass.net>
+References: <20140513142328.GE2485@laptop.programming.kicks-ass.net>
+ <53731D12.7040804@linux.vnet.ibm.com>
+ <20140514094426.GF30445@twins.programming.kicks-ass.net>
+ <5374387E.4080802@linux.vnet.ibm.com>
+ <20140515083531.GE30445@twins.programming.kicks-ass.net>
+ <53747EE4.3020605@linux.vnet.ibm.com>
+ <20140515090638.GI30445@twins.programming.kicks-ass.net>
+ <53748A5D.6070605@linux.vnet.ibm.com>
+ <20140515115751.GK30445@twins.programming.kicks-ass.net>
+ <5375768F.1010000@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <308e7a7eeaf04ae8a90b8db39697009b@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1400142562-9111-1-git-send-email-superlibj8301@gmail.com>
-	<alpine.LFD.2.11.1405151325250.17310@knanqh.ubzr>
-	<CAHPCO9GrwRczw2R9nZDL0tDdYxSHV0f2aDhFSat+xhhiWaYbUg@mail.gmail.com>
-	<308e7a7eeaf04ae8a90b8db39697009b@BY2PR03MB505.namprd03.prod.outlook.com>
-Date: Fri, 16 May 2014 15:45:36 +0800
-Message-ID: <CAHPCO9FuuRY1eyKpXr4OpHpeS8ZW4BroMOkUPYEhLNu4xdDcSA@mail.gmail.com>
-Subject: Re: [PATCHv2] ARM: ioremap: Fix static vm area boundary checking.
-From: Richard Lee <superlibj8301@gmail.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="doRsZBpDQ+I4/+/t"
+Content-Disposition: inline
+In-Reply-To: <5375768F.1010000@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 3:17 PM, Li.Xiubo@freescale.com
-<Li.Xiubo@freescale.com> wrote:
->> Subject: Re: [PATCHv2] ARM: ioremap: Fix static vm area boundary checking.
->>
->> On Fri, May 16, 2014 at 1:28 AM, Nicolas Pitre <nicolas.pitre@linaro.org>
->> wrote:
->> > On Thu, 15 May 2014, Richard Lee wrote:
->> >
->> >> Static vm area boundary check:
->> >>
->> >>       paddr1 --->|       |
->> >>                  |       |
->> >>                  |-------| <-\--- svm->vm->addr(is page aligned)
->> >>       paddr2 --->|       |    |
->> >>                  |     --| <--|-- svm->vm->phys_addr
->> >>                  |       |    |
->> >>       paddr3 --->|       |    |
->> >>                  |       |    |
->> >>                  |-------| <--|-- next page boundary
->> >>                  |       |    |
->> >>       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
->> >>                  |       |    |
->> >>                  |       |    |
->> >> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
->> >>                  | ///// |    |
->> >>       paddr5 --->| guard |    |
->> >>                  | page  |    |
->> >>                  | ///// |    |
->> >>                   -------  <-/--- svm->vm->addr + svm->vm_size
->> >>
->> >> <1> If the paddr == paddr1, then continue;
->> >> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
->> >>     then continue;
->> >> <3> if the paddr >= paddr5 then continue;
->> >>
->> >> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
->> >
->> > instead of doing this repeatedly, why not simply ensure the recorded
->> > static vm information is already page aligned in the first place?
->> >
->>
->> Sorry, I'm not very sure what vm information you meant here.
->>
->> And the 'svm->vm->addr' and 'svm->vm->size' are all page aligned
->> already, but we cannot make sure that the 'paddr' and
->> 'svm->vm->phys_addr' are page aligned.
->>
->
-> The paddr and svm->vm->phys_addr are all already pfn aligned here.
-> What we should fix about is the boundary of them.
->
 
-Sorry, I'm a fresher and I'll be out of the opensource mail list for
-changing jobs and then I have no chance to do this.
-Could you help me fix this issue please ?
+--doRsZBpDQ+I4/+/t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And thanks for your help about how to appoarch the opensource list.
-Thanks very much,
+On Fri, May 16, 2014 at 10:23:11AM +0800, Michael wang wrote:
+> On 05/15/2014 07:57 PM, Peter Zijlstra wrote:
+> [snip]
+> >>
+> >> It's like:
+> >>
+> >> 	/cgroup/cpu/l1/l2/l3/l4/l5/l6/A
+> >>
+> >> about level 7, the issue can not be solved any more.
+> >=20
+> > That's pretty retarded and yeah, that's way past the point where things
+> > make sense. You might be lucky and have l1-5 as empty/pointless
+> > hierarchy so the effective depth is less and then things will work, but
+> > *shees*..
+>=20
+> Exactly, that's the simulation of cgroup topology setup by libvirt,
+> really doesn't make sense... rather torture than deployment, but they do
+> make things like that...
 
-   Richard,
+I'm calling it broken and unfit for purpose if it does crazy shit like
+that.
 
->> >>
->> >>
->> >> Change in V2:
->> >>  - PAGE_SIZE --> PAGE_MASK
->> >>  - remove the 'size' page size align operation.
->> >>
->> >>
->> >>
->> >>
->> >>
->> >>
->> >>  arch/arm/mm/ioremap.c | 40 ++++++++++++++++++++++++++++++++++++++--
->> >>  1 file changed, 38 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
->> >> index be69333..f235ab7 100644
->> >> --- a/arch/arm/mm/ioremap.c
->> >> +++ b/arch/arm/mm/ioremap.c
->> >> @@ -47,16 +47,52 @@ static struct static_vm
->> *find_static_vm_paddr(phys_addr_t paddr,
->> >>  {
->> >>       struct static_vm *svm;
->> >>       struct vm_struct *vm;
->> >> +     size_t offset;
->> >> +
->> >> +     offset = paddr & ~PAGE_MASK;
->> >>
->> >>       list_for_each_entry(svm, &static_vmlist, list) {
->> >> +             phys_addr_t paddr_end, phys_addr_end;
->> >> +             size_t vmoff;
->> >> +
->> >>               vm = &svm->vm;
->> >>               if (!(vm->flags & VM_ARM_STATIC_MAPPING))
->> >>                       continue;
->> >>               if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
->> >>                       continue;
->> >>
->> >> -             if (vm->phys_addr > paddr ||
->> >> -                     paddr + size - 1 > vm->phys_addr + vm->size - 1)
->> >> +             /* Static vm area boundary check:
->> >> +              *
->> >> +              *       paddr1 --->|       |
->> >> +              *                  |       |
->> >> +              *                  |-------| <-\--- svm->vm->addr(page
->> aligned)
->> >> +              *       paddr2 --->|       |    |
->> >> +              *                  |     --| <--|-- svm->vm->phys_addr
->> >> +              *                  |       |    |
->> >> +              *       paddr3 --->|       |    |
->> >> +              *                  |       |    |
->> >> +              *                  |-------| <--|-- next page boundary
->> >> +              *                  |       |    |
->> >> +              *       paddr4 --->|       |    | <----- svm->vm->size,
->> >> +              *                  |       |    |         including guard
->> page
->> >> +              *                  |       |    |
->> >> +              * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
->> >> +              *                  | ///// |    |
->> >> +              *       paddr5 --->| guard |    |
->> >> +              *                  | page  |    |
->> >> +              *                  | ///// |    |
->> >> +              *                   -------  <-/-- svm->vm->addr + svm-
->> >vm_size
->> >> +              *
->> >> +              * <1> If paddr == paddr1, then continue;
->> >> +              * <2> If paddr == paddr2~paddr4 and paddr_end >
->> phys_addr_end,
->> >> +              *     then continue;
->> >> +              * <3> if paddr >= paddr5 then continue;
->> >> +              */
->> >> +             vmoff = vm->phys_addr & ~PAGE_MASK;
->> >> +             phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
->> >> +             paddr_end = paddr + size - offset;
->> >> +             if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
->> >> +                     paddr_end - 1 > phys_addr_end - 1)
->> >>                       continue;
->> >>
->> >>               return svm;
->> >> --
->> >> 1.8.4
->> >>
+There's really not much we can do to fix it either, barring softfloat in
+the load-balancer and I'm sure everybody but virt wankers will complain
+about _that_.
+
+--doRsZBpDQ+I4/+/t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdcK0AAoJEHZH4aRLwOS6LMsP/jJBZTfPRr4NUEXCks0aemCU
+dtqK+n6hGy02clUPIL0peE2/ptIZvHJizg9B21aTKJKOBna8q9FxbkUTW177HLdt
+zUNCvjBw/VopPacBOpWNuhowP48AlTzx/ftKIE7tiGyIdJt+c8acHDQRKUV491WP
+fQfFS3Ge59Oc2XuT023+rNPJ9MgnKOG3OUPip2eLPbztEJVXpBVKX/NXg+97vTRG
+vuRG+nV1Gh7t5Sz64jrCCLcAUQvJnT5QoFnpPt7iGRlJ2ybOcls5TTVtTY7WV4fs
+3EDpWPK6FJDny3JgH6DLaqos4R2tUd8hWW/BJKtBOYsfYfXgqJPq7B/8RRkq7lsn
+iPPTZTh/au4YU8xN6sDK4Hga9YHZDxLi0Y38UNZ3YZRy8OewIK8Gs40OKvkxQ004
+OlX6kwCy7koLF+w2d8dQpC8z8EnxutBCXVNa4jnxOGRK9kI5Dg85CEvadawKvCfS
+GCMtPDJ3kgNJNFp3HnnOP/Ou3katSI5qvObYTSHZs1JtB4cBOcFKC5gSPv4u4Dxg
+8InsUDsAz9TbjjF9aLgzQlg7aUgCNP1PbkCrU1VmART7D9McF0dN+vy51wz6Z0tP
+mSe7OMA/shNAC0eq5tD0863iUF6eB58pAFeFI7TUpZmkw4UbIJsG0G1HPTBDWNyz
+qCXJUaWPxC8lBKuS7HzD
+=W2Af
+-----END PGP SIGNATURE-----
+
+--doRsZBpDQ+I4/+/t--
