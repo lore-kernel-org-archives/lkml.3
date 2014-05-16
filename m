@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaEPBYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 21:24:10 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59934 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaEPBYJ (ORCPT
+	id S1752869AbaEPB3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 21:29:18 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:20418 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaEPB3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 21:24:09 -0400
-Message-ID: <537568B5.9060208@gmail.com>
-Date: Thu, 15 May 2014 20:24:05 -0500
-From: David Hagood <david.hagood@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 15 May 2014 21:29:16 -0400
+Message-ID: <537569B8.5050402@huawei.com>
+Date: Fri, 16 May 2014 09:28:24 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Bug? Older 32 bit program (CivCTP) no longer works under 64 bit kernel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hannes@cmpxchg.org>
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: iterate cgroup_subsys_states
+ directly
+References: <1399671091-23867-1-git-send-email-tj@kernel.org> <5372EF45.8060701@huawei.com> <20140514130722.GE28815@htj.dyndns.org>
+In-Reply-To: <20140514130722.GE28815@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an old native Linux 32 bit copy of Civilization: Call to Power. 
-It used to work under a 64 bit environment back in the 3.0.x days. 
-However, under recent versions (>3.5) it no longer runs - it complains 
-that it cannot find certain files in the directory. The exact same code 
-will run just fine under a 32 bit version of 3.11. I have a Pentium II 
-as well as the Core 2 Duo, both running Ubuntu 14.04, same version of 
-the kernel other than one is 32 bit and one is 64 bit. I've copied the 
-files over from the 32 bit machine, where it runs, to the 64 bit 
-machine, where it does not. I've even gone so far as to copy all the 
-system 32 bit libraries into the CivCTP directory, and forced the 
-program to use them (including using the ld-linux.so loader from that 
-directory) - so in theory it's all the same user space libraries running 
-- the only difference that I can see is that one kernel is 64 bit and 
-one is 32 bit.
+On2014/5/14 21:07, Tejun Heo wrote:
+> Hello, Li.
+> 
+> On Wed, May 14, 2014 at 12:21:25PM +0800, Li Zefan wrote:
+>>> There are now use cases where controllers need to iterate through
+>>> csses regardless of their online state as long as they have positive
+>>
+>> What use cases are we talking about here?
+> 
+> memcg wants to be able to iterate all csses whose refcnts haven't
+> reached zero yet so that it can treat offline csses the same way as
+> online ones in terms of memory reclaim.  They don't contain new tasks
+> so new charges won't be created but offlining won't try to transfer
+> all charges to the parent but just leave the offline child attached
+> until all charges are eventually reclaimed from the pressure from the
+> parent.
+> 
+> I'm not too familiar with the details but this makes sense in generic
+> sense too.  Offline marks an object starting its draining phase and
+> release marks the actual destruction point.  For controllers with
+> persistent states like memcg, it's a lot more natural to deal offlined
+> csses as "active but draining following the usual hierarchical
+> operation" rather than trying to explicitly update the states from
+> offline to move them to the parent especially as the effort there
+> essentially is a waste as most of those moved charges aren't gonna be
+> used in the parent and will be released eventually.
+> 
+> Guaranteeing iteration of offline but not-released csses allow
+> controllers to treat the draining stage between offline and release
+> more or less identically to online state which in turn can make
+> ->css_offline() significantly simpler and lighter.
+> 
 
-Running strace on the program shows that the directories being searched 
-for game assets are corrupted:
+yeah, fair enough.
 
-16218 stat64("/home/wowbaggr/CivCTP/ctdata/englisish/uidata/keymap.txt", 
-  <unfinished ...>
-
-Note the "englisish" rather than "english".
-
-I'm looking for any suggestions on where to look for what might cause 
-such an issue - what can I do to start tracking this down.
