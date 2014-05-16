@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaEPDz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 23:55:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218AbaEPDzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 23:55:25 -0400
-Message-ID: <1400212520.3289.156.camel@ul30vt.home>
-Subject: Re: [PATCH v2 00/15] PCI/iommu: Fix DMA alias problems
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andrew Cooks <acooks@gmail.com>
-Cc: "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Thu, 15 May 2014 21:55:20 -0600
-In-Reply-To: <CAJtEV7ZETiGMpPhR=drGArMyqpnGFZoR3CkKEELApP+86=Oyfw@mail.gmail.com>
-References: <20140509151735.8321.22017.stgit@bling.home>
-	 <CAJtEV7YYB4W_+nZeMgiqZVDV+M4OyFJVBic09z=KbMjOpihnTQ@mail.gmail.com>
-	 <1400175834.3289.65.camel@ul30vt.home>
-	 <CAJtEV7ZETiGMpPhR=drGArMyqpnGFZoR3CkKEELApP+86=Oyfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751741AbaEPEBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 00:01:41 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:44019 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaEPEBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 00:01:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <5375311B.2010202@gmail.com>
+References: <ANuQgHGSPJ45tbrVppAVpOqF0OfHacPWfX=S5mOVxTPr66f7vg@mail.gmail.com>
+	<1400054637-21505-1-git-send-email-chander.kashyap@linaro.org>
+	<1400054637-21505-6-git-send-email-chander.kashyap@linaro.org>
+	<5375311B.2010202@gmail.com>
+Date: Fri, 16 May 2014 09:31:38 +0530
+Message-ID: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/6] exynos: cpuidle: do not allow cpuidle registration
+ for Exynos5420
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 07:45 +0800, Andrew Cooks wrote:
-> Hi Alex
-> 
-> On Fri, May 16, 2014 at 1:43 AM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Thu, 2014-05-15 at 07:40 +0800, Andrew Cooks wrote:
-> >> Hi Alex
-> >>
-> >> On Fri, May 9, 2014 at 11:28 PM, Alex Williamson
-> >> <alex.williamson@redhat.com> wrote:
-> >> > ....
-> >> >
-> >> > Original description:
-> >> >
-> >> > This series attempts to fix a couple issues we've had outstanding in
-> >> > the PCI/IOMMU code for a while.  The first issue is with devices that
-> >> > use the wrong requester ID for DMA transactions.  We already have a
-> >> > sort of half-baked attempt to fix this for several Ricoh devices, but
-> >> > the fix only helps them be useful through IOMMU groups, not the
-> >> > general DMA case.  There are also several Marvell devices which use
-> >> > use a different wrong requester ID and don't even fit into the DMA
-> >> > source idea.  This series creates a DMA alias iterator that will
-> >> > step through each possible alias of a device, allowing IOMMUs to
-> >> > insert mappings for both the device and its aliases.
-> >> >
-> >> > Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
-> >> > function, which is known to blowup when it finds itself suddenly at
-> >> > a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
-> >> > the PCIe capability).  It also likes to make the invalid assumption
-> >> > that a PCIe device never has its requester ID masked by any usptream
-> >> > bus.  We can fix this using the above new DMA alias iterator, since
-> >> > that's effectively what this function was meant to do.
-> >> >
-> >>
-> >> There are two cases where the DMA requester id seems to use the wrong
-> >> slot (as opposed to function) in the patch I attached to
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=42679
-> >> The original bug reports are listed in the patch.
-> >>
-> >> Unfortunately, I wasn't able to get test feedback on those two cases,
-> >> but I'm wondering...
-> >> Did I understand correctly that a slot alias is something that could be needed?
-> >> If so, is it a variation of the PCIe-to-PCI bridge case that's already
-> >> covered or will it require a different approach?
-> >
-> > Wow, I didn't think that kind of broken was possible.  Maybe instead of
-> > a bitmap of function aliases we could have a single devfn alias for a
-> > device.  That means we'd only be able to support a single alias for a
-> > device, but since I don't think we've seen devices that use more than a
-> > single alias, maybe that's ok.
-> 
-> The current patch creates a context entry for the reported device
-> (function 0), plus it's alias (function 1). Is there reason to always
-> add a context entry for the reported devfn and define 'alias' to mean
-> 'one additional devfn'? That will work for all the Marvell cases.
+Hi Tomasz,
 
-Right, that's effectively what it would become, probably making use of a
-flag bit to indicate whether the alias devfn is valid.  The
-pci_for_each_dma_alias() would just drop the loop over the
-dma_alias_funcs bitmap at replace it with a test of the flag and single
-dma alias devfn.  I need to think about whether the IOMMU group code can
-is such a simple replacement.
+On 16 May 2014 02:56, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Chander,
+>
+> On 14.05.2014 10:03, Chander Kashyap wrote:
+>> Exynos5420 is big.Little Soc. It uses cpuidle-big-litle generic cpuidle driver.
+>> Hence do not allow exynos cpuidle driver registration for Exynos5420.
+>>
+>> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+>> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+>> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>  arch/arm/mach-exynos/cpuidle.c |    3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
+>> index 3dd385e..807a386 100644
+>> --- a/arch/arm/mach-exynos/cpuidle.c
+>> +++ b/arch/arm/mach-exynos/cpuidle.c
+>> @@ -218,6 +218,9 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
+>>       int cpu_id, ret;
+>>       struct cpuidle_device *device;
+>>
+>> +     if (soc_is_exynos5420())
+>> +             return -ENODEV;
+>> +
+>>       if (soc_is_exynos5250())
+>>               exynos5_core_down_clk();
+>>
+>>
+>
+> Why not put this in exynos.c in exynos_dt_machine_init(), so
+> exynos_cpuidle_init() is called only if not running on Exynos5420?
+>
 
-I think it makes sense to always include both the actual devfn and, if
-it exists, an alias devfn.  Otherwise we'd just end up with more quirks
-to add later.
+That makes more sense.
+I will update this
 
-> In the testing I did, the Marvell controllers needed context entries
-> for both function 0 and 1. It would be nice if someone could confirm
-> or debunk this. I tested with a 88SE9172 with both ports of the
-> controller in use.
+Thanks
+> Best regards,
+> Tomasz
 
-I think 0 needs to be quirked to 1, but I don't think 1 needs to be
-quirked to 0.  Unfortunately intel-iommu doesn't do any of the reference
-counting that amd_iommu does, so if we have 0 aliased to 1 and we unbind
-function 0 from the driver, intel-iommu will also teardown the mapping
-for function 1.  It's horrible.  That's a problem beyond what I'm trying
-to do here though, it already exists if you have two devices behind a
-PCIe-to-PCI bridge.  Thanks,
 
-Alex
 
+-- 
+with warm regards,
+Chander Kashyap
