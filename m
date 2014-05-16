@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbaEPIXh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:23:37 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:65095 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203AbaEPIXd (ORCPT
+	id S1756770AbaEPIYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:24:10 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54028 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656AbaEPIYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:23:33 -0400
-Message-ID: <5375CB0D.2080309@linaro.org>
-Date: Fri, 16 May 2014 10:23:41 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 16 May 2014 04:24:04 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Alexander Shiyan <shc_work@mail.ru>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] cpuidle: new driver for Cirrus Logic for 3.16
-References: <5360CF57.9050202@linaro.org>
-In-Reply-To: <5360CF57.9050202@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Fri, 16 May 2014 13:54:03 +0530
+Message-ID: <CAKohpo=SXFYEncSe__XQHQ588hTME7cbmS+ykeWZOOt4ESb2Pg@mail.gmail.com>
+Subject: Re: [PATCH v2] PM / OPP: discard duplicate OPP additions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Chander Kashyap <chander.kashyap@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16 May 2014 13:43, Chander Kashyap <chander.kashyap@linaro.org> wrote:
+> From: Chander Kashyap <k.chander@samsung.com>
+>
+> It may be possible to unregister and re-register the cpufreq driver.
+> One such example is arm big-little IKS cpufreq driver. While
+> re-registering the driver, same OPPs may get added again.
+>
+> This patch detects the duplicacy and discards them.
 
-Hi Rafael,
+Diff looks fine but not the log ofcourse. It doesn't have anything to do with
+big LITTLE.. Its just a patch to avoid addition of duplicate OPPs..
 
-just a head up in case you missed it.
+Also fix spelling mistakes in log..
 
-Thanks
-   -- Daniel
-
-On 04/30/2014 12:24 PM, Daniel Lezcano wrote:
->
-> Hi Rafael,
->
-> this pull request is based on top 3.15-rc3
->
->   * Alexander Shiyan added a new driver for the Cirrus Logic clps711x
->
-> Thanks
->    -- Daniel
->
-> The following changes since commit
-> d1db0eea852497762cab43b905b879dfcd3b8987:
->
->    Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
->
-> are available in the git repository at:
->
->    git://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.16
->
-> for you to fetch changes up to 7c7f8f7f2c6bf078874e5de35d7e2c66467fc664:
->
->    ARM: clps711x: Add cpuidle driver (2014-04-30 01:33:02 +0200)
->
-> ----------------------------------------------------------------
-> Alexander Shiyan (1):
->        ARM: clps711x: Add cpuidle driver
->
->   drivers/cpuidle/Kconfig.arm        |    6 ++++
->   drivers/cpuidle/Makefile           |    1 +
->   drivers/cpuidle/cpuidle-clps711x.c |   64
-> ++++++++++++++++++++++++++++++++++++
->   3 files changed, 71 insertions(+)
->   create mode 100644 drivers/cpuidle/cpuidle-clps711x.c
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+And subject should be:
+PM / OPP: discard duplicate OPPs
