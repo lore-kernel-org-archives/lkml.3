@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168AbaEPLQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:16:35 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52338 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806AbaEPLQd (ORCPT
+	id S1757203AbaEPLQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:16:45 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:53555 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756806AbaEPLQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:16:33 -0400
-From: Javi Merino <javi.merino@arm.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Punit.Agrawal@arm.com, Javi Merino <javi.merino@arm.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH] thermal: document struct thermal_zone_device and thermal_governor
-Date: Fri, 16 May 2014 12:16:08 +0100
-Message-Id: <1400238968-8816-1-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 16 May 2014 11:16:39.0807 (UTC) FILETIME=[4F15E8F0:01CF70F8]
-X-MC-Unique: 114051612163121101
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 16 May 2014 07:16:42 -0400
+Date: Fri, 16 May 2014 13:16:46 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: walter harms <wharms@bfs.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140516111646.GC4366@lianli>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+ <5375EB13.8000200@bfs.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5375EB13.8000200@bfs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4GBGklK021472
 
-Document struct struct thermal_zone_device and struct thermal_governor
-fields and their use by the thermal framework code.
+Hello Walter,
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
+> 
+> 
+> Am 16.05.2014 11:54, schrieb Emil Goode:
+> > If we fail to allocate struct platform_device pdev we
+> > dereference it after the goto label err.
+> > 
+> > I have rearranged the error handling a bit to fix the issue
+> > and also make it more clear.
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > ---
+> > v2: Changed to return -ENOMEM instead of ret where possible and
+> >     updated the subject line.
+> > 
+> >  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+> >  1 file changed, 13 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > index fc4dd7c..68f2a4a 100644
+> > --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+> >  
+> >  	pdev = platform_device_alloc("mx3-camera", 0);
+> >  	if (!pdev)
+> > -		goto err;
+> > +		return ERR_PTR(-ENOMEM);
+> >  
+> >  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+> >  	if (!pdev->dev.dma_mask)
+> > -		goto err;
+> > +		goto put_pdev;
+> >  
+> >  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+> >  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> >  
+> >  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+> >  	if (ret)
+> > -		goto err;
+> > +		goto free_dma_mask;
+> >  
+> >  	if (pdata) {
+> >  		struct mx3_camera_pdata *copied_pdata;
+> >  
+> >  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+> > -		if (ret) {
+> > -err:
+> > -			kfree(pdev->dev.dma_mask);
+> > -			platform_device_put(pdev);
+> > -			return ERR_PTR(-ENODEV);
+> > -		}
+> > +		if (ret)
+> > +			goto free_dma_mask;
+> > +
+> >  		copied_pdata = dev_get_platdata(&pdev->dev);
+> >  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
+> 
+> 
+> the patch is fine, but what use is this copied_pdata ?
+> It scope ends next line ?
+> 
+> re,
+>  wh
 
----
+I also thought that looked a bit odd, but copied_pdata is a temporary
+pointer to platform_data of the dev struct.
 
-Hi linux-pm,
+dev_get_platdata looks like this:
 
-I have some patches that add new fields to these structures but I
-don't have a good place to describe those fields as these structs are
-mostly undocumented so I thought I'd document them.
+static inline void *dev_get_platdata(const struct device *dev)
+{
+        return dev->platform_data;
+}
 
-I'm unsure about some of the descriptions, specially for passive and
-forced_passive so please review them.
+So I believe it's a more compact way of writing:
 
- include/linux/thermal.h |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
+pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
 
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index f7e11c7ea7d9..af928c667dba 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -158,6 +158,40 @@ struct thermal_attr {
- 	char name[THERMAL_NAME_LENGTH];
- };
- 
-+/**
-+ * struct thermal_zone_device - structure for a thermal zone
-+ * @id:		unique id number for each thermal zone
-+ * @type:	the thermal zone device type
-+ * @device:	struct device for this thermal zone
-+ * @trip_temp_attrs:	attributes for trip points for sysfs: trip temperature
-+ * @trip_type_attrs:	attributes for trip points for sysfs: trip type
-+ * @trip_hyst_attrs:	attributes for trip points for sysfs: trip hysteresis
-+ * @devdata:	private pointer for device private data
-+ * @trips:	number of trip points the thermal zone supports
-+ * @passive_delay:	number of milliseconds to wait between polls when
-+ *			performing passive cooling.  Only used by the step-wise
-+ *			governor
-+ * @polling_delay:	number of milliseconds to wait between polls when
-+ *			checking whether trip points have been crossed (0 for
-+ *			interrupt driven systems)
-+ * @temperature:	current temperature.  This is only for core code,
-+ *			drivers should use thermal_zone_get_temp() to get the
-+ *			current temperature
-+ * @last_temperature:	previous temperature read
-+ * @emul_temperature:	emulated temperature when using CONFIG_THERMAL_EMULATION
-+ * @passive:	step-wise specific parameter.  1 if you've crossed a passive
-+ *		trip point, 0 otherwise
-+ * @forced_passive:	step-wise specific parameter.  If > 0, temperature at
-+ *			which to switch on all cpufreq cooling devices.
-+ * @ops:	operations this thermal_zone_device supports
-+ * @tzp:	thermal zone parameters
-+ * @governor:	pointer to the governor for this thermal zone
-+ * @thermal_instances:	list of struct thermal_instance of this thermal zone
-+ * @idr:	struct idr to generate unique id for this zone's cooling devices
-+ * @lock:	lock to protect thermal_instances list
-+ * @node:	node in thermal_tz_list (in thermal_core.c)
-+ * @poll_queue:	delayed work for polling
-+ */
- struct thermal_zone_device {
- 	int id;
- 	char type[THERMAL_NAME_LENGTH];
-@@ -179,12 +213,18 @@ struct thermal_zone_device {
- 	struct thermal_governor *governor;
- 	struct list_head thermal_instances;
- 	struct idr idr;
--	struct mutex lock; /* protect thermal_instances list */
-+	struct mutex lock;
- 	struct list_head node;
- 	struct delayed_work poll_queue;
- };
- 
--/* Structure that holds thermal governor information */
-+/**
-+ * struct thermal_governor - structure that holds thermal governor information
-+ * @name:	name of the governor
-+ * @throttle:	callback called for every trip point even if temperature is
-+ *		below the trip point temperature
-+ * @governor_list:	node in thermal_governor_list (in thermal_core.c)
-+ */
- struct thermal_governor {
- 	char name[THERMAL_NAME_LENGTH];
- 	int (*throttle)(struct thermal_zone_device *tz, int trip);
--- 
-1.7.9.5
+Best regards,
 
+Emil Goode
 
+> 
+> >  	}
+> >  
+> >  	return pdev;
+> > +
+> > +free_dma_mask:
+> > +	kfree(pdev->dev.dma_mask);
+> > +put_pdev:
+> > +	platform_device_put(pdev);
+> > +
+> > +	return ERR_PTR(ret);
+> >  }
+> >  
+> >  struct platform_device *__init imx_add_mx3_sdc_fb(
