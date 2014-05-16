@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991AbaEPVLk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:11:40 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27894 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320AbaEPVLf (ORCPT
+	id S1756192AbaEPVL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 17:11:56 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:33679 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139AbaEPVLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 17:11:35 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18a01JMvKgILjXBhT95VtVH
-Date: Fri, 16 May 2014 14:11:25 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: remove some dead code
-Message-ID: <20140516211125.GE12881@atomide.com>
-References: <1400181381.11786.18.camel@x220>
- <20140515194317.GB4752@drone.musicnaut.iki.fi>
+	Fri, 16 May 2014 17:11:53 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 16 May 2014 17:15:49 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 2/3] perf, ARM: use common PMU interrupt disabled code
+In-Reply-To: <alpine.DEB.2.10.1405161701160.11099@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.10.1405161712190.11099@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405161701160.11099@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515194317.GB4752@drone.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Aaro Koskinen <aaro.koskinen@iki.fi> [140515 12:48]:
-> On Thu, May 15, 2014 at 09:16:21PM +0200, Paul Bolle wrote:
-> > A check for CONFIG_CBUS_TAHVO_USB was added in v2.6.17. The related
-> > Kconfig symbol has never been part of the tree. Remove that check.
-> > 
-> > Replace the while (...) loop with a simple if (...) statement, while
-> > we're at it.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> 
-> Acked-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> 
-> > ---
-> > Untested, as usual.
-> > 
-> > A quick search across the history of the tree suggests CBUS_TAHVO_USB
-> > was N770 related. Not that this matters much.
-> 
-> Yes, Tahvo USB is only used on Nokia 770 (which is the correct name,
-> not N770). The driver is nowadays behind TAHVO_USB, but like you said
-> the old symbol was never part of the mainline so it's OK to delete it.
 
-Thanks applying into omap-for-v3.16/board.
+Make the ARM perf code use the new common PMU interrupt disabled code.
 
-Tony
+This allows perf to work on ARM machines without a working PMU
+interrupt (for example, raspberry pi).
+
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index a6bc431..4238bcb 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -410,7 +410,7 @@ __hw_perf_event_init(struct perf_event *event)
+ 	 */
+ 	hwc->config_base	    |= (unsigned long)mapping;
+ 
+-	if (!hwc->sample_period) {
++	if (!is_sampling_event(event)) {
+ 		/*
+ 		 * For non-sampling runs, limit the sample_period to half
+ 		 * of the counter width. That way, the new counter value
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index 51798d7..63d95fa 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -126,8 +126,8 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 
+ 	irqs = min(pmu_device->num_resources, num_possible_cpus());
+ 	if (irqs < 1) {
+-		pr_err("no irqs for PMUs defined\n");
+-		return -ENODEV;
++		printk_once("no irqs for PMU defined, sampled events not supported\n");
++		return 0;
+ 	}
+ 
+ 	irq = platform_get_irq(pmu_device, 0);
+@@ -191,6 +191,11 @@ static void cpu_pmu_init(struct arm_pmu *cpu_pmu)
+ 	/* Ensure the PMU has sane values out of reset. */
+ 	if (cpu_pmu->reset)
+ 		on_each_cpu(cpu_pmu->reset, cpu_pmu, 1);
++
++	/* If no interrupts available, set the corresponding capability flag */
++	if (platform_get_irq(cpu_pmu->plat_device, 0) <= 0) {
++		cpu_pmu->pmu.capabilities |= PERF_PMU_NO_INTERRUPT;
++	}
+ }
+ 
+ /*
