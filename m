@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675AbaEPWxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:53:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51719 "EHLO
+	id S2992441AbaEPWxu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:53:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385AbaEPWwZ (ORCPT
+	with ESMTP id S1756251AbaEPWwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:52:25 -0400
+	Fri, 16 May 2014 18:52:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.4 8/9] powerpc: Add vr save/restore functions
-Date: Fri, 16 May 2014 15:55:31 -0700
-Message-Id: <20140516225458.888702236@linuxfoundation.org>
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 5/9] net: Add net_ratelimited_function and net_<level>_ratelimited macros
+Date: Fri, 16 May 2014 15:55:28 -0700
+Message-Id: <20140516225458.805467686@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -30,245 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Joe Perches <joe@perches.com>
 
-commit 8fe9c93e7453e67b8bd09f263ec1bb0783c733fc upstream.
+commit 3a3bfb61e64476ff1e4ac3122cb6dec9c79b795c upstream.
 
-GCC 4.8 now generates out-of-line vr save/restore functions when
-optimizing for size.  They are needed for the raid6 altivec support.
+__ratelimit() can be considered an inverted bool test because
+it returns true when not ratelimited.  Several tests in the
+kernel tree use this __ratelimit() function incorrectly.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
+No net_ratelimit uses are incorrect currently though.
+
+Most uses of net_ratelimit are to log something via printk or
+pr_<level>.
+
+In order to minimize the uses of net_ratelimit, and to start
+standardizing the code style used for __ratelimit() and net_ratelimit(),
+add a net_ratelimited_function() macro and net_<level>_ratelimited()
+logging macros similar to pr_<level>_ratelimited that use the global
+net_ratelimit instead of a static per call site "struct ratelimit_state".
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/lib/crtsavres.S |  186 +++++++++++++++++++++++++++++++++++++++++++
- scripts/mod/modpost.c        |    8 +
- 2 files changed, 192 insertions(+), 2 deletions(-)
+ include/linux/net.h |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/arch/powerpc/lib/crtsavres.S
-+++ b/arch/powerpc/lib/crtsavres.S
-@@ -230,6 +230,87 @@ _GLOBAL(_rest32gpr_31_x)
- 	mr	1,11
- 	blr
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -259,6 +259,29 @@ extern struct socket *sockfd_lookup(int
+ #define		     sockfd_put(sock) fput(sock->file)
+ extern int	     net_ratelimit(void);
  
-+#ifdef CONFIG_ALTIVEC
-+/* Called with r0 pointing just beyond the end of the vector save area.  */
++#define net_ratelimited_function(function, ...)			\
++do {								\
++	if (net_ratelimit())					\
++		function(__VA_ARGS__);				\
++} while (0)
 +
-+_GLOBAL(_savevr_20)
-+	li	r11,-192
-+	stvx	vr20,r11,r0
-+_GLOBAL(_savevr_21)
-+	li	r11,-176
-+	stvx	vr21,r11,r0
-+_GLOBAL(_savevr_22)
-+	li	r11,-160
-+	stvx	vr22,r11,r0
-+_GLOBAL(_savevr_23)
-+	li	r11,-144
-+	stvx	vr23,r11,r0
-+_GLOBAL(_savevr_24)
-+	li	r11,-128
-+	stvx	vr24,r11,r0
-+_GLOBAL(_savevr_25)
-+	li	r11,-112
-+	stvx	vr25,r11,r0
-+_GLOBAL(_savevr_26)
-+	li	r11,-96
-+	stvx	vr26,r11,r0
-+_GLOBAL(_savevr_27)
-+	li	r11,-80
-+	stvx	vr27,r11,r0
-+_GLOBAL(_savevr_28)
-+	li	r11,-64
-+	stvx	vr28,r11,r0
-+_GLOBAL(_savevr_29)
-+	li	r11,-48
-+	stvx	vr29,r11,r0
-+_GLOBAL(_savevr_30)
-+	li	r11,-32
-+	stvx	vr30,r11,r0
-+_GLOBAL(_savevr_31)
-+	li	r11,-16
-+	stvx	vr31,r11,r0
-+	blr
++#define net_emerg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
++#define net_alert_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
++#define net_crit_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
++#define net_err_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
++#define net_notice_ratelimited(fmt, ...)			\
++	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
++#define net_warn_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
++#define net_info_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
++#define net_dbg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
 +
-+_GLOBAL(_restvr_20)
-+	li	r11,-192
-+	lvx	vr20,r11,r0
-+_GLOBAL(_restvr_21)
-+	li	r11,-176
-+	lvx	vr21,r11,r0
-+_GLOBAL(_restvr_22)
-+	li	r11,-160
-+	lvx	vr22,r11,r0
-+_GLOBAL(_restvr_23)
-+	li	r11,-144
-+	lvx	vr23,r11,r0
-+_GLOBAL(_restvr_24)
-+	li	r11,-128
-+	lvx	vr24,r11,r0
-+_GLOBAL(_restvr_25)
-+	li	r11,-112
-+	lvx	vr25,r11,r0
-+_GLOBAL(_restvr_26)
-+	li	r11,-96
-+	lvx	vr26,r11,r0
-+_GLOBAL(_restvr_27)
-+	li	r11,-80
-+	lvx	vr27,r11,r0
-+_GLOBAL(_restvr_28)
-+	li	r11,-64
-+	lvx	vr28,r11,r0
-+_GLOBAL(_restvr_29)
-+	li	r11,-48
-+	lvx	vr29,r11,r0
-+_GLOBAL(_restvr_30)
-+	li	r11,-32
-+	lvx	vr30,r11,r0
-+_GLOBAL(_restvr_31)
-+	li	r11,-16
-+	lvx	vr31,r11,r0
-+	blr
-+
-+#endif /* CONFIG_ALTIVEC */
-+
- #else /* CONFIG_PPC64 */
+ #define net_random()		random32()
+ #define net_srandom(seed)	srandom32((__force u32)seed)
  
- .globl	_savegpr0_14
-@@ -353,6 +434,111 @@ _restgpr0_31:
- 	mtlr	r0
- 	blr
- 
-+#ifdef CONFIG_ALTIVEC
-+/* Called with r0 pointing just beyond the end of the vector save area.  */
-+
-+.globl	_savevr_20
-+_savevr_20:
-+	li	r12,-192
-+	stvx	vr20,r12,r0
-+.globl	_savevr_21
-+_savevr_21:
-+	li	r12,-176
-+	stvx	vr21,r12,r0
-+.globl	_savevr_22
-+_savevr_22:
-+	li	r12,-160
-+	stvx	vr22,r12,r0
-+.globl	_savevr_23
-+_savevr_23:
-+	li	r12,-144
-+	stvx	vr23,r12,r0
-+.globl	_savevr_24
-+_savevr_24:
-+	li	r12,-128
-+	stvx	vr24,r12,r0
-+.globl	_savevr_25
-+_savevr_25:
-+	li	r12,-112
-+	stvx	vr25,r12,r0
-+.globl	_savevr_26
-+_savevr_26:
-+	li	r12,-96
-+	stvx	vr26,r12,r0
-+.globl	_savevr_27
-+_savevr_27:
-+	li	r12,-80
-+	stvx	vr27,r12,r0
-+.globl	_savevr_28
-+_savevr_28:
-+	li	r12,-64
-+	stvx	vr28,r12,r0
-+.globl	_savevr_29
-+_savevr_29:
-+	li	r12,-48
-+	stvx	vr29,r12,r0
-+.globl	_savevr_30
-+_savevr_30:
-+	li	r12,-32
-+	stvx	vr30,r12,r0
-+.globl	_savevr_31
-+_savevr_31:
-+	li	r12,-16
-+	stvx	vr31,r12,r0
-+	blr
-+
-+.globl	_restvr_20
-+_restvr_20:
-+	li	r12,-192
-+	lvx	vr20,r12,r0
-+.globl	_restvr_21
-+_restvr_21:
-+	li	r12,-176
-+	lvx	vr21,r12,r0
-+.globl	_restvr_22
-+_restvr_22:
-+	li	r12,-160
-+	lvx	vr22,r12,r0
-+.globl	_restvr_23
-+_restvr_23:
-+	li	r12,-144
-+	lvx	vr23,r12,r0
-+.globl	_restvr_24
-+_restvr_24:
-+	li	r12,-128
-+	lvx	vr24,r12,r0
-+.globl	_restvr_25
-+_restvr_25:
-+	li	r12,-112
-+	lvx	vr25,r12,r0
-+.globl	_restvr_26
-+_restvr_26:
-+	li	r12,-96
-+	lvx	vr26,r12,r0
-+.globl	_restvr_27
-+_restvr_27:
-+	li	r12,-80
-+	lvx	vr27,r12,r0
-+.globl	_restvr_28
-+_restvr_28:
-+	li	r12,-64
-+	lvx	vr28,r12,r0
-+.globl	_restvr_29
-+_restvr_29:
-+	li	r12,-48
-+	lvx	vr29,r12,r0
-+.globl	_restvr_30
-+_restvr_30:
-+	li	r12,-32
-+	lvx	vr30,r12,r0
-+.globl	_restvr_31
-+_restvr_31:
-+	li	r12,-16
-+	lvx	vr31,r12,r0
-+	blr
-+
-+#endif /* CONFIG_ALTIVEC */
-+
- #endif /* CONFIG_PPC64 */
- 
- #endif
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -569,12 +569,16 @@ static int ignore_undef_symbol(struct el
- 		if (strncmp(symname, "_restgpr_", sizeof("_restgpr_") - 1) == 0 ||
- 		    strncmp(symname, "_savegpr_", sizeof("_savegpr_") - 1) == 0 ||
- 		    strncmp(symname, "_rest32gpr_", sizeof("_rest32gpr_") - 1) == 0 ||
--		    strncmp(symname, "_save32gpr_", sizeof("_save32gpr_") - 1) == 0)
-+		    strncmp(symname, "_save32gpr_", sizeof("_save32gpr_") - 1) == 0 ||
-+		    strncmp(symname, "_restvr_", sizeof("_restvr_") - 1) == 0 ||
-+		    strncmp(symname, "_savevr_", sizeof("_savevr_") - 1) == 0)
- 			return 1;
- 	if (info->hdr->e_machine == EM_PPC64)
- 		/* Special register function linked on all modules during final link of .ko */
- 		if (strncmp(symname, "_restgpr0_", sizeof("_restgpr0_") - 1) == 0 ||
--		    strncmp(symname, "_savegpr0_", sizeof("_savegpr0_") - 1) == 0)
-+		    strncmp(symname, "_savegpr0_", sizeof("_savegpr0_") - 1) == 0 ||
-+		    strncmp(symname, "_restvr_", sizeof("_restvr_") - 1) == 0 ||
-+		    strncmp(symname, "_savevr_", sizeof("_savevr_") - 1) == 0)
- 			return 1;
- 	/* Do not ignore this symbol */
- 	return 0;
 
 
