@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320AbaEPNGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:06:36 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:58493 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215AbaEPNGe convert rfc822-to-8bit (ORCPT
+	id S1757346AbaEPNGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:06:44 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:54352 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757328AbaEPNGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:06:34 -0400
-X-Originating-IP: 162.38.105.221
-From: =?ISO-8859-1?Q?Sw=E2mi?= Petaramesh <swami@petaramesh.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: 3.14.4 Kernel BUG at fs/namei.c : KDE's kate + ecryptfs + BTRFS + LVM2 + LUKS
-Date: Fri, 16 May 2014 15:06:24 +0200
-Message-ID: <1496827.xlXt6pDnuG@zafu>
-Organization: Secte des Adorateurs de Cela
-User-Agent: KMail/4.13 (Linux/3.14.4-1-ARCH; KDE/4.13.0; x86_64; ; )
+	Fri, 16 May 2014 09:06:41 -0400
+Date: Fri, 16 May 2014 17:06:30 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@linux.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC 1/3] slub: keep full slabs on list for per memcg
+ caches
+Message-ID: <20140516130629.GE32113@esperanza>
+References: <cover.1399982635.git.vdavydov@parallels.com>
+ <bc70b480221f7765926c8b4d63c55fb42e85baaf.1399982635.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405141114040.16512@gentwo.org>
+ <20140515063441.GA32113@esperanza>
+ <alpine.DEB.2.10.1405151011210.24665@gentwo.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405151011210.24665@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I'm not subscribed to linux-kernel, pls copy me on the anwsers)
+On Thu, May 15, 2014 at 10:15:10AM -0500, Christoph Lameter wrote:
+> On Thu, 15 May 2014, Vladimir Davydov wrote:
+> 
+> > > That will significantly impact the fastpaths for alloc and free.
+> > >
+> > > Also a pretty significant change the logic of the fastpaths since they
+> > > were not designed to handle the full lists. In debug mode all operations
+> > > were only performed by the slow paths and only the slow paths so far
+> > > supported tracking full slabs.
+> >
+> > That's the minimal price we have to pay for slab re-parenting, because
+> > w/o it we won't be able to look up for all slabs of a particular per
+> > memcg cache. The question is, can it be tolerated or I'd better try some
+> > other way?
+> 
+> AFACIT these modifications all together will have a significant impact on
+> performance.
+> 
+> You could avoid the refcounting on free relying on the atomic nature of
+> cmpxchg operations. If you zap the per cpu slab then the fast path will be
+> forced to fall back to the slowpaths where you could do what you need to
+> do.
 
-Hi there,
+Hmm, looking at __slab_free once again, I tend to agree that we could
+rely on cmpxchg to do re-parenting: we could freeze all slabs of the
+cache being re-parented forcing every on-going kfree to do only a
+cmpxchg w/o touching any lists and taking any locks, and then unfreeze
+all the frozen slabs to the target cache. No need in the ugly "slow
+mode" I introduced in this patch set would be necessary then.
 
-# uname -a
-Linux zafu 3.14.4-1-ARCH #1 SMP PREEMPT Tue May 13 16:41:39 CEST 2014 x86_64 
-GNU/Linux
+But w/o ref-counting how can we make sure that all kfrees to the cache
+we are going to re-parent have been completed so that it can be safely
+destroyed? An example:
 
-I've seen the same thing happen several times in the last couple of months (so 
-with said kernel version + at least 3.13)
+  CPU0:                                 CPU1:
+  -----                                 -----
+  kfree(obj):
+    page = virt_to_head_page(obj)
+    s = page->slab_cache
+    slab_free(s, page, obj):
+      <<< gets preempted here
 
-Symptom: KDE's kate freezes while saving a small (arbitrary) text file.
+                                        reparent_slab_cache:
+                                          for each slab page
+                                            [...]
+                                            page->slab_cache = target_cache;
 
-(Yes, always KDE's kate and only KDE's kate, while saving a quite small text 
-file... Besides this, machine's stability is rock-solid.)
+                                          kmem_cache_destroy(old_cache)
 
-Afterwards the machine remains more or less able to access its filesystems, 
-however KDE's Dolphin file manager is usually dead as well.
+      <<< continues execution
+      c = s->cpu_slab /* s points to the previous owner cache,
+                         so we use-after-free here */
 
-Underlying is ecryptfs over BTRFS over LVM2 over LUKS (what else ?)
+If kfree were not preemptable, we could make reparent_slab_cache wait
+for all cpus to schedule() before destroying the cache to avoid this,
+but since it is, we need ref-counting...
 
-System logs :
+Thanks.
 
-
-kernel: ------------[ cut here ]------------
-kernel: kernel BUG at fs/namei.c:2404!
-kernel: invalid opcode: 0000 [#1] PREEMPT SMP 
-kernel: Modules linked in: nls_iso8859_1 usb_storage ctr ccm md5 fuse ecb 
-ecryptfs encrypted_keys sha1_ssse3 sha1_generic hmac trusted nls_utf8 
-nls_cp437 vfat fat uvcvideo
-kernel:  vboxdrv(O) sha256_ssse3 sha256_generic cbc dm_crypt dm_mod btrfs xor 
-raid6_pq hid_multitouch hid_generic hid_logitech_dj usbhid hid sd_mod 
-crc_t10dif atkbd libps2
-kernel: CPU: 0 PID: 2142 Comm: kate Tainted: G           O 3.14.4-1-ARCH #1
-kernel: Hardware name: ASUSTeK COMPUTER INC. X202EV/X202EV, BIOS X202EV.200 
-02/27/2013
-kernel: task: ffff8800a503bae0 ti: ffff880012dba000 task.ti: ffff880012dba000
-kernel: RIP: 0010:[<ffffffff811ca378>]  [<ffffffff811ca378>] may_delete+0x138/0x150
-kernel: RSP: 0018:ffff880012dbbd78  EFLAGS: 00010283
-kernel: RAX: ffff88006ae82cc0 RBX: ffff8800b0f23d80 RCX: 0000000d00001616
-kernel: RDX: 0000000000000000 RSI: ffff8800b0f23d80 RDI: ffff8800ba841568
-kernel: RBP: ffff880012dbbd98 R08: 7077732d6574616b R09: ffff8800b0f23c00
-kernel: R10: 8080808080808080 R11: fefefefefefefeff R12: ffff8800a3836918
-kernel: R13: ffff8800561501b8 R14: ffff8800b0f23d80 R15: ffff8800ba841568
-kernel: FS:  00007fe1e2648780(0000) GS:ffff88011ee00000(0000) 
-knlGS:0000000000000000
-kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-kernel: CR2: 00007f2875f70000 CR3: 0000000013ee5000 CR4: 00000000001407f0
-kernel: Stack:
-kernel:  ffff8800b0f23d80 ffff8800ba841568 ffff8800561501b8 ffff8800b0f23d80
-kernel:  ffff880012dbbdd8 ffffffff811ca6db 0000000000000000 ffff8800b0f23d80
-kernel:  ffff88006ae82cc0 ffff880012f0e000 ffff88008cc52000 ffff8800ba841568
-kernel: Call Trace:
-kernel:  [<ffffffff811ca6db>] vfs_unlink+0x2b/0x160
-kernel:  [<ffffffffa05afed5>] ecryptfs_do_unlink+0x65/0x120 [ecryptfs]
-kernel:  [<ffffffffa05affa2>] ecryptfs_unlink+0x12/0x20 [ecryptfs]
-kernel:  [<ffffffff811ca796>] vfs_unlink+0xe6/0x160
-kernel:  [<ffffffff811caaa9>] do_unlinkat+0x299/0x300
-kernel:  [<ffffffff811bc6fe>] ? ____fput+0xe/0x10
-kernel:  [<ffffffff8108c254>] ? task_work_run+0xb4/0xe0
-kernel:  [<ffffffff81016c55>] ? do_notify_resume+0x95/0xa0
-kernel:  [<ffffffff811cb986>] SyS_unlink+0x16/0x20
-kernel:  [<ffffffff81517769>] system_call_fastpath+0x16/0x1b
-kernel: Code: 1f 41 5d 83 e0 f0 41 5e 5d c3 66 0f 1f 84 00 00 00 00 00 b8 ff ff 
-ff ff eb b1 66 0f 1f 84 00 00 00 00 00 0f 0b 66 0f 1f 44 00 00 <0f> 0b 66 0f 1f 
-44 00 00 b8
-kernel: RIP  [<ffffffff811ca378>] may_delete+0x138/0x150
-kernel:  RSP <ffff880012dbbd78>
-kernel: ---[ end trace 73914218811ba28d ]---
-
--- 
-Swâmi Petaramesh <swami@petaramesh.org> http://petaramesh.org PGP 9076E32E
-
-
+> There is no tracking of full slabs without adding much more logic to the
+> fastpath. You could force any operation that affects tne full list into
+> the slow path. But that also would have an impact.
