@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaEPIIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:08:54 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47047 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023AbaEPIIr (ORCPT
+	id S1756784AbaEPIJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:09:24 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:51953 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773AbaEPIJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:08:47 -0400
-Date: Fri, 16 May 2014 17:08:10 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: rupesh.gujare@atmel.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: ozwpan: remove redundant NULL check for devs
-Message-ID: <20140516080810.GA16229@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Fri, 16 May 2014 04:09:16 -0400
+X-Google-Original-From: Jon Maxwell <jmaxwell@redhat.com>
+From: Jon Maxwell <jmaxwell37@gmail.com>
+To: stephen@networkplumber.org
+Cc: davem@davemloft.net, makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com,
+        Jon Maxwell <jmaxwell37@gmail.com>
+Subject: [PATCH net] bridge: notify user space of fdb port change
+Date: Fri, 16 May 2014 18:08:39 +1000
+Message-Id: <1400227719-18403-1-git-send-email-jmaxwell@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 1cebea7a40490d0d0b122eb444a105d424af42e6 Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Fri, 16 May 2014 17:02:04 +0900
-Subject: [PATCH] staging: ozwpan: remove redundant NULL check for devs
+From: Jon Maxwell <jmaxwell37@gmail.com>
 
-The "devs" is a pointer to g_net_dev in ozmain.c.
-g_net_dev has a default value as empty string.
-So "devs" cannot be NULL, removes NULL check for "devs".
+There has been a number incidents recently where customers running KVM have 
+reported that VM hosts on different Hypervisors are unreachable. Based on 
+pcap traces we found that the bridge was broadcasting the ARP request out 
+onto the network. However some NICs have an inbuilt switch which on occasions 
+were broadcasting the VMs ARP request back through the physical NIC on the 
+Hypervisor. This resulted in the bridge changing ports and incorrectly learning
+that the VMs mac address was external. As a result the ARP reply was directed 
+back onto the external network and VM never updated it's ARP cache. This patch 
+will notify the bridge command to identify such port toggling.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
 ---
- drivers/staging/ozwpan/ozproto.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/bridge/br_fdb.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index f09acd0..767cac4 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -765,7 +765,7 @@ static char *oz_get_next_device_name(char *s, char *dname, int max_size)
- int oz_protocol_init(char *devs)
- {
- 	skb_queue_head_init(&g_rx_queue);
--	if (devs && (devs[0] == '*')) {
-+	if (devs[0] == '*') {
- 		oz_binding_add(NULL);
+diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+index 9203d5a..67480c2 100644
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -511,6 +511,8 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
+ 			fdb->updated = jiffies;
+ 			if (unlikely(added_by_user))
+ 				fdb->added_by_user = 1;
++			if (unlikely(source->port_no != fdb->dst->port_no))
++				fdb_notify(br, fdb, RTM_NEWNEIGH);
+ 		}
  	} else {
- 		char d[32];
+ 		spin_lock(&br->hash_lock);
 -- 
-1.7.1
+1.8.3.1
 
