@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaEPQOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:14:23 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:55821 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071AbaEPQOW (ORCPT
+	id S1757566AbaEPQRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:17:05 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:63656 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215AbaEPQRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:14:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <53762EE4.6000808@nvidia.com>
-References: <1399175125-6430-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdYM5W2oVT0y25u+BhWHpVma5fRP8MgmEH46dAyu8L8-2g@mail.gmail.com>
-	<CAAVeFuLqF6d+-BHhFzL+w9bFNxbxWV97dsx1Kbd2GD1PNf3UFg@mail.gmail.com>
-	<CACRpkdYPcG-16aeMRKdbqGiz+coXE68p3u_tZNV2cYJgdp6j0g@mail.gmail.com>
-	<53762EE4.6000808@nvidia.com>
-Date: Fri, 16 May 2014 18:14:22 +0200
-Message-ID: <CACRpkdZ_b4xdzDLFUd625-LGMAw24_1qaUckdD-7ohKe9yLpzA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: make of_get_named_gpiod_flags() private
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 May 2014 12:17:03 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC PATCH 0/5] workqueue: Introduce low-level unbound wq sysfs cpumask v3
+Date: Fri, 16 May 2014 18:16:50 +0200
+Message-Id: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 05/17/2014 12:25 AM, Linus Walleij wrote:
+So in this version I actually save the cpumask belonging to wq (before
+it's intersected against the low level cpumask) in its unbounds attrs.
 
->> I got a horde of mails from Fengguang's autobuilder, I think you got
->> them as well ... else tell me and I'll dig them up.
->
-> Mmm, it seems like I didn't get any mail. Could you follow othem r point me
-> to where these results are visible?
+But the attrs passed to pwq and worker pools have the low level cpumask
+computed against the wq cpumask.
 
-OK I'll look...
+It makes it easier that way as the wq cpumask itself remains untouched.
+It's a user setting so it must stay intact. OTOH the cpumask of pwqs and
+worker pools only belong to the implementation so it's the right
+place to store the effective cpumask.
 
-Linus
+Also wq_update_unbound_numa() is fixed, and cpu_possible_mask() 
+is restored as a base. Thanks to Lai!
+
+Thanks,
+	Frederic
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+        core/workqueue-v5
+---
+
+Frederic Weisbecker (4):
+      workqueue: Reorder sysfs code
+      workqueue: Create low-level unbound workqueues cpumask
+      workqueue: Split apply attrs code from its locking
+      workqueue: Allow modifying low level unbound workqueue cpumask
+
+Lai Jiangshan (1):
+      workqueue: Allow changing attributions of ordered workqueues
+
+
+ kernel/workqueue.c | 1674 ++++++++++++++++++++++++++++------------------------
+ 1 file changed, 900 insertions(+), 774 deletions(-)
