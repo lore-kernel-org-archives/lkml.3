@@ -1,124 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899AbaEPQak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:30:40 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:36841 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757863AbaEPQai (ORCPT
+	id S1757455AbaEPQe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:34:28 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:42754 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaEPQe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:30:38 -0400
-Date: Fri, 16 May 2014 12:30:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [linux-next / akpm] Heads up on minor conflicts in mm/memcontrol.c
-Message-ID: <20140516163034.GF5379@htj.dyndns.org>
+	Fri, 16 May 2014 12:34:27 -0400
+Date: Fri, 16 May 2014 12:34:24 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/6] sched: remove remaining power to the CPU
+In-Reply-To: <CAM4v1pNpc+dpEd4KZ3k-uTxsu01gKBtusNvppaHeMdvdzf_i+Q@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405161230460.17310@knanqh.ubzr>
+References: <1400101030-17717-1-git-send-email-nicolas.pitre@linaro.org> <1400101030-17717-6-git-send-email-nicolas.pitre@linaro.org> <CAM4v1pNpc+dpEd4KZ3k-uTxsu01gKBtusNvppaHeMdvdzf_i+Q@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 16 May 2014, Preeti Murthy wrote:
 
-Today's cgroup/for-next contains aa190dd36dad ("cgroup: remove
-css_parent()").  The wrapper was added while transitioning
-cgroup-based hierarchy to css-based one.  css-based hierarchy is
-mostly getting into the shape now and the parent field is exported and
-expected to remain stable, so the patch removes the wrapper before
-updating the rest of hierarchy to be css-based.  This causes two
-trivial conflicts in mm/memcontrol.c with
-"f51add3a5415edbd2160f8c80ca338edebbaa734".
+> Hi Nicolas,
+> You might want to change the subject.
 
-  static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
-	  struct cftype *cft, u64 val)
-  {
-	  struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-  <<<<<<< HEAD
-  =======
-	  struct mem_cgroup *parent = mem_cgroup_from_css(memcg->css.parent);
-  >>>>>>> 141fdfadf18c10fed33624bbd414fcc0cb74d7ca
+That was a tongue-in-cheek subject. I was wondering if anyone would 
+react to it.  ;-)
 
-	  /* cannot set to root cgroup and only 0 and 1 are allowed */
-	  if (!css_parent(css) || !((val == 0) || (val == 1)))
-		  return -EINVAL;
+> s/sched: remove remaining power to the CPU/
+> sched: remove remaining usage of cpu *power* .
+> 
+> The subject has to explicitly specify in some way
+> that it is a change made to the terminology.
 
-	  memcg->oom_kill_disable = val;
-	  if (!val)
-		  memcg_oom_recover(memcg);
+Sure.
 
-	  return 0;
-  }
 
-  ...
-
-  static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
-					 struct cftype *cft, u64 val)
-  {
-	  struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-  <<<<<<< HEAD
-  =======
-	  struct mem_cgroup *parent = mem_cgroup_from_css(memcg->css.parent);
-
-	  if (val > 100 || !parent)
-		  return -EINVAL;
-
-	  mutex_lock(&memcg_create_mutex);
-  >>>>>>> 141fdfadf18c10fed33624bbd414fcc0cb74d7ca
-
-	  if (val > 100)
-		  return -EINVAL;
-
-	  if (css_parent(css))
-		  memcg->swappiness = val;
-	  else
-		  vm_swappiness = val;
-
-	  return 0;
-  }
-
-For both cases, the resolution is simple.  Take the code from akpm and
-change css_parent(css) to css->parent.
-
-  static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
-	  struct cftype *cft, u64 val)
-  {
-	  struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-
-	  /* cannot set to root cgroup and only 0 and 1 are allowed */
-	  if (!css->parent || !((val == 0) || (val == 1)))
-		  return -EINVAL;
-
-	  memcg->oom_kill_disable = val;
-	  if (!val)
-		  memcg_oom_recover(memcg);
-
-	  return 0;
-  }
-
-  ...
-
-  static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
-					 struct cftype *cft, u64 val)
-  {
-	  struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-
-	  if (val > 100)
-		  return -EINVAL;
-
-	  if (css->parent)
-		  memcg->swappiness = val;
-	  else
-		  vm_swappiness = val;
-
-	  return 0;
-  }
-										
-Thanks.
-
--- 
-tejun
+Nicolas
