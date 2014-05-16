@@ -1,122 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285AbaEPNdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:33:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54058 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaEPNdB (ORCPT
+	id S933193AbaEPOFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:05:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:28851 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757154AbaEPOFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:33:01 -0400
-Date: Fri, 16 May 2014 06:31:59 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-b1ee544174fd0eb28a7770403b9577fd70f1cd3d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        tony.luck@intel.com
-In-Reply-To: <20140507154334.482904047@linutronix.de>
-References: <20140507154334.482904047@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86: Implement arch_setup/teardown_hwirq()
-Git-Commit-ID: b1ee544174fd0eb28a7770403b9577fd70f1cd3d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 May 2014 10:05:10 -0400
+Message-Id: <20140516140502.628373326@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 16 May 2014 10:02:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Javi Merino <javi.merino@arm.com>
+Subject: [PATCH 4/4] tools lib traceevent: Added support for __get_bitmask() macro
+References: <20140516140215.149535442@goodmis.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Disposition: inline; filename=0004-tools-lib-traceevent-Added-support-for-__get_bitmask.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b1ee544174fd0eb28a7770403b9577fd70f1cd3d
-Gitweb:     http://git.kernel.org/tip/b1ee544174fd0eb28a7770403b9577fd70f1cd3d
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 7 May 2014 15:44:06 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 16 May 2014 14:05:18 +0200
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-x86: Implement arch_setup/teardown_hwirq()
+Coming in v3.16, trace events will be able to save bitmasks in raw
+format in the ring buffer and output it with the __get_bitmask() macro.
 
-This is just a cleanup to get rid of the create/destroy_irq variants
-which were designed in hell.
+In order for userspace tools to parse this, it must be able to handle
+the __get_bitmask() call and be able to convert the data that's in
+the ring buffer into a nice bitmask format. The output is similar to
+what the kernel uses to print bitmasks, with a comma separator every
+4 bytes (8 characters).
 
-The long term solution for x86 is to switch over to irq domains and
-cleanup the whole vector allocation mess.
+This allows for cpumasks to also be saved efficiently.
 
-The generic irq_alloc_hwirqs() interface deliberately prevents
-multi-MSI vector allocation to further enforce the irq domain
-conversion (aside of the desire to support ioapic hotplug).
+The first user is the thermal:thermal_power_limit event which has the
+following output:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20140507154334.482904047@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+ thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
+
+Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
+
+Suggested-by: Javi Merino <javi.merino@arm.com>
+Tested-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/Kconfig               |  1 +
- arch/x86/kernel/apic/io_apic.c | 33 +++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+ tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h                 |   7 ++
+ .../perf/util/scripting-engines/trace-event-perl.c |   1 +
+ .../util/scripting-engines/trace-event-python.c    |   1 +
+ 4 files changed, 122 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f..4724770 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -831,6 +831,7 @@ config X86_LOCAL_APIC
- config X86_IO_APIC
- 	def_bool y
- 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC || PCI_MSI
-+	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
- 
- config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
- 	bool "Reroute for broken boot IRQs"
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 992060e..b7175c0 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3010,6 +3010,39 @@ void destroy_irqs(unsigned int irq, unsigned int count)
- 		destroy_irq(irq + i);
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index b83184f2d484..2d6aa92bcd1f 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
+ 	case PRINT_BSTRING:
+ 		free(arg->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		free(arg->bitmask.bitmask);
++		break;
+ 	case PRINT_DYNAMIC_ARRAY:
+ 		free(arg->dynarray.index);
+ 		break;
+@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		ret = 0;
+@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		break;
+@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
+ 	return EVENT_ERROR;
  }
  
-+int arch_setup_hwirq(unsigned int irq, int node)
++static enum event_type
++process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
++	    char **tok)
 +{
-+	struct irq_cfg *cfg;
-+	unsigned long flags;
-+	int ret;
++	enum event_type type;
++	char *token;
 +
-+	cfg = alloc_irq_cfg(irq, node);
-+	if (!cfg)
-+		return -ENOMEM;
++	if (read_expect_type(EVENT_ITEM, &token) < 0)
++		goto out_free;
 +
-+	raw_spin_lock_irqsave(&vector_lock, flags);
-+	ret = __assign_irq_vector(irq, cfg, apic->target_cpus());
-+	raw_spin_unlock_irqrestore(&vector_lock, flags);
++	arg->type = PRINT_BITMASK;
++	arg->bitmask.bitmask = token;
++	arg->bitmask.offset = -1;
 +
-+	if (!ret)
-+		irq_set_chip_data(irq, cfg);
++	if (read_expected(EVENT_DELIM, ")") < 0)
++		goto out_err;
++
++	type = read_token(&token);
++	*tok = token;
++
++	return type;
++
++ out_free:
++	free_token(token);
++ out_err:
++	*tok = NULL;
++	return EVENT_ERROR;
++}
++
+ static struct pevent_function_handler *
+ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+ 	}
++	if (strcmp(token, "__get_bitmask") == 0) {
++		free_token(token);
++		return process_bitmask(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_dynamic_array") == 0) {
+ 		free_token(token);
+ 		return process_dynamic_array(event, arg, tok);
+@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		return eval_type(val, arg, 0);
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 		return 0;
+ 	case PRINT_FUNC: {
+ 		struct trace_seq s;
+@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
+ 		trace_seq_printf(s, format, str);
+ }
+ 
++static void print_bitmask_to_seq(struct pevent *pevent,
++				 struct trace_seq *s, const char *format,
++				 int len_arg, const void *data, int size)
++{
++	int nr_bits = size * 8;
++	int str_size = (nr_bits + 3) / 4;
++	int len = 0;
++	char buf[3];
++	char *str;
++	int index;
++	int i;
++
++	/*
++	 * The kernel likes to put in commas every 32 bits, we
++	 * can do the same.
++	 */
++	str_size += (nr_bits - 1) / 32;
++
++	str = malloc(str_size + 1);
++	if (!str) {
++		do_warning("%s: not enough memory!", __func__);
++		return;
++	}
++	str[str_size] = 0;
++
++	/* Start out with -2 for the two chars per byte */
++	for (i = str_size - 2; i >= 0; i -= 2) {
++		/*
++		 * data points to a bit mask of size bytes.
++		 * In the kernel, this is an array of long words, thus
++		 * endianess is very important.
++		 */
++		if (pevent->file_bigendian)
++			index = size - (len + 1);
++		else
++			index = len;
++
++		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
++		memcpy(str + i, buf, 2);
++		len++;
++		if (!(len & 3) && i > 0) {
++			i--;
++			str[i] = ',';
++		}
++	}
++
++	if (len_arg >= 0)
++		trace_seq_printf(s, format, len_arg, str);
 +	else
-+		free_irq_cfg(irq, cfg);
-+	return ret;
++		trace_seq_printf(s, format, str);
++
++	free(str);
 +}
 +
-+void arch_teardown_hwirq(unsigned int irq)
-+{
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	unsigned long flags;
+ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 			  struct event_format *event, const char *format,
+ 			  int len_arg, struct print_arg *arg)
+@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	case PRINT_BSTRING:
+ 		print_str_to_seq(s, format, len_arg, arg->string.string);
+ 		break;
++	case PRINT_BITMASK: {
++		int bitmask_offset;
++		int bitmask_size;
 +
-+	free_remapped_irq(irq);
-+	raw_spin_lock_irqsave(&vector_lock, flags);
-+	__clear_irq_vector(irq, cfg);
-+	raw_spin_unlock_irqrestore(&vector_lock, flags);
-+	free_irq_cfg(irq, cfg);
-+}
++		if (arg->bitmask.offset == -1) {
++			struct format_field *f;
 +
- /*
-  * MSI message composition
-  */
++			f = pevent_find_any_field(event, arg->bitmask.bitmask);
++			arg->bitmask.offset = f->offset;
++		}
++		bitmask_offset = data2host4(pevent, data + arg->string.offset);
++		bitmask_size = bitmask_offset >> 16;
++		bitmask_offset &= 0xffff;
++		print_bitmask_to_seq(pevent, s, format, len_arg,
++				     data + bitmask_offset, bitmask_size);
++		break;
++	}
+ 	case PRINT_OP:
+ 		/*
+ 		 * The only op for string should be ? :
+@@ -4822,6 +4932,9 @@ static void print_args(struct print_arg *args)
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		printf("__get_bitmask(%s)", args->bitmask.bitmask);
++		break;
+ 	case PRINT_TYPE:
+ 		printf("(%s)", args->typecast.type);
+ 		print_args(args->typecast.item);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index d6c610a66006..025627f55426 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -208,6 +208,11 @@ struct print_arg_string {
+ 	int			offset;
+ };
+ 
++struct print_arg_bitmask {
++	char			*bitmask;
++	int			offset;
++};
++
+ struct print_arg_field {
+ 	char			*name;
+ 	struct format_field	*field;
+@@ -274,6 +279,7 @@ enum print_arg_type {
+ 	PRINT_DYNAMIC_ARRAY,
+ 	PRINT_OP,
+ 	PRINT_FUNC,
++	PRINT_BITMASK,
+ };
+ 
+ struct print_arg {
+@@ -288,6 +294,7 @@ struct print_arg {
+ 		struct print_arg_hex		hex;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
++		struct print_arg_bitmask	bitmask;
+ 		struct print_arg_op		op;
+ 		struct print_arg_dynarray	dynarray;
+ 	};
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index e108207c5de0..af7da565a750 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -215,6 +215,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_STRING:
++	case PRINT_BITMASK:
+ 		break;
+ 	case PRINT_TYPE:
+ 		define_event_symbols(event, ev_name, args->typecast.item);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cd9774df3750..c3de0971bfdd 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -197,6 +197,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_FUNC:
++	case PRINT_BITMASK:
+ 		/* we should warn... */
+ 		return;
+ 	}
+-- 
+1.8.5.3
+
+
