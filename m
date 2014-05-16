@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315AbaEPOUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:20:31 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:52650 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757230AbaEPOU2 (ORCPT
+	id S1756655AbaEPOYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:24:39 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:52318 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaEPOYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:20:28 -0400
-Message-ID: <53761EA9.6060508@lwfinger.net>
-Date: Fri, 16 May 2014 09:20:25 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 16 May 2014 10:24:37 -0400
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-CC: akpm@linux-foundation.org, Chaoming Li <chaoming_li@realsil.com.cn>,
-        Dmitry Semyonov <linulin@gmail.com>
-Subject: Re: [PATCH 3.2 31/34] rtl8192ce: Fix null dereference in watchdog
-References: <lsq.1400244441.849613969@decadent.org.uk>
-In-Reply-To: <lsq.1400244441.849613969@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <0286550@agluck-desk.sc.intel.com>
+References: <20140408153412.0648fb96@gandalf.local.home>
+	<0286550@agluck-desk.sc.intel.com>
+Date: Fri, 16 May 2014 22:24:35 +0800
+Message-ID: <CAAhUcTTDQPZAC+Xg3u-KQvBwGX=B9HU5dnCjC7AJcUTDY2QLpw@mail.gmail.com>
+Subject: Re: [PATCH] time: Provide full featured jiffies_to_nsecs() function
+From: Shy Shuky <rousya@gmail.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>,
+        "xiexiuqi@huawei.com" <xiexiuqi@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 07:47 AM, Ben Hutchings wrote:
-> 3.2.59-rc1 review patch.  If anyone has any objections, please let me know.
+2014-04-09 1:32 GMT+08:00 Tony Luck <tony.luck@intel.com>:
+> The "uptime" tracer added in:
+>     commit 8aacf017b065a805d27467843490c976835eb4a5
+>     tracing: Add "uptime" trace clock that uses jiffies
+> has wraparound problems when the system has been up more
+> than 1 hour 11 minutes and 34 seconds. It converts jiffies
+> to nanoseconds using:
+>         (u64)jiffies_to_usecs(jiffy) * 1000ULL
+> but since jiffies_to_usecs() only returns a 32-bit value, it
+> truncates at 2^32 microseconds.  An additional problem on 32-bit
+> systems is that the argument is "unsigned long", so fixing the
+> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
+> system).
 >
-> ------------------
+> So we provide a full featured jiffies_to_nsec() function that
+> takes a "u64" argument and provides a "u64" result.  To avoid
+> cries of rage from the other user of this: scheduler_tick_max_deferment()
+> we check whether the argument is small enough that we can do
+> the calculations in 32-bit operations.
+
+Hi Tony,
+How about get uptime by get_monotonic_boottime() directly, which's
+the same as /proc/uptime.
+
+Then trace_clock_jiffies() would be like bellow:
+
+u64 notrace trace_clock_jiffies(void)
+        struct timespec uptime;
+        get_monotonic_boottime(&uptime);
+
+        return uptime.tv_sec * NSEC_PER_SEC + uptime.tv_nsec;
+}
+
+--
+XiuQi
+
 >
-> From: Ben Hutchings <ben@decadent.org.uk>
->
-> Dmitry Semyonov reported that after upgrading from 3.2.54 to
-> 3.2.57 the rtl8192ce driver will crash when its interface is brought
-> up.  The oops message shows:
->
-> [ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> [ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
-> ...
-> [ 1833.613326] Call Trace:
-> [ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
-> [ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
-> [ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
-> [ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
-> [ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
-> [ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
-> [ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
-> [ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
->
-> Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
-> parameter was null.  None of the changes to the rtlwifi family between
-> 3.2.54 and 3.2.57 seem to directly cause this, and reverting commit
-> f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
-> doesn't fix it.
->
-> rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
-> rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
-> call trace as it was inlined.  That function has been completely
-> removed upstream which may explain why this crash wasn't seen there.
->
-> I'm not sure that it is sensible to completely remove
-> rtl92c_dm_refresh_rate_adaptive_mask() without making other
-> compensating changes elsewhere, so try to work around this for 3.2 by
-> checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
-> and then skipping the call to rtl92ce_update_hal_rate_tbl().
->
-> References: https://bugs.debian.org/745137
-> References: https://bugs.debian.org/745462
-> Reported-by: Dmitry Semyonov <linulin@gmail.com>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Cc: Larry Finger <Larry.Finger@lwfinger.net>
-> Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
 > ---
-
-Ben,
-
-Your fix is a reasonable workaround. I have no explanation for this NULL pointer 
-dereference to suddenly appear; however, the pointer should have been checked 
-from the start.
-
-Thanks,
-
-Larry
-
+>  include/linux/jiffies.h    |  6 +-----
+>  kernel/time.c              | 24 ++++++++++++++++++++++++
+>  kernel/timeconst.bc        | 12 ++++++++++++
+>  kernel/trace/trace_clock.c |  2 +-
+>  4 files changed, 38 insertions(+), 6 deletions(-)
+...
