@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349AbaEPLqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:46:34 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:40229 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269AbaEPLqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:46:33 -0400
-Subject: Re: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after
- all initialization done
-From: ching <ching2048@areca.com.tw>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <5374AA96.7070206@redhat.com>
-References: <1400068509.6957.62.camel@localhost>
-	 <5373675B.5030102@redhat.com> <1400150952.7179.2.camel@localhost>
-	 <5374AA96.7070206@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 May 2014 19:46:24 +0800
-Message-ID: <1400240784.5489.14.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1756988AbaEPLsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754146AbaEPLsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 07:48:39 -0400
+Date: Fri, 16 May 2014 13:47:57 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
+Message-ID: <20140516114757.GD19475@krava.brq.redhat.com>
+References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
+ <1399999697-65875-7-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399999697-65875-7-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomas,
-
-Although in http://www.makelinux.net/ldd3/chp-7-sect-6, there said to flush the shared workqueue requires calling function
-flush_scheduled_work.
-
-But in kernel workqueue.c, there are comment of flush_scheduled_work said that 
-"In most situations flushing the entire workqueue is overkill; you merely need to know that a particular work item isn't
-queued and isn't running."
-
-In such cases use flush_work is OK.
-This can be proved in so many kernel device driver calling flush_work instead of flush_scheduled_work.
-
-
-On Thu, 2014-05-15 at 13:52 +0200, Tomas Henzl wrote:
-> On 05/15/2014 12:49 PM, ching wrote:
-> > Hi Tomas,
-> >
-> > Then I will have a patch 18/16 to replace flush_scheduled_work with flush_work.
-> > Thanks for your advice.
+On Tue, May 13, 2014 at 12:48:17PM -0400, Don Zickus wrote:
+> In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
+> particular sample instruction.  A bunch of those details relate to the data
+> address.
 > 
-> Here http://www.makelinux.net/ldd3/chp-7-sect-6 is a short text about workqueue,
-> the use of schedule_work in your sources means that you use the global queue.
-> If that is true, flush_scheduled_work is the right choice.
+> One interesting thing you can do with data addresses is to convert them into a unique
+> cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
+> them can reveal cache contention.
 > 
-> >
-> > On Wed, 2014-05-14 at 14:53 +0200, Tomas Henzl wrote:
-> >> On 05/14/2014 01:55 PM, ching wrote:
-> >>> From: Ching<ching2048@areca.com.tw>
-> >>>
-> >>> This is a new patch after patch v1.1 series.
-> >>>
-> >>> Fixed calling scsi_scan_host until all initialization are done.
-> >>> And fixed error path free allocated resource.
-> >>>
-> >>> Signed-off-by: Ching<ching2048@areca.com.tw>
-> >>> ---
-> >>>
-> >>> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> >>> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
-> >>> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
-> >>> @@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
-> >>>  static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
-> >>>  static const char *arcmsr_info(struct Scsi_Host *);
-> >>>  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
-> >>> +static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
-> >>>  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
-> >>>  					  int queue_depth, int reason)
-> >>>  {
-> >>> @@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
-> >>>  	}
-> >>>  	error = scsi_add_host(host, &pdev->dev);
-> >>>  	if(error){
-> >>> -		goto RAID_controller_stop;
-> >>> +		goto free_ccb_pool;
-> >>>  	}
-> >>>  	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
-> >>>  		goto scsi_host_remove;
-> >>>  	arcmsr_iop_init(acb);
-> >>> -    	scsi_scan_host(host);
-> >>>  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-> >>>  	atomic_set(&acb->rq_map_token, 16);
-> >>>  	atomic_set(&acb->ante_token_value, 16);
-> >>> @@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
-> >>>  	add_timer(&acb->eternal_timer);
-> >>>  	if(arcmsr_alloc_sysfs_attr(acb))
-> >>>  		goto out_free_sysfs;
-> >>> +    	scsi_scan_host(host);
-> >>>  	return 0;
-> >>>  out_free_sysfs:
-> >>> -scsi_host_remove:
-> >>> -	scsi_remove_host(host);
-> >>> -RAID_controller_stop:
-> >>> +	del_timer_sync(&acb->eternal_timer);
-> >>> + 	flush_work(&acb->arcmsr_do_message_isr_bh);
-> >> In your driver you use both flush_work(struct work_struct *) and flush_scheduled_work(),
-> >> the second form is used used to flush the shared workqueue. 
-> >> That said (and I think you use just one queue) you should decide which one is correct.
-> >> In my previous mail I have asked about flush_work because i have it seen elsewhere in
-> >> your code, now I've noticed the use of schedule_work and that means that you are using the global wq.
-> >>  
-> >>
-> >>>  	arcmsr_stop_adapter_bgrb(acb);
-> >>>  	arcmsr_flush_adapter_cache(acb);
-> >>> +	arcmsr_free_irq(pdev, acb);
-> >>> +scsi_host_remove:
-> >>> +	scsi_remove_host(host);
-> >>> +free_ccb_pool:
-> >>>  	arcmsr_free_ccb_pool(acb);
-> >>>  free_hbb_mu:
-> >>>  	arcmsr_free_mu(acb);
-> >>>
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+> This patch creates an alogorithm based on various sample details that can help group
+> entries together into data cachelines and allows 'perf report' to sort on it.
 > 
+> The algorithm relies on having proper mmap2 support in the kernel to help determine
+> if the memory map the data address belongs to is private to a pid or globally shared.
+> 
+> The alogortithm is as follows:
+> 
+> o group cpumodes together
+> o group entries with discovered maps together
+> o sort on major, minor, inode and inode generation numbers
+> o if userspace anon, then sort on pid
+> o sort on cachelines based on data addresses
+
+needs some collumn width refresh or something..? ;-)
+
+# Overhead  Data Cacheline         
+# ........  .......................
+#
+     5.42%  [k] 0xffff8801ed832c40 
+     5.29%  [.] sys_errlist@@GLIBC_2.12+0xffffffcbf7dfc1ff                       
+     3.16%  [k] 0xffffffffff5690c0 
 
 
+also I've got again perf hanged up on opening device file
+
+[jolsa@krava perf]$ sudo strace -p 29445
+Process 29445 attached
+open("/dev/snd/pcmC0D0p", O_RDONLY^CProcess 29445 detached
+
+another one I recall was /dev/dri/card0 touched by X server
+
+I guess those device files allow to mmap memory and we recorded
+memory access there.. we need check for this and do not try to
+open device files
+
+
+jirka
