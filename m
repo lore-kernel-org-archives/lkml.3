@@ -1,155 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaEPBuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 21:50:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42673 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaEPBuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 21:50:05 -0400
-Date: Fri, 16 May 2014 01:49:59 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
- namespaces
-Message-ID: <20140516014959.GD22591@ubuntumail>
-References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
- <20140515013245.GA1764@kroah.com>
- <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
- <20140515031527.GA146352@ubuntu-hedt>
- <20140515040032.GA6702@kroah.com>
- <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
- <20140515140856.GA17453@kroah.com>
- <20140515174254.GM21073@ubuntumail>
- <20140515221551.GB13306@kroah.com>
+	id S1752658AbaEPBwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 21:52:35 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.161]:18630 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751163AbaEPBwe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 May 2014 21:52:34 -0400
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-7.tower-39.messagelabs.com!1400205150!14624440!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [James Seong-Won Ban]" <James.Ban.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <Support.Opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [RESEND PATCH V1] regulator: DA9211 : new regulator driver
+Thread-Topic: [RESEND PATCH V1] regulator: DA9211 : new regulator driver
+Thread-Index: AQHPbyF453pPrZ4M6Ua5jim9lNYYRZtAdN+AgAH0gZA=
+Date: Fri, 16 May 2014 01:52:27 +0000
+Message-ID: <8494A6313F8C244E9D54EBA065DD5ACF5ACD3E6C@SW-EX-MBX02.diasemi.com>
+References: <201405140306.s4E36COM023118@swsrvapps-01.diasemi.com>
+ <20140514202029.GL12304@sirena.org.uk>
+In-Reply-To: <20140514202029.GL12304@sirena.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.95.27.226]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515221551.GB13306@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Greg Kroah-Hartman (gregkh@linuxfoundation.org):
-> On Thu, May 15, 2014 at 05:42:54PM +0000, Serge Hallyn wrote:
-> > What exactly defines '"normal" use case for a container'?
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Thursday, May 15, 2014 5:20 AM
+> To: Opensource [James Seong-Won Ban]
+> Cc: Liam Girdwood; Support Opensource; LKML; Guennadi Liakhovetski;
+> David Dajun Chen
+> Subject: Re: [RESEND PATCH V1] regulator: DA9211 : new regulator driver
 > 
-> Well, I'd say "acting like a virtual machine" is a good start :)
+> On Wed, May 14, 2014 at 04:02:34AM +0100, James Ban wrote:
+> > This is the driver for the Dialog DA9211 Multi-phase 12A DC-DC Buck
+> > Converter regulator. It communicates via an I2C bus to the device.
 > 
-> > Not too long ago much of what we can now do with network namespaces
-> > was not a normal container use case.  Neither "you can't do it now"
-> > nor "I don't use it like that" should be grounds for a pre-emptive
-> > nack.  "It will horribly break security assumptions" certainly would
-> > be.
+> This looks a lot like the DA9210 driver, is there really no opportunity for code
+> sharing here?
 > 
-> I agree, and maybe we will get there over time, but this patch is nto
-> the way to do that.
+DA9210 has only one buck. But DA9211 has two buck configuration.
+And the register map is different between two driver.
+So it is not possible to share the code. 
 
-Ok.  [ I/we may be asking for more details later, but think there is enough
-below :), particularly the point about event forwarding ]  Thanks.
-
-> > That's not to say there might not be good reasons why this in particular
-> > is not appropriate, but ISTM if things are going to be nacked without
-> > consideration of the patchset itself, we ought to be having a ksummit
-> > session to come to a consensus [ or receive a decree, presumably by you :)
-> > but after we have a chance to make our case ] on what things are going to
-> > be un/acceptable.
+> > +	/*
+> > +	 * There are two voltage register set A & B for voltage ramping but
+> > +	 * either one of then can be active therefore we first determine
+> > +	 * the active register set.
+> > +	 */
 > 
-> I already stood up and publically said this last year at Plumbers, why
-> is anything now different?
-
-Well I've simply never had a chance to talk to you since then to find out
-exactly what it is that is unacceptable, and why.  And, of course, code
-makes it easier to discuss these things.
-
-> And this patchset is proof of why it's not a good idea.  You really
-> didn't do anything with all of the namespace stuff, except change loop.
-> That's the only thing that cares, so, just do it there, like I said to
-> do so, last August.
-
-Sorry, just do it where?
-
-> And you are ignoring the notifications to userspace and how namespaces
-> here would deal with that.
-
-Good point.  Addressing that is at the same time necessary, interesting,
-and complicated.
-
-> > > > Serge mentioned something to me about a loopdevfs (?) thing that someone
-> > > > else is working on.  That would seem to be a better solution in this
-> > > > particular case but I don't know much about it or where it's at.
-> > > 
-> > > Ok, let's see those patches then.
-> > 
-> > I think Seth has a git tree ready, but not sure which branch he'd want
-> > us to look at.
-> > 
-> > Splitting a namespaced devtmpfs from loopdevfs discussion might be
-> > sensible.  However, in defense of a namespaced devtmpfs I'd say
-> > that for userspace to, at every container startup, bind-mount in
-> > devices from the global devtmpfs into a private tmpfs (for systemd's
-> > sake it can't just be on the container rootfs), seems like something
-> > worth avoiding.
+> I see this but...
 > 
-> I think having to pick and choose what device nodes you want in a
-> container is a good thing.  Becides, you would have to do the same thing
-> in the kernel anyway, what's wrong with userspace making the decision
-> here, especially as it knows exactly what it wants to do much more so
-> than the kernel ever can.
-
-For 'real' devices that sounds sensible.  The thing about loop devices
-is that we simply want to allow a container to say "give me a loop
-device to use" and have it receive a unique loop device (or 3), without
-having to pre-assign them.  I think that would be cleaner to do using
-a pseudofs and loop-control device, rather than having to have a
-daemon in userspace on the host farming those out in response to
-some, I don't know, dbus request?
-
-> > PS - Apparently both parallels and Michael independently
-> > project devices which are hot-plugged on the host into containers.
-> > That also seems like something worth talking about (best practices,
-> > shortcomings, use cases not met by it, any ways tha the kernel can
-> > help out) at ksummit/linuxcon.
+> > +	/* Select register set B for suspend voltage ramping. */
+> > +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
+> > +		ret = regmap_update_bits(chip->regmap, info->conf.reg,
+> > +					info->conf.sel_mask,
+> > +					DA9211_VBUCKA_SEL_B);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +	}
 > 
-> I was told that containers would never want devices hotplugged into
-> them.  What use case has this happening / needed?
+> ..this fairly clearly says that suspend mode is set B and normal mode is set A.
+> 
+This is a case with no gpio configuration.
+If gpio is configured, the active voltage A/B will be controlled by gpio.
+Function da9211_regulator_get/set_voltage_sel  is designed for covering both cases.
 
-I'm pretty sure I didn't say that <looks around nervously>.  But I guess
-we are combining two topics here, the loop psuedofs and the namespaced
-devtmpfs.
+> > +static int da9211_suspend_enable(struct regulator_dev *rdev) {
+> > +	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
+> > +	struct da9211_regulator_info *info = regulator->info;
+> > +	struct da9211 *chip = regulator->da9211;
+> > +
+> > +	/* Select register set B for voltage ramping. */
+> > +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO)
+> > +		return regmap_update_bits(chip->regmap, info->conf.reg,
+> > +					info->conf.sel_mask,
+> > +					DA9211_VBUCKA_SEL_B);
+> > +	else
+> > +		return 0;
+> > +}
+> 
+> This looks like it will immediately shift to the suspend voltage but what this
+> should do is set the voltage which will be set in suspend mode - something
+> else (usually a hardware signal during suspend) should actually enter it.
+> 
+The output voltage A/B of DA9211 could be selected by a hardware signal or register.
+So if there is no gpio configuration, B voltage channel should be selected during suspend mode.
+If user wants to stay same voltage level at suspend mode in case of no gpio configuration,
+user must set same voltage level at A/B register.
 
-The use case of loop-control device and loop pseudofs is to have
-multiple chrooted/namespaced programs be able to grab a loop device
-on demand which they can use for the obvious things (building a livecd,
-extracting file contents, etc) without stepping on each other's toes.  The
-namespaced devtmpfs is not required for this.
-
-One advantage of a namespaced devtmpfs would be sane-looking devices
-in unprivileged containers.  Currently we have to bind-mount the host's
-/dev/{full,zero,etc} which, due to uid and guid mappings, then shows up
-as:
-
-crw-rw-rw- 1 nobody nogroup   1, 7 May 12 13:35 full
-
-Also you mentioned uevent forwarding above.  Michael has talked several
-times about having userspace on the host 'pass' devices into the
-container.  One thing which I believe he and Eric have discussed
-before was how to have userspace in the container be notified when
-a device is passed in.  It seems to me that at least this is something
-that would be simpler done from devtmpfs.  I could be wrong on this -
-Michael do you have any updates or corrections?
-
-Still I think we may be all agreed that we could wait a bit longer and
-see how far we can get with userspace guidance (which we had
-originally decided a year ago, and again a year or two before that
-before user namespaces were complete).
-
-thanks,
--serge
+> > +int da9211_enable_irq(struct da9211 *chip, int irq) {
+> > +	enable_irq(irq);
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9211_enable_irq);
+> 
+> > +int da9211_disable_irq(struct da9211 *chip, int irq) int
+> > +da9211_mask_irq(struct da9211 *chip, int irq) int
+> > +da9211_unmask_irq(struct da9211 *chip, int irq)
+> 
+> This looks bad...  similarly most of the rest of the interrupt code.
+> What is it supposed to be doing?
+Originally it is supposed for user to enable/disable various interrupt signal.
+But indeed it seems a redundant code. The code will  be reorganized and submitted again. 
