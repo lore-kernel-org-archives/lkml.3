@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaEPEVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 00:21:41 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:39082 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaEPEVk (ORCPT
+	id S1753687AbaEPEYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 00:24:44 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35813 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaEPEYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 00:21:40 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Fri, 16 May 2014 00:25:28 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: perfevents: irq loop stuck!
-In-Reply-To: <20140515182136.GI11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1405160017120.1351@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405142246170.30015@vincent-weaver-1.umelst.maine.edu> <20140515182136.GI11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 16 May 2014 00:24:43 -0400
+Message-ID: <53759303.40409@linux.vnet.ibm.com>
+Date: Fri, 16 May 2014 12:24:35 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+References: <20140513094737.GU30445@twins.programming.kicks-ass.net> <53721FD4.6060300@redhat.com> <20140513142328.GE2485@laptop.programming.kicks-ass.net> <53731D12.7040804@linux.vnet.ibm.com> <20140514094426.GF30445@twins.programming.kicks-ass.net> <5374387E.4080802@linux.vnet.ibm.com> <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net> <53748A5D.6070605@linux.vnet.ibm.com> <20140515115751.GK30445@twins.programming.kicks-ass.net> <5375768F.1010000@linux.vnet.ibm.com> <1400208690.7133.11.camel@marge.simpson.net>
+In-Reply-To: <1400208690.7133.11.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051604-5564-0000-0000-00000DB5C1F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Peter Zijlstra wrote:
+Hey, Mike :)
 
-> > So, not sure how to fix this without a total re-write, unless we want to 
-> > cheat and just say sample_period is capped at 62-bits or something.
+On 05/16/2014 10:51 AM, Mike Galbraith wrote:
+> On Fri, 2014-05-16 at 10:23 +0800, Michael wang wrote:
 > 
-> 63 bits should do I think, but yes, we hit a very similar but a few days
-> ago in the sched_deadline code.
+>> But we found that one difference when group get deeper is the tasks of
+>> that group become to gathered on CPU more often, some time all the
+>> dbench instances was running on the same CPU, this won't happen for l1
+>> group, may could explain why dbench could not get CPU more than 100% any
+>> more.
 > 
-> I'm fine with capping it, allowing the full 64bit would mean we need 65
-> bits (effectively 96 or 128 bit of course) math to make it all work
-> which would be tedious and give no real gain.
+> Right.  I played a little (sane groups), saw load balancing as well.
 
-Yes, it looks like 63 bits will be fine although I had to think about some 
-of the logic there to make sure there's no signed overflow.
+Yeah, now we found that even l2 groups will face the same issue, allow
+me to re-list the details here:
 
-> We'll then not make progress for a while, print the msg, get throttled,
-> goto 1. This is possible if we're allowed 100+ interrupts per jiffy, so
-> if you adjust /proc/sys/kernel/perf_event_max_sample_rate to below that
-> and it doesn't trigger anymore we know the throttle works.
+Firstly do workaround (10 times latency):
+	echo 240000000 > /proc/sys/kernel/sched_latency_ns
+        echo NO_GENTLE_FAIR_SLEEPERS > /sys/kernel/debug/sched_features
 
-The odd thing is that even when I try to write a small reproducer I can 
-easily get the overflow of period to 2 to happen, but it doesn't trigger 
-the message.  It will on occasion give a throttle message but that is all.
+This workaround may related to another issue about vruntime bonus for
+sleeper, but let's put it down currently and focus on the gather issue.
 
-The fuzzer can reliably reproduce the actual IRQ warning, but a replay of 
-a gathered trace will not.
+Create groups like:
+	mkdir /sys/fs/cgroup/cpu/A
+	mkdir /sys/fs/cgroup/cpu/B
+	mkdir /sys/fs/cgroup/cpu/C
 
-Even weirder, the even that triggers it is attached to CPU0 but only 
-triggers if the fuzzer itself is running on a different CPU.  Also the 
-trigger event has all of exclude_kernel, exclude_user, and exclude_hv set
-so I'm not sure how it even counts up to the 2 retired instructions to 
-trigger an overflow anyway.  It doesn't help that there are 100+ other 
-active events at the time, although suspiciously a few of them are 
-apic_irq tracepoints (though attached to CPUs other than the trouble one).
+	mkdir /sys/fs/cgroup/cpu/l1
+	mkdir /sys/fs/cgroup/cpu/l1/A
+	mkdir /sys/fs/cgroup/cpu/l1/B
+	mkdir /sys/fs/cgroup/cpu/l1/C
 
-anyway I'm not sure if it's worth tracking this more if it's possible to 
-mostly fix the case by fixing the sample_period bounds.
+Run workload like (6 is half of the CPUS on my box):
+	echo $$ > /sys/fs/cgroup/cpu/A/tasks ; dbench 6
+	echo $$ > /sys/fs/cgroup/cpu/B/tasks ; stress 6
+	echo $$ > /sys/fs/cgroup/cpu/C/tasks ; stress 6
 
-Vince
+Check top, each dbench instance got around 45%, totally around 270%,
+this is close to the case when only dbench running (300%) since we use
+the workaround, otherwise we will see it to be around 100%, but that's
+another issue...
+
+By sample /proc/sched_debug, rarely see more than 2 dbench instances on
+same rq.
+
+Now re-run workload like:
+	echo $$ > /sys/fs/cgroup/cpu/l1/A/tasks ; dbench 6
+	echo $$ > /sys/fs/cgroup/cpu/l1/B/tasks ; stress 6
+	echo $$ > /sys/fs/cgroup/cpu/l1/C/tasks ; stress 6
+
+Check top, each dbench instance got around 20%, totally around 120%,
+sometime dropped under 100%, and dbench throughput dropped.
+
+By sample /proc/sched_debug, frequently see 4 or 5 dbench instances on
+same rq.
+
+So just one level deeper from l1 to l2 and such a big difference, and
+groups with same shares not equally share the resources...
+
+BTW, by bind each dbench instances to different CPU, dbench in l2 groups
+will regain all the CPU% which is 300%.
+
+I'll keep investigation and try to figure out why l2 group's tasks
+starting to gather, please let me know if there are any suggestions ;-)
+
+Regards,
+Michael Wang
+
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
