@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944AbaEPKKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:10:45 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:42485 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500AbaEPKKn (ORCPT
+	id S1756922AbaEPKMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:12:33 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:60535 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475AbaEPKMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:10:43 -0400
+	Fri, 16 May 2014 06:12:31 -0400
+Date: Fri, 16 May 2014 12:12:04 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Geoff Levand <geoff@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] vmlinux.lds.h: Add new SECTION() macro
+Message-ID: <20140516101204.GA10187@ravnborg.org>
+References: <1400189158.11178.157.camel@smoke>
 MIME-Version: 1.0
-In-Reply-To: <CAJuA9aitMu_=OLT+=6pX=us03HVfrPZ1zCYFXfNg58W+-nzm3g@mail.gmail.com>
-References: <cover.1400230695.git.viresh.kumar@linaro.org>
-	<CAJuA9aitMu_=OLT+=6pX=us03HVfrPZ1zCYFXfNg58W+-nzm3g@mail.gmail.com>
-Date: Fri, 16 May 2014 15:40:43 +0530
-Message-ID: <CAKohpokUP6rnV=UyES1GY0yqwiUndBrJFtw7fwJScsRigbE7tA@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] cpufreq: add support for intermediate (stable)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Abraham <ta.omasab@gmail.com>
-Cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arvind Chauhan <arvind.chauhan@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400189158.11178.157.camel@smoke>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 15:39, Thomas Abraham <ta.omasab@gmail.com> wrote:
-> In the given example above, the reworked implementation of cpufreq for
-> exynos maintains the transition frequency at 800MHz / 4 = 200MHz by
-> using a clock divider. So the transition frequency is ensured to be
-> less than or equal to the pre-transition cpu clock frequency.
+On Thu, May 15, 2014 at 02:25:58PM -0700, Geoff Levand wrote:
+> Add a new preprocessor macro SECTION() to vmlinux.lds.h that defines a
+> linker script output section with the section attributes commonly used,
+> and replace all occurrences of equivalent descriptions in vmlinux.lds.h
+> with the new macro.
 
-Thanks for the information. But I think this patchset is still required for
-many platforms. Anyway these extra notifications must be sent for exynos
-as well.
+Looks good - but the name is too generic.
+Use OUTPUT_SECTION() as you suggest in the comment below.
+
+If you walk through all linker scripts then keep an eay out for
+stuff where the generic stuff can be used.
+And see if there is something else that really belongs in asm-generic.
+
+	Sam
+
