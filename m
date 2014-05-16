@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293AbaEPWw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
+	id S1756372AbaEPWwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:52:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395AbaEPWw0 (ORCPT
+	with ESMTP id S1752758AbaEPWwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:52:26 -0400
+	Fri, 16 May 2014 18:52:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.4 9/9] tgafb: fix mode setting with fbset
-Date: Fri, 16 May 2014 15:55:32 -0700
-Message-Id: <20140516225458.916227326@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sumit Saxena <sumit.saxena@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 1/9] SCSI: megaraid: missing bounds check in mimd_to_kioc()
+Date: Fri, 16 May 2014 15:55:24 -0700
+Message-Id: <20140516225458.642634316@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -29,127 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 624966589041deb32a2626ee2e176e8274581101 upstream.
+commit 3de2260140417759c669d391613d583baf03b0cf upstream.
 
-Mode setting in the TGA driver is broken for these reasons:
+pthru32->dataxferlen comes from the user so we need to check that it's
+not too large so we don't overflow the buffer.
 
-- info->fix.line_length is set just once in tgafb_init_fix function. If
-  we change videomode, info->fix.line_length is not recalculated - so
-  the video mode is changed but the screen is corrupted because of wrong
-  info->fix.line_length.
-
-- info->fix.smem_len is set in tgafb_init_fix to the size of the default
-  video mode (640x480). If we set a higher resolution,
-  info->fix.smem_len is smaller than the current screen size, preventing
-  the userspace program from mapping the framebuffer.
-
-This patch fixes it:
-
-- info->fix.line_length initialization is moved to tgafb_set_par so that
-  it is recalculated with each mode change.
-
-- info->fix.smem_len is set to a fixed value representing the real
-  amount of video ram (the values are taken from xfree86 driver).
-
-- add a check to tgafb_check_var to prevent us from setting a videomode
-  that doesn't fit into videoram.
-
-- in tgafb_register, tgafb_init_fix is moved upwards, to be called
-  before fb_find_mode (because fb_find_mode already needs the videoram
-  size set in tgafb_init_fix).
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/video/tgafb.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/scsi/megaraid/megaraid_mm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -192,6 +192,8 @@ tgafb_check_var(struct fb_var_screeninfo
+--- a/drivers/scsi/megaraid/megaraid_mm.c
++++ b/drivers/scsi/megaraid/megaraid_mm.c
+@@ -486,6 +486,8 @@ mimd_to_kioc(mimd_t __user *umimd, mraid
  
- 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
- 		return -EINVAL;
-+	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
-+		return -EINVAL;
- 	if (var->nonstd)
- 		return -EINVAL;
- 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
-@@ -272,6 +274,7 @@ tgafb_set_par(struct fb_info *info)
- 	par->yres = info->var.yres;
- 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
- 	par->bits_per_pixel = info->var.bits_per_pixel;
-+	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 
- 	tga_type = par->tga_type;
- 
-@@ -1318,6 +1321,7 @@ tgafb_init_fix(struct fb_info *info)
- 	int tga_bus_tc = TGA_BUS_TC(par->dev);
- 	u8 tga_type = par->tga_type;
- 	const char *tga_type_name = NULL;
-+	unsigned memory_size;
- 
- 	switch (tga_type) {
- 	case TGA_TYPE_8PLANE:
-@@ -1325,21 +1329,25 @@ tgafb_init_fix(struct fb_info *info)
- 			tga_type_name = "Digital ZLXp-E1";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E1";
-+		memory_size = 2097152;
- 		break;
- 	case TGA_TYPE_24PLANE:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E2";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E2";
-+		memory_size = 8388608;
- 		break;
- 	case TGA_TYPE_24PLUSZ:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E3";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E3";
-+		memory_size = 16777216;
- 		break;
- 	default:
- 		tga_type_name = "Unknown";
-+		memory_size = 16777216;
- 		break;
- 	}
- 
-@@ -1351,9 +1359,8 @@ tgafb_init_fix(struct fb_info *info)
- 			    ? FB_VISUAL_PSEUDOCOLOR
- 			    : FB_VISUAL_DIRECTCOLOR);
- 
--	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 	info->fix.smem_start = (size_t) par->tga_fb_base;
--	info->fix.smem_len = info->fix.line_length * par->yres;
-+	info->fix.smem_len = memory_size;
- 	info->fix.mmio_start = (size_t) par->tga_regs_base;
- 	info->fix.mmio_len = 512;
- 
-@@ -1478,6 +1485,9 @@ tgafb_register(struct device *dev)
- 		modedb_tga = &modedb_tc;
- 		modedbsize_tga = 1;
- 	}
-+
-+	tgafb_init_fix(info);
-+
- 	ret = fb_find_mode(&info->var, info,
- 			   mode_option ? mode_option : mode_option_tga,
- 			   modedb_tga, modedbsize_tga, NULL,
-@@ -1495,7 +1505,6 @@ tgafb_register(struct device *dev)
- 	}
- 
- 	tgafb_set_par(info);
--	tgafb_init_fix(info);
- 
- 	if (register_framebuffer(info) < 0) {
- 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
+ 	pthru32->dataxferaddr	= kioc->buf_paddr;
+ 	if (kioc->data_dir & UIOC_WR) {
++		if (pthru32->dataxferlen > kioc->xferlen)
++			return -EINVAL;
+ 		if (copy_from_user(kioc->buf_vaddr, kioc->user_data,
+ 						pthru32->dataxferlen)) {
+ 			return (-EFAULT);
 
 
