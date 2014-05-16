@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaEPAjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 May 2014 20:39:44 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:21603 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaEPAjl (ORCPT
+	id S1751881AbaEPAsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 May 2014 20:48:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31663 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaEPAsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 May 2014 20:39:41 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-13-53755e3cd730
-Date: Fri, 16 May 2014 09:39:24 +0900
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        t.figa@samsung.com, Will Deacon <will.deacon@arm.com>,
-        tomasz.figa@gmail.com, joshi@samsung.com, s.nawrocki@samsung.com,
-        Varun.Sethi@freescale.com, kgene.kim@samsung.com,
-        prathyush.k@samsung.com, sachin.kamat@linaro.org, joro@8bytes.org,
-        devicetree@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        grundler@chromium.org, linux-samsung-soc@vger.kernel.org,
-        a.motakis@virtualopensystems.com, rahul.sharma@samsung.com,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        supash.ramaswamy@linaro.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v12 11/31] documentation: iommu: add binding document of
- Exynos System MMU
-Message-id: <20140516093924.8ee826b9e7e346cb0144a0f1@samsung.com>
-In-reply-to: <20140515203729.GA7136@mithrandir>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
- <6544270.ddFBoY6LMm@wuerfel> <20140428111802.GI19455@ulmo>
- <4780885.JaktFvJeC7@wuerfel> <20140515203729.GA7136@mithrandir>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 15 May 2014 20:48:37 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-ab-53756062fe48
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Murali Karicheri'" <m-karicheri2@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Mohit Kumar'" <mohit.kumar@st.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Richard Zhu'" <r65037@freescale.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Marek Vasut'" <marex@denx.de>
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
+In-reply-to: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
+Subject: Re: [PATCH v1 0/5] Add Keystone PCIe controller driver
+Date: Fri, 16 May 2014 09:48:34 +0900
+Message-id: <004f01cf70a0$90d7e520$b287af60$%han@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t8zQ12buNJgg3VbrCzu3D3HavF30jF2
-	i/lHgKxXR34wWXy8PJvZYsF+a4vO2RvYLb7v+sJu0bvgKpvFpsfXWC0u75rDZjHj/D4miwsr
-	NrJbTFl0mNXi8Jt2VouTf3oZLY483M1u0XK9l8ni1cE2Fov1M16zWPzcNY/FYtWuP4wWM2+t
-	YbF4+fEEi4OEx5OD85g81sxbw+jx+9ckRo/ZDRdZPP4d7mfy2DnrLrvHnWt72Dw2L6n3mHxj
-	OaNHb/M7No++LasYPT5vkvO4cvQMk8fGuaEBfFFcNimpOZllqUX6dglcGYtuT2IpuCBZ8XXe
-	QuYGxgfCXYycHBICJhLfln9khrDFJC7cW8/WxcjFISSwjFHi/bR7bDBFS3r/QyUWMUq0vpnL
-	DOFMZpKY+uQfI0gVi4CqxIGtc5hAbDYBLYnVc4+DxUUEdCX+n37DAtLALLCGVWLf9/2sIAlh
-	gQSJ0xeWgK3gFXCUmL30NNgdnAL6Eh+3vYNad4xR4t2y54wQd1hIXGjqYIdoEJT4MfkeC4jN
-	DLRt87YmVghbXmLzmrdg50kIdHNKvOuBOIlFQEDi2+RDQA0cQAlZiU0HoJ6WlDi44gbLBEax
-	WUjGzkIydhaSsQsYmVcxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihKSe/h2Mdw9YH2JMBlo5
-	kVlKNDkfmLrySuINjc2MLExNTI2NzC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAj
-	EwenVAMj92XGgpcGR763+t18vnrFuu0fj2x//5SFvS32thCTU1OTRdjxJxfuTu+Vy/DakiTZ
-	8G+Hd6LF/tyFZyx2aZ7YpK4maqU0OTvsy6uIjTKRvA7lkw3Zty9d4Lxea7tv8e0b/8OYp9mK
-	dKSL5bCtKWGZWXx8XaJPtl7oAlnVmxNuBrg/2vijblqPEktxRqKhFnNRcSIAHi+Y+FMDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLJsWRmVeSWpSXmKPExsVy+t9jAV2buNJggykHjS3u3D3HavF30jF2
-	i/lHgKxXR34wWXy8PJvZYsF+a4vO2RvYLb7v+sJu0bvgKpvFpsfXWC0u75rDZjHj/D4miwsr
-	NrJbTFl0mNXi8Jt2VouTf3oZLY483M1u0XK9l8ni1cE2Fov1M16zWPzcNY/FYtWuP4wWM2+t
-	YbF4+fEEi4OEx5OD85g81sxbw+jx+9ckRo/ZDRdZPP4d7mfy2DnrLrvHnWt72Dw2L6n3mHxj
-	OaNHb/M7No++LasYPT5vkvO4cvQMk8fGuaEBfFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7x
-	pmYGhrqGlhbmSgp5ibmptkouPgG6bpk5wGBQUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWYsuj2JpeCCZMXXeQuZGxgfCHcxcnJICJhILOn9zwZhi0lcuLceyObiEBJY
-	xCjR+mYuM4QzmUli6pN/jCBVLAKqEge2zmECsdkEtCRWzz0OFhcR0JX4f/oNC0gDs8AaVol9
-	3/ezgiSEBRIkTl9YAraCV8BRYvbS08wgNqeAvsTHbe+g1h1jlHi37DkjxB0WEheaOtghGgQl
-	fky+xwJiMwNt27ytiRXClpfYvOYt8wRGgVlIymYhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc
-	4tK8dL3k/NxNjODE9kxqB+PKBotDjAIcjEo8vBe0SoOFWBPLiitzDzFKcDArifCetgUK8aYk
-	VlalFuXHF5XmpBYfYkwGhsdEZinR5Hxg0s0riTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6
-	YklqdmpqQWoRzBYmDk6pBsY43/zn6bpisn7bL874zj31cm6Z350dQsLRm47dPFElffzwre39
-	voI79W1imjXyF59+2vJMJsx9YcXfL0eD9pp3MeeX+Zee4XPjefnxbdZsv6BP21subVrAtkeG
-	7+i1V18mB8++w72VqVeGa2nn6kf7rihu2VzUUOWy/ZuiFTd7W7Fu8ST+m7uVWIozEg21mIuK
-	EwHPQEpusAMAAA==
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9wVwStLuxIQSTKQyy3QmeKF3q0xAASBxeg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t8zQ92khNJgg6OrDC2WNGVYvDykaXHg
+	zw5Gi8sLL7FaXHjaw2ax6fE1VovLu+awWZydd5zN4vZlXou+3gNsFm/aGhktNk79xWjRfknZ
+	4vEsYYvWvUfYLV73rWF2EPBoae5h85g36wSLx7/D/UweCzaVemxa1cnmcefaHjaPzUvqPfq2
+	rGL0ePpjL7PH8RvbmTw+b5IL4I7isklJzcksSy3St0vgytj8chJzwT2JiiunrrM1MHYJdTFy
+	ckgImEj8nLCJEcIWk7hwbz1bFyMXh5DAMkaJ6y9essAUNS//xApiCwlMZ5S4P9Maoug3o0T/
+	1mdsIAk2ATWJL18Os4PYIgI6EsuONzKBFDELLGCR+NE2lR2i20ni2fsVzCA2p4CzxLHeN0wg
+	trCAvcT7C7/AtrEIqEq0758EZvMK2Eos+rafHcIWlPgx+R5YnFlAS2L9zuNMELa8xOY1b4Fm
+	cgBdqi7x6K8uxA1GEhdm9zBClIhI7HvxjhHkHgmBCxwSHT0XWCF2CUh8m3yIBaJXVmLTAWaI
+	hyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQI
+	SSP9OxjvHrA+xJgMtH4is5Rocj4wDeWVxBsamxlZmJqYGhuZW5qRJqwkznv/YVKQkEB6Yklq
+	dmpqQWpRfFFpTmrxIUYmDk6pBsbQ3ZlrtAKy5y/08dimaSZ+pqHOVZhza1aU2vOenl0GRzb0
+	rKg9KJp180r89YMlJqc175X3Pr2oej9vdtHmJF2zSI66+r2PMg5dNO5Pu8X159P/otubl7CZ
+	6O3SnFuiqnDE6rKpbW6fa3Rn2LNb96wDH1xxXKC/4NEKL+8NHCulf3hFiDzaaKHEUpyRaKjF
+	XFScCADKJ3YYOQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmk+LIzCtJLcpLzFFi42I5/e+xoG5SQmmwQdsubYslTRkWLw9pWhz4
+	s4PR4vLCS6wWF572sFlsenyN1eLyrjlsFmfnHWezuH2Z16Kv9wCbxZu2RkaLjVN/MVq0X1K2
+	eDxL2KJ17xF2i9d9a5gdBDxamnvYPObNOsHi8e9wP5PHgk2lHptWdbJ53Lm2h81j85J6j74t
+	qxg9nv7Yy+xx/MZ2Jo/Pm+QCuKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
+	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
+	MWZsfjmJueCeRMWVU9fZGhi7hLoYOTkkBEwkmpd/YoWwxSQu3FvPBmILCUxnlLg/07qLkQvI
+	/s0o0b/1GViCTUBN4suXw+wgtoiAjsSy441MIEXMAgtYJH60TWWH6HaSePZ+BTOIzSngLHGs
+	9w0TiC0sYC/x/sIvFhCbRUBVon3/JDCbV8BWYtG3/ewQtqDEj8n3wOLMAloS63ceZ4Kw5SU2
+	r3kLNJMD6FJ1iUd/dSFuMJK4MLuHEaJERGLfi3eMExiFZiGZNAvJpFlIJs1C0rKAkWUVo2hq
+	QXJBcVJ6rpFecWJucWleul5yfu4mRnCSeia9g3FVg8UhRgEORiUe3gtapcFCrIllxZW5hxgl
+	OJiVRHhP2wKFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YQPNK4g2NTcyMLI3MLIxMzM1J
+	E1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgbFc++oC1U77fztzZPi+q8rsNxB5my317XyP
+	RZfxfPGFxc1P5FLeGu1IFmO/eFT0tJEb92HFh4+erJzVvOlbuId4QrWdX3PN7eSP7mcPnlb8
+	kJvELnxixU3NXY43Ju87L2Sgc/T6GkPxGcbe1Qdjbytvq3qxpW+uaoxNoZCScXD3wUUTfp5Q
+	kFdiKc5INNRiLipOBABC1bGflgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -70,86 +70,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014 22:37:31 +0200, Thierry Reding wrote:
-> On Mon, Apr 28, 2014 at 02:05:30PM +0200, Arnd Bergmann wrote:
-> [...]
-> > let me clarify by example:
-> > 
-> > 	iommu@1 {
-> > 		compatible = "some,simple-iommu";
-> > 		reg = <1>;
-> > 		#iommu-cells = <0>; /* supports only one master */
-> > 	};
-> > 
-> > 	iommu@2 {
-> > 		compatible = "some,other-iommu";
-> > 		reg = <3>;
-> > 		#iommu-cells = <1>; /* contains master ID */
-> > 	};
-> > 
-> > 	iommu@3 {
-> > 		compatible = "some,windowed-iommu";
-> > 		reg = <2>;
-> > 		#iommu-cells = <2>; /* contains dma-window */
-> > 	};
-> > 
-> > 	device@4 {
-> > 		compatible = "some,ethernet";
-> > 		iommus = <&/iommu@1>;
-> > 	};
-> > 
-> > 	device@5 {
-> > 		compatible = "some,dmaengine";
-> > 		iommus = <&/iommu@2 0x40000000 0x1000000>,
-> > 			 <&/iommu@3 0x101>;
-> > 	};
-> > 
-> > The device at address 4 has a one-one relationship with iommu@1, so there
-> > is no need for any data. device@5 has two master ports. One is connected to
-> > an IOMMU that has a per-device aperture, device@5 can only issue transfers
-> > to the 256MB area at 0x40000000, and the IOMMU will have to put entries for
-> > this device into that address. The second master port is connected to
-> > iommu@3, which uses a master ID that gets passed along with each transfer,
-> > so that needs to be put into the IOTLBs.
+On Friday, May 16, 2014 1:01 AM, Murali Karicheri wrote:
 > 
-> iommu@3 and the second port of device@5 seem to match what we need for
-> Tegra (and as I understand also Exynos). Can we settle on this for now
-> so that Hiroshi and Cho can go update their drivers for this binding?
+> This patch adds a PCIe controller driver for Keystone SoCs. This
+> is based on the origin RFC patch that I had sent earlier. I have
+> incorporated following comments:-
+> 
+>  - Add a interrupt controller node for Legacy irq chip and use
+>    interrupt map/map-mask property to map legacy IRQs A/B/C/D
+>  - Add a Phy driver to replace the original serdes driver
+>  - Move common applicaiton register handling code to a separate
+>    file to allow re-use across other platforms that use older
+>    DW PCIe h/w
+>  - PCI quirk for maximum read request size. Check and override only
+>    if the maximum is higher than what controller can handle.
+>  - Converted to a module platform driver.
+> 
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Grant Likely <grant.likely@linaro.org>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Mohit Kumar <mohit.kumar@st.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
 > 
 
-Currently, Exynos IOMMU is the case of iommu@1.
+Your patches modify 'pcie-designware.c', and affects other PCIe
+drivers using designware PCIe Core IP. Please add the following
+people to CC list. They are also related to the designware PCIe.
 
-But in the near future, it will support multiple masters with a single context
-that means all masters that shares a single System MMU also views the same
-address space.
+  Pratyush Anand <pratyush.anand@st.com>
+  Richard Zhu <r65037@freescale.com>
+  Kishon Vijay Abraham I <kishon@ti.com>
+  Marek Vasut <marex@denx.de>
 
-For some cases, we may need iommu@3 that supports dma-window.
+Best regards,
+Jingoo Han
 
-So, I have no other opinion.
-
-By the way, iommu framework should allow to process the parameters
-to 'iommus' property in the master nodes by iommu driver implementations
-because it is depended on implementations.
-
-> > A variation would be to not use #iommu-cells at all, but provide a
-> > #address-cells / #size-cells pair in the IOMMU, and have a translation
-> > as we do for dma-ranges. This is probably most flexible.
 > 
-> The remainder of this discussion seems to indicate that #iommu-cells and
-> dma-ranges don't have to be mutually exclusive. For some IOMMUs it might
-> make sense to use both.
+> Murali Karicheri (5):
+>   ARM: keystone: add pcie related options
+>   pci: designware: enhancements to support keystone pcie
+>   phy: pci serdes phy driver for keystone
+>   pci: dw: add common functions to support old hw based pci driver
+>   pci: keystone: add pcie driver based on designware core driver
 > 
-> In fact perhaps we should require every IOMMU user to also specify a
-> dma-ranges property, even if for some cases the range would be simply
-> the complete physical address space. Perhaps in analogy to the ranges
-> property an empty dma-ranges property could be taken to mean all of the
-> physical address space.
+>  .../devicetree/bindings/pci/pcie-keystone.txt      |   68 ++++
+>  arch/arm/mach-keystone/Kconfig                     |    2 +
+>  drivers/pci/host/Kconfig                           |   12 +
+>  drivers/pci/host/Makefile                          |    2 +
+>  drivers/pci/host/pci-dw-old-msi.c                  |  150 ++++++++
+>  drivers/pci/host/pci-dw-old.c                      |  371 ++++++++++++++++++
+>  drivers/pci/host/pci-dw-old.h                      |   30 ++
+>  drivers/pci/host/pci-keystone.c                    |  400 ++++++++++++++++++++
+>  drivers/pci/host/pcie-designware.c                 |  101 +++--
+>  drivers/pci/host/pcie-designware.h                 |   42 +-
+>  drivers/pci/quirks.c                               |   13 +
+>  drivers/phy/Kconfig                                |    6 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/phy-keystone.c                         |  230 +++++++++++
+>  14 files changed, 1388 insertions(+), 40 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pci/pcie-keystone.txt
+>  create mode 100644 drivers/pci/host/pci-dw-old-msi.c
+>  create mode 100644 drivers/pci/host/pci-dw-old.c
+>  create mode 100644 drivers/pci/host/pci-dw-old.h
+>  create mode 100644 drivers/pci/host/pci-keystone.c
+>  create mode 100644 drivers/phy/phy-keystone.c
 > 
-> I'm aware that this doesn't cover any of the more exotic cases out
-> there, but the fact is that we have real devices out there that ship
-> with some variations of these simple IOMMUs and I don't think we're
-> doing ourselves a favour by blocking support for these to be added on
-> the hope of merging the perfect solution that covers all use-cases.
-> Patches for Tegra have already been around for close to half a year.
-> 
-> Thierry
+> --
+> 1.7.9.5
+
