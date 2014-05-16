@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438AbaEPPCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:02:04 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:35333 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaEPPB7 convert rfc822-to-8bit (ORCPT
+	id S932675AbaEPPCg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:02:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54596 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756380AbaEPPCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:01:59 -0400
+	Fri, 16 May 2014 11:02:31 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX182FicUmHNjNs7Eqjsa1voG
+Date: Fri, 16 May 2014 08:02:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: nsekhar@ti.com, joelf@ti.com, arnd@arndb.de, linux@arm.linux.org.uk,
+        vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        bcousson@baylibre.com
+Subject: Re: [PATCH v3 10/13] ARM: dts: am33xx: Remove obsolete properties
+ from edma node
+Message-ID: <20140516150216.GA22031@atomide.com>
+References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com>
+ <1400242640-9902-11-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20140430111308.GA11829@linutronix.de>
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
-	<1395505004-22650-7-git-send-email-bigeasy@linutronix.de>
-	<5331F6D5.7070809@gmail.com>
-	<53427718.30406@linutronix.de>
-	<CANk1AXSuBGj3vZ7knKmHTwDZLTkvVFT42Lt9ZTdk-E+sp=xQ+g@mail.gmail.com>
-	<20140430111308.GA11829@linutronix.de>
-Date: Fri, 16 May 2014 17:01:58 +0200
-Message-ID: <CACRpkdY=oVyBCwRkppq11B0tkn2bMw+-h_fDhy538eatVUJ=pQ@mail.gmail.com>
-Subject: Re: [PATCH 6/7 v2] gpio: dwapb: use a second irq chip
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: delicious quinoa <delicious.quinoa@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400242640-9902-11-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 1:13 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [140516 05:18]:
+> dma-channels, ti,edma-regions and ti,edma-slots no longer needed in DT since
+> the the same information is available in the IP's CCCFG register.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-> Right new have one irq chip running always in level mode. It would nicer
-> to have two irq chips where one is handling level type interrupts and
-> the other one is doing edge interrupts. So we can have at runtime two users
-> where one is using edge and the other level.
->
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Tony Lindgren <tony@atomide.com>
+
 > ---
-> I am very sorry for the delay. I assumed that I've already fixed the
-> patch sent it out. Just realized that it was not the case.
->
-> v1…v2:
-
-OK this patch is ACKed by Alan so I would like to apply it but:
-
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-This is not good. Quoted-printable makes the raw patch look like
-that:
-
-- int err, irq;
-+ int err, irq, i;
-=20
-  irq =3D irq_of_parse_and_map(node, 0);
-
-Notice spurious =20 and =3D encoding.
-
-Please resend in ISO8859-1 and take this opportunity to add
-Alan's ACK.
-
-Yours,
-Linus Walleij
+>  arch/arm/boot/dts/am33xx.dtsi | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index f1eea4af40ed..37d4cad4dd38 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -147,9 +147,6 @@
+>  				<0x44e10f90 0x40>;
+>  			interrupts = <12 13 14>;
+>  			#dma-cells = <1>;
+> -			dma-channels = <64>;
+> -			ti,edma-regions = <4>;
+> -			ti,edma-slots = <256>;
+>  		};
+>  
+>  		gpio0: gpio@44e07000 {
+> -- 
+> 1.9.3
+> 
