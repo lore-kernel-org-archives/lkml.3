@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507AbaEPNwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:52:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757480AbaEPNwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:52:43 -0400
-Date: Fri, 16 May 2014 15:51:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/1] ptrace: task_clear_jobctl_trapping()->wake_up_bit()
-	needs mb()
-Message-ID: <20140516135137.GB19210@redhat.com>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de> <1399974350-11089-20-git-send-email-mgorman@suse.de> <20140513125313.GR23991@suse.de> <20140513141748.GD2485@laptop.programming.kicks-ass.net> <20140514161152.GA2615@redhat.com> <20140514161755.GQ30445@twins.programming.kicks-ass.net> <20140516135116.GA19210@redhat.com>
+	id S932895AbaEPNit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:38:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54381 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757480AbaEPNip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 09:38:45 -0400
+Date: Fri, 16 May 2014 06:37:55 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-d8179bc0db8d0c9654d5de43de2874bf6d0a58fa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        tony.luck@intel.com
+In-Reply-To: <20140507154341.012847637@linutronix.de>
+References: <20140507154341.012847637@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Remove dynamic_irq mess
+Git-Commit-ID: d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140516135116.GA19210@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__wake_up_bit() checks waitqueue_active() and thus the caller needs
-mb() as wake_up_bit() documents, fix task_clear_jobctl_trapping().
+Commit-ID:  d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
+Gitweb:     http://git.kernel.org/tip/d8179bc0db8d0c9654d5de43de2874bf6d0a58fa
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 7 May 2014 15:44:23 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 16 May 2014 14:05:22 +0200
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+genirq: Remove dynamic_irq mess
+
+No more users. Get rid of the cruft.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140507154341.012847637@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/signal.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/linux/irq.h  | 10 ----------
+ kernel/irq/irqdesc.c | 23 +++++++----------------
+ 2 files changed, 7 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index c2a8542..f4c4119 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -277,6 +277,7 @@ void task_clear_jobctl_trapping(struct task_struct *task)
- {
- 	if (unlikely(task->jobctl & JOBCTL_TRAPPING)) {
- 		task->jobctl &= ~JOBCTL_TRAPPING;
-+		smp_mb();	/* advised by wake_up_bit() */
- 		wake_up_bit(&task->jobctl, JOBCTL_TRAPPING_BIT);
- 	}
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 8ff71d1..0d998d8 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -525,16 +525,6 @@ static inline void irq_set_percpu_devid_flags(unsigned int irq)
+ 			     IRQ_NOPROBE | IRQ_PER_CPU_DEVID);
  }
--- 
-1.5.5.1
-
-
+ 
+-/*
+- * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
+- * irq_free_desc instead.
+- */
+-extern void dynamic_irq_cleanup(unsigned int irq);
+-static inline void dynamic_irq_init(unsigned int irq)
+-{
+-	dynamic_irq_cleanup(irq);
+-}
+-
+ /* Set/get chip/data for an IRQ: */
+ extern int irq_set_chip(unsigned int irq, struct irq_chip *chip);
+ extern int irq_set_handler_data(unsigned int irq, void *data);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 7f26779..7339e42 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -278,7 +278,12 @@ EXPORT_SYMBOL(irq_to_desc);
+ 
+ static void free_desc(unsigned int irq)
+ {
+-	dynamic_irq_cleanup(irq);
++	struct irq_desc *desc = irq_to_desc(irq);
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	desc_set_defaults(irq, desc, desc_node(desc), NULL);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ }
+ 
+ static inline int alloc_descs(unsigned int start, unsigned int cnt, int node,
+@@ -309,7 +314,7 @@ void irq_mark_irq(unsigned int irq)
+ #ifdef CONFIG_GENERIC_IRQ_LEGACY
+ void irq_init_desc(unsigned int irq)
+ {
+-	dynamic_irq_cleanup(irq);
++	free_desc(irq);
+ }
+ #endif
+ 
+@@ -522,20 +527,6 @@ int irq_set_percpu_devid(unsigned int irq)
+ 	return 0;
+ }
+ 
+-/**
+- * dynamic_irq_cleanup - cleanup a dynamically allocated irq
+- * @irq:	irq number to initialize
+- */
+-void dynamic_irq_cleanup(unsigned int irq)
+-{
+-	struct irq_desc *desc = irq_to_desc(irq);
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-	desc_set_defaults(irq, desc, desc_node(desc), NULL);
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
+-}
+-
+ void kstat_incr_irq_this_cpu(unsigned int irq)
+ {
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
