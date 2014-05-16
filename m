@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947AbaEPPYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:24:16 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:33376 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932798AbaEPPYO (ORCPT
+	id S932970AbaEPPZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:25:14 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62115 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932347AbaEPPZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:24:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400020614-18907-1-git-send-email-berthe.ab@gmail.com>
-References: <1400020614-18907-1-git-send-email-berthe.ab@gmail.com>
-Date: Fri, 16 May 2014 17:24:13 +0200
-Message-ID: <CACRpkdZ4aQq-z6Rk4C1pBEMDdgu5ijWQ8gyr3REigx4uEPs3eg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpioep93xx: use devm functions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: abdoulaye berthe <berthe.ab@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 May 2014 11:25:12 -0400
+Message-ID: <1400253910.20342.52.camel@x220>
+Subject: [PATCH] ARM: remove check for CONFIG_CPU_ICACHE_STREAMING_DISABLE
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 May 2014 17:25:10 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2014 15:25:10.0619 (UTC) FILETIME=[069F42B0:01CF711B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 12:36 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+A check for CONFIG_CPU_ICACHE_STREAMING_DISABLE was added in v2.6.4. But
+the related Kconfig symbol was never added to the tree. So that check
+has evaluated to false for a decade. Let's remove that check and the
+single line it guards.
 
-> This uses devm functions for mem allocation
->
-> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-Patch applied, thanks it's a real nice cleanup.
+ arch/arm/mm/proc-arm925.S | 3 ---
+ 1 file changed, 3 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/arch/arm/mm/proc-arm925.S b/arch/arm/mm/proc-arm925.S
+index 97448c3acf38..3c31f32153ad 100644
+--- a/arch/arm/mm/proc-arm925.S
++++ b/arch/arm/mm/proc-arm925.S
+@@ -441,9 +441,6 @@ ENTRY(cpu_arm925_set_pte_ext)
+ 	.type	__arm925_setup, #function
+ __arm925_setup:
+ 	mov	r0, #0
+-#if defined(CONFIG_CPU_ICACHE_STREAMING_DISABLE)
+-        orr     r0,r0,#1 << 7
+-#endif
+ 
+ 	/* Transparent on, D-cache clean & flush mode. See  NOTE2 above */
+         orr     r0,r0,#1 << 1			@ transparent mode on
+-- 
+1.9.0
+
