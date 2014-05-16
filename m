@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437AbaEPMvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:51:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49580 "EHLO
+	id S932415AbaEPMvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:51:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49567 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753881AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1753717AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "Chaoming Li" <chaoming_li@realsil.com.cn>,
-        "Dmitry Semyonov" <linulin@gmail.com>
+CC: akpm@linux-foundation.org, "Ludovic Drolez" <ldrolez@debian.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <jhovold@gmail.com>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.849613969@decadent.org.uk>
+Message-ID: <lsq.1400244441.943404503@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 31/34] rtl8192ce: Fix null dereference in watchdog
+Subject: [PATCH 3.2 27/34] USB: io_ti: fix firmware download on big-endian
+ machines
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,64 +33,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Johan Hovold <jhovold@gmail.com>
 
-Dmitry Semyonov reported that after upgrading from 3.2.54 to
-3.2.57 the rtl8192ce driver will crash when its interface is brought
-up.  The oops message shows:
+commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
 
-[ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-[ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
-...
-[ 1833.613326] Call Trace:
-[ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
-[ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
-[ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
-[ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
-[ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
-[ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
-[ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
-[ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
+During firmware download the device expects memory addresses in
+big-endian byte order. As the wIndex parameter which hold the address is
+sent in little-endian byte order regardless of host byte order, we need
+to use swab16 rather than cpu_to_be16.
 
-Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
-parameter was null.  None of the changes to the rtlwifi family between
-3.2.54 and 3.2.57 seem to directly cause this, and reverting commit 
-f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
-doesn't fix it.
+Also make sure to handle the struct ti_i2c_desc size parameter which is
+returned in little-endian byte order.
 
-rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
-rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
-call trace as it was inlined.  That function has been completely
-removed upstream which may explain why this crash wasn't seen there.
-
-I'm not sure that it is sensible to completely remove
-rtl92c_dm_refresh_rate_adaptive_mask() without making other
-compensating changes elsewhere, so try to work around this for 3.2 by
-checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
-and then skipping the call to rtl92ce_update_hal_rate_tbl().
-
-References: https://bugs.debian.org/745137
-References: https://bugs.debian.org/745462
-Reported-by: Dmitry Semyonov <linulin@gmail.com>
+Reported-by: Ludovic Drolez <ldrolez@debian.org>
+Tested-by: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
 ---
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-@@ -1228,11 +1228,14 @@ static void rtl92c_dm_refresh_rate_adapt
- 			if (rtlhal->interface == INTF_PCI) {
- 				rcu_read_lock();
- 				sta = ieee80211_find_sta(mac->vif, mac->bssid);
-+				if (!sta)
-+					goto out_unlock;
- 			}
- 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
- 					p_ra->ratr_state);
+ drivers/usb/serial/io_ti.c | 50 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 17 deletions(-)
+
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -36,6 +36,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/serial.h>
++#include <linux/swab.h>
+ #include <linux/kfifo.h>
+ #include <linux/ioctl.h>
+ #include <linux/firmware.h>
+@@ -306,7 +307,7 @@ static int read_download_mem(struct usb_
+ {
+ 	int status = 0;
+ 	__u8 read_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
  
- 			p_ra->pre_ratr_state = p_ra->ratr_state;
-+		out_unlock:
- 			if (rtlhal->interface == INTF_PCI)
- 				rcu_read_unlock();
+ 	dbg("%s - @ %x for %d", __func__, start_address, length);
+ 
+@@ -323,10 +324,14 @@ static int read_download_mem(struct usb_
+ 			dbg("%s - @ %x for %d", __func__,
+ 			     start_address, read_length);
  		}
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * NOTE: Must use swab as wIndex is sent in little-endian
++		 *       byte order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
+ 					(__u16)address_type,
+-					(__force __u16)be_start_address,
++					be_start_address,
+ 					buffer, read_length);
+ 
+ 		if (status) {
+@@ -426,7 +431,7 @@ static int write_i2c_mem(struct edgeport
+ {
+ 	int status = 0;
+ 	int write_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
+ 
+ 	/* We can only send a maximum of 1 aligned byte page at a time */
+ 
+@@ -442,11 +447,16 @@ static int write_i2c_mem(struct edgeport
+ 	usb_serial_debug_data(debug, &serial->serial->dev->dev,
+ 						__func__, write_length, buffer);
+ 
+-	/* Write first page */
+-	be_start_address = cpu_to_be16(start_address);
++	/*
++	 * Write first page.
++	 *
++	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
++	 *       regardless of host byte order.
++	 */
++	be_start_address = swab16((u16)start_address);
+ 	status = ti_vsend_sync(serial->serial->dev,
+ 				UMPC_MEMORY_WRITE, (__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer,	write_length);
+ 	if (status) {
+ 		dbg("%s - ERROR %d", __func__, status);
+@@ -470,11 +480,16 @@ static int write_i2c_mem(struct edgeport
+ 		usb_serial_debug_data(debug, &serial->serial->dev->dev,
+ 					__func__, write_length, buffer);
+ 
+-		/* Write next page */
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * Write next page.
++		 *
++		 * NOTE: Must use swab as wIndex is sent in little-endian byte
++		 *       order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
+ 				(__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer, write_length);
+ 		if (status) {
+ 			dev_err(&serial->serial->dev->dev, "%s - ERROR %d\n",
+@@ -681,8 +696,8 @@ static int get_descriptor_addr(struct ed
+ 		if (rom_desc->Type == desc_type)
+ 			return start_address;
+ 
+-		start_address = start_address + sizeof(struct ti_i2c_desc)
+-							+ rom_desc->Size;
++		start_address = start_address + sizeof(struct ti_i2c_desc) +
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
+ 
+@@ -695,7 +710,7 @@ static int valid_csum(struct ti_i2c_desc
+ 	__u16 i;
+ 	__u8 cs = 0;
+ 
+-	for (i = 0; i < rom_desc->Size; i++)
++	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
+ 		cs = (__u8)(cs + buffer[i]);
+ 
+ 	if (cs != rom_desc->CheckSum) {
+@@ -749,7 +764,7 @@ static int check_i2c_image(struct edgepo
+ 			break;
+ 
+ 		if ((start_address + sizeof(struct ti_i2c_desc) +
+-					rom_desc->Size) > TI_MAX_I2C_SIZE) {
++			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
+ 			status = -ENODEV;
+ 			dbg("%s - structure too big, erroring out.", __func__);
+ 			break;
+@@ -764,7 +779,8 @@ static int check_i2c_image(struct edgepo
+ 			/* Read the descriptor data */
+ 			status = read_rom(serial, start_address +
+ 						sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++						le16_to_cpu(rom_desc->Size),
++						buffer);
+ 			if (status)
+ 				break;
+ 
+@@ -773,7 +789,7 @@ static int check_i2c_image(struct edgepo
+ 				break;
+ 		}
+ 		start_address = start_address + sizeof(struct ti_i2c_desc) +
+-								rom_desc->Size;
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
+ 				(start_address < TI_MAX_I2C_SIZE));
+@@ -812,7 +828,7 @@ static int get_manuf_info(struct edgepor
+ 
+ 	/* Read the descriptor data */
+ 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++					le16_to_cpu(rom_desc->Size), buffer);
+ 	if (status)
+ 		goto exit;
+ 
 
