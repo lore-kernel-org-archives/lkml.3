@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaEPOYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:24:39 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:52318 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaEPOYh (ORCPT
+	id S1756392AbaEPOZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:25:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48899 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744AbaEPOZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:24:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <0286550@agluck-desk.sc.intel.com>
-References: <20140408153412.0648fb96@gandalf.local.home>
-	<0286550@agluck-desk.sc.intel.com>
-Date: Fri, 16 May 2014 22:24:35 +0800
-Message-ID: <CAAhUcTTDQPZAC+Xg3u-KQvBwGX=B9HU5dnCjC7AJcUTDY2QLpw@mail.gmail.com>
-Subject: Re: [PATCH] time: Provide full featured jiffies_to_nsecs() function
-From: Shy Shuky <rousya@gmail.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>,
-        "xiexiuqi@huawei.com" <xiexiuqi@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 May 2014 10:25:42 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2] regmap: mmio: Fix regmap_mmio_write for uneven counts
+Date: Fri, 16 May 2014 16:25:34 +0200
+Message-Id: <1400250334-9397-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.0.0.rc0
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-09 1:32 GMT+08:00 Tony Luck <tony.luck@intel.com>:
-> The "uptime" tracer added in:
->     commit 8aacf017b065a805d27467843490c976835eb4a5
->     tracing: Add "uptime" trace clock that uses jiffies
-> has wraparound problems when the system has been up more
-> than 1 hour 11 minutes and 34 seconds. It converts jiffies
-> to nanoseconds using:
->         (u64)jiffies_to_usecs(jiffy) * 1000ULL
-> but since jiffies_to_usecs() only returns a 32-bit value, it
-> truncates at 2^32 microseconds.  An additional problem on 32-bit
-> systems is that the argument is "unsigned long", so fixing the
-> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
-> system).
->
-> So we provide a full featured jiffies_to_nsec() function that
-> takes a "u64" argument and provides a "u64" result.  To avoid
-> cries of rage from the other user of this: scheduler_tick_max_deferment()
-> we check whether the argument is small enough that we can do
-> the calculations in 32-bit operations.
+Commit 932580409a9dacbf42215fa737bf06ae2c0aa624
+"regmap: mmio: Add support for 1/2/8 bytes wide register address."
+broke regmap_mmio_write for uneven counts, for example 32-bit register
+addresses with no padding and 8-byte values (count = 5).
+Fix this by allowing all counts large enough to include some value.
+This check was BUG_ON(count < 4) before the last change.
 
-Hi Tony,
-How about get uptime by get_monotonic_boottime() directly, which's
-the same as /proc/uptime.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v1:
+ - Added missing offset parameter.
+---
+ drivers/base/regmap/regmap-mmio.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Then trace_clock_jiffies() would be like bellow:
+diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
+index 1e03e7f..902c4fb 100644
+--- a/drivers/base/regmap/regmap-mmio.c
++++ b/drivers/base/regmap/regmap-mmio.c
+@@ -61,9 +61,9 @@ static int regmap_mmio_regbits_check(size_t reg_bits)
+ 	}
+ }
+ 
+-static inline void regmap_mmio_count_check(size_t count)
++static inline void regmap_mmio_count_check(size_t count, u32 offset)
+ {
+-	BUG_ON(count % 2 != 0);
++	BUG_ON(count <= offset);
+ }
+ 
+ static int regmap_mmio_gather_write(void *context,
+@@ -120,7 +120,7 @@ static int regmap_mmio_write(void *context, const void *data, size_t count)
+ 	struct regmap_mmio_context *ctx = context;
+ 	u32 offset = ctx->reg_bytes + ctx->pad_bytes;
+ 
+-	regmap_mmio_count_check(count);
++	regmap_mmio_count_check(count, offset);
+ 
+ 	return regmap_mmio_gather_write(context, data, ctx->reg_bytes,
+ 					data + offset, count - offset);
+-- 
+2.0.0.rc0
 
-u64 notrace trace_clock_jiffies(void)
-        struct timespec uptime;
-        get_monotonic_boottime(&uptime);
-
-        return uptime.tv_sec * NSEC_PER_SEC + uptime.tv_nsec;
-}
-
---
-XiuQi
-
->
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  include/linux/jiffies.h    |  6 +-----
->  kernel/time.c              | 24 ++++++++++++++++++++++++
->  kernel/timeconst.bc        | 12 ++++++++++++
->  kernel/trace/trace_clock.c |  2 +-
->  4 files changed, 38 insertions(+), 6 deletions(-)
-...
