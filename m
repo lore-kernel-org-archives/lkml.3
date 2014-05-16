@@ -1,73 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053AbaEPReA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:34:00 -0400
-Received: from fallback5.mail.ru ([94.100.176.59]:53665 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021AbaEPRdp (ORCPT
+	id S1758056AbaEPRmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:42:40 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:55136 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756634AbaEPRmi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:33:45 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?QWxleGFuZGVyIEhvbGxlcg==?= <holler@ahsoftware.de>
-Cc: devicetree@vger.kernel.org, =?UTF-8?B?Sm9uIExvZWxpZ2Vy?= <jdl@jdl.com>,
-        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
-        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?Um9iIEhlcnJpbmc=?= <robh+dt@kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?B?R3JhbnQgTGlrZWx5?= <grant.likely@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtSRkMgUEFUQ0ggMi85XSBkdDogZGVwczogZGVwZW5kZW5jeSBiYXNl?=
- =?UTF-8?B?ZCBkZXZpY2UgY3JlYXRpb24=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.1]
-Date: Fri, 16 May 2014 21:31:20 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1400261480.338700899@f360.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <5373DBCF.1080503@ahsoftware.de>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
- <20140514200645.15984C4095B@trevor.secretlab.ca>
- <5373DBCF.1080503@ahsoftware.de>
+	Fri, 16 May 2014 13:42:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140516132451.GK967@e106497-lin.cambridge.arm.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+	<CA+sq2Ccok5wtKjCZUkBhhj3WsiqFAoMgHK7LY210aBtMku+8SA@mail.gmail.com>
+	<20140516132451.GK967@e106497-lin.cambridge.arm.com>
+Date: Fri, 16 May 2014 23:12:36 +0530
+Message-ID: <CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
+From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
+To: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "kdb@lurndal.org" <kdb@lurndal.org>,
+        "yu.zhao@intel.com" <yu.zhao@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4GHYmr8024453
 
-Wed, 14 May 2014 23:10:39 +0200 Ð¾Ñ‚ Alexander Holler <holler@ahsoftware.de>:
-> Am 14.05.2014 22:06, schrieb Grant Likely:
-> > On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
-> >> Am 14.05.2014 16:05, schrieb Grant Likely:
-> >>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
-> 
-> >> Hmm, I don't really care if that will be merged. I have no motivation to 
-> >> fight with Linux kernel maintainers and I don't know if I will spend the 
-> >> necessary time to do so.
-> > 
-> > The people you need to convince are Rob, Greg, and me, and you've got my
-> > attention. If I'm convinced, then I can probably convince Greg also.
-> > You've got an interesting approach, and I hope you won't give up on it.
-> 
-> Sorry, but that point of the view is already a problem. Why do I have to
-> convince you people?
-> 
-> To summarize:
-> 
-> Linux kernel maintainers
-> 
-> - don't like code they haven't written theirself,
-> - don't like code which doesn't look like they have written it theirself,
-> - don't like ideas they haven't had themself,
-> - do feel good in their closed group they have formed,
-> ...
+Hi Liviu,
 
-Very correct and well said.
-For many subsystems is it as is, we cannot break these barriers.
+Issue may not be only with SR-IOV resources.
 
----
+I am not an expert with Linux PCI core. But i am trying to understand
+how even for a non SR-IOV capable device's resource, gets a parent
+associated with it.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+When a PCI device driver calls pci_enable_device() which inturn calls
+'arch/arm64/kernel/pci.c' pcibios_enable_device() which uses Linux PCI core
+API 'pci_enable_resources'. This API checks 'res->parent' for all
+valid resources
+before enabling them, otherwise it fails.
+                if (!r->parent) {
+                        dev_err(&dev->dev, "device not available "
+                                "(can't reserve %pR)\n", r);
+                        return -EINVAL;
+                }
+
+Can you please let me know where this hierarchy is being set for
+'pcibios_enable_resources' to work.
+
+I could only find request_resource() API which sets the parent and
+pci_claim_resource() uses this.
+
+Thanks,
+Sunil.
+
+On Fri, May 16, 2014 at 6:54 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Hi Sunil,
+>
+> On Fri, May 16, 2014 at 11:33:04AM +0100, Sunil Kovvuri wrote:
+>> Hi Liviu,
+>>
+>> I am using your ARM64 PCIe patches to write a PCIe host controller
+>> driver for our SOC. I am facing an issue with SR-IOV capable device.
+>>
+>> Consider an PCI Express endpoint connected to a PCI Express
+>> Root Port.  The PCI Express endpoint provides PCI-SIG SR-IOV
+>> capabilities with a single physical function and a large number
+>> of virtual functions.  The Root Port contains a pci-pci bridge in
+>> between it and the SR-IOV device.
+>>
+>> When the SR-IOV capable device's driver tries to enable sriov
+>> (pci_enable_sriov()) it fails to create/add PCI device for each
+>> virtual function reporting  "not enough MMIO resources for SR-IOV".
+>>
+>> In sriov_enable() (drivers/pci/iov.c)
+>>
+>>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+>>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
+>>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
+>>  299                 if (res->parent)
+>>  300                         nres++;
+>>  301         }
+>>  302         if (nres != iov->nres) {
+>>  303                 dev_err(&dev->dev, "not enough MMIO resources for
+>>  SR-IOV\n");
+>>  304                 return -ENOMEM;
+>>  305         }
+>>
+>> Here its checking if physical function's IOV resource has a parent or not.
+>> Which is pci-pci bridge in this case. Otherwise it doesn't consider
+>> that resource.
+>>
+>> Added below api to your patch.
+>> This will try to claim a resource while creating a PCI device which
+>> inturn sets 'res->parent'.
+>>
+>> Let me know if this is okay.
+>>
+>> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
+>> index 9f29c9a..fbfb48f 100644
+>> --- a/arch/arm64/kernel/pci.c
+>> +++ b/arch/arm64/kernel/pci.c
+>> @@ -125,6 +125,21 @@ resource_size_t pcibios_align_resource(void
+>> *data, const struct resource *res,
+>>         return res->start;
+>>  }
+>>
+>> +int pcibios_add_device(struct pci_dev *pdev)
+>> +{
+>> +        unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+>> +        struct resource *res;
+>> +
+>> +        for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+>> +                res = &pdev->resource[i];
+>> +                if (res->parent || !(res->flags & type_mask))
+>> +                        continue;
+>> +                pci_claim_resource(pdev, i);
+>> +        }
+>> +
+>>
+>
+> I would like not to have to add your patch in this file as I am trying to
+> remove it entirely. I don't have an SR-IOV capable device in my setup so
+> I am not able to debug your problem, but could you have a go and try to
+> figure out why the SR-IOV resources do not get a parent associated with
+> when they get created?
+>
+> Many thanks,
+> Liviu
+>
+>
+> --
+> ====================
+> | I would like to |
+> | fix the world,  |
+> | but they're not |
+> | giving me the   |
+>  \ source code!  /
+>   ---------------
+>     Â¯\_(ãƒ„)_/Â¯
+>
