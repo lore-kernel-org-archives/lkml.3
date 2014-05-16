@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaEPNeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:34:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54131 "EHLO
+	id S932301AbaEPNe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:34:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54139 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155AbaEPNeO (ORCPT
+	with ESMTP id S932155AbaEPNeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:34:14 -0400
-Date: Fri, 16 May 2014 06:33:15 -0700
+	Fri, 16 May 2014 09:34:23 -0400
+Date: Fri, 16 May 2014 06:33:29 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-d07c9f18756e8231909a9bbcbfa7502c60cbc810@git.kernel.org>
+Message-ID: <tip-aa5125a45568f8f666f6d2f224fe8ab261b1069e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, konrad.wilk@oracle.com, peterz@infradead.org,
-        tony.luck@intel.com, tglx@linutronix.de
+        mingo@kernel.org, joro@8bytes.org, peterz@infradead.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        peterz@infradead.org, tony.luck@intel.com, tglx@linutronix.de
-In-Reply-To: <20140507154335.959870037@linutronix.de>
-References: <20140507154335.959870037@linutronix.de>
+        linux-kernel@vger.kernel.org, peterz@infradead.org, joro@8bytes.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de
+In-Reply-To: <20140507154336.178850165@linutronix.de>
+References: <20140507154336.178850165@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86: Get rid of get_nr_irqs_gsi()
-Git-Commit-ID: d07c9f18756e8231909a9bbcbfa7502c60cbc810
+Subject: [tip:irq/core] iommu: smar: Fix return value check of create_irq(
+ )
+Git-Commit-ID: aa5125a45568f8f666f6d2f224fe8ab261b1069e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,89 +34,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d07c9f18756e8231909a9bbcbfa7502c60cbc810
-Gitweb:     http://git.kernel.org/tip/d07c9f18756e8231909a9bbcbfa7502c60cbc810
+Commit-ID:  aa5125a45568f8f666f6d2f224fe8ab261b1069e
+Gitweb:     http://git.kernel.org/tip/aa5125a45568f8f666f6d2f224fe8ab261b1069e
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Wed, 7 May 2014 15:44:10 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 16 May 2014 14:05:19 +0200
 
-x86: Get rid of get_nr_irqs_gsi()
+iommu: smar: Fix return value check of create_irq()
 
-No need to expose this outside of the ioapic code. The dynamic
-allocations are guaranteed not to happen in the gsi space. See commit
-62a08ae2a.
+ia64 returns a negative error code when allocation fails andx86
+returns 0. Make it handle both.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Reviewed-by: Grant Likely <grant.likely@linaro.org>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Cc: x86@kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org
-Link: http://lkml.kernel.org/r/20140507154335.959870037@linutronix.de
+Acked-by: Joerg Roedel <joro@8bytes.org>
+Cc: linux-ia64@vger.kernel.org
+Cc: iommu@lists.linux-foundation.org
+Link: http://lkml.kernel.org/r/20140507154336.178850165@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
 ---
- arch/x86/include/asm/io_apic.h   |  2 --
- arch/x86/kernel/apic/io_apic.c   |  5 -----
- drivers/xen/events/events_base.c | 17 +----------------
- 3 files changed, 1 insertion(+), 23 deletions(-)
+ drivers/iommu/dmar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 459e50a..90f97b4 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -168,8 +168,6 @@ extern int save_ioapic_entries(void);
- extern void mask_ioapic_entries(void);
- extern int restore_ioapic_entries(void);
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 39f8b71..3ce1f62 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1551,7 +1551,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 		return 0;
  
--extern int get_nr_irqs_gsi(void);
--
- extern void setup_ioapic_ids_from_mpc(void);
- extern void setup_ioapic_ids_from_mpc_nocheck(void);
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3c17b25..be3b574 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3450,11 +3450,6 @@ static void __init probe_nr_irqs_gsi(void)
- 	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
- }
- 
--int get_nr_irqs_gsi(void)
--{
--	return nr_irqs_gsi;
--}
--
- unsigned int arch_dynirq_lower_bound(unsigned int from)
- {
- 	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index dfa12a4..c919d3d 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -390,22 +390,7 @@ static void xen_irq_init(unsigned irq)
- 
- static int __must_check xen_allocate_irqs_dynamic(int nvec)
- {
--	int first = 0;
--	int i, irq;
--
--#ifdef CONFIG_X86_IO_APIC
--	/*
--	 * For an HVM guest or domain 0 which see "real" (emulated or
--	 * actual respectively) GSIs we allocate dynamic IRQs
--	 * e.g. those corresponding to event channels or MSIs
--	 * etc. from the range above those "real" GSIs to avoid
--	 * collisions.
--	 */
--	if (xen_initial_domain() || xen_hvm_domain())
--		first = get_nr_irqs_gsi();
--#endif
--
--	irq = irq_alloc_descs_from(first, nvec, -1);
-+	int i, irq = irq_alloc_descs(-1, 0, nvec, -1);
- 
- 	if (irq >= 0) {
- 		for (i = 0; i < nvec; i++)
+ 	irq = create_irq();
+-	if (!irq) {
++	if (irq <= 0) {
+ 		pr_err("IOMMU: no free vectors\n");
+ 		return -EINVAL;
+ 	}
