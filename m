@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaEPOGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:06:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755021AbaEPOGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:06:34 -0400
-Date: Fri, 16 May 2014 16:05:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140516140551.GF19475@krava.brq.redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <20140516114757.GD19475@krava.brq.redhat.com>
- <20140516133058.GN50500@redhat.com>
+	id S932911AbaEPOFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:05:07 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:28851 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752392AbaEPOFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 10:05:05 -0400
+Message-Id: <20140516140502.195874839@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 16 May 2014 10:02:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/4] tools lib traceevent: Add flag to not load event plugins
+References: <20140516140215.149535442@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516133058.GN50500@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0001-tools-lib-traceevent-Add-flag-to-not-load-event-plug.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 09:30:58AM -0400, Don Zickus wrote:
-> On Fri, May 16, 2014 at 01:47:57PM +0200, Jiri Olsa wrote:
-> > On Tue, May 13, 2014 at 12:48:17PM -0400, Don Zickus wrote:
-> > > In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
-> > > particular sample instruction.  A bunch of those details relate to the data
-> > > address.
-> > > 
-> > > One interesting thing you can do with data addresses is to convert them into a unique
-> > > cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
-> > > them can reveal cache contention.
-> > > 
-> > > This patch creates an alogorithm based on various sample details that can help group
-> > > entries together into data cachelines and allows 'perf report' to sort on it.
-> > > 
-> > > The algorithm relies on having proper mmap2 support in the kernel to help determine
-> > > if the memory map the data address belongs to is private to a pid or globally shared.
-> > > 
-> > > The alogortithm is as follows:
-> > > 
-> > > o group cpumodes together
-> > > o group entries with discovered maps together
-> > > o sort on major, minor, inode and inode generation numbers
-> > > o if userspace anon, then sort on pid
-> > > o sort on cachelines based on data addresses
-> > 
-> > needs some collumn width refresh or something..? ;-)
-> 
-> Not sure what you mean here.
-> 
-> > 
-> > # Overhead  Data Cacheline         
-> > # ........  .......................
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-header not being wide enough to cover the longest data
+Add a flag to pevent that will let the callers be able to set it and
+keep the system, and perhaps even normal plugins from being loaded.
+
+This is useful when plugins might hide certain information and seeing
+the raw events shows what may be going on.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/lib/traceevent/event-parse.h  | 2 ++
+ tools/lib/traceevent/event-plugin.c | 7 ++++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index feab94281634..a68ec3d8289f 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -354,6 +354,8 @@ enum pevent_func_arg_type {
+ 
+ enum pevent_flag {
+ 	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
++	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
++	PEVENT_DISABLE_PLUGINS		= 1 << 2,
+ };
+ 
+ #define PEVENT_ERRORS 							      \
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index 0c8bf6780e4d..317466bd1a37 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -148,12 +148,17 @@ load_plugins(struct pevent *pevent, const char *suffix,
+ 	char *path;
+ 	char *envdir;
+ 
++	if (pevent->flags & PEVENT_DISABLE_PLUGINS)
++		return;
++
+ 	/*
+ 	 * If a system plugin directory was defined,
+ 	 * check that first.
+ 	 */
+ #ifdef PLUGIN_DIR
+-	load_plugins_dir(pevent, suffix, PLUGIN_DIR, load_plugin, data);
++	if (!(pevent->flags & PEVENT_DISABLE_SYS_PLUGINS))
++		load_plugins_dir(pevent, suffix, PLUGIN_DIR,
++				 load_plugin, data);
+ #endif
+ 
+ 	/*
+-- 
+1.8.5.3
 
 
-> > #
-> >      5.42%  [k] 0xffff8801ed832c40 
-> >      5.29%  [.] sys_errlist@@GLIBC_2.12+0xffffffcbf7dfc1ff                       
-> >      3.16%  [k] 0xffffffffff5690c0 
-> > 
-> > 
-> > also I've got again perf hanged up on opening device file
-> > 
-> > [jolsa@krava perf]$ sudo strace -p 29445
-> > Process 29445 attached
-> > open("/dev/snd/pcmC0D0p", O_RDONLY^CProcess 29445 detached
-> > 
-> > another one I recall was /dev/dri/card0 touched by X server
-> > 
-> > I guess those device files allow to mmap memory and we recorded
-> > memory access there.. we need check for this and do not try to
-> > open device files
-> 
-> Ok.  And that problem doesn't happen when my patch is not applied?  I am
-> not sure how this patch causes open device hangs.  I'll try to run this on
-> a box with X server running to duplicate.
-
-I think it came with the memory profiling, because we treat
-data areas as dsos.. open and look for symbols
-
-jirka
