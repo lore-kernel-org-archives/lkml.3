@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaEPHso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:48:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58401 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaEPHsm (ORCPT
+	id S1755708AbaEPHyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:54:06 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:48148 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944AbaEPHyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:48:42 -0400
-Date: Fri, 16 May 2014 00:48:26 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-Message-ID: <20140516074826.GB8555@infradead.org>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
- <8468354.y2kUZdOz9e@wuerfel>
- <1400168823.7862.9.camel@dabdike>
- <9176609.NChAu49t7f@wuerfel>
- <20140515220717.1ced0f1a@alan.etchedpixels.co.uk>
+	Fri, 16 May 2014 03:54:01 -0400
+Message-ID: <5375C40E.2090904@monstr.eu>
+Date: Fri, 16 May 2014 09:53:50 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515220717.1ced0f1a@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Bart Tanghe <bart.tanghe@thomasmore.be>, thierry.reding@gmail.com,
+        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, grant.likely@linaro.org,
+        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [rfc]pwm: add xilinx pwm driver
+References: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be> <5049141.XmehsUeakV@wuerfel> <5374C773.6070402@monstr.eu> <16896948.U7hTsgDub4@wuerfel>
+In-Reply-To: <16896948.U7hTsgDub4@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="8U46eKv1e8CjRDdJ0cPKVRTlu51bG6H71"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 10:07:17PM +0100, One Thousand Gnomes wrote:
-> True sort of for the kernel (except you've got problems with file system
-> compatibility and I believe stuff like NFS and that fact some file
-> systems just break).
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--8U46eKv1e8CjRDdJ0cPKVRTlu51bG6H71
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-modern filesystems including NFS don't use anything that corresponds to
-a time_t on disk or on the wire, so we'd just need to adjust the few
-places the conert time representations.
+On 05/15/2014 06:30 PM, Arnd Bergmann wrote:
+> On Thursday 15 May 2014 15:56:03 Michal Simek wrote:
+>> IP is configurable as is normal for us.
+>> You can select IP with just one timer.
+>> It means register locations for specific timer are fixed.
+>> http://www.xilinx.com/support/documentation/ip_documentation/xps_timer=
+=2Epdf
+>>
+>> timer0 - offset 0x0
+>> timer1 - offset 0x10 (doesn't need to be synthesized)
+>>
+>> There is one interrupt for both timers.
+>>
+>> Timers can be as timers (up/down count/ reload with or without IRQs)
+>> But then one options is to use both timers and generate PWM signal.
+>> From full ip description in DT you can see xlnx,gen0-assert =3D <1>;
+>> which can suggest that this IP can output PMW signal.
+>> (We can also detect if PWM0 signal is connected just to be sure
+>> that PWM can be enabled).
+>>
+>> There is also capture trigger mode where external signal start/stop
+>> timer counting.
+>>
+>> It means there are 3 modes - timer, capture and PWM.
+>> Timer (clocksource, clockevent) requires specific handling,
+>> PWM has own subsystem and not sure if there is any subsystem for
+>> capture mode. Is there any?
+>=20
+> I don't think so. Possibly somewhere in IIO.
+>=20
+>> Not every timer configuration is suitable for all things
+>> but fully configured timer can be used in all 3 modes.
+>>
+>>
+>> I think that make sense to register and map all timers in the system
+>> and classify them with flags (like can't be used for capture or PMW
+>> if there are not outputs connected) and then use the best
+>> timer for clocksource and clockevent. The best candidate is IP
+>> with the lowest IRQ number in dual timer mode but in general
+>> whatever timer can be used that's why we can't probably avoid
+>> timer specification in DT.
+>> In spite of this smells because you are saying via DT
+>> to Linux which timer should be used for what purpose.
+>=20
+> We had discussions about this in the past, but I don't remember the
+> outcome of that.
 
-> > The main advantage that I see with 64-bit time_t is that a lot of user
-> > space already works with it, because NetBSD and OpenBSD use this, and
-> > all 64-bit Linux systems already work with this without changing the ABI.
-> > If we want a POSIX extension to cover a new ABI, this would be the most
-> > likely candidate.
-> 
-> The main advantage IMHO of just using 64bit on 32bit boxes is getting it
-> right. I'd go so far as to consider changing userspace time_t to be a
-> struct. Yes it'll break lots of code but at least you'll know about it.
+Will be great if someone is able to find out this outcome.
+IRC: You can register as many clocksources as you like and core
+itself choose the best one - the most accurate one.
 
-I think we're attacking that from the wrong angle.  We'll need to work
-with the glibc and other libc folks to what can be implemented as the
-library API/ABI and then ensure the kernel provides proper support for
-it.
+But I don't think for our case there is any universal algorithm
+which we can use to find out which timer should be used for this
+purpose that's why selecting it via DT is probably the best what we
+can do.
 
-Chaning the size of time_t in the library seems like the only feasible
-approach that keeps existing programs compatible.  If we support this
-with a time64_, a shifted epoch or structures at the kernel ABI is a
-question of balaning what libc needs and what we can use efficiently
-internally.
+Thanks,
+Michal
 
-> > As mentioned earlier, between kernel and user space it's probably best
-> > to avoid time_t and timeval completely and just use timespec64 or some
-> > other safe type, but there has to be a way to port user space that relies
-> > on time_t or timespec.
-> 
-> This I think is bang on. We've already got lots of cases where we can't
-> shoehorn useful info into syscalls due to time_t, including stuff like
-> exposing accurate stamps in stat(). On an 8MHz 68000 not much happened in
-> the same second, on a 32 core x86 it's a bit different.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-The stat(64) syscall already has stopped time_t for a long time:
 
-struct stat64 {
-	...
-	int             st_atime;       /* Time of last access.  */
-	unsigned int    st_atime_nsec;
-	int             st_mtime;       /* Time of last modification.  */
-	unsigned int    st_mtime_nsec;
-	int             st_ctime;	/* Time of last status change. */
-	unsigned int	st_ctime_nsec;
-};
 
+--8U46eKv1e8CjRDdJ0cPKVRTlu51bG6H71
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlN1xBAACgkQykllyylKDCHVtQCeNv7ZNx0t+AZ9RYFEPPDq478n
+DjAAn3S0JKB4KIe8qA4a8zabD13OEP23
+=ffsq
+-----END PGP SIGNATURE-----
+
+--8U46eKv1e8CjRDdJ0cPKVRTlu51bG6H71--
