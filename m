@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaEPWT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:19:59 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:60489 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207AbaEPWT5 (ORCPT
+	id S1756005AbaEPWVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:21:16 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56502 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753207AbaEPWVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:19:57 -0400
-Message-ID: <53768F08.1090008@redhat.com>
-Date: Sat, 17 May 2014 00:19:52 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 16 May 2014 18:21:14 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 3/4] clk: new basic clk type for fractional divider
+Date: Sat, 17 May 2014 00:38:05 +0200
+Message-ID: <1454520.Q33DvSH0ns@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140515165349.9521.75672@quantum>
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com> <1400161226-24067-4-git-send-email-heikki.krogerus@linux.intel.com> <20140515165349.9521.75672@quantum>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: jan.kiszka@siemens.com, kvm@vger.kernel.org, gleb@kernel.org,
-        avi.kivity@gmail.com
-Subject: Re: [PATCH v2 1/4] KVM: x86: use new CS.RPL as CPL during task switch
-References: <1400172691-27030-1-git-send-email-pbonzini@redhat.com> <1400172691-27030-2-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1400172691-27030-2-git-send-email-pbonzini@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/05/2014 18:51, Paolo Bonzini ha scritto:
-> During task switch, all of CS.DPL, CS.RPL, SS.DPL must match (in addition
-> to all the other requirements) and will be the new CPL.  So far this
-> worked by carefully setting the CS selector and flag before doing the
+On Thursday, May 15, 2014 09:53:49 AM Mike Turquette wrote:
+> Quoting Heikki Krogerus (2014-05-15 06:40:25)
+> > Fractional divider clocks are fairly common. This adds basic
+> > type for them.
+> > 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> 
+> Taken into clk-next.
+> 
+> Just FYI, there was some talk at Embedded Linux Conference on providing
+> a better abstraction layer for some of these "basic" clock types. This
+> abstraction would allow the basic clock types to implement the
+> machine-agnostic logic (e.g. an incoming rate is divided by a value) and
+> then platforms and drivers could plug in the machine-specific parts
+> (e.g. divider is made up of m/n, or divider is power-of-two, or divider
+> is a simple integer with min == 1 and max == 5).
+> 
+> All of that is to say that in time this fractional divider could go away
+> once the abstraction layer allows us to fold the m/n divider stuff into
+> a core divider implementation.
+> 
+> Nothing wrong with the patch for now, so I've taken it for 3.16.
 
-s/flag/EFLAGS/
+Well, OK, but I guess [4/4] depends on it and [4/4] also depends on
+[1-2/4], so how you're proposing to resolve this?
 
-> task switch; however, this will not work once we get the CPL from SS.DPL:
-> setting SS itself would fail if the task switch changes the privilege
-> level.
-
-More precisely, before patch 4 in this series setting CS.selector would 
-already change the CPL.  After it, you actually have to set the full 
-segment descriptor cache to change the CPL, so we cannot use 
-ctxt->ops->cpl(ctxt) to retrieve the CPL during a task switch.  The 
-check that fails without this patch is that SS.DPL must be == CPL, and 
-the failure happens because ctxt->ops->cpl(ctxt) is the *old* SS.DPL.
-
-Paolo
-
-> Temporarily assume that the CPL comes from CS.RPL during task switch
-> to a protected-mode task.  This is the same approach used in QEMU's
-> emulation code, which (until version 2.0) manually tracks the CPL.
+Rafael
 
