@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605AbaEPMs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:48:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49544 "EHLO
+	id S1756244AbaEPMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:49:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49661 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752427AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1752150AbaEPMsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 08:48:21 -0400
+	Fri, 16 May 2014 08:48:25 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jeff Layton" <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Terry Barnaby" <terry1@beam.ltd.uk>
-Date: Fri, 16 May 2014 13:47:20 +0100
-Message-ID: <lsq.1400244440.475163402@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "" <stable@vger.kernel.org>, "Jiri Slaby" <jslaby@suse.cz>,
+        "Peter Hurley" <peter@hurleysoftware.com>
+Date: Fri, 16 May 2014 13:47:21 +0100
+Message-ID: <lsq.1400244441.938704882@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 05/34] locks: allow __break_lease to sleep even when
- break_time is 0
+Subject: [PATCH 3.2 32/34] n_tty: Fix n_tty_write crash when echoing in
+ raw mode
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +35,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit f1c6bb2cb8b81013e8979806f8e15e3d53efb96d upstream.
+commit 4291086b1f081b869c6d79e5b7441633dc3ace00 upstream.
 
-A fl->fl_break_time of 0 has a special meaning to the lease break code
-that basically means "never break the lease". knfsd uses this to ensure
-that leases don't disappear out from under it.
+The tty atomic_write_lock does not provide an exclusion guarantee for
+the tty driver if the termios settings are LECHO & !OPOST.  And since
+it is unexpected and not allowed to call TTY buffer helpers like
+tty_insert_flip_string concurrently, this may lead to crashes when
+concurrect writers call pty_write. In that case the following two
+writers:
+* the ECHOing from a workqueue and
+* pty_write from the process
+race and can overflow the corresponding TTY buffer like follows.
 
-Unfortunately, the code in __break_lease can end up passing this value
-to wait_event_interruptible as a timeout, which prevents it from going
-to sleep at all. This makes __break_lease to spin in a tight loop and
-causes soft lockups.
+If we look into tty_insert_flip_string_fixed_flag, there is:
+  int space = __tty_buffer_request_room(port, goal, flags);
+  struct tty_buffer *tb = port->buf.tail;
+  ...
+  memcpy(char_buf_ptr(tb, tb->used), chars, space);
+  ...
+  tb->used += space;
 
-Fix this by ensuring that we pass a minimum value of 1 as a timeout
-instead.
+so the race of the two can result in something like this:
+              A                                B
+__tty_buffer_request_room
+                                  __tty_buffer_request_room
+memcpy(buf(tb->used), ...)
+tb->used += space;
+                                  memcpy(buf(tb->used), ...) ->BOOM
 
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+B's memcpy is past the tty_buffer due to the previous A's tb->used
+increment.
+
+Since the N_TTY line discipline input processing can output
+concurrently with a tty write, obtain the N_TTY ldisc output_lock to
+serialize echo output with normal tty writes.  This ensures the tty
+buffer helper tty_insert_flip_string is not called concurrently and
+everything is fine.
+
+Note that this is nicely reproducible by an ordinary user using
+forkpty and some setup around that (raw termios + ECHO). And it is
+present in kernels at least after commit
+d945cb9cce20ac7143c2de8d88b187f62db99bdc (pty: Rework the pty layer to
+use the normal buffering logic) in 2.6.31-rc3.
+
+js: add more info to the commit log
+js: switch to bool
+js: lock unconditionally
+js: lock only the tty->ops->write call
+
+References: CVE-2014-0196
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: output_lock is a member of struct tty_struct]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/locks.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/tty/n_tty.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1253,11 +1253,10 @@ int __break_lease(struct inode *inode, u
- 
- restart:
- 	break_time = flock->fl_break_time;
--	if (break_time != 0) {
-+	if (break_time != 0)
- 		break_time -= jiffies;
--		if (break_time == 0)
--			break_time++;
--	}
-+	if (break_time == 0)
-+		break_time++;
- 	locks_insert_block(flock, new_fl);
- 	unlock_flocks();
- 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1997,7 +1997,9 @@ static ssize_t n_tty_write(struct tty_st
+ 				tty->ops->flush_chars(tty);
+ 		} else {
+ 			while (nr > 0) {
++				mutex_lock(&tty->output_lock);
+ 				c = tty->ops->write(tty, b, nr);
++				mutex_unlock(&tty->output_lock);
+ 				if (c < 0) {
+ 					retval = c;
+ 					goto break_out;
 
