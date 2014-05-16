@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaEPIKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:10:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26275 "EHLO mga11.intel.com"
+	id S932314AbaEPIK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:10:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27264 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333AbaEPIIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:08:19 -0400
+	id S1756339AbaEPIHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:07:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540108156"
+   d="scan'208";a="540108092"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,9 +16,10 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
-        Tony Lindgren <tony@atomide.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
         Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -26,10 +27,11 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
-Subject: [RFC Patch Part1 V1 29/30] x86, irq, devicetree: use common irqdomain map interface to program IOAPIC pins
-Date: Fri, 16 May 2014 16:05:49 +0800
-Message-Id: <1400227550-5935-30-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [RFC Patch Part1 V1 28/30] x86, irq, SFI: use common irqdomain map interface to program IOAPIC pins
+Date: Fri, 16 May 2014 16:05:48 +0800
+Message-Id: <1400227550-5935-29-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,53 +39,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refine devicetree to use common irqdomain map interface to program
-IOAPIC pins, so we can unify the callsite to progam IOAPIC pins.
+Refine SFI to use common irqdomain map interface to program IOAPIC pins,
+so we can unify the callsite to progam IOAPIC pins.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/devicetree.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ arch/x86/pci/intel_mid_pci.c      |   17 +++++++----------
+ arch/x86/platform/intel-mid/sfi.c |   18 +++++++++---------
+ arch/x86/platform/sfi/sfi.c       |    4 +++-
+ 3 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index a44d45df49f5..3bd30eb92d9d 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -280,10 +280,8 @@ static int ioapic_xlate(struct irq_domain *domain,
- 			const u32 *intspec, u32 intsize,
- 			irq_hw_number_t *out_hwirq, u32 *out_type)
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 84b9d672843d..f6f3de857baa 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -208,23 +208,20 @@ static int pci_write(struct pci_bus *bus, unsigned int devfn, int where,
+ 
+ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
  {
--	struct io_apic_irq_attr attr;
- 	struct of_ioapic_type *it;
- 	u32 line, idx;
--	int rc;
- 
- 	if (WARN_ON(intsize < 2))
- 		return -EINVAL;
-@@ -296,12 +294,9 @@ static int ioapic_xlate(struct irq_domain *domain,
- 	it = &of_ioapic_type[intspec[1]];
- 
- 	idx = (u32)(long)domain->host_data;
--	set_io_apic_irq_attr(&attr, idx, line, it->trigger, it->polarity);
+-	u8 pin;
+-	struct io_apic_irq_attr irq_attr;
 -
--	rc = io_apic_setup_irq_pin_once(irq_find_mapping(domain, line),
--					cpu_to_node(0), &attr);
--	if (rc)
--		return rc;
-+	if (mp_set_pin_attr(idx, line, it->trigger, it->polarity,
-+			    cpu_to_node(0)))
+-	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++	int ioapic, polarity;
+ 
+ 	/*
+ 	 * MRST only have IOAPIC, the PCI irq lines are 1:1 mapped to
+ 	 * IOAPIC RTE entries, so we just enable RTE for the device.
+ 	 */
+-	irq_attr.ioapic = mp_find_ioapic(dev->irq);
+-	irq_attr.ioapic_pin = dev->irq;
+-	irq_attr.trigger = 1; /* level */
++	ioapic = mp_find_ioapic(dev->irq);
+ 	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER)
+-		irq_attr.polarity = 0; /* active high */
++		polarity = 0; /* active high */
+ 	else
+-		irq_attr.polarity = 1; /* active low */
+-	io_apic_set_pci_routing(&dev->dev, dev->irq, &irq_attr);
++		polarity = 1; /* active low */
++	if (mp_set_pin_attr(ioapic, dev->irq, 1, polarity, dev_to_node(dev)))
 +		return -EBUSY;
++	mp_map_gsi_to_irq(dev->irq, 1);
  
- 	*out_hwirq = line;
- 	*out_type = it->out_type;
-@@ -309,6 +304,7 @@ static int ioapic_xlate(struct irq_domain *domain,
+ 	return 0;
  }
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 994c40bd7cb7..3fe5c23ba1c5 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -434,6 +434,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 	struct devs_id *dev = NULL;
+ 	int num, i;
+ 	int ioapic;
++	int polarity;
+ 	struct io_apic_irq_attr irq_attr;
  
- const struct irq_domain_ops ioapic_irq_domain_ops = {
+ 	sb = (struct sfi_table_simple *)table;
+@@ -450,30 +451,29 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 			 */
+ 			ioapic = mp_find_ioapic(irq);
+ 			if (ioapic >= 0) {
+-				irq_attr.ioapic = ioapic;
+-				irq_attr.ioapic_pin = irq;
+-				irq_attr.trigger = 1;
+ 				if (intel_mid_identify_cpu() ==
+ 						INTEL_MID_CPU_CHIP_TANGIER) {
+ 					if (!strncmp(pentry->name,
+ 							"r69001-ts-i2c", 13))
+ 						/* active low */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else if (!strncmp(pentry->name,
+ 							"synaptics_3202", 14))
+ 						/* active low */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else if (irq == 41)
+ 						/* fast_int_1 */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else
+ 						/* active high */
+-						irq_attr.polarity = 0;
++						polarity = 0;
+ 				} else {
+ 					/* PNW and CLV go with active low */
+-					irq_attr.polarity = 1;
++					polarity = 1;
+ 				}
+-				io_apic_set_pci_routing(NULL, irq, &irq_attr);
++				if (mp_set_pin_attr(ioapic, irq, 1, polarity, NUMA_NO_NODE))
++					return -EBUSY;
++				mp_map_gsi_to_irq(dev->irq, 1);
+ 			}
+ 		} else {
+ 			irq = 0; /* No irq */
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index 2c3522dfa05d..91e5046efae9 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -71,7 +71,9 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
+ #endif /* CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
+-static struct irq_domain_ops sfi_ioapic_irqdomain_ops;
++static struct irq_domain_ops sfi_ioapic_irqdomain_ops = {
 +	.map = mp_irqdomain_map,
- 	.xlate = ioapic_xlate,
- };
++};
  
+ static struct irq_domain *sfi_ioapic_create_irqdomain(int ioapic, void *arg)
+ {
 -- 
 1.7.10.4
 
