@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533AbaEPRR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:17:56 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31581 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751564AbaEPRRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:17:55 -0400
-Date: Fri, 16 May 2014 18:17:05 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes for 3.15
-Message-ID: <20140516171659.GA11088@arm.com>
+	id S1757830AbaEPRSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:18:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11150 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757590AbaEPRSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:18:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1068,1389772800"; 
+   d="scan'208";a="512875569"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Shy Shuky <rousya@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Ingo Molnar" <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>,
+        "xiexiuqi@huawei.com" <xiexiuqi@huawei.com>
+Subject: RE: [PATCH] time: Provide full featured jiffies_to_nsecs() function
+Thread-Topic: [PATCH] time: Provide full featured jiffies_to_nsecs() function
+Thread-Index: AQHPcRKVIK4lOPm6x0SG99JQVqbgGJtDbdtA
+Date: Fri, 16 May 2014 17:17:46 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3280B567@ORSMSX114.amr.corp.intel.com>
+References: <20140408153412.0648fb96@gandalf.local.home>
+	<0286550@agluck-desk.sc.intel.com>
+ <CAAhUcTTDQPZAC+Xg3u-KQvBwGX=B9HU5dnCjC7AJcUTDY2QLpw@mail.gmail.com>
+In-Reply-To: <CAAhUcTTDQPZAC+Xg3u-KQvBwGX=B9HU5dnCjC7AJcUTDY2QLpw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4GHIIYp024304
 
-Hi Linus,
+> How about get uptime by get_monotonic_boottime() directly, which's
+> the same as /proc/uptime.
 
-Please pull the arm64 fixes below. Thanks.
+I don't know.  get_monotonic_boottime() had existed for many releases
+at the point the uptime trace clock was added - so it was an available
+choice. Maybe not noticed by
 
+Is this function safe to call in every context (including NMI & machine check)?
+[it uses read_seqcount_begin/read_seqcount_retry ... which I *think* is
+safe ... but this stuff is tricky, so I'd like some reassurance].
 
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+Mauro, Steven: Did we just do math on jiffies because we wanted less overhead
+in a tracepoint?
 
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+Bigger question (mostly for Mauro) ... what was the motivation for the "uptime"
+tracer to begin with?  The rasdaemon code that is using it converts the times
+from traces into absolute times (by adding an offset it computes by comparing
+uptime and gettimeofday() when it starts).  But this would seem to be fraught
+with problems:
+1) Do we get this right for events that happen in daylight saving time shift windows?
+2) Is there a "drift" problem for systems that stay up for months and rely on ntp
+to keep wall clock time in line with reality?
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
-
-for you to fetch changes up to 4797ec2dc83a43be35bad56037d1b53db9e2b5d5:
-
-  arm64: fix pud_huge() for 2-level pagetables (2014-05-16 17:34:40 +0100)
-
-----------------------------------------------------------------
-- arm64 migrate_irqs() fix following commit ffde1de64012 (irqchip: Gic:
-  Support forced affinity setting)
-- fix arm64 pud_huge() to return 0 when only 2 levels page tables are
-  used (__PAGETABLE_PMD_FOLDED defined and pmd_huge already covers block
-  entries at the first level), otherwise KVM gets confused
-
-----------------------------------------------------------------
-Mark Salter (1):
-      arm64: fix pud_huge() for 2-level pagetables
-
-Sudeep Holla (1):
-      arm64: use cpu_online_mask when using forced irq_set_affinity
-
- arch/arm64/kernel/irq.c     | 10 +++++++---
- arch/arm64/mm/hugetlbpage.c |  4 ++++
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
--- 
-Catalin
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
