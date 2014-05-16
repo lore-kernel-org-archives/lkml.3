@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546AbaEPNfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:35:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54234 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470AbaEPNfw (ORCPT
+	id S932520AbaEPNfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:35:51 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54052 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470AbaEPNfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:35:52 -0400
-Date: Fri, 16 May 2014 06:34:57 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-651fb13943304be2008b43adf813fa62435423d7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, cmetcalf@tilera.com,
-        tony.luck@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, tglx@linutronix.de
-In-Reply-To: <20140507154337.643399187@linutronix.de>
-References: <20140507154337.643399187@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] tile: serial: Use irq_alloc/free_hwirq
-Git-Commit-ID: 651fb13943304be2008b43adf813fa62435423d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 May 2014 09:35:48 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399267649-20218-7-git-send-email-antoine.tenart@free-electrons.com>
+References: <1399267649-20218-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1399267649-20218-7-git-send-email-antoine.tenart@free-electrons.com>
+Date: Fri, 16 May 2014 15:35:48 +0200
+Message-ID: <CACRpkdaL9tzfUrY=wLjSR3dcD7JC1mUX3kdG+Wh5gDyxGY2Yqw@mail.gmail.com>
+Subject: Re: [PATCH v3 6/7] Documentation: add the Marvell Berlin pinctrl documentation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        zhiming Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  651fb13943304be2008b43adf813fa62435423d7
-Gitweb:     http://git.kernel.org/tip/651fb13943304be2008b43adf813fa62435423d7
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 7 May 2014 15:44:15 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 16 May 2014 14:05:20 +0200
+On Mon, May 5, 2014 at 7:27 AM, Antoine Ténart
+<antoine.tenart@free-electrons.com> wrote:
 
-tile: serial: Use irq_alloc/free_hwirq
+> Add the documentation related to the Berlin pin-controller driver and
+> explain how to configure this group based controller.
+>
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+(...)
 
-No functional change. Just convert to the new interface.
+When I see this:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Link: http://lkml.kernel.org/r/20140507154337.643399187@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/tty/serial/tilegx.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> +Required subnode-properties:
+> +- marvell,groups: a list of strings describing the group names.
+> +- marvell,function: a string describing the function used to mux the groups.
+> +
+> +Example:
+> +
+> +sm_pinctrl: pin-controller@0 {
+> +       compatible = "marvell,berlin2q-sysmgr-pinctrl";
+> +       reg = <0xfc0000 0x44>;
+> +
+> +       uart0_pmux: uart0-pmux {
+> +               marvell,groups = "GSM12", "GSM13";
+> +               marvell,function = "uart0";
+> +       };
+> +}
 
-diff --git a/drivers/tty/serial/tilegx.c b/drivers/tty/serial/tilegx.c
-index f92d7e6..613ccf0 100644
---- a/drivers/tty/serial/tilegx.c
-+++ b/drivers/tty/serial/tilegx.c
-@@ -359,8 +359,8 @@ static int tilegx_startup(struct uart_port *port)
- 		}
- 
- 		/* Create our IRQs. */
--		port->irq = create_irq();
--		if (port->irq < 0)
-+		port->irq = irq_alloc_hwirq(-1);
-+		if (!port->irq)
- 			goto err_uart_dest;
- 		tile_irq_activate(port->irq, TILE_IRQ_PERCPU);
- 
-@@ -395,7 +395,7 @@ static int tilegx_startup(struct uart_port *port)
- err_free_irq:
- 	free_irq(port->irq, port);
- err_dest_irq:
--	destroy_irq(port->irq);
-+	irq_free_hwirq(port->irq);
- err_uart_dest:
- 	gxio_uart_destroy(context);
- 	ret = -ENXIO;
-@@ -435,7 +435,7 @@ static void tilegx_shutdown(struct uart_port *port)
- 
- 	if (port->irq > 0) {
- 		free_irq(port->irq, port);
--		destroy_irq(port->irq);
-+		irq_free_hwirq(port->irq);
- 		port->irq = 0;
- 	}
- 
+I feel like ... can't we just standardize that and make it a common
+pinctrl binding, and name the properties "groups" and "function"
+for a family of pin controllers just mapping N groups to 1 function?
+
+I will merge the patches as are, but maybe we can make it generic
+on top of this before the merge window?
+
+Yours,
+Linus Walleij
