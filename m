@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464AbaEPNfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:35:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54209 "EHLO
+	id S932494AbaEPNfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:35:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54220 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbaEPNfb (ORCPT
+	with ESMTP id S932470AbaEPNfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:35:31 -0400
-Date: Fri, 16 May 2014 06:34:33 -0700
+	Fri, 16 May 2014 09:35:41 -0400
+Date: Fri, 16 May 2014 06:34:45 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-7e5f01b1a1504b2777342628e365c1a0c6600b0e@git.kernel.org>
+Message-ID: <tip-094e873c2a0bd54ced4e98f1f6f612b1fc60f426@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, cmetcalf@tilera.com,
         tony.luck@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
         linux-kernel@vger.kernel.org, peterz@infradead.org,
         cmetcalf@tilera.com, tony.luck@intel.com, tglx@linutronix.de
-In-Reply-To: <20140507154337.177939962@linutronix.de>
-References: <20140507154337.177939962@linutronix.de>
+In-Reply-To: <20140507154337.410843062@linutronix.de>
+References: <20140507154337.410843062@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] tile: usb: Use irq_alloc/free_hwirq
-Git-Commit-ID: 7e5f01b1a1504b2777342628e365c1a0c6600b0e
+Subject: [tip:irq/core] tile: net: Use irq_alloc/free_hwirq
+Git-Commit-ID: 094e873c2a0bd54ced4e98f1f6f612b1fc60f426
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,14 +33,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e5f01b1a1504b2777342628e365c1a0c6600b0e
-Gitweb:     http://git.kernel.org/tip/7e5f01b1a1504b2777342628e365c1a0c6600b0e
+Commit-ID:  094e873c2a0bd54ced4e98f1f6f612b1fc60f426
+Gitweb:     http://git.kernel.org/tip/094e873c2a0bd54ced4e98f1f6f612b1fc60f426
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 7 May 2014 15:44:13 +0000
+AuthorDate: Wed, 7 May 2014 15:44:14 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 16 May 2014 14:05:20 +0200
 
-tile: usb: Use irq_alloc/free_hwirq
+tile: net: Use irq_alloc/free_hwirq
 
 No functional change. Just convert to the new interface.
 
@@ -49,76 +49,33 @@ Reviewed-by: Grant Likely <grant.likely@linaro.org>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Link: http://lkml.kernel.org/r/20140507154337.177939962@linutronix.de
+Link: http://lkml.kernel.org/r/20140507154337.410843062@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/usb/host/ehci-tilegx.c | 8 ++++----
- drivers/usb/host/ohci-tilegx.c | 8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/tile/tilegx.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-tilegx.c b/drivers/usb/host/ehci-tilegx.c
-index f3713d3..0d24767 100644
---- a/drivers/usb/host/ehci-tilegx.c
-+++ b/drivers/usb/host/ehci-tilegx.c
-@@ -142,8 +142,8 @@ static int ehci_hcd_tilegx_drv_probe(struct platform_device *pdev)
- 	ehci->hcs_params = readl(&ehci->caps->hcs_params);
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 7e1c91d..449011b 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -1208,8 +1208,8 @@ static int tile_net_setup_interrupts(struct net_device *dev)
  
- 	/* Create our IRQs and register them. */
--	pdata->irq = create_irq();
--	if (pdata->irq < 0) {
-+	pdata->irq = irq_alloc_hwirq(-1);
-+	if (!pdata->irq) {
- 		ret = -ENXIO;
- 		goto err_no_irq;
- 	}
-@@ -175,7 +175,7 @@ static int ehci_hcd_tilegx_drv_probe(struct platform_device *pdev)
- 	}
- 
- err_have_irq:
--	destroy_irq(pdata->irq);
-+	irq_free_hwirq(pdata->irq);
- err_no_irq:
- 	tilegx_stop_ehc();
- 	usb_put_hcd(hcd);
-@@ -193,7 +193,7 @@ static int ehci_hcd_tilegx_drv_remove(struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- 	tilegx_stop_ehc();
- 	gxio_usb_host_destroy(&pdata->usb_ctx);
--	destroy_irq(pdata->irq);
-+	irq_free_hwirq(pdata->irq);
- 
- 	return 0;
- }
-diff --git a/drivers/usb/host/ohci-tilegx.c b/drivers/usb/host/ohci-tilegx.c
-index 0b183e0..bef6dfb 100644
---- a/drivers/usb/host/ohci-tilegx.c
-+++ b/drivers/usb/host/ohci-tilegx.c
-@@ -129,8 +129,8 @@ static int ohci_hcd_tilegx_drv_probe(struct platform_device *pdev)
- 	tilegx_start_ohc();
- 
- 	/* Create our IRQs and register them. */
--	pdata->irq = create_irq();
--	if (pdata->irq < 0) {
-+	pdata->irq = irq_alloc_hwirq(-1);
-+	if (!pdata->irq) {
- 		ret = -ENXIO;
- 		goto err_no_irq;
- 	}
-@@ -164,7 +164,7 @@ static int ohci_hcd_tilegx_drv_probe(struct platform_device *pdev)
- 	}
- 
- err_have_irq:
--	destroy_irq(pdata->irq);
-+	irq_free_hwirq(pdata->irq);
- err_no_irq:
- 	tilegx_stop_ohc();
- 	usb_put_hcd(hcd);
-@@ -182,7 +182,7 @@ static int ohci_hcd_tilegx_drv_remove(struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- 	tilegx_stop_ohc();
- 	gxio_usb_host_destroy(&pdata->usb_ctx);
--	destroy_irq(pdata->irq);
-+	irq_free_hwirq(pdata->irq);
- 
- 	return 0;
- }
+ 	irq = md->ingress_irq;
+ 	if (irq < 0) {
+-		irq = create_irq();
+-		if (irq < 0) {
++		irq = irq_alloc_hwirq(-1);
++		if (!irq) {
+ 			netdev_err(dev,
+ 				   "create_irq failed: mpipe[%d] %d\n",
+ 				   instance, irq);
+@@ -1223,7 +1223,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+ 		if (rc != 0) {
+ 			netdev_err(dev, "request_irq failed: mpipe[%d] %d\n",
+ 				   instance, rc);
+-			destroy_irq(irq);
++			irq_free_hwirq(irq);
+ 			return rc;
+ 		}
+ 		md->ingress_irq = irq;
