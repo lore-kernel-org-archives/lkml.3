@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaEPO0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:26:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29892 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536AbaEPO0N (ORCPT
+	id S1756895AbaEPO1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:27:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42519 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755567AbaEPO1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:26:13 -0400
-Message-ID: <53761FDB.10806@oracle.com>
-Date: Fri, 16 May 2014 10:25:31 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 16 May 2014 10:27:38 -0400
+Date: Fri, 16 May 2014 10:27:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 1/3] PM / sleep: Mechanism to avoid resuming runtime-suspended
+ devices unnecessarily
+In-Reply-To: <7183958.HCss1mGDD2@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405161023110.1224-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kthreads: kill CLONE_KERNEL, change kernel_thread(kernel_init)
- to avoid CLONE_SIGHAND
-References: <20140413195617.GA31819@redhat.com>
-In-Reply-To: <20140413195617.GA31819@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2014 03:56 PM, Oleg Nesterov wrote:
-> 1. Remove CLONE_KERNEL, it has no users and it is dangerous.
-> 
->    The (old) comment says "List of flags we want to share for kernel
->    threads" but this is not true, we do not want to share ->sighand by
->    default. This flag can only be used if the caller is sure that both
->    parent/child will never play with signals (say, allow_signal/etc).
-> 
-> 2. Change rest_init() to clone kernel_init() without CLONE_SIGHAND.
-> 
->    In this case CLONE_SIGHAND does not really hurt, and it looks like
->    optimization because copy_sighand() can avoid kmem_cache_alloc().
-> 
->    But in fact this only adds the minor pessimization. kernel_init()
->    is going to exec the init process, and de_thread() will need to
->    unshare ->sighand and do kmem_cache_alloc(sighand_cachep) anyway,
->    but it needs to do more work and take tasklist_lock and siglock.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Fri, 16 May 2014, Rafael J. Wysocki wrote:
 
-Hi Oleg,
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> resume all runtime-suspended devices during system suspend, mostly
+> because those devices may need to be reprogrammed due to different
+> wakeup settings for system sleep and for runtime PM.
+> 
+> For some devices, though, it's OK to remain in runtime suspend 
+> throughout a complete system suspend/resume cycle (if the device was in
+> runtime suspend at the start of the cycle).  We would like to do this
+> whenever possible, to avoid the overhead of extra power-up and power-down
+> events.
+> 
+> However, problems may arise because the device's descendants may require
+> it to be at full power at various points during the cycle.  Therefore the
+> most straightforward way to do this safely is if the device and all its
+> descendants can remain runtime suspended until the complete stage of
+> system resume.
+> 
+> To this end, introduce a new device PM flag, power.direct_complete
+> and modify the PM core to use that flag as follows.
+> 
+> If the ->prepare() callback of a device returns a positive number,
+> the PM core will regard that as an indication that it may leave the
+> device runtime-suspended.  It will then check if the system power
+> transition in progress is a suspend (and not hibernation in particular)
+> and if the device is, indeed, runtime-suspended.  In that case, the PM
+> core will set the device's power.direct_complete flag.  Otherwise it
+> will clear power.direct_complete for the device and it also will later
+> clear it for the device's parent (if there's one).
+> 
+> Next, the PM core will not invoke the ->suspend() ->suspend_late(),
+> ->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
+> callbacks for all devices having power.direct_complete set.  It
+> will invoke their ->complete() callbacks, however, and those
+> callbacks are then responsible for resuming the devices as
+> appropriate, if necessary.  For example, in some cases they may
+> need to queue up runtime resume requests for the devices using
+> pm_request_resume().
+> 
+> Changelog partly based on an Alan Stern's description of the idea
+> (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This patch triggers a hang during boot in my KVM guest. There are no
-messages or anything, it just hangs right before init is supposed to
-start up.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-I've narrowed it down a bit, and it's the removal of CLONE_SIGHAND
-that's bothering it. Removing CLONE_FS and CLONE_FILES doesn't
-cause the hang on boot.
+And likewise for the documentation patches.
 
-
-Thanks,
-Sasha
