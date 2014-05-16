@@ -1,146 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaEPPnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:43:37 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:38987 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaEPPne (ORCPT
+	id S1751495AbaEPPnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:43:49 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:52889 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaEPPnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:43:34 -0400
-Date: Fri, 16 May 2014 11:43:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        ARM kernel mailing list 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH cgroup/for-3.16] cgroup: introduce CSS_NO_REF and skip
- refcnting on normal root csses
-Message-ID: <20140516154330.GB5379@htj.dyndns.org>
-References: <1399670015-23463-1-git-send-email-tj@kernel.org>
- <1399670015-23463-10-git-send-email-tj@kernel.org>
- <53751062.2050401@wwwdotorg.org>
- <53753823.2090402@wwwdotorg.org>
- <20140516143718.GA5379@htj.dyndns.org>
+	Fri, 16 May 2014 11:43:46 -0400
+Date: Fri, 16 May 2014 10:43:38 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140516154338.GB23902@ubuntu-hedt>
+Mail-Followup-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>,
+	Jens Axboe <axboe@kernel.dk>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <20140515031527.GA146352@ubuntu-hedt>
+ <20140515040032.GA6702@kroah.com>
+ <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+ <20140515140856.GA17453@kroah.com>
+ <20140515174254.GM21073@ubuntumail>
+ <20140515221551.GB13306@kroah.com>
+ <20140516014959.GD22591@ubuntumail>
+ <20140516043532.GA14149@kroah.com>
+ <20140516140607.GA23902@ubuntu-hedt>
+ <1400254108.3540.5.camel@canyon.ip6.wittsend.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140516143718.GA5379@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400254108.3540.5.camel@canyon.ip6.wittsend.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 49035d695d8f1c4bbe4e37480e5d06812818947c Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Fri, 16 May 2014 11:40:33 -0400
+On Fri, May 16, 2014 at 11:28:28AM -0400, Michael H. Warfield wrote:
+> On Fri, 2014-05-16 at 09:06 -0500, Seth Forshee wrote:
+> > On Thu, May 15, 2014 at 09:35:32PM -0700, Greg Kroah-Hartman wrote:
+> > > On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
+> > > > > I think having to pick and choose what device nodes you want in a
+> > > > > container is a good thing.  Becides, you would have to do the same thing
+> > > > > in the kernel anyway, what's wrong with userspace making the decision
+> > > > > here, especially as it knows exactly what it wants to do much more so
+> > > > > than the kernel ever can.
+> > > > 
+> > > > For 'real' devices that sounds sensible.  The thing about loop devices
+> > > > is that we simply want to allow a container to say "give me a loop
+> > > > device to use" and have it receive a unique loop device (or 3), without
+> > > > having to pre-assign them.  I think that would be cleaner to do using
+> > > > a pseudofs and loop-control device, rather than having to have a
+> > > > daemon in userspace on the host farming those out in response to
+> > > > some, I don't know, dbus request?
+> > > 
+> > > I agree that loop devices would be nice to have in a container, and that
+> > > the existing loop interface doesn't really lend itself to that.  So
+> > > create a new type of thing that acts like a loop device in a container.
+> > > But don't try to mess with the whole driver core just for a single type
+> > > of device.
+> 
+> > No matter what I don't think we get out of this without driver core
+> > changes, whether this was done in loop or by creating something new.
+> > Not unless the whole thing is punted to userspace, anyway.
+> 
+> > The first problem is that many block device ioctls check for
+> > CAP_SYS_ADMIN. Most of these might not ever be used on loop devices, I'm
+> > not really sure. But loop does at minimum support partitions, and to get
+> > that functionality in an unprivileged container at least the block layer
+> > needs to know the namespace which has privileges for that device.
+> 
+> Woa!  Time out...  Sorry, this will be an off topic aside.
+> 
+> Loop devices support partitions?  I'd love to know how that works.  I've
+> tried several times in the past to do that but it's failed every time.
+> I haven't been able to find any how-to in the past.  This article was
+> just a couple of years ago (after the last time I tried this):
+> 
+> http://madduck.net/blog/2006.10.20:loop-mounting-partitions-from-a-disk-image/
+> 
+> This guy didn't use partitions directly but used the offset to the
+> mount, which is what I had to use.  Everything I found always referred
+> to using mount offsets in order to mount partitions within a loop
+> device.
 
-9395a4500404 ("cgroup: enable refcnting for root csses") enabled
-reference counting for root csses (cgroup_subsys_states) so that
-cgroup's self csses can be used to manage the lifetime of the
-containing cgroups.
-
-Unfortunately, this change was incorrect.  cpu controller uses
-early_init and starts using css reference counts on its root css from
-then on.  percpu_ref can't initialized during early init and its
-initialization is deferred till cgroup_init() time.  This means that
-cpu was using percpu_ref which wasn't properly initialized.  Due to
-the way percpu variables are laid out on x86, this didn't blow up
-immediately on x86 but ended up incrementing and decrementing the
-percpu variable at offset zero, whatever it may be; however, on other
-archs, this caused fault and early boot failure.
-
-As cgroup self csses still need working refcounting, we can't revert
-9395a4500404.  This patch adds CSS_NO_REF which explicitly inhibits
-reference counting on the css and sets it on all normal (non-self)
-csses.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Stephen Warren <swarren@wwwdotorg.org>
-Fixes: 9395a4500404 ("cgroup: enable refcnting for root csses")
----
-Patch applied to cgroup/for-3.16.
-
-Thanks.
-
- include/linux/cgroup.h | 11 ++++++++---
- kernel/cgroup.c        |  9 +++++++--
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 76dadd77..1737db0 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -77,6 +77,7 @@ struct cgroup_subsys_state {
- 
- /* bits in struct cgroup_subsys_state flags field */
- enum {
-+	CSS_NO_REF	= (1 << 0), /* no reference counting for this css */
- 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
- };
- 
-@@ -88,7 +89,8 @@ enum {
-  */
- static inline void css_get(struct cgroup_subsys_state *css)
- {
--	percpu_ref_get(&css->refcnt);
-+	if (!(css->flags & CSS_NO_REF))
-+		percpu_ref_get(&css->refcnt);
- }
- 
- /**
-@@ -103,7 +105,9 @@ static inline void css_get(struct cgroup_subsys_state *css)
-  */
- static inline bool css_tryget_online(struct cgroup_subsys_state *css)
- {
--	return percpu_ref_tryget_live(&css->refcnt);
-+	if (!(css->flags & CSS_NO_REF))
-+		return percpu_ref_tryget_live(&css->refcnt);
-+	return true;
- }
- 
- /**
-@@ -114,7 +118,8 @@ static inline bool css_tryget_online(struct cgroup_subsys_state *css)
-  */
- static inline void css_put(struct cgroup_subsys_state *css)
- {
--	percpu_ref_put(&css->refcnt);
-+	if (!(css->flags & CSS_NO_REF))
-+		percpu_ref_put(&css->refcnt);
- }
- 
- /* bits in struct cgroup flags field */
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index c01e8e8..ad15bb7 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4593,11 +4593,17 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
- 	/* We don't handle early failures gracefully */
- 	BUG_ON(IS_ERR(css));
- 	init_and_link_css(css, ss, &cgrp_dfl_root.cgrp);
-+
-+	/*
-+	 * Root csses are never destroyed and we can't initialize
-+	 * percpu_ref during early init.  Disable refcnting.
-+	 */
-+	css->flags |= CSS_NO_REF;
-+
- 	if (early) {
- 		/* allocation can't be done safely during early init */
- 		css->id = 1;
- 	} else {
--		BUG_ON(percpu_ref_init(&css->refcnt, css_release));
- 		css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2, GFP_KERNEL);
- 		BUG_ON(css->id < 0);
- 	}
-@@ -4684,7 +4690,6 @@ int __init cgroup_init(void)
- 			struct cgroup_subsys_state *css =
- 				init_css_set.subsys[ss->id];
- 
--			BUG_ON(percpu_ref_init(&css->refcnt, css_release));
- 			css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2,
- 						   GFP_KERNEL);
- 			BUG_ON(css->id < 0);
--- 
-1.9.0
-
+It's controlled by the loop.max_part module parameter. It defaults to 0,
+which means no partition support. For any value > 0 max_part will be the
+maximum available partition number, after rounding it up to the nearest
+power of 2 minus 1 (so max_part=5 gives you up to 8 partitions,
+max_part=8 gives you up to 16, etc).
