@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714AbaEPPCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:02:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55136 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932562AbaEPPCl (ORCPT
+	id S932585AbaEPPD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:03:29 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:50082 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755513AbaEPPD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:02:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19EZoFmMX3ysQHfLKuAhPiJ
-Date: Fri, 16 May 2014 08:02:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: nsekhar@ti.com, joelf@ti.com, arnd@arndb.de, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        bcousson@baylibre.com
-Subject: Re: [PATCH v3 11/13] ARM: dts: am4372: Remove obsolete properties
- from edma node
-Message-ID: <20140516150232.GB22031@atomide.com>
-References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com>
- <1400242640-9902-12-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400242640-9902-12-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 16 May 2014 11:03:26 -0400
+Date: Fri, 16 May 2014 10:03:22 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
+ offline
+In-Reply-To: <20140516132234.GF32113@esperanza>
+Message-ID: <alpine.DEB.2.10.1405160957100.32249@gentwo.org>
+References: <cover.1399982635.git.vdavydov@parallels.com> <6eafe1e95d9a934228e9af785f5b5de38955aa6a.1399982635.git.vdavydov@parallels.com> <alpine.DEB.2.10.1405141119320.16512@gentwo.org> <20140515071650.GB32113@esperanza> <alpine.DEB.2.10.1405151015330.24665@gentwo.org>
+ <20140516132234.GF32113@esperanza>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [140516 05:19]:
-> dma-channels, ti,edma-regions and ti,edma-slots no longer needed in DT since
-> the the same information is available in the IP's CCCFG register.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+On Fri, 16 May 2014, Vladimir Davydov wrote:
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+> > Do we even know that all objects in that slab belong to a certain cgroup?
+> > AFAICT the fastpath currently do not allow to make that distinction.
+>
+> All allocations from a memcg's cache are accounted to the owner memcg,
+> so that all objects on the same slab belong to the same memcg, a pointer
+> to which can be obtained from the page->slab_cache->memcg_params. At
+> least, this is true since commit faebbfe10ec1 ("sl[au]b: charge slabs to
+> kmemcg explicitly").
 
-> ---
->  arch/arm/boot/dts/am4372.dtsi | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-> index 03a225505126..b9f83b705f4b 100644
-> --- a/arch/arm/boot/dts/am4372.dtsi
-> +++ b/arch/arm/boot/dts/am4372.dtsi
-> @@ -108,9 +108,6 @@
->  					<GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
->  					<GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
->  			#dma-cells = <1>;
-> -			dma-channels = <64>;
-> -			ti,edma-regions = <4>;
-> -			ti,edma-slots = <256>;
->  		};
->  
->  		uart0: serial@44e09000 {
-> -- 
-> 1.9.3
-> 
+I doubt that. The accounting occurs when a new cpu slab page is allocated.
+But the individual allocations in the fastpath are not accounted to a
+specific group. Thus allocation in a slab page can belong to various
+cgroups.
+
+> > I wish you would find some other way to do this.
+>
+> The only practical alternative to re-parenting I see right now is
+> periodic reaping, but Johannes isn't very fond of it, and his opinion is
+> quite justified, because having caches that will never be allocated from
+> hanging around indefinitely, only because they have a couple of active
+> objects to be freed, doesn't look very good.
+
+If all objects in the cache are in use then the slab page needs to hang
+around since the objects presence is required. You may not know exactly
+which cgroups these object belong to. The only thing that you may now (if
+you keep a list of full slabs) is which cgroup was in use then the
+slab page was initially allocated.
+
+Isnt it sufficient to add a counter of full slabs to a cgroup? When you
+allocate a new slab page add to the counter. When an object in a slab page
+is freed and the slab page goes on a partial list decrement the counter.
+
+That way you can avoid tracking full slabs.
+
