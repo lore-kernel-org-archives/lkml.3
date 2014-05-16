@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341AbaEPIDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:03:37 -0400
+	id S1756312AbaEPIDf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:03:35 -0400
 Received: from mga11.intel.com ([192.55.52.93]:55849 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755475AbaEPID0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:03:26 -0400
+	id S1755986AbaEPID2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:03:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540106105"
+   d="scan'208";a="540106199"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,19 +16,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiri Kosina <trivial@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-doc@vger.kernel.org
-Subject: [RFC Patch Part1 V1 01/30] genirq, trivial: improve documentation to match current implementation
-Date: Fri, 16 May 2014 16:05:21 +0800
-Message-Id: <1400227550-5935-2-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
+Subject: [RFC Patch Part1 V1 02/30] x86, mpparse: use pr_lvl() helper utilities to replace printk(KERN_LVL)
+Date: Fri, 16 May 2014 16:05:22 +0800
+Message-Id: <1400227550-5935-3-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
@@ -36,62 +34,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use pr_lvl() helper utilities to replace printk(KERN_LVL) for readability,
+no function changes.
+
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- Documentation/IRQ-domain.txt |    3 +--
- kernel/irq/internals.h       |    2 +-
- kernel/irq/irqdomain.c       |    6 +++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ arch/x86/kernel/mpparse.c |   84 +++++++++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 45 deletions(-)
 
-diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-index 03df71aeb38c..8a8b82c9ca53 100644
---- a/Documentation/IRQ-domain.txt
-+++ b/Documentation/IRQ-domain.txt
-@@ -41,8 +41,7 @@ An interrupt controller driver creates and registers an irq_domain by
- calling one of the irq_domain_add_*() functions (each mapping method
- has a different allocator function, more on that later).  The function
- will return a pointer to the irq_domain on success.  The caller must
--provide the allocator function with an irq_domain_ops structure with
--the .map callback populated as a minimum.
-+provide the allocator function with an irq_domain_ops structure.
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index d2b56489d70f..24da837389b7 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -67,7 +67,7 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ 		boot_cpu_physical_apicid = m->apicid;
+ 	}
  
- In most cases, the irq_domain will begin empty without any mappings
- between hwirq and IRQ numbers.  Mappings are added to the irq_domain
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index ddf1ffeb79f1..9552a0c123c8 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -33,7 +33,7 @@ enum {
- };
+-	printk(KERN_INFO "Processor #%d%s\n", m->apicid, bootup_cpu);
++	pr_info("Processor #%d%s\n", m->apicid, bootup_cpu);
+ 	generic_processor_info(apicid, m->apicver);
+ }
  
- /*
-- * Bit masks for desc->state
-+ * Bit masks for desc->core_internal_state__do_not_mess_with_it
-  *
-  * IRQS_AUTODETECT		- autodetection in progress
-  * IRQS_SPURIOUS_DISABLED	- was disabled due to spurious interrupt
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index f14033700c25..eb5e10e32e05 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -27,14 +27,14 @@ static struct irq_domain *irq_default_domain;
-  * __irq_domain_add() - Allocate a new irq_domain data structure
-  * @of_node: optional device-tree node of the interrupt controller
-  * @size: Size of linear map; 0 for radix mapping only
-+ * @hwirq_max: Maximum number of interrupts supported by controller
-  * @direct_max: Maximum value of direct maps; Use ~0 for no limit; 0 for no
-  *              direct mapping
-  * @ops: map/unmap domain callbacks
-  * @host_data: Controller private data pointer
-  *
-- * Allocates and initialize and irq_domain structure.  Caller is expected to
-- * register allocated irq_domain with irq_domain_register().  Returns pointer
-- * to IRQ domain, or NULL on failure.
-+ * Allocates and initialize and irq_domain structure.
-+ * Returns pointer to IRQ domain, or NULL on failure.
-  */
- struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
- 				    irq_hw_number_t hwirq_max, int direct_max,
+@@ -87,9 +87,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 
+ #if MAX_MP_BUSSES < 256
+ 	if (m->busid >= MAX_MP_BUSSES) {
+-		printk(KERN_WARNING "MP table busid value (%d) for bustype %s "
+-		       " is too large, max. supported is %d\n",
+-		       m->busid, str, MAX_MP_BUSSES - 1);
++		pr_warn("MP table busid value (%d) for bustype %s is too large, max. supported is %d\n",
++			m->busid, str, MAX_MP_BUSSES - 1);
+ 		return;
+ 	}
+ #endif
+@@ -110,7 +109,7 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_EISA;
+ #endif
+ 	} else
+-		printk(KERN_WARNING "Unknown bustype %s - ignoring\n", str);
++		pr_warn("Unknown bustype %s - ignoring\n", str);
+ }
+ 
+ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+@@ -148,34 +147,33 @@ static int __init smp_check_mpc(struct mpc_table *mpc, char *oem, char *str)
+ {
+ 
+ 	if (memcmp(mpc->signature, MPC_SIGNATURE, 4)) {
+-		printk(KERN_ERR "MPTABLE: bad signature [%c%c%c%c]!\n",
++		pr_err("MPTABLE: bad signature [%c%c%c%c]!\n",
+ 		       mpc->signature[0], mpc->signature[1],
+ 		       mpc->signature[2], mpc->signature[3]);
+ 		return 0;
+ 	}
+ 	if (mpf_checksum((unsigned char *)mpc, mpc->length)) {
+-		printk(KERN_ERR "MPTABLE: checksum error!\n");
++		pr_err("MPTABLE: checksum error!\n");
+ 		return 0;
+ 	}
+ 	if (mpc->spec != 0x01 && mpc->spec != 0x04) {
+-		printk(KERN_ERR "MPTABLE: bad table version (%d)!!\n",
+-		       mpc->spec);
++		pr_err("MPTABLE: bad table version (%d)!!\n", mpc->spec);
+ 		return 0;
+ 	}
+ 	if (!mpc->lapic) {
+-		printk(KERN_ERR "MPTABLE: null local APIC address!\n");
++		pr_err("MPTABLE: null local APIC address!\n");
+ 		return 0;
+ 	}
+ 	memcpy(oem, mpc->oem, 8);
+ 	oem[8] = 0;
+-	printk(KERN_INFO "MPTABLE: OEM ID: %s\n", oem);
++	pr_info("MPTABLE: OEM ID: %s\n", oem);
+ 
+ 	memcpy(str, mpc->productid, 12);
+ 	str[12] = 0;
+ 
+-	printk(KERN_INFO "MPTABLE: Product ID: %s\n", str);
++	pr_info("MPTABLE: Product ID: %s\n", str);
+ 
+-	printk(KERN_INFO "MPTABLE: APIC at: 0x%X\n", mpc->lapic);
++	pr_info("MPTABLE: APIC at: 0x%X\n", mpc->lapic);
+ 
+ 	return 1;
+ }
+@@ -188,8 +186,8 @@ static void skip_entry(unsigned char **ptr, int *count, int size)
+ 
+ static void __init smp_dump_mptable(struct mpc_table *mpc, unsigned char *mpt)
+ {
+-	printk(KERN_ERR "Your mptable is wrong, contact your HW vendor!\n"
+-		"type %x\n", *mpt);
++	pr_err("Your mptable is wrong, contact your HW vendor!\ntype %x\n",
++	       *mpt);
+ 	print_hex_dump(KERN_ERR, "  ", DUMP_PREFIX_ADDRESS, 16,
+ 			1, mpc, mpc->length, 1);
+ }
+@@ -259,7 +257,7 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
+ 	}
+ 
+ 	if (!num_processors)
+-		printk(KERN_ERR "MPTABLE: no processors registered!\n");
++		pr_err("MPTABLE: no processors registered!\n");
+ 	return num_processors;
+ }
+ 
+@@ -295,16 +293,13 @@ static void __init construct_default_ioirq_mptable(int mpc_default_type)
+ 	 *  If it does, we assume it's valid.
+ 	 */
+ 	if (mpc_default_type == 5) {
+-		printk(KERN_INFO "ISA/PCI bus type with no IRQ information... "
+-		       "falling back to ELCR\n");
++		pr_info("ISA/PCI bus type with no IRQ information... falling back to ELCR\n");
+ 
+ 		if (ELCR_trigger(0) || ELCR_trigger(1) || ELCR_trigger(2) ||
+ 		    ELCR_trigger(13))
+-			printk(KERN_ERR "ELCR contains invalid data... "
+-			       "not using ELCR\n");
++			pr_err("ELCR contains invalid data... not using ELCR\n");
+ 		else {
+-			printk(KERN_INFO
+-			       "Using ELCR to identify PCI interrupts\n");
++			pr_info("Using ELCR to identify PCI interrupts\n");
+ 			ELCR_fallback = 1;
+ 		}
+ 	}
+@@ -353,7 +348,7 @@ static void __init construct_ioapic_table(int mpc_default_type)
+ 	bus.busid = 0;
+ 	switch (mpc_default_type) {
+ 	default:
+-		printk(KERN_ERR "???\nUnknown standard configuration %d\n",
++		pr_err("???\nUnknown standard configuration %d\n",
+ 		       mpc_default_type);
+ 		/* fall through */
+ 	case 1:
+@@ -462,7 +457,7 @@ static int __init check_physptr(struct mpf_intel *mpf, unsigned int early)
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 		smp_found_config = 0;
+ #endif
+-		printk(KERN_ERR "BIOS bug, MP table errors detected!...\n"
++		pr_err("BIOS bug, MP table errors detected!...\n"
+ 			"... disabling SMP support. (tell your hw vendor)\n");
+ 		early_iounmap(mpc, size);
+ 		return -1;
+@@ -481,7 +476,7 @@ static int __init check_physptr(struct mpf_intel *mpf, unsigned int early)
+ 	if (!mp_irq_entries) {
+ 		struct mpc_bus bus;
+ 
+-		printk(KERN_ERR "BIOS bug, no explicit IRQ entries, "
++		pr_err("BIOS bug, no explicit IRQ entries, "
+ 		       "using default mptable. (tell your hw vendor)\n");
+ 
+ 		bus.type = MP_BUS;
+@@ -516,14 +511,14 @@ void __init default_get_smp_config(unsigned int early)
+ 	if (acpi_lapic && acpi_ioapic)
+ 		return;
+ 
+-	printk(KERN_INFO "Intel MultiProcessor Specification v1.%d\n",
+-	       mpf->specification);
++	pr_info("Intel MultiProcessor Specification v1.%d\n",
++		mpf->specification);
+ #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32)
+ 	if (mpf->feature2 & (1 << 7)) {
+-		printk(KERN_INFO "    IMCR and PIC compatibility mode.\n");
++		pr_info("    IMCR and PIC compatibility mode.\n");
+ 		pic_mode = 1;
+ 	} else {
+-		printk(KERN_INFO "    Virtual Wire compatibility mode.\n");
++		pr_info("    Virtual Wire compatibility mode.\n");
+ 		pic_mode = 0;
+ 	}
+ #endif
+@@ -539,8 +534,7 @@ void __init default_get_smp_config(unsigned int early)
+ 			return;
+ 		}
+ 
+-		printk(KERN_INFO "Default MP configuration #%d\n",
+-		       mpf->feature1);
++		pr_info("Default MP configuration #%d\n", mpf->feature1);
+ 		construct_default_ISA_mptable(mpf->feature1);
+ 
+ 	} else if (mpf->physptr) {
+@@ -550,7 +544,7 @@ void __init default_get_smp_config(unsigned int early)
+ 		BUG();
+ 
+ 	if (!early)
+-		printk(KERN_INFO "Processors: %d\n", num_processors);
++		pr_info("Processors: %d\n", num_processors);
+ 	/*
+ 	 * Only use the first configuration found.
+ 	 */
+@@ -583,10 +577,10 @@ static int __init smp_scan_config(unsigned long base, unsigned long length)
+ #endif
+ 			mpf_found = mpf;
+ 
+-			printk(KERN_INFO "found SMP MP-table at [mem %#010llx-%#010llx] mapped at [%p]\n",
+-			       (unsigned long long) virt_to_phys(mpf),
+-			       (unsigned long long) virt_to_phys(mpf) +
+-			       sizeof(*mpf) - 1, mpf);
++			pr_info("found SMP MP-table at [mem %#010llx-%#010llx] mapped at [%p]\n",
++				(unsigned long long) virt_to_phys(mpf),
++				(unsigned long long) virt_to_phys(mpf) +
++				sizeof(*mpf) - 1, mpf);
+ 
+ 			mem = virt_to_phys(mpf);
+ 			memblock_reserve(mem, sizeof(*mpf));
+@@ -735,7 +729,7 @@ static int  __init replace_intsrc_all(struct mpc_table *mpc,
+ 	int nr_m_spare = 0;
+ 	unsigned char *mpt = ((unsigned char *)mpc) + count;
+ 
+-	printk(KERN_INFO "mpc_length %x\n", mpc->length);
++	pr_info("mpc_length %x\n", mpc->length);
+ 	while (count < mpc->length) {
+ 		switch (*mpt) {
+ 		case MP_PROCESSOR:
+@@ -862,13 +856,13 @@ static int __init update_mp_table(void)
+ 	if (!smp_check_mpc(mpc, oem, str))
+ 		return 0;
+ 
+-	printk(KERN_INFO "mpf: %llx\n", (u64)virt_to_phys(mpf));
+-	printk(KERN_INFO "physptr: %x\n", mpf->physptr);
++	pr_info("mpf: %llx\n", (u64)virt_to_phys(mpf));
++	pr_info("physptr: %x\n", mpf->physptr);
+ 
+ 	if (mpc_new_phys && mpc->length > mpc_new_length) {
+ 		mpc_new_phys = 0;
+-		printk(KERN_INFO "mpc_new_length is %ld, please use alloc_mptable=8k\n",
+-			 mpc_new_length);
++		pr_info("mpc_new_length is %ld, please use alloc_mptable=8k\n",
++			mpc_new_length);
+ 	}
+ 
+ 	if (!mpc_new_phys) {
+@@ -879,10 +873,10 @@ static int __init update_mp_table(void)
+ 		mpc->checksum = 0xff;
+ 		new = mpf_checksum((unsigned char *)mpc, mpc->length);
+ 		if (old == new) {
+-			printk(KERN_INFO "mpc is readonly, please try alloc_mptable instead\n");
++			pr_info("mpc is readonly, please try alloc_mptable instead\n");
+ 			return 0;
+ 		}
+-		printk(KERN_INFO "use in-position replacing\n");
++		pr_info("use in-position replacing\n");
+ 	} else {
+ 		mpf->physptr = mpc_new_phys;
+ 		mpc_new = phys_to_virt(mpc_new_phys);
+@@ -892,7 +886,7 @@ static int __init update_mp_table(void)
+ 		if (mpc_new_phys - mpf->physptr) {
+ 			struct mpf_intel *mpf_new;
+ 			/* steal 16 bytes from [0, 1k) */
+-			printk(KERN_INFO "mpf new: %x\n", 0x400 - 16);
++			pr_info("mpf new: %x\n", 0x400 - 16);
+ 			mpf_new = phys_to_virt(0x400 - 16);
+ 			memcpy(mpf_new, mpf, 16);
+ 			mpf = mpf_new;
+@@ -900,7 +894,7 @@ static int __init update_mp_table(void)
+ 		}
+ 		mpf->checksum = 0;
+ 		mpf->checksum -= mpf_checksum((unsigned char *)mpf, 16);
+-		printk(KERN_INFO "physptr new: %x\n", mpf->physptr);
++		pr_info("physptr new: %x\n", mpf->physptr);
+ 	}
+ 
+ 	/*
 -- 
 1.7.10.4
 
