@@ -1,159 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094AbaEPOGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:06:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:23603 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932754AbaEPOFI (ORCPT
+	id S933235AbaEPOGW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:06:22 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:46014 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021AbaEPOGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:05:08 -0400
-Message-Id: <20140516140502.481024166@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Fri, 16 May 2014 10:02:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/4] tools lib traceevent: Add options to function plugin
-References: <20140516140215.149535442@goodmis.org>
+	Fri, 16 May 2014 10:06:15 -0400
+Date: Fri, 16 May 2014 09:06:07 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140516140607.GA23902@ubuntu-hedt>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	Jens Axboe <axboe@kernel.dk>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
+References: <20140515013245.GA1764@kroah.com>
+ <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+ <20140515031527.GA146352@ubuntu-hedt>
+ <20140515040032.GA6702@kroah.com>
+ <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+ <20140515140856.GA17453@kroah.com>
+ <20140515174254.GM21073@ubuntumail>
+ <20140515221551.GB13306@kroah.com>
+ <20140516014959.GD22591@ubuntumail>
+ <20140516043532.GA14149@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-tools-lib-traceevent-Add-options-to-function-plugin.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516043532.GA14149@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, May 15, 2014 at 09:35:32PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
+> > > I think having to pick and choose what device nodes you want in a
+> > > container is a good thing.  Becides, you would have to do the same thing
+> > > in the kernel anyway, what's wrong with userspace making the decision
+> > > here, especially as it knows exactly what it wants to do much more so
+> > > than the kernel ever can.
+> > 
+> > For 'real' devices that sounds sensible.  The thing about loop devices
+> > is that we simply want to allow a container to say "give me a loop
+> > device to use" and have it receive a unique loop device (or 3), without
+> > having to pre-assign them.  I think that would be cleaner to do using
+> > a pseudofs and loop-control device, rather than having to have a
+> > daemon in userspace on the host farming those out in response to
+> > some, I don't know, dbus request?
+> 
+> I agree that loop devices would be nice to have in a container, and that
+> the existing loop interface doesn't really lend itself to that.  So
+> create a new type of thing that acts like a loop device in a container.
+> But don't try to mess with the whole driver core just for a single type
+> of device.
 
-Add the options "parent" and "indent" to the function plugin.
+No matter what I don't think we get out of this without driver core
+changes, whether this was done in loop or by creating something new.
+Not unless the whole thing is punted to userspace, anyway.
 
-When parent is set, the output looks like this:
+The first problem is that many block device ioctls check for
+CAP_SYS_ADMIN. Most of these might not ever be used on loop devices, I'm
+not really sure. But loop does at minimum support partitions, and to get
+that functionality in an unprivileged container at least the block layer
+needs to know the namespace which has privileges for that device.
 
-function:             fsnotify_modify <-- vfs_write
-function:             zone_statistics <-- get_page_from_freelist
-function:                __inc_zone_state <-- zone_statistics
-function:                inotify_inode_queue_event <-- fsnotify_modify
-function:                fsnotify_parent <-- fsnotify_modify
-function:                __inc_zone_state <-- zone_statistics
-function:                   __fsnotify_parent <-- fsnotify_parent
-function:                   inotify_dentry_parent_queue_event <-- fsnotify_parent
-function:             add_to_page_cache_lru <-- do_read_cache_page
+The second is that all block devices automatically appear in devtmpfs.
+The scenario I'm concerned about is that the host could unknowingly use
+a loop device exposed to a container, then the container could see data
+from the host. So we either need a flag to tell the driver core not to
+create a node in devtmpfs, or we need a privileged manager in userspace
+to remove them (which kind of defeats the purpose). And it gets more
+complicated when partition block devs are mixed in, because they can be
+created without involvement from the driver - they would need to inherit
+the "no devtmpfs node" property from their parent, and if the driver
+uses a psuedo fs to create device nodes for userspace then it needs to
+be informed about the partitions too so it can create those nodes.
 
-When it's not set, it looks like:
+So maybe we could get by without the privileged ioctls, as long as it
+was understood that unprivileged containers can't do partitioning. But I
+do think the devtmpfs problem would need to be addressed.
 
-function:             fsnotify_modify
-function:             zone_statistics
-function:                __inc_zone_state
-function:                inotify_inode_queue_event
-function:                fsnotify_parent
-function:                __inc_zone_state
-function:                   __fsnotify_parent
-function:                   inotify_dentry_parent_queue_event
-function:             add_to_page_cache_lru
-
-When the otpion "indent" is not set, it looks like this:
-
-function:             fsnotify_modify <-- vfs_write
-function:             zone_statistics <-- get_page_from_freelist
-function:             __inc_zone_state <-- zone_statistics
-function:             inotify_inode_queue_event <-- fsnotify_modify
-function:             fsnotify_parent <-- fsnotify_modify
-function:             __inc_zone_state <-- zone_statistics
-function:             __fsnotify_parent <-- fsnotify_parent
-function:             inotify_dentry_parent_queue_event <-- fsnotify_parent
-function:             add_to_page_cache_lru <-- do_read_cache_page
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/plugin_function.c | 43 +++++++++++++++++++++++++++++-----
- 1 file changed, 37 insertions(+), 6 deletions(-)
-
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 80ba4ff1fe84..a00ec190821a 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -33,6 +33,29 @@ static int cpus = -1;
- 
- #define STK_BLK 10
- 
-+struct pevent_plugin_option plugin_options[] =
-+{
-+	{
-+		.name = "parent",
-+		.plugin_alias = "ftrace",
-+		.description =
-+		"Print parent of functions for function events",
-+	},
-+	{
-+		.name = "indent",
-+		.plugin_alias = "ftrace",
-+		.description =
-+		"Try to show function call indents, based on parents",
-+		.set = 1,
-+	},
-+	{
-+		.name = NULL,
-+	}
-+};
-+
-+static struct pevent_plugin_option *ftrace_parent = &plugin_options[0];
-+static struct pevent_plugin_option *ftrace_indent = &plugin_options[1];
-+
- static void add_child(struct func_stack *stack, const char *child, int pos)
- {
- 	int i;
-@@ -119,7 +142,8 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
- 
- 	parent = pevent_find_function(pevent, pfunction);
- 
--	index = add_and_get_index(parent, func, record->cpu);
-+	if (parent && ftrace_indent->set)
-+		index = add_and_get_index(parent, func, record->cpu);
- 
- 	trace_seq_printf(s, "%*s", index*3, "");
- 
-@@ -128,11 +152,13 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
- 	else
- 		trace_seq_printf(s, "0x%llx", function);
- 
--	trace_seq_printf(s, " <-- ");
--	if (parent)
--		trace_seq_printf(s, "%s", parent);
--	else
--		trace_seq_printf(s, "0x%llx", pfunction);
-+	if (ftrace_parent->set) {
-+		trace_seq_printf(s, " <-- ");
-+		if (parent)
-+			trace_seq_printf(s, "%s", parent);
-+		else
-+			trace_seq_printf(s, "0x%llx", pfunction);
-+	}
- 
- 	return 0;
- }
-@@ -141,6 +167,9 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
- {
- 	pevent_register_event_handler(pevent, -1, "ftrace", "function",
- 				      function_handler, NULL);
-+
-+	traceevent_plugin_add_options("ftrace", plugin_options);
-+
- 	return 0;
- }
- 
-@@ -157,6 +186,8 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
- 		free(fstack[i].stack);
- 	}
- 
-+	traceevent_plugin_remove_options(plugin_options);
-+
- 	free(fstack);
- 	fstack = NULL;
- 	cpus = -1;
--- 
-1.8.5.3
-
-
+Thanks,
+Seth
