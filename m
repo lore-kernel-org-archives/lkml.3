@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757AbaEPRFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:05:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53706 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaEPRFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:05:18 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] clk: qcom: Fix msm8660 GCC probe
-Date: Fri, 16 May 2014 10:05:14 -0700
-Message-Id: <1400259914-28121-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	id S1757257AbaEPRFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:05:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46616 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756475AbaEPRFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:05:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1068,1389772800"; 
+   d="scan'208";a="512869419"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/9] perf, tools: Only print base source file for srcline
+Date: Fri, 16 May 2014 10:05:33 -0700
+Message-Id: <1400259938-3436-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
+References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When consolidating the msm8660 GCC probe code I forgot to keep
-around these temporary clock registrations. Put them back so the
-clock tree is not entirely orphaned.
+From: Andi Kleen <ak@linux.intel.com>
 
-Fixes: 49fc825f0cc2 (clk: qcom: Consolidate common probe code)
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+For perf report with --sort srcline only print the base source file
+name. This makes the results generally fit much better to the
+screen. The path is usually not that useful anyways because it is
+often from different systems.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/clk/qcom/gcc-msm8660.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ tools/perf/util/srcline.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/clk/qcom/gcc-msm8660.c b/drivers/clk/qcom/gcc-msm8660.c
-index 44bc6fa64d78..0c4b727ae429 100644
---- a/drivers/clk/qcom/gcc-msm8660.c
-+++ b/drivers/clk/qcom/gcc-msm8660.c
-@@ -2718,6 +2718,18 @@ MODULE_DEVICE_TABLE(of, gcc_msm8660_match_table);
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index c6a7cdc..ac877f9 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -274,7 +274,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	if (!addr2line(dso_name, addr, &file, &line, dso))
+ 		goto out;
  
- static int gcc_msm8660_probe(struct platform_device *pdev)
- {
-+	struct clk *clk;
-+	struct device *dev = &pdev->dev;
-+
-+	/* Temporary until RPM clocks supported */
-+	clk = clk_register_fixed_rate(dev, "cxo", NULL, CLK_IS_ROOT, 19200000);
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
-+
-+	clk = clk_register_fixed_rate(dev, "pxo", NULL, CLK_IS_ROOT, 27000000);
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
-+
- 	return qcom_cc_probe(pdev, &gcc_msm8660_desc);
- }
- 
+-	if (asprintf(&srcline, "%s:%u", file, line) < 0) {
++	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
+ 		free(file);
+ 		goto out;
+ 	}
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.0
 
