@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaEPWqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:46:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:65259 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754706AbaEPWql (ORCPT
+	id S932268AbaEPWrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:47:36 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36820 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550AbaEPWre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 18:46:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Subject: Re: [PATCH] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
-Date: Sat, 17 May 2014 01:03:32 +0200
-Message-ID: <200048151.0RTJzuPcGp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpomYMcisB-UHp7TOEdxvQ9-1VzyRshQh=P-dQqYOuBz-5g@mail.gmail.com>
-References: <1400237477-24831-1-git-send-email-chander.kashyap@linaro.org> <CAKohpomYMcisB-UHp7TOEdxvQ9-1VzyRshQh=P-dQqYOuBz-5g@mail.gmail.com>
+	Fri, 16 May 2014 18:47:34 -0400
+Date: Sat, 17 May 2014 00:47:33 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140516224733.GA4323@lianli>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+ <20140516192451.GP16662@pengutronix.de>
+ <20140516222108.GI8897@mwanda>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140516222108.GI8897@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 16, 2014 04:43:31 PM Viresh Kumar wrote:
-> On 16 May 2014 16:21, Chander Kashyap <chander.kashyap@linaro.org> wrote:
-> > In of_init_opp_table function, if a failure to add an OPP is
-> > detected, the count of OPPs, yet to be added is not updated.
-> > Fix this by decrementing this count on failure as well.
-> >
-> > Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> > Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> > ---
-> >  drivers/base/power/opp.c |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
+
+On Sat, May 17, 2014 at 01:21:08AM +0300, Dan Carpenter wrote:
+> On Fri, May 16, 2014 at 09:24:51PM +0200, Uwe Kleine-König wrote:
+> > I didn't check if it is easily possible, but converting this file to use
+> > platform_device_register_full might simplify it considerably.
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> In a separate patch, though, please.
 
-Is this -stable material?  If so, which -stable?
+Will consider another patch.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+> > 
+> > I'm not sure this fix is critical, because the problem happens if an
+> > allocation during boot fails. But still, if you want to get this fix
+> > into a stable release, you should simplify it, i.e. don't do the code
+> > reorganisations. (Also the "more clear" part seems to be subjective, I
+> > like the error handling better as it is now. But that might only be me.)
+> 
+> Emil's error handling is done exactly in the correct way...  The error
+> path and success path are separate.  Unwinding in the reverse order.
+> The label names describe the label locations.  Most days I spend hours
+> looking at linux kernel error handling and I can assure you that
+> sensible labels like this are a rare and wonderful gift.
+> 
+> It's hard for me to imagine how anyone could defend the original error
+> handling.  The label was "err".  The error handling was randomly plopped
+> in the middle of the success handling.  Whenever I see new "creative"
+> error handling like this it drives me nuts because obviously it's going
+> to be buggy like a swamp picnic.
+
+Thank you for the colorful reply, I guess there is no need for me to
+further defend my choice of labels :)
+
+Best regards,
+
+Emil Goode
