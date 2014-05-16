@@ -1,88 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaEPHy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:54:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37013 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836AbaEPHyZ (ORCPT
+	id S1756174AbaEPHyn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:54:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37643 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345AbaEPHyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:54:25 -0400
-Date: Fri, 16 May 2014 09:54:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-Message-ID: <20140516075421.GL11096@twins.programming.kicks-ass.net>
-References: <20140514094426.GF30445@twins.programming.kicks-ass.net>
- <5374387E.4080802@linux.vnet.ibm.com>
- <20140515083531.GE30445@twins.programming.kicks-ass.net>
- <53747EE4.3020605@linux.vnet.ibm.com>
- <20140515090638.GI30445@twins.programming.kicks-ass.net>
- <53748A5D.6070605@linux.vnet.ibm.com>
- <20140515115751.GK30445@twins.programming.kicks-ass.net>
- <5375768F.1010000@linux.vnet.ibm.com>
- <1400208690.7133.11.camel@marge.simpson.net>
- <53759303.40409@linux.vnet.ibm.com>
+	Fri, 16 May 2014 03:54:41 -0400
+Date: Fri, 16 May 2014 09:53:44 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: tthayer@altera.com
+Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
+        grant.likely@linaro.org, bp@alien8.de, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tthayer.linux@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140516075344.GF949@pengutronix.de>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+ <1400169891-29546-2-git-send-email-tthayer@altera.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m+1hRa/9CwYN9i9M"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53759303.40409@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1400169891-29546-2-git-send-email-tthayer@altera.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:31:17 up 23 days,  1:02, 41 users,  load average: 0,15, 0,15,
+ 0,14
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---m+1hRa/9CwYN9i9M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 15, 2014 at 11:04:49AM -0500, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
+> 
+> Addition of the Altera SDRAM controller bindings and device
+> tree changes to the Altera SoC project.
+> 
+> v2: Changes to SoC SDRAM EDAC code.
+> 
+> v3: Implement code suggestions for SDRAM EDAC code.
+> 
+> v4: Remove syscon from SDRAM controller bindings.
+> 
+> v5: No Change, bump version for consistency.
+> 
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> ---
+>  .../bindings/arm/altera/socfpga-sdram.txt          |   11 +++++++++++
+>  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+>  2 files changed, 16 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> new file mode 100644
+> index 0000000..8f8746b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> @@ -0,0 +1,11 @@
+> +Altera SOCFPGA SDRAM Controller
+> +
+> +Required properties:
+> +- compatible : "altr,sdr-ctl";
+> +- reg : Should contain 1 register ranges(address and length)
+> +
+> +Example:
+> +	sdrctl@ffc25000 {
+> +		compatible = "altr,sdr-ctl";
+> +		reg = <0xffc25000 0x1000>;
+> +	};
+> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> index df43702..6ce912e 100644
+> --- a/arch/arm/boot/dts/socfpga.dtsi
+> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> @@ -676,6 +676,11 @@
+>  			clocks = <&l4_sp_clk>;
+>  		};
+>  
+> +		sdrctl@ffc25000 {
+> +			compatible = "altr,sdr-ctl", "syscon";
+                                                   ^^^^^^^^^^
 
-On Fri, May 16, 2014 at 12:24:35PM +0800, Michael wang wrote:
-> Hey, Mike :)
->=20
-> On 05/16/2014 10:51 AM, Mike Galbraith wrote:
-> > On Fri, 2014-05-16 at 10:23 +0800, Michael wang wrote:
-> >=20
-> >> But we found that one difference when group get deeper is the tasks of
-> >> that group become to gathered on CPU more often, some time all the
-> >> dbench instances was running on the same CPU, this won't happen for l1
-> >> group, may could explain why dbench could not get CPU more than 100% a=
-ny
-> >> more.
-> >=20
-> > Right.  I played a little (sane groups), saw load balancing as well.
->=20
-> Yeah, now we found that even l2 groups will face the same issue, allow
-> me to re-list the details here:
+Get rid of that, too, please.
+> +			reg = <0xffc25000 0x1000>;
+> +		};
+> +
 
-Hmm, that _should_ more or less work and does indeed suggest there's
-something iffy.
+How about
 
---m+1hRa/9CwYN9i9M
-Content-Type: application/pgp-signature
+		sdrctl@ffc25000 {
+			compatible = "altr,sdr-ctl";
+			reg = <0xffc25000 0x1000>;
+			ranges;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+			edac@ffc2502c {
+				compatible = "altr,sdram-edac";
+				reg = <0xffc2502c 0x50>;
+				interrupts = <0 39 4>;
+			};
+		};
 
-iQIcBAEBAgAGBQJTdcQsAAoJEHZH4aRLwOS6CtgP+wSYPapAla0sj7jNnseitET4
-a1PDVxe5wAF5lur3c1blyoREJCChfvaqigW+C+jHApuFqDXmnB8fweZvE8NmX/4y
-vdGTB6Qql0Z+3Ymld+HYSyNfhWzsa3aQDSlCIwm8XZ5RGVHtkPr7NxXfweE0G49Y
-QDcREVa9Z5vM/Te6pHnRDCVa2jBjHsO22m5USdY7Hcl8d+xXJImXNUGvXvOYk92m
-Q8cnPyEeUGr+n4jnwxwUWiIhWv7S8R40RjqHxji4VEFhswdidPZ8WEro39L9NF/Q
-isbAEntIoN02OIi6e33KZtIm6uUFIM4Y5RehpWh3Iy57kjuct5MvVSwD4K40oFGj
-U5jED0WVRA4rwDWR4Kr6HWExL0HO0b0s61ehtqpJjlK6fLKPQL496MuB4b1eK74p
-UPacU6YvPDSkPJ0cy7vAlW1XSNFzZn3vN7pluiHHVUXsROJYTDavz+SxmcBqrUy1
-a6i/XJz9BB8DI2BXuAHocrkYwZbHq7g3HaBTpMBMl4dyVPssuCpDvNr+TGLjLilY
-xvgkRpVDfDEdlZDDkD03PXTDMCYc20Qaavpzy4hBSTamb/B2yT6xJ0I5X7/EHnT9
-RUmLYjWkmAezRRt3+Pn2d5eCir4B0O3MIgCJu6AuKZYl9NybgaSS0aJnFiIAIbYZ
-/Lcj2kkp5DZIYPFyKQ+D
-=3QMI
------END PGP SIGNATURE-----
+Then we can later add:
 
---m+1hRa/9CwYN9i9M--
+			sdr-ports: ports@ffc2507c {
+				#reset-cells = <1>;
+				compatible = "altr,sdr-ports";
+				reg = <0xffc2507c 0x10>;
+				clocks = <&ddr_dqs_clk>;
+				...
+			};
+
+to use the reset-controller framework for the port resets.
+
+>  		rstmgr@ffd05000 {
+>  			compatible = "altr,rst-mgr";
+>  			reg = <0xffd05000 0x1000>;
+> -- 
+
+Regards,
+Steffen
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
