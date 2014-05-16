@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385AbaEPIyi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:54:38 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:33300 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219AbaEPIyg (ORCPT
+	id S1756491AbaEPI5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:57:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43321 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469AbaEPI5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:54:36 -0400
-Date: Fri, 16 May 2014 04:54:30 -0400 (EDT)
-From: Jon Maxwell <jmaxwell@redhat.com>
-To: stephen@networkplumber.org
-Cc: davem@davemloft.net, makita toshiaki <makita.toshiaki@lab.ntt.co.jp>,
-        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jpirko@redhat.com
-Message-ID: <1635112974.7420478.1400230470472.JavaMail.zimbra@redhat.com>
-In-Reply-To: <255115023.7295678.1400227971937.JavaMail.zimbra@redhat.com>
-References: <1400227719-18403-1-git-send-email-jmaxwell@redhat.com> <255115023.7295678.1400227971937.JavaMail.zimbra@redhat.com>
-Subject: Re: [PATCH net] bridge: notify user space of fdb port change
+	Fri, 16 May 2014 04:57:10 -0400
+Message-ID: <5375D2CE.5050801@ti.com>
+Date: Fri, 16 May 2014 11:56:46 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: bridge: notify user space of fdb port change
-Thread-Index: aHKzRqp6gc6Yk2UlydieOGf2EiRnJZiJNWOU
+To: Aaro Koskinen <aaro.koskinen@iki.fi>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Peter Griffin <peter.griffin@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Janusz Krzysztofik <jmkrzyszt@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] video: omap: delete support for early fbmem allocation
+References: <1399675964-22917-1-git-send-email-aaro.koskinen@iki.fi>
+In-Reply-To: <1399675964-22917-1-git-send-email-aaro.koskinen@iki.fi>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="KaMSlFi1wJVMETsvD2u2U0qkFGoSeRd5t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--KaMSlFi1wJVMETsvD2u2U0qkFGoSeRd5t
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 10/05/14 01:52, Aaro Koskinen wrote:
+> Commit 1e434f9318efc3dddc0c0b8d2071712668154c2b (OMAPFB: remove early m=
+em
+> alloc from old omapfb) deleted the support for early fbmem allocation
+> from the platform code, but some code still remains in the driver side.=
+
+> Delete this code now, as it repotedly causes build issues on !MMU.
+>=20
+> The patch was tested on Amstrad E3 and Nokia 770 and framebuffer
+> functionality is not affected.
+>=20
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+Thanks, queued for 3.16.
+
+ Tomi
 
 
------ Original Message -----
-> From: "Jon Maxwell" <jmaxwell@redhat.com>
-> To: stephen@networkplumber.org
-> Cc: davem@davemloft.net, "makita toshiaki" <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com,
-> bridge@lists.linux-foundation.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jpirko@redhat.com
-> Sent: Friday, May 16, 2014 6:12:51 PM
-> Subject: Re: [PATCH net] bridge: notify user space of fdb port change
-> 
-> Please use this patch. My bad, the previous one
-> incorrectly did the notify before fdb->added_by_user = 1.
-> 
 
-I just realized I did the port compare after fdb->dst = source;
-So the notify will never trigger. It's been a long
-day, I'll rewrite this tomorrow and resubmit after 
-testing it on my reproducer. Please ignore this one
-too.
+--KaMSlFi1wJVMETsvD2u2U0qkFGoSeRd5t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> ----- Original Message -----
-> > From: "Jon Maxwell" <jmaxwell37@gmail.com>
-> > To: stephen@networkplumber.org
-> > Cc: davem@davemloft.net, "makita toshiaki" <makita.toshiaki@lab.ntt.co.jp>,
-> > vyasevic@redhat.com,
-> > bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-> > linux-kernel@vger.kernel.org, jpirko@redhat.com,
-> > jmaxwell@redhat.com, "Jon Maxwell" <jmaxwell37@gmail.com>
-> > Sent: Friday, May 16, 2014 6:08:39 PM
-> > Subject: [PATCH net] bridge: notify user space of fdb port change
-> > 
-> > From: Jon Maxwell <jmaxwell37@gmail.com>
-> > 
-> > There has been a number incidents recently where customers running KVM have
-> > reported that VM hosts on different Hypervisors are unreachable. Based on
-> > pcap traces we found that the bridge was broadcasting the ARP request out
-> > onto the network. However some NICs have an inbuilt switch which on
-> > occasions
-> > were broadcasting the VMs ARP request back through the physical NIC on the
-> > Hypervisor. This resulted in the bridge changing ports and incorrectly
-> > learning
-> > that the VMs mac address was external. As a result the ARP reply was
-> > directed
-> > back onto the external network and VM never updated it's ARP cache. This
-> > patch
-> > will notify the bridge command to identify such port toggling.
-> > 
-> > Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
-> > ---
-> >  net/bridge/br_fdb.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> > index 9203d5a..67480c2 100644
-> > --- a/net/bridge/br_fdb.c
-> > +++ b/net/bridge/br_fdb.c
-> > @@ -511,6 +511,8 @@ void br_fdb_update(struct net_bridge *br, struct
-> > net_bridge_port *source,
-> >  			fdb->updated = jiffies;
-> >  			if (unlikely(added_by_user))
-> >  				fdb->added_by_user = 1;
-> > +			if (unlikely(source->port_no != fdb->dst->port_no))
-> > +				fdb_notify(br, fdb, RTM_NEWNEIGH);
-> >  		}
-> >  	} else {
-> >  		spin_lock(&br->hash_lock);
-> > --
-> > 1.8.3.1
-> > 
-> > 
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTddLOAAoJEPo9qoy8lh71JycP/jh4fkLxmePYwOo202X7RepU
+FezY93PiyngWt6uP3c2GzcwbW5tX6Y3ujMtAXTVJ32swRqCPoeDF/TV4qq1yesIr
+Kog+w109gwV9pFVTR6vupriNjYRUGUIneK2IMdlxd4K/y5mxAGQyN0V0yIepZKv0
+e5eLJSdH31MVlFBM3w4bKQTJaXXR62t9kmsbxXDEYpHDyGQmpfqbKUVn2KXOAgC0
+dUKwzC9SJfN8Sobr3M1gf6LAECfHd8L7mham5FDfwh29Q/8IMFGtBopsN1hfSN/v
+q09Mu6bFxvMaeTVsHhRuvaGgIBJjQ/thM1gxF278Onn+S5M8iG//nangjVGA3wnA
+caB6ztM8NJiRfBQINbqgcbPPxGV0wxvjYHwZ25PB4YclTQX+czXuk5C1Ac3J8gjo
+oFTsPqMw+muK7dAfAxyZNI/iXgppXBRnTluRA2jhSQBI0uUYPprmjpFDRZ4911Fo
+z6PfV1M1ooz8QXgKkSpWGvl3zufwVCibWVA+Aw6SCQygT8CJKl8ZXi5D65cDQq4b
+3919zNtOCcvbL15kMYMVOJvrTPNjuaXy5fUubYLQDX7B+kPGKkN8jJ9wQRa9dqH1
+LDaAdzn9dGBuxZN5oFTAnf9KvS6w+IQkM0NRjv85USYJ5rJsQm2US8zWDrhZgKbl
+G1boRxGLu7MoRl34NHRN
+=01QK
+-----END PGP SIGNATURE-----
+
+--KaMSlFi1wJVMETsvD2u2U0qkFGoSeRd5t--
