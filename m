@@ -1,109 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013AbaEPRp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:45:26 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:35234 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaEPRpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:45:24 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Gioh Kim <gioh.kim@lge.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Minchan Kim <minchan.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Laura Abbott <lauraa@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com
-Subject: Re: [RFC][PATCH] CMA: drivers/base/Kconfig: restrict CMA size to non-zero value
-In-Reply-To: <5375C619.8010501@lge.com>
-Organization: http://mina86.com/
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <20140513030057.GC32092@bbox> <20140515015301.GA10116@js1304-P5Q-DELUXE> <5375C619.8010501@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140516:gunho.lee@lge.com::Ue4lLo8igHVb8nRV:0000000000000000000000000000000000000000000004RN
-X-Hashcash: 1:20:140516:mgorman@suse.de::Y44lujPGIM0JmPnH:000Bjk
-X-Hashcash: 1:20:140516:minchan.kim@lge.com::sjMe8lbJUCBJaHPf:0000000000000000000000000000000000000000001Q7T
-X-Hashcash: 1:20:140516:iamjoonsoo.kim@lge.com::sGmK1jXThI8QbUfE:0000000000000000000000000000000000000001JgU
-X-Hashcash: 1:20:140516:gurugio@gmail.com::0PZnxRTmJPUMrBUR:000000000000000000000000000000000000000000002036
-X-Hashcash: 1:20:140516:heesub.shin@samsung.com::qGmHIbRzo0P/Oqh1:000000000000000000000000000000000000001y/V
-X-Hashcash: 1:20:140516:m.szyprowski@samsung.com::cBDBo5qWerjEa/GC:00000000000000000000000000000000000002vfv
-X-Hashcash: 1:20:140516:linux-mm@kvack.org::ljUJEw7y1VSARITh:00000000000000000000000000000000000000000003ILx
-X-Hashcash: 1:20:140516:gioh.kim@lge.com::Ii/ezs31gS2GtoH4:06a9M
-X-Hashcash: 1:20:140516:hannes@cmpxchg.org::8rA0phc+VyEqPN8c:00000000000000000000000000000000000000000007aMt
-X-Hashcash: 1:20:140516:linux-kernel@vger.kernel.org::Jb5P0U8PLV0+qZnC:0000000000000000000000000000000008WAv
-X-Hashcash: 1:20:140516:lauraa@codeaurora.org::uOqMWgD9HmNScwhR:0000000000000000000000000000000000000000Gi62
-X-Hashcash: 1:20:140516:riel@redhat.com::WH1J3hmqR6TOTnU9:00HiX8
-X-Hashcash: 1:20:140516:akpm@linux-foundation.org::trlLagc63vdq1hfI:000000000000000000000000000000000000LXPR
-Date: Fri, 16 May 2014 10:45:12 -0700
-Message-ID: <xa1tppjdfwif.fsf@mina86.com>
+	id S1757897AbaEPRtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:49:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54091 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752691AbaEPRth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:49:37 -0400
+Date: Fri, 16 May 2014 19:49:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: x86-ml <x86@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Cleanup console loglevels
+Message-ID: <20140516174921.GA18778@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Fri, May 16 2014, Gioh Kim wrote:
-> If CMA_SIZE_MBYTES is allowed to be zero, there should be defense code
-> to check CMA is initlaized correctly. And atomic_pool initialization
-> should be done by __alloc_remap_buffer instead of
-> __alloc_from_contiguous if __alloc_from_contiguous is failed.
+so I was staring at
 
-Agreed, and this is the correct fix.
+12544697f12e ("x86_64: be less annoying on boot, v2")
 
-> IMPO, it is more simple and powerful to restrict CMA_SIZE_MBYTES_MAX
-> configuration to be larger than zero.
+and how naked numbers mean sh*t and how I have to grep sources to find
+out what this 10 thing means. So how about the following cleanup? We can
+do it this way, we can do accessors and stuff, whatever. But the naked
+numbers are plain misleading.
 
-No, because it makes it impossible to have CMA disabled by default and
-only enabled if command line argument is given.
+So how about it? I'm asking whether it makes sense first before I go
+and replace all tests of console_loglevel with naked numbers around the
+tree.
 
-Furthermore, your patch does *not* guarantee CMA region to always be
-allocated.  If CMA_SIZE_SEL_PERCENTAGE is selected for instance.  Or if
-user explicitly passes 0 on command line.
+Thanks.
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+---
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 068054f4bf20..0029d974e431 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
+ 	 */
+ 	load_ucode_bsp();
+ 
+-	if (console_loglevel == 10)
++	if (console_loglevel >= CONSOLE_LOGLEVEL_QUIET)
+ 		early_printk("Kernel alive\n");
+ 
+ 	clear_page(init_level4_pgt);
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 8752f7595b27..0325b231d100 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -30,6 +30,17 @@ static inline const char *printk_skip_level(const char *buffer)
+ 	return buffer;
+ }
+ 
++/* printk's without a loglevel use this.. */
++#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
++
++/* We show everything that is MORE important than this.. */
++#define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
++#define CONSOLE_LOGLEVEL_MIN	 1 /* Minimum loglevel we let people use */
++#define CONSOLE_LOGLEVEL_QUIET	 4 /* Shhh ..., when booted with "quiet" */
++#define CONSOLE_LOGLEVEL_DEFAULT 7 /* anything MORE serious than KERN_DEBUG */
++#define CONSOLE_LOGLEVEL_DEBUG	10 /* issue debug messages */
++#define CONSOLE_LOGLEVEL_MOTORMOUTH 15	/* You can't shut this one up */
++
+ extern int console_printk[];
+ 
+ #define console_loglevel (console_printk[0])
+@@ -39,13 +50,13 @@ extern int console_printk[];
+ 
+ static inline void console_silent(void)
+ {
+-	console_loglevel = 0;
++	console_loglevel = CONSOLE_LOGLEVEL_SILENT;
+ }
+ 
+ static inline void console_verbose(void)
+ {
+ 	if (console_loglevel)
+-		console_loglevel = 15;
++		console_loglevel = CONSOLE_LOGLEVEL_MOTORMOUTH;
+ }
+ 
+ struct va_format {
+diff --git a/init/main.c b/init/main.c
+index eb0ea86aefde..46923e7e1668 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -203,13 +203,13 @@ EXPORT_SYMBOL(loops_per_jiffy);
+ 
+ static int __init debug_kernel(char *str)
+ {
+-	console_loglevel = 10;
++	console_loglevel = CONSOLE_LOGLEVEL_DEBUG;
+ 	return 0;
+ }
+ 
+ static int __init quiet_kernel(char *str)
+ {
+-	console_loglevel = 4;
++	console_loglevel = CONSOLE_LOGLEVEL_QUIET;
+ 	return 0;
+ }
+ 
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 7228258b85ec..9cef0425bdcf 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -54,18 +54,11 @@
+ #include "console_cmdline.h"
+ #include "braille.h"
+ 
+-/* printk's without a loglevel use this.. */
+-#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
+-
+-/* We show everything that is MORE important than this.. */
+-#define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
+-#define DEFAULT_CONSOLE_LOGLEVEL 7 /* anything MORE serious than KERN_DEBUG */
+-
+ int console_printk[4] = {
+-	DEFAULT_CONSOLE_LOGLEVEL,	/* console_loglevel */
++	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
+ 	DEFAULT_MESSAGE_LOGLEVEL,	/* default_message_loglevel */
+-	MINIMUM_CONSOLE_LOGLEVEL,	/* minimum_console_loglevel */
+-	DEFAULT_CONSOLE_LOGLEVEL,	/* default_console_loglevel */
++	CONSOLE_LOGLEVEL_MIN,		/* minimum_console_loglevel */
++	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
+ };
+ 
+ /*
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+-- 
+Regards/Gruss,
+    Boris.
 
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdk6oAAoJECBgQBJQdR/0/uAP/iy4hKtOCEcIenjryq8Y8a6e
-A8qqXcLu0Ms9x0Pj6ooWAZiEwgyXMZaTv7ykH3JRGW6JDD4oHLwkCO5ZHXrhT1mf
-pPWIhdVJNJsFL8YBEoIWzRzdMFyXsPhezn79dCR4mX/mIMGiZtKEbNc8uTSNJozS
-yF0ZPGeevPWBgb5bJVh0ijDm26zyXIXk/aRxHCX5C9XgIS7aZhbKMmG2J2X97NU/
-eyuQCPhzzfXKzcDzpZUYm2HhZDaJ/CQKOGQDwTDPVsuktOPeKu5T94+j5cFK9rKW
-NG/uTXDWA2B9DsC/OIcmSf/IFFHojWr2i7zaMPK4kXN6Hd+MAr9WNm+aslo8df+J
-F8Y2y9Gbu2ZQjBbB2R3Ecz4AJUDZgquOwSG54N+6QZuY+aMKoL3sc7kI+q12mZKS
-m2DjnEp6uUPsYo2RUaOotqjHBjiKlfLN6tBpxsP0BFRYyf/KCs7FGG/NS9g5xcU+
-fI0h4AXIiA8g+bP1lmcv7BRFefKRZsQLYRuNoFFvzAqz0wmQ5tHpZylE6sEbpHzm
-d2dDlVizFPF9QEnLLMFGfOYUZrLLan3jmlCy5+dMKxKF2AdOKFYIrpexb5Io+jRp
-kabi/5LDR8ISiULgiQ9NDZyGTCXTmsvkvGQTuYyJhS+bBrQtrlVVL8w5Qx6/WSU1
-l9Se161WbizexGWJds28
-=oIPD
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+Sent from a fat crate under my desk. Formatting is fine.
+--
