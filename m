@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613AbaEPQEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:04:47 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:65308 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753810AbaEPQEq (ORCPT
+	id S1757634AbaEPQFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:05:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45263 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757064AbaEPQFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:04:46 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjASAMI2dlNXQB71/2dsb2JhbABZgwaCQqgmBQUFAZoZAgKBFhd0gmYcIxiBAiQTiEUB0haFVYh6hEcBA48tiioBixGICIM5Ow
-Date: Fri, 16 May 2014 18:04:43 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] kernel/hrtimer.c: move EXPORT_SYMBOL
-Message-Id: <20140516180443.ef444911350b6ef8a7e98095@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
+	Fri, 16 May 2014 12:05:22 -0400
+Message-ID: <5376373E.1080401@wwwdotorg.org>
+Date: Fri, 16 May 2014 10:05:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] clk: tegra: Fix wrong value written to PLLE_AUX
+References: <1400248220-16025-1-git-send-email-ttynkkynen@nvidia.com> <20140516143110.GA28338@ulmo>
+In-Reply-To: <20140516143110.GA28338@ulmo>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warnings:
-"WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable"
+On 05/16/2014 08:31 AM, Thierry Reding wrote:
+> On Fri, May 16, 2014 at 04:50:20PM +0300, Tuomas Tynkkynen wrote:
+>> The value written to PLLE_AUX was incorrect due to a wrong variable
+>> being used.
+>>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>> Tested-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> ---
+>>   This fix is required for the (upcoming) SATA support.
+>>  drivers/clk/tegra/clk-pll.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Reviewed-by: Thierry Reding <treding@nvidia.com>
+> Tested-by: Thierry Reding <treding@nvidia.com>
+> Acked-by: Thierry Reding <treding@nvidia.com>
+> 
+> Mike, Peter, it might be good to have this go into 3.16 as a
+> prerequisite for the upcoming SATA driver (which presumably won't be
+> ready until 3.17, but in that case it would be good to have this
+> prerequisite merged already).
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- kernel/hrtimer.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 14f9030..1eccb98 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -292,7 +292,6 @@ ktime_t ktime_add_ns(const ktime_t kt, u64 nsec)
- 
- 	return ktime_add(kt, tmp);
- }
--
- EXPORT_SYMBOL_GPL(ktime_add_ns);
- 
- /**
-@@ -316,7 +315,6 @@ ktime_t ktime_sub_ns(const ktime_t kt, u64 nsec)
- 
- 	return ktime_sub(kt, tmp);
- }
--
- EXPORT_SYMBOL_GPL(ktime_sub_ns);
- # endif /* !CONFIG_KTIME_SCALAR */
- 
-@@ -357,7 +355,6 @@ ktime_t ktime_add_safe(const ktime_t lhs, const ktime_t rhs)
- 
- 	return res;
- }
--
- EXPORT_SYMBOL_GPL(ktime_add_safe);
- 
- #ifdef CONFIG_DEBUG_OBJECTS_TIMERS
--- 
-1.8.4.5
-
+Probably even Cc: stable since it's a fix for a bug that I assume has
+been in a kernel release or two?
