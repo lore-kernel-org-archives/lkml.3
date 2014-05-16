@@ -1,88 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617AbaEPJq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:46:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6783 "EHLO mga09.intel.com"
+	id S1756743AbaEPJsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:48:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35921 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756258AbaEPJqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:46:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1066,1389772800"; 
-   d="scan'208";a="541505962"
-Message-ID: <5375DE80.4030707@intel.com>
-Date: Fri, 16 May 2014 11:46:40 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Chander Kashyap <chander.kashyap@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND][PATCH] cpuidle: governor: menu: move repeated correction
- factor check to init
-References: <CANuQgHFdYhTc8YZ2MbQv0r_CsJGDLwHOqy9NuVDEfVUOTsbRpA@mail.gmail.com>	<1398170284-7551-1-git-send-email-chander.kashyap@linaro.org> <CANuQgHGLgrbYME7Y8zJQ6ACt7ByviZJMMEk+RbhqwXvnsm+8_g@mail.gmail.com>
-In-Reply-To: <CANuQgHGLgrbYME7Y8zJQ6ACt7ByviZJMMEk+RbhqwXvnsm+8_g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756489AbaEPJsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 05:48:18 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
+Date: Fri, 16 May 2014 11:47:53 +0200
+Message-Id: <1400233673-11477-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/2014 10:16 AM, Chander Kashyap wrote:
-> On 22 April 2014 18:08, Chander Kashyap <chander.kashyap@linaro.org> wrote:
->> In menu_select function we check for correction factor every time.
->> If it is zero we are initializing to unity. Hence move it to init function
->> and initialise by unity, hence avoid repeated comparisons.
->>
->> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->> Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
->> ---
->>   drivers/cpuidle/governors/menu.c |   15 ++++++++-------
->>   1 file changed, 8 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
->> index 71b5232..9b7918c 100644
->> --- a/drivers/cpuidle/governors/menu.c
->> +++ b/drivers/cpuidle/governors/menu.c
->> @@ -311,13 +311,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->>          data->bucket = which_bucket(data->next_timer_us);
->>
->>          /*
->> -        * if the correction factor is 0 (eg first time init or cpu hotplug
->> -        * etc), we actually want to start out with a unity factor.
->> -        */
->> -       if (data->correction_factor[data->bucket] == 0)
->> -               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
->> -
->> -       /*
->>           * Force the result of multiplication to be 64 bits even if both
->>           * operands are 32 bits.
->>           * Make sure to round up for half microseconds.
->> @@ -466,9 +459,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
->>                                  struct cpuidle_device *dev)
->>   {
->>          struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
->> +       int i;
->>
->>          memset(data, 0, sizeof(struct menu_device));
->>
->> +       /*
->> +        * if the correction factor is 0 (eg first time init or cpu hotplug
->> +        * etc), we actually want to start out with a unity factor.
->> +        */
->> +       for(i = 0; i < BUCKETS; i++)
->> +               data->correction_factor[i] = RESOLUTION * DECAY;
->> +
->>          return 0;
->>   }
->>
-> ping.
+Compaction uses compact_checklock_irqsave() function to periodically check for
+lock contention and need_resched() to either abort async compaction, or to
+free the lock, schedule and retake the lock. When aborting, cc->contended is
+set to signal the contended state to the caller. Two problems have been
+identified in this mechanism.
 
-I believe this is in linux-next today, care to check?
+First, compaction also calls directly cond_resched() in both scanners when no
+lock is yet taken. This call either does not abort async compaction, or set
+cc->contended appropriately. This patch introduces a new compact_should_abort()
+function to achieve both. In isolate_freepages(), the check frequency is
+reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
+scanner does in the preliminary page checks. In case a pageblock is found
+suitable for calling isolate_freepages_block(), the checks within there are
+done on higher frequency.
 
-Rafael
+Second, isolate_freepages() does not check if isolate_freepages_block()
+aborted due to contention, and advances to the next pageblock. This violates
+the principle of aborting on contention, and might result in pageblocks not
+being scanned completely, since the scanning cursor is advanced. This patch
+makes isolate_freepages_block() check the cc->contended flag and abort.
+
+In case isolate_freepages() has already isolated some pages before aborting
+due to contention, page migration will proceed, which is OK since we do not
+want to waste the work that has been done, and page migration has own checks
+for contention. However, we do not want another isolation attempt by either
+of the scanners, so cc->contended flag check is added also to
+compaction_alloc() and compact_finished() to make sure compaction is aborted
+right after the migration.
+
+Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+v2: update struct compact_control comment (per Naoya Horiguchi)
+    rename to compact_should_abort() and add comments (per David Rientjes)
+    add cc->contended checks in compaction_alloc() and compact_finished()
+    (per Joonsoo Kim)
+    reduce frequency of checks in isolate_freepages() 
+
+ mm/compaction.c | 54 ++++++++++++++++++++++++++++++++++++++++++++----------
+ mm/internal.h   |  5 ++++-
+ 2 files changed, 48 insertions(+), 11 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 83ca6f9..6fc9f18 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -222,6 +222,30 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+ 	return true;
+ }
+ 
++/*
++ * Aside from avoiding lock contention, compaction also periodically checks
++ * need_resched() and either schedules in sync compaction, or aborts async
++ * compaction. This is similar to compact_checklock_irqsave() does, but used
++ * where no lock is concerned.
++ *
++ * Returns false when no scheduling was needed, or sync compaction scheduled.
++ * Returns true when async compaction should abort.
++ */
++static inline bool compact_should_abort(struct compact_control *cc)
++{
++	/* async compaction aborts if contended */
++	if (need_resched()) {
++		if (cc->mode == MIGRATE_ASYNC) {
++			cc->contended = true;
++			return false;
++		}
++
++		cond_resched();
++	}
++
++	return true;
++}
++
+ /* Returns true if the page is within a block suitable for migration to */
+ static bool suitable_migration_target(struct page *page)
+ {
+@@ -491,11 +515,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			return 0;
+ 	}
+ 
+-	if (cond_resched()) {
+-		/* Async terminates prematurely on need_resched() */
+-		if (cc->mode == MIGRATE_ASYNC)
+-			return 0;
+-	}
++	if (compact_should_abort(cc))
++		return 0;
+ 
+ 	/* Time to isolate some pages for migration */
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+@@ -718,9 +739,11 @@ static void isolate_freepages(struct zone *zone,
+ 		/*
+ 		 * This can iterate a massively long zone without finding any
+ 		 * suitable migration targets, so periodically check if we need
+-		 * to schedule.
++		 * to schedule, or even abort async compaction.
+ 		 */
+-		cond_resched();
++		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
++						&& compact_should_abort(cc))
++			break;
+ 
+ 		if (!pfn_valid(block_start_pfn))
+ 			continue;
+@@ -758,6 +781,13 @@ static void isolate_freepages(struct zone *zone,
+ 		 */
+ 		if (isolated)
+ 			cc->finished_update_free = true;
++
++		/*
++		 * isolate_freepages_block() might have aborted due to async
++		 * compaction being contended
++		 */
++		if (cc->contended)
++			break;
+ 	}
+ 
+ 	/* split_free_page does not map the pages */
+@@ -785,9 +815,13 @@ static struct page *compaction_alloc(struct page *migratepage,
+ 	struct compact_control *cc = (struct compact_control *)data;
+ 	struct page *freepage;
+ 
+-	/* Isolate free pages if necessary */
++	/*
++	 * Isolate free pages if necessary, and if we are not aborting due to
++	 * contention.
++	 */
+ 	if (list_empty(&cc->freepages)) {
+-		isolate_freepages(cc->zone, cc);
++		if (!cc->contended)
++			isolate_freepages(cc->zone, cc);
+ 
+ 		if (list_empty(&cc->freepages))
+ 			return NULL;
+@@ -857,7 +891,7 @@ static int compact_finished(struct zone *zone,
+ 	unsigned int order;
+ 	unsigned long watermark;
+ 
+-	if (fatal_signal_pending(current))
++	if (cc->contended || fatal_signal_pending(current))
+ 		return COMPACT_PARTIAL;
+ 
+ 	/* Compaction run completes if the migrate and free scanner meet */
+diff --git a/mm/internal.h b/mm/internal.h
+index a25424a..ad844ab 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -144,7 +144,10 @@ struct compact_control {
+ 	int order;			/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+ 	struct zone *zone;
+-	bool contended;			/* True if a lock was contended */
++	bool contended;			/* True if a lock was contended, or
++					 * need_resched() true during async
++					 * compaction
++					 */
+ };
+ 
+ unsigned long
+-- 
+1.8.4.5
 
