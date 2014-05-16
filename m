@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966AbaEPPa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:30:27 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:35808 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbaEPPaZ (ORCPT
+	id S1757418AbaEPPbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:31:53 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63302 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756241AbaEPPbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:30:25 -0400
-Date: Fri, 16 May 2014 17:30:00 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix for possible null pointer dereference in keyspan.c
-Message-ID: <20140516153000.GC8213@localhost>
-References: <1400190910-28019-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1400190910-28019-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 16 May 2014 11:31:52 -0400
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Ming Lei <tom.leiming@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH v1] virtio_blk: fix race between start and stop queue
+Date: Fri, 16 May 2014 23:31:21 +0800
+Message-Id: <1400254281-11294-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:55:10PM +0200, Rickard Strandqvist wrote:
-> There is otherwise a risk of a possible null pointer dereference.
+When there isn't enough vring descriptor for adding to vq,
+blk-mq will be put as stopped state until some of pending
+descriptors are completed & freed.
 
-I don't think this can be triggered unless the URB allocation fails at
-probe, but let's move the offending line nonetheless.
+Unfortunately, the vq's interrupt may come just before
+blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
+still be kept as stopped even though lots of descriptors
+are completed and freed in the interrupt handler. The worst
+case is that all pending descriptors are freed in the
+interrupt handler, and the queue is kept as stopped forever.
 
-I'll fix up the patch subject as well.
+This patch fixes the problem by starting/stopping blk-mq
+with holding vq_lock.
 
-> Was largely found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/usb/serial/keyspan.c |    4 ++--
->  1 fil ändrad, 2 tillägg(+), 2 borttagningar(-)
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+v1:
+	- remove 'queue_stopped' flag
 
-Diff stats in Swedish?! :)
+ drivers/block/virtio_blk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Johan
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 7a51f06..9f340fa 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -147,11 +147,11 @@ static void virtblk_done(struct virtqueue *vq)
+ 		if (unlikely(virtqueue_is_broken(vq)))
+ 			break;
+ 	} while (!virtqueue_enable_cb(vq));
+-	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	if (req_done)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
++	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ }
+ 
+ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+@@ -205,8 +205,8 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
+ 	if (err) {
+ 		virtqueue_kick(vblk->vq);
+-		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		blk_mq_stop_hw_queue(hctx);
++		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		/* Out of mem doesn't actually happen, since we fall back
+ 		 * to direct descriptors */
+ 		if (err == -ENOMEM || err == -ENOSPC)
+-- 
+1.7.9.5
 
-> diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-> index d3acaea..93cb7ce 100644
-> --- a/drivers/usb/serial/keyspan.c
-> +++ b/drivers/usb/serial/keyspan.c
-> @@ -1535,14 +1535,14 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
->  
->  	this_urb = p_priv->outcont_urb;
->  
-> -	dev_dbg(&port->dev, "%s - endpoint %d\n", __func__, usb_pipeendpoint(this_urb->pipe));
-> -
->  		/* Make sure we have an urb then send the message */
->  	if (this_urb == NULL) {
->  		dev_dbg(&port->dev, "%s - oops no urb.\n", __func__);
->  		return -1;
->  	}
->  
-> +	dev_dbg(&port->dev, "%s - endpoint %d\n", __func__, usb_pipeendpoint(this_urb->pipe));
-> +
->  	/* Save reset port val for resend.
->  	   Don't overwrite resend for open/close condition. */
->  	if ((reset_port + 1) > p_priv->resend_cont)
