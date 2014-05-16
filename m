@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992431AbaEPVo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:44:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3300 "EHLO mga03.intel.com"
+	id S1756275AbaEPVpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 17:45:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20987 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753760AbaEPVnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754023AbaEPVnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 17:43:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1069,1389772800"; 
-   d="scan'208";a="433231950"
+   d="scan'208";a="512987836"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/8] ftrace: Out of line ftrace_trigger_soft_disabled
-Date: Fri, 16 May 2014 14:43:13 -0700
-Message-Id: <1400276595-6965-7-git-send-email-andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>,
+        alexander.deucher@amd.com, dri-devel@lists.freedesktop.org
+Subject: [PATCH 7/8] radeon: Out of line radeon_get_ib_value
+Date: Fri, 16 May 2014 14:43:14 -0700
+Message-Id: <1400276595-6965-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
 References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
@@ -24,88 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Out of lining this function saves about 14k text
+Saves about 5k of text
 
    text	   data	    bss	    dec	    hex	filename
-14094629	2004040	1507328	17605997	10ca56d	vmlinux-before-ftrace
-14079650	2008136	1507328	17595114	10c7aea	vmlinux-ftrace
+14080360	2008168	1507328	17595856	10c7dd0	vmlinux-before-radeon
+14074978	2008168	1507328	17590474	10c68ca	vmlinux-radeon
 
+Cc: alexander.deucher@amd.com
+Cc: dri-devel@lists.freedesktop.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/ftrace_event.h        | 23 +----------------------
- kernel/trace/trace_events_trigger.c | 25 +++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        | 10 +---------
+ drivers/gpu/drm/radeon/radeon_device.c |  9 +++++++++
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index d16da3e..70be665 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -416,28 +416,7 @@ extern enum event_trigger_type event_triggers_call(struct ftrace_event_file *fil
- extern void event_triggers_post_call(struct ftrace_event_file *file,
- 				     enum event_trigger_type tt);
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 6852861..8cae409 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -1032,15 +1032,7 @@ struct radeon_cs_parser {
+ 	struct ww_acquire_ctx	ticket;
+ };
  
--/**
-- * ftrace_trigger_soft_disabled - do triggers and test if soft disabled
-- * @file: The file pointer of the event to test
-- *
-- * If any triggers without filters are attached to this event, they
-- * will be called here. If the event is soft disabled and has no
-- * triggers that require testing the fields, it will return true,
-- * otherwise false.
-- */
--static inline bool
--ftrace_trigger_soft_disabled(struct ftrace_event_file *file)
+-static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
 -{
--	unsigned long eflags = file->flags;
+-	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
 -
--	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
--		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
--			event_triggers_call(file, NULL);
--		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
--			return true;
--	}
--	return false;
+-	if (ibc->kdata)
+-		return ibc->kdata[idx];
+-	return p->ib.ptr[idx];
 -}
-+extern bool ftrace_trigger_soft_disabled(struct ftrace_event_file *file);
+-
++u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
  
- /*
-  * Helper function for event_trigger_unlock_commit{_regs}().
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 4747b47..136c181 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -28,6 +28,31 @@
- static LIST_HEAD(trigger_commands);
- static DEFINE_MUTEX(trigger_cmd_mutex);
+ struct radeon_cs_packet {
+ 	unsigned	idx;
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 0e770bb..1cbd171 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -112,6 +112,15 @@ bool radeon_is_px(struct drm_device *dev)
+ 	return false;
+ }
  
-+
-+/**
-+ * ftrace_trigger_soft_disabled - do triggers and test if soft disabled
-+ * @file: The file pointer of the event to test
-+ *
-+ * If any triggers without filters are attached to this event, they
-+ * will be called here. If the event is soft disabled and has no
-+ * triggers that require testing the fields, it will return true,
-+ * otherwise false.
-+ */
-+bool
-+ftrace_trigger_soft_disabled(struct ftrace_event_file *file)
++u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
 +{
-+	unsigned long eflags = file->flags;
++	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
 +
-+	if (!(eflags & FTRACE_EVENT_FL_TRIGGER_COND)) {
-+		if (eflags & FTRACE_EVENT_FL_TRIGGER_MODE)
-+			event_triggers_call(file, NULL);
-+		if (eflags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+			return true;
-+	}
-+	return false;
++	if (ibc->kdata)
++		return ibc->kdata[idx];
++	return p->ib.ptr[idx];
 +}
-+EXPORT_SYMBOL(ftrace_trigger_soft_disabled);
 +
- static void
- trigger_data_free(struct event_trigger_data *data)
- {
+ /**
+  * radeon_program_register_sequence - program an array of registers.
+  *
 -- 
 1.9.0
 
