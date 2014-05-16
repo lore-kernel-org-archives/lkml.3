@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992517AbaEPTe4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 15:34:56 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54422 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945889AbaEPTey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 15:34:54 -0400
+	id S2992494AbaEPTis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 15:38:48 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:48104 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2992428AbaEPTir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 15:38:47 -0400
+Date: Fri, 16 May 2014 22:38:00 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
+Subject: Re: [PATCH v6] mm: support madvise(MADV_FREE)
+Message-ID: <20140516193800.GA7273@node.dhcp.inet.fi>
+References: <1399857988-2880-1-git-send-email-minchan@kernel.org>
+ <20140515154657.GA2720@cmpxchg.org>
+ <20140516063427.GC27599@bbox>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1405161431590.2126@gentwo.org>
-References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
-	<1400257015-28222-4-git-send-email-fweisbec@gmail.com>
-	<alpine.DEB.2.10.1405161250350.492@gentwo.org>
-	<20140516183500.GI5379@htj.dyndns.org>
-	<alpine.DEB.2.10.1405161350360.1681@gentwo.org>
-	<20140516190042.GJ5379@htj.dyndns.org>
-	<alpine.DEB.2.10.1405161431590.2126@gentwo.org>
-Date: Fri, 16 May 2014 15:34:54 -0400
-X-Google-Sender-Auth: 8oTOK71NUKaJUl-OR90Ryw-aSZE
-Message-ID: <CAOS58YPwkWQCtuE=sUReBzi+3ygvsawEovV-nfWLK2f3GDn9Kg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] workqueue: Create low-level unbound workqueues cpumask
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516063427.GC27599@bbox>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 3:32 PM, Christoph Lameter <cl@linux.com> wrote:
-> It sets a bad precedent. So move to /sys/kernel/workqueue and lets have a
-> symlink that goes back?
+On Fri, May 16, 2014 at 03:34:27PM +0900, Minchan Kim wrote:
+> > > +static inline unsigned long lazyfree_pmd_range(struct mmu_gather *tlb,
+> > > +				struct vm_area_struct *vma, pud_t *pud,
+> > > +				unsigned long addr, unsigned long end)
+> > > +{
+> > > +	pmd_t *pmd;
+> > > +	unsigned long next;
+> > > +
+> > > +	pmd = pmd_offset(pud, addr);
+> > > +	do {
+> > > +		next = pmd_addr_end(addr, end);
+> > > +		if (pmd_trans_huge(*pmd))
+> > > +			split_huge_page_pmd(vma, addr, pmd);
+> > 
+> > /* XXX */ as well? :)
+> 
+> You meant huge page unit lazyfree rather than 4K page unit?
+> If so, I will add.
 
-Hmm... I don't think it's a good idea to lose uevent. It's an integral
-part in configuring sysfs. Wouldn't it make more sense to move
-/sys/kernel under /sys/devices?
-
-Thanks.
+Please, free huge page if range cover it. 
 
 -- 
-tejun
+ Kirill A. Shutemov
