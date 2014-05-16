@@ -1,103 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956AbaEPJzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:55:00 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:42470 "EHLO
+	id S932240AbaEPJ5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:57:41 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:56620 "EHLO
 	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590AbaEPJy5 (ORCPT
+	with ESMTP id S1755828AbaEPJ5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:54:57 -0400
+	Fri, 16 May 2014 05:57:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <5375DE80.4030707@intel.com>
-References: <CANuQgHFdYhTc8YZ2MbQv0r_CsJGDLwHOqy9NuVDEfVUOTsbRpA@mail.gmail.com>
-	<1398170284-7551-1-git-send-email-chander.kashyap@linaro.org>
-	<CANuQgHGLgrbYME7Y8zJQ6ACt7ByviZJMMEk+RbhqwXvnsm+8_g@mail.gmail.com>
-	<5375DE80.4030707@intel.com>
-Date: Fri, 16 May 2014 15:24:56 +0530
-Message-ID: <CANuQgHHm9t2_4cv-wjDiLZpLOjR1HqzCpWMJHe8Znuj=97-HJw@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] cpuidle: governor: menu: move repeated correction
- factor check to init
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <tip-143e1e28cb40bed836b0a06567208bd7347c9672@git.kernel.org>
+References: <1397209481-28542-2-git-send-email-vincent.guittot@linaro.org>
+	<tip-143e1e28cb40bed836b0a06567208bd7347c9672@git.kernel.org>
+Date: Fri, 16 May 2014 10:57:37 +0100
+X-Google-Sender-Auth: 6LnsIy_bJdsrFzPHqNkavA9S6iQ
+Message-ID: <CAAG0J9915TAT-9JUjz5cMQ_ze7jayhNpKpjZdCZG9JzW1ocBsA@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Rework sched_domain topology definition
+From: James Hogan <james.hogan@imgtec.com>
+To: mingo@kernel.org, hanjun.guo@linaro.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, schwidefsky@de.ibm.com,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        jason.low2@hp.com, tony.luck@intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, heiko.carstens@de.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        dietmar.eggemann@arm.com, "David S. Miller" <davem@davemloft.net>,
+        bhelgaas@google.com, benh@kernel.crashing.org,
+        preeti@linux.vnet.ibm.com, fenghua.yu@intel.com,
+        vincent.guittot@linaro.org
+Cc: linux-tip-commits@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
+        metag <linux-metag@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 15:16, Rafael J. Wysocki <rafael.j.wysocki@intel.com> wrote:
-> On 5/16/2014 10:16 AM, Chander Kashyap wrote:
->>
->> On 22 April 2014 18:08, Chander Kashyap <chander.kashyap@linaro.org>
->> wrote:
->>>
->>> In menu_select function we check for correction factor every time.
->>> If it is zero we are initializing to unity. Hence move it to init
->>> function
->>> and initialise by unity, hence avoid repeated comparisons.
->>>
->>> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->>> Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
->>> ---
->>>   drivers/cpuidle/governors/menu.c |   15 ++++++++-------
->>>   1 file changed, 8 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/drivers/cpuidle/governors/menu.c
->>> b/drivers/cpuidle/governors/menu.c
->>> index 71b5232..9b7918c 100644
->>> --- a/drivers/cpuidle/governors/menu.c
->>> +++ b/drivers/cpuidle/governors/menu.c
->>> @@ -311,13 +311,6 @@ static int menu_select(struct cpuidle_driver *drv,
->>> struct cpuidle_device *dev)
->>>          data->bucket = which_bucket(data->next_timer_us);
->>>
->>>          /*
->>> -        * if the correction factor is 0 (eg first time init or cpu
->>> hotplug
->>> -        * etc), we actually want to start out with a unity factor.
->>> -        */
->>> -       if (data->correction_factor[data->bucket] == 0)
->>> -               data->correction_factor[data->bucket] = RESOLUTION *
->>> DECAY;
->>> -
->>> -       /*
->>>           * Force the result of multiplication to be 64 bits even if both
->>>           * operands are 32 bits.
->>>           * Make sure to round up for half microseconds.
->>> @@ -466,9 +459,17 @@ static int menu_enable_device(struct cpuidle_driver
->>> *drv,
->>>                                  struct cpuidle_device *dev)
->>>   {
->>>          struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
->>> +       int i;
->>>
->>>          memset(data, 0, sizeof(struct menu_device));
->>>
->>> +       /*
->>> +        * if the correction factor is 0 (eg first time init or cpu
->>> hotplug
->>> +        * etc), we actually want to start out with a unity factor.
->>> +        */
->>> +       for(i = 0; i < BUCKETS; i++)
->>> +               data->correction_factor[i] = RESOLUTION * DECAY;
->>> +
->>>          return 0;
->>>   }
->>>
->> ping.
->
->
-> I believe this is in linux-next today, care to check?
->
-> Rafael
->
+Hi Vincent,
 
-Thanks, Rafael
+On 8 May 2014 11:43, tip-bot for Vincent Guittot <tipbot@zytor.com> wrote:
+> Commit-ID:  143e1e28cb40bed836b0a06567208bd7347c9672
+> Gitweb:     http://git.kernel.org/tip/143e1e28cb40bed836b0a06567208bd7347c9672
+> Author:     Vincent Guittot <vincent.guittot@linaro.org>
+> AuthorDate: Fri, 11 Apr 2014 11:44:37 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 7 May 2014 13:33:49 +0200
+>
+> sched: Rework sched_domain topology definition
+>
+> We replace the old way to configure the scheduler topology with a new method
+> which enables a platform to declare additionnal level (if needed).
+>
+> We still have a default topology table definition that can be used by platform
+> that don't want more level than the SMT, MC, CPU and NUMA ones. This table can
+> be overwritten by an arch which either wants to add new level where a load
+> balance make sense like BOOK or powergating level or wants to change the flags
+> configuration of some levels.
+>
+> For each level, we need a function pointer that returns cpumask for each cpu,
+> a function pointer that returns the flags for the level and a name. Only flags
+> that describe topology, can be set by an architecture. The current topology
+> flags are:
+>
+>  SD_SHARE_CPUPOWER
+>  SD_SHARE_PKG_RESOURCES
+>  SD_NUMA
+>  SD_ASYM_PACKING
+>
+> Then, each level must be a subset on the next one. The build sequence of the
+> sched_domain will take care of removing useless levels like those with 1 CPU
+> and those with the same CPU span and no more relevant information for
+> load balancing than its children.
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> Reviewed-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Hanjun Guo <hanjun.guo@linaro.org>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Jason Low <jason.low2@hp.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: linux390@de.ibm.com
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-s390@vger.kernel.org
+> Link: http://lkml.kernel.org/r/1397209481-28542-2-git-send-email-vincent.guittot@linaro.org
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/ia64/include/asm/topology.h |  24 ----
+>  arch/s390/include/asm/topology.h |   2 -
+>  arch/tile/include/asm/topology.h |  33 ------
+>  include/linux/sched.h            |  53 +++++++++
+>  include/linux/topology.h         | 128 +++------------------
+>  kernel/sched/core.c              | 233 ++++++++++++++++++++-------------------
+>  6 files changed, 186 insertions(+), 287 deletions(-)
 
--- 
-with warm regards,
-Chander Kashyap
+
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 2a4298f..656b035 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -985,6 +1006,38 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
+>
+>  bool cpus_share_cache(int this_cpu, int that_cpu);
+>
+> +typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+> +typedef const int (*sched_domain_flags_f)(void);
+
+I just noticed, since May 9th, linux-next (ARCH=metag, gcc 4.2.4, with
+meta2_smp_defconfig) is showing loads of warnings due to the above
+line:
+
+include/linux/sched.h +1010 : warning: type qualifiers ignored on
+function return type
+
+Looks to me that the const serves no purpose in this context and could
+be removed.
+
+Cheers
+James
