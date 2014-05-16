@@ -1,127 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842AbaEPJSe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:18:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34487 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756286AbaEPJSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:18:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1066,1389772800"; 
-   d="scan'208";a="532952151"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sundar Iyer <sundar.iyer@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: baytrail: Add pull type, strength and open drain to debugfs output
-Date: Fri, 16 May 2014 12:18:29 +0300
-Message-Id: <1400231909-7662-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1756584AbaEPJ2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:28:20 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15712 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133AbaEPJ2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 05:28:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 16 May 2014 02:23:28 -0700
+Date: Fri, 16 May 2014 12:28:12 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC] cpufreq: send notifications for intermediate (stable)
+ frequencies
+Message-ID: <20140516092812.GN15168@tbergstrom-lnx.Nvidia.com>
+References: <25738681139c04272b6d2ebeff244c6d36c893f7.1400133090.git.viresh.kumar@linaro.org>
+ <537512E0.7000102@wwwdotorg.org>
+ <CAD=FV=X_tVnMBz3yOf6QBYf4+-AK79_sF=asX4mD2mptxhM2CQ@mail.gmail.com>
+ <537528B9.9070708@wwwdotorg.org>
+ <CAD=FV=V4dBRubAKUOUFc=yAWRPNhmSvULg4Pjtx9rD+ou-sMZg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=V4dBRubAKUOUFc=yAWRPNhmSvULg4Pjtx9rD+ou-sMZg@mail.gmail.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of resolving power management or similar issues it might be useful
-to have these properties included in the debugfs output.
+On Thu, May 15, 2014 at 10:58:26PM +0200, Doug Anderson wrote:
+> Stephen,
+> 
+> On Thu, May 15, 2014 at 1:51 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > On 05/15/2014 02:39 PM, Doug Anderson wrote:
+> >> Hi,
+> >>
+> >> On Thu, May 15, 2014 at 12:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> >>> On 05/14/2014 11:56 PM, Viresh Kumar wrote:
+> >>>> Douglas Anderson, recently pointed out an interesting problem due to which his
+> >>>> udelay() was expiring earlier than it should:
+> >>>> https://lkml.org/lkml/2014/5/13/766
+> >>>>
+> >>>> While transitioning between frequencies few platforms may temporarily switch to
+> >>>> a stable frequency, waiting for the main PLL to stabilize.
+> >>>>
+> >>>> For example: When we transition between very low frequencies on exynos, like
+> >>>> between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
+> >>>> No CPUFREQ notification is sent for that. That means there's a period of time
+> >>>> when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
+> >>>> and 300MHz. And so udelay behaves badly.
+> >>>>
+> >>>> To get this fixed in a generic way, lets introduce another callback safe_freq()
+> >>>> for the cpufreq drivers.
+> >>>>
+> >>>> safe_freq() should return a stable intermediate frequency a platform might want
+> >>>> to switch to, before jumping to the frequency corresponding to 'index'. Core
+> >>>> will send the 'PRE' notification for this 'stable' frequency and 'POST' for the
+> >>>> 'target' frequency. Though if ->target_index() fails, it will handle POST for
+> >>>> 'stable' frequency only.
+> >>>>
+> >>>> Drivers must send 'POST' notification for 'stable' freq and 'PRE' for 'target'
+> >>>> freq. If they can't switch to target frequency, they don't need to send any
+> >>>> notification.
+> >>>
+> >>> This seems rather complex. Can't either the driver or the cpufreq core
+> >>> be responsible for all of the notifications? Otherwise, the logic gets
+> >>> rather complex, and spread between the core and the driver.
+> >>>
+> >>> Perhaps the core should make separate calls into the driver to switch to
+> >>> the temporary frequency and the final frequency, so it can manage all
+> >>> the notifications. Probably best to use a separate function pointer for
+> >>> the temporary change so the driver can easily know what it's doing.
+> >>
+> >> In the discussion about the exynos cpufreq redesign (atop
+> >> cpufreq-cpu0), it turns out that they've come up with a pretty
+> >> reasonable solution that also happens to solve our problem.  They
+> >> utilize an extra divider to make sure that the temporary PLL gets
+> >> divided down so that it's low enough.
+> >>
+> >> It might mean that going between 300 MHz and 500 MHz that you will
+> >> transition through 400 MHz, but I'm quite OK with not sending out a
+> >> notification for that.
+> >>
+> >> If something like that could work for tegra, then maybe we can drop
+> >> this whole thing and it will all just fix itself.  ;)
+> >
+> > At least in the case of Tegra20 cpufreq, I don't think that will be
+> > possible at least without changing the temporary clock source we use
+> > (pll_p). The PLL that's use temporarily is also the root of all the
+> > peripheral clocks, and hence can't be changed. We also only characterize
+> > that PLL at the one specific frequency it was designed to run at.
+> 
+> It's interesting, in the exynos case they didn't change the PLL itself
+> but found an extra divider that I wasn't actually aware existed.  It
+> was located after the mux and before the cpu.
+> 
+> 
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/pinctrl/pinctrl-baytrail.c | 55 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 51 insertions(+), 4 deletions(-)
+We do have a divider between the mux and clocksource as well, but we never use
+it except from Tegra114 onwards for hw controlled thermal throttling (more as
+an emergency measure in case sw fails to react in time). Tegra also has a
+microsecond counter which could be used for udelay() on parts which don't have
+the arch counter (Tegra20 and Tegra30). For Tegra114 and Tegra124 we use the
+arch counter, so there shouldn't be a problem.
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 7c65c9dab215..975572e2f260 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -43,9 +43,20 @@
- #define BYT_INT_STAT_REG	0x800
- 
- /* BYT_CONF0_REG register bits */
-+#define BYT_IODEN		BIT(31)
- #define BYT_TRIG_NEG		BIT(26)
- #define BYT_TRIG_POS		BIT(25)
- #define BYT_TRIG_LVL		BIT(24)
-+#define BYT_PULL_STR_SHIFT	9
-+#define BYT_PULL_STR_MASK	(3 << BYT_PULL_STR_SHIFT)
-+#define BYT_PULL_STR_2K		(0 << BYT_PULL_STR_SHIFT)
-+#define BYT_PULL_STR_10K	(1 << BYT_PULL_STR_SHIFT)
-+#define BYT_PULL_STR_20K	(2 << BYT_PULL_STR_SHIFT)
-+#define BYT_PULL_STR_40K	(3 << BYT_PULL_STR_SHIFT)
-+#define BYT_PULL_ASSIGN_SHIFT	7
-+#define BYT_PULL_ASSIGN_MASK	(3 << BYT_PULL_ASSIGN_SHIFT)
-+#define BYT_PULL_ASSIGN_UP	(1 << BYT_PULL_ASSIGN_SHIFT)
-+#define BYT_PULL_ASSIGN_DOWN	(2 << BYT_PULL_ASSIGN_SHIFT)
- #define BYT_PIN_MUX		0x07
- 
- /* BYT_VAL_REG register bits */
-@@ -321,6 +332,8 @@ static void byt_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 	spin_lock_irqsave(&vg->lock, flags);
- 
- 	for (i = 0; i < vg->chip.ngpio; i++) {
-+		const char *pull_str = NULL;
-+		const char *pull = NULL;
- 		const char *label;
- 		offs = vg->range->pins[i] * 16;
- 		conf0 = readl(vg->reg_base + offs + BYT_CONF0_REG);
-@@ -330,8 +343,32 @@ static void byt_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 		if (!label)
- 			label = "Unrequested";
- 
-+		switch (conf0 & BYT_PULL_ASSIGN_MASK) {
-+		case BYT_PULL_ASSIGN_UP:
-+			pull = "up";
-+			break;
-+		case BYT_PULL_ASSIGN_DOWN:
-+			pull = "down";
-+			break;
-+		}
-+
-+		switch (conf0 & BYT_PULL_STR_MASK) {
-+		case BYT_PULL_STR_2K:
-+			pull_str = "2k";
-+			break;
-+		case BYT_PULL_STR_10K:
-+			pull_str = "10k";
-+			break;
-+		case BYT_PULL_STR_20K:
-+			pull_str = "20k";
-+			break;
-+		case BYT_PULL_STR_40K:
-+			pull_str = "40k";
-+			break;
-+		}
-+
- 		seq_printf(s,
--			   " gpio-%-3d (%-20.20s) %s %s %s pad-%-3d offset:0x%03x mux:%d %s%s%s\n",
-+			   " gpio-%-3d (%-20.20s) %s %s %s pad-%-3d offset:0x%03x mux:%d %s%s%s",
- 			   i,
- 			   label,
- 			   val & BYT_INPUT_EN ? "  " : "in",
-@@ -339,9 +376,19 @@ static void byt_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			   val & BYT_LEVEL ? "hi" : "lo",
- 			   vg->range->pins[i], offs,
- 			   conf0 & 0x7,
--			   conf0 & BYT_TRIG_NEG ? " fall" : "",
--			   conf0 & BYT_TRIG_POS ? " rise" : "",
--			   conf0 & BYT_TRIG_LVL ? " level" : "");
-+			   conf0 & BYT_TRIG_NEG ? " fall" : "     ",
-+			   conf0 & BYT_TRIG_POS ? " rise" : "     ",
-+			   conf0 & BYT_TRIG_LVL ? " level" : "      ");
-+
-+		if (pull && pull_str)
-+			seq_printf(s, " %-4s %-3s", pull, pull_str);
-+		else
-+			seq_puts(s, "          ");
-+
-+		if (conf0 & BYT_IODEN)
-+			seq_puts(s, " open-drain");
-+
-+		seq_puts(s, "\n");
- 	}
- 	spin_unlock_irqrestore(&vg->lock, flags);
- }
--- 
-2.0.0.rc2
+Cheers,
 
+Peter.
