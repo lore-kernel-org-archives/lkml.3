@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaEPIJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:09:24 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:51953 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756773AbaEPIJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:09:16 -0400
-X-Google-Original-From: Jon Maxwell <jmaxwell@redhat.com>
-From: Jon Maxwell <jmaxwell37@gmail.com>
-To: stephen@networkplumber.org
-Cc: davem@davemloft.net, makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com,
-        Jon Maxwell <jmaxwell37@gmail.com>
-Subject: [PATCH net] bridge: notify user space of fdb port change
-Date: Fri, 16 May 2014 18:08:39 +1000
-Message-Id: <1400227719-18403-1-git-send-email-jmaxwell@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755142AbaEPIKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:10:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26275 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756333AbaEPIIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:08:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
+   d="scan'208";a="540108156"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
+        Tony Lindgren <tony@atomide.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org
+Subject: [RFC Patch Part1 V1 29/30] x86, irq, devicetree: use common irqdomain map interface to program IOAPIC pins
+Date: Fri, 16 May 2014 16:05:49 +0800
+Message-Id: <1400227550-5935-30-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Maxwell <jmaxwell37@gmail.com>
+Refine devicetree to use common irqdomain map interface to program
+IOAPIC pins, so we can unify the callsite to progam IOAPIC pins.
 
-There has been a number incidents recently where customers running KVM have 
-reported that VM hosts on different Hypervisors are unreachable. Based on 
-pcap traces we found that the bridge was broadcasting the ARP request out 
-onto the network. However some NICs have an inbuilt switch which on occasions 
-were broadcasting the VMs ARP request back through the physical NIC on the 
-Hypervisor. This resulted in the bridge changing ports and incorrectly learning
-that the VMs mac address was external. As a result the ARP reply was directed 
-back onto the external network and VM never updated it's ARP cache. This patch 
-will notify the bridge command to identify such port toggling.
-
-Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- net/bridge/br_fdb.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/devicetree.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-index 9203d5a..67480c2 100644
---- a/net/bridge/br_fdb.c
-+++ b/net/bridge/br_fdb.c
-@@ -511,6 +511,8 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
- 			fdb->updated = jiffies;
- 			if (unlikely(added_by_user))
- 				fdb->added_by_user = 1;
-+			if (unlikely(source->port_no != fdb->dst->port_no))
-+				fdb_notify(br, fdb, RTM_NEWNEIGH);
- 		}
- 	} else {
- 		spin_lock(&br->hash_lock);
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index a44d45df49f5..3bd30eb92d9d 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -280,10 +280,8 @@ static int ioapic_xlate(struct irq_domain *domain,
+ 			const u32 *intspec, u32 intsize,
+ 			irq_hw_number_t *out_hwirq, u32 *out_type)
+ {
+-	struct io_apic_irq_attr attr;
+ 	struct of_ioapic_type *it;
+ 	u32 line, idx;
+-	int rc;
+ 
+ 	if (WARN_ON(intsize < 2))
+ 		return -EINVAL;
+@@ -296,12 +294,9 @@ static int ioapic_xlate(struct irq_domain *domain,
+ 	it = &of_ioapic_type[intspec[1]];
+ 
+ 	idx = (u32)(long)domain->host_data;
+-	set_io_apic_irq_attr(&attr, idx, line, it->trigger, it->polarity);
+-
+-	rc = io_apic_setup_irq_pin_once(irq_find_mapping(domain, line),
+-					cpu_to_node(0), &attr);
+-	if (rc)
+-		return rc;
++	if (mp_set_pin_attr(idx, line, it->trigger, it->polarity,
++			    cpu_to_node(0)))
++		return -EBUSY;
+ 
+ 	*out_hwirq = line;
+ 	*out_type = it->out_type;
+@@ -309,6 +304,7 @@ static int ioapic_xlate(struct irq_domain *domain,
+ }
+ 
+ const struct irq_domain_ops ioapic_irq_domain_ops = {
++	.map = mp_irqdomain_map,
+ 	.xlate = ioapic_xlate,
+ };
+ 
 -- 
-1.8.3.1
+1.7.10.4
 
