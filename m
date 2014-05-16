@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147AbaEPKqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:46:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54338 "EHLO arroyo.ext.ti.com"
+	id S1757094AbaEPKqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:46:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41647 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756907AbaEPKq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756740AbaEPKq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 06:46:27 -0400
 From: Nishanth Menon <nm@ti.com>
 To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
@@ -14,9 +14,9 @@ To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
 CC: Nishanth Menon <nm@ti.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH 3/3] ARM: dts: OMAP5/DRA7: use omap5-mpu-dpll-clock capable of dealing with higher frequencies
-Date: Fri, 16 May 2014 05:46:00 -0500
-Message-ID: <1400237160-25125-4-git-send-email-nm@ti.com>
+Subject: [PATCH 1/3] ARM: OMAP5+: dpll: support Duty Cycle Correction(DCC)
+Date: Fri, 16 May 2014 05:45:58 -0500
+Message-ID: <1400237160-25125-2-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400237160-25125-1-git-send-email-nm@ti.com>
 References: <1400237160-25125-1-git-send-email-nm@ti.com>
@@ -26,44 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP5432, DRA75x and DRA72x have MPU DPLLs that need Duty Cycle
-Correction(DCC) to operate safely at frequencies >= 1.4GHz.
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
 
-Switch to "ti,omap5-mpu-dpll-clock" compatible property which provides
-this support.
+Duty Cycle Correction(DCC) needs to be enabled if the MPU is to run at
+frequencies beyond 1.4GHz for OMAP5, DRA75x, DRA72x.
 
+MPU DPLL has a limitation on the maximum frequency it can be locked
+at. Duty Cycle Correction circuit is used to recover a correct duty
+cycle for achieving higher frequencies (hardware internally switches
+output to M3 output(CLKOUTHIF) from M2 output (CLKOUT)).
+
+For further information, See the note on OMAP5432 Technical Reference
+Manual(SWPU282U) chapter 3.6.3.3.1 "DPLLs Output Clocks Parameters",
+and also the "OMAP543x ES2.0 DM Operating Conditions Addendum v0.5"
+chapter 2.1 "Micro Processor Unit (MPU)". Equivalent information is
+present in relevant DRA75x, 72x documentation(SPRUHP2E, SPRUHI2P).
+
+Signed-off-by: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Signed-off-by: Taras Kondratiuk <taras@ti.com>
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
+[t-kristo@ti.com: added TRM / DM references for DCC clock rate]
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
 ---
- arch/arm/boot/dts/dra7xx-clocks.dtsi   |    2 +-
- arch/arm/boot/dts/omap54xx-clocks.dtsi |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/dpll3xxx.c |    9 +++++++++
+ include/linux/clk/ti.h         |    4 ++++
+ 2 files changed, 13 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index cfb8fc7..aac5522 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -277,7 +277,7 @@
+diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
+index fcd8036..6d7ba37 100644
+--- a/arch/arm/mach-omap2/dpll3xxx.c
++++ b/arch/arm/mach-omap2/dpll3xxx.c
+@@ -319,6 +319,15 @@ static int omap3_noncore_dpll_program(struct clk_hw_omap *clk, u16 freqsel)
  
- 	dpll_mpu_ck: dpll_mpu_ck {
- 		#clock-cells = <0>;
--		compatible = "ti,omap4-dpll-clock";
-+		compatible = "ti,omap5-mpu-dpll-clock";
- 		clocks = <&sys_clkin1>, <&mpu_dpll_hs_clk_div>;
- 		reg = <0x0160>, <0x0164>, <0x016c>, <0x0168>;
- 	};
-diff --git a/arch/arm/boot/dts/omap54xx-clocks.dtsi b/arch/arm/boot/dts/omap54xx-clocks.dtsi
-index d487fda..465505c 100644
---- a/arch/arm/boot/dts/omap54xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/omap54xx-clocks.dtsi
-@@ -362,7 +362,7 @@
- 
- 	dpll_mpu_ck: dpll_mpu_ck {
- 		#clock-cells = <0>;
--		compatible = "ti,omap4-dpll-clock";
-+		compatible = "ti,omap5-mpu-dpll-clock";
- 		clocks = <&sys_clkin>, <&mpu_dpll_hs_clk_div>;
- 		reg = <0x0160>, <0x0164>, <0x016c>, <0x0168>;
- 	};
+ 	/* Set DPLL multiplier, divider */
+ 	v = omap2_clk_readl(clk, dd->mult_div1_reg);
++
++	/* Handle Duty Cycle Correction */
++	if (dd->dcc_mask) {
++		if (dd->last_rounded_rate >= dd->dcc_rate)
++			v |= dd->dcc_mask; /* Enable DCC */
++		else
++			v &= ~dd->dcc_mask; /* Disable DCC */
++	}
++
+ 	v &= ~(dd->mult_mask | dd->div1_mask);
+ 	v |= dd->last_rounded_m << __ffs(dd->mult_mask);
+ 	v |= (dd->last_rounded_n - 1) << __ffs(dd->div1_mask);
+diff --git a/include/linux/clk/ti.h b/include/linux/clk/ti.h
+index 4a21a87..1f5c55e 100644
+--- a/include/linux/clk/ti.h
++++ b/include/linux/clk/ti.h
+@@ -41,6 +41,8 @@
+  * @idlest_reg: register containing the DPLL idle status bitfield
+  * @autoidle_mask: mask of the DPLL autoidle mode bitfield in @autoidle_reg
+  * @freqsel_mask: mask of the DPLL jitter correction bitfield in @control_reg
++ * @dcc_mask: mask of the DPLL DCC correction bitfield @mult_div1_reg
++ * @dcc_rate: rate atleast which DCC @dcc_mask must be set
+  * @idlest_mask: mask of the DPLL idle status bitfield in @idlest_reg
+  * @lpmode_mask: mask of the DPLL low-power mode bitfield in @control_reg
+  * @m4xen_mask: mask of the DPLL M4X multiplier bitfield in @control_reg
+@@ -86,6 +88,8 @@ struct dpll_data {
+ 	u32			idlest_mask;
+ 	u32			dco_mask;
+ 	u32			sddiv_mask;
++	u32			dcc_mask;
++	unsigned long		dcc_rate;
+ 	u32			lpmode_mask;
+ 	u32			m4xen_mask;
+ 	u8			auto_recal_bit;
 -- 
 1.7.9.5
 
