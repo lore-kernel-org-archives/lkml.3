@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050AbaEPSCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:02:30 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:35933 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109AbaEPSC3 (ORCPT
+	id S1757448AbaEPSHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:07:40 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:48717 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755145AbaEPSHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:02:29 -0400
-To: linux-wireless@vger.kernel.org
-Subject: [PATCH] [RESEND] orinoco_usb: Fix broken firmware load error checking
-Cc: Kumar Amit Mehta <gmate.amit@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Fri, 16 May 2014 20:01:59 +0200
+	Fri, 16 May 2014 14:07:38 -0400
+Date: Fri, 16 May 2014 23:37:25 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: cascardo@linux.vnet.ibm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] ehea: Introduce the use of the managed version of kzalloc
+Message-ID: <20140516180725.GA12976@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201405162001.59695.linux@rainbow-software.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The check of ezusb_firmware_download() return value (added by commit
-488ec878034eccb852267b0e27ce9d511f75c587) is broken because
-ezusb_firmware_download() returns 1 on success.
-This causes the driver not to work with the following error:
-orinoco_usb: probe of 3-3:1.0 failed with error -14
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions.
 
-Check the return value only for negative values.
+The following Coccinelle semantic patch was used for making the change:
 
-This fix should be applied to -stable kernels too.
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/net/wireless/orinoco/orinoco_usb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Not compile tested due to incompatible architecture.
 
-diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
-index f9805c9..1cbb783 100644
---- a/drivers/net/wireless/orinoco/orinoco_usb.c
-+++ b/drivers/net/wireless/orinoco/orinoco_usb.c
-@@ -1687,7 +1687,7 @@ static int ezusb_probe(struct usb_interface *interface,
- 		firmware.code = fw_entry->data;
+ drivers/net/ethernet/ibm/ehea/ehea_main.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 538903b..4dda3d1 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -3273,7 +3273,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
+ 		return -EINVAL;
  	}
- 	if (firmware.size && firmware.code) {
--		if (ezusb_firmware_download(upriv, &firmware))
-+		if (ezusb_firmware_download(upriv, &firmware) < 0)
- 			goto error;
- 	} else {
- 		err("No firmware to download");
+ 
+-	adapter = kzalloc(sizeof(*adapter), GFP_KERNEL);
++	adapter = devm_kzalloc(&dev->dev, sizeof(*adapter), GFP_KERNEL);
+ 	if (!adapter) {
+ 		ret = -ENOMEM;
+ 		dev_err(&dev->dev, "no mem for ehea_adapter\n");
+@@ -3359,7 +3359,6 @@ out_kill_eq:
+ 
+ out_free_ad:
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ out:
+ 	ehea_update_firmware_handles();
+@@ -3386,7 +3385,6 @@ static int ehea_remove(struct platform_device *dev)
+ 	ehea_destroy_eq(adapter->neq);
+ 	ehea_remove_adapter_mr(adapter);
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ 	ehea_update_firmware_handles();
+ 
 -- 
-Ondrej Zary
+1.9.1
+
