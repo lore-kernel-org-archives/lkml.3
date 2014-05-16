@@ -1,82 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaEPOtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:49:22 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49371 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447AbaEPOtV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:49:21 -0400
-Date: Fri, 16 May 2014 16:49:11 +0200
-From: Michael Mueller <mimu@linux.vnet.ibm.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@kernel.org>,
+	id S932327AbaEPOtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:49:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42864 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756502AbaEPOtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 10:49:40 -0400
+Message-ID: <53762581.30708@suse.de>
+Date: Fri, 16 May 2014 16:49:37 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Michael Mueller <mimu@linux.vnet.ibm.com>
+CC: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Paolo Bonzini <pbonzini@redhat.com>,
-        Richard Henderson <rth@twiddle.net>,
         Andreas Faerber <afaerber@suse.de>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Subject: Re: [PATCH v1 RFC 0/6] KVM: s390: cpu model implementation
-Message-ID: <20140516164911.1e62c844@bee>
-In-Reply-To: <5375F739.2090903@de.ibm.com>
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
-	<5375F739.2090903@de.ibm.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [Qemu-devel] [PATCH v1 RFC 3/6] KVM: s390: use facilities and
+ cpu_id per KVM
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>	<1399993114-15333-4-git-send-email-mimu@linux.vnet.ibm.com>	<5375FCBD.7010700@suse.de> <20140516164645.57f22213@bee>
+In-Reply-To: <20140516164645.57f22213@bee>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051614-8372-0000-0000-000009B70A25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014 13:32:09 +0200
-Christian Borntraeger <borntraeger@de.ibm.com> wrote:
 
-> On 13/05/14 16:58, Michael Mueller wrote:
-> > The proposed patch set implements S390 cpu model support in kvm. A cpu
-> > model is defined by a triple comprizing the cpu type , the cpu facility
-> > set and instruction blocking control. A consumer requests a feasible
-> > combination of that that triple before vcpu creation. All subsequently
-> > created vcpu's will use this cpu configuration. 
-> > 
-> > Michael Mueller (6):
-> >   s390/sclp: add sclp_get_ibc function
-> >   KVM: s390: split SIE state guest prefix field
-> >   KVM: s390: use facilities and cpu_id per KVM
-> >   KVM: s390: add ibc api
-> >   KVM: s390: initial implementation of soft facilities
-> >   KVM: s390: add cpu model support
-> > 
-> >  arch/s390/include/asm/kvm_host.h |  13 +-
-> >  arch/s390/include/asm/sclp.h     |   1 +
-> >  arch/s390/include/uapi/asm/kvm.h |  23 ++++
-> >  arch/s390/kvm/Makefile           |   2 +-
-> >  arch/s390/kvm/diag.c             |   2 +-
-> >  arch/s390/kvm/gaccess.c          |   4 +-
-> >  arch/s390/kvm/gaccess.h          |   8 +-
-> >  arch/s390/kvm/ibc.c              |  29 +++++
-> >  arch/s390/kvm/kvm-s390.c         | 263 +++++++++++++++++++++++++++++++++------
-> >  arch/s390/kvm/kvm-s390.h         |  43 ++++++-
-> >  arch/s390/kvm/priv.c             |  16 ++-
-> >  arch/s390/kvm/softfac.c          |  38 ++++++
-> >  drivers/s390/char/sclp_early.c   |  12 +-
-> >  13 files changed, 397 insertions(+), 57 deletions(-)
-> >  create mode 100644 arch/s390/kvm/ibc.c
-> >  create mode 100644 arch/s390/kvm/softfac.c
-> > 
-> 
-> I will add patch 1 and 2 to the next KVM: s390: pull request as there 
-> does not seem to be potential for discussion / interface changes. 
-> Everything else looks ok, but I want to wait if additional feedback 
-> about the overall design comes in. 
+On 16.05.14 16:46, Michael Mueller wrote:
+> On Fri, 16 May 2014 13:55:41 +0200
+> Alexander Graf <agraf@suse.de> wrote:
+>
+>> On 13.05.14 16:58, Michael Mueller wrote:
+>>> The patch introduces facilities and cpu_ids per virtual machine.
+>>> Different virtual machines may want to expose different facilities and
+>>> cpu ids to the guest, so let's make them per-vm instead of global.
+>>>
+>>> In addition this patch renames all ocurrences of *facilities to *fac_list
+>>> smilar to the already exiting symbol stfl_fac_list in lowcore.
+>>>
+>>> Signed-off-by: Michael Mueller <mimu@linux.vnet.ibm.com>
+>>> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+>>> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+>>> ---
+>>>    arch/s390/include/asm/kvm_host.h |   7 +++
+>>>    arch/s390/kvm/gaccess.c          |   4 +-
+>>>    arch/s390/kvm/kvm-s390.c         | 107 +++++++++++++++++++++++++++------------
+>>>    arch/s390/kvm/kvm-s390.h         |  23 +++++++--
+>>>    arch/s390/kvm/priv.c             |  13 +++--
+>>>    5 files changed, 113 insertions(+), 41 deletions(-)
+>>>
+>>> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+>>> index 38d487a..b4751ba 100644
+>>> --- a/arch/s390/include/asm/kvm_host.h
+>>> +++ b/arch/s390/include/asm/kvm_host.h
+>>> @@ -414,6 +414,12 @@ struct kvm_s390_config {
+>>>    	struct kvm_s390_attr_name name;
+>>>    };
+>>>    
+>>> +struct kvm_s390_cpu_model {
+>>> +	unsigned long *sie_fac;
+>>> +	struct cpuid cpu_id;
+>>> +	unsigned long *fac_list;
+>>> +};
+>>> +
+>>>    struct kvm_arch{
+>>>    	struct sca_block *sca;
+>>>    	debug_info_t *dbf;
+>>> @@ -427,6 +433,7 @@ struct kvm_arch{
+>>>    	wait_queue_head_t ipte_wq;
+>>>    	struct kvm_s390_config *cfg;
+>>>    	spinlock_t start_stop_lock;
+>>> +	struct kvm_s390_cpu_model model;
+>>>    };
+>>>    
+>>>    #define KVM_HVA_ERR_BAD		(-1UL)
+>>> diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
+>>> index db608c3..4c7ca40 100644
+>>> --- a/arch/s390/kvm/gaccess.c
+>>> +++ b/arch/s390/kvm/gaccess.c
+>>> @@ -358,8 +358,8 @@ static unsigned long guest_translate(struct kvm_vcpu *vcpu, unsigned long
+>>> gva, union asce asce;
+>>>    
+>>>    	ctlreg0.val = vcpu->arch.sie_block->gcr[0];
+>>> -	edat1 = ctlreg0.edat && test_vfacility(8);
+>>> -	edat2 = edat1 && test_vfacility(78);
+>>> +	edat1 = ctlreg0.edat && test_kvm_facility(vcpu->kvm, 8);
+>>> +	edat2 = edat1 && test_kvm_facility(vcpu->kvm, 78);
+>>>    	asce.val = get_vcpu_asce(vcpu);
+>>>    	if (asce.r)
+>>>    		goto real_address;
+>>> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+>>> index 01a5212..a53652f 100644
+>>> --- a/arch/s390/kvm/kvm-s390.c
+>>> +++ b/arch/s390/kvm/kvm-s390.c
+>>> @@ -1,5 +1,5 @@
+>>>    /*
+>>> - * hosting zSeries kernel virtual machines
+>>> + * Hosting zSeries kernel virtual machines
+>>>     *
+>>>     * Copyright IBM Corp. 2008, 2009
+>>>     *
+>>> @@ -30,7 +30,6 @@
+>>>    #include <asm/pgtable.h>
+>>>    #include <asm/nmi.h>
+>>>    #include <asm/switch_to.h>
+>>> -#include <asm/facility.h>
+>>>    #include <asm/sclp.h>
+>>>    #include<asm/timex.h>
+>>>    #include "kvm-s390.h"
+>>> @@ -92,15 +91,33 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
+>>>    	{ NULL }
+>>>    };
+>>>    
+>>> -unsigned long *vfacilities;
+>>> -static struct gmap_notifier gmap_notifier;
+>>> +/* upper facilities limit for kvm */
+>>> +unsigned long kvm_s390_fac_list_mask[] = {
+>>> +	0xff82fff3f47c2000UL,
+>>> +	0x005c000000000000UL,
+>>> +};
+>>> +
+>>> +unsigned long kvm_s390_fac_list_mask_size(void)
+>>> +{
+>>> +	BUILD_BUG_ON(ARRAY_SIZE(kvm_s390_fac_list_mask) >
+>>> +		     S390_ARCH_FAC_MASK_SIZE_U64);
+>>> +	return ARRAY_SIZE(kvm_s390_fac_list_mask);
+>>> +}
+>>>    
+>>> -/* test availability of vfacility */
+>>> -int test_vfacility(unsigned long nr)
+>>> +void kvm_s390_apply_fac_list_mask(unsigned long fac_list[])
+>>>    {
+>>> -	return __test_facility(nr, (void *) vfacilities);
+>>> +	unsigned int i;
+>>> +
+>>> +	for (i = 0; i < S390_ARCH_FAC_LIST_SIZE_U64; i++) {
+>>> +		if (i < kvm_s390_fac_list_mask_size())
+>>> +			fac_list[i] &= kvm_s390_fac_list_mask[i];
+>>> +		else
+>>> +			fac_list[i] &= 0UL;
+>>> +	}
+>>>    }
+>>>    
+>>> +static struct gmap_notifier gmap_notifier;
+>>> +
+>>>    /* Section: not file related */
+>>>    int kvm_arch_hardware_enable(void *garbage)
+>>>    {
+>>> @@ -485,6 +502,30 @@ long kvm_arch_vm_ioctl(struct file *filp,
+>>>    	return r;
+>>>    }
+>>>    
+>>> +/* make sure the memory used for fac_list is zeroed */
+>>> +void kvm_s390_get_hard_fac_list(unsigned long *fac_list, int size)
+>> Hard? Wouldn't "host" make more sense here?
+> Renaming "*hard_fac_list" with "*host_fac_list" here and wherever it appears is ok with me.
+>
+>> I also think it makes sense to expose the native host facility list to
+>> user space via an ioctl somehow.
+>>
+> In which situation do you need the full facility list. Do you have an example?
 
-Perfect...
+If you want to just implement -cpu host to get the exact feature set 
+that the host gives you, how do you know which set that is?
 
-> 
-> Christian
+
+Alex
 
