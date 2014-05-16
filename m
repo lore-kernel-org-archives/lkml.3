@@ -1,144 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789AbaEPNiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:38:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39337 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932766AbaEPNiM (ORCPT
+	id S932739AbaEPNh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:37:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54342 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718AbaEPNhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:38:12 -0400
-Date: Fri, 16 May 2014 15:38:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, chegu_vinod@hp.com, mingo@kernel.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: [PATCH RFC] sched,numa: move tasks to preferred_node at wakeup
- time
-Message-ID: <20140516133805.GS11096@twins.programming.kicks-ass.net>
-References: <20140516001332.67f91af2@annuminas.surriel.com>
- <20140516021450.473361ea@annuminas.surriel.com>
+	Fri, 16 May 2014 09:37:55 -0400
+Date: Fri, 16 May 2014 06:37:07 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-f63b6a05f2b11537612266a8b27a61f412344a1d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        tony.luck@intel.com
+In-Reply-To: <20140507154340.061990194@linutronix.de>
+References: <20140507154340.061990194@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Replace reserve_irqs in core code
+Git-Commit-ID: f63b6a05f2b11537612266a8b27a61f412344a1d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PgFjNgMZ2k7V6t4+"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140516021450.473361ea@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f63b6a05f2b11537612266a8b27a61f412344a1d
+Gitweb:     http://git.kernel.org/tip/f63b6a05f2b11537612266a8b27a61f412344a1d
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 7 May 2014 15:44:21 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 16 May 2014 14:05:22 +0200
 
---PgFjNgMZ2k7V6t4+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+genirq: Replace reserve_irqs in core code
 
-On Fri, May 16, 2014 at 02:14:50AM -0400, Rik van Riel wrote:
-> +#ifdef CONFIG_NUMA_BALANCING
-> +static int numa_balance_on_wake(struct task_struct *p, int prev_cpu)
-> +{
-> +	long load, src_load, dst_load;
+We want to get rid of the public interface.
 
-> +	int cur_node = cpu_to_node(prev_cpu);
-> +	struct numa_group *numa_group = ACCESS_ONCE(p->numa_group);
-> +	struct sched_domain *sd;
-> +	struct task_numa_env env = {
-> +		.p = p,
-> +		.best_task = NULL,
-> +		.best_imp = 0,
-> +		.best_cpu = -1
-> +	};
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140507154340.061990194@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/chip.c      | 5 ++---
+ kernel/irq/internals.h | 6 ++++++
+ kernel/irq/irqdesc.c   | 7 +++++++
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-That's all code, ideally you'd move that after we're done checking the
-reasons to not do work, say somehere like...
-
-> +
-> +	if (!sched_feat(NUMA))
-> +		return prev_cpu;
-
-Yah.. :-( I think some people changed that to numabalancing_enabled.
-
-Fixing that is still on the todo list somewhere.
-
-> +
-> +	if (p->numa_preferred_nid == -1)
-> +		return prev_cpu;
-> +
-> +	if (p->numa_preferred_nid == cur_node);
-> +		return prev_cpu;
-> +
-> +	if (numa_group && node_isset(cur_node, numa_group->active_nodes))
-> +		return prev_cpu;
-> +
-> +	sd = rcu_dereference(per_cpu(sd_numa, env.src_cpu));
-> +	if (sd)
-> +		env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
-> +
-> +	/*
-> +	 * Cpusets can break the scheduler domain tree into smaller
-> +	 * balance domains, some of which do not cross NUMA boundaries.
-> +	 * Tasks that are "trapped" in such domains cannot be migrated
-> +	 * elsewhere, so there is no point in (re)trying.
-> +	 */
-> +	if (unlikely(!sd)) {
-
-How about you bail early, and then have the above test evaporate?
-
-> +		p->numa_preferred_nid = cur_node;
-> +		return prev_cpu;
-> +	}
-
-.. here.
-
-> +
-> +	/*
-> +	 * Only allow p to move back to its preferred nid if
-> +	 * that does not create an imbalance that would cause
-> +	 * the load balancer to move a task around later.
-> +	 */
-> +	env.src_nid = cur_node;
-> +	env.dst_nid = p->numa_preferred_nid;
-> +
-> +	update_numa_stats(&env.src_stats, env.src_nid);
-> +	update_numa_stats(&env.dst_stats, env.dst_nid);
-> +
-> +	dst_load = env.dst_stats.load;
-> +	src_load = env.src_stats.load;
-> +
-> +	/* XXX missing power terms */
-> +	load = task_h_load(p);
-> +	dst_load += load;
-> +	src_load -= load;
-> +
-> +	if (load_too_imbalanced(env.src_stats.load, env.dst_stats.load,
-> +				src_load, dst_load, &env))
-> +		return prev_cpu;
-
-So I'm thinking that load_too_imbalanced() is from another patch I
-haven't yet seen, lemme go see if you did send it and I missed it.
-
-> +
-> +	return cpumask_first(cpumask_of_node(p->numa_preferred_nid));
-> +}
-
---PgFjNgMZ2k7V6t4+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdhS9AAoJEHZH4aRLwOS6idMP/j2Cns+IDlc49fQeewSAFvjI
-eCowBqzxYbQBNIeYC7knVYdG1gGYg3imQKiBcrTTBs0c6hwvf/w+2y7p8QPeisP7
-R+AJc0lDLjFA/gF2e+3rZSWrfkSOOiYXJGoU93fQzYcJTXBFL1Mg6TeMrbQSuHd6
-hbs5Ja5kRnJZJaM5+YGlPGqUE68h4tId/GpQ6TpIe9qnvD31Nzb2jZvVhrXDEfmu
-9gkahr0YpqSgtNGW8M2Z4+bwvUfHkpzcJJS9aynuOKpomAxd//BZT7mVPyNUnjBC
-m6m5DhOGhKJ9Orx3GsBgCiE46y8SZdj9yrGzTEqCkYK97EJaX6lNbe9HirdmC3TE
-Od6jHFpei0R5iLmRHlghAB6rjsek+EjRw/R2poZqo0iQG81ftyVdqzGcQooyNjnf
-M4O2eYCvd8UcgXuHz9+cP5W6UVqoKp+sDPSsh8amzO+se/l65gP8P1WL90pt1buR
-qpd1U1Og8RS7ARmwzaKF7MugrBCieh4d2LEGebEbCra0uZlRnskbAGhe8NJrYWZz
-2sa8CuRMlBDF++tuehr12Doe7VvV5oFnLxccWgJn2heQJT6lEgXG+rv3e49SAwTu
-GVDpIqcw62Oy/WFiHX6+TYq3vs9/TcXv0xLmItBET171IJ7QSpuOgzwEQMQL5Dv8
-sIOn1ypmj0Vgxy2rGAW7
-=MWxY
------END PGP SIGNATURE-----
-
---PgFjNgMZ2k7V6t4+--
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 6397df2..a2b28a2 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -40,10 +40,9 @@ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
+ 	irq_put_desc_unlock(desc, flags);
+ 	/*
+ 	 * For !CONFIG_SPARSE_IRQ make the irq show up in
+-	 * allocated_irqs. For the CONFIG_SPARSE_IRQ case, it is
+-	 * already marked, and this call is harmless.
++	 * allocated_irqs.
+ 	 */
+-	irq_reserve_irq(irq);
++	irq_mark_irq(irq);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(irq_set_chip);
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index ddf1ffe..c4065e3 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -76,6 +76,12 @@ extern void mask_irq(struct irq_desc *desc);
+ extern void unmask_irq(struct irq_desc *desc);
+ extern void unmask_threaded_irq(struct irq_desc *desc);
+ 
++#ifdef CONFIG_SPARSE_IRQ
++static inline void irq_mark_irq(unsigned int irq) { }
++#else
++extern void irq_mark_irq(unsigned int irq);
++#endif
++
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+ irqreturn_t handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index f388ade..2402934 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -299,6 +299,13 @@ static int irq_expand_nr_irqs(unsigned int nr)
+ 	return -ENOMEM;
+ }
+ 
++void irq_mark_irq(unsigned int irq)
++{
++	mutex_lock(&sparse_irq_lock);
++	bitmap_set(allocated_irqs, irq, 1);
++	mutex_unlock(&sparse_irq_lock);
++}
++
+ #endif /* !CONFIG_SPARSE_IRQ */
+ 
+ /**
