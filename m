@@ -1,126 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305AbaEPOiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:38:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57290 "EHLO mx1.redhat.com"
+	id S1756835AbaEPOpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:45:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10708 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913AbaEPOiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:38:17 -0400
-Message-ID: <1400251093.3289.193.camel@ul30vt.home>
-Subject: Re: [PATCH] i915: Add module option to support VGA arbiter on HD
- devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Date: Fri, 16 May 2014 08:38:13 -0600
-In-Reply-To: <20140516090649.GD8790@phenom.ffwll.local>
-References: <20140509201655.2849.97478.stgit@bling.home>
-	 <20140512190812.GH25056@phenom.ffwll.local>
-	 <1399923039.6734.97.camel@bling.home>
-	 <20140512193825.GI25056@phenom.ffwll.local>
-	 <1400190194.3289.143.camel@ul30vt.home>
-	 <CAKMK7uGRCQSUNjBiegkYncUiYmFfoLAqxj6UPYJNeOf2S2x-7w@mail.gmail.com>
-	 <1400215610.3289.174.camel@ul30vt.home>
-	 <20140516090649.GD8790@phenom.ffwll.local>
+	id S1753913AbaEPOpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 10:45:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
+   d="scan'208";a="512800813"
+Message-ID: <1400251512.3703.55.camel@smile.fi.intel.com>
+Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
+ T100
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 16 May 2014 17:45:12 +0300
+In-Reply-To: <537614A0.1050908@linux.intel.com>
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+	 <5374D0A8.2090407@linux.intel.com>
+	 <1400165610.3703.41.camel@smile.fi.intel.com>
+	 <5374E472.9030001@linux.intel.com>
+	 <20140515161148.GM1674@lahna.fi.intel.com> <53754DF4.10302@linux.intel.com>
+	 <1400223856.3703.44.camel@smile.fi.intel.com>
+	 <537614A0.1050908@linux.intel.com>
+Organization: Intel Finland Oy
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 11:06 +0200, Daniel Vetter wrote:
-> On Thu, May 15, 2014 at 10:46:50PM -0600, Alex Williamson wrote:
-> > On Fri, 2014-05-16 at 00:50 +0200, Daniel Vetter wrote:
-> > > On Thu, May 15, 2014 at 11:43 PM, Alex Williamson
-> > > <alex.williamson@redhat.com> wrote:
-> > > > I don't know what to do with this.  It seems like a lot of wishful
-> > > > thinking that in the best case would drag on for years.  Even if we get
-> > > > VGA arbitration out of Xorg, the bit about making the userspace VGA
-> > > > arbiter interface lie depending on current->comm sounds tricky and
-> > > > horrible.  If we can lie to Xorg there, why don't we do that now?  If we
-> > > > can't lie to Xorg now, then what deprecation event or detection of the
-> > > > caller is going to allow us to do so in the future?
-> > > 
-> > > Well we wouldn't necessarily need to lie to X, but could instead look
-> > > whether all the vga devices in a system are claimed by kms drivers. If
-> > > that's the case the userspace doesn't have an awful lot of business
-> > > touching the VGA registers and we could simply not obey a vga arb
-> > > request from userspace.
-> > > 
-> > > More advanced would be if we still obey it for those devices not
-> > > claimed by kms drivers. So not really a need to key on current->comm.
+On Fri, 2014-05-16 at 21:37 +0800, Li, Aubrey wrote:
+> On 2014/5/16 15:04, Andy Shevchenko wrote:
+> > On Fri, 2014-05-16 at 07:29 +0800, Li, Aubrey wrote:
+> >> On 2014/5/16 0:11, Mika Westerberg wrote:
+> >>> On Thu, May 15, 2014 at 11:59:46PM +0800, Li, Aubrey wrote:
+> >>>> On 2014/5/15 22:53, Andy Shevchenko wrote:
+> >>>>> On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
+> >>>>>> On 2014/5/15 21:40, Heikki Krogerus wrote:
+> >>>>>>> Changes since v1:
+> >>>>>>> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
+> >>>>>>> - NULL checks for clk_name allocation in acpi_lpss.c
+> >>>>>>>
+> >>>>>>> This combines two patch sets for LPSS that I had already send for
+> >>>>>>> review separately. They conflicted with each other.
+> >>>>>>>
+> >>>>>>> The first two patches will fix a problem were the context of the
+> >>>>>>> private LPSS registers is lost when entering D3. The last two will add
+> >>>>>>> support for the M/N dividers on LPSS by adding a new basic clock type
+> >>>>>>> for fractional dividers. The UART driver needs support for it in order
+> >>>>>>> to get clock rates that suit the requested baud rates.
+> >>>>>>
+> >>>>>> The major issue in my mind is, this proposal makes a couple between I2C
+> >>>>>> designware, HSUART, or probably DMA driver as well with LPSS driver.
+> >>>>>
+> >>>>> acpi_lpss driver creates platform devices for each found and enumerated
+> >>>>> device.
+> >>>>
+> >>>>> If there no acpi_lpss enabled the drivers work as supposed without it.
+> >>>>
+> >>>> This is not true.
+> >>>
+> >>> The drivers work fine on non-LPSS platform. If you make them depend on
+> >>> acpi_lpss, you break that.
+> >>>
+> >>
+> >> People don't know the relationship between LPSS driver and I2C/HSUART,
+> >> there is nowhere to describe that. If LPSS driver is unchecked, they
+> >> will encounter a weird issue which is very hard to figure out what's
+> >> going on.
 > > 
-> > This is a requirement for me, I don't really care about KMS or Xorg, the
-> > use case I want to enable is binding a VGA device to vfio-pci so that it
-> > can be assigned to a guest virtual machine.  This works on an unmodified
-> > kernel today so long as you don't have an Intel IGD in your system.  If
-> > you do, we try to switch the VGA device, but it doesn't actually get
-> > switched because i915 opts-out of arbitration yet still claims VGA
-> > accesses.
+> > Besides this discussion is off the topic, I could say that LPSS drivers
+> > are kinda optional (we won't enforce user to use them) even on some
+> > systems where they are present. Relationship is provided by the proper
+> > kernel configuration.
+> > 
+> It is optional previously but definitely not optional after this patch.
+
+I'm sorry, I didn't clearly see what part in this patchset prevents
+this.
+
+> The user who uses I2C designeware driver without LPSS now, I2C won't
+> work properly on Asus T100.
+
+In that case you specifically enable this driver in the kernel
+configuration. T100 may require that driver to be fully functional.
+
 > 
-> I get that its a requirement for you.
+> The proper configuration leads to a question, why a completed I2C
+> controller driver doesn't work properly without another LPSS driver. I
+> worry about this is hard to maintain in future.
 > 
-> I've also just detailed the solution for you above, but I'm not going to
-> write the patch itself (since I can't test it really).
-
-I repeat it because it seems incompatible with any plan that involves
-modes of operation where the VGA arbiter says one thing if all VGA
-devices are bound to KMS drivers and another if they're not.  That means
-Xorg would have a different feature set depending on the driver state of
-devices we might be using for entirely different purposes.
-
-Users want to be able to run X on the host i915 at the same time that
-they have other VGA devices assigned to guests.
-
-> We have two users of the vga-arb crap relevant here:
-> - pci/pci-sysfs.c, used by X through libpciaccess
-> - vfio/pci/vfio_pci_rdwr.c, for vfio-pci vga forwarding
-
-Do we really know that we only have these two users?
-
-> Make the former lie if all vga devices have kms drivers and the latter
-
-There's that "if all vga devices" again.  Is the user expected to start
-Xorg with all devices attached to KMS drivers, then unbind the extra VGA
-devices to be used for other purposes?  What happens if the user wants
-to restart X, do they get a different feature set?  Does the output of
-the VGA arbiter change while X is running when the other devices are
-unbound from their KMS driver?  (unbinding a graphics card from it's
-driver isn't a foolproof operation btw, so the driver may be blacklisted
-or avoided through other means)
-
-> still work correctly. That will prevent X from going nasty if there are
-> kms drivers, while still keeping vfio going.
-
-But by lying to Xorg, I think we're saying that it's ok to go mmap VGA
-MMIO space through /dev/mem and poke VGA I/O through inb/outb, it's not
-going to change... then at the same time we provide this other interface
-that allows it to change.  Are we just masking i915's bug by breaking
-the entire interface?
-
-> Then we re-re-revert the i915 to have proper vga-arb.
+> Do we have a platform configuration to specify LPSS is needed?
 > 
-> Afaics no need for hacks, module options, special casing or breaking old
-> userspace. 
+> BTW, do we have a system with I2C and HSUART but without LPSS?
 
-But there is special casing isn't there?  Aren't we only able to make
-the assumption that it's ok to lie through the VGA arbiter userspace
-interface if only KMS drivers are in use?
+I believe we have.
 
-> And really, if there is a kms driver userspace has zero
-> business touching the vga registers, so imo we don't lose an real
-> functionality. You can always opt to not load kms drivers if you want
-> userspace access.
-> 
-> What am I missing?
 
-I must be the one missing something because this still all sounds
-terribly convoluted and fragile.  Thanks,
-
-Alex
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
