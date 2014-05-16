@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574AbaEPXGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:06:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446AbaEPXGI (ORCPT
+	id S932226AbaEPXHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:07:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52401 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829AbaEPXHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:06:08 -0400
-Date: Fri, 16 May 2014 16:09:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: dgap: implement error handling in
- dgap_tty_register()
-Message-ID: <20140516230928.GA31392@kroah.com>
-References: <20140425070459.GA9155@devel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140425070459.GA9155@devel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 16 May 2014 19:07:17 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/7] clk: qcom: Fix clk_rcg2_is_enabled() check
+Date: Fri, 16 May 2014 16:07:08 -0700
+Message-Id: <1400281634-9313-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
+References: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
-> - alloc_tty_driver() is deprecated so it is changed to
-> tty_alloc_driver()
-> - Pointers which are allocated by alloc_tty_driver() and kzalloc()
-> can be NULL so it need to check NULL for them.
-> - If one of those is failed, it need to add proper handler for
-> avoiding memory leak.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  drivers/staging/dgap/dgap.c |   49 +++++++++++++++++++++++++++++++++++--------
->  1 files changed, 40 insertions(+), 9 deletions(-)
+If the bit is set the clock is off so we should be checking for
+a clear bit, not a set bit. Invert the logic.
 
-This doesn't apply at all to my tree anymore, please refresh it and
-resend.
+Fixes: bcd61c0f535a (clk: qcom: Add support for root clock generators (RCGs))
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/clk-rcg2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-thanks,
+diff --git a/drivers/clk/qcom/clk-rcg2.c b/drivers/clk/qcom/clk-rcg2.c
+index 00f878a04d3f..0996a3a39855 100644
+--- a/drivers/clk/qcom/clk-rcg2.c
++++ b/drivers/clk/qcom/clk-rcg2.c
+@@ -55,7 +55,7 @@ static int clk_rcg2_is_enabled(struct clk_hw *hw)
+ 	if (ret)
+ 		return ret;
+ 
+-	return (cmd & CMD_ROOT_OFF) != 0;
++	return (cmd & CMD_ROOT_OFF) == 0;
+ }
+ 
+ static u8 clk_rcg2_get_parent(struct clk_hw *hw)
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-greg k-h
