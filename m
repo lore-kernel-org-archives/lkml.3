@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515AbaEPO4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:56:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48284 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289AbaEPO4J (ORCPT
+	id S932570AbaEPO5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:57:40 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:59856 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932311AbaEPO5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:56:09 -0400
-Date: Fri, 16 May 2014 10:55:48 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        kim.phillips@linaro.org, linux-pci@vger.kernel.org,
-        stuart.yoder@freescale.com, agraf@suse.de, libvir-list@redhat.com,
-        iommu@lists.linux-foundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, tech@virtualopensystems.com,
-        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org
-Subject: Re: [PATCH v2] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-ID: <20140516145548.GA4199@phenom.dumpdata.com>
-References: <20140509164326.12141.44591.stgit@bling.home>
- <CACJDEmp+whOkOZ5pVn4qqNBqXJc5Nb=1m-DmxPzFUZNxEyG6gQ@mail.gmail.com>
+	Fri, 16 May 2014 10:57:39 -0400
+Message-ID: <5376275F.8030709@kernel.dk>
+Date: Fri, 16 May 2014 08:57:35 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACJDEmp+whOkOZ5pVn4qqNBqXJc5Nb=1m-DmxPzFUZNxEyG6gQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] virtio_blk: fix race between start and stop queue
+References: <1400157181-17800-1-git-send-email-tom.leiming@gmail.com> <53762662.2050702@kernel.dk>
+In-Reply-To: <53762662.2050702@kernel.dk>
+Content-Type: multipart/mixed;
+ boundary="------------090206030003090204000509"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 10:48:00AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, May 9, 2014 at 12:50 PM, Alex Williamson <alex.williamson@redhat.com
-> > wrote:
-> 
-> > The driver_override field allows us to specify the driver for a device
-> > ...
-> >
-> ...
-> 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> 
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This is a multi-part message in MIME format.
+--------------090206030003090204000509
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-And somehow my emailer (Google) decided to add yucky HTML crud
-to the end.
+On 2014-05-16 08:53, Jens Axboe wrote:
+> On 2014-05-15 06:33, Ming Lei wrote:
+>> When there isn't enough vring descriptor for adding to vq,
+>> blk-mq will be put as stopped state until some of pending
+>> descriptors are completed & freed.
+>>
+>> Unfortunately, the vq's interrupt may come just before
+>> blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
+>> still be kept as stopped even though lots of descriptors
+>> are completed and freed in the interrupt handler. The worst
+>> case is that all pending descriptors are freed in the
+>> interrupt handler, and the queue is kept as stopped forever.
+>>
+>> This patch fixes the problem by starting/stopping blk-mq
+>> with holding vq_lock.
+>
+> Why not just use blk_mq_start_hw_queues()?
 
-So here is an nice plain email so that it can go the the right
-mailing lists - and sorry for the extra emails to those on the
-'To' and 'CC'!
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+Or, if you want to maintain current heuristics, just move the start and 
+stop under the vq_lock. That should prevent the race, as far as I can 
+tell. Not sure what that extra queue_stopped would buy you, seems a lot 
+cleaner to just maintain this state exclusively in the queue.
 
+-- 
+Jens Axboe
+
+
+--------------090206030003090204000509
+Content-Type: text/x-patch;
+ name="virtio-blk-start.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="virtio-blk-start.patch"
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 7a51f065edcd..2e328231a795 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -147,11 +147,12 @@ static void virtblk_done(struct virtqueue *vq)
+ 		if (unlikely(virtqueue_is_broken(vq)))
+ 			break;
+ 	} while (!virtqueue_enable_cb(vq));
+-	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	if (req_done)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
++
++	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ }
+ 
+ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+@@ -205,8 +206,8 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
+ 	if (err) {
+ 		virtqueue_kick(vblk->vq);
+-		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		blk_mq_stop_hw_queue(hctx);
++		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		/* Out of mem doesn't actually happen, since we fall back
+ 		 * to direct descriptors */
+ 		if (err == -ENOMEM || err == -ENOSPC)
+
+--------------090206030003090204000509--
