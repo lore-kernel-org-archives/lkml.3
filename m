@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761AbaEPRPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:15:18 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:49686 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510AbaEPRPQ (ORCPT
+	id S1757533AbaEPRR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:17:56 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31581 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751564AbaEPRRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:15:16 -0400
-Message-ID: <537608D8.7030000@gmail.com>
-Date: Fri, 16 May 2014 14:47:20 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-CC: mtk.manpages@gmail.com, akpm@linux-foundation.org, aswin@hp.com,
+	Fri, 16 May 2014 13:17:55 -0400
+Date: Fri, 16 May 2014 18:17:05 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] ipc,msg: loosen check for full queue
-References: <1400012857-11733-1-git-send-email-davidlohr@hp.com>	 <1400012857-11733-6-git-send-email-davidlohr@hp.com>	 <5373AF39.7030406@colorfullife.com>	 <1400097031.3865.25.camel@buesod1.americas.hpqcorp.net>	 <537440A7.2020707@colorfullife.com> <1400168793.6946.10.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1400168793.6946.10.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: [GIT PULL] arm64 fixes for 3.15
+Message-ID: <20140516171659.GA11088@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-Hi Davidlohr,
-
-On 05/15/2014 05:46 PM, Davidlohr Bueso wrote:
-> On Thu, 2014-05-15 at 06:20 +0200, Manfred Spraul wrote:
->> Hi Davidlohr,
->>
->> On 05/14/2014 09:50 PM, Davidlohr Bueso wrote:
->>> Do you have any preferences? I can cook up a patch if you think that
->>> this merits Linux having MSGTQL.
->> MSGTQL means a global counter - therefore zero scalability. That's why I 
->> didn't implement it when I noticed the issue with 0-byte messages.
-> 
-> Hmmm so I was actually thinking of calculating it on demand, but after a
-> closer look, we don't track each queue in the system, which would have
-> made this rather trivial.
-> 
-> We do however have plenty of similar counters in the kernel, and the
-> natural way of dealing with the scalability issue is using percpu
-> counters. But I won't argue much if we leave it as it is, it's been like
-> that since almost forever and no one is complaining but me.
-> 
-> Andrew, could you please drop this patch from -mm, I'll send another one
-> to add a comment instead.
-> 
->>> Worst case scenario, we should update the msgsnd(2) manpage and document
->>> this unique Linux behavior.
->> I would document the current behavior.
-> 
-> Cc'ing Michael. Here is a vague attempt to update our manpage, feel free
-> to update it to your taste.
-> 
-> Thanks,
-> Davidlohr
-> 
-> 8<------------------------------------------------------------
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Subject: [PATCH] msgop.2: Document full queue criteria
-> 
-> Explicitly mention the two conditions we rely on when
-> checking if a message queue is full when calling msgsnd(2).
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  man2/msgop.2 | 22 +++++++++++++++++++---
->  1 file changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/man2/msgop.2 b/man2/msgop.2
-> index 3f5bc36..b4c8c04 100644
-> --- a/man2/msgop.2
-> +++ b/man2/msgop.2
-> @@ -105,13 +105,29 @@ by
->  If sufficient space is available in the queue,
->  .BR msgsnd ()
->  succeeds immediately.
-> -(The queue capacity is defined by the
-> -.I msg_qbytes
-> +The queue capacity is governed by the
-> +.I msg_qbytes 
->  field in the associated data structure for the message queue.
->  During queue creation this field is initialized to
->  .B MSGMNB
->  bytes, but this limit can be modified using
-> -.BR msgctl (2).)
-> +.BR msgctl (2).
-> +A full queue is defined by two factors :
-> +.IP * 2
-> +The new msg size + current size of the queue is greater than the 
-> +queue's maximum size (the
-> +.I msg_qbytes
-> +field).
-> +.IP *
-> +The current amount of messages in the queue + 1 (the new msg) is 
-> +greater than the queue's maximum size (the
-> +.I msg_qbytes
-> +field). This is necessary to prevent users from using infinite 
-> +amounts of locked memory (used by the kernel for headers) by 
-> +sending 0-byte messages. This is equivalent to the traditional
-> +MSGTQL parameter present in many Unix systems. This behavior
-> +is unique to Linux.
-> +.PP
->  If insufficient space is available in the queue, then the default
->  behavior of
->  .BR msgsnd ()
+Please pull the arm64 fixes below. Thanks.
 
 
-I applied, and reworded a little. Also: I dropped the piece about
-MSGTQL, since it is not quite right. As noted elsewhere on the page
-MSGTQL is a *system-wide* (not per-queue) limit on the number of
-messages in all MQs. Also: I dropped the piece saying this is unique
-to Linux. I believe that's true, but it implies there's a lot
-more standardization around these limits than there actually is
-in my observation.
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-Thanks for the patch!
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-Cheers,
+are available in the git repository at:
 
-Michael
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
 
-Cheers,
+for you to fetch changes up to 4797ec2dc83a43be35bad56037d1b53db9e2b5d5:
 
-Michael
+  arm64: fix pud_huge() for 2-level pagetables (2014-05-16 17:34:40 +0100)
 
+----------------------------------------------------------------
+- arm64 migrate_irqs() fix following commit ffde1de64012 (irqchip: Gic:
+  Support forced affinity setting)
+- fix arm64 pud_huge() to return 0 when only 2 levels page tables are
+  used (__PAGETABLE_PMD_FOLDED defined and pmd_huge already covers block
+  entries at the first level), otherwise KVM gets confused
 
+----------------------------------------------------------------
+Mark Salter (1):
+      arm64: fix pud_huge() for 2-level pagetables
+
+Sudeep Holla (1):
+      arm64: use cpu_online_mask when using forced irq_set_affinity
+
+ arch/arm64/kernel/irq.c     | 10 +++++++---
+ arch/arm64/mm/hugetlbpage.c |  4 ++++
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Catalin
