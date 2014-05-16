@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676AbaEPI1b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:27:31 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49402 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756431AbaEPIE2 (ORCPT
+	id S1756320AbaEPIdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:33:23 -0400
+Received: from ar-005-i191.relay.mailchannels.net ([162.253.144.73]:46984 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752616AbaEPIdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:28 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH v6 2/6] arm: exynos: add generic function to calculate cpu number
-Date: Fri, 16 May 2014 13:33:54 +0530
-Message-Id: <1400227438-27155-3-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
-References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
- <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+	Fri, 16 May 2014 04:33:20 -0400
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 May 2014 04:33:19 EDT
+X-Sender-Id: totalchoicehosting|x-authuser|billaue
+X-Sender-Id: totalchoicehosting|x-authuser|billaue
+X-MailChannels-SenderId: totalchoicehosting%7Cx-authuser%7Cbillaue
+X-MailChannels-Auth-Id: totalchoicehosting
+X-MC-Relay: Neutral
+From: Eli Billauer <eli.billauer@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, tj@kernel.org, linux-kernel@vger.kernel.org,
+        Eli Billauer <eli.billauer@gmail.com>
+Subject: [PATCH 3/5] dma-mapping: pci: Add devm_ interface for pci_map_single
+Date: Fri, 16 May 2014 11:26:37 +0300
+Message-Id: <1400228799-8832-4-git-send-email-eli.billauer@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1400228799-8832-1-git-send-email-eli.billauer@gmail.com>
+References: <1400228799-8832-1-git-send-email-eli.billauer@gmail.com>
+X-AuthUser: billaue
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of cpu power registers in pmu is based on cpu number
-offsets. This function calculate the same. This is essentially
-required in case of multi-cluster SoC's e.g Exynos5420.
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
 ---
- arch/arm/mach-exynos/regs-pmu.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ Documentation/driver-model/devres.txt |    2 ++
+ include/asm-generic/pci-dma-compat.h  |   17 +++++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 4179f6a..485aefd 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -325,4 +325,13 @@
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 13b8be0..09b03c9 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -272,6 +272,8 @@ DMA
+ PCI
+   pcim_enable_device()	: after success, all PCI ops become managed
+   pcim_pin_device()	: keep PCI device enabled after release
++  pcim_map_single()
++  pcim_unmap_single()
  
- #define EXYNOS5420_SWRESET_KFC_SEL				0x3
+ IOMAP
+   devm_ioport_map()
+diff --git a/include/asm-generic/pci-dma-compat.h b/include/asm-generic/pci-dma-compat.h
+index 1437b7d..444e598 100644
+--- a/include/asm-generic/pci-dma-compat.h
++++ b/include/asm-generic/pci-dma-compat.h
+@@ -113,4 +113,21 @@ static inline int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask)
+ }
+ #endif
  
-+#include <asm/cputype.h>
-+#define MAX_CPUS_IN_CLUSTER	4
++/*
++ * Managed DMA API
++ */
 +
-+static inline unsigned int exynos_pmu_cpunr(unsigned int mpidr)
++static inline dma_addr_t
++pcim_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction)
 +{
-+	return ((MPIDR_AFFINITY_LEVEL(mpidr, 1) * MAX_CPUS_IN_CLUSTER)
-+		 + MPIDR_AFFINITY_LEVEL(mpidr, 0));
++	return dmam_map_single(hwdev == NULL ? NULL : &hwdev->dev, ptr, size, (enum dma_data_direction)direction);
 +}
 +
- #endif /* __ASM_ARCH_REGS_PMU_H */
++static inline void
++pcim_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
++		 size_t size, int direction)
++{
++	dmam_unmap_single(hwdev == NULL ? NULL : &hwdev->dev, dma_addr, size, (enum dma_data_direction)direction);
++}
++
+ #endif
 -- 
-1.7.9.5
+1.7.2.3
 
