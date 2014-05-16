@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955AbaEPRLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:11:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23280 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757269AbaEPRLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:11:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1068,1389772800"; 
-   d="scan'208";a="433137574"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
-Subject: Implement lbr-as-callgraph v7
-Date: Fri, 16 May 2014 10:05:29 -0700
-Message-Id: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
+	id S1757975AbaEPRLv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:11:51 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58759 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109AbaEPRLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:11:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOqmu82GQ2qsm0c7fq8n5ovR7+4j5t_Y3=03S=nWtR+bH3yhdg@mail.gmail.com>
+References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+	<CAKohponY6Nn5kYGyps2SLm5uBbH1JWuJBpzzVD=QOc=oM7crAg@mail.gmail.com>
+	<CAOqmu82GQ2qsm0c7fq8n5ovR7+4j5t_Y3=03S=nWtR+bH3yhdg@mail.gmail.com>
+Date: Fri, 16 May 2014 22:41:49 +0530
+Message-ID: <CAKohpokCBbL1OkxB3rh0Pr3yqiG1H6UsZgD-WQTRvihxJt1-Qw@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: Implement free_opp_table function
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Inderpal Singh <inderpal.s@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Even more review feedback and some bugs addressed.]
-[Only port to changes in perf/core. No other changes.]
-[Rebase to latest perf/core]
+On 16 May 2014 22:38, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>>> +       while (!list_empty(&dev_opp->opp_list)) {
+>>> +               opp = list_entry_rcu(dev_opp->opp_list.next,
+>>> +                                       struct dev_pm_opp, node);
+>>
+>> list_for_each_entry_rcu ?
+>>
+>
+> list_for_each_entry_rcu can not be used as opp is being deleted in the loop.
 
-This patchkit implements lbr-as-callgraphs in per freport,
-as an alternative way to present LBR information.
+So what? The above code can be replaced easily I think.
+This is how it is implemented:
 
-Current perf report does a histogram over the branch edges,
-which is useful to look at basic blocks, but doesn't tell
-you anything about the larger control flow behaviour.
-
-This patchkit adds a new option --branch-history that
-adds the branch paths to the callgraph history instead.
-
-This allows to reason about individual branch paths leading
-to specific samples.
-
-Also available at
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph4
-
-v2:
-- rebased on perf/core
-- fix various issues
-- rename the option to --branch-history
-- various fixes to display the information more concise
-v3:
-- White space changes
-- Consolidate some patches
-- Update some descriptions
-v4:
-- Fix various display problems
-- Unknown srcline is now printed as symbol+offset
-- Refactor some code to address review feedback
-- Merge with latest tip
-- Fix missing srcline display in stdio hist output.
-v5:
-- Rename functions
-- Fix gtk build problem
-- Fix crash without -g
-- Improve error messages
-- Improve srcline display in various ways
-v6:
-- Port to latest perf/core
-v7:
-- Really port to latest perf/core
-
-Example output:
-
-    % perf record -b -g ./tsrc/tcall
-    [ perf record: Woken up 1 times to write data ]
-    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
-    % perf report --branch-history
-    ...
-        54.91%  tcall.c:6  [.] f2                      tcall
-                |
-                |--65.53%-- f2 tcall.c:5
-                |          |
-                |          |--70.83%-- f1 tcall.c:11
-                |          |          f1 tcall.c:10
-                |          |          main tcall.c:18
-                |          |          main tcall.c:18
-                |          |          main tcall.c:17
-                |          |          main tcall.c:17
-                |          |          f1 tcall.c:13
-                |          |          f1 tcall.c:13
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:12
-                |          |          f1 tcall.c:12
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:11
-
-
+#define list_for_each_entry_rcu(pos, head, member) \
+        for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
+                &pos->member != (head); \
+                pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
