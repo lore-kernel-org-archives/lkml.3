@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221AbaEPMDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:03:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20026 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757194AbaEPMDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 08:03:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
-   d="scan'208";a="433023531"
-Date: Fri, 16 May 2014 15:03:37 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Jin Yao <yao.jin@intel.com>,
-        Aubrey Li <aubrey.li@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinctrl: baytrail: Add back Baytrail-T ACPI ID
-Message-ID: <20140516120337.GE2067@lahna.fi.intel.com>
-References: <1400167727-20233-1-git-send-email-mika.westerberg@linux.intel.com>
- <1593450.1tg6AZy8cc@vostro.rjw.lan>
+	id S1756791AbaEPMG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:06:56 -0400
+Received: from relay2.muni.cz ([147.251.4.34]:38615 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754409AbaEPMGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 08:06:55 -0400
+Date: Fri, 16 May 2014 14:06:42 +0200
+From: Jan Kasprzak <kas@fi.muni.cz>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
+Message-ID: <20140516120642.GW9638@fi.muni.cz>
+References: <20140428145201.GG29712@fi.muni.cz>
+ <F766E4F80769BD478052FB6533FA745D4F6368598F@SC-VEXCH4.marvell.com>
+ <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
+ <F766E4F80769BD478052FB6533FA745D4F63685A27@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1593450.1tg6AZy8cc@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D4F63685A27@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Muni-Envelope-From: kas@fi.muni.cz
+X-Muni-Spam-TestIP: 147.251.48.3
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (minas.ics.muni.cz [147.251.4.35]); Fri, 16 May 2014 14:06:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 02:10:47PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, May 15, 2014 06:28:46 PM Mika Westerberg wrote:
-> > From: Jin Yao <yao.jin@intel.com>
-> > 
-> > Now that the x86 dynamic IRQ allocation problem has been resolved with
-> > commmit 62a08ae2a576 (genirq: x86: Ensure that dynamic irq allocation does
-> > not conflict), we can add back Baytrail-T ACPI ID to the pinctrl driver.
-> > 
-> > This makes the driver to work on Asus T100 where it is needed for several
-> > things like ACPI GPIO events and SD card detection.
-> > 
-> > References: https://bugzilla.kernel.org/show_bug.cgi?id=68291
-> > Signed-off-by: Jin Yao <yao.jin@intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+	Hello,
 
+Xiangliang Yu wrote:
+: > Ben Hutchings already submitted a patch for this twice, which I cc'd you
+: > on:
+: > 
+: > http://marc.info/?t=139277203900003
+: > 
+: > will you ack it?  
+: I can't find this mail in my mail box.
+
+any news with this patch? Will it be acked by you and submitted upstream?
 Thanks!
 
-> And I think this is pinctrl material really.
+-Jan Kasprzak
 
-Indeed, only one change touches drivers/acpi/ but wanted to keep you in
-the loop. I'm hoping that Linus W. takes these.
+-- 
+| Jan "Yenya" Kasprzak  <kas at {fi.muni.cz - work | yenya.net - private}> |
+| New GPG 4096R/A45477D5 - see http://www.fi.muni.cz/~kas/pgp-rollover.txt |
+| http://www.fi.muni.cz/~kas/    Journal: http://www.fi.muni.cz/~kas/blog/ |
+  There's clearly a balance between "octopus merges are fine" and "Christ,
+  that's not an octopus, that's a Cthulhu merge".         --Linus Torvalds
