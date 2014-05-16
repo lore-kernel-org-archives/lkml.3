@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197AbaEPNlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:41:25 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:62784 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933179AbaEPNlW (ORCPT
+	id S932536AbaEPNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:49:11 -0400
+Received: from helium.waldemar-brodkorb.de ([89.238.66.15]:49333 "EHLO
+	helium.waldemar-brodkorb.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756368AbaEPNtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:41:22 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 28/49] media: davinci: vpif_capture: use vb2_ops_wait_prepare/finish helper functions
-Date: Fri, 16 May 2014 19:03:33 +0530
-Message-Id: <1400247235-31434-30-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
+	Fri, 16 May 2014 09:49:08 -0400
+Date: Fri, 16 May 2014 15:49:04 +0200
+From: Waldemar Brodkorb <wbx@openadk.org>
+To: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: serial console on rb532 disabled on boot (linux 3.15rc5)
+Message-ID: <20140516134904.GW618@waldemar-brodkorb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+X-Operating-System: Linux 3.2.0-4-amd64 x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Hi Linux hackers,
 
-this patch makes use of vb2_ops_wait_prepare/finish helper functions.
+I am trying to bootup my Mikrotik RB532 board with the latest
+kernel, but my serial console is disabled after boot:
+..
+Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+serial8250: ttyS0 at MMIO 0x0 (irq = 104, base_baud = 12499875) is a
+16550A
+console [ttyS0] enabled
+console [ttyS0] disabled
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpif_capture.c |   21 +--------------------
- 1 file changed, 1 insertion(+), 20 deletions(-)
+I used git bisect to find the problematic commit:
+commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
+Author: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date:   Fri Feb 28 14:21:32 2014 +0100
 
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 484d858..8572efe 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -224,24 +224,6 @@ static void vpif_buf_cleanup(struct vb2_buffer *vb)
- 
- }
- 
--static void vpif_wait_prepare(struct vb2_queue *vq)
--{
--	struct channel_obj *ch = vb2_get_drv_priv(vq);
--	struct common_obj *common;
--
--	common = &ch->common[VPIF_VIDEO_INDEX];
--	mutex_unlock(&common->lock);
--}
--
--static void vpif_wait_finish(struct vb2_queue *vq)
--{
--	struct channel_obj *ch = vb2_get_drv_priv(vq);
--	struct common_obj *common;
--
--	common = &ch->common[VPIF_VIDEO_INDEX];
--	mutex_lock(&common->lock);
--}
--
- static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- {
- 	struct vpif_capture_config *vpif_config_data =
-@@ -374,8 +356,6 @@ static void vpif_stop_streaming(struct vb2_queue *vq)
- 
- static struct vb2_ops video_qops = {
- 	.queue_setup		= vpif_buffer_queue_setup,
--	.wait_prepare		= vpif_wait_prepare,
--	.wait_finish		= vpif_wait_finish,
- 	.buf_prepare		= vpif_buffer_prepare,
- 	.start_streaming	= vpif_start_streaming,
- 	.stop_streaming		= vpif_stop_streaming,
-@@ -1977,6 +1957,7 @@ static int vpif_probe_complete(void)
- 		q->buf_struct_size = sizeof(struct vpif_cap_buffer);
- 		q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
- 		q->min_buffers_needed = 1;
-+		q->lock = &common->lock;
- 
- 		err = vb2_queue_init(q);
- 		if (err) {
--- 
-1.7.9.5
+    serial_core: Unregister console in uart_remove_one_port()
+    
+    If the serial port being removed is used as a console, it must
+also be
+    unregistered from the console subsystem using
+unregister_console().
+    
+    uart_ops.release_port() will release resources (e.g. iounmap()
+the serial
+    port registers), causing a crash on subsequent kernel output if
+the console
+    is still registered.
+    
+    Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+After reverting the change, everything is fine.
+
+I can provide a .config and dmesg if needed.
+
+Thanks in advance
+ Waldemar
 
