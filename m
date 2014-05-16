@@ -1,278 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928AbaEPRLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:11:16 -0400
+	id S1757955AbaEPRLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:11:38 -0400
 Received: from mga03.intel.com ([143.182.124.21]:23280 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757398AbaEPRLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:11:14 -0400
+	id S1757269AbaEPRLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:11:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1068,1389772800"; 
-   d="scan'208";a="433137575"
+   d="scan'208";a="433137574"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/9] perf, tools: Enable printing the srcline in the history v4
-Date: Fri, 16 May 2014 10:05:32 -0700
-Message-Id: <1400259938-3436-4-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
+Subject: Implement lbr-as-callgraph v7
+Date: Fri, 16 May 2014 10:05:29 -0700
+Message-Id: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
-References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[Even more review feedback and some bugs addressed.]
+[Only port to changes in perf/core. No other changes.]
+[Rebase to latest perf/core]
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+This patchkit implements lbr-as-callgraphs in per freport,
+as an alternative way to present LBR information.
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
+Current perf report does a histogram over the branch edges,
+which is useful to look at basic blocks, but doesn't tell
+you anything about the larger control flow behaviour.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
+This patchkit adds a new option --branch-history that
+adds the branch paths to the callgraph history instead.
 
-Contains fixes from Namhyung Kim
+This allows to reason about individual branch paths leading
+to specific samples.
 
-v2: Refactor code into common function
-v3: Fix GTK build
-v4: Rebase
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/ui/browsers/hists.c | 17 -----------------
- tools/perf/ui/gtk/hists.c      | 11 +----------
- tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
- tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
- tools/perf/util/callchain.h    |  5 +++++
- tools/perf/util/machine.c      |  2 +-
- tools/perf/util/srcline.c      |  6 ++++--
- 7 files changed, 49 insertions(+), 44 deletions(-)
+Also available at
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph4
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b0861e3..b0b54f9 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -423,23 +423,6 @@ out:
- 	return key;
- }
- 
--static char *callchain_list__sym_name(struct callchain_list *cl,
--				      char *bf, size_t bfsize, bool show_dso)
--{
--	int printed;
--
--	if (cl->ms.sym)
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--
--	if (show_dso)
--		scnprintf(bf + printed, bfsize - printed, " %s",
--			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
--
--	return bf;
--}
--
- #define LEVEL_OFFSET_STEP 3
- 
- static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 91f10f3..1ad9ec1 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -72,15 +72,6 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_us;
- }
- 
--static void callchain_list__sym_name(struct callchain_list *cl,
--				     char *bf, size_t bfsize)
--{
--	if (cl->ms.sym)
--		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--}
--
- static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 				    GtkTreeIter *parent, int col, u64 total)
- {
-@@ -111,7 +102,7 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
- 			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
- 			gtk_tree_store_set(store, &iter, 0, buf, -1);
- 
--			callchain_list__sym_name(chain, buf, sizeof(buf));
-+			callchain_list__sym_name(chain, buf, sizeof(buf), false);
- 			gtk_tree_store_set(store, &iter, col, buf, -1);
- 
- 			if (need_new_parent) {
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9eccf7f..242d5a9 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- {
- 	int i;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	ret += callchain__fprintf_left_margin(fp, left_margin);
- 	for (i = 0; i < depth; i++) {
-@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 		} else
- 			ret += fprintf(fp, "%s", "          ");
- 	}
--	if (chain->ms.sym)
--		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
--	else
--		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
--
-+	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
-+	fputc('\n', fp);
- 	return ret;
- }
- 
-@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 	struct rb_node *node;
- 	int i = 0;
- 	int ret = 0;
-+	char bf[1024];
- 
- 	/*
- 	 * If have one single callchain root, don't bother printing
-@@ -195,10 +194,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 			} else
- 				ret += callchain__fprintf_left_margin(fp, left_margin);
- 
--			if (chain->ms.sym)
--				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
--			else
--				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
-+			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
-+							false));
- 
- 			if (++entries_printed == callchain_param.print_limit)
- 				break;
-@@ -218,6 +215,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- {
- 	struct callchain_list *chain;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	if (!node)
- 		return 0;
-@@ -228,11 +226,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- 	list_for_each_entry(chain, &node->val, list) {
- 		if (chain->ip >= PERF_CONTEXT_MAX)
- 			continue;
--		if (chain->ms.sym)
--			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
--		else
--			ret += fprintf(fp, "                %p\n",
--					(void *)(long)chain->ip);
-+		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
-+					bf, sizeof(bf), false));
- 	}
- 
- 	return ret;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 470b29b..84ac8c3 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -636,3 +636,32 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
- 		return 0;
- 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
- }
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso)
-+{
-+	int printed;
-+
-+	if (cl->ms.sym) {
-+		if (callchain_param.key == CCKEY_ADDRESS &&
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s",
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s",
-+					    cl->ms.sym->name);
-+	} else
-+		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+
-+	if (show_dso)
-+		scnprintf(bf + printed, bfsize - printed, " %s",
-+			  cl->ms.map ?
-+			  cl->ms.map->dso->short_name :
-+			  "unknown");
-+
-+	return bf;
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 9c0d147..2830162 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -66,6 +66,7 @@ struct callchain_param {
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char		       *srcline;
- 	struct list_head	list;
- };
- 
-@@ -166,4 +167,8 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
- 
- extern const char record_callchain_help[];
- int parse_callchain_report_opt(const char *arg);
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso);
-+
- #endif	/* __PERF_CALLCHAIN_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f828c87..2eecd7c 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1308,7 +1308,7 @@ static int add_callchain_ip(struct machine *machine,
- 			return -EINVAL;
- 	}
- 
--	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
-+	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
- }
- 
- #define CHASHSZ 127
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..c6a7cdc 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
- 
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
- 
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
- 
- void free_srcline(char *srcline)
--- 
-1.9.0
+v2:
+- rebased on perf/core
+- fix various issues
+- rename the option to --branch-history
+- various fixes to display the information more concise
+v3:
+- White space changes
+- Consolidate some patches
+- Update some descriptions
+v4:
+- Fix various display problems
+- Unknown srcline is now printed as symbol+offset
+- Refactor some code to address review feedback
+- Merge with latest tip
+- Fix missing srcline display in stdio hist output.
+v5:
+- Rename functions
+- Fix gtk build problem
+- Fix crash without -g
+- Improve error messages
+- Improve srcline display in various ways
+v6:
+- Port to latest perf/core
+v7:
+- Really port to latest perf/core
+
+Example output:
+
+    % perf record -b -g ./tsrc/tcall
+    [ perf record: Woken up 1 times to write data ]
+    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+    % perf report --branch-history
+    ...
+        54.91%  tcall.c:6  [.] f2                      tcall
+                |
+                |--65.53%-- f2 tcall.c:5
+                |          |
+                |          |--70.83%-- f1 tcall.c:11
+                |          |          f1 tcall.c:10
+                |          |          main tcall.c:18
+                |          |          main tcall.c:18
+                |          |          main tcall.c:17
+                |          |          main tcall.c:17
+                |          |          f1 tcall.c:13
+                |          |          f1 tcall.c:13
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:12
+                |          |          f1 tcall.c:12
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:11
+
 
