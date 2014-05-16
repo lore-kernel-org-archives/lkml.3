@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374AbaEPPBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:01:32 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:65522 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757331AbaEPPBa (ORCPT
+	id S932633AbaEPPBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:01:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48524 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388AbaEPPBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:01:30 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH] [RFC] ARM: perf: allow tracing with kernel tracepoints events
-Date: Fri, 16 May 2014 17:01:16 +0200
-Message-Id: <1400252476-20128-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 16 May 2014 11:01:46 -0400
+Date: Fri, 16 May 2014 08:01:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: DaeSeok Youn <daeseok.youn@gmail.com>, devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lidza Louina <lidza.louina@gmail.com>
+Subject: Re: [PATCH] staging: dgap: implement error handling in
+ dgap_tty_register()
+Message-ID: <20140516150145.GA24032@kroah.com>
+References: <20140425092607.GH26890@mwanda>
+ <875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
+ <535A5535.6000701@compro.net>
+ <1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
+ <535A7402.1060305@compro.net>
+ <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
+ <20140426184721.GL26890@mwanda>
+ <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
+ <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
+ <20140516095247.GD16255@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516095247.GD16255@mwanda>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When tracing with tracepoints events the IP and CPSR are set to 0,
-preventing the perf code to resolve the symbols:
+On Fri, May 16, 2014 at 12:52:47PM +0300, Dan Carpenter wrote:
+> On Fri, May 16, 2014 at 06:40:28PM +0900, DaeSeok Youn wrote:
+> > Hi,
+> > 
+> >  This patch haven't been updated over the past 3 weeks.
+> > Will you check for me?
+> 
+> Greg was trying to travel around the world in one month like Jackie
+> Chan.  http://www.imdb.com/title/tt0327437/  He is back to work since
+> yesterday.
 
-./perf record -e kmem:kmalloc cal
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.007 MB perf.data (~321 samples) ]
+Well, I'm home for a day or so before I leave again for a week, so I'm
+having to prioritize things (patches or laundry) and dealing with a pet
+vet emergency, so my ability to get to cleanup patches is way down the
+list...
 
-./perf report
-Overhead Command Shared Object Symbol
-........ ....... ............. ...........
-40.78%   cal     [unknown]     [.]00000000
-31.6%    cal     [unknown]     [.]00000000
-
-The examination of the gathered samples (perf report -D) shows the IP
-is set to 0 and that the samples are considered as user space samples,
-while the IP should be set from the registers and the samples should be
-considered as kernel samples.
-
-The fix is to implement perf_arch_fetch_caller_regs for ARM, which
-fills the necessary registers: ip, lr, sp and cpsr (used to check
-the user mode property of the samples).
-
-Heavily inspired from arch/arm/include/asm/kexec.h.
-
-Reported by Sneha Priya on linaro-dev, cf.
-http://lists.linaro.org/pipermail/linaro-dev/2014-May/017151.html
-
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Reported-by: Sneha Priya <sneha.cse@hotmail.com>
----
- arch/arm/include/asm/perf_event.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/arch/arm/include/asm/perf_event.h b/arch/arm/include/asm/perf_event.h
-index 7558775..d466e39 100644
---- a/arch/arm/include/asm/perf_event.h
-+++ b/arch/arm/include/asm/perf_event.h
-@@ -26,6 +26,19 @@ struct pt_regs;
- extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
- extern unsigned long perf_misc_flags(struct pt_regs *regs);
- #define perf_misc_flags(regs)	perf_misc_flags(regs)
-+
-+#define perf_arch_fetch_caller_regs(regs, __ip) {	\
-+	instruction_pointer(regs)= (__ip);		\
-+	__asm__ __volatile__ (				\
-+		"mov	%[_ARM_sp], sp\n\t"		\
-+		"str	lr, %[_ARM_lr]\n\t"		\
-+		"mrs	%[_ARM_cpsr], cpsr\n\t"		\
-+		: [_ARM_cpsr] "=r" (regs->ARM_cpsr),	\
-+		  [_ARM_sp] "=r" (regs->ARM_sp),	\
-+		  [_ARM_lr] "=o" (regs->ARM_lr)		\
-+		: : "memory"				\
-+	);						\
-+}
- #endif
- 
- #endif /* __ARM_PERF_EVENT_H__ */
--- 
-1.8.1.2
-
+greg k-h
