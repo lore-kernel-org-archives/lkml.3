@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627AbaEPQRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:17:10 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:40028 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215AbaEPQRG (ORCPT
+	id S1757660AbaEPQRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:17:17 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:35981 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757630AbaEPQRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:17:06 -0400
+	Fri, 16 May 2014 12:17:13 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/5] workqueue: Reorder sysfs code
-Date: Fri, 16 May 2014 18:16:52 +0200
-Message-Id: <1400257015-28222-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/5] workqueue: Split apply attrs code from its locking
+Date: Fri, 16 May 2014 18:16:54 +0200
+Message-Id: <1400257015-28222-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
 References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
@@ -25,13 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sysfs code usually belongs to the botom of the file since it deals
-with high level objects. In the workqueue code it's misplaced and such
-that we'll need to work around functions references to allow the sysfs
-code to call APIs like apply_workqueue_attrs().
+In order to allow overriding the unbound wqs low-level cpumask, we
+need to be able to call apply_workqueue_attr() on all workqueues in
+the pool list.
 
-Lets move that block further in the file, right above alloc_workqueue_key()
-which reference it.
+Now since traversing the pool list require to lock it, we can't currently
+call apply_workqueue_attr() under the pool traversal.
+
+So lets provide a version of apply_workqueue_attrs() that can be
+called when the pool is already locked.
 
 Suggested-by: Tejun Heo <tj@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>
@@ -43,653 +45,138 @@ Cc: Tejun Heo <tj@kernel.org>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/workqueue.c | 626 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 313 insertions(+), 313 deletions(-)
+ kernel/workqueue.c | 77 +++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 44 insertions(+), 33 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index c68e84f..e5d7719 100644
+index 1252a8c..2aa296d 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -3137,319 +3137,6 @@ int execute_in_process_context(work_func_t fn, struct execute_work *ew)
+@@ -3637,24 +3637,9 @@ static struct pool_workqueue *numa_pwq_tbl_install(struct workqueue_struct *wq,
+ 	return old_pwq;
  }
- EXPORT_SYMBOL_GPL(execute_in_process_context);
  
--#ifdef CONFIG_SYSFS
--/*
-- * Workqueues with WQ_SYSFS flag set is visible to userland via
-- * /sys/bus/workqueue/devices/WQ_NAME.  All visible workqueues have the
-- * following attributes.
-- *
-- *  per_cpu	RO bool	: whether the workqueue is per-cpu or unbound
-- *  max_active	RW int	: maximum number of in-flight work items
-- *
-- * Unbound workqueues have the following extra attributes.
-- *
-- *  id		RO int	: the associated pool ID
-- *  nice	RW int	: nice value of the workers
-- *  cpumask	RW mask	: bitmask of allowed CPUs for the workers
-- */
--struct wq_device {
--	struct workqueue_struct		*wq;
--	struct device			dev;
--};
--
--static struct workqueue_struct *dev_to_wq(struct device *dev)
--{
--	struct wq_device *wq_dev = container_of(dev, struct wq_device, dev);
--
--	return wq_dev->wq;
--}
--
--static ssize_t per_cpu_show(struct device *dev, struct device_attribute *attr,
--			    char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--
--	return scnprintf(buf, PAGE_SIZE, "%d\n", (bool)!(wq->flags & WQ_UNBOUND));
--}
--static DEVICE_ATTR_RO(per_cpu);
--
--static ssize_t max_active_show(struct device *dev,
--			       struct device_attribute *attr, char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--
--	return scnprintf(buf, PAGE_SIZE, "%d\n", wq->saved_max_active);
--}
--
--static ssize_t max_active_store(struct device *dev,
--				struct device_attribute *attr, const char *buf,
--				size_t count)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	int val;
--
--	if (sscanf(buf, "%d", &val) != 1 || val <= 0)
--		return -EINVAL;
--
--	workqueue_set_max_active(wq, val);
--	return count;
--}
--static DEVICE_ATTR_RW(max_active);
--
--static struct attribute *wq_sysfs_attrs[] = {
--	&dev_attr_per_cpu.attr,
--	&dev_attr_max_active.attr,
--	NULL,
--};
--ATTRIBUTE_GROUPS(wq_sysfs);
--
--static ssize_t wq_pool_ids_show(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	const char *delim = "";
--	int node, written = 0;
--
--	rcu_read_lock_sched();
--	for_each_node(node) {
--		written += scnprintf(buf + written, PAGE_SIZE - written,
--				     "%s%d:%d", delim, node,
--				     unbound_pwq_by_node(wq, node)->pool->id);
--		delim = " ";
--	}
--	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
--	rcu_read_unlock_sched();
--
--	return written;
--}
--
--static ssize_t wq_nice_show(struct device *dev, struct device_attribute *attr,
--			    char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	int written;
--
--	mutex_lock(&wq->mutex);
--	written = scnprintf(buf, PAGE_SIZE, "%d\n", wq->unbound_attrs->nice);
--	mutex_unlock(&wq->mutex);
--
--	return written;
--}
--
--/* prepare workqueue_attrs for sysfs store operations */
--static struct workqueue_attrs *wq_sysfs_prep_attrs(struct workqueue_struct *wq)
--{
--	struct workqueue_attrs *attrs;
--
--	attrs = alloc_workqueue_attrs(GFP_KERNEL);
--	if (!attrs)
--		return NULL;
--
--	mutex_lock(&wq->mutex);
--	copy_workqueue_attrs(attrs, wq->unbound_attrs);
--	mutex_unlock(&wq->mutex);
--	return attrs;
--}
--
--static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
--			     const char *buf, size_t count)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	struct workqueue_attrs *attrs;
--	int ret;
--
--	attrs = wq_sysfs_prep_attrs(wq);
--	if (!attrs)
--		return -ENOMEM;
--
--	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
--	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
--		ret = apply_workqueue_attrs(wq, attrs);
--	else
--		ret = -EINVAL;
--
--	free_workqueue_attrs(attrs);
--	return ret ?: count;
--}
--
--static ssize_t wq_cpumask_show(struct device *dev,
--			       struct device_attribute *attr, char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	int written;
--
--	mutex_lock(&wq->mutex);
--	written = cpumask_scnprintf(buf, PAGE_SIZE, wq->unbound_attrs->cpumask);
--	mutex_unlock(&wq->mutex);
--
--	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
--	return written;
--}
--
--static ssize_t wq_cpumask_store(struct device *dev,
--				struct device_attribute *attr,
--				const char *buf, size_t count)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	struct workqueue_attrs *attrs;
--	int ret;
--
--	attrs = wq_sysfs_prep_attrs(wq);
--	if (!attrs)
--		return -ENOMEM;
--
--	ret = cpumask_parse(buf, attrs->cpumask);
--	if (!ret)
--		ret = apply_workqueue_attrs(wq, attrs);
--
--	free_workqueue_attrs(attrs);
--	return ret ?: count;
--}
--
--static ssize_t wq_numa_show(struct device *dev, struct device_attribute *attr,
--			    char *buf)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	int written;
--
--	mutex_lock(&wq->mutex);
--	written = scnprintf(buf, PAGE_SIZE, "%d\n",
--			    !wq->unbound_attrs->no_numa);
--	mutex_unlock(&wq->mutex);
--
--	return written;
--}
--
--static ssize_t wq_numa_store(struct device *dev, struct device_attribute *attr,
--			     const char *buf, size_t count)
--{
--	struct workqueue_struct *wq = dev_to_wq(dev);
--	struct workqueue_attrs *attrs;
--	int v, ret;
--
--	/* Creating per-node pwqs breaks ordering guarantee. Keep no_numa = 1 */
--	if (WARN_ON(wq->flags & __WQ_ORDERED))
--		return -EINVAL;
--
--	attrs = wq_sysfs_prep_attrs(wq);
--	if (!attrs)
--		return -ENOMEM;
--
--	ret = -EINVAL;
--	if (sscanf(buf, "%d", &v) == 1) {
--		attrs->no_numa = !v;
--		ret = apply_workqueue_attrs(wq, attrs);
--	}
--
--	free_workqueue_attrs(attrs);
--	return ret ?: count;
--}
--
--static struct device_attribute wq_sysfs_unbound_attrs[] = {
--	__ATTR(pool_ids, 0444, wq_pool_ids_show, NULL),
--	__ATTR(nice, 0644, wq_nice_show, wq_nice_store),
--	__ATTR(cpumask, 0644, wq_cpumask_show, wq_cpumask_store),
--	__ATTR(numa, 0644, wq_numa_show, wq_numa_store),
--	__ATTR_NULL,
--};
--
--static struct bus_type wq_subsys = {
--	.name				= "workqueue",
--	.dev_groups			= wq_sysfs_groups,
--};
--
--static int __init wq_sysfs_init(void)
--{
--	return subsys_virtual_register(&wq_subsys, NULL);
--}
--core_initcall(wq_sysfs_init);
--
--static void wq_device_release(struct device *dev)
--{
--	struct wq_device *wq_dev = container_of(dev, struct wq_device, dev);
--
--	kfree(wq_dev);
--}
--
 -/**
-- * workqueue_sysfs_register - make a workqueue visible in sysfs
-- * @wq: the workqueue to register
+- * apply_workqueue_attrs - apply new workqueue_attrs to an unbound workqueue
+- * @wq: the target workqueue
+- * @attrs: the workqueue_attrs to apply, allocated with alloc_workqueue_attrs()
 - *
-- * Expose @wq in sysfs under /sys/bus/workqueue/devices.
-- * alloc_workqueue*() automatically calls this function if WQ_SYSFS is set
-- * which is the preferred method.
+- * Apply @attrs to an unbound workqueue @wq.  Unless disabled, on NUMA
+- * machines, this function maps a separate pwq to each NUMA node with
+- * possibles CPUs in @attrs->cpumask so that work items are affine to the
+- * NUMA node it was issued on.  Older pwqs are released as in-flight work
+- * items finish.  Note that a work item which repeatedly requeues itself
+- * back-to-back will stay on its current pwq.
 - *
-- * Workqueue user should use this function directly iff it wants to apply
-- * workqueue_attrs before making the workqueue visible in sysfs; otherwise,
-- * apply_workqueue_attrs() may race against userland updating the
-- * attributes.
+- * Performs GFP_KERNEL allocations.
 - *
-- * Return: 0 on success, -errno on failure.
+- * Return: 0 on success and -errno on failure.
 - */
--int workqueue_sysfs_register(struct workqueue_struct *wq)
--{
--	struct wq_device *wq_dev;
--	int ret;
+-int apply_workqueue_attrs(struct workqueue_struct *wq,
+-			  const struct workqueue_attrs *attrs)
++static int apply_workqueue_attrs_locked(struct workqueue_struct *wq,
++					const struct workqueue_attrs *attrs,
++					cpumask_var_t unbounds_cpumask)
+ {
+ 	struct workqueue_attrs *new_attrs, *tmp_attrs;
+ 	struct pool_workqueue **pwq_tbl, *dfl_pwq;
+@@ -3676,7 +3661,7 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 
+ 	/* make a copy of @attrs and sanitize it */
+ 	copy_workqueue_attrs(new_attrs, attrs);
+-	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, wq_unbound_cpumask);
++	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, unbounds_cpumask);
+ 
+ 	/*
+ 	 * We may create multiple pwqs with differing cpumasks.  Make a
+@@ -3686,15 +3671,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 	copy_workqueue_attrs(tmp_attrs, new_attrs);
+ 
+ 	/*
+-	 * CPUs should stay stable across pwq creations and installations.
+-	 * Pin CPUs, determine the target cpumask for each node and create
+-	 * pwqs accordingly.
+-	 */
+-	get_online_cpus();
 -
--	wq->wq_dev = wq_dev = kzalloc(sizeof(*wq_dev), GFP_KERNEL);
--	if (!wq_dev)
--		return -ENOMEM;
--
--	wq_dev->wq = wq;
--	wq_dev->dev.bus = &wq_subsys;
--	wq_dev->dev.init_name = wq->name;
--	wq_dev->dev.release = wq_device_release;
+-	mutex_lock(&wq_pool_mutex);
 -
 -	/*
--	 * unbound_attrs are created separately.  Suppress uevent until
--	 * everything is ready.
--	 */
--	dev_set_uevent_suppress(&wq_dev->dev, true);
+ 	 * If something goes wrong during CPU up/down, we'll fall back to
+ 	 * the default pwq covering whole @attrs->cpumask.  Always create
+ 	 * it even if we don't use it immediately.
+@@ -3714,8 +3690,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 		}
+ 	}
+ 
+-	mutex_unlock(&wq_pool_mutex);
 -
--	ret = device_register(&wq_dev->dev);
--	if (ret) {
--		kfree(wq_dev);
--		wq->wq_dev = NULL;
--		return ret;
--	}
--
--	if (wq->flags & WQ_UNBOUND) {
--		struct device_attribute *attr;
--
--		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
--			ret = device_create_file(&wq_dev->dev, attr);
--			if (ret) {
--				device_unregister(&wq_dev->dev);
--				wq->wq_dev = NULL;
--				return ret;
--			}
--		}
--	}
--
--	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
--	return 0;
--}
--
--/**
-- * workqueue_sysfs_unregister - undo workqueue_sysfs_register()
-- * @wq: the workqueue to unregister
-- *
-- * If @wq is registered to sysfs by workqueue_sysfs_register(), unregister.
-- */
--static void workqueue_sysfs_unregister(struct workqueue_struct *wq)
--{
--	struct wq_device *wq_dev = wq->wq_dev;
--
--	if (!wq->wq_dev)
--		return;
--
--	wq->wq_dev = NULL;
--	device_unregister(&wq_dev->dev);
--}
--#else	/* CONFIG_SYSFS */
--static void workqueue_sysfs_unregister(struct workqueue_struct *wq)	{ }
--#endif	/* CONFIG_SYSFS */
--
- /**
-  * free_workqueue_attrs - free a workqueue_attrs
-  * @attrs: workqueue_attrs to free
-@@ -4163,6 +3850,319 @@ out_unlock:
- 	put_pwq_unlocked(old_pwq);
+ 	/* all pwqs have been created successfully, let's install'em */
+ 	mutex_lock(&wq->mutex);
+ 
+@@ -3736,7 +3710,6 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 		put_pwq_unlocked(pwq_tbl[node]);
+ 	put_pwq_unlocked(dfl_pwq);
+ 
+-	put_online_cpus();
+ 	ret = 0;
+ 	/* fall through */
+ out_free:
+@@ -3750,14 +3723,52 @@ enomem_pwq:
+ 	for_each_node(node)
+ 		if (pwq_tbl && pwq_tbl[node] != dfl_pwq)
+ 			free_unbound_pwq(pwq_tbl[node]);
+-	mutex_unlock(&wq_pool_mutex);
+-	put_online_cpus();
+ enomem:
+ 	ret = -ENOMEM;
+ 	goto out_free;
  }
  
-+#ifdef CONFIG_SYSFS
-+/*
-+ * Workqueues with WQ_SYSFS flag set is visible to userland via
-+ * /sys/bus/workqueue/devices/WQ_NAME.  All visible workqueues have the
-+ * following attributes.
+ /**
++ * apply_workqueue_attrs - apply new workqueue_attrs to an unbound workqueue
++ * @wq: the target workqueue
++ * @attrs: the workqueue_attrs to apply, allocated with alloc_workqueue_attrs()
 + *
-+ *  per_cpu	RO bool	: whether the workqueue is per-cpu or unbound
-+ *  max_active	RW int	: maximum number of in-flight work items
++ * Apply @attrs to an unbound workqueue @wq.  Unless disabled, on NUMA
++ * machines, this function maps a separate pwq to each NUMA node with
++ * possibles CPUs in @attrs->cpumask so that work items are affine to the
++ * NUMA node it was issued on.  Older pwqs are released as in-flight work
++ * items finish.  Note that a work item which repeatedly requeues itself
++ * back-to-back will stay on its current pwq.
 + *
-+ * Unbound workqueues have the following extra attributes.
++ * Performs GFP_KERNEL allocations.
 + *
-+ *  id		RO int	: the associated pool ID
-+ *  nice	RW int	: nice value of the workers
-+ *  cpumask	RW mask	: bitmask of allowed CPUs for the workers
++ * Return: 0 on success and -errno on failure.
 + */
-+struct wq_device {
-+	struct workqueue_struct		*wq;
-+	struct device			dev;
-+};
-+
-+static struct workqueue_struct *dev_to_wq(struct device *dev)
++int apply_workqueue_attrs(struct workqueue_struct *wq,
++			  const struct workqueue_attrs *attrs)
 +{
-+	struct wq_device *wq_dev = container_of(dev, struct wq_device, dev);
-+
-+	return wq_dev->wq;
-+}
-+
-+static ssize_t per_cpu_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", (bool)!(wq->flags & WQ_UNBOUND));
-+}
-+static DEVICE_ATTR_RO(per_cpu);
-+
-+static ssize_t max_active_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", wq->saved_max_active);
-+}
-+
-+static ssize_t max_active_store(struct device *dev,
-+				struct device_attribute *attr, const char *buf,
-+				size_t count)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	int val;
-+
-+	if (sscanf(buf, "%d", &val) != 1 || val <= 0)
-+		return -EINVAL;
-+
-+	workqueue_set_max_active(wq, val);
-+	return count;
-+}
-+static DEVICE_ATTR_RW(max_active);
-+
-+static struct attribute *wq_sysfs_attrs[] = {
-+	&dev_attr_per_cpu.attr,
-+	&dev_attr_max_active.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(wq_sysfs);
-+
-+static ssize_t wq_pool_ids_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	const char *delim = "";
-+	int node, written = 0;
-+
-+	rcu_read_lock_sched();
-+	for_each_node(node) {
-+		written += scnprintf(buf + written, PAGE_SIZE - written,
-+				     "%s%d:%d", delim, node,
-+				     unbound_pwq_by_node(wq, node)->pool->id);
-+		delim = " ";
-+	}
-+	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
-+	rcu_read_unlock_sched();
-+
-+	return written;
-+}
-+
-+static ssize_t wq_nice_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	int written;
-+
-+	mutex_lock(&wq->mutex);
-+	written = scnprintf(buf, PAGE_SIZE, "%d\n", wq->unbound_attrs->nice);
-+	mutex_unlock(&wq->mutex);
-+
-+	return written;
-+}
-+
-+/* prepare workqueue_attrs for sysfs store operations */
-+static struct workqueue_attrs *wq_sysfs_prep_attrs(struct workqueue_struct *wq)
-+{
-+	struct workqueue_attrs *attrs;
-+
-+	attrs = alloc_workqueue_attrs(GFP_KERNEL);
-+	if (!attrs)
-+		return NULL;
-+
-+	mutex_lock(&wq->mutex);
-+	copy_workqueue_attrs(attrs, wq->unbound_attrs);
-+	mutex_unlock(&wq->mutex);
-+	return attrs;
-+}
-+
-+static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
-+			     const char *buf, size_t count)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	struct workqueue_attrs *attrs;
 +	int ret;
-+
-+	attrs = wq_sysfs_prep_attrs(wq);
-+	if (!attrs)
-+		return -ENOMEM;
-+
-+	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
-+	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
-+		ret = apply_workqueue_attrs(wq, attrs);
-+	else
-+		ret = -EINVAL;
-+
-+	free_workqueue_attrs(attrs);
-+	return ret ?: count;
-+}
-+
-+static ssize_t wq_cpumask_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	int written;
-+
-+	mutex_lock(&wq->mutex);
-+	written = cpumask_scnprintf(buf, PAGE_SIZE, wq->unbound_attrs->cpumask);
-+	mutex_unlock(&wq->mutex);
-+
-+	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
-+	return written;
-+}
-+
-+static ssize_t wq_cpumask_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	struct workqueue_attrs *attrs;
-+	int ret;
-+
-+	attrs = wq_sysfs_prep_attrs(wq);
-+	if (!attrs)
-+		return -ENOMEM;
-+
-+	ret = cpumask_parse(buf, attrs->cpumask);
-+	if (!ret)
-+		ret = apply_workqueue_attrs(wq, attrs);
-+
-+	free_workqueue_attrs(attrs);
-+	return ret ?: count;
-+}
-+
-+static ssize_t wq_numa_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	int written;
-+
-+	mutex_lock(&wq->mutex);
-+	written = scnprintf(buf, PAGE_SIZE, "%d\n",
-+			    !wq->unbound_attrs->no_numa);
-+	mutex_unlock(&wq->mutex);
-+
-+	return written;
-+}
-+
-+static ssize_t wq_numa_store(struct device *dev, struct device_attribute *attr,
-+			     const char *buf, size_t count)
-+{
-+	struct workqueue_struct *wq = dev_to_wq(dev);
-+	struct workqueue_attrs *attrs;
-+	int v, ret;
-+
-+	/* Creating per-node pwqs breaks ordering guarantee. Keep no_numa = 1 */
-+	if (WARN_ON(wq->flags & __WQ_ORDERED))
-+		return -EINVAL;
-+
-+	attrs = wq_sysfs_prep_attrs(wq);
-+	if (!attrs)
-+		return -ENOMEM;
-+
-+	ret = -EINVAL;
-+	if (sscanf(buf, "%d", &v) == 1) {
-+		attrs->no_numa = !v;
-+		ret = apply_workqueue_attrs(wq, attrs);
-+	}
-+
-+	free_workqueue_attrs(attrs);
-+	return ret ?: count;
-+}
-+
-+static struct device_attribute wq_sysfs_unbound_attrs[] = {
-+	__ATTR(pool_ids, 0444, wq_pool_ids_show, NULL),
-+	__ATTR(nice, 0644, wq_nice_show, wq_nice_store),
-+	__ATTR(cpumask, 0644, wq_cpumask_show, wq_cpumask_store),
-+	__ATTR(numa, 0644, wq_numa_show, wq_numa_store),
-+	__ATTR_NULL,
-+};
-+
-+static struct bus_type wq_subsys = {
-+	.name				= "workqueue",
-+	.dev_groups			= wq_sysfs_groups,
-+};
-+
-+static int __init wq_sysfs_init(void)
-+{
-+	return subsys_virtual_register(&wq_subsys, NULL);
-+}
-+core_initcall(wq_sysfs_init);
-+
-+static void wq_device_release(struct device *dev)
-+{
-+	struct wq_device *wq_dev = container_of(dev, struct wq_device, dev);
-+
-+	kfree(wq_dev);
-+}
-+
-+/**
-+ * workqueue_sysfs_register - make a workqueue visible in sysfs
-+ * @wq: the workqueue to register
-+ *
-+ * Expose @wq in sysfs under /sys/bus/workqueue/devices.
-+ * alloc_workqueue*() automatically calls this function if WQ_SYSFS is set
-+ * which is the preferred method.
-+ *
-+ * Workqueue user should use this function directly iff it wants to apply
-+ * workqueue_attrs before making the workqueue visible in sysfs; otherwise,
-+ * apply_workqueue_attrs() may race against userland updating the
-+ * attributes.
-+ *
-+ * Return: 0 on success, -errno on failure.
-+ */
-+int workqueue_sysfs_register(struct workqueue_struct *wq)
-+{
-+	struct wq_device *wq_dev;
-+	int ret;
-+
-+	wq->wq_dev = wq_dev = kzalloc(sizeof(*wq_dev), GFP_KERNEL);
-+	if (!wq_dev)
-+		return -ENOMEM;
-+
-+	wq_dev->wq = wq;
-+	wq_dev->dev.bus = &wq_subsys;
-+	wq_dev->dev.init_name = wq->name;
-+	wq_dev->dev.release = wq_device_release;
 +
 +	/*
-+	 * unbound_attrs are created separately.  Suppress uevent until
-+	 * everything is ready.
++	 * CPUs should stay stable across pwq creations and installations.
++	 * Pin CPUs, determine the target cpumask for each node and create
++	 * pwqs accordingly.
 +	 */
-+	dev_set_uevent_suppress(&wq_dev->dev, true);
 +
-+	ret = device_register(&wq_dev->dev);
-+	if (ret) {
-+		kfree(wq_dev);
-+		wq->wq_dev = NULL;
-+		return ret;
-+	}
++	get_online_cpus();
++	/*
++	 * Lock for alloc_unbound_pwq()
++	 */
++	mutex_lock(&wq_pool_mutex);
++	ret = apply_workqueue_attrs_locked(wq, attrs, wq_unbound_cpumask);
++	mutex_unlock(&wq_pool_mutex);
++	put_online_cpus();
 +
-+	if (wq->flags & WQ_UNBOUND) {
-+		struct device_attribute *attr;
-+
-+		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
-+			ret = device_create_file(&wq_dev->dev, attr);
-+			if (ret) {
-+				device_unregister(&wq_dev->dev);
-+				wq->wq_dev = NULL;
-+				return ret;
-+			}
-+		}
-+	}
-+
-+	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
-+	return 0;
++	return ret;
 +}
++
 +
 +/**
-+ * workqueue_sysfs_unregister - undo workqueue_sysfs_register()
-+ * @wq: the workqueue to unregister
-+ *
-+ * If @wq is registered to sysfs by workqueue_sysfs_register(), unregister.
-+ */
-+static void workqueue_sysfs_unregister(struct workqueue_struct *wq)
-+{
-+	struct wq_device *wq_dev = wq->wq_dev;
-+
-+	if (!wq->wq_dev)
-+		return;
-+
-+	wq->wq_dev = NULL;
-+	device_unregister(&wq_dev->dev);
-+}
-+#else	/* CONFIG_SYSFS */
-+static void workqueue_sysfs_unregister(struct workqueue_struct *wq)	{ }
-+#endif	/* CONFIG_SYSFS */
-+
- static int alloc_and_link_pwqs(struct workqueue_struct *wq)
- {
- 	bool highpri = wq->flags & WQ_HIGHPRI;
+  * wq_update_unbound_numa - update NUMA affinity of a wq for CPU hot[un]plug
+  * @wq: the target workqueue
+  * @cpu: the CPU coming up or going down
 -- 
 1.8.3.1
 
