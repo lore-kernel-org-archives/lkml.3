@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbaEPIVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:21:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756226AbaEPIEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540106785"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RFC Patch Part1 V1 10/30] x86, ioapic: kill unused global variable timer_through_8259
-Date: Fri, 16 May 2014 16:05:30 +0800
-Message-Id: <1400227550-5935-11-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1756517AbaEPIEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:04:48 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:50544 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226AbaEPIEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:04:41 -0400
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
+        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: [PATCH v6 5/6] exynos: cpuidle: do not allow cpuidle registration for Exynos5420
+Date: Fri, 16 May 2014 13:33:57 +0530
+Message-Id: <1400227438-27155-6-git-send-email-chander.kashyap@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+ <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/io_apic.h |    4 ----
- arch/x86/kernel/apic/io_apic.c |    3 ---
- 2 files changed, 7 deletions(-)
+Exynos5420 is big.Little Soc. It uses cpuidle-big-litle generic cpuidle driver.
+Hence do not allow exynos cpuidle driver registration for Exynos5420.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 8f472daea221..0c448ac14abf 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -130,9 +130,6 @@ extern int noioapicquirk;
- /* -1 if "noapic" boot option passed */
- extern int noioapicreroute;
- 
--/* 1 if the timer IRQ uses the '8259A Virtual Wire' mode */
--extern int timer_through_8259;
--
- /*
-  * If we use the IO-APIC for IRQ routing, disable automatic
-  * assignment of PCI IRQ's.
-@@ -214,7 +211,6 @@ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- 
- #define io_apic_assign_pci_irqs 0
- #define setup_ioapic_ids_from_mpc x86_init_noop
--static const int timer_through_8259 = 0;
- static inline void ioapic_insert_resources(void) { }
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1041b227726a..a338d9601841 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2664,8 +2664,6 @@ static int __init disable_timer_pin_setup(char *arg)
- }
- early_param("disable_timer_pin_1", disable_timer_pin_setup);
- 
--int timer_through_8259 __initdata;
--
- /*
-  * This code may look a bit paranoid, but it's supposed to cooperate with
-  * a wide range of boards and BIOS bugs.  Fortunately only the timer IRQ
-@@ -2770,7 +2768,6 @@ static inline void __init check_timer(void)
- 		legacy_pic->unmask(0);
- 		if (timer_irq_works()) {
- 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
--			timer_through_8259 = 1;
- 			goto out;
+Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+Changes in v6:
+	1. Move cpuidle registration check to exynos.c from cpuidle.c and
+	   use "samsung,exynos5420" compatible string to avvoid registration
+ arch/arm/mach-exynos/exynos.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 4df3452..ef24edf 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -286,7 +286,9 @@ static void __init exynos_dt_machine_init(void)
  		}
- 		/*
+ 	}
+ 
+-	exynos_cpuidle_init();
++	if (!of_machine_is_compatible("samsung,exynos5420"))
++		exynos_cpuidle_init();
++
+ 	exynos_cpufreq_init();
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
 -- 
-1.7.10.4
+1.7.9.5
 
