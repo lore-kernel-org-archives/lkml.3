@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaEPIX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:23:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312AbaEPIEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:04:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540106694"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC Patch Part1 V1 07/30] x86, ACPI, irq: enhance error handling in function acpi_register_gsi()
-Date: Fri, 16 May 2014 16:05:27 +0800
-Message-Id: <1400227550-5935-8-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+	id S932273AbaEPIXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:23:37 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:65095 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203AbaEPIXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:23:33 -0400
+Message-ID: <5375CB0D.2080309@linaro.org>
+Date: Fri, 16 May 2014 10:23:41 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Alexander Shiyan <shc_work@mail.ru>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] cpuidle: new driver for Cirrus Logic for 3.16
+References: <5360CF57.9050202@linaro.org>
+In-Reply-To: <5360CF57.9050202@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function mp_register_gsi() may return invalid GSI if error happens,
-so enhance acpi_register_gsi() to handle possible error cases.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/kernel/acpi/boot.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Hi Rafael,
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 6d65850f49e9..8b8ff786af12 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -97,6 +97,8 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
- 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
- };
- 
-+#define	ACPI_INVALID_GSI		INT_MIN
-+
- static unsigned int gsi_to_irq(unsigned int gsi)
- {
- 	unsigned int irq = gsi + NR_IRQS_LEGACY;
-@@ -553,13 +555,13 @@ int (*acpi_suspend_lowlevel)(void);
-  */
- int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
--	unsigned int irq;
- 	unsigned int plat_gsi = gsi;
- 
- 	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
--	irq = gsi_to_irq(plat_gsi);
-+	if (plat_gsi != ACPI_INVALID_GSI)
-+		return gsi_to_irq(plat_gsi);
- 
--	return irq;
-+	return -1;
- }
- EXPORT_SYMBOL_GPL(acpi_register_gsi);
- 
-@@ -1054,7 +1056,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
- 	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
- 	if (ret < 0)
--		gsi = INT_MIN;
-+		gsi = ACPI_INVALID_GSI;
- 
- 	return gsi;
- }
+just a head up in case you missed it.
+
+Thanks
+   -- Daniel
+
+On 04/30/2014 12:24 PM, Daniel Lezcano wrote:
+>
+> Hi Rafael,
+>
+> this pull request is based on top 3.15-rc3
+>
+>   * Alexander Shiyan added a new driver for the Cirrus Logic clps711x
+>
+> Thanks
+>    -- Daniel
+>
+> The following changes since commit
+> d1db0eea852497762cab43b905b879dfcd3b8987:
+>
+>    Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
+>
+> are available in the git repository at:
+>
+>    git://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.16
+>
+> for you to fetch changes up to 7c7f8f7f2c6bf078874e5de35d7e2c66467fc664:
+>
+>    ARM: clps711x: Add cpuidle driver (2014-04-30 01:33:02 +0200)
+>
+> ----------------------------------------------------------------
+> Alexander Shiyan (1):
+>        ARM: clps711x: Add cpuidle driver
+>
+>   drivers/cpuidle/Kconfig.arm        |    6 ++++
+>   drivers/cpuidle/Makefile           |    1 +
+>   drivers/cpuidle/cpuidle-clps711x.c |   64
+> ++++++++++++++++++++++++++++++++++++
+>   3 files changed, 71 insertions(+)
+>   create mode 100644 drivers/cpuidle/cpuidle-clps711x.c
+>
+
+
 -- 
-1.7.10.4
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
