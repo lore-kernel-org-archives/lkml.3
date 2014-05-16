@@ -1,74 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978AbaEPO2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 10:28:02 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:56884 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964AbaEPO17 (ORCPT
+	id S1756628AbaEPOaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 10:30:21 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41729 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaEPOaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 10:27:59 -0400
+	Fri, 16 May 2014 10:30:18 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 16 May 2014 15:27:39 +0100
-X-Google-Sender-Auth: Y6dY3wXrnroSuU4_SxrOp1uwY0E
-Message-ID: <CACxGe6v5vAXypkOcX7ZLqpsDaVNxCGanYCuytWrLzu_6pRXFuA@mail.gmail.com>
-Subject: [GIT PULL] Devicetree fixes for v3.15
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Cc: Rob Herring <rob.herring@linaro.org>
+In-Reply-To: <5375ED80.2010008@samsung.com>
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+	<5373CBAD.2010505@gmail.com>
+	<CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
+	<53753527.3000905@gmail.com>
+	<CAPdUM4M5k-aouSA=dyUXWOyFLBhob+o8103a=gAxo-O68i-MCw@mail.gmail.com>
+	<CAPdUM4Py4r3ZV79ULcJ3KojaPQ0hfZTE2XbsY+=hP4LD70mb8Q@mail.gmail.com>
+	<5375ED80.2010008@samsung.com>
+Date: Fri, 16 May 2014 20:00:16 +0530
+X-Google-Sender-Auth: B6WNlfVe4vmHbgeFq7xrcWBag64
+Message-ID: <CAPdUM4Mfe4xTnh-qPeazcknbCoqX3HcORKHLqBE9ukqa4ULi9A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+From: Rahul Sharma <rahul.sharma@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        PANKAJ KUMAR DUBEY <pankaj.dubey@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        sunil joshi <joshi@samsung.com>, Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 16 May 2014 16:20, Tomasz Figa <t.figa@samsung.com> wrote:
+> On 16.05.2014 12:35, Rahul Sharma wrote:
+>> On 16 May 2014 15:12, Rahul Sharma <rahul.sharma@samsung.com> wrote:
+>>> On 16 May 2014 03:14, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>>> On 15.05.2014 06:01, Rahul Sharma wrote:
+>> [snip]
+>>>>>> the PHY provider.
+>>>>>>
+>>>>>
+>>>>> Please correct me if I got you wrong. You want somthing like this:
+>>>>>
+>>>>> pmu_system_controller: system-controller@10040000 {
+>>>>>          ...
+>>>>>           simple_phys: simple-phys {
+>>>>>                         compatible = "samsung,exynos5420-simple-phy";
+>>>>>                         ...
+>>>>>           };
+>>>>> };
+>>>>
+>>>> Not exactly.
+>>>>
+>>>> What I meant is that the PMU node itself should be the PHY provider, e.g.
+>>>>
+>>>> pmu_system_controller: system-controller@10040000 {
+>>>>         /* ... */
+>>>>         #phy-cells = <1>;
+>>>> };
+>>>>
+>>>> and then the PMU node should instantiate the Exynos simple PHY driver,
+>>>> as this is a driver for a facility existing entirely inside of the PMU.
+>>>> Moreover, the driver should be rather called Exynos PMU PHY.
+>>>>
+>>>> I know this isn't really possible at the moment, but with device tree we
+>>>> must design things carefully, so it's better to take a bit more time and
+>>>> do things properly.
+>>>>
+>>>> So my opinion on this is that there should be a central Exynos PMU
+>>>> driver that claims the IO region and instantiates necessary subdrivers,
+>>>> such as Exynos PMU PHY driver, Exynos CLKOUT driver, Exynos cpuidle
+>>>> driver and more, similar to what is being done in drivers/mfd.
+>>>
+>>
+>> Hi Tomasz,
+>>
+>> These PHYs are not part of PMU as such. I am not sure if it is correct to
+>> probe them as phy provider for all these phys. Only relation of these phys with
+>> the PMU is 'enable/disable control'.
+>
+> Well, in reality what is implemented by this driver is not even a PHY,
+> just some kind of power controllers, which are contained entirely in the
+> PMU.
+>
 
-Please pull the following bug fix branch.
+I agree. Actually the role of generic phy framework for these 'simple' phys is
+only that much.
 
-Thanks,
-g.
+>> Controlling this bit using regmap interface
+>> still looks better to me.
+>
+> Well, when there is a choice between using regmap and not using regmap,
+> I'd rather choose the latter. Why would you want to introduce additional
+> abstraction layer if there is no need for such?
+>
+>>
+>> IMHO Ideal method would be probing these PHYs independently and resolving
+>> the necessary dependencies like syscon handle, clocks etc. This way we will
+>> not be having any common phy provider for all these independent PHYs and it
+>> would be clean to add each of these phy nodes in DT. Please see my original
+>> comment below.
+>>
+>> http://lkml.iu.edu/hypermail/linux/kernel/1404.1/00701.html
+>
+> With the solution I proposed, you don't need any kind of dependencies
+> for those simple power controllers. They are just single bits that don't
+> need anything special to operate, except PMU clock running.
 
-The following changes since commit 14186fea0cb06bc43181ce239efe0df6f1af260a:
+In that case we can further trim it down and let the drivers use the regmap
+interface to control this bit. Many drivers including HDMI, DP just need that
+much functionality from the phy provider.
 
-  Merge tag 'locks-v3.15-4' of git://git.samba.org/jlayton/linux
-(2014-05-13 11:33:09 +0900)
+Regards,
+Rahul Sharma
 
-are available in the git repository at:
-
-
-  git://git.secretlab.ca/git/linux tags/dt-for-linus
-
-for you to fetch changes up to dfc44f8030653b345fc6fb337558c3a07536823f:
-
-  mips: dts: Fix missing device_type="memory" property in memory nodes
-(2014-05-16 15:22:53 +0100)
-
-----------------------------------------------------------------
-Drivercore bugfixes for v3.15
-
-This branch contains bug fixes important to get into v3.15. There is a
-fix for modifying properties seen during early boot, a fix for an
-incorrect prototype when CONFIG_OF=n, and a couple of corrections to
-device tree memory nodes on  a few platforms.
-
-----------------------------------------------------------------
-Leif Lindholm (2):
-      arm: dts: Fix missing device_type="memory" for ste-ccu8540
-      mips: dts: Fix missing device_type="memory" property in memory nodes
-
-Stephen Rothwell (1):
-      of: fix CONFIG_OF=n prototype of of_node_full_name()
-
-Thomas Petazzoni (1):
-      of: make of_update_property() usable earlier in the boot process
-
- arch/arm/boot/dts/ste-ccu8540.dts     | 1 +
- arch/mips/lantiq/dts/easy50712.dts    | 1 +
- arch/mips/ralink/dts/mt7620a_eval.dts | 1 +
- arch/mips/ralink/dts/rt2880_eval.dts  | 1 +
- arch/mips/ralink/dts/rt3052_eval.dts  | 1 +
- arch/mips/ralink/dts/rt3883_eval.dts  | 1 +
- drivers/of/base.c                     | 4 ++++
- include/linux/of.h                    | 2 +-
- 8 files changed, 11 insertions(+), 1 deletion(-)
+>
+> Best regards,
+> Tomasz
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
