@@ -1,162 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaEPVyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:54:35 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:44848 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766AbaEPVyd (ORCPT
+	id S1753969AbaEPWAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:00:20 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:57308 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaEPWAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 17:54:33 -0400
+	Fri, 16 May 2014 18:00:18 -0400
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Greg Thelen <gthelen@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+In-reply-to: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+Date: Fri, 16 May 2014 15:00:16 -0700
+Message-ID: <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJZ5v0inpqY5w-FE4Wvaj2W_tG3AMHNoRQfdK8iSgJUQ798O-g@mail.gmail.com>
-References: <CAJZ5v0inpqY5w-FE4Wvaj2W_tG3AMHNoRQfdK8iSgJUQ798O-g@mail.gmail.com>
-Date: Fri, 16 May 2014 23:54:32 +0200
-X-Google-Sender-Auth: XSOJEzV7sseovhh044V-dsz5DN8
-Message-ID: <CAJZ5v0iZ6eREK24fWAw7ixz=BJXMiMBcTAOJ1MdBq+pfR4zcHA@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI and power management fixes for v3.15-rc6
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Sorry for this last-minute update, but it's just turned out that
-one of the new ACPI video blacklist entries was added overzealously
-and added is a commit reverting it.
+On Tue, May 13 2014, Michal Hocko <mhocko@suse.cz> wrote:
 
-Please pull from
+> force_empty has been introduced primarily to drop memory before it gets
+> reparented on the group removal. This alone doesn't sound fully
+> justified because reparented pages which are not in use can be reclaimed
+> also later when there is a memory pressure on the parent level.
+>
+> Mark the knob CFTYPE_INSANE which tells the cgroup core that it
+> shouldn't create the knob with the experimental sane_behavior. Other
+> users will get informed about the deprecation and asked to tell us more
+> because I do not expect most users will use sane_behavior cgroups mode
+> very soon.
+> Anyway I expect that most users will be simply cgroup remove handlers
+> which do that since ever without having any good reason for it.
+>
+> If somebody really cares because reparented pages, which would be
+> dropped otherwise, push out more important ones then we should fix the
+> reparenting code and put pages to the tail.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.15-rc6
+I should mention a case where I've needed to use memory.force_empty: to
+synchronously flush stats from child to parent.  Without force_empty
+memory.stat is temporarily inconsistent until async css_offline
+reparents charges.  Here is an example on v3.14 showing that
+parent/memory.stat contents are in-flux immediately after rmdir of
+parent/child.
 
-to receive ACPI and power management fixes for v3.15-rc6
-with top-most commit 658a0f4e661a6c07395de318a58f9058ba2faf8f
+$ cat /test
+#!/bin/bash
 
-  Merge branch 'acpi-video'
+# Create parent and child.  Add some non-reclaimable anon rss to child,
+# then move running task to parent.
+mkdir p p/c
+(echo $BASHPID > p/c/cgroup.procs && exec sleep 1d) &
+pid=$!
+sleep 1
+echo $pid > p/cgroup.procs 
 
-on top of commit d6d211db37e75de2ddc3a4f979038c40df7cc79c
+grep 'rss ' {p,p/c}/memory.stat
+if [[ $1 == force ]]; then
+  echo 1 > p/c/memory.force_empty
+fi
+rmdir p/c
 
-  Linux 3.15-rc5
+echo 'For a small time the p/c memory has not been reparented to p.'
+grep 'rss ' {p,p/c}/memory.stat
 
-Still fixing regressions (partly by reverting commits that broke
-things for people), fixing other stable-candidate bugs and adding
-some blacklist entries for ACPI video and _OSI.  Two ACPICA regression
-fixes (one recent and one for a 3.14 commit), a fix for an ACPI-related
-regression in TPM (introduced in 3.14), a revert of the ACPI AC
-driver conversion in 3.13 that went wrong for an unknown reason,
-two reverts of commits that attempted to remove an old user space
-interface in /proc and broke some utilities, in 3.13 too, a fix for
-a CPU hotplug bug in the ACPI processor driver (stable material),
-two (stable candidate) fixes for intel_pstate and a few new blacklist
-entries, mostly for systems that shipped with Windows 8.
+sleep 1
+echo 'After waiting all memory has been reparented'
+grep 'rss ' {p,p/c}/memory.stat
 
-Specifics:
-
- - ACPICA fix for a stale pointer access introduced by a recent
-   commit in the XSDT validation code from Lv Zheng.
-
- - ACPICA fix for the default value of the command line switch
-   to favor 32-bit FADT addresses (in case there's a conflict
-   between a 64-bit and a 32-bit address).  The previous default
-   was that the 32-bit version would take precedence and we tried
-   to change it to the other way around and it didn't work.
-   From Lv Zheng.
-
- - A TPM commit related to ACPI _DSM in 3.14 caused the driver to
-   refuse to load if a specific _DSM was missing and that broke
-   resume from system suspend on Chromebooks that require the TPM
-   hardware to be restored to a working state during resume by the
-   OS.  Restore the old behavior to load the driver if the _DSM
-   in question is not present, but prevent it from using the
-   feature the _DSM is for.
-
- - ACPI AC driver conversion in 3.13 broke thermal management on
-   at least one machine and has to be reverted.  From Guenter Roeck.
-
- - Two reverts of 3.13 commits that attempted to remove the old ACPI
-   battery interface in /proc, but turned out to break some utilities
-   still using that interface.  From Lan Tianyu.
-
- - ACPI processor driver fix to prevent acpi_processor_add() from
-   modifying the CPU device's .offline field which leads to breakage
-   if the initial online of the CPU fails.  From Igor Mammedov.
-
- - Two intel_pstate fixes, one to take a BayTrail documentation update
-   into account and one to avoid forcing the maximum P-state on init
-   which causes CPU PM trouble on systems with P-states coordination
-   when one of the CPU cores is initialized after an offline/online
-   cycle triggered by user space.  Both stable candidates, from
-   Dirk Brandewie.
-
- - Fix for the ACPI video DMI blacklist entry for Dell Inspiron 7520
-   from Aaron Lu.
-
- - Two new ACPI video blacklist entries for machines shipping with
-   Win8 that need to use native backlight so that it can be controlled
-   in a usual way (which doesn't work otherwise due bugs in the ACPI
-   tables) from Hans de Goede.
-
- - Two ACPI _OSI quirks for systems that need them to work correctly
-   with Linux from Edward Lin and Hans de Goede.
-
-Thanks!
+kill $pid
+rmdir p
 
 
----------------
+-- First, demonstrate that just rmdir, without memory.force_empty,
+   temporarily hides reparented child memory stats.
 
-Aaron Lu (1):
-      ACPI / video: correct DMI tag for Dell Inspiron 7520
+$ /test
+p/memory.stat:rss 0
+p/memory.stat:total_rss 69632
+p/c/memory.stat:rss 69632
+p/c/memory.stat:total_rss 69632
+For a small time the p/c memory has not been reparented to p.
+p/memory.stat:rss 0
+p/memory.stat:total_rss 0
+grep: p/c/memory.stat: No such file or directory
+After waiting all memory has been reparented
+p/memory.stat:rss 69632
+p/memory.stat:total_rss 69632
+grep: p/c/memory.stat: No such file or directory
+/test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
 
-Dirk Brandewie (2):
-      intel_pstate: Set turbo VID for BayTrail
-      intel_pstate: remove setting P state to MAX on init
+-- Demonstrate that using memory.force_empty before rmdir, behaves more
+   sensibly.  Stats for reparented child memory are not hidden.
 
-Edward Lin (1):
-      ACPI: blacklist win8 OSI for Dell Inspiron 7737
-
-Guenter Roeck (1):
-      ACPI: Revert "ACPI / AC: convert ACPI ac driver to platform bus"
-
-Hans de Goede (3):
-      ACPI / video: Add use_native_backlight quirks for more systems
-      ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
-      ACPI / video: Revert native brightness quirk for ThinkPad T530
-
-Igor Mammedov (1):
-      ACPI / processor: do not mark present at boot but not onlined
-CPU as onlined
-
-Lan Tianyu (2):
-      ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"
-      ACPI: Revert "ACPI / Battery: Remove battery's proc directory"
-
-Lv Zheng (2):
-      ACPICA: Tables: Fix invalid pointer accesses in
-acpi_tb_parse_root_table().
-      ACPICA: Tables: Restore old behavor to favor 32-bit FADT addresses.
-
-Rafael J. Wysocki (2):
-      ACPI / proc: Do not say when /proc interfaces will be deleted in Kconfig
-      ACPI / TPM: Fix resume regression on Chromebooks
-
----------------
-
- drivers/acpi/Kconfig           |  17 +++
- drivers/acpi/Makefile          |   1 +
- drivers/acpi/ac.c              | 117 ++++++++-------
- drivers/acpi/acpi_platform.c   |   1 -
- drivers/acpi/acpi_processor.c  |   1 -
- drivers/acpi/acpica/acglobal.h |   4 +-
- drivers/acpi/acpica/tbutils.c  |   7 +-
- drivers/acpi/battery.c         | 329 ++++++++++++++++++++++++++++++++++++++++-
- drivers/acpi/blacklist.c       |  21 +++
- drivers/acpi/cm_sbs.c          | 105 +++++++++++++
- drivers/acpi/video.c           |  16 +-
- drivers/char/tpm/tpm_ppi.c     |   8 +-
- drivers/cpufreq/intel_pstate.c |  34 ++---
- 13 files changed, 568 insertions(+), 93 deletions(-)
+$ /test force
+p/memory.stat:rss 0
+p/memory.stat:total_rss 69632
+p/c/memory.stat:rss 69632
+p/c/memory.stat:total_rss 69632
+For a small time the p/c memory has not been reparented to p.
+p/memory.stat:rss 69632
+p/memory.stat:total_rss 69632
+grep: p/c/memory.stat: No such file or directory
+After waiting all memory has been reparented
+p/memory.stat:rss 69632
+p/memory.stat:total_rss 69632
+grep: p/c/memory.stat: No such file or directory
+/test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
