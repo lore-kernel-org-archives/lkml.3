@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400AbaEPNmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:42:11 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55031 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933375AbaEPNmE (ORCPT
+	id S933450AbaEPNmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:42:24 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:32778 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428AbaEPNmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:42:04 -0400
+	Fri, 16 May 2014 09:42:19 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 36/49] media: davinci: vpif_capture: use vb2_ioctl_* helpers
-Date: Fri, 16 May 2014 19:03:42 +0530
-Message-Id: <1400247235-31434-39-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 39/49] media: davinic: vpif_capture: drop started member from struct common_obj
+Date: Fri, 16 May 2014 19:03:45 +0530
+Message-Id: <1400247235-31434-42-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,293 +24,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
+the started member was indicating whether streaming was started
+or not, this can be determined by vb2 offering, this patch replaces
+the started member from struct common_obj with appropriate vb2 calls.
+
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpif_capture.c |  240 +++----------------------
- 1 file changed, 22 insertions(+), 218 deletions(-)
+ drivers/media/platform/davinci/vpif_capture.c |   36 ++++++++++---------------
+ drivers/media/platform/davinci/vpif_capture.h |    2 --
+ 2 files changed, 14 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 6ad9e09..75015f4 100644
+index 6b66f55..b898779 100644
 --- a/drivers/media/platform/davinci/vpif_capture.c
 +++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -208,6 +208,12 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 		}
- 	}
+@@ -73,6 +73,9 @@ static void vpif_config_addr(struct channel_obj *ch, int muxmode);
  
-+	ret = v4l2_subdev_call(ch->sd, video, s_stream, 1);
-+	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV) {
-+		vpif_dbg(1, debug, "stream on failed in subdev\n");
-+		goto err;
-+	}
+ static u8 channel_first_int[VPIF_NUMBER_OF_OBJECTS][2] = { {1, 1} };
+ 
++/* Is set to 1 in case of SDTV formats, 2 in case of HDTV formats. */
++static int ycmux_mode;
 +
+ static inline struct vpif_cap_buffer *to_vpif_buffer(struct vb2_buffer *vb)
+ {
+ 	return container_of(vb, struct vpif_cap_buffer, vb);
+@@ -194,9 +197,8 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 
+ 	spin_lock_irqsave(&common->irqlock, flags);
+ 
+-	/* Initialize field_id and started member */
++	/* Initialize field_id */
+ 	ch->field_id = 0;
+-	common->started = 1;
+ 
+ 	/* configure 1 or 2 channel mode */
+ 	if (vpif_config_data->setup_input_channel_mode) {
+@@ -216,13 +218,12 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 
  	/* Call vpif_set_params function to set the parameters and addresses */
  	ret = vpif_set_video_params(vpif, ch->channel_id);
- 
-@@ -275,6 +281,7 @@ static void vpif_stop_streaming(struct vb2_queue *vq)
- 	struct channel_obj *ch = vb2_get_drv_priv(vq);
- 	struct common_obj *common;
- 	unsigned long flags;
-+	int ret;
- 
- 	common = &ch->common[VPIF_VIDEO_INDEX];
- 
-@@ -290,6 +297,10 @@ static void vpif_stop_streaming(struct vb2_queue *vq)
+-
+ 	if (ret < 0) {
+ 		vpif_dbg(1, debug, "can't set video params\n");
+ 		goto err;
  	}
- 	common->started = 0;
  
-+	ret = v4l2_subdev_call(ch->sd, video, s_stream, 0);
-+	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
-+		vpif_dbg(1, debug, "stream off failed in subdev\n");
-+
- 	/* release all active buffers */
- 	spin_lock_irqsave(&common->irqlock, flags);
- 	if (common->cur_frm == common->next_frm) {
-@@ -751,218 +762,6 @@ static void vpif_config_addr(struct channel_obj *ch, int muxmode)
- }
+-	common->started = ret;
++	ycmux_mode = ret;
+ 	vpif_config_addr(ch, ret);
  
- /**
-- * vpif_reqbufs() - request buffer handler
-- * @file: file ptr
-- * @priv: file handle
-- * @reqbuf: request buffer structure ptr
-- */
--static int vpif_reqbufs(struct file *file, void *priv,
--			struct v4l2_requestbuffers *reqbuf)
--{
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common;
--	u8 index = 0;
--
--	vpif_dbg(2, debug, "vpif_reqbufs\n");
--
--	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != reqbuf->type || !vpif_dev)
--		return -EINVAL;
--
--	index = VPIF_VIDEO_INDEX;
--
--	common = &ch->common[index];
--
--	if (0 != common->io_usrs)
--		return -EBUSY;
--
--	/* Increment io usrs member of channel object to 1 */
--	common->io_usrs = 1;
--	/* Store type of memory requested in channel object */
--	common->memory = reqbuf->memory;
--
--	/* Allocate buffers */
--	return vb2_reqbufs(&common->buffer_queue, reqbuf);
--}
--
--/**
-- * vpif_querybuf() - query buffer handler
-- * @file: file ptr
-- * @priv: file handle
-- * @buf: v4l2 buffer structure ptr
-- */
--static int vpif_querybuf(struct file *file, void *priv,
--				struct v4l2_buffer *buf)
--{
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--
--	vpif_dbg(2, debug, "vpif_querybuf\n");
--
--	if (common->fmt.type != buf->type)
--		return -EINVAL;
--
--	if (common->memory != V4L2_MEMORY_MMAP) {
--		vpif_dbg(1, debug, "Invalid memory\n");
--		return -EINVAL;
--	}
--
--	return vb2_querybuf(&common->buffer_queue, buf);
--}
--
--/**
-- * vpif_qbuf() - query buffer handler
-- * @file: file ptr
-- * @priv: file handle
-- * @buf: v4l2 buffer structure ptr
-- */
--static int vpif_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
--{
--
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--	struct v4l2_buffer tbuf = *buf;
--
--	vpif_dbg(2, debug, "vpif_qbuf\n");
--
--	if (common->fmt.type != tbuf.type) {
--		vpif_err("invalid buffer type\n");
--		return -EINVAL;
--	}
--
--	return vb2_qbuf(&common->buffer_queue, buf);
--}
--
--/**
-- * vpif_dqbuf() - query buffer handler
-- * @file: file ptr
-- * @priv: file handle
-- * @buf: v4l2 buffer structure ptr
-- */
--static int vpif_dqbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
--{
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--
--	vpif_dbg(2, debug, "vpif_dqbuf\n");
--
--	return vb2_dqbuf(&common->buffer_queue, buf,
--			 (file->f_flags & O_NONBLOCK));
--}
--
--/**
-- * vpif_streamon() - streamon handler
-- * @file: file ptr
-- * @priv: file handle
-- * @buftype: v4l2 buffer type
-- */
--static int vpif_streamon(struct file *file, void *priv,
--				enum v4l2_buf_type buftype)
--{
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--	struct channel_obj *oth_ch = vpif_obj.dev[!ch->channel_id];
--	struct vpif_params *vpif;
--	int ret = 0;
--
--	vpif_dbg(2, debug, "vpif_streamon\n");
--
--	vpif = &ch->vpifparams;
--
--	if (buftype != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		vpif_dbg(1, debug, "buffer type not supported\n");
--		return -EINVAL;
--	}
--
--	/* If Streaming is already started, return error */
--	if (common->started) {
--		vpif_dbg(1, debug, "channel->started\n");
--		return -EBUSY;
--	}
--
--	if ((ch->channel_id == VPIF_CHANNEL0_VIDEO &&
--	    oth_ch->common[VPIF_VIDEO_INDEX].started &&
--	    vpif->std_info.ycmux_mode == 0) ||
--	   ((ch->channel_id == VPIF_CHANNEL1_VIDEO) &&
--	    (2 == oth_ch->common[VPIF_VIDEO_INDEX].started))) {
--		vpif_dbg(1, debug, "other channel is being used\n");
--		return -EBUSY;
--	}
--
--	ret = vpif_check_format(ch, &common->fmt.fmt.pix, 0);
--	if (ret)
--		return ret;
--
--	/* Enable streamon on the sub device */
--	ret = v4l2_subdev_call(ch->sd, video, s_stream, 1);
--
--	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV) {
--		vpif_dbg(1, debug, "stream on failed in subdev\n");
--		return ret;
--	}
--
--	/* Call vb2_streamon to start streaming in videobuf2 */
--	ret = vb2_streamon(&common->buffer_queue, buftype);
--	if (ret) {
--		vpif_dbg(1, debug, "vb2_streamon\n");
--		return ret;
--	}
--
--	return ret;
--}
--
--/**
-- * vpif_streamoff() - streamoff handler
-- * @file: file ptr
-- * @priv: file handle
-- * @buftype: v4l2 buffer type
-- */
--static int vpif_streamoff(struct file *file, void *priv,
--				enum v4l2_buf_type buftype)
--{
--
--	struct video_device *vdev = video_devdata(file);
--	struct channel_obj *ch = video_get_drvdata(vdev);
--	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--	int ret;
--
--	vpif_dbg(2, debug, "vpif_streamoff\n");
--
--	if (buftype != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		vpif_dbg(1, debug, "buffer type not supported\n");
--		return -EINVAL;
--	}
--
--	/* If streaming is not started, return error */
--	if (!common->started) {
--		vpif_dbg(1, debug, "channel->started\n");
--		return -EINVAL;
--	}
--
--	/* disable channel */
--	if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
--		enable_channel0(0);
--		channel0_intr_enable(0);
--	} else {
--		enable_channel1(0);
--		channel1_intr_enable(0);
--	}
--
+ 	/* Get the next frame from the buffer queue */
+@@ -252,7 +253,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 		enable_channel0(1);
+ 	}
+ 	if (VPIF_CHANNEL1_VIDEO == ch->channel_id ||
+-		common->started == 2) {
++		ycmux_mode == 2) {
+ 		channel1_intr_assert();
+ 		channel1_intr_enable(1);
+ 		enable_channel1(1);
+@@ -291,11 +292,12 @@ static void vpif_stop_streaming(struct vb2_queue *vq)
+ 		channel0_intr_enable(0);
+ 	}
+ 	if (VPIF_CHANNEL1_VIDEO == ch->channel_id ||
+-		2 == common->started) {
++		ycmux_mode == 2) {
+ 		enable_channel1(0);
+ 		channel1_intr_enable(0);
+ 	}
 -	common->started = 0;
--
--	ret = v4l2_subdev_call(ch->sd, video, s_stream, 0);
--
--	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
--		vpif_dbg(1, debug, "stream off failed in subdev\n");
--
--	return vb2_streamoff(&common->buffer_queue, buftype);
--}
--
--/**
-  * vpif_input_to_subdev() - Maps input to sub device
-  * @vpif_cfg - global config ptr
-  * @chan_cfg - channel config ptr
-@@ -1531,15 +1330,20 @@ static const struct v4l2_ioctl_ops vpif_ioctl_ops = {
- 	.vidioc_enum_input		= vpif_enum_input,
- 	.vidioc_s_input			= vpif_s_input,
- 	.vidioc_g_input			= vpif_g_input,
--	.vidioc_reqbufs         	= vpif_reqbufs,
--	.vidioc_querybuf        	= vpif_querybuf,
 +
-+	.vidioc_reqbufs			= vb2_ioctl_reqbufs,
-+	.vidioc_create_bufs		= vb2_ioctl_create_bufs,
-+	.vidioc_querybuf		= vb2_ioctl_querybuf,
-+	.vidioc_qbuf			= vb2_ioctl_qbuf,
-+	.vidioc_dqbuf			= vb2_ioctl_dqbuf,
-+	.vidioc_expbuf			= vb2_ioctl_expbuf,
-+	.vidioc_streamon		= vb2_ioctl_streamon,
-+	.vidioc_streamoff		= vb2_ioctl_streamoff,
-+
- 	.vidioc_querystd		= vpif_querystd,
- 	.vidioc_s_std           	= vpif_s_std,
- 	.vidioc_g_std			= vpif_g_std,
--	.vidioc_qbuf            	= vpif_qbuf,
--	.vidioc_dqbuf           	= vpif_dqbuf,
--	.vidioc_streamon        	= vpif_streamon,
--	.vidioc_streamoff       	= vpif_streamoff,
-+
- 	.vidioc_cropcap         	= vpif_cropcap,
- 	.vidioc_enum_dv_timings         = vpif_enum_dv_timings,
- 	.vidioc_query_dv_timings        = vpif_query_dv_timings,
++	ycmux_mode = 0;
+ 
+ 	ret = v4l2_subdev_call(ch->sd, video, s_stream, 0);
+ 	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
+@@ -404,9 +406,6 @@ static irqreturn_t vpif_channel_isr(int irq, void *dev_id)
+ 	for (i = 0; i < VPIF_NUMBER_OF_OBJECTS; i++) {
+ 		common = &ch->common[i];
+ 		/* skip If streaming is not started in this channel */
+-		if (0 == common->started)
+-			continue;
+-
+ 		/* Check the field format */
+ 		if (1 == ch->vpifparams.std_info.frm_fmt) {
+ 			/* Progressive mode */
+@@ -910,10 +909,8 @@ static int vpif_s_std(struct file *file, void *priv, v4l2_std_id std_id)
+ 
+ 	vpif_dbg(2, debug, "vpif_s_std\n");
+ 
+-	if (common->started) {
+-		vpif_err("streaming in progress\n");
++	if (vb2_is_busy(&common->buffer_queue))
+ 		return -EBUSY;
+-	}
+ 
+ 	/* Call encoder subdevice function to set the standard */
+ 	ch->video.stdid = std_id;
+@@ -998,10 +995,8 @@ static int vpif_s_input(struct file *file, void *priv, unsigned int index)
+ 	if (index >= chan_cfg->input_count)
+ 		return -EINVAL;
+ 
+-	if (common->started) {
+-		vpif_err("Streaming in progress\n");
++	if (vb2_is_busy(&common->buffer_queue))
+ 		return -EBUSY;
+-	}
+ 
+ 	return vpif_set_input(config, ch, index);
+ }
+@@ -1092,11 +1087,8 @@ static int vpif_s_fmt_vid_cap(struct file *file, void *priv,
+ 
+ 	vpif_dbg(2, debug, "%s\n", __func__);
+ 
+-	/* If streaming is started, return error */
+-	if (common->started) {
+-		vpif_dbg(1, debug, "Streaming is started\n");
++	if (vb2_is_busy(&common->buffer_queue))
+ 		return -EBUSY;
+-	}
+ 
+ 	pixfmt = &fmt->fmt.pix;
+ 	/* Check for valid field format */
+@@ -1707,7 +1699,7 @@ static int vpif_suspend(struct device *dev)
+ 				channel0_intr_enable(0);
+ 			}
+ 			if (ch->channel_id == VPIF_CHANNEL1_VIDEO ||
+-			    common->started == 2) {
++				ycmux_mode == 2) {
+ 				enable_channel1(0);
+ 				channel1_intr_enable(0);
+ 			}
+@@ -1739,7 +1731,7 @@ static int vpif_resume(struct device *dev)
+ 				channel0_intr_enable(1);
+ 			}
+ 			if (ch->channel_id == VPIF_CHANNEL1_VIDEO ||
+-			    common->started == 2) {
++				ycmux_mode == 2) {
+ 				enable_channel1(1);
+ 				channel1_intr_enable(1);
+ 			}
+diff --git a/drivers/media/platform/davinci/vpif_capture.h b/drivers/media/platform/davinci/vpif_capture.h
+index 9b7dd06..4960504 100644
+--- a/drivers/media/platform/davinci/vpif_capture.h
++++ b/drivers/media/platform/davinci/vpif_capture.h
+@@ -77,8 +77,6 @@ struct common_obj {
+ 	struct mutex lock;
+ 	/* number of users performing IO */
+ 	u32 io_usrs;
+-	/* Indicates whether streaming started */
+-	u8 started;
+ 	/* Function pointer to set the addresses */
+ 	void (*set_addr) (unsigned long, unsigned long, unsigned long,
+ 			  unsigned long);
 -- 
 1.7.9.5
 
