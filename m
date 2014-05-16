@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972AbaEPSKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 14:10:08 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49292 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757914AbaEPSKF (ORCPT
+	id S1758046AbaEPSL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 14:11:28 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:42747 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937AbaEPSL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 14:10:05 -0400
-Message-ID: <53765475.6040707@hitachi.com>
-Date: Sat, 17 May 2014 03:09:57 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 16 May 2014 14:11:27 -0400
+Date: Fri, 16 May 2014 14:11:25 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+cc: linux@arm.linux.org.uk, lauraa@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
+        iamjoonsoo.kim@lge.com, superlibj8301@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] arm: ioremap: Fix static vm area boundary check.
+In-Reply-To: <1400232920-25079-1-git-send-email-Li.Xiubo@freescale.com>
+Message-ID: <alpine.LFD.2.11.1405161403400.17310@knanqh.ubzr>
+References: <1400232920-25079-1-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-References: <cover.1398958771.git.jpoimboe@redhat.com> <20140505085537.GA32196@gmail.com> <20140505132638.GA14432@treble.redhat.com> <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com> <5368CB6E.3090105@hitachi.com> <20140506082604.31928cb9@gandalf.local.home> <alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/17 1:27), Jiri Kosina wrote:
-> On Tue, 6 May 2014, Steven Rostedt wrote:
-> 
->>> However, I also think if users can accept such freezing wait-time,
->>> it means they can also accept kexec based "checkpoint-restart" patching.
->>> So, I think the final goal of the kpatch will be live patching without
->>> stopping the machine. I'm discussing the issue on github #138, but that is
->>> off-topic. :)
->>
->> I agree with Ingo too. Being conservative at first is the right
->> approach here. We should start out with a stop_machine making sure that
->> everything is sane before we continue. Sure, that's not much different
->> than a kexec, but lets take things one step at a time.
->>
->> ftrace did the stop_machine (and still does for some archs), and slowly
->> moved to a more efficient method. kpatch/kgraft should follow suit.
-> 
-> I don't really agree here.
-> 
-> I actually believe that "lazy" switching kgraft is doing provides a little 
-> bit more in the sense of consistency than stop_machine()-based aproach.
-> 
-> Consider this scenario:
-> 
-> 	void foo()
-> 	{
-> 		for (i=0; i<10000; i++) {
-> 			bar(i);
-> 			something_else(i);
-> 		}
-> 	}
+On Fri, 16 May 2014, Xiubo Li wrote:
 
-In this case, I'd recommend you to add foo() to replacing target
-as dummy. Then, kpatch can ensure foo() is actually not running. :)
+> For each vmalloc area, there is one guard page at the end of it.
+> so the vm->size = PAGE_ALIGN(offset + request size) + guard page size.
 
-> Let's say you want to live-patch bar(). With stop_machine()-based aproach, 
-> you can easily end-up with old bar() and new bar() being called in two 
-> consecutive iterations before the loop is even exited, right? (especially 
-> on preemptible kernel, or if something_else() goes to sleep).
-> 
-> With lazy-switching implemented in kgraft, this can never happen.
-
-And I guess similar thing may happen with kgraft. If old function and
-new function share a non-auto variable and they modify it different way,
-the result will be unexpected by the mutual interference.
-
-Thank you,
-
-> 
-> So I'd like to ask for a little bit more explanation why you think the 
-> stop_machine()-based patching provides more sanity/consistency assurance 
-> than the lazy switching we're doing.
-> 
-> Thanks a lot,
-> 
+Nope.  There is no guard page for statically created vmalloc areas.
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  arch/arm/mm/ioremap.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index be69333..758e8f7 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -49,14 +49,18 @@ static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
+>  	struct vm_struct *vm;
+>  
+>  	list_for_each_entry(svm, &static_vmlist, list) {
+> +		phys_addr_t paddr_end, phys_addr_end;
+> +
+>  		vm = &svm->vm;
+>  		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+>  			continue;
+>  		if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+>  			continue;
+>  
+> -		if (vm->phys_addr > paddr ||
+> -			paddr + size - 1 > vm->phys_addr + vm->size - 1)
+> +		/* The PAGE_SIZE here is vmalloc area's guard page */
+> +		phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - 1;
+> +		paddr_end = paddr + size - 1;
+> +		if (vm->phys_addr > paddr || paddr_end > phys_addr_end)
+>  			continue;
+>  
+>  		return svm;
+> -- 
+> 1.8.4
+> 
