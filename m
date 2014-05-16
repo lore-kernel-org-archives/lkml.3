@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaEPVpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 17:45:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20987 "EHLO mga09.intel.com"
+	id S2992456AbaEPVpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 17:45:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61145 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023AbaEPVnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 17:43:25 -0400
+	id S1753687AbaEPVnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 17:43:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1069,1389772800"; 
-   d="scan'208";a="512987836"
+   d="scan'208";a="533259471"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>,
-        alexander.deucher@amd.com, dri-devel@lists.freedesktop.org
-Subject: [PATCH 7/8] radeon: Out of line radeon_get_ib_value
-Date: Fri, 16 May 2014 14:43:14 -0700
-Message-Id: <1400276595-6965-8-git-send-email-andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/8] list: Out of line INIT_LIST_HEAD and list_del
+Date: Fri, 16 May 2014 14:43:10 -0700
+Message-Id: <1400276595-6965-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
 References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
@@ -25,61 +24,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Saves about 5k of text
+Out of lining these two inlines saves ~21k on my vmlinux
 
-   text	   data	    bss	    dec	    hex	filename
-14080360	2008168	1507328	17595856	10c7dd0	vmlinux-before-radeon
-14074978	2008168	1507328	17590474	10c68ca	vmlinux-radeon
+14152713	2003976	1507328	17664017	10d8811	vmlinux-before-list
+14131431	2008136	1507328	17646895	10d452f	vmlinux-list
 
-Cc: alexander.deucher@amd.com
-Cc: dri-devel@lists.freedesktop.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/gpu/drm/radeon/radeon.h        | 10 +---------
- drivers/gpu/drm/radeon/radeon_device.c |  9 +++++++++
- 2 files changed, 10 insertions(+), 9 deletions(-)
+ include/linux/list.h | 15 ++++-----------
+ lib/Makefile         |  2 +-
+ lib/list.c           | 22 ++++++++++++++++++++++
+ 3 files changed, 27 insertions(+), 12 deletions(-)
+ create mode 100644 lib/list.c
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 6852861..8cae409 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -1032,15 +1032,7 @@ struct radeon_cs_parser {
- 	struct ww_acquire_ctx	ticket;
- };
+diff --git a/include/linux/list.h b/include/linux/list.h
+index ef95941..8297885 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -21,11 +21,8 @@
+ #define LIST_HEAD(name) \
+ 	struct list_head name = LIST_HEAD_INIT(name)
  
--static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
+-static inline void INIT_LIST_HEAD(struct list_head *list)
 -{
--	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
--
--	if (ibc->kdata)
--		return ibc->kdata[idx];
--	return p->ib.ptr[idx];
+-	list->next = list;
+-	list->prev = list;
 -}
--
-+u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
++/* Out of line to save space */
++void INIT_LIST_HEAD(struct list_head *list);
  
- struct radeon_cs_packet {
- 	unsigned	idx;
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 0e770bb..1cbd171 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -112,6 +112,15 @@ bool radeon_is_px(struct drm_device *dev)
- 	return false;
+ /*
+  * Insert a new entry between two known consecutive entries.
+@@ -101,12 +98,8 @@ static inline void __list_del_entry(struct list_head *entry)
+ 	__list_del(entry->prev, entry->next);
  }
  
-+u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
+-static inline void list_del(struct list_head *entry)
+-{
+-	__list_del(entry->prev, entry->next);
+-	entry->next = LIST_POISON1;
+-	entry->prev = LIST_POISON2;
+-}
++/* Out of line to save space */
++void list_del(struct list_head *entry);
+ #else
+ extern void __list_del_entry(struct list_head *entry);
+ extern void list_del(struct list_head *entry);
+diff --git a/lib/Makefile b/lib/Makefile
+index 0cd7b68..8b744f7 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+-	 earlycpio.o
++	 earlycpio.o list.o
+ 
+ obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+ lib-$(CONFIG_MMU) += ioremap.o
+diff --git a/lib/list.c b/lib/list.c
+new file mode 100644
+index 0000000..298768f
+--- /dev/null
++++ b/lib/list.c
+@@ -0,0 +1,22 @@
++#include <linux/list.h>
++#include <linux/module.h>
++
++/*
++ * Out of line versions of common list.h functions that bloat the
++ * kernel too much.
++ */
++
++void INIT_LIST_HEAD(struct list_head *list)
 +{
-+	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
-+
-+	if (ibc->kdata)
-+		return ibc->kdata[idx];
-+	return p->ib.ptr[idx];
++	list->next = list;
++	list->prev = list;
 +}
++EXPORT_SYMBOL(INIT_LIST_HEAD);
 +
- /**
-  * radeon_program_register_sequence - program an array of registers.
-  *
++void list_del(struct list_head *entry)
++{
++	__list_del(entry->prev, entry->next);
++	entry->next = LIST_POISON1;
++	entry->prev = LIST_POISON2;
++}
++EXPORT_SYMBOL(list_del);
 -- 
 1.9.0
 
