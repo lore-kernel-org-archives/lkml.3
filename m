@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894AbaEPKFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:05:43 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:53960 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756596AbaEPKFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:05:41 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 1/2] of: add mundoreader and radxa vendor prefixes
-Date: Fri, 16 May 2014 12:09:04 +0200
-Message-ID: <2536935.asXUKXC7IY@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1399396211-25353-1-git-send-email-b.galvani@gmail.com>
-References: <1399396211-25353-1-git-send-email-b.galvani@gmail.com>
+	id S1756923AbaEPKGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:06:38 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:59060 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596AbaEPKGh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 06:06:37 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+Date: Fri, 16 May 2014 15:36:36 +0530
+Message-ID: <CAKohponY6Nn5kYGyps2SLm5uBbH1JWuJBpzzVD=QOc=oM7crAg@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: Implement free_opp_table function
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Inderpal Singh <inderpal.s@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Beniamino,
+On 16 May 2014 14:39, Inderpal Singh <inderpal.s@samsung.com> wrote:
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> +void dev_pm_opp_free_opp_table(struct device *dev)
+> +{
+> +       struct device_opp *dev_opp = NULL;
+> +       struct dev_pm_opp *opp;
+> +
+> +       /* Hold our list modification lock here */
+> +       mutex_lock(&dev_opp_list_lock);
+> +
+> +       /* Check for existing list for 'dev' */
+> +       dev_opp = find_device_opp(dev);
+> +       if (IS_ERR(dev_opp)) {
+> +               mutex_unlock(&dev_opp_list_lock);
+> +               return;
+> +       }
+> +
+> +       while (!list_empty(&dev_opp->opp_list)) {
+> +               opp = list_entry_rcu(dev_opp->opp_list.next,
+> +                                       struct dev_pm_opp, node);
 
-Am Dienstag, 6. Mai 2014, 19:10:10 schrieb Beniamino Galvani:
-> Add new vendor prefixes for:
-> 
->     * Mundo Reader S.L., a company that produces tablets and e-readers
->     * Radxa, manufacturer of ARM boards
-> 
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+list_for_each_entry_rcu ?
 
-Just FYI, I've sent both patches off, as part of my dt changes pull request on 
-monday.
+> +               list_del_rcu(&opp->node);
+> +               kfree_rcu(opp, head);
+> +       }
+> +
+> +       list_del_rcu(&dev_opp->node);
+> +       mutex_unlock(&dev_opp_list_lock);
+> +       synchronize_rcu();
+> +       kfree(dev_opp);
+> +}
+> +EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
+>  #endif
+> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+> index 0330217..3c29620 100644
+> --- a/include/linux/pm_opp.h
+> +++ b/include/linux/pm_opp.h
+> @@ -50,6 +50,8 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
+>  int dev_pm_opp_disable(struct device *dev, unsigned long freq);
+>
+>  struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
+> +
+> +void dev_pm_opp_free_opp_table(struct device *dev);
+>  #else
+>  static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
+>  {
+> @@ -105,6 +107,10 @@ static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
+>  {
+>         return ERR_PTR(-EINVAL);
+>  }
+> +
+> +void dev_pm_opp_free_opp_table(struct device *dev)
+> +{
+> +}
+>  #endif         /* CONFIG_PM_OPP */
+>
+>  #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
 
-
-Heiko
-
-> ---
-> 
-> v2:
->  - use mundoreader prefix instead of bq as suggested by Heiko Stuebner
-> 
->  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
-> abc3080..53bd92f 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -79,6 +79,7 @@ microchip	Microchip Technology Inc.
->  mosaixtech	Mosaix Technologies, Inc.
->  moxa	Moxa
->  mpl	MPL AG
-> +mundoreader	Mundo Reader S.L.
->  mxicy	Macronix International Co., Ltd.
->  national	National Semiconductor
->  neonode		Neonode Inc.
-> @@ -98,6 +99,7 @@ powervr	PowerVR (deprecated, use img)
->  qca	Qualcomm Atheros, Inc.
->  qcom	Qualcomm Technologies, Inc
->  qnap	QNAP Systems, Inc.
-> +radxa	Radxa
->  raidsonic	RaidSonic Technology GmbH
->  ralink	Mediatek/Ralink Technology Corp.
->  ramtron	Ramtron International
-
+Otherwise looks fine.
