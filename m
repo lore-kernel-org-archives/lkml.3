@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633AbaEPPBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 11:01:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757388AbaEPPBq (ORCPT
+	id S1757472AbaEPPCH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 11:02:07 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:51477 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932419AbaEPPBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 11:01:46 -0400
-Date: Fri, 16 May 2014 08:01:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: DaeSeok Youn <daeseok.youn@gmail.com>, devel <devel@driverdev.osuosl.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lidza Louina <lidza.louina@gmail.com>
-Subject: Re: [PATCH] staging: dgap: implement error handling in
- dgap_tty_register()
-Message-ID: <20140516150145.GA24032@kroah.com>
-References: <20140425092607.GH26890@mwanda>
- <875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
- <535A5535.6000701@compro.net>
- <1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
- <535A7402.1060305@compro.net>
- <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
- <20140426184721.GL26890@mwanda>
- <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
- <CAHb8M2C0w0wC_xEODX41k8wFs-Eq0P02WpAiCO6wdK5SnLZgMQ@mail.gmail.com>
- <20140516095247.GD16255@mwanda>
+	Fri, 16 May 2014 11:01:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516095247.GD16255@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+Date: Fri, 16 May 2014 08:01:47 -0700
+X-Google-Sender-Auth: 468RAC7xVqFUEukckaEtbMZ7TOU
+Message-ID: <CAE9FiQVHG5hPChCYXb2St4WpDhdwvaNwDLXzhRt_T0wbyfnvwg@mail.gmail.com>
+Subject: Re: [RFC Patch Part1 V1 00/30] use irqdomain to dynamically allocate
+ IRQ for IOAPIC pin
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        sfi-devel@simplefirmware.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:52:47PM +0300, Dan Carpenter wrote:
-> On Fri, May 16, 2014 at 06:40:28PM +0900, DaeSeok Youn wrote:
-> > Hi,
-> > 
-> >  This patch haven't been updated over the past 3 weeks.
-> > Will you check for me?
-> 
-> Greg was trying to travel around the world in one month like Jackie
-> Chan.  http://www.imdb.com/title/tt0327437/  He is back to work since
-> yesterday.
+On Fri, May 16, 2014 at 1:05 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
+> There are two issues with this design. First it causes trouble to IOAPIC
+> hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
+> Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
+> IRQ numbers are statically assigned.
+>
+> This patchset tries to enable dynamic IRQ number allocation for IOAPIC
+> by adopting the irqdomain framework, it solves the two issues mentioned
+> above. It also simplifies the IOAPIC driver by consolidating ways to
+> program IOAPIC pins with the irqdomain map interface.
+>
+> We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
+> once the IOAPIC driver has been converted to irqdomain.
+>
+> This patchset applies to v3.15-rc4-260-g38583f095c5a and has been tested
+> on a two socket 64 bit Intel platforms with:
+> 1) ACPI and mpparse enabled (boot successfully)
+> 2) Mpparse enabled with ACPI disabled (boot successfully)
+> 3) ACPI enabled with Mpparse disabled (boot successfully)
 
-Well, I'm home for a day or so before I leave again for a week, so I'm
-having to prioritize things (patches or laundry) and dealing with a pet
-vet emergency, so my ability to get to cleanup patches is way down the
-list...
+Great. I don't need to look into using irqdomain for x86 by myself.
 
-greg k-h
+Thomas put some irq clean up patches in tip irq branch.
+
+Can you rebase your irqdomain/for x86 on top of that?
+Also would be better if you can put your patches in git branch.
+
+Thanks
+
+Yinghai
