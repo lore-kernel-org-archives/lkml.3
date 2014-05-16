@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaEPUxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 16:53:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49225 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752598AbaEPUxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 16:53:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 1/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-Date: Fri, 16 May 2014 23:10:30 +0200
-Message-ID: <2004121.oyWgtUAlR6@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1405161023110.1224-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1405161023110.1224-100000@iolanthe.rowland.org>
+	id S1755315AbaEPUzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 16:55:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59410 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884AbaEPUzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 16:55:03 -0400
+Message-ID: <53767AE6.5020202@zytor.com>
+Date: Fri, 16 May 2014 13:53:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
+CC: dave.hansen@linux.intel.com, tglx@linutronix.de, x86@kernel.org,
+        peterz@infradead.org, gleb@redhat.com, kvm@vger.kernel.org,
+        pbonzini@redhat.com, rostedt@goodmis.org
+Subject: Re: [PATCH] x86: fix page fault tracing when KVM guest support enabled
+References: <20140516194515.D859CC11@viggo.jf.intel.com>
+In-Reply-To: <20140516194515.D859CC11@viggo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 16, 2014 10:27:37 AM Alan Stern wrote:
-> On Fri, 16 May 2014, Rafael J. Wysocki wrote:
+On 05/16/2014 12:45 PM, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 > 
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > resume all runtime-suspended devices during system suspend, mostly
-> > because those devices may need to be reprogrammed due to different
-> > wakeup settings for system sleep and for runtime PM.
-> > 
-> > For some devices, though, it's OK to remain in runtime suspend 
-> > throughout a complete system suspend/resume cycle (if the device was in
-> > runtime suspend at the start of the cycle).  We would like to do this
-> > whenever possible, to avoid the overhead of extra power-up and power-down
-> > events.
-> > 
-> > However, problems may arise because the device's descendants may require
-> > it to be at full power at various points during the cycle.  Therefore the
-> > most straightforward way to do this safely is if the device and all its
-> > descendants can remain runtime suspended until the complete stage of
-> > system resume.
-> > 
-> > To this end, introduce a new device PM flag, power.direct_complete
-> > and modify the PM core to use that flag as follows.
-> > 
-> > If the ->prepare() callback of a device returns a positive number,
-> > the PM core will regard that as an indication that it may leave the
-> > device runtime-suspended.  It will then check if the system power
-> > transition in progress is a suspend (and not hibernation in particular)
-> > and if the device is, indeed, runtime-suspended.  In that case, the PM
-> > core will set the device's power.direct_complete flag.  Otherwise it
-> > will clear power.direct_complete for the device and it also will later
-> > clear it for the device's parent (if there's one).
-> > 
-> > Next, the PM core will not invoke the ->suspend() ->suspend_late(),
-> > ->suspend_irq(), ->resume_irq(), ->resume_early(), or ->resume()
-> > callbacks for all devices having power.direct_complete set.  It
-> > will invoke their ->complete() callbacks, however, and those
-> > callbacks are then responsible for resuming the devices as
-> > appropriate, if necessary.  For example, in some cases they may
-> > need to queue up runtime resume requests for the devices using
-> > pm_request_resume().
-> > 
-> > Changelog partly based on an Alan Stern's description of the idea
-> > (http://marc.info/?l=linux-pm&m=139940466625569&w=2).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> I noticed on some of my systems that page fault tracing doesn't
+> work:
 > 
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 	cd /sys/kernel/debug/tracing
+> 	echo 1 > events/exceptions/enable
+> 	cat trace;
+> 	# nothing shows up
 > 
-> And likewise for the documentation patches.
+> I eventually traced it down to CONFIG_KVM_GUEST.  At least in a
+> KVM VM, enabling that option breaks page fault tracing, and
+> disabling fixes it.  I tried on some old kernels and this does
+> not appear to be a regression: it never worked.
+> 
+> There are two page-fault entry functions today.  One when tracing
+> is on and another when it is off.  The KVM code calls do_page_fault()
+> directly instead of calling the traced version:
+> 
+>> dotraplinkage void __kprobes
+>> do_async_page_fault(struct pt_regs *regs, unsigned long
+>> error_code)
+>> {
+>>         enum ctx_state prev_state;
+>>
+>>         switch (kvm_read_and_reset_pf_reason()) {
+>>         default:
+>>                 do_page_fault(regs, error_code);
+>>                 break;
+>>         case KVM_PV_REASON_PAGE_NOT_PRESENT:
+> 
+> I'm also having problems with the page fault tracing on bare
+> metal (same symptom of no trace output).  I'm unsure if it's
+> related.
+> 
+> Steven had an alternative to this which has zero overhead when
+> tracing is off where this includes the standard noops even when
+> tracing is disabled.  I'm unconvinced that the extra complexity
+> of his apporach:
+> 
+> 	http://lkml.kernel.org/r/20140508194508.561ed220@gandalf.local.home
+> 
+> is worth it, expecially considering that the KVM code is already
+> making page fault entry slower here.  This solution is
+> dirt-simple.
+> 
+> Gleb, please apply.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: x86@kernel.org
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: kvm@vger.kernel.org
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Thanks a lot!
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+
+If Gleb and Paolo are okay with it, I am.
+
+	-hpa
+
+
+
 
