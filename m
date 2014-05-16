@@ -1,85 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaEPKwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:52:54 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:19605 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302AbaEPKww (ORCPT
+	id S932357AbaEPKy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:54:58 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:60669 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340AbaEPKy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:52:52 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-16-5375ee025aae
-Message-id: <5375EDFD.1020708@samsung.com>
-Date: Fri, 16 May 2014 12:52:45 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Rahul Sharma <rahul.sharma@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line on
- Exynos SoCs
-References: <1400175151-27779-1-git-send-email-t.figa@samsung.com>
- <1400175151-27779-4-git-send-email-t.figa@samsung.com>
- <CAPdUM4P7Z1eLVKuc0N1iPaekM_7kNv7KCve2MgrEziszfnzz7A@mail.gmail.com>
-In-reply-to: <CAPdUM4P7Z1eLVKuc0N1iPaekM_7kNv7KCve2MgrEziszfnzz7A@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xy7pM70qDDaZ8VLGY+vAJm8X8I+dY
-	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZLH2yF12i6XXLzJZPJ1wkc1i0dYv7BZTFh1mtWjde4Td
-	YtWuP4wW7X/3sjnweayZt4bRY+esu+wem1Z1snncubaHzWPzknqPvi2rGD0+b5ILYI/isklJ
-	zcksSy3St0vgymjZ8Iq94A57xZw+zwbGPtYuRk4OCQETicfHH7ND2GISF+6tZ+ti5OIQEljK
-	KHHkby+U85lRYtKLmWwgVbwCWhIfnq4H62ARUJVY8n862CQ2ATWJzw2PwGr4gWrWNF1n6WLk
-	4BAViJB4fEEIolVQ4sfkeywgtoiAtkTDsRaw+cwCb1kkVq34ADZHWCBWovnrCnaIxYcYJbY8
-	a2UESXAKBEvMuH8UrJtZQEdif+s0NghbXmLzmrfMExgFZyFZMgtJ2SwkZQsYmVcxiqaWJhcU
-	J6XnGukVJ+YWl+al6yXn525ihMTV1x2MS49ZHWIU4GBU4uFlCC0NFmJNLCuuzAW6hoNZSYTX
-	7RVQiDclsbIqtSg/vqg0J7X4ECMTB6dUA+OquQeUr655OI/7kd7q5xbz3ux/nzQvYFO8qd+6
-	u4EPmvZ7Lmtn9PKZM9lMXIa/6/mRWZtv2jdwMlQ+0Av4IHP+Uf5/U6t3blWuvRZLfrE/X5BY
-	FsOz2cbnaZOdglEmR/f18FM+Ujv2+x1U9BS6efzw2bS9O0QvvX5SedpM50Pir5nb4jZpqpko
-	sRRnJBpqMRcVJwIAbAe7xIkCAAA=
+	Fri, 16 May 2014 06:54:56 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
+To: frowand.list@gmail.com
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <53757D25.1060005@gmail.com>
+References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org>
+	<1399993115-21552-3-git-send-email-grant.likely@linaro.org>
+	<53757D25.1060005@gmail.com>
+Date: Fri, 16 May 2014 11:54:44 +0100
+Message-Id: <20140516105444.C1DB7C42277@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rahul,
-
-On 16.05.2014 12:39, Rahul Sharma wrote:
-> [snip]
->> +       gate->lock = &clkout_lock;
->> +
->> +       mux->reg = reg + EXYNOS_PMU_DEBUG_REG;
->> +       mux->mask = EXYNOS_CLKOUT_MUX_MASK;
->> +       mux->shift = EXYNOS_CLKOUT_MUX_SHIFT;
->> +       mux->lock = &clkout_lock;
->> +
->> +       clk = clk_register_composite(NULL, "clkout", parent_names,
->> +                                       parent_count, &mux->hw,
->> +                                       &clk_mux_ops, NULL, NULL, &gate->hw,
->> +                                       &clk_gate_ops, 0);
->> +       if (IS_ERR(clk))
->> +               goto err_unmap;
->> +
+On Thu, 15 May 2014 19:51:17 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
+> On 5/13/2014 7:58 AM, Grant Likely wrote:
+> > Make of_find_node_by_path() handle aliases as prefixes. To make this
+> > work the name search is refactored to search by path component instead
+> > of by full string. This should be a more efficient search, and it makes
+> > it possible to start a search at a subnode of a tree.
+> > 
+> > Signed-off-by: David Daney <david.daney@cavium.com>
+> > Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+> > [grant.likely: Rework to not require allocating at runtime]
+> > Acked-by: Rob Herring <robh@kernel.org>
+> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> > ---
+> >  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+> >  1 file changed, 56 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index 6e240698353b..60089b9a3014 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -771,9 +771,38 @@ struct device_node *of_get_child_by_name(const struct device_node *node,
+> >  }
+> >  EXPORT_SYMBOL(of_get_child_by_name);
+> >  
+> > +static struct device_node *__of_find_node_by_path(struct device_node *parent,
+> > +						const char *path)
+> > +{
+> > +	struct device_node *child;
+> > +	int len = strchrnul(path, '/') - path;
+> > +
+> > +	if (!len)
+> > +		return parent;
 > 
-> Hi Tomasz,
+> (!len) is true if the the final character of the path passed into of_find_node_by_path()
+> was "/".  Strictly speaking, ->full_name will never end with "/", so the return value
+> should be NULL, indicating that the match fails.
+
+Ah, good catch. I should add a test case for that.
+
 > 
-> Do we really need a composite clock here? How about registering
-> a mux and a gate separately?
+> > +
+> > +	for_each_child_of_node(parent, child) {
+> > +		const char *name = strrchr(child->full_name, '/');
+> > +		if (WARN(!name, "malformed device_node %s\n", child->full_name))
+> > +			continue;
+> > +		name++;
+> 
+> Why go to the effort of finding the final component of child->full_name instead
+> of just using child->name?
 
-What's wrong with a composite clock? It simplifies the code as just a
-single clock needs to be registered. I don't see any drawbacks compared
-to registering two clocks separately.
+Because child->name and the final component of child->full_name is not
+the same thing. child->name has the unit address stripped off. It is
+part of how OpenFirmware expects to be used. New drivers are never
+supposed to be matching by node name, but I don't currently have a good
+way to go through any driver depending on the OpenFirmware behaviour.
 
-Best regards,
-Tomasz
+Ideally I'd like to get rid of the difference.
+
+> 
+> > +		if (strncmp(path, name, len) == 0 && (strlen(name) == len))
+> > +			return child;
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> >  /**
+> >   *	of_find_node_by_path - Find a node matching a full OF path
+> >   *	@path:	The full path to match
+> > + *	@path: Either the full path to match, or if the path does not
+> 
+> Delete the old @path description.
+
+Oops, thanks.
+
+> 
+> 
+> > + *	       start with '/', the name of a property of the /aliases
+> > + *	       node (an alias).  In the case of an alias, the node
+> > + *	       matching the alias' value will be returned.
+> > + *
+> > + *	Valid paths:
+> > + *		/foo/bar	Full path
+> > + *		foo		Valid alias
+> > + *		foo/bar		Valid alias + relative path
+> >   *
+> >   *	Returns a node pointer with refcount incremented, use
+> >   *	of_node_put() on it when done.
+> > @@ -781,13 +810,36 @@ EXPORT_SYMBOL(of_get_child_by_name);
+> >  struct device_node *of_find_node_by_path(const char *path)
+> >  {
+> >  	struct device_node *np = of_allnodes;
+> > +	struct property *pp;
+> >  	unsigned long flags;
+> >  
+> > +	/* The path could begin with an alias */
+> > +	if (*path != '/') {
+> > +		char *p = strchrnul(path, '/');
+> > +		int len = p - path;
+> > +
+> > +		/* of_aliases must not be NULL */
+> > +		if (!of_aliases)
+> > +			return NULL;
+> > +
+> > +		np = NULL;
+> > +		for_each_property_of_node(of_aliases, pp) {
+> > +			if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
+> > +				np = of_find_node_by_path(pp->value);
+> > +				break;
+> > +			}
+> > +		}
+> > +		if (!np)
+> > +			return NULL;
+> > +		path = p;
+> > +	}
+> > +
+> > +	/* Step down the tree matching path components */
+> >  	raw_spin_lock_irqsave(&devtree_lock, flags);
+> > -	for (; np; np = np->allnext) {
+> > -		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
+> > -		    && of_node_get(np))
+> > -			break;
+> > +	while (np && *path == '/') {
+> > +		path++; /* Increment past '/' delimiter */
+> > +		np = __of_find_node_by_path(np, path);
+> > +		path = strchrnul(path, '/');
+> >  	}
+> >  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> >  	return np;
+> > 
+> 
+
