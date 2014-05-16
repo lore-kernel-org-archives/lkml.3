@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405AbaEPMxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:53:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49565 "EHLO
+	id S1757391AbaEPMxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:53:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49542 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753680AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1752915AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Hugh Dickins" <hughd@google.com>,
-        "Dave Jones" <davej@redhat.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Michele Baldessari" <michele@acksyn.org>,
+        "Johan Hovold" <jhovold@gmail.com>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.859581880@decadent.org.uk>
+Message-ID: <lsq.1400244441.924282510@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 19/34] mm: make fixup_user_fault() check the vma
- access rights too
+Subject: [PATCH 3.2 08/34] USB: serial: ftdi_sio: add id for Brainboxes
+ serial cards
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,53 +34,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
+commit efe26e16b1d93ac0085e69178cc18811629e8fc5 upstream.
 
-fixup_user_fault() is used by the futex code when the direct user access
-fails, and the futex code wants it to either map in the page in a usable
-form or return an error.  It relied on handle_mm_fault() to map the
-page, and correctly checked the error return from that, but while that
-does map the page, it doesn't actually guarantee that the page will be
-mapped with sufficient permissions to be then accessed.
+Custom VID/PIDs for Brainboxes cards as reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=1071914
 
-So do the appropriate tests of the vma access rights by hand.
-
-[ Side note: arguably handle_mm_fault() could just do that itself, but
-  we have traditionally done it in the caller, because some callers -
-  notably get_user_pages() - have been able to access pages even when
-  they are mapped with PROT_NONE.  Maybe we should re-visit that design
-  decision, but in the meantime this is the minimal patch. ]
-
-Found by Dave Jones running his trinity tool.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/memory.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1852,12 +1852,17 @@ int fixup_user_fault(struct task_struct
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	vm_flags_t vm_flags;
- 	int ret;
- 
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
- 
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -920,6 +920,39 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	/* Cressi Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
++	/* Brainboxes Devices */
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1326,3 +1326,40 @@
+  * Manufacturer: Cressi
+  */
+ #define FTDI_CRESSI_PID		0x87d0
 +
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
++/*
++ * Brainboxes devices
++ */
++#define BRAINBOXES_VID			0x05d1
++#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
++#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
++#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
++#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
++#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
++#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
++#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
++#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
++#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
++#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
++#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
++#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
++#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
++#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
++#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
++#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
 
