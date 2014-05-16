@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaEPEYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 00:24:44 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35813 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaEPEYn (ORCPT
+	id S1753530AbaEPEff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 00:35:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42475 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaEPEfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 00:24:43 -0400
-Message-ID: <53759303.40409@linux.vnet.ibm.com>
-Date: Fri, 16 May 2014 12:24:35 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 16 May 2014 00:35:34 -0400
+Date: Thu, 15 May 2014 21:35:32 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140516043532.GA14149@kroah.com>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+ <20140515013245.GA1764@kroah.com>
+ <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+ <20140515031527.GA146352@ubuntu-hedt>
+ <20140515040032.GA6702@kroah.com>
+ <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+ <20140515140856.GA17453@kroah.com>
+ <20140515174254.GM21073@ubuntumail>
+ <20140515221551.GB13306@kroah.com>
+ <20140516014959.GD22591@ubuntumail>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-References: <20140513094737.GU30445@twins.programming.kicks-ass.net> <53721FD4.6060300@redhat.com> <20140513142328.GE2485@laptop.programming.kicks-ass.net> <53731D12.7040804@linux.vnet.ibm.com> <20140514094426.GF30445@twins.programming.kicks-ass.net> <5374387E.4080802@linux.vnet.ibm.com> <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net> <53748A5D.6070605@linux.vnet.ibm.com> <20140515115751.GK30445@twins.programming.kicks-ass.net> <5375768F.1010000@linux.vnet.ibm.com> <1400208690.7133.11.camel@marge.simpson.net>
-In-Reply-To: <1400208690.7133.11.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051604-5564-0000-0000-00000DB5C1F8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516014959.GD22591@ubuntumail>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Mike :)
-
-On 05/16/2014 10:51 AM, Mike Galbraith wrote:
-> On Fri, 2014-05-16 at 10:23 +0800, Michael wang wrote:
+On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
+> > I think having to pick and choose what device nodes you want in a
+> > container is a good thing.  Becides, you would have to do the same thing
+> > in the kernel anyway, what's wrong with userspace making the decision
+> > here, especially as it knows exactly what it wants to do much more so
+> > than the kernel ever can.
 > 
->> But we found that one difference when group get deeper is the tasks of
->> that group become to gathered on CPU more often, some time all the
->> dbench instances was running on the same CPU, this won't happen for l1
->> group, may could explain why dbench could not get CPU more than 100% any
->> more.
-> 
-> Right.  I played a little (sane groups), saw load balancing as well.
+> For 'real' devices that sounds sensible.  The thing about loop devices
+> is that we simply want to allow a container to say "give me a loop
+> device to use" and have it receive a unique loop device (or 3), without
+> having to pre-assign them.  I think that would be cleaner to do using
+> a pseudofs and loop-control device, rather than having to have a
+> daemon in userspace on the host farming those out in response to
+> some, I don't know, dbus request?
 
-Yeah, now we found that even l2 groups will face the same issue, allow
-me to re-list the details here:
+I agree that loop devices would be nice to have in a container, and that
+the existing loop interface doesn't really lend itself to that.  So
+create a new type of thing that acts like a loop device in a container.
+But don't try to mess with the whole driver core just for a single type
+of device.
 
-Firstly do workaround (10 times latency):
-	echo 240000000 > /proc/sys/kernel/sched_latency_ns
-        echo NO_GENTLE_FAIR_SLEEPERS > /sys/kernel/debug/sched_features
-
-This workaround may related to another issue about vruntime bonus for
-sleeper, but let's put it down currently and focus on the gather issue.
-
-Create groups like:
-	mkdir /sys/fs/cgroup/cpu/A
-	mkdir /sys/fs/cgroup/cpu/B
-	mkdir /sys/fs/cgroup/cpu/C
-
-	mkdir /sys/fs/cgroup/cpu/l1
-	mkdir /sys/fs/cgroup/cpu/l1/A
-	mkdir /sys/fs/cgroup/cpu/l1/B
-	mkdir /sys/fs/cgroup/cpu/l1/C
-
-Run workload like (6 is half of the CPUS on my box):
-	echo $$ > /sys/fs/cgroup/cpu/A/tasks ; dbench 6
-	echo $$ > /sys/fs/cgroup/cpu/B/tasks ; stress 6
-	echo $$ > /sys/fs/cgroup/cpu/C/tasks ; stress 6
-
-Check top, each dbench instance got around 45%, totally around 270%,
-this is close to the case when only dbench running (300%) since we use
-the workaround, otherwise we will see it to be around 100%, but that's
-another issue...
-
-By sample /proc/sched_debug, rarely see more than 2 dbench instances on
-same rq.
-
-Now re-run workload like:
-	echo $$ > /sys/fs/cgroup/cpu/l1/A/tasks ; dbench 6
-	echo $$ > /sys/fs/cgroup/cpu/l1/B/tasks ; stress 6
-	echo $$ > /sys/fs/cgroup/cpu/l1/C/tasks ; stress 6
-
-Check top, each dbench instance got around 20%, totally around 120%,
-sometime dropped under 100%, and dbench throughput dropped.
-
-By sample /proc/sched_debug, frequently see 4 or 5 dbench instances on
-same rq.
-
-So just one level deeper from l1 to l2 and such a big difference, and
-groups with same shares not equally share the resources...
-
-BTW, by bind each dbench instances to different CPU, dbench in l2 groups
-will regain all the CPU% which is 300%.
-
-I'll keep investigation and try to figure out why l2 group's tasks
-starting to gather, please let me know if there are any suggestions ;-)
-
-Regards,
-Michael Wang
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+greg k-h
