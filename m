@@ -1,144 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaEPGPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 02:15:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534AbaEPGPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 02:15:20 -0400
-Date: Fri, 16 May 2014 02:14:50 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, chegu_vinod@hp.com, mingo@kernel.org,
-        umgwanakikbuti@gmail.com
-Subject: [PATCH RFC] sched,numa: move tasks to preferred_node at wakeup time
-Message-ID: <20140516021450.473361ea@annuminas.surriel.com>
-In-Reply-To: <20140516001332.67f91af2@annuminas.surriel.com>
-References: <20140516001332.67f91af2@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1754469AbaEPGTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 02:19:23 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:51308 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaEPGTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 02:19:22 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH 04/20] perf tools: Support event grouping in hpp ->sort()
+References: <1399876133-17963-1-git-send-email-namhyung@kernel.org>
+	<1399876133-17963-5-git-send-email-namhyung@kernel.org>
+	<20140515114315.GB4009@krava.brq.redhat.com>
+Date: Fri, 16 May 2014 15:19:19 +0900
+In-Reply-To: <20140515114315.GB4009@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Thu, 15 May 2014 13:43:15 +0200")
+Message-ID: <87mweikzyw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do not have performance numbers in yet, but with this patch on
-top of all the previous ones, I see RMA/LMA ratios (as reported
-by numatop) drop well below 1 for a SPECjbb2013, most of the time.
+Hi Jiri,
 
-In other words, we actually manage to run the processes where
-their memory is most of the time. Sometimes tasks get moved away
-from their memory for a bit, but I suspect this patch is a move
-in the right direction.
+On Thu, 15 May 2014 13:43:15 +0200, Jiri Olsa wrote:
+> On Mon, May 12, 2014 at 03:28:37PM +0900, Namhyung Kim wrote:
+>
+> SNIP
+>
+>> +static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
+>> +		       hpp_field_fn get_field)
+>> +{
+>> +	s64 ret;
+>> +	int i, nr_members;
+>> +	struct perf_evsel *evsel;
+>> +	struct hist_entry *pair;
+>> +	u64 *fields_a, *fields_b;
+>> +
+>> +	ret = field_cmp(get_field(a), get_field(b));
+>> +	if (ret || !symbol_conf.event_group)
+>> +		return ret;
+>> +
+>> +	evsel = hists_to_evsel(a->hists);
+>> +	if (!perf_evsel__is_group_event(evsel))
+>> +		return ret;
+>> +
+>> +	nr_members = evsel->nr_members;
+>> +	fields_a = calloc(sizeof(*fields_a), nr_members);
+>> +	fields_b = calloc(sizeof(*fields_b), nr_members);
+>> +
+>> +	if (!fields_a || !fields_b)
+>> +		goto out;
+>> +
+>> +	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
+>> +		evsel = hists_to_evsel(pair->hists);
+>> +		fields_a[perf_evsel__group_idx(evsel)] = get_field(pair);
+>> +	}
+>> +
+>> +	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
+>> +		evsel = hists_to_evsel(pair->hists);
+>> +		fields_b[perf_evsel__group_idx(evsel)] = get_field(pair);
+>> +	}
+>> +
+>> +	for (i = 1; i < nr_members; i++) {
+>> +		ret = fields_a[i] - fields_b[i];
+>
+> should we call here ^^^call  field_cmp ?
 
-With luck I will have performance numbers this afternoon (EST).
+Right!  Will fix.
 
----8<---
-
-Subject: sched,numa: move tasks to preferred_node at wakeup time
-
-If a task is caught running off-node at wakeup time, check if it can
-be moved to its preferred node without creating a load imbalance.
-
-This is only done when the system has already decided not to do an
-affine wakeup.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 75 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0381b11..bb5b048 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4178,6 +4178,79 @@ static int wake_wide(struct task_struct *p)
- 	return 0;
- }
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+static int numa_balance_on_wake(struct task_struct *p, int prev_cpu)
-+{
-+	long load, src_load, dst_load;
-+	int cur_node = cpu_to_node(prev_cpu);
-+	struct numa_group *numa_group = ACCESS_ONCE(p->numa_group);
-+	struct sched_domain *sd;
-+	struct task_numa_env env = {
-+		.p = p,
-+		.best_task = NULL,
-+		.best_imp = 0,
-+		.best_cpu = -1
-+	};
-+
-+	if (!sched_feat(NUMA))
-+		return prev_cpu;
-+
-+	if (p->numa_preferred_nid == -1)
-+		return prev_cpu;
-+
-+	if (p->numa_preferred_nid == cur_node);
-+		return prev_cpu;
-+
-+	if (numa_group && node_isset(cur_node, numa_group->active_nodes))
-+		return prev_cpu;
-+
-+	sd = rcu_dereference(per_cpu(sd_numa, env.src_cpu));
-+	if (sd)
-+		env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
-+
-+	/*
-+	 * Cpusets can break the scheduler domain tree into smaller
-+	 * balance domains, some of which do not cross NUMA boundaries.
-+	 * Tasks that are "trapped" in such domains cannot be migrated
-+	 * elsewhere, so there is no point in (re)trying.
-+	 */
-+	if (unlikely(!sd)) {
-+		p->numa_preferred_nid = cur_node;
-+		return prev_cpu;
-+	}
-+
-+	/*
-+	 * Only allow p to move back to its preferred nid if
-+	 * that does not create an imbalance that would cause
-+	 * the load balancer to move a task around later.
-+	 */
-+	env.src_nid = cur_node;
-+	env.dst_nid = p->numa_preferred_nid;
-+
-+	update_numa_stats(&env.src_stats, env.src_nid);
-+	update_numa_stats(&env.dst_stats, env.dst_nid);
-+
-+	dst_load = env.dst_stats.load;
-+	src_load = env.src_stats.load;
-+
-+	/* XXX missing power terms */
-+	load = task_h_load(p);
-+	dst_load += load;
-+	src_load -= load;
-+
-+	if (load_too_imbalanced(env.src_stats.load, env.dst_stats.load,
-+				src_load, dst_load, &env))
-+		return prev_cpu;
-+
-+	return cpumask_first(cpumask_of_node(p->numa_preferred_nid));
-+}
-+#else
-+static int numa_balance_on_wake(struct task_struct *p, int prev_cpu)
-+{
-+	return prev_cpu;
-+}
-+#endif
-+
- static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
-@@ -4440,6 +4513,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 
- 	if (affine_sd && cpu != prev_cpu && wake_affine(affine_sd, p, sync))
- 		prev_cpu = cpu;
-+	else if (sd_flag & SD_WAKE_AFFINE)
-+		prev_cpu = numa_balance_on_wake(p, prev_cpu);
- 
- 	if (sd_flag & SD_BALANCE_WAKE) {
- 		new_cpu = select_idle_sibling(p, prev_cpu);
+Thanks,
+Namhyung
