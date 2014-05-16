@@ -1,81 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775AbaEPRGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:06:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46625 "EHLO mga02.intel.com"
+	id S1757909AbaEPRHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:07:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17852 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756924AbaEPRFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:05:45 -0400
+	id S1757884AbaEPRHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:07:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,1068,1389772800"; 
-   d="scan'208";a="512869428"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 8/9] tools, perf: Make srcline output address with -v
-Date: Fri, 16 May 2014 10:05:37 -0700
-Message-Id: <1400259938-3436-9-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
-References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
+   d="scan'208";a="541694018"
+Message-ID: <537645D1.7020403@intel.com>
+Date: Fri, 16 May 2014 10:07:29 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: gather_hugetbl_stats() doesn't use huge_pte...() variants
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
-
-When -v is specified always print the hex address for the srcline.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/srcline.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 36a7aff..a22be7c 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,6 +258,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
- 	unsigned line = 0;
- 	char *srcline;
- 	const char *dso_name;
-+	char astr[50];
-+
-+	if (verbose)
-+		snprintf(astr, sizeof astr, " %#lx", addr);
-+	else
-+		astr[0] = 0;
- 
- 	if (!dso->has_srcline)
- 		goto out;
-@@ -276,7 +282,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
- 	if (!addr2line(dso_name, addr, &file, &line, dso))
- 		goto out;
- 
--	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
-+	if (line == 0) {
-+		free(file);
-+		goto fallback;
-+	}
-+
-+	if (asprintf(&srcline, "%s:%u%s", basename(file), line, astr) < 0) {
- 		free(file);
- 		goto out;
- 	}
-@@ -291,9 +302,10 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
-+fallback:
- 	if (sym) {
--		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
--					addr - sym->start) < 0)
-+		if (asprintf(&srcline, "%s+%ld%s", show_sym ? sym->name : "",
-+					addr - sym->start, astr) < 0)
- 			return SRCLINE_UNKNOWN;
- 	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
- 		return SRCLINE_UNKNOWN;
--- 
-1.9.0
-
+Is the numa maps gather_hugetbl_stats() buggy on s390?  It uses the
+normal pte_ variants.
