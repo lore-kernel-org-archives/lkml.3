@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405AbaEPNMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:12:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754423AbaEPNMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:12:15 -0400
-Message-ID: <537604DD.40506@redhat.com>
-Date: Fri, 16 May 2014 14:30:21 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756075AbaEPNQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:16:58 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:39536 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916AbaEPNQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 09:16:57 -0400
+Date: Fri, 16 May 2014 09:16:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Richard Lee <superlibj8301@gmail.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, iamjoonsoo.kim@lge.com,
+        santosh.shilimkar@ti.com, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Li.Xiubo@freescale.com,
+        robherring2@gmail.com, linux-kernel@vger.kernel.org,
+        lauraa@codeaurora.org
+Subject: Re: [PATCHv2] ARM: ioremap: Fix static vm area boundary checking.
+In-Reply-To: <CAHPCO9GrwRczw2R9nZDL0tDdYxSHV0f2aDhFSat+xhhiWaYbUg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405160910220.17310@knanqh.ubzr>
+References: <1400142562-9111-1-git-send-email-superlibj8301@gmail.com> <alpine.LFD.2.11.1405151325250.17310@knanqh.ubzr> <CAHPCO9GrwRczw2R9nZDL0tDdYxSHV0f2aDhFSat+xhhiWaYbUg@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: ching <ching2048@areca.com.tw>
-CC: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1.2 17/16] arcmsr: fixed calling scsi_scan_host after
- all initialization done
-References: <1400068509.6957.62.camel@localhost>	 <5373675B.5030102@redhat.com> <1400150952.7179.2.camel@localhost>	 <5374AA96.7070206@redhat.com> <1400240784.5489.14.camel@localhost>
-In-Reply-To: <1400240784.5489.14.camel@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 01:46 PM, ching wrote:
-> Hi Tomas,
->
-> Although in http://www.makelinux.net/ldd3/chp-7-sect-6, there said to flush the shared workqueue requires calling function
-> flush_scheduled_work.
->
-> But in kernel workqueue.c, there are comment of flush_scheduled_work said that 
-> "In most situations flushing the entire workqueue is overkill; you merely need to know that a particular work item isn't
-> queued and isn't running."
->
-> In such cases use flush_work is OK.
-> This can be proved in so many kernel device driver calling flush_work instead of flush_scheduled_work.
+On Fri, 16 May 2014, Richard Lee wrote:
 
-Yes, I think now this is correct, I have no more objections.
+> On Fri, May 16, 2014 at 1:28 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > On Thu, 15 May 2014, Richard Lee wrote:
+> >
+> >> Static vm area boundary check:
+> >>
+> >>       paddr1 --->|       |
+> >>                  |       |
+> >>                  |-------| <-\--- svm->vm->addr(is page aligned)
+> >>       paddr2 --->|       |    |
+> >>                  |     --| <--|-- svm->vm->phys_addr
+> >>                  |       |    |
+> >>       paddr3 --->|       |    |
+> >>                  |       |    |
+> >>                  |-------| <--|-- next page boundary
+> >>                  |       |    |
+> >>       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
+> >>                  |       |    |
+> >>                  |       |    |
+> >> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
+> >>                  | ///// |    |
+> >>       paddr5 --->| guard |    |
+> >>                  | page  |    |
+> >>                  | ///// |    |
+> >>                   -------  <-/--- svm->vm->addr + svm->vm_size
+> >>
+> >> <1> If the paddr == paddr1, then continue;
+> >> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
+> >>     then continue;
+> >> <3> if the paddr >= paddr5 then continue;
+> >>
+> >> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
+> >
+> > instead of doing this repeatedly, why not simply ensure the recorded
+> > static vm information is already page aligned in the first place?
+> >
+> 
+> Sorry, I'm not very sure what vm information you meant here.
+> 
+> And the 'svm->vm->addr' and 'svm->vm->size' are all page aligned
+> already, but we cannot make sure that the 'paddr' and
+> 'svm->vm->phys_addr' are page aligned.
 
-Thanks, Tomas,
+If ->vm->addr is page aligned, then ->vm->phys_addr must be page aligned 
+as well.  The hardware does virtual to physical mappings on a page 
+granularity.  It is then not important to align paddr for the purpose of 
+the search.
 
->
->
-> On Thu, 2014-05-15 at 13:52 +0200, Tomas Henzl wrote:
->> On 05/15/2014 12:49 PM, ching wrote:
->>> Hi Tomas,
->>>
->>> Then I will have a patch 18/16 to replace flush_scheduled_work with flush_work.
->>> Thanks for your advice.
->> Here http://www.makelinux.net/ldd3/chp-7-sect-6 is a short text about workqueue,
->> the use of schedule_work in your sources means that you use the global queue.
->> If that is true, flush_scheduled_work is the right choice.
->>
->>> On Wed, 2014-05-14 at 14:53 +0200, Tomas Henzl wrote:
->>>> On 05/14/2014 01:55 PM, ching wrote:
->>>>> From: Ching<ching2048@areca.com.tw>
->>>>>
->>>>> This is a new patch after patch v1.1 series.
->>>>>
->>>>> Fixed calling scsi_scan_host until all initialization are done.
->>>>> And fixed error path free allocated resource.
->>>>>
->>>>> Signed-off-by: Ching<ching2048@areca.com.tw>
->>>>> ---
->>>>>
->>>>> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
->>>>> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-08 17:45:34.000000000 +0800
->>>>> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-14 18:29:30.000000000 +0800
->>>>> @@ -112,6 +112,7 @@ static void arcmsr_hbaD_message_isr(stru
->>>>>  static void arcmsr_hardware_reset(struct AdapterControlBlock *acb);
->>>>>  static const char *arcmsr_info(struct Scsi_Host *);
->>>>>  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb);
->>>>> +static void arcmsr_free_irq(struct pci_dev *, struct AdapterControlBlock *);
->>>>>  static int arcmsr_adjust_disk_queue_depth(struct scsi_device *sdev,
->>>>>  					  int queue_depth, int reason)
->>>>>  {
->>>>> @@ -778,12 +779,11 @@ static int arcmsr_probe(struct pci_dev *
->>>>>  	}
->>>>>  	error = scsi_add_host(host, &pdev->dev);
->>>>>  	if(error){
->>>>> -		goto RAID_controller_stop;
->>>>> +		goto free_ccb_pool;
->>>>>  	}
->>>>>  	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
->>>>>  		goto scsi_host_remove;
->>>>>  	arcmsr_iop_init(acb);
->>>>> -    	scsi_scan_host(host);
->>>>>  	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
->>>>>  	atomic_set(&acb->rq_map_token, 16);
->>>>>  	atomic_set(&acb->ante_token_value, 16);
->>>>> @@ -795,13 +795,17 @@ static int arcmsr_probe(struct pci_dev *
->>>>>  	add_timer(&acb->eternal_timer);
->>>>>  	if(arcmsr_alloc_sysfs_attr(acb))
->>>>>  		goto out_free_sysfs;
->>>>> +    	scsi_scan_host(host);
->>>>>  	return 0;
->>>>>  out_free_sysfs:
->>>>> -scsi_host_remove:
->>>>> -	scsi_remove_host(host);
->>>>> -RAID_controller_stop:
->>>>> +	del_timer_sync(&acb->eternal_timer);
->>>>> + 	flush_work(&acb->arcmsr_do_message_isr_bh);
->>>> In your driver you use both flush_work(struct work_struct *) and flush_scheduled_work(),
->>>> the second form is used used to flush the shared workqueue. 
->>>> That said (and I think you use just one queue) you should decide which one is correct.
->>>> In my previous mail I have asked about flush_work because i have it seen elsewhere in
->>>> your code, now I've noticed the use of schedule_work and that means that you are using the global wq.
->>>>  
->>>>
->>>>>  	arcmsr_stop_adapter_bgrb(acb);
->>>>>  	arcmsr_flush_adapter_cache(acb);
->>>>> +	arcmsr_free_irq(pdev, acb);
->>>>> +scsi_host_remove:
->>>>> +	scsi_remove_host(host);
->>>>> +free_ccb_pool:
->>>>>  	arcmsr_free_ccb_pool(acb);
->>>>>  free_hbb_mu:
->>>>>  	arcmsr_free_mu(acb);
->>>>>
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+In other words, I fail to understand what problem your patch solves.
 
+
+Nicolas
