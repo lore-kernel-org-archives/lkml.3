@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392AbaEPMvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:51:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49579 "EHLO
+	id S932334AbaEPMvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:51:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49575 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753913AbaEPMsV (ORCPT
+	by vger.kernel.org with ESMTP id S1753783AbaEPMsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 08:48:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Cornel Panceac" <cpanceac@gmail.com>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Jani Nikula" <jani.nikula@intel.com>, "Greg KH" <greg@kroah.com>,
-        "" <annndddrr@gmail.com>, "Daniel Vetter" <daniel.vetter@ffwll.ch>
+CC: akpm@linux-foundation.org, "=?UTF-8?q?Bj=C3=B8rn=20Mork?=" <bjorn@mork.no>,
+        "Lars Melin" <larsm17@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Fri, 16 May 2014 13:47:21 +0100
-Message-ID: <lsq.1400244441.367797689@decadent.org.uk>
+Message-ID: <lsq.1400244441.25368423@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 17/34] dmi: add support for exact DMI matches in
- addition to substring matching
+Subject: [PATCH 3.2 30/34] usb: option: add and update a number of CMOTech
+ devices
 In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,81 +33,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 5017b2851373ee15c7035151853bb1448800cae2 upstream.
+commit 34f972d6156fe9eea2ab7bb418c71f9d1d5c8e7b upstream.
 
-dmi_match() considers a substring match to be a successful match.  This is
-not always sufficient to distinguish between DMI data for different
-systems.  Add support for exact string matching using strcmp() in addition
-to the substring matching using strstr().
+A number of older CMOTech modems are based on Qualcomm
+chips.  The blacklisted interfaces are QMI/wwan.
 
-The specific use case in the i915 driver is to allow us to use an exact
-match for D510MO, without also incorrectly matching D510MOV:
-
-  {
-	.ident = "Intel D510MO",
-	.matches = {
-		DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-		DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
-	},
-  }
-
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Cc: <annndddrr@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Cornel Panceac <cpanceac@gmail.com>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/dmi_scan.c     | 12 +++++++++---
- include/linux/mod_devicetable.h |  6 ++++--
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/usb/serial/option.c | 74 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 70 insertions(+), 4 deletions(-)
 
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -534,9 +534,15 @@ static bool dmi_matches(const struct dmi
- 		int s = dmi->matches[i].slot;
- 		if (s == DMI_NONE)
- 			break;
--		if (dmi_ident[s]
--		    && strstr(dmi_ident[s], dmi->matches[i].substr))
--			continue;
-+		if (dmi_ident[s]) {
-+			if (!dmi->matches[i].exact_match &&
-+			    strstr(dmi_ident[s], dmi->matches[i].substr))
-+				continue;
-+			else if (dmi->matches[i].exact_match &&
-+				 !strcmp(dmi_ident[s], dmi->matches[i].substr))
-+				continue;
-+		}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -234,8 +234,31 @@ static void option_instat_callback(struc
+ #define QUALCOMM_VENDOR_ID			0x05C6
+ 
+ #define CMOTECH_VENDOR_ID			0x16d8
+-#define CMOTECH_PRODUCT_6008			0x6008
+-#define CMOTECH_PRODUCT_6280			0x6280
++#define CMOTECH_PRODUCT_6001			0x6001
++#define CMOTECH_PRODUCT_CMU_300			0x6002
++#define CMOTECH_PRODUCT_6003			0x6003
++#define CMOTECH_PRODUCT_6004			0x6004
++#define CMOTECH_PRODUCT_6005			0x6005
++#define CMOTECH_PRODUCT_CGU_628A		0x6006
++#define CMOTECH_PRODUCT_CHE_628S		0x6007
++#define CMOTECH_PRODUCT_CMU_301			0x6008
++#define CMOTECH_PRODUCT_CHU_628			0x6280
++#define CMOTECH_PRODUCT_CHU_628S		0x6281
++#define CMOTECH_PRODUCT_CDU_680			0x6803
++#define CMOTECH_PRODUCT_CDU_685A		0x6804
++#define CMOTECH_PRODUCT_CHU_720S		0x7001
++#define CMOTECH_PRODUCT_7002			0x7002
++#define CMOTECH_PRODUCT_CHU_629K		0x7003
++#define CMOTECH_PRODUCT_7004			0x7004
++#define CMOTECH_PRODUCT_7005			0x7005
++#define CMOTECH_PRODUCT_CGU_629			0x7006
++#define CMOTECH_PRODUCT_CHU_629S		0x700a
++#define CMOTECH_PRODUCT_CHU_720I		0x7211
++#define CMOTECH_PRODUCT_7212			0x7212
++#define CMOTECH_PRODUCT_7213			0x7213
++#define CMOTECH_PRODUCT_7251			0x7251
++#define CMOTECH_PRODUCT_7252			0x7252
++#define CMOTECH_PRODUCT_7253			0x7253
+ 
+ #define TELIT_VENDOR_ID				0x1bc7
+ #define TELIT_PRODUCT_UC864E			0x1003
+@@ -517,6 +540,10 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(1) | BIT(2),
+ };
+ 
++static const struct option_blacklist_info net_intf0_blacklist = {
++	.reserved = BIT(0),
++};
 +
- 		/* No match */
- 		return false;
- 	}
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -461,7 +461,8 @@ enum dmi_field {
+ static const struct option_blacklist_info net_intf1_blacklist = {
+ 	.reserved = BIT(1),
  };
- 
- struct dmi_strmatch {
--	unsigned char slot;
-+	unsigned char slot:7;
-+	unsigned char exact_match:1;
- 	char substr[79];
- };
- 
-@@ -489,7 +490,8 @@ struct dmi_system_id {
- #define dmi_device_id dmi_system_id
- #endif
- 
--#define DMI_MATCH(a, b)	{ a, b }
-+#define DMI_MATCH(a, b)	{ .slot = a, .substr = b }
-+#define DMI_EXACT_MATCH(a, b)	{ .slot = a, .substr = b, .exact_match = 1 }
- 
- #define PLATFORM_NAME_SIZE	20
- #define PLATFORM_MODULE_PREFIX	"platform:"
+@@ -1051,8 +1078,47 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+-	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
+-	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6004) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6005) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_628A) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHE_628S),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_301),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628S) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_680) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_685A) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720S),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7002),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629K),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7004),
++	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7005) },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_629),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629S),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720I),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7212),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7213),
++	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7251),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7252),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
++	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7253),
++	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
 
