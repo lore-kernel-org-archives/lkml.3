@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaEPXkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:40:45 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:41566 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767AbaEPXko (ORCPT
+	id S1756745AbaEPXo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:44:29 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:37849 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374AbaEPXo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:40:44 -0400
-MIME-Version: 1.0
-From: David Sharp <dhsharp@google.com>
-Date: Fri, 16 May 2014 16:40:23 -0700
-Message-ID: <CAJL_eksGD+-8it08wOrKtFsXovk0Bz7OoxtqiJbTBacOr7xpyw@mail.gmail.com>
-Subject: perf: TRACING_DATA header.size is invalid
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Tom Zanussi <tzanussi@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, namhyung@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 16 May 2014 19:44:28 -0400
+From: Hani Benhabiles <kroosec@gmail.com>
+To: Paul.Clements@steeleye.com
+Cc: nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] nbd: Zero from and len fields in NBD_CMD_DISCONNECT.
+Date: Sat, 17 May 2014 00:43:27 +0100
+Message-Id: <1400283807-27930-1-git-send-email-kroosec@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We ran into an issue recently where a parser we have for perf.data
-could not handle TRACING_DATA events. It has a default behaviour of
-skipping event types it does not understand by using the header.size,
-since that seems to be how perf.data files are formatted.
+Len field is already set to zero, but not the from field which is sent as
+0xfffffffffffffe00. This makes no sense, and may cause confuse server
+implementations doing sanity checks (qemu-nbd is an example.)
 
-However, for TRACING_DATA events, header.size is set to
-sizeof(ev.tracing_data), even though all of the tracing data
-immediately follows the event.
+Signed-off-by: Hani Benhabiles <hani@linux.com>
+---
+ drivers/block/nbd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The simple fix would seem to be to set header.size to the size of the
-tracing data (plus sizeof ev.tracing_data). However, header.size is
-only 16 bits, and I imagine TRACING_DATA often exceeds UINT16_MAX,
-which is probably why the (u32) size was added outside the header.
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 3a70ea2..657bdac 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -246,7 +246,7 @@ static int nbd_send_req(struct nbd_device *nbd, struct request *req)
+ 	request.magic = htonl(NBD_REQUEST_MAGIC);
+ 	request.type = htonl(nbd_cmd(req));
+ 
+-	if (nbd_cmd(req) == NBD_CMD_FLUSH) {
++	if (nbd_cmd(req) == NBD_CMD_FLUSH || nbd_cmd(req) == NBD_CMD_DISC) {
+ 		/* Other values are reserved for FLUSH requests.  */
+ 		request.from = 0;
+ 		request.len = 0;
+-- 
+1.8.3.2
 
-So I'm not sure we can fix this for real.
-
-But, I do have an idea to mitigate damage: set header.size to zero.
-This will cause one of a few things to happen to a parser that doesn't
-understand TRACING_DATA events:
-- Ideally: It will realize that a zero size is nonsense and bail.
-- It will try to advance by zero bytes and enter an infinite loop
-(this happened to our parser after it skipped around some bogus data
-and happened upon some data that had zero where size would be). I
-argue this is better than reading garbage.
-- I can also imagine an implementation that read()s only
-sizeof(header), then extends the read() by (header.size -
-sizeof(header)) additional bytes, and this would end up overflowing
-the unsigned values, and that could also cause bugs, but hopefully by
-reading to EOF.
-
-Any better ideas?
-
-A more difficult solution would be to split TRACING_DATA into
-UINT16_MAX-sized chunks, but would this needlessly break older readers
-of data produced by newer perf, even if they already know how to read
-TRACING_DATA correctly?
-
-Thanks,
-d#
