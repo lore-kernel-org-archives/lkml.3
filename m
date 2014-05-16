@@ -1,276 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaEPXJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 19:09:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52424 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756455AbaEPXHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 19:07:19 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 5/7] clk: qcom: Properly support display clocks on msm8974
-Date: Fri, 16 May 2014 16:07:12 -0700
-Message-Id: <1400281634-9313-6-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
-References: <1400281634-9313-1-git-send-email-sboyd@codeaurora.org>
+	id S1756419AbaEPXMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 19:12:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60797 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753935AbaEPXMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 19:12:21 -0400
+Message-ID: <53769B27.2090407@zytor.com>
+Date: Fri, 16 May 2014 16:11:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, "Joseph S. Myers" <joseph@codesourcery.com>
+CC: Chung-Lin Tang <cltang@codesourcery.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <4706636.rTYoqSXXOR@wuerfel> <Pine.LNX.4.64.1405151949160.911@digraph.polyomino.org.uk> <9236147.lyD24Zv5SZ@wuerfel>
+In-Reply-To: <9236147.lyD24Zv5SZ@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The display clocks all source from dedicated phy PLLs within their
-respective multimedia hardware block. Hook up these PLLs to the
-display clocks with the appropriate parent mappings, clock flags,
-and the appropriate clock ops. This should allow the display
-clocks to work once the appropriate phy PLL driver registers their
-PLL clocks.
+On 05/15/2014 01:38 PM, Arnd Bergmann wrote:
+> 
+> For practical purposes in the kernel, we may still want to use 64-bit
+> nanoseconds: if we use a 96 bit struct timespec, that would be incompatible
+> with the native type on 64-bit kernels, thus complicating the syscall
+> emulation layer.
+> 
+> I don't know why timespec on x32 uses 'long tv_nsec', it does seem
+> problematic.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/qcom/mmcc-msm8974.c | 105 +++++++++++++++++++++-------------------
- 1 file changed, 54 insertions(+), 51 deletions(-)
+struct timespec is specified in POSIX as having type "long" for tv_nsec.
+ This, as Linus pointed out, is totally braindamaged.
 
-diff --git a/drivers/clk/qcom/mmcc-msm8974.c b/drivers/clk/qcom/mmcc-msm8974.c
-index 62200bbc759e..c65b90515872 100644
---- a/drivers/clk/qcom/mmcc-msm8974.c
-+++ b/drivers/clk/qcom/mmcc-msm8974.c
-@@ -41,9 +41,11 @@
- #define P_EDPVCO	3
- #define P_GPLL1		4
- #define P_DSI0PLL	4
-+#define P_DSI0PLL_BYTE	4
- #define P_MMPLL2	4
- #define P_MMPLL3	4
- #define P_DSI1PLL	5
-+#define P_DSI1PLL_BYTE	5
- 
- static const u8 mmcc_xo_mmpll0_mmpll1_gpll0_map[] = {
- 	[P_XO]		= 0,
-@@ -161,6 +163,24 @@ static const char *mmcc_xo_dsi_hdmi_edp_gpll0[] = {
- 	"dsi1pll",
- };
- 
-+static const u8 mmcc_xo_dsibyte_hdmi_edp_gpll0_map[] = {
-+	[P_XO]			= 0,
-+	[P_EDPLINK]		= 4,
-+	[P_HDMIPLL]		= 3,
-+	[P_GPLL0]		= 5,
-+	[P_DSI0PLL_BYTE]	= 1,
-+	[P_DSI1PLL_BYTE]	= 2,
-+};
-+
-+static const char *mmcc_xo_dsibyte_hdmi_edp_gpll0[] = {
-+	"xo",
-+	"edp_link_clk",
-+	"hdmipll",
-+	"gpll0_vote",
-+	"dsi0pllbyte",
-+	"dsi1pllbyte",
-+};
-+
- #define F(f, s, h, m, n) { (f), (s), (2 * (h) - 1), (m), (n) }
- 
- static struct clk_pll mmpll0 = {
-@@ -500,15 +520,8 @@ static struct clk_rcg2 jpeg2_clk_src = {
- 	},
- };
- 
--static struct freq_tbl ftbl_mdss_pclk0_clk[] = {
--	F(125000000, P_DSI0PLL, 2, 0, 0),
--	F(250000000, P_DSI0PLL, 1, 0, 0),
--	{ }
--};
--
--static struct freq_tbl ftbl_mdss_pclk1_clk[] = {
--	F(125000000, P_DSI1PLL, 2, 0, 0),
--	F(250000000, P_DSI1PLL, 1, 0, 0),
-+static struct freq_tbl pixel_freq_tbl[] = {
-+	{ .src = P_DSI0PLL },
- 	{ }
- };
- 
-@@ -517,12 +530,13 @@ static struct clk_rcg2 pclk0_clk_src = {
- 	.mnd_width = 8,
- 	.hid_width = 5,
- 	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
--	.freq_tbl = ftbl_mdss_pclk0_clk,
-+	.freq_tbl = pixel_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "pclk0_clk_src",
- 		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_pixel_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
-@@ -531,12 +545,13 @@ static struct clk_rcg2 pclk1_clk_src = {
- 	.mnd_width = 8,
- 	.hid_width = 5,
- 	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
--	.freq_tbl = ftbl_mdss_pclk1_clk,
-+	.freq_tbl = pixel_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "pclk1_clk_src",
- 		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_pixel_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
-@@ -754,41 +769,36 @@ static struct clk_rcg2 cpp_clk_src = {
- 	},
- };
- 
--static struct freq_tbl ftbl_mdss_byte0_clk[] = {
--	F(93750000, P_DSI0PLL, 8, 0, 0),
--	F(187500000, P_DSI0PLL, 4, 0, 0),
--	{ }
--};
--
--static struct freq_tbl ftbl_mdss_byte1_clk[] = {
--	F(93750000, P_DSI1PLL, 8, 0, 0),
--	F(187500000, P_DSI1PLL, 4, 0, 0),
-+static struct freq_tbl byte_freq_tbl[] = {
-+	{ .src = P_DSI0PLL_BYTE },
- 	{ }
- };
- 
- static struct clk_rcg2 byte0_clk_src = {
- 	.cmd_rcgr = 0x2120,
- 	.hid_width = 5,
--	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
--	.freq_tbl = ftbl_mdss_byte0_clk,
-+	.parent_map = mmcc_xo_dsibyte_hdmi_edp_gpll0_map,
-+	.freq_tbl = byte_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "byte0_clk_src",
--		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
-+		.parent_names = mmcc_xo_dsibyte_hdmi_edp_gpll0,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_byte_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
- static struct clk_rcg2 byte1_clk_src = {
- 	.cmd_rcgr = 0x2140,
- 	.hid_width = 5,
--	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
--	.freq_tbl = ftbl_mdss_byte1_clk,
-+	.parent_map = mmcc_xo_dsibyte_hdmi_edp_gpll0_map,
-+	.freq_tbl = byte_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "byte1_clk_src",
--		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
-+		.parent_names = mmcc_xo_dsibyte_hdmi_edp_gpll0,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_byte_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
-@@ -826,12 +836,12 @@ static struct clk_rcg2 edplink_clk_src = {
- 		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
- 		.num_parents = 6,
- 		.ops = &clk_rcg2_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
--static struct freq_tbl ftbl_mdss_edppixel_clk[] = {
--	F(175000000, P_EDPVCO, 2, 0, 0),
--	F(350000000, P_EDPVCO, 11, 0, 0),
-+static struct freq_tbl edp_pixel_freq_tbl[] = {
-+	{ .src = P_EDPVCO },
- 	{ }
- };
- 
-@@ -840,12 +850,12 @@ static struct clk_rcg2 edppixel_clk_src = {
- 	.mnd_width = 8,
- 	.hid_width = 5,
- 	.parent_map = mmcc_xo_dsi_hdmi_edp_map,
--	.freq_tbl = ftbl_mdss_edppixel_clk,
-+	.freq_tbl = edp_pixel_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "edppixel_clk_src",
- 		.parent_names = mmcc_xo_dsi_hdmi_edp,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_edp_pixel_ops,
- 	},
- };
- 
-@@ -857,11 +867,11 @@ static struct freq_tbl ftbl_mdss_esc0_1_clk[] = {
- static struct clk_rcg2 esc0_clk_src = {
- 	.cmd_rcgr = 0x2160,
- 	.hid_width = 5,
--	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
-+	.parent_map = mmcc_xo_dsibyte_hdmi_edp_gpll0_map,
- 	.freq_tbl = ftbl_mdss_esc0_1_clk,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "esc0_clk_src",
--		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
-+		.parent_names = mmcc_xo_dsibyte_hdmi_edp_gpll0,
- 		.num_parents = 6,
- 		.ops = &clk_rcg2_ops,
- 	},
-@@ -870,26 +880,18 @@ static struct clk_rcg2 esc0_clk_src = {
- static struct clk_rcg2 esc1_clk_src = {
- 	.cmd_rcgr = 0x2180,
- 	.hid_width = 5,
--	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
-+	.parent_map = mmcc_xo_dsibyte_hdmi_edp_gpll0_map,
- 	.freq_tbl = ftbl_mdss_esc0_1_clk,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "esc1_clk_src",
--		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
-+		.parent_names = mmcc_xo_dsibyte_hdmi_edp_gpll0,
- 		.num_parents = 6,
- 		.ops = &clk_rcg2_ops,
- 	},
- };
- 
--static struct freq_tbl ftbl_mdss_extpclk_clk[] = {
--	F(25200000, P_HDMIPLL, 1, 0, 0),
--	F(27000000, P_HDMIPLL, 1, 0, 0),
--	F(27030000, P_HDMIPLL, 1, 0, 0),
--	F(65000000, P_HDMIPLL, 1, 0, 0),
--	F(74250000, P_HDMIPLL, 1, 0, 0),
--	F(108000000, P_HDMIPLL, 1, 0, 0),
--	F(148500000, P_HDMIPLL, 1, 0, 0),
--	F(268500000, P_HDMIPLL, 1, 0, 0),
--	F(297000000, P_HDMIPLL, 1, 0, 0),
-+static struct freq_tbl extpclk_freq_tbl[] = {
-+	{ .src = P_HDMIPLL },
- 	{ }
- };
- 
-@@ -897,12 +899,13 @@ static struct clk_rcg2 extpclk_clk_src = {
- 	.cmd_rcgr = 0x2060,
- 	.hid_width = 5,
- 	.parent_map = mmcc_xo_dsi_hdmi_edp_gpll0_map,
--	.freq_tbl = ftbl_mdss_extpclk_clk,
-+	.freq_tbl = extpclk_freq_tbl,
- 	.clkr.hw.init = &(struct clk_init_data){
- 		.name = "extpclk_clk_src",
- 		.parent_names = mmcc_xo_dsi_hdmi_edp_gpll0,
- 		.num_parents = 6,
--		.ops = &clk_rcg2_ops,
-+		.ops = &clk_byte_ops,
-+		.flags = CLK_SET_RATE_PARENT,
- 	},
- };
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+x32 does not follow POSIX (Linus pretty much dictated that), and instead
+does the __kernel_suseconds_t to match the native kernel type.  The
+proposal at some point was to try to push a snseconds_t into POSIX.
+
+	-hpa
 
