@@ -1,160 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670AbaEPJHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 05:07:50 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44023 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505AbaEPJHo (ORCPT
+	id S1756498AbaEPJJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 05:09:07 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:48557 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258AbaEPJJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 05:07:44 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        swarren@nvidia.com, nicolas.pitre@linaro.org, swarren@wwwdotorg.org,
-        dianders@chromium.org, linux@arm.linux.org.uk,
-        thomas.abraham@linaro.org, pdeschrijver@nvidia.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 3/3] cpufreq: Tegra: implement intermediate frequency callbacks
-Date: Fri, 16 May 2014 14:37:19 +0530
-Message-Id: <b3e68b08ca8175fde81ef1a85db1fde506f835b9.1400230695.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <9e1ed1bf8c3610709436fe5ef8df3a63856f8f5c.1400230695.git.viresh.kumar@linaro.org>
-References: <9e1ed1bf8c3610709436fe5ef8df3a63856f8f5c.1400230695.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1400230695.git.viresh.kumar@linaro.org>
-References: <cover.1400230695.git.viresh.kumar@linaro.org>
+	Fri, 16 May 2014 05:09:04 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.121.61]
+In-Reply-To: <20140515.124931.1801842437410594819.davem@davemloft.net>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-14-git-send-email-miklos@szeredi.hu>
+	<CAJfpegsAUQZ0mxpqOeVj2SERT41Caw77irBHSTPMc0CaQp=uYA@mail.gmail.com>
+	<20140515.124931.1801842437410594819.davem@davemloft.net>
+Date: Fri, 16 May 2014 11:09:02 +0200
+Message-ID: <CAJfpegsyE4TCo5VBG2K2q=2hrnDN5kgZ_Qt-KUvwDSfcq1oitA@mail.gmail.com>
+Subject: Re: [PATCH 13/15] sparc: add renameat2 syscall
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: David Miller <davem@davemloft.net>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra had always been switching to intermediate frequency (pll_p_clk) since
-ever. CPUFreq core has better support for handling notifications for these
-frequencies and so we can adapt Tegra's driver to it.
+On Thu, May 15, 2014 at 6:49 PM, David Miller <davem@davemloft.net> wrote:
+> From: Miklos Szeredi <miklos@szeredi.hu>
+> Date: Thu, 15 May 2014 14:22:33 +0200
+>
+>> On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>> From: Miklos Szeredi <mszeredi@suse.cz>
+>>>
+>>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>>> Cc: David S. Miller <davem@davemloft.net>
+>>
+>> David,
+>>
+>> I'll be sending a batch of patches with arch support for the renameat2
+>> syscall to Linus next week.  If you'd like me to send this as well,
+>> could you please ACK it?
+>
+> For the 32-bit compat case on sparc64, you need to add a wrapper to
+> sign extend the oldfd and newfd arguments.
+>
+> This usually occurs in arch/sparc/kernel/sys32.S, probably something
+> like:
+>
+> SIGN2(sys32_renameat2, sys_renameat2, %o0, %o2)
+>
+> and then you hook up sys32_renameat2 instead of sys_renameat2 in the
+> 32-bit compat syscall table in syscall_64.S
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/tegra-cpufreq.c | 81 +++++++++++++++++++----------------------
- 1 file changed, 38 insertions(+), 43 deletions(-)
+Are you sure?  None of the *at() functions (including renameat())  are in there.
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index 6e774c6..10b29ec 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -46,9 +46,33 @@ static struct clk *pll_x_clk;
- static struct clk *pll_p_clk;
- static struct clk *emc_clk;
- 
--static int tegra_cpu_clk_set_rate(unsigned long rate)
-+static unsigned int
-+tegra_get_intermediate(struct cpufreq_policy *policy, unsigned int index)
- {
--	int ret;
-+	return clk_get_rate(pll_p_clk);
-+}
-+
-+static int
-+tegra_target_intermediate(struct cpufreq_policy *policy, unsigned int frequency)
-+{
-+	return clk_set_parent(cpu_clk, pll_p_clk);
-+}
-+
-+static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
-+{
-+	unsigned long rate = freq_table[index].frequency;
-+	int ret = 0;
-+
-+	/*
-+	 * Vote on memory bus frequency based on cpu frequency
-+	 * This sets the minimum frequency, display or avp may request higher
-+	 */
-+	if (rate >= 816000)
-+		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
-+	else if (rate >= 456000)
-+		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
-+	else
-+		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
- 
- 	/*
- 	 * Take an extra reference to the main pll so it doesn't turn
-@@ -56,12 +80,6 @@ static int tegra_cpu_clk_set_rate(unsigned long rate)
- 	 */
- 	clk_prepare_enable(pll_x_clk);
- 
--	ret = clk_set_parent(cpu_clk, pll_p_clk);
--	if (ret) {
--		pr_err("Failed to switch cpu to clock pll_p\n");
--		goto out;
--	}
--
- 	if (rate == clk_get_rate(pll_p_clk))
- 		goto out;
- 
-@@ -72,36 +90,11 @@ static int tegra_cpu_clk_set_rate(unsigned long rate)
- 	}
- 
- 	ret = clk_set_parent(cpu_clk, pll_x_clk);
--	if (ret) {
-+	if (ret)
- 		pr_err("Failed to switch cpu to clock pll_x\n");
--		goto out;
--	}
- 
- out:
- 	clk_disable_unprepare(pll_x_clk);
--	return ret;
--}
--
--static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
--{
--	unsigned long rate = freq_table[index].frequency;
--	int ret = 0;
--
--	/*
--	 * Vote on memory bus frequency based on cpu frequency
--	 * This sets the minimum frequency, display or avp may request higher
--	 */
--	if (rate >= 816000)
--		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
--	else if (rate >= 456000)
--		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
--	else
--		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
--
--	ret = tegra_cpu_clk_set_rate(rate * 1000);
--	if (ret)
--		pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
--			rate);
- 
- 	return ret;
- }
-@@ -137,16 +130,18 @@ static int tegra_cpu_exit(struct cpufreq_policy *policy)
- }
- 
- static struct cpufreq_driver tegra_cpufreq_driver = {
--	.flags		= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
--	.verify		= cpufreq_generic_frequency_table_verify,
--	.target_index	= tegra_target,
--	.get		= cpufreq_generic_get,
--	.init		= tegra_cpu_init,
--	.exit		= tegra_cpu_exit,
--	.name		= "tegra",
--	.attr		= cpufreq_generic_attr,
-+	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify			= cpufreq_generic_frequency_table_verify,
-+	.get_intermediate	= tegra_get_intermediate,
-+	.target_intermediate	= tegra_target_intermediate,
-+	.target_index		= tegra_target,
-+	.get			= cpufreq_generic_get,
-+	.init			= tegra_cpu_init,
-+	.exit			= tegra_cpu_exit,
-+	.name			= "tegra",
-+	.attr			= cpufreq_generic_attr,
- #ifdef CONFIG_PM
--	.suspend	= cpufreq_generic_suspend,
-+	.suspend		= cpufreq_generic_suspend,
- #endif
- };
- 
--- 
-2.0.0.rc2
-
+Thanks,
+Miklos
