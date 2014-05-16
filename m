@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043AbaEPKfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 06:35:52 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51946 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711AbaEPKfu (ORCPT
+	id S1756992AbaEPKjY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 06:39:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34646 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741AbaEPKjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 06:35:50 -0400
+	Fri, 16 May 2014 06:39:23 -0400
+Date: Fri, 16 May 2014 12:39:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: jjherne@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+Message-ID: <20140516103907.GQ13658@twins.programming.kicks-ass.net>
+References: <537119EF.2060102@oracle.com>
+ <20140512200135.GL1421@htj.dyndns.org>
+ <53718119.1090000@cn.fujitsu.com>
+ <537180B9.6080407@oracle.com>
+ <53739F3B.4060608@linux.vnet.ibm.com>
+ <53758B12.8060609@cn.fujitsu.com>
+ <20140516093530.GN11096@twins.programming.kicks-ass.net>
+ <20140516101505.GO13658@twins.programming.kicks-ass.net>
+ <20140516101643.GP13658@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <CAPdUM4M5k-aouSA=dyUXWOyFLBhob+o8103a=gAxo-O68i-MCw@mail.gmail.com>
-References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
-	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
-	<5373CBAD.2010505@gmail.com>
-	<CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
-	<53753527.3000905@gmail.com>
-	<CAPdUM4M5k-aouSA=dyUXWOyFLBhob+o8103a=gAxo-O68i-MCw@mail.gmail.com>
-Date: Fri, 16 May 2014 16:05:48 +0530
-X-Google-Sender-Auth: JV4lvuThK0NhfLtelBESPLYOoiQ
-Message-ID: <CAPdUM4Py4r3ZV79ULcJ3KojaPQ0hfZTE2XbsY+=hP4LD70mb8Q@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <rahul.sharma@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        PANKAJ KUMAR DUBEY <pankaj.dubey@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        sunil joshi <joshi@samsung.com>, Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ie5iOtK4e9kgqh2F"
+Content-Disposition: inline
+In-Reply-To: <20140516101643.GP13658@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 May 2014 15:12, Rahul Sharma <rahul.sharma@samsung.com> wrote:
-> On 16 May 2014 03:14, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> On 15.05.2014 06:01, Rahul Sharma wrote:
-[snip]
->>>> the PHY provider.
->>>>
->>>
->>> Please correct me if I got you wrong. You want somthing like this:
->>>
->>> pmu_system_controller: system-controller@10040000 {
->>>          ...
->>>           simple_phys: simple-phys {
->>>                         compatible = "samsung,exynos5420-simple-phy";
->>>                         ...
->>>           };
->>> };
->>
->> Not exactly.
->>
->> What I meant is that the PMU node itself should be the PHY provider, e.g.
->>
->> pmu_system_controller: system-controller@10040000 {
->>         /* ... */
->>         #phy-cells = <1>;
->> };
->>
->> and then the PMU node should instantiate the Exynos simple PHY driver,
->> as this is a driver for a facility existing entirely inside of the PMU.
->> Moreover, the driver should be rather called Exynos PMU PHY.
->>
->> I know this isn't really possible at the moment, but with device tree we
->> must design things carefully, so it's better to take a bit more time and
->> do things properly.
->>
->> So my opinion on this is that there should be a central Exynos PMU
->> driver that claims the IO region and instantiates necessary subdrivers,
->> such as Exynos PMU PHY driver, Exynos CLKOUT driver, Exynos cpuidle
->> driver and more, similar to what is being done in drivers/mfd.
->
 
-Hi Tomasz,
+--Ie5iOtK4e9kgqh2F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-These PHYs are not part of PMU as such. I am not sure if it is correct to
-probe them as phy provider for all these phys. Only relation of these phys with
-the PMU is 'enable/disable control'. Controlling this bit using regmap interface
-still looks better to me.
+On Fri, May 16, 2014 at 12:16:43PM +0200, Peter Zijlstra wrote:
+> On Fri, May 16, 2014 at 12:15:05PM +0200, Peter Zijlstra wrote:
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -5126,7 +5126,6 @@ static int sched_cpu_active(struct notif
+> >  				      unsigned long action, void *hcpu)
+> >  {
+> >  	switch (action & ~CPU_TASKS_FROZEN) {
+> > -	case CPU_STARTING:
+> >  	case CPU_DOWN_FAILED:
+> >  		set_cpu_active((long)hcpu, true);
+> >  		return NOTIFY_OK;
+>=20
+> In fact, I dropped this part as it conflicts with another patch I have,
+> and setting it again isn't a big problem.
 
-IMHO Ideal method would be probing these PHYs independently and resolving
-the necessary dependencies like syscon handle, clocks etc. This way we will
-not be having any common phy provider for all these independent PHYs and it
-would be clean to add each of these phy nodes in DT. Please see my original
-comment below.
+Gurgl, I'm an idiot, this doesn't re-set it, it sets it earlier. Let me
+go fix the conflict properly then..
 
-http://lkml.iu.edu/hypermail/linux/kernel/1404.1/00701.html
+--Ie5iOtK4e9kgqh2F
+Content-Type: application/pgp-signature
 
-Regards,
-Rahul Sharma
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->
->>
->> Now, there is already ongoing effort to convert current freestanding PMU
->> configuration code in mach-exynos into a full-fledged PMU driver, but
->> not exactly in the same direction as I stated above. I'll try to
->> cooperate with Pankaj, who is responsible for this work to make this go
->> into the right track.
->>
->> Best regards,
->> Tomasz
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+iQIcBAEBAgAGBQJTderLAAoJEHZH4aRLwOS6kGIP+QF2c343mFdElB4RNGD0udN/
+qZ8jZQ0Uvn1eaxQ5+SC25h5O6fx82iKRakrTrBPeuTq3ImCshKzBHR2tEszu/wkW
+BYbN5liWRV5CKQuwQSVGGJpfZEuSTCfIMl6Gt5C5/doXW4aFu8GrDjyRRvm8+gxT
+iGQakDGgt04c9YySLw6Ph3rYFSOFFQjq6azjm63b+gcbzki4HR9VmC0KyBZ2LXKT
+RSNIYQnzWT5ih0MOmdAas3wWtUAzqpng2t2CnNIO3m37uDdQA8wXPQZYbdqt3dKI
+7OBLLkLjG/NWw5+wgKZGvyG9usG/nCXCRJf3gMYcXxCytLTIUGrZIGMAjWrxMBUq
+te9tGGnv2Cdfb90vVWcQZP8eAw1gGoZIMdXAiaz4HD6nerC7Qzn62yGkjhxPLpc7
+WgYeKWqImMqQn9IiY/n5K1sdufWB1j7ArdFI76K1nA3LfmmxsnEogciQF/OyDQy3
+JlaJlJ/TkwyDyIlPZ17NJ25Kxq1Uutppw0zHyW06PW1X6nEJVQsTexT0hUw4JQDS
+wF3FKz6ZGsSGBNjTRTHZUz4tha/CNBHlBhArLwwjoUGsCtI7grZYxxjCo9ymO4Zg
+9xs9DfmKMWuhmWcu6Z1r7nZhAvf4UFiHdrTWJBE0mD1YuXPZS85INf0ORRuac1I+
+eioputeLzYq9N9Y/Puj6
+=nvmm
+-----END PGP SIGNATURE-----
+
+--Ie5iOtK4e9kgqh2F--
