@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992441AbaEPWxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 18:53:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
+	id S1756810AbaEPWyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 18:54:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251AbaEPWwX (ORCPT
+	with ESMTP id S1756237AbaEPWwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 May 2014 18:52:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 5/9] net: Add net_ratelimited_function and net_<level>_ratelimited macros
-Date: Fri, 16 May 2014 15:55:28 -0700
-Message-Id: <20140516225458.805467686@linuxfoundation.org>
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH 3.4 4/9] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
+Date: Fri, 16 May 2014 15:55:27 -0700
+Message-Id: <20140516225458.777837218@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140516225458.512693003@linuxfoundation.org>
 References: <20140516225458.512693003@linuxfoundation.org>
@@ -28,64 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Perches <joe@perches.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 3a3bfb61e64476ff1e4ac3122cb6dec9c79b795c upstream.
+commit 223b02d923ecd7c84cf9780bb3686f455d279279 upstream.
 
-__ratelimit() can be considered an inverted bool test because
-it returns true when not ratelimited.  Several tests in the
-kernel tree use this __ratelimit() function incorrectly.
+"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
+case it can contain all extensions. Bellow you can find sizes for all
+types of extensions. Their sum is definitely bigger than 256.
 
-No net_ratelimit uses are incorrect currently though.
+nf_ct_ext_types[0]->len = 24
+nf_ct_ext_types[1]->len = 32
+nf_ct_ext_types[2]->len = 24
+nf_ct_ext_types[3]->len = 32
+nf_ct_ext_types[4]->len = 152
+nf_ct_ext_types[5]->len = 2
+nf_ct_ext_types[6]->len = 16
+nf_ct_ext_types[7]->len = 8
 
-Most uses of net_ratelimit are to log something via printk or
-pr_<level>.
+I have seen "len" up to 280 and my host has crashes w/o this patch.
 
-In order to minimize the uses of net_ratelimit, and to start
-standardizing the code style used for __ratelimit() and net_ratelimit(),
-add a net_ratelimited_function() macro and net_<level>_ratelimited()
-logging macros similar to pr_<level>_ratelimited that use the global
-net_ratelimit instead of a static per call site "struct ratelimit_state".
+The right way to fix this problem is reducing the size of the ecache
+extension (4) and Florian is going to do this, but these changes will
+be quite large to be appropriate for a stable tree.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/net.h |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ include/net/netfilter/nf_conntrack_extend.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -259,6 +259,29 @@ extern struct socket *sockfd_lookup(int
- #define		     sockfd_put(sock) fput(sock->file)
- extern int	     net_ratelimit(void);
- 
-+#define net_ratelimited_function(function, ...)			\
-+do {								\
-+	if (net_ratelimit())					\
-+		function(__VA_ARGS__);				\
-+} while (0)
-+
-+#define net_emerg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
-+#define net_alert_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
-+#define net_crit_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
-+#define net_err_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
-+#define net_notice_ratelimited(fmt, ...)			\
-+	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
-+#define net_warn_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
-+#define net_info_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
-+#define net_dbg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
-+
- #define net_random()		random32()
- #define net_srandom(seed)	srandom32((__force u32)seed)
+--- a/include/net/netfilter/nf_conntrack_extend.h
++++ b/include/net/netfilter/nf_conntrack_extend.h
+@@ -37,8 +37,8 @@ enum nf_ct_ext_id {
+ /* Extensions: optional stuff which isn't permanently in struct. */
+ struct nf_ct_ext {
+ 	struct rcu_head rcu;
+-	u8 offset[NF_CT_EXT_NUM];
+-	u8 len;
++	u16 offset[NF_CT_EXT_NUM];
++	u16 len;
+ 	char data[0];
+ };
  
 
 
