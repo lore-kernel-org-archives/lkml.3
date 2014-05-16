@@ -1,132 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575AbaEPLxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 07:53:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2086 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897AbaEPLxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 07:53:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
-   d="scan'208";a="512729487"
-Date: Fri, 16 May 2014 14:53:46 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: =?iso-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] [3.14.0-rc4] regression: drm FIFO underruns
-Message-ID: <20140516115346.GO27580@intel.com>
-References: <20140509170335.GZ18465@intel.com>
- <CADDKRnAiQawK6vi0XO2FDdfGDbcwWQzdeu-rfEU8viJzARO+yQ@mail.gmail.com>
- <CAKMK7uHLSfW0wN-uXMejOcnvaYpZfVSfSh7+NpqAUBCOvbK2eg@mail.gmail.com>
- <CADDKRnCzHQw7_Cr2jpZ7qC50hrdmr0XRaYyMxaOSaqihNGccDA@mail.gmail.com>
- <20140512190300.GF25056@phenom.ffwll.local>
- <CADDKRnAOkdaziCQ_NGkt01hiQqjiAiKza2+QbCuDBuY72LJK=A@mail.gmail.com>
- <CAKMK7uGy3bKdj-B21rCpeF2EPEE4Wi8CxLbDWFBGpLWskoDj3w@mail.gmail.com>
- <20140513132200.GC3908@phenom.ffwll.local>
- <CADDKRnADucv7wMRgEDZ_DKRJqkPPZdgymL6VJhtG_JD9MkiJhA@mail.gmail.com>
- <20140513163832.GM3908@phenom.ffwll.local>
+	id S1756932AbaEPLyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 07:54:00 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62980 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756638AbaEPLx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 07:53:58 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Jin Yao <yao.jin@intel.com>,
+        Aubrey Li <aubrey.li@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] pinctrl: baytrail: Add back Baytrail-T ACPI ID
+Date: Fri, 16 May 2014 14:10:47 +0200
+Message-ID: <1593450.1tg6AZy8cc@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400167727-20233-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1400167727-20233-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140513163832.GM3908@phenom.ffwll.local>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 06:38:32PM +0200, Daniel Vetter wrote:
-> On Tue, May 13, 2014 at 05:21:49PM +0200, Jörg Otte wrote:
-> > 2014-05-13 15:22 GMT+02:00 Daniel Vetter <daniel@ffwll.ch>:
-> > > On Tue, May 13, 2014 at 12:38:41PM +0200, Daniel Vetter wrote:
-> > >> On Tue, May 13, 2014 at 12:29 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
-> > >> >>> Branch drm-intel-nightly as of
-> > >> >>> ed60c27 drm-intel-nightly: 2014y-05m-09d-21h-51m-45s integration manifest
-> > >> >>> looks badly:
-> > >> >>>    - KDE splash screen on boot-up is not visible
-> > >> >>>    - x-windows don't have title and menu bars
-> > >> >>>    - KDE system menu is not visible
-> > >> >>>    - moving windows around destroys its content
-> > >> >>
-> > >> >> Ugh, that's ugly. Nothing else change like e.g. the version of
-> > >> >> xfree-video-intel?
-> > >> >
-> > >> >  (II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
-> > >> >  (II) Module intel: vendor="X.Org Foundation"
-> > >> >  compiled for 1.11.3, module version = 2.17.0
-> > >> >  Module class: X.Org Video Driver
-> > >> >  ABI class: X.Org Video Driver, version 11.0
-> > >>
-> > >> Chris, any ideas? It's an ivybridge apparently.
-> > >>
-> > >> For the fifo underruns I think we've fully confirmed that they only
-> > >> happen on boot-up. I'll try to come up with some ideas what could have
-> > >> gone wrong there.
-> > >
-> > > Please test the below patch.
-> > > -Daniel
-> > >
-> > > diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-> > > index b10fbde1d5ee..63ced2dee027 100644
-> > > --- a/drivers/gpu/drm/i915/i915_irq.c
-> > > +++ b/drivers/gpu/drm/i915/i915_irq.c
-> > > @@ -427,9 +427,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
-> > >
-> > >         ret = !intel_crtc->cpu_fifo_underrun_disabled;
-> > >
-> > > -       if (enable == ret)
-> > > -               goto done;
-> > > -
-> > >         intel_crtc->cpu_fifo_underrun_disabled = !enable;
-> > >
-> > >         if (enable && (INTEL_INFO(dev)->gen < 5 || IS_VALLEYVIEW(dev)))
-> > > @@ -441,7 +438,6 @@ bool __intel_set_cpu_fifo_underrun_reporting(struct drm_device *dev,
-> > >         else if (IS_GEN8(dev))
-> > >                 broadwell_set_fifo_underrun_reporting(dev, pipe, enable);
-> > >
-> > > -done:
-> > >         return ret;
-> > >  }
-> > >
-> > > --
-> > 
-> > Doesn't work for me, I still have an underrun at boot-up.
+On Thursday, May 15, 2014 06:28:46 PM Mika Westerberg wrote:
+> From: Jin Yao <yao.jin@intel.com>
 > 
-> I'm at a loss tbh with ideas. We successfully disable both pipes, then
-> enable pipe A and it all works.
+> Now that the x86 dynamic IRQ allocation problem has been resolved with
+> commmit 62a08ae2a576 (genirq: x86: Ensure that dynamic irq allocation does
+> not conflict), we can add back Baytrail-T ACPI ID to the pinctrl driver.
 > 
-> Then we enable pipe B and _both_ pipes underrun immediately afterwards.
-> Really strange. Can you please reproduce the issue again on
-> drm-intel-nightly (latest -nightly should also have the display
-> corruptions fixed, so good to retest anyway) and attach a new dmesg with
-> drm.debug=0xe.
-
-I see a few underrun on my IVB as well. But it seems to be limited to
-cases that involve the VGA connector, which doesn't actually exist on
-this machine so I can't be sure if it's really properly set up on the
-PCH. But so far with just two HDMI connectors I was unable to reproduce
-it.
-
+> This makes the driver to work on Asus T100 where it is needed for several
+> things like ACPI GPIO events and SD card detection.
 > 
-> Meanwhile I'll try to come up with new theories and ideas.
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=68291
+> Signed-off-by: Jin Yao <yao.jin@intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-I was thinking that we might frob with the PCH refclk during driver init
-and that might cause the PCH underrun for Jörg, but it looks like the
-underruns really happen at the modeset time which is much later than the
-PCH refclock init.
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-For the 1<->n pipe transition, I don't think we handle it correctly at
-the moment. I have a fix as part of my remaining watermark patches. I
-rebased those and I'll repost them soon. In the meantime I pushed them
-to [1]. Jörg, can you give that branch a go?
+And I think this is pinctrl material really.
 
-[1] git://gitorious.org/vsyrjala/linux.git watermarks_intm_31_notrace
+> ---
+>  drivers/acpi/acpi_lpss.c           | 1 +
+>  drivers/pinctrl/pinctrl-baytrail.c | 1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 24e49a52cefb..c314d709e5a6 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -189,6 +189,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+>  	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>  	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>  	{ "INT33B2", },
+> +	{ "INT33FC", },
+>  
+>  	{ "INT3430", (unsigned long)&lpt_dev_desc },
+>  	{ "INT3431", (unsigned long)&lpt_dev_desc },
+> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+> index 6e8301f77187..447f1dc25ea6 100644
+> --- a/drivers/pinctrl/pinctrl-baytrail.c
+> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+>  
+>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>  	{ "INT33B2", 0 },
+> +	{ "INT33FC", 0 },
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+> 
 
 -- 
-Ville Syrjälä
-Intel OTC
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
