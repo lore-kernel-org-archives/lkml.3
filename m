@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810AbaEPINw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 04:13:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9318 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755977AbaEPIGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 04:06:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1065,1389772800"; 
-   d="scan'208";a="540107629"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, sfi-devel@simplefirmware.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC Patch Part1 V1 21/30] x86, ACPI, irq: provide basic irqdomain support
-Date: Fri, 16 May 2014 16:05:41 +0800
-Message-Id: <1400227550-5935-22-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1400227550-5935-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1756821AbaEPIOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 04:14:17 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:38337 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969AbaEPIOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 04:14:12 -0400
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: nm@ti.com, rjw@rjwysocki.net, pavel@ucw.cz, len.brown@intel.com,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Subject: [PATCH v2] PM / OPP: discard duplicate OPP additions
+Date: Fri, 16 May 2014 13:43:48 +0530
+Message-Id: <1400228028-30165-1-git-send-email-chander.kashyap@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAKohpom1t2sOWr_S5Xzhx_OG=2qmgkZ5Z6UJ4TKAmJgeq0TU2Q@mail.gmail.com>
+References: <CAKohpom1t2sOWr_S5Xzhx_OG=2qmgkZ5Z6UJ4TKAmJgeq0TU2Q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance ACPI driver to provide basic irqdomain support for IOAPIC.
+From: Chander Kashyap <k.chander@samsung.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+It may be possible to unregister and re-register the cpufreq driver.
+One such example is arm big-little IKS cpufreq driver. While
+re-registering the driver, same OPPs may get added again.
+
+This patch detects the duplicacy and discards them.
+
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
 ---
- arch/x86/kernel/acpi/boot.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ Changes in v2:
+	- Reorder check for duplicate opp
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index f70f4f318316..1ee639e74d50 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -31,6 +31,7 @@
- #include <linux/module.h>
- #include <linux/dmi.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
- #include <linux/slab.h>
- #include <linux/bootmem.h>
- #include <linux/ioport.h>
-@@ -331,6 +332,23 @@ static void  mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
- static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			   int polarity);
+ drivers/base/power/opp.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index ca521e1..973da78 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -443,15 +443,24 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+ 	new_opp->u_volt = u_volt;
+ 	new_opp->available = true;
  
-+static struct irq_domain_ops acpi_irqdomain_ops;
-+
-+static struct irq_domain *acpi_create_irqdomain(int idx, void *arg)
-+{
-+	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
-+
+-	/* Insert new OPP in order of increasing frequency */
 +	/*
-+	 * Statically allocate IRQ number for legacy IRQs and all pins on the
-+	 * first IOAPIC.
++	 * Insert new OPP in order of increasing frequency
++	 * and discard if already present
 +	 */
-+	if (gsi_cfg->gsi_base < NR_IRQS_LEGACY &&
-+	    ioapic_dynirq_base < gsi_cfg->gsi_end)
-+		ioapic_dynirq_base = gsi_cfg->gsi_end + 1;
-+
-+	return mp_irqdomain_create(idx, NULL, &acpi_irqdomain_ops);
-+}
-+
- static int __init
- acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- {
-@@ -345,7 +363,7 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+ 	head = &dev_opp->opp_list;
+ 	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
+-		if (new_opp->rate < opp->rate)
++		if (new_opp->rate <= opp->rate)
+ 			break;
+ 		else
+ 			head = &opp->node;
+ 	}
  
- 	mp_register_ioapic(ioapic->id,
- 			   ioapic->address, ioapic->global_irq_base,
--			   NULL, NULL);
-+			   acpi_create_irqdomain, NULL);
++	if (new_opp->rate == opp->rate) {
++		mutex_unlock(&dev_opp_list_lock);
++		kfree(new_opp);
++		return 0;
++	}
++
+ 	list_add_rcu(&new_opp->node, head);
+ 	mutex_unlock(&dev_opp_list_lock);
  
- 	return 0;
- }
 -- 
-1.7.10.4
+1.7.9.5
 
