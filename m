@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645AbaEPNbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:31:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913AbaEPNbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:31:40 -0400
-Date: Fri, 16 May 2014 09:30:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140516133058.GN50500@redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <20140516114757.GD19475@krava.brq.redhat.com>
+	id S1756666AbaEPNdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:33:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54066 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaEPNdC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 09:33:02 -0400
+Date: Fri, 16 May 2014 06:31:35 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-465665f78a7f47d46d7fe18195f3548b4911547f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tony.luck@intel.com,
+        jchandra@broadcom.com, ralf@linux-mips.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        tony.luck@intel.com, jchandra@broadcom.com, ralf@linux-mips.org,
+        tglx@linutronix.de
+In-Reply-To: <20140507154334.008113902@linutronix.de>
+References: <20140507154334.008113902@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] mips: Kill pointless destroy_irq()
+Git-Commit-ID: 465665f78a7f47d46d7fe18195f3548b4911547f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140516114757.GD19475@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 01:47:57PM +0200, Jiri Olsa wrote:
-> On Tue, May 13, 2014 at 12:48:17PM -0400, Don Zickus wrote:
-> > In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
-> > particular sample instruction.  A bunch of those details relate to the data
-> > address.
-> > 
-> > One interesting thing you can do with data addresses is to convert them into a unique
-> > cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
-> > them can reveal cache contention.
-> > 
-> > This patch creates an alogorithm based on various sample details that can help group
-> > entries together into data cachelines and allows 'perf report' to sort on it.
-> > 
-> > The algorithm relies on having proper mmap2 support in the kernel to help determine
-> > if the memory map the data address belongs to is private to a pid or globally shared.
-> > 
-> > The alogortithm is as follows:
-> > 
-> > o group cpumodes together
-> > o group entries with discovered maps together
-> > o sort on major, minor, inode and inode generation numbers
-> > o if userspace anon, then sort on pid
-> > o sort on cachelines based on data addresses
-> 
-> needs some collumn width refresh or something..? ;-)
+Commit-ID:  465665f78a7f47d46d7fe18195f3548b4911547f
+Gitweb:     http://git.kernel.org/tip/465665f78a7f47d46d7fe18195f3548b4911547f
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 7 May 2014 15:44:05 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 16 May 2014 14:05:18 +0200
 
-Not sure what you mean here.
+mips: Kill pointless destroy_irq()
 
-> 
-> # Overhead  Data Cacheline         
-> # ........  .......................
-> #
->      5.42%  [k] 0xffff8801ed832c40 
->      5.29%  [.] sys_errlist@@GLIBC_2.12+0xffffffcbf7dfc1ff                       
->      3.16%  [k] 0xffffffffff5690c0 
-> 
-> 
-> also I've got again perf hanged up on opening device file
-> 
-> [jolsa@krava perf]$ sudo strace -p 29445
-> Process 29445 attached
-> open("/dev/snd/pcmC0D0p", O_RDONLY^CProcess 29445 detached
-> 
-> another one I recall was /dev/dri/card0 touched by X server
-> 
-> I guess those device files allow to mmap memory and we recorded
-> memory access there.. we need check for this and do not try to
-> open device files
+Copy and paste leftovers with no functionality at all.
 
-Ok.  And that problem doesn't happen when my patch is not applied?  I am
-not sure how this patch causes open device hangs.  I'll try to run this on
-a box with X server running to duplicate.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jayachandran C <jchandra@broadcom.com>
+Cc: linux-mips@linux-mips.org
+Link: http://lkml.kernel.org/r/20140507154334.008113902@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/mips/pci/msi-xlp.c | 10 +---------
+ arch/mips/pci/pci-xlr.c | 10 +---------
+ 2 files changed, 2 insertions(+), 18 deletions(-)
 
-Cheers,
-Don
+diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
+index afd8405..3249685 100644
+--- a/arch/mips/pci/msi-xlp.c
++++ b/arch/mips/pci/msi-xlp.c
+@@ -206,14 +206,8 @@ static struct irq_chip xlp_msix_chip = {
+ 	.irq_unmask	= unmask_msi_irq,
+ };
+ 
+-void destroy_irq(unsigned int irq)
+-{
+-	    /* nothing to do yet */
+-}
+-
+ void arch_teardown_msi_irq(unsigned int irq)
+ {
+-	destroy_irq(irq);
+ }
+ 
+ /*
+@@ -298,10 +292,8 @@ static int xlp_setup_msi(uint64_t lnkbase, int node, int link,
+ 
+ 	xirq = xirq + msivec;		/* msi mapped to global irq space */
+ 	ret = irq_set_msi_desc(xirq, desc);
+-	if (ret < 0) {
+-		destroy_irq(xirq);
++	if (ret < 0)
+ 		return ret;
+-	}
+ 
+ 	write_msi_msg(xirq, &msg);
+ 	return 0;
+diff --git a/arch/mips/pci/pci-xlr.c b/arch/mips/pci/pci-xlr.c
+index 4427abb..0dde803 100644
+--- a/arch/mips/pci/pci-xlr.c
++++ b/arch/mips/pci/pci-xlr.c
+@@ -214,14 +214,8 @@ static int get_irq_vector(const struct pci_dev *dev)
+ }
+ 
+ #ifdef CONFIG_PCI_MSI
+-void destroy_irq(unsigned int irq)
+-{
+-	    /* nothing to do yet */
+-}
+-
+ void arch_teardown_msi_irq(unsigned int irq)
+ {
+-	destroy_irq(irq);
+ }
+ 
+ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+@@ -263,10 +257,8 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 		MSI_DATA_DELIVERY_FIXED;
+ 
+ 	ret = irq_set_msi_desc(irq, desc);
+-	if (ret < 0) {
+-		destroy_irq(irq);
++	if (ret < 0)
+ 		return ret;
+-	}
+ 
+ 	write_msi_msg(irq, &msg);
+ 	return 0;
