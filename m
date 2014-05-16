@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066AbaEPNhs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 09:37:48 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37241 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441AbaEPNhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 09:37:45 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 07/49] media: davinci: vpif_display: improve vpif_buffer_queue_setup() function
-Date: Fri, 16 May 2014 19:03:12 +0530
-Message-Id: <1400247235-31434-9-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1400247235-31434-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S932762AbaEPNiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 09:38:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63661 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932737AbaEPNh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 09:37:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1067,1389772800"; 
+   d="scan'208";a="512771709"
+Message-ID: <537614A0.1050908@linux.intel.com>
+Date: Fri, 16 May 2014 21:37:36 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
+ T100
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>	 <5374D0A8.2090407@linux.intel.com>	 <1400165610.3703.41.camel@smile.fi.intel.com>	 <5374E472.9030001@linux.intel.com>	 <20140515161148.GM1674@lahna.fi.intel.com> <53754DF4.10302@linux.intel.com> <1400223856.3703.44.camel@smile.fi.intel.com>
+In-Reply-To: <1400223856.3703.44.camel@smile.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 2014/5/16 15:04, Andy Shevchenko wrote:
+> On Fri, 2014-05-16 at 07:29 +0800, Li, Aubrey wrote:
+>> On 2014/5/16 0:11, Mika Westerberg wrote:
+>>> On Thu, May 15, 2014 at 11:59:46PM +0800, Li, Aubrey wrote:
+>>>> On 2014/5/15 22:53, Andy Shevchenko wrote:
+>>>>> On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
+>>>>>> On 2014/5/15 21:40, Heikki Krogerus wrote:
+>>>>>>> Changes since v1:
+>>>>>>> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
+>>>>>>> - NULL checks for clk_name allocation in acpi_lpss.c
+>>>>>>>
+>>>>>>> This combines two patch sets for LPSS that I had already send for
+>>>>>>> review separately. They conflicted with each other.
+>>>>>>>
+>>>>>>> The first two patches will fix a problem were the context of the
+>>>>>>> private LPSS registers is lost when entering D3. The last two will add
+>>>>>>> support for the M/N dividers on LPSS by adding a new basic clock type
+>>>>>>> for fractional dividers. The UART driver needs support for it in order
+>>>>>>> to get clock rates that suit the requested baud rates.
+>>>>>>
+>>>>>> The major issue in my mind is, this proposal makes a couple between I2C
+>>>>>> designware, HSUART, or probably DMA driver as well with LPSS driver.
+>>>>>
+>>>>> acpi_lpss driver creates platform devices for each found and enumerated
+>>>>> device.
+>>>>
+>>>>> If there no acpi_lpss enabled the drivers work as supposed without it.
+>>>>
+>>>> This is not true.
+>>>
+>>> The drivers work fine on non-LPSS platform. If you make them depend on
+>>> acpi_lpss, you break that.
+>>>
+>>
+>> People don't know the relationship between LPSS driver and I2C/HSUART,
+>> there is nowhere to describe that. If LPSS driver is unchecked, they
+>> will encounter a weird issue which is very hard to figure out what's
+>> going on.
+> 
+> Besides this discussion is off the topic, I could say that LPSS drivers
+> are kinda optional (we won't enforce user to use them) even on some
+> systems where they are present. Relationship is provided by the proper
+> kernel configuration.
+> 
+It is optional previously but definitely not optional after this patch.
+The user who uses I2C designeware driver without LPSS now, I2C won't
+work properly on Asus T100.
 
-this patch sets the sizes[0] of plane according to the fmt passed
-or which is being set in the channel, in both MMAP and USERPTR buffer
-type.
+The proper configuration leads to a question, why a completed I2C
+controller driver doesn't work properly without another LPSS driver. I
+worry about this is hard to maintain in future.
 
-This patch also move the calculation of offests(vpif_calculate_offsets())
-to queue_setup() callback as after queue_setup() callback the
-application is no longer allowed to change format, and prepares to
-removal of config_params.
+Do we have a platform configuration to specify LPSS is needed?
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpif_display.c |   53 ++++++++++---------------
- 1 file changed, 21 insertions(+), 32 deletions(-)
+BTW, do we have a system with I2C and HSUART but without LPSS?
 
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index 1c518de..1b6cbe8 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -103,8 +103,17 @@ static int vpif_buffer_prepare(struct vb2_buffer *vb)
- 	return 0;
- }
- 
--/*
-- * vpif_buffer_queue_setup: This function allocates memory for the buffers
-+/**
-+ * vpif_buffer_queue_setup : Callback function for buffer setup.
-+ * @vq: vb2_queue ptr
-+ * @fmt: v4l2 format
-+ * @nbuffers: ptr to number of buffers requested by application
-+ * @nplanes:: contains number of distinct video planes needed to hold a frame
-+ * @sizes[]: contains the size (in bytes) of each plane.
-+ * @alloc_ctxs: ptr to allocation context
-+ *
-+ * This callback function is called when reqbuf() is called to adjust
-+ * the buffer count and buffer size
-  */
- static int vpif_buffer_queue_setup(struct vb2_queue *vq,
- 				const struct v4l2_format *fmt,
-@@ -113,37 +122,20 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
- {
- 	struct channel_obj *ch = vb2_get_drv_priv(vq);
- 	struct common_obj *common = &ch->common[VPIF_VIDEO_INDEX];
--	unsigned long size;
--
--	if (V4L2_MEMORY_MMAP == common->memory) {
--		size = config_params.channel_bufsize[ch->channel_id];
--		/*
--		* Checking if the buffer size exceeds the available buffer
--		* ycmux_mode = 0 means 1 channel mode HD and
--		* ycmux_mode = 1 means 2 channels mode SD
--		*/
--		if (ch->vpifparams.std_info.ycmux_mode == 0) {
--			if (config_params.video_limit[ch->channel_id])
--				while (size * *nbuffers >
--					(config_params.video_limit[0]
--						+ config_params.video_limit[1]))
--					(*nbuffers)--;
--		} else {
--			if (config_params.video_limit[ch->channel_id])
--				while (size * *nbuffers >
--				config_params.video_limit[ch->channel_id])
--					(*nbuffers)--;
--		}
--	} else {
--		size = common->fmt.fmt.pix.sizeimage;
--	}
- 
--	if (*nbuffers < config_params.min_numbuffers)
--			*nbuffers = config_params.min_numbuffers;
-+	if (fmt && fmt->fmt.pix.sizeimage < common->fmt.fmt.pix.sizeimage)
-+		return -EINVAL;
-+
-+	if (vq->num_buffers + *nbuffers < 3)
-+		*nbuffers = 3 - vq->num_buffers;
- 
- 	*nplanes = 1;
--	sizes[0] = size;
-+	sizes[0] = fmt ? fmt->fmt.pix.sizeimage : common->fmt.fmt.pix.sizeimage;
- 	alloc_ctxs[0] = common->alloc_ctx;
-+
-+	/* Calculate the offset for Y and C data  in the buffer */
-+	vpif_calculate_offsets(ch);
-+
- 	return 0;
- }
- 
-@@ -185,9 +177,6 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	ch->field_id = 0;
- 	common->started = 1;
- 
--	/* Calculate the offset for Y and C data  in the buffer */
--	vpif_calculate_offsets(ch);
--
- 	if ((ch->vpifparams.std_info.frm_fmt &&
- 		((common->fmt.fmt.pix.field != V4L2_FIELD_NONE)
- 		&& (common->fmt.fmt.pix.field != V4L2_FIELD_ANY)))
--- 
-1.7.9.5
+Thanks,
+-Aubrey
+
+Thanks,
+-Aubrey
+
+
 
