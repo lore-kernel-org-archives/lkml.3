@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419AbaEPMx1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 08:53:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49563 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753618AbaEPMsV (ORCPT
+	id S1756182AbaEPMzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 08:55:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:62546 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012AbaEPMzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 08:48:21 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 16 May 2014 08:55:06 -0400
+Message-ID: <53760AA2.4040703@monstr.eu>
+Date: Fri, 16 May 2014 14:54:58 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Matthew Wilcox" <matthew.r.wilcox@intel.com>,
-        "Matthew Wilcox" <willy@linux.intel.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Date: Fri, 16 May 2014 13:47:20 +0100
-Message-ID: <lsq.1400244440.103860639@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 02/34] ext4: note the error in ext4_end_bio()
-In-Reply-To: <lsq.1400244440.390103756@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:3db0:c181:6526:5597
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, git@xilinx.com
+Subject: Re: [PATCH] ARM: zynq: dt: Add a fixed regulator for CPU voltage
+References: <1399064852-19569-1-git-send-email-soren.brinkmann@xilinx.com> <e9675d40-2fd9-4fed-a020-5b465ea1842d@BN1BFFO11FD047.protection.gbl>
+In-Reply-To: <e9675d40-2fd9-4fed-a020-5b465ea1842d@BN1BFFO11FD047.protection.gbl>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="n5SGEOGa5WHKFnmu2hBEofPxOD2nn5hSD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.59-rc1 review patch.  If anyone has any objections, please let me know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--n5SGEOGa5WHKFnmu2hBEofPxOD2nn5hSD
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 05/15/2014 04:57 PM, S=C3=B6ren Brinkmann wrote:
+> ping? Any comments?
+>=20
+> 	Thanks,
+> 	S=C3=B6ren
+>=20
+> On Fri, 2014-05-02 at 02:07PM -0700, Soren Brinkmann wrote:
+>> To silence the warning
+>> 	cpufreq_cpu0: failed to get cpu0 regulator: -19
+>> from the cpufreq driver regarding a missing regulator,
+>> add a fixed regulator to the DT.
+>> Zynq does not support voltage scaling and the CPU rail should always b=
+e
+>> supplied with 1 V, hence it is added in the SOC-level dtsi.
+>>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> ---
+>>
+>>  arch/arm/boot/dts/zynq-7000.dtsi | 10 ++++++++++
+>>  1 file changed, 10 insertions(+)
 
-From: Matthew Wilcox <willy@linux.intel.com>
+Probably no objection from others.
+Applied to zynq/dt branch.
 
-commit 9503c67c93ed0b95ba62d12d1fd09da6245dbdd6 upstream.
+Thanks,
+Michal
 
-ext4_end_bio() currently throws away the error that it receives.  Chances
-are this is part of a spate of errors, one of which will end up getting
-the error returned to userspace somehow, but we shouldn't take that risk.
-Also print out the errno to aid in debug.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- fs/ext4/page-io.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -241,13 +241,14 @@ static void ext4_end_bio(struct bio *bio
- 
- 	if (error) {
- 		io_end->flag |= EXT4_IO_END_ERROR;
--		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
-+		ext4_warning(inode->i_sb, "I/O error %d writing to inode %lu "
- 			     "(offset %llu size %ld starting block %llu)",
--			     inode->i_ino,
-+			     error, inode->i_ino,
- 			     (unsigned long long) io_end->offset,
- 			     (long) io_end->size,
- 			     (unsigned long long)
- 			     bi_sector >> (inode->i_blkbits - 9));
-+		mapping_set_error(inode->i_mapping, error);
- 	}
- 
- 	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
 
+--n5SGEOGa5WHKFnmu2hBEofPxOD2nn5hSD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlN2CqIACgkQykllyylKDCFK+gCfcVL6alupw81rOELTHHHUJ8Nk
+YhoAnREGt2JVsPm2w/I4HuIlVqiosnCK
+=KlEt
+-----END PGP SIGNATURE-----
+
+--n5SGEOGa5WHKFnmu2hBEofPxOD2nn5hSD--
