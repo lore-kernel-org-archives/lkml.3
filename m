@@ -1,104 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488AbaEPHo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 03:44:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55555 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaEPHoy (ORCPT
+	id S1755781AbaEPHpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 03:45:38 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:36988 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517AbaEPHph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 03:44:54 -0400
-Date: Fri, 16 May 2014 09:44:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perfevents: irq loop stuck!
-Message-ID: <20140516074445.GJ11096@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1405142246170.30015@vincent-weaver-1.umelst.maine.edu>
- <20140515182136.GI11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405160017120.1351@vincent-weaver-1.umelst.maine.edu>
+	Fri, 16 May 2014 03:45:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tTvAEuyWWbMF5UF4"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405160017120.1351@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <308e7a7eeaf04ae8a90b8db39697009b@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1400142562-9111-1-git-send-email-superlibj8301@gmail.com>
+	<alpine.LFD.2.11.1405151325250.17310@knanqh.ubzr>
+	<CAHPCO9GrwRczw2R9nZDL0tDdYxSHV0f2aDhFSat+xhhiWaYbUg@mail.gmail.com>
+	<308e7a7eeaf04ae8a90b8db39697009b@BY2PR03MB505.namprd03.prod.outlook.com>
+Date: Fri, 16 May 2014 15:45:36 +0800
+Message-ID: <CAHPCO9FuuRY1eyKpXr4OpHpeS8ZW4BroMOkUPYEhLNu4xdDcSA@mail.gmail.com>
+Subject: Re: [PATCHv2] ARM: ioremap: Fix static vm area boundary checking.
+From: Richard Lee <superlibj8301@gmail.com>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 16, 2014 at 3:17 PM, Li.Xiubo@freescale.com
+<Li.Xiubo@freescale.com> wrote:
+>> Subject: Re: [PATCHv2] ARM: ioremap: Fix static vm area boundary checking.
+>>
+>> On Fri, May 16, 2014 at 1:28 AM, Nicolas Pitre <nicolas.pitre@linaro.org>
+>> wrote:
+>> > On Thu, 15 May 2014, Richard Lee wrote:
+>> >
+>> >> Static vm area boundary check:
+>> >>
+>> >>       paddr1 --->|       |
+>> >>                  |       |
+>> >>                  |-------| <-\--- svm->vm->addr(is page aligned)
+>> >>       paddr2 --->|       |    |
+>> >>                  |     --| <--|-- svm->vm->phys_addr
+>> >>                  |       |    |
+>> >>       paddr3 --->|       |    |
+>> >>                  |       |    |
+>> >>                  |-------| <--|-- next page boundary
+>> >>                  |       |    |
+>> >>       paddr4 --->|       |    | <----- svm->vm->size(including guard page)
+>> >>                  |       |    |
+>> >>                  |       |    |
+>> >> max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
+>> >>                  | ///// |    |
+>> >>       paddr5 --->| guard |    |
+>> >>                  | page  |    |
+>> >>                  | ///// |    |
+>> >>                   -------  <-/--- svm->vm->addr + svm->vm_size
+>> >>
+>> >> <1> If the paddr == paddr1, then continue;
+>> >> <2> If the paddr == paddr2~paddr4 and paddr_end > phys_addr_end,
+>> >>     then continue;
+>> >> <3> if the paddr >= paddr5 then continue;
+>> >>
+>> >> Signed-off-by: Richard Lee <superlibj8301@gmail.com>
+>> >
+>> > instead of doing this repeatedly, why not simply ensure the recorded
+>> > static vm information is already page aligned in the first place?
+>> >
+>>
+>> Sorry, I'm not very sure what vm information you meant here.
+>>
+>> And the 'svm->vm->addr' and 'svm->vm->size' are all page aligned
+>> already, but we cannot make sure that the 'paddr' and
+>> 'svm->vm->phys_addr' are page aligned.
+>>
+>
+> The paddr and svm->vm->phys_addr are all already pfn aligned here.
+> What we should fix about is the boundary of them.
+>
 
---tTvAEuyWWbMF5UF4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, I'm a fresher and I'll be out of the opensource mail list for
+changing jobs and then I have no chance to do this.
+Could you help me fix this issue please ?
 
-On Fri, May 16, 2014 at 12:25:28AM -0400, Vince Weaver wrote:
-> anyway I'm not sure if it's worth tracking this more if it's possible to=
-=20
-> mostly fix the case by fixing the sample_period bounds.
+And thanks for your help about how to appoarch the opensource list.
+Thanks very much,
 
-Right, so lets start with that, if it triggers again, we'll have another
-look.
+   Richard,
 
-FWIW I ran with the below patch over night, and while trinity completely
-shat itself going OOM -- so I'm not sure how long it ran, it didn't
-trigger the stuck interrupt loop.
-
-Will do more runs now that I'm there to hold its hand once more.
-
----
-Subject: perf: Limit perf_event_attr::sample_period to 63 bits
-=46rom: Peter Zijlstra <peterz@infradead.org>
-Date: Thu May 15 20:23:48 CEST 2014
-
-Vince reported that using a large sample_period (one with bit 63 set)
-results in wreckage since while the sample_period is fundamentally
-unsigned (negative periods don't make sense) the way we implement
-things very much rely on signed logic.
-
-So limit sample_period to 63 bits to avoid tripping over this.
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
----
- kernel/events/core.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7058,6 +7058,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (attr.freq) {
- 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
- 			return -EINVAL;
-+	} else {
-+		if (attr.sample_period & (1ULL << 63))
-+			return -EINVAL;
- 	}
-=20
- 	/*
-
---tTvAEuyWWbMF5UF4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTdcHnAAoJEHZH4aRLwOS6waYP/jlLyQY9NsPvwpg5FSnGnPbA
-T7/rvd/zQ/aAhK/RLCDXwcWki2n3DSZPGab+1wnXChc+IQccXf29QxLOis31j+lo
-2HT9lDEQ+pO/Yencm+cDbFOIMKRRU+QrqbVcYY2Sj5nAVC6uqowpfwWmc5ezh841
-TUxa4+iqYCnN5tKjgnz6cqSfJ/3voA3Id2jnYKiPoje/e9hNe/atq9TWYQCfxOFA
-LbWsmymN3Yj18Us3dXboBocAC6te2PVeC0L3EbevWcula6gAffDWYvfkr8J6B3uN
-X5zQZ1/GpGyjKEvCO2ktGh7E6bf94GYl6o9vxdnMRbWZD3mzHXLB09aBTNWIR1eR
-Kt3NI/nzKyEWfKO2tb23S8Z9YBGEjNZg+Cbgj7bTC7+M/5vTAd9v23QLv5DwdIjv
-qIXjwgjAlcKUMAvWGH6SKsl6yJszzgO5s7YxViJ7TcxgwoXRX/6Xr0owb9y9bfW2
-cUmNQ+7fZgx8EYvNqhJRz0h2QWRYTBybkIsHCli8mr9HPaWf2cbI5hjwr3wicvMc
-guFw9UZshRBCoAG3jr3Nz2343hg7RjaBTtsy7zuHey/lAxXizms0dTTZlVrziWwO
-9II1HdKLGMgcq+pAOADS8TFCTS/P2F/jzD3S0O9gcxQsng4FHRRDqoLaAQSvvc5p
-ljF4iYsCbOyn1bSZvelV
-=ypUT
------END PGP SIGNATURE-----
-
---tTvAEuyWWbMF5UF4--
+>> >>
+>> >>
+>> >> Change in V2:
+>> >>  - PAGE_SIZE --> PAGE_MASK
+>> >>  - remove the 'size' page size align operation.
+>> >>
+>> >>
+>> >>
+>> >>
+>> >>
+>> >>
+>> >>  arch/arm/mm/ioremap.c | 40 ++++++++++++++++++++++++++++++++++++++--
+>> >>  1 file changed, 38 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+>> >> index be69333..f235ab7 100644
+>> >> --- a/arch/arm/mm/ioremap.c
+>> >> +++ b/arch/arm/mm/ioremap.c
+>> >> @@ -47,16 +47,52 @@ static struct static_vm
+>> *find_static_vm_paddr(phys_addr_t paddr,
+>> >>  {
+>> >>       struct static_vm *svm;
+>> >>       struct vm_struct *vm;
+>> >> +     size_t offset;
+>> >> +
+>> >> +     offset = paddr & ~PAGE_MASK;
+>> >>
+>> >>       list_for_each_entry(svm, &static_vmlist, list) {
+>> >> +             phys_addr_t paddr_end, phys_addr_end;
+>> >> +             size_t vmoff;
+>> >> +
+>> >>               vm = &svm->vm;
+>> >>               if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+>> >>                       continue;
+>> >>               if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+>> >>                       continue;
+>> >>
+>> >> -             if (vm->phys_addr > paddr ||
+>> >> -                     paddr + size - 1 > vm->phys_addr + vm->size - 1)
+>> >> +             /* Static vm area boundary check:
+>> >> +              *
+>> >> +              *       paddr1 --->|       |
+>> >> +              *                  |       |
+>> >> +              *                  |-------| <-\--- svm->vm->addr(page
+>> aligned)
+>> >> +              *       paddr2 --->|       |    |
+>> >> +              *                  |     --| <--|-- svm->vm->phys_addr
+>> >> +              *                  |       |    |
+>> >> +              *       paddr3 --->|       |    |
+>> >> +              *                  |       |    |
+>> >> +              *                  |-------| <--|-- next page boundary
+>> >> +              *                  |       |    |
+>> >> +              *       paddr4 --->|       |    | <----- svm->vm->size,
+>> >> +              *                  |       |    |         including guard
+>> page
+>> >> +              *                  |       |    |
+>> >> +              * max paddr_end -->|-------| <--|-- svm->vm's phys_addr_end
+>> >> +              *                  | ///// |    |
+>> >> +              *       paddr5 --->| guard |    |
+>> >> +              *                  | page  |    |
+>> >> +              *                  | ///// |    |
+>> >> +              *                   -------  <-/-- svm->vm->addr + svm-
+>> >vm_size
+>> >> +              *
+>> >> +              * <1> If paddr == paddr1, then continue;
+>> >> +              * <2> If paddr == paddr2~paddr4 and paddr_end >
+>> phys_addr_end,
+>> >> +              *     then continue;
+>> >> +              * <3> if paddr >= paddr5 then continue;
+>> >> +              */
+>> >> +             vmoff = vm->phys_addr & ~PAGE_MASK;
+>> >> +             phys_addr_end = vm->phys_addr + vm->size - PAGE_SIZE - vmoff;
+>> >> +             paddr_end = paddr + size - offset;
+>> >> +             if (__phys_to_pfn(vm->phys_addr) > __phys_to_pfn(paddr) ||
+>> >> +                     paddr_end - 1 > phys_addr_end - 1)
+>> >>                       continue;
+>> >>
+>> >>               return svm;
+>> >> --
+>> >> 1.8.4
+>> >>
