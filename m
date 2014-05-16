@@ -1,35 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581AbaEPQDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 12:03:05 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:40104 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425AbaEPQDD (ORCPT
+	id S1757592AbaEPQDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 12:03:20 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:15197 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757349AbaEPQDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 12:03:03 -0400
-Date: Fri, 16 May 2014 18:03:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Erik Bosman <erik@minemu.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: SROP mitigation: implement signal canaries
-Message-ID: <20140516160301.GH1873@two.firstfloor.org>
-References: <20140515211004.GA9575@pizzadoos.com>
- <87vbt6rao3.fsf@tassilo.jf.intel.com>
- <20140515223222.GA9727@pizzadoos.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515223222.GA9727@pizzadoos.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 16 May 2014 12:03:18 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai0SAFk1dlNXQB71/2dsb2JhbABZgwaqaAUFBQGaGQICgRYXdIJTExwjGIECJBOIRQHSE4VViHqERwEDjy2KKgGLEYgIgzk7
+Date: Fri, 16 May 2014 18:03:15 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/3] kernel/hrtimer.c: convert printk to pr_foo()
+Message-Id: <20140516180315.116d6c58d3fd125472e35cd7@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hrmz.. FP state is aligned on a 64 byte boundary, the signal frame (separately)
-> on a 16 byte-sizeof(long) boundary.  But it looks like that for 32 and 64 bit
-> rt_sigreturn this means no padding :-/
+...and define pr_fmt
 
-There may be some unused bytes in the existing structures, perhaps not
-continuous.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/hrtimer.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
--Andi
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6b715c0..14f9030 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -31,6 +31,8 @@
+  *  For licencing details see kernel-base/COPYING
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/cpu.h>
+ #include <linux/export.h>
+ #include <linux/percpu.h>
+@@ -717,8 +719,8 @@ static int hrtimer_switch_to_hres(void)
+ 
+ 	if (tick_init_highres()) {
+ 		local_irq_restore(flags);
+-		printk(KERN_WARNING "Could not switch to high resolution "
+-				    "mode on CPU %d\n", cpu);
++		pr_warn("Could not switch to high resolution mode on CPU %d\n",
++			cpu);
+ 		return 0;
+ 	}
+ 	base->hres_active = 1;
+@@ -1410,8 +1412,7 @@ retry:
+ 	else
+ 		expires_next = ktime_add(now, delta);
+ 	tick_program_event(expires_next, 1);
+-	printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
+-		    ktime_to_ns(delta));
++	pr_warn_once("interrupt took %llu ns\n", ktime_to_ns(delta));
+ }
+ 
+ /*
+-- 
+1.8.4.5
+
