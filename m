@@ -1,211 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089AbaEPReQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 13:34:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48884 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757735AbaEPReN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 13:34:13 -0400
-Message-ID: <53764BF2.1030805@ti.com>
-Date: Fri, 16 May 2014 12:33:38 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <nsekhar@ti.com>, <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 08/13] ARM: edma: Get IP configuration from HW (number
- of channels, tc, etc)
-References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-9-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1400242640-9902-9-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1758053AbaEPReA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 13:34:00 -0400
+Received: from fallback5.mail.ru ([94.100.176.59]:53665 "EHLO
+	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021AbaEPRdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 13:33:45 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QWxleGFuZGVyIEhvbGxlcg==?= <holler@ahsoftware.de>
+Cc: devicetree@vger.kernel.org, =?UTF-8?B?Sm9uIExvZWxpZ2Vy?= <jdl@jdl.com>,
+        =?UTF-8?B?UnVzc2VsbCBLaW5n?= <linux@arm.linux.org.uk>,
+        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?Um9iIEhlcnJpbmc=?= <robh+dt@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?B?R3JhbnQgTGlrZWx5?= <grant.likely@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?UmU6IFtSRkMgUEFUQ0ggMi85XSBkdDogZGVwczogZGVwZW5kZW5jeSBiYXNl?=
+ =?UTF-8?B?ZCBkZXZpY2UgY3JlYXRpb24=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [5.18.98.1]
+Date: Fri, 16 May 2014 21:31:20 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1400261480.338700899@f360.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <5373DBCF.1080503@ahsoftware.de>
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
+ <20140514200645.15984C4095B@trevor.secretlab.ca>
+ <5373DBCF.1080503@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4GHYmr8024453
 
-On 05/16/2014 07:17 AM, Peter Ujfalusi wrote:
-> From CCCFG register of eDMA3 we can get all the needed information for the
-> driver about the IP:
-> Number of channels: NUM_DMACH
-> Number of regions: NUM_REGN
-> Number of slots (PaRAM sets): NUM_PAENTRY
-> Number of TC/EQ: NUM_EVQUE
+Wed, 14 May 2014 23:10:39 +0200 Ğ¾Ñ‚ Alexander Holler <holler@ahsoftware.de>:
+> Am 14.05.2014 22:06, schrieb Grant Likely:
+> > On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
+> >> Am 14.05.2014 16:05, schrieb Grant Likely:
+> >>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
 > 
-> In case when booted with DT or the queue_priority_mapping is not provided
-> set up a default priority map.
-
-Thanks.
-
-Acked-by: Joel Fernandes <joelf@ti.com>
-
-
+> >> Hmm, I don't really care if that will be merged. I have no motivation to 
+> >> fight with Linux kernel maintainers and I don't know if I will spend the 
+> >> necessary time to do so.
+> > 
+> > The people you need to convince are Rob, Greg, and me, and you've got my
+> > attention. If I'm convinced, then I can probably convince Greg also.
+> > You've got an interesting approach, and I hope you won't give up on it.
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  arch/arm/common/edma.c | 115 +++++++++++++++++++++++++++++++------------------
->  1 file changed, 73 insertions(+), 42 deletions(-)
+> Sorry, but that point of the view is already a problem. Why do I have to
+> convince you people?
 > 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index aa9473cb0c23..485be42519b9 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -102,7 +102,13 @@
->  #define PARM_OFFSET(param_no)	(EDMA_PARM + ((param_no) << 5))
->  
->  #define EDMA_DCHMAP	0x0100  /* 64 registers */
-> -#define CHMAP_EXIST	BIT(24)
-> +
-> +/* CCCFG register */
-> +#define GET_NUM_DMACH(x)	(x & 0x7) /* bits 0-2 */
-> +#define GET_NUM_PAENTRY(x)	((x & 0x7000) >> 12) /* bits 12-14 */
-> +#define GET_NUM_EVQUE(x)	((x & 0x70000) >> 16) /* bits 16-18 */
-> +#define GET_NUM_REGN(x)		((x & 0x300000) >> 20) /* bits 20-21 */
-> +#define CHMAP_EXIST		BIT(24)
->  
->  #define EDMA_MAX_DMACH           64
->  #define EDMA_MAX_PARAMENTRY     512
-> @@ -1408,6 +1414,67 @@ void edma_clear_event(unsigned channel)
->  }
->  EXPORT_SYMBOL(edma_clear_event);
->  
-> +static int edma_setup_from_hw(struct device *dev, struct edma_soc_info *pdata,
-> +			      struct edma *edma_cc)
-> +{
-> +	int i;
-> +	u32 value, cccfg;
-> +	s8 (*queue_priority_map)[2];
-> +
-> +	/* Decode the eDMA3 configuration from CCCFG register */
-> +	cccfg = edma_read(0, EDMA_CCCFG);
-> +
-> +	value = GET_NUM_REGN(cccfg);
-> +	edma_cc->num_region = BIT(value);
-> +
-> +	value = GET_NUM_DMACH(cccfg);
-> +	edma_cc->num_channels = BIT(value + 1);
-> +
-> +	value = GET_NUM_PAENTRY(cccfg);
-> +	edma_cc->num_slots = BIT(value + 4);
-> +
-> +	value = GET_NUM_EVQUE(cccfg);
-> +	edma_cc->num_tc = value + 1;
-> +
-> +	dev_dbg(dev, "eDMA3 HW configuration (cccfg: 0x%08x):\n", cccfg);
-> +	dev_dbg(dev, "num_region: %u\n", edma_cc->num_region);
-> +	dev_dbg(dev, "num_channel: %u\n", edma_cc->num_channels);
-> +	dev_dbg(dev, "num_slot: %u\n", edma_cc->num_slots);
-> +	dev_dbg(dev, "num_tc: %u\n", edma_cc->num_tc);
-> +
-> +	/* Nothing need to be done if queue priority is provided */
-> +	if (pdata->queue_priority_mapping)
-> +		return 0;
-> +
-> +	/*
-> +	 * Configure TC/queue priority as follows:
-> +	 * Q0 - priority 0
-> +	 * Q1 - priority 1
-> +	 * Q2 - priority 2
-> +	 * ...
-> +	 * The meaning of priority numbers: 0 highest priority, 7 lowest
-> +	 * priority. So Q0 is the highest priority queue and the last queue has
-> +	 * the lowest priority.
-> +	 */
-> +	queue_priority_map = devm_kzalloc(dev,
-> +					  (edma_cc->num_tc + 1) * sizeof(s8),
-> +					  GFP_KERNEL);
-> +	if (!queue_priority_map)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < edma_cc->num_tc; i++) {
-> +		queue_priority_map[i][0] = i;
-> +		queue_priority_map[i][1] = i;
-> +	}
-> +	queue_priority_map[i][0] = -1;
-> +	queue_priority_map[i][1] = -1;
-> +
-> +	pdata->queue_priority_mapping = queue_priority_map;
-> +	pdata->default_queue = 0;
-> +
-> +	return 0;
-> +}
-> +
->  #if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
->  
->  static int edma_xbar_event_map(struct device *dev, struct device_node *node,
-> @@ -1458,50 +1525,16 @@ static int edma_of_parse_dt(struct device *dev,
->  			    struct device_node *node,
->  			    struct edma_soc_info *pdata)
->  {
-> -	int ret = 0, i;
-> -	u32 value;
-> +	int ret = 0;
->  	struct property *prop;
->  	size_t sz;
->  	struct edma_rsv_info *rsv_info;
-> -	s8 (*queue_priority_map)[2];
-> -
-> -	ret = of_property_read_u32(node, "dma-channels", &value);
-> -	if (ret < 0)
-> -		return ret;
-> -	pdata->n_channel = value;
-> -
-> -	ret = of_property_read_u32(node, "ti,edma-regions", &value);
-> -	if (ret < 0)
-> -		return ret;
-> -	pdata->n_region = value;
-> -
-> -	ret = of_property_read_u32(node, "ti,edma-slots", &value);
-> -	if (ret < 0)
-> -		return ret;
-> -	pdata->n_slot = value;
-> -
-> -	pdata->n_tc = 3;
->  
->  	rsv_info = devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
->  	if (!rsv_info)
->  		return -ENOMEM;
->  	pdata->rsv = rsv_info;
->  
-> -	queue_priority_map = devm_kzalloc(dev, 8*sizeof(s8), GFP_KERNEL);
-> -	if (!queue_priority_map)
-> -		return -ENOMEM;
-> -
-> -	for (i = 0; i < 3; i++) {
-> -		queue_priority_map[i][0] = i;
-> -		queue_priority_map[i][1] = i;
-> -	}
-> -	queue_priority_map[i][0] = -1;
-> -	queue_priority_map[i][1] = -1;
-> -
-> -	pdata->queue_priority_mapping = queue_priority_map;
-> -
-> -	pdata->default_queue = 0;
-> -
->  	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
->  	if (prop)
->  		ret = edma_xbar_event_map(dev, node, pdata, sz);
-> @@ -1621,14 +1654,12 @@ static int edma_probe(struct platform_device *pdev)
->  		if (!edma_cc[j])
->  			return -ENOMEM;
->  
-> -		edma_cc[j]->num_channels = min_t(unsigned, info[j]->n_channel,
-> -							EDMA_MAX_DMACH);
-> -		edma_cc[j]->num_slots = min_t(unsigned, info[j]->n_slot,
-> -							EDMA_MAX_PARAMENTRY);
-> -		edma_cc[j]->num_tc = info[j]->n_tc;
-> +		/* Get eDMA3 configuration from IP */
-> +		ret = edma_setup_from_hw(dev, info[j], edma_cc[j]);
-> +		if (ret)
-> +			return ret;
->  
->  		edma_cc[j]->default_queue = info[j]->default_queue;
-> -		edma_cc[j]->num_region = info[j]->n_region;
->  
->  		dev_dbg(&pdev->dev, "DMA REG BASE ADDR=%p\n",
->  			edmacc_regs_base[j]);
+> To summarize:
 > 
+> Linux kernel maintainers
+> 
+> - don't like code they haven't written theirself,
+> - don't like code which doesn't look like they have written it theirself,
+> - don't like ideas they haven't had themself,
+> - do feel good in their closed group they have formed,
+> ...
 
+Very correct and well said.
+For many subsystems is it as is, we cannot break these barriers.
+
+---
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
