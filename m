@@ -1,96 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaEQUig (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 16:38:36 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:41187 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaEQUif (ORCPT
+	id S1751391AbaEQUsN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 16:48:13 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:61284 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaEQUsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 16:38:35 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/2] Input: Add keycodes for some missing Fn key combinations
-Date: Sat, 17 May 2014 22:38:30 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-input@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-References: <201405171639.45722@pali> <1400337817-14473-2-git-send-email-pali.rohar@gmail.com> <20140517203054.GA19657@core.coreip.homeip.net>
-In-Reply-To: <20140517203054.GA19657@core.coreip.homeip.net>
+	Sat, 17 May 2014 16:48:11 -0400
+Date: Sat, 17 May 2014 22:48:06 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140517204805.GA1046@mithrandir>
+References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
+ <20140517170455.08e181f16d3abf36d1ec6274@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2287472.MCrLzuzKjs";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201405172238.30089@pali>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <20140517170455.08e181f16d3abf36d1ec6274@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2287472.MCrLzuzKjs
-Content-Type: Text/Plain;
-  charset="utf-8"
+
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Saturday 17 May 2014 22:30:54 Dmitry Torokhov wrote:
-> Hi Pali,
+On Sat, May 17, 2014 at 05:04:55PM +0900, Cho KyongHo wrote:
+> On Fri, 16 May 2014 14:23:18 +0200, Thierry Reding wrote:
+[...]
+> > +Examples:
+> > +=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > +
+> > +Single-master IOMMU:
+> > +--------------------
+> > +
+> > +	iommu {
+> > +		#iommu-cells =3D <0>;
+> > +	};
+> > +
+> > +	master {
+> > +		iommu =3D <&/iommu>;
+> > +	};
+> > +
 >=20
-> On Sat, May 17, 2014 at 04:43:36PM +0200, Pali Roh=C3=A1r wrote:
-> > There are already defined some Fn key combinations, but not
-> > all. This patch adds missing combinations for support in
-> > dell-wmi driver.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > ---
-> >=20
-> >  include/uapi/linux/input.h |    6 ++++++
-> >  1 file changed, 6 insertions(+)
-> >=20
-> > diff --git a/include/uapi/linux/input.h
-> > b/include/uapi/linux/input.h index f484952..3a32799 100644
-> > --- a/include/uapi/linux/input.h
-> > +++ b/include/uapi/linux/input.h
-> > @@ -672,6 +672,12 @@ struct input_keymap_entry {
-> >=20
-> >  #define KEY_FN_F		0x1e2
-> >  #define KEY_FN_S		0x1e3
-> >  #define KEY_FN_B		0x1e4
-> >=20
-> > +#define KEY_FN_Q		0x1e5
-> > +#define KEY_FN_W		0x1e6
-> > +#define KEY_FN_R		0x1e7
-> > +#define KEY_FN_T		0x1e8
-> > +#define KEY_FN_A		0x1e9
-> > +#define KEY_FN_G		0x1ea
+> Great work, Thierry.
 >=20
-> What do they actually do?
+> One simple comment.
 >=20
-> Thanks.
+> This should be also applicable to multi-master IOMMUs that the masters
+> of an IOMMU is not configurable with ID or something.
+> I think the title needs to be changed to cover such IOMMUs which always
+> translate master's transactions and unable to change the configuration
+> of the relationship between the masters and IOMMUs by S/W.
 
-All 10 combinations Fn+Q ... Fn+T, Fn+A ... Fn+G are reported by=20
-WMI and I need to assign some keycodes for them in dell-wmi=20
-driver. And because More FN_* constants are already defined in=20
-input.h I added those which are missing.
+Agreed, how about we add a separate example for that case:
 
-With this patch series I'm able to use above Fn combinations for=20
-my own keyboard shortcuts. Before this patch all Fn combinations=20
-were one same keycode - which was useless.
+Multiple-master IOMMU with fixed associations:
+----------------------------------------------
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+	/* multiple-master IOMMU */
+	iommu {
+		/*
+		 * Masters are statically associated with this IOMMU and
+		 * address translation is always enabled.
+		 */
+		#iommu-cells =3D <0>;
+	};
 
---nextPart2287472.MCrLzuzKjs
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+	/* static association with IOMMU */
+	master@1 {
+		reg =3D <1>;
+		iommus =3D <&/iommu>;
+	};
+
+	/* static association with IOMMU */
+	master@2 {
+		reg =3D <2>;
+		iommus =3D <&/iommu>;
+	};
+
+?
+
+Thierry
+
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iEYEABECAAYFAlN3yMYACgkQi/DJPQPkQ1JZSgCeJKH1qJRRRcgXv9AgHm5KQYSj
-JqsAn3PagCQ5GKraIOG8u4uO+zo07jzC
-=SH+l
+iQIcBAEBAgAGBQJTd8sFAAoJEN0jrNd/PrOhGXIQAJOqRSklMjl4lFQfRhWaoB3m
+pYpRwqjrA0rLzEb+u6bk5Kv4kLRK5wOYr6Fd/y8DYONY+vZ0SXBOgEo7uv/mXURM
+R2m8tTiKLtmQm6xZ///FmcU98lOZM+l6Vv3/F+QVH/41RRNTzTXXir0q2XTYG5wU
+Fefylq654a8Ha1rDN2Y6kPt4P/1Q0tuA/7Z0jidDYXK04Pp+5QTBUHSFAYJ4V1Q3
+HuH2XmCioGRTem4cl4SMM6uA+IrnuZcXePrNT35HwtN6bmSe2IKNxaK+VKvnVzza
+Qc0hvQEDdsjijs1Fy4rY3zPhkvAGz/rbs6nYUJpRl96R3Zb5sKaO2Vqj9glLX5/e
+B5/wv5yVSs/ygRLW8/E76LXB2PNqkVg68smSRGrA/7q7iU2/ZUatnqoVCTWT2Jid
+0zUkBur8KM0wdBrowgrs/sVzFvS5Ii/yUyyfXJQWZELkhEo681LGGNt7PXYugjtr
+P//6zQwn1ogR7xq+7hCcy5yZAtc8UrXyIRF9/XrNvdGhg0zXdaQa1viM5AapeLGs
+WAPwb+KlFvXxG/8EY96Y59LvULcP5oGhwMXkUrkvH9OiDzZXIVbEZfrtCvKhUzn6
+G7CzsIQr4Q3+5u42Ndt94WglpdiDfVeUmh6ofv34rTZHqy7MGpybJBp67qf0sff9
+wO7Z6vqP8a7m/yZuQ7tr
+=Y4ib
 -----END PGP SIGNATURE-----
 
---nextPart2287472.MCrLzuzKjs--
+--6TrnltStXW4iwmi0--
