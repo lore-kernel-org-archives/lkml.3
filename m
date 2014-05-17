@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196AbaEQAD1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:03:27 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:58623 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaEQADZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:03:25 -0400
-Message-ID: <1400285003.5367.17.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 3/8] list: Out of line INIT_LIST_HEAD and list_del
-From: Eric Dumazet <eric.dumazet@gmail.com>
+	id S1756449AbaEQADg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:03:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059AbaEQADe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 20:03:34 -0400
+Date: Fri, 16 May 2014 20:03:11 -0400
+From: Dave Jones <davej@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>
-Date: Fri, 16 May 2014 17:03:23 -0700
-In-Reply-To: <1400276595-6965-4-git-send-email-andi@firstfloor.org>
+Subject: Re: [PATCH 3/8] list: Out of line INIT_LIST_HEAD and list_del
+Message-ID: <20140517000311.GA26496@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
 References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
-	 <1400276595-6965-4-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+ <1400276595-6965-4-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400276595-6965-4-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 14:43 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Out of lining these two inlines saves ~21k on my vmlinux
-> 
-> 14152713	2003976	1507328	17664017	10d8811	vmlinux-before-list
-> 14131431	2008136	1507328	17646895	10d452f	vmlinux-list
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
+On Fri, May 16, 2014 at 02:43:10PM -0700, Andi Kleen wrote:
 
-> +
-> +void list_del(struct list_head *entry)
-> +{
-> +	__list_del(entry->prev, entry->next);
-> +	entry->next = LIST_POISON1;
-> +	entry->prev = LIST_POISON2;
-> +}
-> +EXPORT_SYMBOL(list_del);
+ > diff --git a/lib/Makefile b/lib/Makefile
+ > index 0cd7b68..8b744f7 100644
+ > --- a/lib/Makefile
+ > +++ b/lib/Makefile
+ > @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ >  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ >  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+ >  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+ > -	 earlycpio.o
+ > +	 earlycpio.o list.o
 
-Have you tried :
+Hey Andi,
 
-CONFIG_DEBUG_LIST=y
+Did you test this with CONFIG_DEBUG_LIST ?
+Unless I'm missing something, this looks like we'll have duplicate
+symbols for list_del if that is set.
 
-Function will be doubly defined/exported then....
-
-BTW, my vmlinux is more like 
-
-$ size vmlinux
-   text	   data	    bss	    dec	    hex	filename
-8233991	1743032	1904640	11881663	 b54cbf	vmlinux
-
-Seems I beat you without even trying ;)
-
+	Dave
 
