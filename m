@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030332AbaEQRUP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 13:20:15 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:48273 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964842AbaEQRUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 13:20:13 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] macintosh: windfarm_pm121.c:  Fix for possible null pointer dereference
-Date: Sat, 17 May 2014 19:20:57 +0200
-Message-Id: <1400347257-25623-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1030338AbaEQRVM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 13:21:12 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:59738 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030196AbaEQRVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 13:21:11 -0400
+Message-ID: <53779A7F.8020007@iki.fi>
+Date: Sat, 17 May 2014 20:21:03 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Martin Kepplinger <martink@posteo.de>, gregkh@linuxfoundation.org,
+        Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] staging: media: as102: replace custom dprintk() with
+ dev_dbg()
+References: <53776B57.5050504@iki.fi> <1400342738-32652-1-git-send-email-martink@posteo.de>
+In-Reply-To: <1400342738-32652-1-git-send-email-martink@posteo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 85.23.164.239
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is otherwise a risk of a possible null pointer dereference.
+On 05/17/2014 07:05 PM, Martin Kepplinger wrote:
+> don't reinvent dev_dbg(). remove dprintk() in as102_drv.c.
+> use the common kernel coding style.
+>
+> Signed-off-by: Martin Kepplinger <martink@posteo.de>
 
-Was largely found by using a static code analysis program called cppcheck.
+Reviewed-by: Antti Palosaari <crope@iki.fi>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/macintosh/windfarm_pm121.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+> ---
+> this applies to next-20140516. any more suggestions?
+> more cleanup can be done when dprintk() is completely gone.
 
-diff --git a/drivers/macintosh/windfarm_pm121.c b/drivers/macintosh/windfarm_pm121.c
-index 7fe58b0..b350fb8 100644
---- a/drivers/macintosh/windfarm_pm121.c
-+++ b/drivers/macintosh/windfarm_pm121.c
-@@ -555,8 +555,18 @@ static void pm121_create_sys_fans(int loop_id)
- 	pid_param.interval	= PM121_SYS_INTERVAL;
- 	pid_param.history_len	= PM121_SYS_HISTORY_SIZE;
- 	pid_param.itarget	= param->itarget;
--	pid_param.min		= control->ops->get_min(control);
--	pid_param.max		= control->ops->get_max(control);
-+	if(control)
-+	{
-+		pid_param.min		= control->ops->get_min(control);
-+		pid_param.max		= control->ops->get_max(control);
-+	} else {
-+		/*
-+		 * This is probably not the right!?
-+		 * Perhaps goto fail  if control == NULL  above?
-+		 */
-+		pid_param.min		= 0;
-+		pid_param.max		= 0;
-+	}
- 
- 	wf_pid_init(&pm121_sys_state[loop_id]->pid, &pid_param);
- 
-@@ -571,7 +581,7 @@ static void pm121_create_sys_fans(int loop_id)
- 	   control the same control */
- 	printk(KERN_WARNING "pm121: failed to set up %s loop "
- 	       "setting \"%s\" to max speed.\n",
--	       loop_names[loop_id], control->name);
-+	       loop_names[loop_id], control ? control->name : "uninitialized value");
- 
- 	if (control)
- 		wf_control_set_max(control);
+Do you have the device? I am a bit reluctant patching that driver 
+without any testing as it has happened too many times something has gone 
+totally broken.
+
+IIRC Devin said it is in staging because of style issues and nothing 
+more. Is that correct?
+
+regards
+Antti
+
 -- 
-1.7.10.4
-
+http://palosaari.fi/
