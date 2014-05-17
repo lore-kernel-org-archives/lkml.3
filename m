@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaEQWye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:54:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44256 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaEQWyc (ORCPT
+	id S1751308AbaEQW4D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:56:03 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43253 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaEQW4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:54:32 -0400
-Date: Sun, 18 May 2014 01:53:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: imx: fix error handling in ipu device
- registration
-Message-ID: <20140517225339.GJ16255@mwanda>
-References: <1400352033-18262-1-git-send-email-emilgoode@gmail.com>
- <20140517191821.GD16662@pengutronix.de>
- <20140517220836.GI15585@mwanda>
- <20140517223555.GR3693@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140517223555.GR3693@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sat, 17 May 2014 18:56:01 -0400
+Message-ID: <1400367360.16727.3.camel@haakon3.risingtidesystems.com>
+Subject: Re: [GIT PULL] target fixes for v3.15-rc6
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>, Andy Grover <agrover@redhat.com>
+Date: Sat, 17 May 2014 15:56:00 -0700
+In-Reply-To: <1400275930.7353.17.camel@haakon3.risingtidesystems.com>
+References: <1400275930.7353.17.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 11:35:55PM +0100, Russell King - ARM Linux wrote:
-> On Sun, May 18, 2014 at 01:08:36AM +0300, Dan Carpenter wrote:
-> > Let's look at that error handling again.
-> > 
-> > err:  <-- the name is not descriptive.  the location is bad.
-> > 		kfree(pdev->dev.dma_mask);  <- null dereference.
-> > 		platform_device_put(pdev);  <- ok
-> > 		return ERR_PTR(-ENODEV);    <- should be "return ERR_PTR(ret);"
-> > 
-> > 3 out of 4 of the lines are bad.
+On Fri, 2014-05-16 at 14:32 -0700, Nicholas A. Bellinger wrote:
+> Hello Linus,
 > 
-> 2 out of 4.  kfree(NULL) is perfectly legal.
+> Here are the target-pending fixes for v3.15-rc6.  Please go ahead and
+> pull from:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+> 
+> This series include:
+> 
+>   - Close race between iser-target network portal shutdown + accepting 
+>     new connection logins (sagi)
+>   - Fix free-after-use regression in tcm_fc post conversion to 
+>     percpu-ida pre-allocation (nab)
+>   - Explicitly disable Immediate + Unsolicited Data for iser-target 
+>     connections when T10-PI is enabled (sagi + nab)
+>   - Allow pi_prot_type + emulate_write_cache attributes to be set to
+>     zero regardless of backend support (andy)
+> 
 
-pdev was NULL though...
+Hi Linus,
 
-The bug is *caused* by trying to use the same "err" label to do all
-error handling.  This is a very common anti-patern, but if you follow
-canonical kernel style then your error handling is less buggy.
+One last minute bugfix from Mikulas has been included in this PULL
+request.  Here is the updated short-log + diffstat.
 
-regards,
-dan carpenter
+Thank you,
+
+--nab
+
+Andy Grover (2):
+  target: Allow non-supporting backends to set pi_prot_type to 0
+  target: Don't allow setting WC emulation if device doesn't support
+
+Mikulas Patocka (1):
+  target: fix memory leak on XCOPY
+
+Nicholas Bellinger (3):
+  iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
+  tcm_fc: Fix free-after-use regression in ft_free_cmd
+  iscsi-target: Disable Immediate + Unsolicited Data with ISER
+    Protection
+
+Sagi Grimberg (3):
+  Target/iser: Fix wrong connection requests list addition
+  Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
+  Target/iscsi,iser: Avoid accepting transport connections during stop
+    stage
+
+ drivers/infiniband/ulp/isert/ib_isert.c   |   38 +++++++++++++----------------
+ drivers/infiniband/ulp/isert/ib_isert.h   |    2 +-
+ drivers/target/iscsi/iscsi_target.c       |    4 ++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |   28 ++++++++++++++++++++-
+ drivers/target/iscsi/iscsi_target_tpg.c   |    1 +
+ drivers/target/target_core_device.c       |   12 ++++++---
+ drivers/target/target_core_transport.c    |    2 +-
+ drivers/target/tcm_fc/tfc_cmd.c           |    8 +++---
+ 9 files changed, 63 insertions(+), 33 deletions(-)
+
+-- 
+1.7.10.4
 
