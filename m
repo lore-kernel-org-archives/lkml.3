@@ -1,123 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaEQUsN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 16:48:13 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:61284 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaEQUsL (ORCPT
+	id S1751476AbaEQUvn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 16:51:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39302 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaEQUvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 16:48:11 -0400
-Date: Sat, 17 May 2014 22:48:06 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140517204805.GA1046@mithrandir>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
- <20140517170455.08e181f16d3abf36d1ec6274@samsung.com>
+	Sat, 17 May 2014 16:51:42 -0400
+Date: Sat, 17 May 2014 22:51:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pll] irq updates for 3.15
+Message-ID: <alpine.DEB.2.02.1405172244130.4084@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
-Content-Disposition: inline
-In-Reply-To: <20140517170455.08e181f16d3abf36d1ec6274@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+please pull the latest irq-urgent-for-linus git tree from:
 
-On Sat, May 17, 2014 at 05:04:55PM +0900, Cho KyongHo wrote:
-> On Fri, 16 May 2014 14:23:18 +0200, Thierry Reding wrote:
-[...]
-> > +Examples:
-> > +=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > +
-> > +Single-master IOMMU:
-> > +--------------------
-> > +
-> > +	iommu {
-> > +		#iommu-cells =3D <0>;
-> > +	};
-> > +
-> > +	master {
-> > +		iommu =3D <&/iommu>;
-> > +	};
-> > +
->=20
-> Great work, Thierry.
->=20
-> One simple comment.
->=20
-> This should be also applicable to multi-master IOMMUs that the masters
-> of an IOMMU is not configurable with ID or something.
-> I think the title needs to be changed to cover such IOMMUs which always
-> translate master's transactions and unable to change the configuration
-> of the relationship between the masters and IOMMUs by S/W.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
-Agreed, how about we add a separate example for that case:
+Two small updates from the irq departement:
 
-Multiple-master IOMMU with fixed associations:
-----------------------------------------------
+ * Provide missing inline stub for a SMP only function
 
-	/* multiple-master IOMMU */
-	iommu {
-		/*
-		 * Masters are statically associated with this IOMMU and
-		 * address translation is always enabled.
-		 */
-		#iommu-cells =3D <0>;
-	};
+ * Add sub-maintainer for the drivers/irqchip/ part of the irq
+   subsystem. YAY!
 
-	/* static association with IOMMU */
-	master@1 {
-		reg =3D <1>;
-		iommus =3D <&/iommu>;
-	};
+Thanks,
 
-	/* static association with IOMMU */
-	master@2 {
-		reg =3D <2>;
-		iommus =3D <&/iommu>;
-	};
+	tglx
 
-?
+------------------>
+Arnd Bergmann (1):
+      genirq: Provide irq_force_affinity fallback for non-SMP
 
-Thierry
+Jason Cooper (1):
+      MAINTAINERS: Add co-maintainer for drivers/irqchip
 
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ MAINTAINERS               |    8 ++++++++
+ include/linux/interrupt.h |    5 +++++
+ 2 files changed, 13 insertions(+)
 
-iQIcBAEBAgAGBQJTd8sFAAoJEN0jrNd/PrOhGXIQAJOqRSklMjl4lFQfRhWaoB3m
-pYpRwqjrA0rLzEb+u6bk5Kv4kLRK5wOYr6Fd/y8DYONY+vZ0SXBOgEo7uv/mXURM
-R2m8tTiKLtmQm6xZ///FmcU98lOZM+l6Vv3/F+QVH/41RRNTzTXXir0q2XTYG5wU
-Fefylq654a8Ha1rDN2Y6kPt4P/1Q0tuA/7Z0jidDYXK04Pp+5QTBUHSFAYJ4V1Q3
-HuH2XmCioGRTem4cl4SMM6uA+IrnuZcXePrNT35HwtN6bmSe2IKNxaK+VKvnVzza
-Qc0hvQEDdsjijs1Fy4rY3zPhkvAGz/rbs6nYUJpRl96R3Zb5sKaO2Vqj9glLX5/e
-B5/wv5yVSs/ygRLW8/E76LXB2PNqkVg68smSRGrA/7q7iU2/ZUatnqoVCTWT2Jid
-0zUkBur8KM0wdBrowgrs/sVzFvS5Ii/yUyyfXJQWZELkhEo681LGGNt7PXYugjtr
-P//6zQwn1ogR7xq+7hCcy5yZAtc8UrXyIRF9/XrNvdGhg0zXdaQa1viM5AapeLGs
-WAPwb+KlFvXxG/8EY96Y59LvULcP5oGhwMXkUrkvH9OiDzZXIVbEZfrtCvKhUzn6
-G7CzsIQr4Q3+5u42Ndt94WglpdiDfVeUmh6ofv34rTZHqy7MGpybJBp67qf0sff9
-wO7Z6vqP8a7m/yZuQ7tr
-=Y4ib
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6bef70b..4195801 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4818,6 +4818,14 @@ L:	linux-kernel@vger.kernel.org
+ S:	Maintained
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
+ F:	kernel/irq/
++
++IRQCHIP DRIVERS
++M:	Thomas Gleixner <tglx@linutronix.de>
++M:	Jason Cooper <jason@lakedaemon.net>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
++T:	git git://git.infradead.org/users/jcooper/linux.git irqchip/core
+ F:	drivers/irqchip/
+ 
+ IRQ DOMAINS (IRQ NUMBER MAPPING LIBRARY)
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 97ac926..051c850 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -272,6 +272,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+ 	return -EINVAL;
+ }
+ 
++static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return 0;
++}
++
+ static inline int irq_can_set_affinity(unsigned int irq)
+ {
+ 	return 0;
