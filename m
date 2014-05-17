@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699AbaEQWJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:09:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40407 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaEQWJ2 (ORCPT
+	id S1751241AbaEQWOk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:14:40 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:37607 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaEQWOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:09:28 -0400
-Date: Sun, 18 May 2014 01:08:36 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: imx: fix error handling in ipu device
- registration
-Message-ID: <20140517220836.GI15585@mwanda>
-References: <1400352033-18262-1-git-send-email-emilgoode@gmail.com>
- <20140517191821.GD16662@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140517191821.GD16662@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sat, 17 May 2014 18:14:39 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alan Cox <alan@linux.intel.com>, kernel-janitors@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: [PATCH 2/4 V2] cpupower: Remove redundant error check
+Date: Sun, 18 May 2014 00:14:14 +0200
+Message-Id: <1400364854-9575-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 09:18:21PM +0200, Uwe Kleine-König wrote:
-> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> index fc4dd7cedc11..6bd7c3f37ac0 100644
-> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> @@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
->  
->  	pdev = platform_device_alloc("mx3-camera", 0);
->  	if (!pdev)
-> -		goto err;
-> +		return ERR_PTR(-ENOMEM);
->  
->  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
->  	if (!pdev->dev.dma_mask)
+Remove double checks, and move the call to print_error to the
+first check. Replace break by return, and return 0 on success.
+The simplified version of the coccinelle semantic patch that
+fixes this issue is as follows:
 
-Emil, do this one, please and not the second suggestion.
+// <smpl>
+@@
+expression E; identifier pr; expression list es;
+@@
+for(...;...;...){
+...
+-	if (E) break;
++	if (E){
++		pr(es);
++		break;
++	}
+...
+}
+- if(E) pr(es);
+// </smpl>
 
-Direct returns are more readable.  Otherwise, you wonder what the goto
-is for and where it will take you and be annoyed to discover it is a
-waste of time, no-op goto.  Also you will wonder if platform_device_put()
-accepts NULL pointers.  Thirdly there is a small ugliness that the error
-code is not preserved.  What is the point of setting the error code to
--ENOMEM only to discard it?
+Untested.
 
-Let's look at that error handling again.
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-err:  <-- the name is not descriptive.  the location is bad.
-		kfree(pdev->dev.dma_mask);  <- null dereference.
-		platform_device_put(pdev);  <- ok
-		return ERR_PTR(-ENODEV);    <- should be "return ERR_PTR(ret);"
+---
+Changes from V1:
+ - Replaced break with a return
+ - Return 0 instead of ret on success
 
-3 out of 4 of the lines are bad.
+ tools/power/cpupower/utils/cpufreq-set.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-regards,
-dan carpenter
-
+diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
+index a416de8..f656e58 100644
+--- a/tools/power/cpupower/utils/cpufreq-set.c
++++ b/tools/power/cpupower/utils/cpufreq-set.c
+@@ -320,12 +320,11 @@ int cmd_freq_set(int argc, char **argv)
+ 
+ 		printf(_("Setting cpu: %d\n"), cpu);
+ 		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
+-		if (ret)
+-			break;
++		if (ret) {
++			print_error();
++			return ret;
++		}
+ 	}
+ 
+-	if (ret)
+-		print_error();
+-
+-	return ret;
++	return 0;
+ }
