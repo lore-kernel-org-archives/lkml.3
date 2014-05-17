@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030220AbaEQQBv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 12:01:51 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:48580 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223AbaEQQBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 12:01:49 -0400
-Date: Sat, 17 May 2014 11:01:45 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
- namespaces
-Message-ID: <20140517160145.GA44802@ubuntu-hedt>
-Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Serge Hallyn <serge.hallyn@ubuntu.com>,
-	"Michael H. Warfield" <mhw@WittsEnd.com>,
-	linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Serge Hallyn <serge.hallyn@canonical.com>,
-	lxc-devel@lists.linuxcontainers.org,
-	James Bottomley <James.Bottomley@HansenPartnership.com>
-References: <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
- <20140515031527.GA146352@ubuntu-hedt>
- <20140515040032.GA6702@kroah.com>
- <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
- <20140515140856.GA17453@kroah.com>
- <20140515174254.GM21073@ubuntumail>
- <20140515221551.GB13306@kroah.com>
- <20140516014959.GD22591@ubuntumail>
- <20140516043532.GA14149@kroah.com>
- <87mwehgh5i.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwehgh5i.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932558AbaEQQFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 12:05:53 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:55019 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932115AbaEQQFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 12:05:52 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org, crope@iki.fi
+Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCHv2] staging: media: as102: replace custom dprintk() with dev_dbg()
+Date: Sat, 17 May 2014 18:05:38 +0200
+Message-Id: <1400342738-32652-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <53776B57.5050504@iki.fi>
+References: <53776B57.5050504@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 09:31:37PM -0700, Eric W. Biederman wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> 
-> > On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
-> >> > I think having to pick and choose what device nodes you want in a
-> >> > container is a good thing.  Becides, you would have to do the same thing
-> >> > in the kernel anyway, what's wrong with userspace making the decision
-> >> > here, especially as it knows exactly what it wants to do much more so
-> >> > than the kernel ever can.
-> >> 
-> >> For 'real' devices that sounds sensible.  The thing about loop devices
-> >> is that we simply want to allow a container to say "give me a loop
-> >> device to use" and have it receive a unique loop device (or 3), without
-> >> having to pre-assign them.  I think that would be cleaner to do using
-> >> a pseudofs and loop-control device, rather than having to have a
-> >> daemon in userspace on the host farming those out in response to
-> >> some, I don't know, dbus request?
-> >
-> > I agree that loop devices would be nice to have in a container, and that
-> > the existing loop interface doesn't really lend itself to that.  So
-> > create a new type of thing that acts like a loop device in a container.
-> > But don't try to mess with the whole driver core just for a single type
-> > of device.
-> 
-> Yes. Something like devpts (without the newinstance option).  Built to
-> allow unprivileged users to create loopback devices.
+don't reinvent dev_dbg(). remove dprintk() in as102_drv.c.
+use the common kernel coding style.
 
-That's where I started, and I've got code, so I guess I'll clean it up
-and send patches. If the stance is that only system-wide CAP_SYS_ADMIN
-gets to do privileged block device ioctls, including reading partitions
-on a block device which has been assigned to a contiainer, then I guess
-that approach works well enough.
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+this applies to next-20140516. any more suggestions?
+more cleanup can be done when dprintk() is completely gone.
 
-> There is still a huge kettle of fish in with verifying a filesystem is
-> safe from a hostile user that has acess to the block device while the
-> filesystem is mounted.
-> 
-> Having a few filesystems that are robust enough to trust with arbitrary
-> filesystem corruption would be very interesting.
-> 
-> I assume unprivileged and hostile users because if you trusted the real
-> root inside of your container this would not be an issue.
-> 
-> Eric
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/staging/media/as102/as102_drv.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/media/as102/as102_drv.c b/drivers/staging/media/as102/as102_drv.c
+index 09d64cd..e0ee618 100644
+--- a/drivers/staging/media/as102/as102_drv.c
++++ b/drivers/staging/media/as102/as102_drv.c
+@@ -31,10 +31,6 @@
+ #include "as102_fw.h"
+ #include "dvbdev.h"
+ 
+-int as102_debug;
+-module_param_named(debug, as102_debug, int, 0644);
+-MODULE_PARM_DESC(debug, "Turn on/off debugging (default: off)");
+-
+ int dual_tuner;
+ module_param_named(dual_tuner, dual_tuner, int, 0644);
+ MODULE_PARM_DESC(dual_tuner, "Activate Dual-Tuner config (default: off)");
+@@ -74,7 +70,8 @@ static void as102_stop_stream(struct as102_dev_t *dev)
+ 			return;
+ 
+ 		if (as10x_cmd_stop_streaming(bus_adap) < 0)
+-			dprintk(debug, "as10x_cmd_stop_streaming failed\n");
++			dev_dbg(&dev->bus_adap.usb_dev->dev,
++				"as10x_cmd_stop_streaming failed\n");
+ 
+ 		mutex_unlock(&dev->bus_adap.lock);
+ 	}
+@@ -112,14 +109,16 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
+ 	int ret = -EFAULT;
+ 
+ 	if (mutex_lock_interruptible(&dev->bus_adap.lock)) {
+-		dprintk(debug, "mutex_lock_interruptible(lock) failed !\n");
++		dev_dbg(&dev->bus_adap.usb_dev->dev,
++			"amutex_lock_interruptible(lock) failed !\n");
+ 		return -EBUSY;
+ 	}
+ 
+ 	switch (onoff) {
+ 	case 0:
+ 		ret = as10x_cmd_del_PID_filter(bus_adap, (uint16_t) pid);
+-		dprintk(debug, "DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
++		dev_dbg(&dev->bus_adap.usb_dev->dev,
++			"DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
+ 			index, pid, ret);
+ 		break;
+ 	case 1:
+@@ -131,7 +130,7 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
+ 		filter.pid = pid;
+ 
+ 		ret = as10x_cmd_add_PID_filter(bus_adap, &filter);
+-		dprintk(debug,
++		dev_dbg(&dev->bus_adap.usb_dev->dev,
+ 			"ADD_PID_FILTER([%02d -> %02d], 0x%04x) ret = %d\n",
+ 			index, filter.idx, filter.pid, ret);
+ 		break;
+-- 
+1.7.10.4
+
