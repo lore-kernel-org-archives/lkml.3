@@ -1,348 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945892AbaEQAdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:33:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18346 "EHLO mga01.intel.com"
+	id S1756576AbaEQAdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:33:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33087 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439AbaEQAdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:33:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,1070,1389772800"; 
-   d="scan'208";a="533312262"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave@sr71.net,
-        willy@linux.intel.com, riel@redhat.com, mgorman@suse.de,
-        aarcange@redhat.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [RFC, PATCH] mm: unified interface to handle page table entries on different levels?
-Date: Sat, 17 May 2014 03:33:05 +0300
-Message-Id: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1756201AbaEQAd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 20:33:29 -0400
+Message-ID: <5376AE23.10905@zytor.com>
+Date: Fri, 16 May 2014 17:32:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Chung-Lin Tang <cltang@codesourcery.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+References: <1399971456-3941-1-git-send-email-lftan@altera.com> <4706636.rTYoqSXXOR@wuerfel> <Pine.LNX.4.64.1405151949160.911@digraph.polyomino.org.uk> <9236147.lyD24Zv5SZ@wuerfel> <53769B27.2090407@zytor.com> <Pine.LNX.4.64.1405162336150.24114@digraph.polyomino.org.uk>
+In-Reply-To: <Pine.LNX.4.64.1405162336150.24114@digraph.polyomino.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux VM was built with fixed page size in mind. We have rich API to
-deal with page table entries, but it focused mostly on one level of page
-tables -- PTE.
+On 05/16/2014 04:47 PM, Joseph S. Myers wrote:
+>>
+>> struct timespec is specified in POSIX as having type "long" for tv_nsec.
+>>  This, as Linus pointed out, is totally braindamaged.
+> 
+> long is a perfectly reasonable type for this purpose - it's guaranteed to 
+> have enough precision.  ISO C11 follows POSIX in the definition of struct 
+> timespec.
+> 
 
-As huge pages was added we duplicated routines on demand for other page
-tables level (PMD, PUD). With separate APIs it's hard to harmonize huge
-pages support code with rest of VM.
+That is not the issue.  The issue is that by fixing the type, the POSIX
+committee foolishly fixed the ABI unnecessarily.  There is nothing wrong
+with storing this value in a long, of course, but:
 
-Can we do better than that?
+a) there is no reason it needs to be as wide as long, on an LP64 ABI an
+   int would serve just fine;
+b) ABI compatibilility issue, especially since on virtually all ABIs a
+   96-bit struct timespec would end up padded to 128 bits anyway;
+c) gratuitously different from struct timeval.
 
-Below is my attempt to play with the problem. I've took one function --
-page_referenced_one() -- which looks ugly because of different APIs for
-PTE/PMD and convert it to use vpte_t. vpte_t is union for pte_t, pmd_t
-and pud_t.
+>> x32 does not follow POSIX (Linus pretty much dictated that), and instead
+>> does the __kernel_suseconds_t to match the native kernel type.  The
+>> proposal at some point was to try to push a snseconds_t into POSIX.
+> 
+> If the x32 kernel won't be fixed to treat the high part as padding then 
+> glibc will need fixing to copy all struct timespec values passed to the 
+> kernel and clear the padding when copying (really, fixing that bug would 
+> need such copying anyway unless --enable-kernel is used to allow a fixed 
+> kernel to be assumed).  In any case, we should not put any more ports into 
+> glibc with that x32 bug; "long" and an explicit padding field is the way 
+> to go (and copying / zeroing if the kernel doesn't treat that padding 
+> field as padding).
+> 
+> Adding snseconds_t to POSIX seems pointless when there is no need for this 
+> field to store values that can't fit in "long".  Even if it were added, 
+> good practice would say that implementations should keep using "long" 
+> whenever possible for compatibility with existing applications (just like 
+> the ISO C recommendation "The types used for size_t and ptrdiff_t should 
+> not have an integer conversion rank greater than that of signed long int 
+> unless the implementation supports objects large enough to make this 
+> necessary.").
 
-Basically, the idea is instead of having different helpers to handle
-PTE/PMD/PUD, we have one, which take pair of vpte_t + pglevel.
+That is a very different thing, though.
 
-Should we try this way? Any suggestions?
----
- arch/x86/include/asm/pgtable.h       |  4 ++
- arch/x86/include/asm/pgtable_types.h |  2 +
- arch/x86/mm/pgtable.c                | 13 +++++++
- include/asm-generic/pgtable-vpte.h   | 34 +++++++++++++++++
- include/asm-generic/pgtable.h        | 15 ++++++++
- include/linux/mm.h                   | 15 ++++++++
- include/linux/mmu_notifier.h         |  8 ++--
- include/linux/rmap.h                 | 13 +++++++
- mm/rmap.c                            | 72 +++++++++++++-----------------------
- 9 files changed, 127 insertions(+), 49 deletions(-)
- create mode 100644 include/asm-generic/pgtable-vpte.h
+> If you were designing from scratch, no doubt a typedef such as snseconds_t 
+> would be there, but with real-world APIs that have accumulated over time, 
+> deviating from "long" now is a bad idea.
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index b459ddf27d64..407bfe97e22e 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -816,6 +816,10 @@ static inline void pmdp_set_wrprotect(struct mm_struct *mm,
- 	pmd_update(mm, addr, pmdp);
- }
- 
-+#define vptep_clear_flush_young vptep_clear_flush_young
-+extern int vptep_clear_flush_young(struct vm_area_struct *vma,
-+		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl);
-+
- /*
-  * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
-  *
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index eb3d44945133..eefc835b7437 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -296,6 +296,8 @@ static inline pmdval_t native_pmd_val(pmd_t pmd)
- }
- #endif
- 
-+#include <asm-generic/pgtable-vpte.h>
-+
- static inline pudval_t pud_flags(pud_t pud)
- {
- 	return native_pud_val(pud) & PTE_FLAGS_MASK;
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index c96314abd144..92a97257a442 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -438,6 +438,19 @@ void pmdp_splitting_flush(struct vm_area_struct *vma,
- }
- #endif
- 
-+int vptep_clear_flush_young(struct vm_area_struct *vma,
-+		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl)
-+{
-+	int young;
-+
-+	/* _PAGE_BIT_ACCESSED is in the same place in PTE/PMD/PUD */
-+	young = ptep_test_and_clear_young(vma, address, &vptep->pte);
-+	if (young)
-+		flush_tlb_range(vma, address,
-+				address + vpte_size(*vptep, ptlvl));
-+
-+	return young;
-+}
- /**
-  * reserve_top_address - reserves a hole in the top of kernel address space
-  * @reserve - size of hole to reserve
-diff --git a/include/asm-generic/pgtable-vpte.h b/include/asm-generic/pgtable-vpte.h
-new file mode 100644
-index 000000000000..96e52b5e39ca
---- /dev/null
-+++ b/include/asm-generic/pgtable-vpte.h
-@@ -0,0 +1,34 @@
-+#ifndef _ASM_GENERIC_PGTABLE_VPTE_H
-+#define _ASM_GENERIC_PGTABLE_VPTE_H
-+
-+typedef union {
-+	pte_t pte;
-+	pmd_t pmd;
-+	pud_t pud;
-+} vpte_t;
-+
-+enum ptlevel {
-+	PTE,
-+	PMD,
-+	PUD,
-+};
-+
-+static inline unsigned long vpte_size(vpte_t vptep, enum ptlevel ptlvl)
-+{
-+	switch (ptlvl) {
-+	case PTE:
-+		return PAGE_SIZE;
-+#ifdef PMD_SIZE
-+	case PMD:
-+		return PMD_SIZE;
-+#endif
-+#ifdef PUD_SIZE
-+	case PUD:
-+		return PUD_SIZE;
-+#endif
-+	default:
-+		return 0; /* XXX */
-+	}
-+}
-+
-+#endif
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index a8015a7a55bb..1cfc9ba67078 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -79,6 +79,21 @@ int pmdp_clear_flush_young(struct vm_area_struct *vma,
- 			   unsigned long address, pmd_t *pmdp);
- #endif
- 
-+#ifndef vptep_clear_flush_young
-+static inline int vptep_clear_flush_young(struct vm_area_struct *vma,
-+		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl)
-+{
-+	switch (ptlvl) {
-+	case PTE:
-+		return ptep_clear_flush_young(vma, address, &vptep->pte);
-+	case PMD:
-+		return pmdp_clear_flush_young(vma, address, &vptep->pmd);
-+	default:
-+		BUG();
-+	};
-+}
-+#endif
-+
- #ifndef __HAVE_ARCH_PTEP_GET_AND_CLEAR
- static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
- 				       unsigned long address,
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d6777060449f..cac04827d93e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1559,6 +1559,21 @@ static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
- 	return ptl;
- }
- 
-+static inline void vpte_unmap_unlock(vpte_t *vpte, enum ptlevel ptlvl,
-+		spinlock_t *ptl)
-+{
-+	switch (ptlvl) {
-+	case PTE:
-+		pte_unmap_unlock(&vpte->pte, ptl);
-+		break;
-+	case PMD:
-+		spin_unlock(ptl);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- extern void free_area_init(unsigned long * zones_size);
- extern void free_area_init_node(int nid, unsigned long * zones_size,
- 		unsigned long zone_start_pfn, unsigned long *zholes_size);
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index deca87452528..927c00ea3c73 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -257,12 +257,14 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
- 	__young;							\
- })
- 
--#define pmdp_clear_flush_young_notify(__vma, __address, __pmdp)		\
-+#define vptep_clear_flush_young_notify(__vma, __address,		\
-+		__vptep, __ptlvl)					\
- ({									\
- 	int __young;							\
- 	struct vm_area_struct *___vma = __vma;				\
- 	unsigned long ___address = __address;				\
--	__young = pmdp_clear_flush_young(___vma, ___address, __pmdp);	\
-+	__young = vptep_clear_flush_young(___vma, ___address,		\
-+			__vptep, __ptlvl);				\
- 	__young |= mmu_notifier_clear_flush_young(___vma->vm_mm,	\
- 						  ___address);		\
- 	__young;							\
-@@ -335,7 +337,7 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
- }
- 
- #define ptep_clear_flush_young_notify ptep_clear_flush_young
--#define pmdp_clear_flush_young_notify pmdp_clear_flush_young
-+#define vptep_clear_flush_young_notify vptep_clear_flush_young
- #define set_pte_at_notify set_pte_at
- 
- #endif /* CONFIG_MMU_NOTIFIER */
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index b66c2110cb1f..71f2156ac632 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -209,6 +209,19 @@ static inline pte_t *page_check_address(struct page *page, struct mm_struct *mm,
- 	return ptep;
- }
- 
-+
-+static inline vpte_t *page_check_address_vpte(struct page *page,
-+		struct mm_struct *mm, unsigned long address,
-+		spinlock_t **ptlp, int sync)
-+{
-+	if (PageTransHuge(page))
-+		return (vpte_t *) page_check_address_pmd(page, mm, address,
-+				PAGE_CHECK_ADDRESS_PMD_FLAG, ptlp);
-+	else
-+		return (vpte_t *) page_check_address(page, mm, address,
-+				ptlp, sync);
-+}
-+
- /*
-  * Used by swapoff to help locate where page is expected in vma.
-  */
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 9c3e77396d1a..0101a1a72bb0 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -676,59 +676,39 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 	spinlock_t *ptl;
- 	int referenced = 0;
- 	struct page_referenced_arg *pra = arg;
-+	vpte_t *vpte;
-+	enum ptlevel ptlvl = PTE;
- 
--	if (unlikely(PageTransHuge(page))) {
--		pmd_t *pmd;
-+	ptlvl = unlikely(PageTransHuge(page)) ? PMD : PTE;
- 
--		/*
--		 * rmap might return false positives; we must filter
--		 * these out using page_check_address_pmd().
--		 */
--		pmd = page_check_address_pmd(page, mm, address,
--					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
--		if (!pmd)
--			return SWAP_AGAIN;
--
--		if (vma->vm_flags & VM_LOCKED) {
--			spin_unlock(ptl);
--			pra->vm_flags |= VM_LOCKED;
--			return SWAP_FAIL; /* To break the loop */
--		}
-+	/*
-+	 * rmap might return false positives; we must filter these out using
-+	 * page_check_address_vpte().
-+	 */
-+	vpte = page_check_address_vpte(page, mm, address, &ptl, 0);
-+	if (!vpte)
-+		return SWAP_AGAIN;
-+
-+	if (vma->vm_flags & VM_LOCKED) {
-+		vpte_unmap_unlock(vpte, ptlvl, ptl);
-+		pra->vm_flags |= VM_LOCKED;
-+		return SWAP_FAIL; /* To break the loop */
-+	}
- 
--		/* go ahead even if the pmd is pmd_trans_splitting() */
--		if (pmdp_clear_flush_young_notify(vma, address, pmd))
--			referenced++;
--		spin_unlock(ptl);
--	} else {
--		pte_t *pte;
- 
-+	/* go ahead even if the pmd is pmd_trans_splitting() */
-+	if (vptep_clear_flush_young_notify(vma, address, vpte, ptlvl)) {
- 		/*
--		 * rmap might return false positives; we must filter
--		 * these out using page_check_address().
-+		 * Don't treat a reference through a sequentially read
-+		 * mapping as such.  If the page has been used in
-+		 * another mapping, we will catch it; if this other
-+		 * mapping is already gone, the unmap path will have
-+		 * set PG_referenced or activated the page.
- 		 */
--		pte = page_check_address(page, mm, address, &ptl, 0);
--		if (!pte)
--			return SWAP_AGAIN;
--
--		if (vma->vm_flags & VM_LOCKED) {
--			pte_unmap_unlock(pte, ptl);
--			pra->vm_flags |= VM_LOCKED;
--			return SWAP_FAIL; /* To break the loop */
--		}
--
--		if (ptep_clear_flush_young_notify(vma, address, pte)) {
--			/*
--			 * Don't treat a reference through a sequentially read
--			 * mapping as such.  If the page has been used in
--			 * another mapping, we will catch it; if this other
--			 * mapping is already gone, the unmap path will have
--			 * set PG_referenced or activated the page.
--			 */
--			if (likely(!(vma->vm_flags & VM_SEQ_READ)))
--				referenced++;
--		}
--		pte_unmap_unlock(pte, ptl);
-+		if (likely(!(vma->vm_flags & VM_SEQ_READ)))
-+			referenced++;
- 	}
-+	vpte_unmap_unlock(vpte, ptlvl, ptl);
- 
- 	if (referenced) {
- 		pra->referenced++;
--- 
-2.0.0.rc2
+Given that you already have a long long member of the same structure, it
+seems unlikely that adding another long long to this is a problem.
+
+Anyway, this was discussed back in 2011:
+
+https://lkml.org/lkml/2011/8/31/244
+
+	-hpa
+
 
