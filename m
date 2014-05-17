@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527AbaEQOot (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 10:44:49 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:49660 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116AbaEQOoo (ORCPT
+	id S1757554AbaEQOoz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 10:44:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28385 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757213AbaEQOow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 10:44:44 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-input@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH 2/2] dell-wmi: Add support for Fn key combinations
-Date: Sat, 17 May 2014 16:43:37 +0200
-Message-Id: <1400337817-14473-3-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400337817-14473-1-git-send-email-pali.rohar@gmail.com>
-References: <201405171639.45722@pali>
- <1400337817-14473-1-git-send-email-pali.rohar@gmail.com>
+	Sat, 17 May 2014 10:44:52 -0400
+Date: Sat, 17 May 2014 17:44:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Jes.Sorensen@redhat.com,
+        Larry.Finger@lwfinger.net
+Subject: Re: [PATCH 1/2] staging: rtl8188eu: fix usage of uninit scalar in
+ rtw_drv_init()
+Message-ID: <20140517144423.GA15585@mwanda>
+References: <1400323138-32243-1-git-send-email-cengelma@gmx.at>
+ <1400323138-32243-2-git-send-email-cengelma@gmx.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400323138-32243-2-git-send-email-cengelma@gmx.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bios DMI table contains scancodes for some Fn key combinations. But
-corresponding keycodes in DMI table have same value 255. And dell-wmi driver
-map value 255 to KEY_PROG3. This means that it is not possible to distinguish
-between Fn key combinations (e.g Fn+Q and Fn+W), because kernel reports for all
-of them only KEY_PROG3.
+On Sat, May 17, 2014 at 12:38:57PM +0200, Christian Engelmayer wrote:
+> Function rtw_drv_init() is written in a way that assumes 'status' != _SUCCESS
+> as long as not explicitly set. Thus initialize 'status' to FAIL, in order to
+> prevent undefined behaviour if going through the exit paths. Detected by
+> Coverity - CID 1077832.
+> 
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 
-This patch adding new table for mapping Bios DMI scancodes to linux keycodes
-when bios DMI keycode is set to "generic" keycode 255. So different Fn key
-combinations will have different keycodes.
+This is a bugfix and we like to merge bugfixes without asking redo
+things, so don't redo.  But really the better fix is to get rid of the
+status variable completely.  Just return directly on the success path.
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- drivers/platform/x86/dell-wmi.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+If we were to do that, then both patches would be merged together and
+called:  [patch] Staging: rtl8188eu: fix error handling in rtw_drv_init()
 
-diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
-index 390e8e3..c54d675 100644
---- a/drivers/platform/x86/dell-wmi.c
-+++ b/drivers/platform/x86/dell-wmi.c
-@@ -140,7 +140,27 @@ static const u16 bios_to_linux_keycode[256] __initconst = {
- 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
--	0, 0, 0, 0, 0, 0, 0, 0, 0, KEY_PROG3
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-+};
-+
-+/* table for bios code 0xff */
-+static const u16 scancode_to_linux_keycode[256] __initconst = {
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	KEY_FN_Q, KEY_FN_W, KEY_FN_E, KEY_FN_R,
-+	KEY_FN_T, 0, 0, 0,
-+	0, 0, 0, 0,
-+	0, 0, KEY_FN_A, KEY_FN_S,
-+	KEY_FN_D, KEY_FN_F, KEY_FN_G, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
- };
- 
- static struct input_dev *dell_wmi_input_dev;
-@@ -212,6 +232,11 @@ static const struct key_entry * __init dell_wmi_prepare_new_keymap(void)
- 		keymap[i].keycode = bios_entry->keycode < 256 ?
- 				    bios_to_linux_keycode[bios_entry->keycode] :
- 				    KEY_RESERVED;
-+		if (bios_entry->keycode == 255 && bios_entry->scancode < 256)
-+			keymap[i].keycode =
-+				scancode_to_linux_keycode[bios_entry->scancode];
-+		if (!keymap[i].keycode)
-+			keymap[i].keycode = KEY_RESERVED;
- 	}
- 
- 	keymap[hotkey_num].type = KE_END;
--- 
-1.7.9.5
+But this patch is also acceptable as-is.  Thanks for fixing the bug.  :)
+
+regards,
+dan carpenter
 
