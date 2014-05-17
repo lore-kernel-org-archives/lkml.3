@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030327AbaEQSYY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 14:24:24 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:37937 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030236AbaEQSYX (ORCPT
+	id S1030416AbaEQSYf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 14:24:35 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:48431 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030236AbaEQSYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 14:24:23 -0400
+	Sat, 17 May 2014 14:24:31 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Roland Dreier <roland@kernel.org>
 Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/4] VMCI: Remove redundant error check
-Date: Sat, 17 May 2014 20:22:57 +0200
-Message-Id: <1400350980-30455-1-git-send-email-peter.senna@gmail.com>
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/4] IB: Remove redundant error check
+Date: Sat, 17 May 2014 20:23:00 +0200
+Message-Id: <1400350980-30455-4-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double checks, and move the call to pr_devel to the
+Remove double checks, and move calls to pr_err and printk to the
 first check. The simplified version of the coccinelle semantic
 patch that fixes this issue is as follows:
 
@@ -44,28 +46,49 @@ Tested by compilation only.
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/misc/vmw_vmci/vmci_context.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/ocrdma/ocrdma_hw.c |    6 +++---
+ drivers/infiniband/ulp/srpt/ib_srpt.c    |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/misc/vmw_vmci/vmci_context.c b/drivers/misc/vmw_vmci/vmci_context.c
-index f866a4b..3995e64 100644
---- a/drivers/misc/vmw_vmci/vmci_context.c
-+++ b/drivers/misc/vmw_vmci/vmci_context.c
-@@ -836,12 +836,12 @@ int vmci_ctx_set_chkpt_state(u32 context_id,
- 	for (i = 0; i < num_ids && result == VMCI_SUCCESS; i++) {
- 		current_id = ((u32 *)cpt_buf)[i];
- 		result = vmci_ctx_add_notification(context_id, current_id);
--		if (result != VMCI_SUCCESS)
-+		if (result != VMCI_SUCCESS) {
-+			pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
-+				 cpt_type, result);
+diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
+index 3bbf201..f085a51 100644
+--- a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
++++ b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
+@@ -1839,11 +1839,11 @@ int ocrdma_reg_mr(struct ocrdma_dev *dev,
+ 
+ 		status = ocrdma_mbx_reg_mr_cont(dev, hwmr, cur_pbl_cnt,
+ 						pbl_offset, last);
+-		if (status)
++		if (status) {
++			pr_err("%s() err. status=%d\n", __func__, status);
  			break;
 +		}
  	}
--	if (result != VMCI_SUCCESS)
--		pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
--			 cpt_type, result);
+-	if (status)
+-		pr_err("%s() err. status=%d\n", __func__, status);
  
- 	return result;
+ 	return status;
  }
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index fe09f27..ab23b07 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2875,13 +2875,13 @@ static int srpt_perform_rdmas(struct srpt_rdma_ch *ch,
+ 			wr.send_flags = IB_SEND_SIGNALED;
+ 
+ 		ret = ib_post_send(ch->qp, &wr, &bad_wr);
+-		if (ret)
++		if (ret) {
++			printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
++			       __func__, __LINE__, ret, i, n_rdma);
+ 			break;
++		}
+ 	}
+ 
+-	if (ret)
+-		printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
+-				 __func__, __LINE__, ret, i, n_rdma);
+ 	if (ret && i > 0) {
+ 		wr.num_sge = 0;
+ 		wr.wr_id = encode_wr_id(SRPT_RDMA_ABORT, ioctx->ioctx.index);
 
