@@ -1,124 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaEQBX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 21:23:58 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:63318 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbaEQBX4 (ORCPT
+	id S1756718AbaEQBed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 21:34:33 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44653 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428AbaEQBeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 21:23:56 -0400
-Message-ID: <5376BA1E.8050309@gmail.com>
-Date: Sat, 17 May 2014 03:23:42 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 16 May 2014 21:34:31 -0400
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>, linux-pm@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v4 0/3] Generic Device Tree based power domain look-up
-References: <1399553355-6615-1-git-send-email-t.figa@samsung.com>
-In-Reply-To: <1399553355-6615-1-git-send-email-t.figa@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140516065137.GD27599@bbox>
+References: <000101cf7013$f646ac30$e2d40490$%yang@samsung.com>
+	<20140515143856.58bc6d723fc4aefb6b5ed5c3@linux-foundation.org>
+	<20140516065137.GD27599@bbox>
+Date: Sat, 17 May 2014 09:34:31 +0800
+Message-ID: <CAL1ERfP26OBcvACU7J6RwLYx-3dtzWe8cfXkeoF=uKuN7i1M7w@mail.gmail.com>
+Subject: Re: [PATCH v2] zram: remove global tb_lock with fine grain lock
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Bob Liu <bob.liu@oracle.com>, Dan Streetman <ddstreet@ieee.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 16, 2014 at 2:51 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello Andrew,
+>
+> On Thu, May 15, 2014 at 02:38:56PM -0700, Andrew Morton wrote:
+>> On Thu, 15 May 2014 16:00:47 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+>>
+>> > Currently, we use a rwlock tb_lock to protect concurrent access to
+>> > the whole zram meta table. However, according to the actual access model,
+>> > there is only a small chance for upper user to access the same table[index],
+>> > so the current lock granularity is too big.
+>> >
+>> > The idea of optimization is to change the lock granularity from whole
+>> > meta table to per table entry (table -> table[index]), so that we can
+>> > protect concurrent access to the same table[index], meanwhile allow
+>> > the maximum concurrency.
+>> > With this in mind, several kinds of locks which could be used as a
+>> > per-entry lock were tested and compared:
+>> >
+>> > Test environment:
+>> > x86-64 Intel Core2 Q8400, system memory 4GB, Ubuntu 12.04,
+>> > kernel v3.15.0-rc3 as base, zram with 4 max_comp_streams LZO.
+>> >
+>> > iozone test:
+>> > iozone -t 4 -R -r 16K -s 200M -I +Z
+>> > (1GB zram with ext4 filesystem, take the average of 10 tests, KB/s)
+>> >
+>> >       Test       base      CAS    spinlock    rwlock   bit_spinlock
+>> > -------------------------------------------------------------------
+>> >  Initial write  1381094   1425435   1422860   1423075   1421521
+>> >        Rewrite  1529479   1641199   1668762   1672855   1654910
+>> >           Read  8468009  11324979  11305569  11117273  10997202
+>> >        Re-read  8467476  11260914  11248059  11145336  10906486
+>> >   Reverse Read  6821393   8106334   8282174   8279195   8109186
+>> >    Stride read  7191093   8994306   9153982   8961224   9004434
+>> >    Random read  7156353   8957932   9167098   8980465   8940476
+>> > Mixed workload  4172747   5680814   5927825   5489578   5972253
+>> >   Random write  1483044   1605588   1594329   1600453   1596010
+>> >         Pwrite  1276644   1303108   1311612   1314228   1300960
+>> >          Pread  4324337   4632869   4618386   4457870   4500166
+>>
+>> Did you investigate seqlocks?
+>>
 
-On 08.05.2014 14:49, Tomasz Figa wrote:
-> Up till now there was no single generic method to bind devices to their
-> power domains using Device Tree. Each platform has been doing this using
-> its own way, example of which are Exynos power domain bindings [1] and
-> look-up code [2].
-> 
-> This series is intended to change this and provide generic DT bindings for
-> power domain specification and generic code performing look-up of power
-> domains and binding them to devices.
-> 
-> First two patches are the most important part of this series, as they
-> introduce $subject. Patch 3 converts mach-exynos to use the new generic
-> method. Further patches are adding one more user of the new code,
-> mach-s3c64xx, with first 3 patches (4-6) required to clean-up its power
-> domain driver a bit and last 3 patches (9-11) adding display support for
-> Mini6410 board, including a node for display controller (FIMD) which is
-> a power domain consumer.
-> 
-> The design of DT bindings and provider code is heavily inspired by
-> implementation of clock providers in Common Clock Framework, while
-> the code binding devices to power domains by my Exynos power domain
-> implementation (now removed by this series ;)).
-> 
-> Successfully tested on Exynos4210-based Trats and Exynos4412-based Trats2
-> boards using MFC, 
-> 
-> [1] Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> [2] arch/arm/mach-exynos/pm_domains.c
-> 
-> Changes since v3:
-> (http://thread.gmane.org/gmane.linux.power-management.general/44571)
->  - rebased onto current Rafael's linux-pm bleeding-edge branch (0a112bf),
->  - renamed "power-domain" property to "power-domains" to facilitate further
->    extension to support multiple power domains per device in future.
-> 
-> Changes since v2:
-> (http://thread.gmane.org/gmane.linux.kernel/1658926)
->  - rebased onto current Rafael's linux-pm bleeding-edge branch,
->  - dropped patches for s3c64xx for now. I will send them in separate series,
->  - do not call pm_genpd_dev_need_restore(true) in genpd_bind_domain(),
->  - fixed various stylistic issues reported in review comments.
-> 
-> Changes since v1 (RFC):
-> [https://lkml.org/lkml/2014/1/11/141]
->  - rebased onto current Rafael's linux-pm bleeding-edge branch,
->  - reordered the patches a bit (to have the generic ones first),
->  - dropped renaming of S3C64xx power domains (as suggested by Mark Brown),
->  - added support for deferred probing (as suggested by Stephen Boyd),
->  - fixed several minor issues pointed by Stephen Boyd,
->  - replaced notifiers with direct hooks in driver core to make power domain
->    support independent from specific bus type and allow error handling.
-> 
-> Tomasz Figa (3):
->   base: power: Add generic OF-based power domain look-up
->   drivercore: Bind/unbind power domain on probe/remove
->   ARM: exynos: Move to generic power domain bindings
-> 
->  .../bindings/arm/exynos/power_domain.txt           |  12 +-
->  .../devicetree/bindings/power/power_domain.txt     |  51 ++++
->  arch/arm/mach-exynos/pm_domains.c                  |  81 +-----
->  drivers/base/dd.c                                  |   9 +-
->  drivers/base/power/domain.c                        | 283 +++++++++++++++++++++
->  include/linux/pm_domain.h                          |  46 ++++
->  kernel/power/Kconfig                               |   4 +
->  7 files changed, 398 insertions(+), 88 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/power/power_domain.txt
-> 
+Yes, I did. However, I think it is hard the use seqlocks here, no
+matter use it as
+a meta global lock or a table[index] lock. The main reason is the
+writer will free
+the handle rather than just change some values.
 
-Rob, Mark, could we have your ACK (or NAK if you find some issues) for
-DT bindings introduced by this series?
+>> > To enhance the possibility of access the same table[index] concurrently,
+>> > set zram a small disksize(10MB) and let threads run with large loop count.
+>> >
+>> > fio test:
+>> > fio --bs=32k --randrepeat=1 --randseed=100 --refill_buffers
+>> > --scramble_buffers=1 --direct=1 --loops=3000 --numjobs=4
+>> > --filename=/dev/zram0 --name=seq-write --rw=write --stonewall
+>> > --name=seq-read --rw=read --stonewall --name=seq-readwrite
+>> > --rw=rw --stonewall --name=rand-readwrite --rw=randrw --stonewall
+>> > (10MB zram raw block device, take the average of 10 tests, KB/s)
+>> >
+>> >     Test     base     CAS    spinlock    rwlock  bit_spinlock
+>> > -------------------------------------------------------------
+>> > seq-write   933789   999357   1003298    995961   1001958
+>> >  seq-read  5634130  6577930   6380861   6243912   6230006
+>> >    seq-rw  1405687  1638117   1640256   1633903   1634459
+>> >   rand-rw  1386119  1614664   1617211   1609267   1612471
+>> >
+>> > All the optimization methods show a higher performance than the base,
+>> > however, it is hard to say which method is the most appropriate.
+>> >
+>> > On the other hand, zram is mostly used on small embedded system, so we
+>> > don't want to increase any memory footprint.
+>> >
+>> > This patch pick the bit_spinlock method, pack object size and page_flag
+>> > into an unsigned long table.value, so as to not increase any memory
+>> > overhead on both 32-bit and 64-bit system.
+>>
+>> bit_spinlocks are not a particularly good or complete mechanism - they
+>> don't have lockdep support and iirc they are somewhat slow.
+>>
+>> So we need a pretty good reason to use them.  How much memory saving
+>> are we expecting here?
+>
+> Actually, the reason would be same with page->flags bit spinlock.
+> Given that normally people set up swap size two times bigger than
+> memory, zram table's bloating will be bigger than struct page's one.
+>
 
-Rafael, I wonder if we could still have this series applied for 3.16. I
-know it is a bit late already, but the series isn't too invasive, as it
-mostly generalizes what was being done on per-platform basis and makes
-the code generic. Also I have already seen at least two other series
-depending on this one, so they would benefit from this being merged.
+This data is just for reference: for 1GB zram, CAS will increase about
+1MB memory
+on 32-bit system, the other locks will increase more especially when we config
+DEBUG_SPINLOCK these configs.
+Consider the zsmalloc compress ratio (about 1: 4.7 on test), we can save more
+memory, it is good news for embedded system.
 
-Best regards,
-Tomasz
+>>
+>> > On the third hand, even though different kinds of locks have different
+>> > performances, we can ignore this difference, because:
+>> > if zram is used as zram swapfile, the swap subsystem can prevent concurrent
+>> > access to the same swapslot;
+>> > if zram is used as zram-blk for set up filesystem on it, the upper filesystem
+>> > and the page cache also prevent concurrent access of the same block mostly.
+>> > So we can ignore the different performances among locks.
+>>
+>> So do we need any locking at all?
+>
+> Yes, insane user might want to read/write block device directly while
+> another user uses it with some FS on the block device so at least, zram
+> should make sure consistency.
+>
+
+I agree with Minchan, zram is a general block device, we should consider
+the completeness of its logic.
+
+But your question really inspire me, maybe we can modify the frontswap/zswap
+system by removing any inner lock, because it is for special purpose and the
+upper swap system already have its lock logic.
+
+>>
+>> >
+>> > ....
+>> >
+>> >  static void zram_free_page(struct zram *zram, size_t index)
+>> >  {
+>> >     struct zram_meta *meta = zram->meta;
+>> >     unsigned long handle = meta->table[index].handle;
+>> > +   int size;
+>> >
+>> >     if (unlikely(!handle)) {
+>> >             /*
+>> >              * No memory is allocated for zero filled pages.
+>> >              * Simply clear zero page flag.
+>> >              */
+>> > -           if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+>> > -                   zram_clear_flag(meta, index, ZRAM_ZERO);
+>> > +           if (zram_test_zero(meta, index)) {
+>> > +                   zram_clear_zero(meta, index);
+>> >                     atomic64_dec(&zram->stats.zero_pages);
+>>
+>> Having these atomic ops in the alloc/free hotpaths must be costing us?
+>
+> Yeb, maybe but I think it's not a scope of this patch. If it was really
+> trouble, maybe we could change accouting with percpu.
+>
+> Thanks.
+>
+>>
+>> >             }
+>> >             return;
+>> >
+>> > ....
+>> >
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
