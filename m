@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030416AbaEQSYf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 14:24:35 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:48431 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030236AbaEQSYb (ORCPT
+	id S1030385AbaEQSYa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 14:24:30 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61307 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030236AbaEQSY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 14:24:31 -0400
+	Sat, 17 May 2014 14:24:27 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Roland Dreier <roland@kernel.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
 Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/4] IB: Remove redundant error check
-Date: Sat, 17 May 2014 20:23:00 +0200
-Message-Id: <1400350980-30455-4-git-send-email-peter.senna@gmail.com>
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alan Cox <alan@linux.intel.com>, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/4] cpupower: Remove redundant error check
+Date: Sat, 17 May 2014 20:22:58 +0200
+Message-Id: <1400350980-30455-2-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double checks, and move calls to pr_err and printk to the
-first check. The simplified version of the coccinelle semantic
+Remove double checks, and move the call to print_error to the
+first check.  The simplified version of the coccinelle semantic
 patch that fixes this issue is as follows:
 
 // <smpl>
@@ -41,54 +41,32 @@ for(...;...;...){
 - if(E) pr(es);
 // </smpl>
 
-Tested by compilation only.
+Untested.
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/infiniband/hw/ocrdma/ocrdma_hw.c |    6 +++---
- drivers/infiniband/ulp/srpt/ib_srpt.c    |    8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ tools/power/cpupower/utils/cpufreq-set.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-index 3bbf201..f085a51 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-@@ -1839,11 +1839,11 @@ int ocrdma_reg_mr(struct ocrdma_dev *dev,
+diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
+index a416de8..4e2f35a 100644
+--- a/tools/power/cpupower/utils/cpufreq-set.c
++++ b/tools/power/cpupower/utils/cpufreq-set.c
+@@ -320,12 +320,11 @@ int cmd_freq_set(int argc, char **argv)
  
- 		status = ocrdma_mbx_reg_mr_cont(dev, hwmr, cur_pbl_cnt,
- 						pbl_offset, last);
--		if (status)
-+		if (status) {
-+			pr_err("%s() err. status=%d\n", __func__, status);
- 			break;
-+		}
- 	}
--	if (status)
--		pr_err("%s() err. status=%d\n", __func__, status);
- 
- 	return status;
- }
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index fe09f27..ab23b07 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2875,13 +2875,13 @@ static int srpt_perform_rdmas(struct srpt_rdma_ch *ch,
- 			wr.send_flags = IB_SEND_SIGNALED;
- 
- 		ret = ib_post_send(ch->qp, &wr, &bad_wr);
+ 		printf(_("Setting cpu: %d\n"), cpu);
+ 		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
 -		if (ret)
 +		if (ret) {
-+			printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
-+			       __func__, __LINE__, ret, i, n_rdma);
++			print_error();
  			break;
 +		}
  	}
  
 -	if (ret)
--		printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
--				 __func__, __LINE__, ret, i, n_rdma);
- 	if (ret && i > 0) {
- 		wr.num_sge = 0;
- 		wr.wr_id = encode_wr_id(SRPT_RDMA_ABORT, ioctx->ioctx.index);
+-		print_error();
+-
+ 	return ret;
+ }
 
