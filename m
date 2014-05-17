@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaEQWqL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:46:11 -0400
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:39332 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaEQWqJ (ORCPT
+	id S1751695AbaEQWvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:51:47 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:58940 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaEQWvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:46:09 -0400
-Date: Sun, 18 May 2014 00:46:03 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140517224603.GA2544@suse.cz>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <20140505085537.GA32196@gmail.com>
- <20140505132638.GA14432@treble.redhat.com>
- <20140505141038.GA27403@localhost.localdomain>
- <20140505184304.GA15137@gmail.com>
- <5368CB6E.3090105@hitachi.com>
- <20140506082604.31928cb9@gandalf.local.home>
- <alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
- <53765475.6040707@hitachi.com>
+	Sat, 17 May 2014 18:51:46 -0400
+Date: Sun, 18 May 2014 00:51:53 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: imx: fix error handling in ipu device
+ registration
+Message-ID: <20140517225153.GB20413@lianli>
+References: <1400352033-18262-1-git-send-email-emilgoode@gmail.com>
+ <20140517191821.GD16662@pengutronix.de>
+ <20140517220836.GI15585@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53765475.6040707@hitachi.com>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140517220836.GI15585@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 03:09:57AM +0900, Masami Hiramatsu wrote:
-> (2014/05/17 1:27), Jiri Kosina wrote:
-> > On Tue, 6 May 2014, Steven Rostedt wrote:
-> > 
-> >>> However, I also think if users can accept such freezing wait-time,
-> >>> it means they can also accept kexec based "checkpoint-restart" patching.
-> >>> So, I think the final goal of the kpatch will be live patching without
-> >>> stopping the machine. I'm discussing the issue on github #138, but that is
-> >>> off-topic. :)
-> >>
-> >> I agree with Ingo too. Being conservative at first is the right
-> >> approach here. We should start out with a stop_machine making sure that
-> >> everything is sane before we continue. Sure, that's not much different
-> >> than a kexec, but lets take things one step at a time.
-> >>
-> >> ftrace did the stop_machine (and still does for some archs), and slowly
-> >> moved to a more efficient method. kpatch/kgraft should follow suit.
-> > 
-> > I don't really agree here.
-> > 
-> > I actually believe that "lazy" switching kgraft is doing provides a little 
-> > bit more in the sense of consistency than stop_machine()-based aproach.
-> > 
-> > Consider this scenario:
-> > 
-> > 	void foo()
-> > 	{
-> > 		for (i=0; i<10000; i++) {
-> > 			bar(i);
-> > 			something_else(i);
-> > 		}
-> > 	}
+Hello Dan,
+
+On Sun, May 18, 2014 at 01:08:36AM +0300, Dan Carpenter wrote:
+> On Sat, May 17, 2014 at 09:18:21PM +0200, Uwe Kleine-König wrote:
+> > diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > index fc4dd7cedc11..6bd7c3f37ac0 100644
+> > --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > @@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+> >  
+> >  	pdev = platform_device_alloc("mx3-camera", 0);
+> >  	if (!pdev)
+> > -		goto err;
+> > +		return ERR_PTR(-ENOMEM);
+> >  
+> >  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+> >  	if (!pdev->dev.dma_mask)
 > 
-> In this case, I'd recommend you to add foo() to replacing target
-> as dummy. Then, kpatch can ensure foo() is actually not running. :)
+> Emil, do this one, please and not the second suggestion.
 
-The problem is: Where do you stop?
+Yes, I would pick this one to.
 
-Adding the whole list of functions that transitively may ever call bar()
-can be pretty much the whole kernel. And given that you can be calling
-via pointer, you can't often even tell who is calling bar().
-
-So yes, a developer could manually include foo() in the to be patched
-list, so that it is checked that foo() isn't being executed while
-patching.
-
-But that would have to be done entirely manually after thoroughly
-understanding the implications of the patch.
-
-> > Let's say you want to live-patch bar(). With stop_machine()-based aproach, 
-> > you can easily end-up with old bar() and new bar() being called in two 
-> > consecutive iterations before the loop is even exited, right? (especially 
-> > on preemptible kernel, or if something_else() goes to sleep).
-> > 
-> > With lazy-switching implemented in kgraft, this can never happen.
 > 
-> And I guess similar thing may happen with kgraft. If old function and
-> new function share a non-auto variable and they modify it different way,
-> the result will be unexpected by the mutual interference.
+> Direct returns are more readable.  Otherwise, you wonder what the goto
+> is for and where it will take you and be annoyed to discover it is a
+> waste of time, no-op goto.  Also you will wonder if platform_device_put()
+> accepts NULL pointers.  Thirdly there is a small ugliness that the error
+> code is not preserved.  What is the point of setting the error code to
+> -ENOMEM only to discard it?
+> 
+> Let's look at that error handling again.
+> 
+> err:  <-- the name is not descriptive.  the location is bad.
+> 		kfree(pdev->dev.dma_mask);  <- null dereference.
+> 		platform_device_put(pdev);  <- ok
+> 		return ERR_PTR(-ENODEV);    <- should be "return ERR_PTR(ret);"
+> 
+> 3 out of 4 of the lines are bad.
 
-By non-auto I assume you mean globally accessible variable or data
-structures.
+I agree that it's not very pretty.
 
-Yes, with kGraft the new function has to be backward compatible with
-pre-patch global data layout and semantics.
+Now that Uwe solved the issue regarding converting the function to
+platform_device_register_full(), I will look into sending a second patch
+that would remove these lines.
 
-The parameters, return value and their semantics are free to change,
-though, and kGraft guarantees consistency there.
+Thank you!
 
--- 
-Vojtech Pavlik
-SUSE Labs
+Best regards,
+
+Emil Goode
