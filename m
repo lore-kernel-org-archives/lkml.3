@@ -1,169 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964796AbaEQMWx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 08:22:53 -0400
-Received: from si-002-i53.relay.mailchannels.net ([184.154.112.227]:25992 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932361AbaEQMWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 08:22:52 -0400
-X-Sender-Id: totalchoicehosting|x-authuser|billaue
-X-Sender-Id: totalchoicehosting|x-authuser|billaue
-X-MC-Relay: Neutral
-X-MailChannels-SenderId: totalchoicehosting%7Cx-authuser%7Cbillaue
-X-MailChannels-Auth-Id: totalchoicehosting
-From: Eli Billauer <eli.billauer@gmail.com>
-To: tj@kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Eli Billauer <eli.billauer@gmail.com>
-Subject: [PATCH 1/3] dma-mapping: Add devm_ interface for dma_map_single()
-Date: Sat, 17 May 2014 15:22:23 +0300
-Message-Id: <1400329345-15556-1-git-send-email-eli.billauer@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-X-AuthUser: billaue
+	id S932651AbaEQMZi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 08:25:38 -0400
+Received: from mout.gmx.net ([212.227.17.20]:60128 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756738AbaEQMZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 08:25:37 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: anton@tuxera.com
+Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] ntfs: Cleanup string initializations (char[] instead of char *)
+Date: Sat, 17 May 2014 14:25:22 +0200
+Message-Id: <1400329522-17875-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:+BBow0Q8dEtvp63tjjTq/XryAyZOI6RpzumX20PgSuKQiwOMW0i
+ s+FHSmciAoNKnYBGjnAYjZgpqrxqcXm9AvJG21YU32LDUQPViKAoiefdiqzkKZazS8nZLB2
+ 446WLivcXW1i34FiljnWNMeSu/+1sryk0m3IrG2xEp2PQdDv1B0BbpwvFGJw/nlbpA0quo3
+ cIpqUpw7J7AxWf3iP6o9A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmam_map_single() and dmam_unmap_single() are the managed counterparts
-for the respective dma_* functions.
+Initializations like 'char *foo = "bar"' will create two variables: a static
+string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
+will allocate only a declare a single variable and will end up in shorter
+assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
 
-Note that dmam_map_single() returns zero on failure, and not a value to
-be handled by dma_mapping_error(): The error check is done by
-dmam_map_single() to avoid the registration of a mapping that failed.
-
-Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 ---
- Documentation/driver-model/devres.txt |    2 +
- drivers/base/dma-mapping.c            |   80 +++++++++++++++++++++++++++++++++
- include/linux/dma-mapping.h           |    5 ++-
- 3 files changed, 86 insertions(+), 1 deletions(-)
+ fs/ntfs/inode.c |    2 +-
+ fs/ntfs/super.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index e1a2707..13b8be0 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -266,6 +266,8 @@ DMA
-   dmam_declare_coherent_memory()
-   dmam_pool_create()
-   dmam_pool_destroy()
-+  dmam_map_single()
-+  dmam_unmap_single()
+diff --git a/fs/ntfs/inode.c b/fs/ntfs/inode.c
+index f47af5e..3975798 100644
+--- a/fs/ntfs/inode.c
++++ b/fs/ntfs/inode.c
+@@ -2368,7 +2368,7 @@ int ntfs_truncate(struct inode *vi)
+ 	ntfs_attr_search_ctx *ctx;
+ 	MFT_RECORD *m;
+ 	ATTR_RECORD *a;
+-	const char *te = "  Leaving file length out of sync with i_size.";
++	const char te[] = "  Leaving file length out of sync with i_size.";
+ 	int err, mp_size, size_change, alloc_change;
+ 	u32 attr_len;
  
- PCI
-   pcim_enable_device()	: after success, all PCI ops become managed
-diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
-index 0ce39a3..db1c496 100644
---- a/drivers/base/dma-mapping.c
-+++ b/drivers/base/dma-mapping.c
-@@ -19,6 +19,7 @@ struct dma_devres {
- 	size_t		size;
- 	void		*vaddr;
- 	dma_addr_t	dma_handle;
-+	enum dma_data_direction direction;
- };
- 
- static void dmam_coherent_release(struct device *dev, void *res)
-@@ -267,3 +268,82 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
- 	return ret;
- }
- EXPORT_SYMBOL(dma_common_mmap);
-+
-+static int dmam_map_match(struct device *dev, void *res, void *match_data)
-+{
-+	struct dma_devres *this = res, *match = match_data;
-+
-+	if (this->dma_handle == match->dma_handle) {
-+		WARN_ON(this->size != match->size ||
-+			this->direction != match->direction);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static void dmam_map_single_release(struct device *dev, void *res)
-+{
-+	struct dma_devres *this = res;
-+
-+	dma_unmap_single(dev, this->dma_handle, this->size, this->direction);
-+}
-+
-+/**
-+ * dmam_map_single - Managed dma_map_single()
-+ * @dev: Device to map DMA region for
-+ * @ptr: Pointer to region
-+ * @size: Size to map
-+ * @direction: The mapping's direction
-+ *
-+ * Managed dma_map_single().  The region mapped using this
-+ * function will be automatically unmapped on driver detach.
-+ *
-+ * RETURNS:
-+ * The DMA handle of the mapped region upon success, 0 otherwise.
-+ */
-+dma_addr_t dmam_map_single(struct device *dev, void *ptr, size_t size,
-+			   enum dma_data_direction direction)
-+
-+{
-+	struct dma_devres *dr;
-+	dma_addr_t dma_handle;
-+
-+	dr = devres_alloc(dmam_map_single_release, sizeof(*dr), GFP_KERNEL);
-+	if (!dr)
-+		return 0;
-+
-+	dma_handle = dma_map_single(dev, ptr, size, direction);
-+	if (dma_mapping_error(dev, dma_handle)) {
-+		devres_free(dr);
-+		return 0;
-+	}
-+
-+	dr->vaddr = ptr;
-+	dr->dma_handle = dma_handle;
-+	dr->size = size;
-+	dr->direction = direction;
-+
-+	devres_add(dev, dr);
-+
-+	return dma_handle;
-+}
-+EXPORT_SYMBOL(dmam_map_single);
-+
-+/**
-+ * dmam_unmap_single - Managed dma_unmap_single()
-+ * @dev: Device to map DMA region for
-+ * @dma_handle: DMA handle of the region to unmap
-+ * @size: Size to unmap
-+ * @direction: The mapping's direction
-+ *
-+ * Managed dma_unmap_single().
-+ */
-+void dmam_unmap_single(struct device *dev, dma_addr_t dma_handle,
-+		       size_t size, enum dma_data_direction direction)
-+{
-+	struct dma_devres match_data = { size, NULL, dma_handle, direction };
-+
-+	WARN_ON(devres_release(dev, dmam_map_single_release, dmam_map_match,
-+			       &match_data));
-+}
-+EXPORT_SYMBOL(dmam_unmap_single);
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index fd4aee2..cdb14a8 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -233,7 +233,10 @@ static inline void dmam_release_declared_memory(struct device *dev)
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index 9de2491..eb2c195 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -676,7 +676,7 @@ not_ntfs:
+ static struct buffer_head *read_ntfs_boot_sector(struct super_block *sb,
+ 		const int silent)
  {
- }
- #endif /* ARCH_HAS_DMA_DECLARE_COHERENT_MEMORY */
--
-+dma_addr_t dmam_map_single(struct device *dev, void *ptr, size_t size,
-+			   enum dma_data_direction direction);
-+void dmam_unmap_single(struct device *dev, dma_addr_t dma_handle,
-+		       size_t size, enum dma_data_direction direction);
- #ifndef CONFIG_HAVE_DMA_ATTRS
- struct dma_attrs;
+-	const char *read_err_str = "Unable to read %s boot sector.";
++	const char read_err_str[] = "Unable to read %s boot sector.";
+ 	struct buffer_head *bh_primary, *bh_backup;
+ 	sector_t nr_blocks = NTFS_SB(sb)->nr_blocks;
  
 -- 
-1.7.2.3
+1.7.10.4
 
