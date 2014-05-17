@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964927AbaEQRS5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 13:18:57 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:37098 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964856AbaEQRS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 13:18:56 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Karsten Keil <isdn@linux-pingi.de>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] isdn: hisax: l3ni1.c:  Fix for possible null pointer dereference
-Date: Sat, 17 May 2014 19:19:40 +0200
-Message-Id: <1400347180-25553-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S964942AbaEQRTe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 13:19:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964842AbaEQRTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 13:19:32 -0400
+Date: Sat, 17 May 2014 19:18:56 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        Leilei Shang <shangll@marvell.com>, Daniel Drake <dsd@laptop.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] i2c: busses: i2c-pxa.c:  Fix for possible null pointer
+ dereference
+Message-ID: <20140517171855.GC1939@mguzik.redhat.com>
+References: <1400346848-25098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1400346848-25098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is otherwise a risk of a possible null pointer dereference.
+On Sat, May 17, 2014 at 07:14:08PM +0200, Rickard Strandqvist wrote:
+> There is otherwise a risk of a possible null pointer dereference.
+> 
+> Was largely found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/i2c/busses/i2c-pxa.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+> index bbe6dfb..dbe5ebe 100644
+> --- a/drivers/i2c/busses/i2c-pxa.c
+> +++ b/drivers/i2c/busses/i2c-pxa.c
+> @@ -1269,7 +1269,9 @@ eremap:
+>  eclk:
+>  	kfree(i2c);
+>  emalloc:
+> -	release_mem_region(res->start, resource_size(res));
+> +	if(res) {
+> +		release_mem_region(res->start, resource_size(res));
+> +	}
+>  	return ret;
+>  }
+>  
 
-Was largely found by using a static code analysis program called cppcheck.
+This looks incorrect.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/isdn/hisax/l3ni1.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+request_mem_region, which I believe is a prerequisite for this function
+may not be called when you jump here.
 
-diff --git a/drivers/isdn/hisax/l3ni1.c b/drivers/isdn/hisax/l3ni1.c
-index 0df6691..367b9d6 100644
---- a/drivers/isdn/hisax/l3ni1.c
-+++ b/drivers/isdn/hisax/l3ni1.c
-@@ -2064,8 +2064,12 @@ static int l3ni1_cmd_global(struct PStack *st, isdn_ctrl *ic)
- 				{ free_invoke_id(st, id);
- 					return (-2);
- 				}
--			pc->prot.ni1.ll_id = ic->parm.ni1_io.ll_id; /* remember id */
--			pc->prot.ni1.proc = ic->parm.ni1_io.proc; /* and procedure */
-+
-+			if (pc)
-+			{
-+				pc->prot.ni1.ll_id = ic->parm.ni1_io.ll_id; /* remember id */
-+				pc->prot.ni1.proc = ic->parm.ni1_io.proc; /* and procedure */
-+			}
- 
- 			if (!(skb = l3_alloc_skb(l)))
- 			{ free_invoke_id(st, id);
 -- 
-1.7.10.4
-
+Mateusz Guzik
