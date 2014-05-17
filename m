@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbaEQADg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:03:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059AbaEQADe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:03:34 -0400
-Date: Fri, 16 May 2014 20:03:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/8] list: Out of line INIT_LIST_HEAD and list_del
-Message-ID: <20140517000311.GA26496@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
- <1400276595-6965-4-git-send-email-andi@firstfloor.org>
+	id S1756829AbaEQAEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:04:47 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53417 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167AbaEQAEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 20:04:46 -0400
+Message-ID: <5376A79B.30604@linaro.org>
+Date: Fri, 16 May 2014 17:04:43 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400276595-6965-4-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Miroslav Lichvar <mlichvar@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering
+References: <1398380677-8684-1-git-send-email-john.stultz@linaro.org> <20140425140421.GA7933@localhost>
+In-Reply-To: <20140425140421.GA7933@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 02:43:10PM -0700, Andi Kleen wrote:
+On 04/25/2014 07:04 AM, Miroslav Lichvar wrote:
+> On Thu, Apr 24, 2014 at 04:04:34PM -0700, John Stultz wrote:
+>> Continuing the sporadic work on improving the timekeeping
+>> frequency steering logic when NOHZ is enabled, I've made a number
+>> of changes to my re-implementation of Miroslav's patch (most
+>> recently posted here: https://lkml.org/lkml/2014/2/12/401 ),
+>> and I'm getting much closer results in the simulator.
+> Thanks, in my initial testing it seems to be working well. The results
+> from the simulator are much better than with the previous patch.
+>
+>> Compared with Miroslav's patch, this avoids doing any extra
+>> divisions, and instead approximates the correction
+>> logarithmically.
+> Hm, doesn't that basically make the code a software implementation of
+> division? It seems it needs about 4-8 iterations to get to the final
+> result.
+>
+> I didn't measure it, but I think with this change it now may be close
+> or possibly even slower than my patch. The extra division and
+> multiplication in my patch are used only when the tick length changes
+> (normally once per second), otherwise the update is very cheap.
 
- > diff --git a/lib/Makefile b/lib/Makefile
- > index 0cd7b68..8b744f7 100644
- > --- a/lib/Makefile
- > +++ b/lib/Makefile
- > @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- >  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- >  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- >  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
- > -	 earlycpio.o
- > +	 earlycpio.o list.o
+Fair enough. I've moved to your division method for the last patch in my
+series (instead of looping).
 
-Hey Andi,
+I'm still not 100% convinced we need it, since I'm still worried the
+error seen in the simulator with the default options is somewhat
+contrived. For example, since it regularly skips 4k ticks, that
+exaggerates the accumulated error in the approximation case. But we can
+discuss this further w/ the new patch series.
 
-Did you test this with CONFIG_DEBUG_LIST ?
-Unless I'm missing something, this looks like we'll have duplicate
-symbols for list_del if that is set.
+thanks!
+-john
 
-	Dave
+
 
