@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaEQDXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 23:23:46 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40825 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887AbaEQDXo (ORCPT
+	id S1753307AbaEQEGf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 00:06:35 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:43270 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaEQEGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 23:23:44 -0400
-Date: Fri, 16 May 2014 20:23:41 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, jeffrey.t.kirsher@intel.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 4/8] e1000e: Out of line __ew32_prepare/__ew32
-Message-ID: <20140516202341.4b402aa6@nehalam.linuxnetplumber.net>
-In-Reply-To: <1400276595-6965-5-git-send-email-andi@firstfloor.org>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
-	<1400276595-6965-5-git-send-email-andi@firstfloor.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sat, 17 May 2014 00:06:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53765DD9.6040403@wwwdotorg.org>
+References: <cover.1400230695.git.viresh.kumar@linaro.org>
+	<9e1ed1bf8c3610709436fe5ef8df3a63856f8f5c.1400230695.git.viresh.kumar@linaro.org>
+	<53765DD9.6040403@wwwdotorg.org>
+Date: Sat, 17 May 2014 09:36:33 +0530
+Message-ID: <CAKohpo=t=HcOMHfG_wRhaPAucDsOCmW4wW9_UjPmv5uE29v36g@mail.gmail.com>
+Subject: Re: [PATCH V2 2/3] cpufreq: add support for intermediate (stable) frequencies
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014 14:43:11 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+On 17 May 2014 00:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> s/Uset/Used.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Out of lining these two common inlines saves about 30k text size,
-> due to their errata workarounds.
-> 
-> 14131431	2008136	1507328	17646895	10d452f	vmlinux-before-e1000e
-> 14101415	2004040	1507328	17612783	10cbfef	vmlinux-e1000e
-> 
-> Cc: jeffrey.t.kirsher@intel.com
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+:(
 
-Since you are making a formerly private function global, the name
-should be unique. I.e prefix it with e1000_
+>> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+>> +     unsigned int (*get_intermediate)(struct cpufreq_policy *policy,
+>> +                                      unsigned int index);
+>
+> Should get_intermediate be passed a struct cpufreq_freqs freqs rather
+> than just the target index? That way, if the intermediate frequency
+> varies depending on old/new frequencies, then the driver won't have to
+> go look up the current frequency in order to implement that logic.
 
-
+That can be done by simply doing policy->cur and we don't require to
+get it from hardware again. So, probably should stay as is.
