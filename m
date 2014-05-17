@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546AbaEQMHa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 08:07:30 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:60571 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247AbaEQMH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 08:07:29 -0400
-From: Chen Yucong <slaoub@gmail.com>
-To: tony.luck@intel.com
-Cc: bp@alien8.de, linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
-        Chen Yucong <slaoub@gmail.com>
-Subject: [PATCH] x86/mce: Clear a useless global variable in mce.c
-Date: Sat, 17 May 2014 20:05:43 +0800
-Message-Id: <1400328343-6483-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932588AbaEQMKu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 08:10:50 -0400
+Received: from mout.gmx.net ([212.227.17.22]:53613 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932361AbaEQMKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 08:10:49 -0400
+From: Christian Engelmayer <cengelma@gmx.at>
+To: linux-rdma@vger.kernel.org
+Cc: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        monis@mellanox.com, ogerlitz@mellanox.com,
+        linux-kernel@vger.kernel.org, Christian Engelmayer <cengelma@gmx.at>
+Subject: [PATCH] IB/mlx4: Fix potentially uninitialized use of 'is_mcast' in create_iboe_ah()
+Date: Sat, 17 May 2014 14:09:27 +0200
+Message-Id: <1400328567-4430-1-git-send-email-cengelma@gmx.at>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:hC353l6/DTMEAPbo8GZU/6gMtRRQZJlqNkww/anTuDoynkaqwlQ
+ zx3b1GBxzxMPftSynwrgu5FuukD7W9zTUycF7Qi0AaqlcdjQPlKm8oH3c5NhuRn+jvgydNl
+ 9WweMILezhDIpS/t5FFIyAyF7hRipW503+QiWCdW7plIZLT+kZLMl1kXK3lcPxlfKfouTa2
+ jKYfNwrMLvQwu9VPwa1+Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mce_entry, which was defined as a global variable in mce.c, was
-used in nmi_watchdog_tick().But nmi_watchdog_tick() has been discarded 
-in the new generic nmi_watchdog implementation - commit 1fb9d6ad2766. 
-So, of course, there is no need for the mce_entry.
+Before commit 297e0da (IB/mlx4: Handle Ethernet L2 parameters for IP based GID
+addressing) local variable 'is_mcast' in function create_iboe_ah() was
+guaranteed to be set after calling mlx4_ib_resolve_grh(). Since 297e0da
+'is_mcast' is set in case of rdma_is_multicast_addr(), but otherwise left
+uninitialized. Thus init 'is_mcast' to 0. Detected by Coverity - CID 1164324
 
-This patch is just used to remove a useless global variable mce_entry
-and relative operations in mce.c.
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- arch/x86/include/asm/mce.h       |    2 --
- arch/x86/kernel/cpu/mcheck/mce.c |    5 -----
- 2 files changed, 7 deletions(-)
+Compile tested. Applies against branch for-next in tree
+git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git
+---
+ drivers/infiniband/hw/mlx4/ah.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 6e4ce2d..958b90f 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -176,8 +176,6 @@ int mce_available(struct cpuinfo_x86 *c);
- DECLARE_PER_CPU(unsigned, mce_exception_count);
- DECLARE_PER_CPU(unsigned, mce_poll_count);
+diff --git a/drivers/infiniband/hw/mlx4/ah.c b/drivers/infiniband/hw/mlx4/ah.c
+index 170dca6..2d8c339 100644
+--- a/drivers/infiniband/hw/mlx4/ah.c
++++ b/drivers/infiniband/hw/mlx4/ah.c
+@@ -73,7 +73,7 @@ static struct ib_ah *create_iboe_ah(struct ib_pd *pd, struct ib_ah_attr *ah_attr
+ {
+ 	struct mlx4_ib_dev *ibdev = to_mdev(pd->device);
+ 	struct mlx4_dev *dev = ibdev->dev;
+-	int is_mcast;
++	int is_mcast = 0;
+ 	struct in6_addr in6;
+ 	u16 vlan_tag;
  
--extern atomic_t mce_entry;
--
- typedef DECLARE_BITMAP(mce_banks_t, MAX_NR_BANKS);
- DECLARE_PER_CPU(mce_banks_t, mce_poll_banks);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68317c8..8f520a1 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -60,8 +60,6 @@ static DEFINE_MUTEX(mce_chrdev_read_mutex);
- 
- #define SPINUNIT 100	/* 100ns */
- 
--atomic_t mce_entry;
--
- DEFINE_PER_CPU(unsigned, mce_exception_count);
- 
- struct mce_bank *mce_banks __read_mostly;
-@@ -1041,8 +1039,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	DECLARE_BITMAP(valid_banks, MAX_NR_BANKS);
- 	char *msg = "Unknown";
- 
--	atomic_inc(&mce_entry);
--
- 	this_cpu_inc(mce_exception_count);
- 
- 	if (!cfg->banks)
-@@ -1172,7 +1168,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		mce_report_event(regs);
- 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
- out:
--	atomic_dec(&mce_entry);
- 	sync_core();
- }
- EXPORT_SYMBOL_GPL(do_machine_check);
 -- 
-1.7.10.4
+1.9.1
 
