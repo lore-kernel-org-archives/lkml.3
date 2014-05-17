@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047AbaEQIcG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 04:32:06 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:45053 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087AbaEQIcD (ORCPT
+	id S1757247AbaEQIdL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 04:33:11 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:51580 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757187AbaEQIdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 04:32:03 -0400
-Date: Sat, 17 May 2014 10:31:44 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, linux-kbuild@vger.kernel.org,
-        mmarek@suse.cz
-Subject: Re: [PATCH 8/8] Kbuild: add inline-account tool to find inline bloat
-Message-ID: <20140517083144.GA16691@ravnborg.org>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
- <1400276595-6965-9-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400276595-6965-9-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 17 May 2014 04:33:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhEWAN8dd1NXQxKA/2dsb2JhbABZgwaCQn2nMAcBAQEFAZonAgKBChd0gmYcIxiBAiQTiEUB0TKFVYgWZIRHAQOPLooqAYsRiAmBd4FCO4Ex
+Date: Sat, 17 May 2014 10:33:06 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@samba.org>
+Subject: [PATCH 1/1 linux-next] fs/cifs/inode.c: replace deprecated
+ smp_mb__after_clear_bit
+Message-Id: <20140517103306.4ddd9b979c728d6969b6f9c4@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi.
+based on
+febdbfe8a91ce0
+"arch: Prepare for smp_mb__{before,after}_atomic()"
 
-On Fri, May 16, 2014 at 02:43:15PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a tool to hunt for inline bloat. It uses objdump -S to account
-> inlines.
-I tried this on my sparc32 build - but it failed with:
-objdump: can't disassemble for architecture UNKNOWN!
+Cc: Jeff Layton <jlayton@poochiereds.net>
+Cc: Steve French <sfrench@samba.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/cifs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It looks simple to add CROSS_COMPILE support but I did not do so.
-My python skills are non-existing.
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 9ff8df8..a174605 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1806,7 +1806,7 @@ cifs_revalidate_mapping(struct inode *inode)
+ 	}
+ 
+ 	clear_bit_unlock(CIFS_INO_LOCK, flags);
+-	smp_mb__after_clear_bit();
++	smp_mb__after_atomic();
+ 	wake_up_bit(flags, CIFS_INO_LOCK);
+ 
+ 	return rc;
+-- 
+1.8.4.5
 
-	Sam
