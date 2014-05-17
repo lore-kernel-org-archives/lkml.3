@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482AbaEQLxL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 07:53:11 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51849 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932247AbaEQLxK (ORCPT
+	id S932515AbaEQMCt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 08:02:49 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:30074 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247AbaEQMCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 07:53:10 -0400
-Message-ID: <1400327586.13824.10.camel@x220>
-Subject: [PATCH] Hexagon: remove check for CONFIG_COMET_EARLY_UART_DEBUG
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 17 May 2014 13:53:06 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Sat, 17 May 2014 08:02:47 -0400
+X-Nat-Received: from [202.181.97.72]:18032 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1400328165.10432
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: Fix theoretical division by 0 in super_cache_scan().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201405172102.GII52606.JtMOQOOFVHFLFS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 17 May 2014 21:02:42 +0900
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 May 2014 11:53:07.0567 (UTC) FILETIME=[918157F0:01CF71C6]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16052014 #7937103, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's been a check for CONFIG_COMET_EARLY_UART_DEBUG ever since
-Hexagon was added in v3.2. But the related Kconfig symbol has never been
-added to the tree. Remove this check.
+>From 7a2ed4e9c91864736ce5ad89489fd5862d59542e Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 17 May 2014 20:56:38 +0900
+Subject: [PATCH] fs: Fix theoretical division by 0 in super_cache_scan().
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+total_objects could be 0 and is used as a denom.
+
+While total_objects is a "long", total_objects == 0 unlikely happens for
+3.12 and later kernels because 32-bit architectures would not be able to
+hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
+between 3.1 and 3.11 because total_objects in prune_super() was an "int"
+and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: stable <stable@kernel.org> # 3.1+
 ---
-Not tested.
+ fs/super.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- arch/hexagon/kernel/vm_init_segtable.S | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/hexagon/kernel/vm_init_segtable.S b/arch/hexagon/kernel/vm_init_segtable.S
-index 80967f2192b3..167b48458620 100644
---- a/arch/hexagon/kernel/vm_init_segtable.S
-+++ b/arch/hexagon/kernel/vm_init_segtable.S
-@@ -85,12 +85,7 @@ swapper_pg_dir:
- 	.word X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X
- 	.word X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X
- /*0xa8*/.word X,X,X,X
--#ifdef CONFIG_COMET_EARLY_UART_DEBUG
--UART_PTE_ENTRY:
--/*0xa9*/.word BKPG_IO(0xa9000000),BKPG_IO(0xa9000000),BKPG_IO(0xa9000000),BKPG_IO(0xa9000000)
--#else
- /*0xa9*/.word X,X,X,X
--#endif
- /*0xaa*/.word X,X,X,X
- /*0xab*/.word X,X,X,X
- /*0xac*/.word X,X,X,X
+diff --git a/fs/super.c b/fs/super.c
+index 48377f7..1408362 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -81,6 +81,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
+ 	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
+ 	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
+ 	total_objects = dentries + inodes + fs_objects + 1;
++	if (!total_objects)
++		total_objects = 1;
+ 
+ 	/* proportion the scan between the caches */
+ 	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
 -- 
-1.9.0
-
+1.7.1
