@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992426AbaEQHKW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 03:10:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57237 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756615AbaEQHKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 03:10:21 -0400
-Date: Sat, 17 May 2014 09:10:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <20140516202709.6e345117@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1405170852120.1615@pobox.suse.cz>
-References: <cover.1398958771.git.jpoimboe@redhat.com> <20140505085537.GA32196@gmail.com> <20140505132638.GA14432@treble.redhat.com> <20140505141038.GA27403@localhost.localdomain> <20140505184304.GA15137@gmail.com> <5368CB6E.3090105@hitachi.com>
- <20140506082604.31928cb9@gandalf.local.home> <alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz> <20140516145533.4ef7bc22@gandalf.local.home> <alpine.LNX.2.00.1405170002180.1615@pobox.suse.cz> <20140516202709.6e345117@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S2992487AbaEQHMJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 03:12:09 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:58887 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S2992439AbaEQHMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 03:12:08 -0400
+X-IronPort-AV: E=Sophos;i="4.98,1071,1392159600"; 
+   d="scan'208";a="74201384"
+Date: Sat, 17 May 2014 15:12:02 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Fabio Estevam <festevam@gmail.com>
+cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mtd: delete unneeded call to platform_get_drvdata
+In-Reply-To: <CAOMZO5AymcCnC6Awt2LiGP9yz=baRA0HLoLRUSBgNeg3b5=9xQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1405171511140.2587@hadrien>
+References: <1400308369-24375-1-git-send-email-Julia.Lawall@lip6.fr> <CAOMZO5AymcCnC6Awt2LiGP9yz=baRA0HLoLRUSBgNeg3b5=9xQ@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014, Steven Rostedt wrote:
 
-> Why I still favor the stop_machine approach, is because the method of
-> patching is a bit simpler that way. A "lazy" approach will be more
-> complex and more likely to be buggy. The thing I'm arguing here is not
-> the end result being a problem, but the implementation of the patching
-> itself causing bugs.
 
-Well, what can I say to this.
+On Sat, 17 May 2014, Fabio Estevam wrote:
 
-	21 files changed, 594 insertions(+), 10 deletions(-)
+> On Sat, May 17, 2014 at 3:32 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > Platform_get_drvdata is an accessor function, and has no purpose if its
+> > result is not used.
+> >
+> > The semantic patch that fixes this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> >
+> > // <smpl>
+> > @@
+> > identifier x;
+> > type T;
+> > @@
+> > - T x = platform_get_drvdata(...);
+> > ... when != x
+> > // </smpl>
+> >
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > ---
+> >  drivers/mtd/nand/bf5xx_nand.c |    4 ----
+> >  1 file changed, 4 deletions(-)
+> >
+> > diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
+> > index b7a2494..b5fbd48 100644
+> > --- a/drivers/mtd/nand/bf5xx_nand.c
+> > +++ b/drivers/mtd/nand/bf5xx_nand.c
+> > @@ -840,15 +840,11 @@ out_err_kzalloc:
+> >
+> >  static int bf5xx_nand_suspend(struct platform_device *dev, pm_message_t pm)
+> >  {
+> > -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
+> > -
+> >         return 0;
+> >  }
+> >
+> >  static int bf5xx_nand_resume(struct platform_device *dev)
+> >  {
+> > -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
+> > -
+> >         return 0;
+>
+> In this case bf5xx_nand_suspend/resume could be removed?
 
-that's a complete implementation, including comments and some 
-documentation.
+I don't know.  It looks like it is intentional to have a definition that
+returns an indication of success?  The complete set of definitions is:
 
-Yes, it still has TODOs (such as patching modules as they are modprobed, 
-we're working on multi-arch support, etc), but it's more or less complete 
-working x86 skeleton.
+#ifdef CONFIG_PM
 
-> I rather have a "lazy" approach, 
+static int bf5xx_nand_suspend(struct platform_device *dev, pm_message_t
+pm)
+{
+        struct bf5xx_nand_info *info = platform_get_drvdata(dev);
 
-I'm glad to hear that, thanks :)
+	return 0;
+}
 
-> but like ftrace and its breakpoint method, the stop_machine approach is 
-> the simpler way to make sure the patching works before we try to 
-> optimize it.
+static int bf5xx_nand_resume(struct platform_device *dev)
+{
+        struct bf5xx_nand_info *info = platform_get_drvdata(dev);
 
-I am still not convinced that it's more complex. It's actually lazy both 
-in the way it performs patching and in implementation -- we basically set 
-a flag, flip the switch, and let the universe converge to a new state by 
-itself.
+        return 0;
+}
 
-It's basically hard to argue about level of bugginess when no actual bugs 
-are being pointed out :) (well, yes, the kthreads stuff needs to be taken 
-care of, but both kgraft and kpatch have similar issues there).
+#else
+#define bf5xx_nand_suspend NULL
+#define bf5xx_nand_resume NULL
+#endif
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+julia
