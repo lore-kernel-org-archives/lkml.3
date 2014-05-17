@@ -1,90 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992461AbaEQA1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:27:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:63686 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755929AbaEQA1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:27:12 -0400
-Date: Fri, 16 May 2014 20:27:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140516202709.6e345117@gandalf.local.home>
-In-Reply-To: <alpine.LNX.2.00.1405170002180.1615@pobox.suse.cz>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
-	<20140505085537.GA32196@gmail.com>
-	<20140505132638.GA14432@treble.redhat.com>
-	<20140505141038.GA27403@localhost.localdomain>
-	<20140505184304.GA15137@gmail.com>
-	<5368CB6E.3090105@hitachi.com>
-	<20140506082604.31928cb9@gandalf.local.home>
-	<alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
-	<20140516145533.4ef7bc22@gandalf.local.home>
-	<alpine.LNX.2.00.1405170002180.1615@pobox.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1945892AbaEQAdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:33:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18346 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753439AbaEQAdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 May 2014 20:33:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,1070,1389772800"; 
+   d="scan'208";a="533312262"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave@sr71.net,
+        willy@linux.intel.com, riel@redhat.com, mgorman@suse.de,
+        aarcange@redhat.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [RFC, PATCH] mm: unified interface to handle page table entries on different levels?
+Date: Sat, 17 May 2014 03:33:05 +0300
+Message-Id: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 May 2014 00:32:10 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+Linux VM was built with fixed page size in mind. We have rich API to
+deal with page table entries, but it focused mostly on one level of page
+tables -- PTE.
 
+As huge pages was added we duplicated routines on demand for other page
+tables level (PMD, PUD). With separate APIs it's hard to harmonize huge
+pages support code with rest of VM.
 
-> That's true, and we come back to what has been said at the very beginning 
-> for both aproaches -- you can't really get away without manual human 
-> inspection of the patches that are being applied.
-> 
-> The case you have outlined is indeed problematic for the "lazy switching" 
-> aproach, and can be worked around (interim function, which takes both 
-> mutexes in well defined order, for example).
-> 
-> You can construct a broken locking scenario for stop_machine() aproach as 
-> well -- consider a case when you are exchaing a function which changes the 
-> locking order of two locks/mutexes. How do you deal with the rest of the 
-> code where the locks are being acquired, but not through the functions 
-> you've exchanged?
+Can we do better than that?
 
-I'm a bit confused by this. If you change locking order and there's
-other functions that acquire it in reverse order that's not in the
-patch, that sounds like you just introduced a new bug.
+Below is my attempt to play with the problem. I've took one function --
+page_referenced_one() -- which looks ugly because of different APIs for
+PTE/PMD and convert it to use vpte_t. vpte_t is union for pte_t, pmd_t
+and pud_t.
 
-> 
-> So again -- there is no disagreement, I believe, about the fact that "live 
-> patches" can't be reliably auto-generated, and human inspection will 
-> always be necessary. Given the intended use-case (serious CVEs mostly, 
-> handled by distro vendors), this is fine.
-> 
+Basically, the idea is instead of having different helpers to handle
+PTE/PMD/PUD, we have one, which take pair of vpte_t + pglevel.
 
-Right, I absolutely agree that the real use case is to fix off by one
-errors and buffer overflows. Anything that is more complex really needs
-a reboot (at a minimum, a kexec reboot). I know our customers would love
-to see this upgrading entire kernels, but that's rather unrealistic.
+Should we try this way? Any suggestions?
+---
+ arch/x86/include/asm/pgtable.h       |  4 ++
+ arch/x86/include/asm/pgtable_types.h |  2 +
+ arch/x86/mm/pgtable.c                | 13 +++++++
+ include/asm-generic/pgtable-vpte.h   | 34 +++++++++++++++++
+ include/asm-generic/pgtable.h        | 15 ++++++++
+ include/linux/mm.h                   | 15 ++++++++
+ include/linux/mmu_notifier.h         |  8 ++--
+ include/linux/rmap.h                 | 13 +++++++
+ mm/rmap.c                            | 72 +++++++++++++-----------------------
+ 9 files changed, 127 insertions(+), 49 deletions(-)
+ create mode 100644 include/asm-generic/pgtable-vpte.h
 
-Why I still favor the stop_machine approach, is because the method of
-patching is a bit simpler that way. A "lazy" approach will be more
-complex and more likely to be buggy. The thing I'm arguing here is not
-the end result being a problem, but the implementation of the patching
-itself causing bugs.
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index b459ddf27d64..407bfe97e22e 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -816,6 +816,10 @@ static inline void pmdp_set_wrprotect(struct mm_struct *mm,
+ 	pmd_update(mm, addr, pmdp);
+ }
+ 
++#define vptep_clear_flush_young vptep_clear_flush_young
++extern int vptep_clear_flush_young(struct vm_area_struct *vma,
++		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl);
++
+ /*
+  * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
+  *
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index eb3d44945133..eefc835b7437 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -296,6 +296,8 @@ static inline pmdval_t native_pmd_val(pmd_t pmd)
+ }
+ #endif
+ 
++#include <asm-generic/pgtable-vpte.h>
++
+ static inline pudval_t pud_flags(pud_t pud)
+ {
+ 	return native_pud_val(pud) & PTE_FLAGS_MASK;
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index c96314abd144..92a97257a442 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -438,6 +438,19 @@ void pmdp_splitting_flush(struct vm_area_struct *vma,
+ }
+ #endif
+ 
++int vptep_clear_flush_young(struct vm_area_struct *vma,
++		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl)
++{
++	int young;
++
++	/* _PAGE_BIT_ACCESSED is in the same place in PTE/PMD/PUD */
++	young = ptep_test_and_clear_young(vma, address, &vptep->pte);
++	if (young)
++		flush_tlb_range(vma, address,
++				address + vpte_size(*vptep, ptlvl));
++
++	return young;
++}
+ /**
+  * reserve_top_address - reserves a hole in the top of kernel address space
+  * @reserve - size of hole to reserve
+diff --git a/include/asm-generic/pgtable-vpte.h b/include/asm-generic/pgtable-vpte.h
+new file mode 100644
+index 000000000000..96e52b5e39ca
+--- /dev/null
++++ b/include/asm-generic/pgtable-vpte.h
+@@ -0,0 +1,34 @@
++#ifndef _ASM_GENERIC_PGTABLE_VPTE_H
++#define _ASM_GENERIC_PGTABLE_VPTE_H
++
++typedef union {
++	pte_t pte;
++	pmd_t pmd;
++	pud_t pud;
++} vpte_t;
++
++enum ptlevel {
++	PTE,
++	PMD,
++	PUD,
++};
++
++static inline unsigned long vpte_size(vpte_t vptep, enum ptlevel ptlvl)
++{
++	switch (ptlvl) {
++	case PTE:
++		return PAGE_SIZE;
++#ifdef PMD_SIZE
++	case PMD:
++		return PMD_SIZE;
++#endif
++#ifdef PUD_SIZE
++	case PUD:
++		return PUD_SIZE;
++#endif
++	default:
++		return 0; /* XXX */
++	}
++}
++
++#endif
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index a8015a7a55bb..1cfc9ba67078 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -79,6 +79,21 @@ int pmdp_clear_flush_young(struct vm_area_struct *vma,
+ 			   unsigned long address, pmd_t *pmdp);
+ #endif
+ 
++#ifndef vptep_clear_flush_young
++static inline int vptep_clear_flush_young(struct vm_area_struct *vma,
++		unsigned long address, vpte_t *vptep, enum ptlevel ptlvl)
++{
++	switch (ptlvl) {
++	case PTE:
++		return ptep_clear_flush_young(vma, address, &vptep->pte);
++	case PMD:
++		return pmdp_clear_flush_young(vma, address, &vptep->pmd);
++	default:
++		BUG();
++	};
++}
++#endif
++
+ #ifndef __HAVE_ARCH_PTEP_GET_AND_CLEAR
+ static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
+ 				       unsigned long address,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d6777060449f..cac04827d93e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1559,6 +1559,21 @@ static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
+ 	return ptl;
+ }
+ 
++static inline void vpte_unmap_unlock(vpte_t *vpte, enum ptlevel ptlvl,
++		spinlock_t *ptl)
++{
++	switch (ptlvl) {
++	case PTE:
++		pte_unmap_unlock(&vpte->pte, ptl);
++		break;
++	case PMD:
++		spin_unlock(ptl);
++		break;
++	default:
++		BUG();
++	}
++}
++
+ extern void free_area_init(unsigned long * zones_size);
+ extern void free_area_init_node(int nid, unsigned long * zones_size,
+ 		unsigned long zone_start_pfn, unsigned long *zholes_size);
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index deca87452528..927c00ea3c73 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -257,12 +257,14 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
+ 	__young;							\
+ })
+ 
+-#define pmdp_clear_flush_young_notify(__vma, __address, __pmdp)		\
++#define vptep_clear_flush_young_notify(__vma, __address,		\
++		__vptep, __ptlvl)					\
+ ({									\
+ 	int __young;							\
+ 	struct vm_area_struct *___vma = __vma;				\
+ 	unsigned long ___address = __address;				\
+-	__young = pmdp_clear_flush_young(___vma, ___address, __pmdp);	\
++	__young = vptep_clear_flush_young(___vma, ___address,		\
++			__vptep, __ptlvl);				\
+ 	__young |= mmu_notifier_clear_flush_young(___vma->vm_mm,	\
+ 						  ___address);		\
+ 	__young;							\
+@@ -335,7 +337,7 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
+ }
+ 
+ #define ptep_clear_flush_young_notify ptep_clear_flush_young
+-#define pmdp_clear_flush_young_notify pmdp_clear_flush_young
++#define vptep_clear_flush_young_notify vptep_clear_flush_young
+ #define set_pte_at_notify set_pte_at
+ 
+ #endif /* CONFIG_MMU_NOTIFIER */
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index b66c2110cb1f..71f2156ac632 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -209,6 +209,19 @@ static inline pte_t *page_check_address(struct page *page, struct mm_struct *mm,
+ 	return ptep;
+ }
+ 
++
++static inline vpte_t *page_check_address_vpte(struct page *page,
++		struct mm_struct *mm, unsigned long address,
++		spinlock_t **ptlp, int sync)
++{
++	if (PageTransHuge(page))
++		return (vpte_t *) page_check_address_pmd(page, mm, address,
++				PAGE_CHECK_ADDRESS_PMD_FLAG, ptlp);
++	else
++		return (vpte_t *) page_check_address(page, mm, address,
++				ptlp, sync);
++}
++
+ /*
+  * Used by swapoff to help locate where page is expected in vma.
+  */
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 9c3e77396d1a..0101a1a72bb0 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -676,59 +676,39 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 	spinlock_t *ptl;
+ 	int referenced = 0;
+ 	struct page_referenced_arg *pra = arg;
++	vpte_t *vpte;
++	enum ptlevel ptlvl = PTE;
+ 
+-	if (unlikely(PageTransHuge(page))) {
+-		pmd_t *pmd;
++	ptlvl = unlikely(PageTransHuge(page)) ? PMD : PTE;
+ 
+-		/*
+-		 * rmap might return false positives; we must filter
+-		 * these out using page_check_address_pmd().
+-		 */
+-		pmd = page_check_address_pmd(page, mm, address,
+-					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
+-		if (!pmd)
+-			return SWAP_AGAIN;
+-
+-		if (vma->vm_flags & VM_LOCKED) {
+-			spin_unlock(ptl);
+-			pra->vm_flags |= VM_LOCKED;
+-			return SWAP_FAIL; /* To break the loop */
+-		}
++	/*
++	 * rmap might return false positives; we must filter these out using
++	 * page_check_address_vpte().
++	 */
++	vpte = page_check_address_vpte(page, mm, address, &ptl, 0);
++	if (!vpte)
++		return SWAP_AGAIN;
++
++	if (vma->vm_flags & VM_LOCKED) {
++		vpte_unmap_unlock(vpte, ptlvl, ptl);
++		pra->vm_flags |= VM_LOCKED;
++		return SWAP_FAIL; /* To break the loop */
++	}
+ 
+-		/* go ahead even if the pmd is pmd_trans_splitting() */
+-		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+-			referenced++;
+-		spin_unlock(ptl);
+-	} else {
+-		pte_t *pte;
+ 
++	/* go ahead even if the pmd is pmd_trans_splitting() */
++	if (vptep_clear_flush_young_notify(vma, address, vpte, ptlvl)) {
+ 		/*
+-		 * rmap might return false positives; we must filter
+-		 * these out using page_check_address().
++		 * Don't treat a reference through a sequentially read
++		 * mapping as such.  If the page has been used in
++		 * another mapping, we will catch it; if this other
++		 * mapping is already gone, the unmap path will have
++		 * set PG_referenced or activated the page.
+ 		 */
+-		pte = page_check_address(page, mm, address, &ptl, 0);
+-		if (!pte)
+-			return SWAP_AGAIN;
+-
+-		if (vma->vm_flags & VM_LOCKED) {
+-			pte_unmap_unlock(pte, ptl);
+-			pra->vm_flags |= VM_LOCKED;
+-			return SWAP_FAIL; /* To break the loop */
+-		}
+-
+-		if (ptep_clear_flush_young_notify(vma, address, pte)) {
+-			/*
+-			 * Don't treat a reference through a sequentially read
+-			 * mapping as such.  If the page has been used in
+-			 * another mapping, we will catch it; if this other
+-			 * mapping is already gone, the unmap path will have
+-			 * set PG_referenced or activated the page.
+-			 */
+-			if (likely(!(vma->vm_flags & VM_SEQ_READ)))
+-				referenced++;
+-		}
+-		pte_unmap_unlock(pte, ptl);
++		if (likely(!(vma->vm_flags & VM_SEQ_READ)))
++			referenced++;
+ 	}
++	vpte_unmap_unlock(vpte, ptlvl, ptl);
+ 
+ 	if (referenced) {
+ 		pra->referenced++;
+-- 
+2.0.0.rc2
 
-I rather have a "lazy" approach, but like ftrace and its breakpoint
-method, the stop_machine approach is the simpler way to make sure the
-patching works before we try to optimize it.
-
--- Steve
