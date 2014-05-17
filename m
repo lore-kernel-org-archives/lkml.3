@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271AbaEQA53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:57:29 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:62443 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455AbaEQA5Z (ORCPT
+	id S1756563AbaEQA5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:57:32 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:48229 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884AbaEQA51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:57:25 -0400
+	Fri, 16 May 2014 20:57:27 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Miroslav Lichvar <mlichvar@redhat.com>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 1/3] [RFC] timekeeping: Rework frequency adjustments to work better w/ nohz
-Date: Fri, 16 May 2014 17:56:42 -0700
-Message-Id: <1400288204-414-2-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/3] [RFC] timekeeping: Use cached ntp_tick_length when accumulating error
+Date: Fri, 16 May 2014 17:56:43 -0700
+Message-Id: <1400288204-414-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
 References: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
@@ -23,39 +23,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing timekeeping_adjust logic has always been complicated
-to understand. Further, since it was developed prior to NOHZ becoming
-common, its not surprising it performs poorly when NOHZ is enabled.
+By caching the ntp_tick_length() when we correct the frequency error,
+and then using that cached value to accumulate error, we avoid large
+initial errors when the tick length is changed.
 
-Since Miroslav pointed out the problematic nature of the existing code
-in the NOHZ case, I've tried to refactor the code to perform better.
+This makes convergence happen much faster in the simulator, since the
+initial error doesn't have to be slowly whittled away.
 
-The problem with the previous approach was that it tried to adjust
-for the total cumulative error using a scaled dampening factor. This
-resulted in large errors to be corrected slowly, while small errors
-were corrected quickly. With NOHZ the timekeeping code doesn't know
-how far out the next tick will be, so this results in bad
-over-correction to small errors, and insufficient correction to large
-errors.
+This initially seems like an accounting error, but Miroslav pointed out
+that ntp_tick_length() can change mid-tick, so when we apply it in the
+error accumulation, we are applying any recent change to the entire tick.
 
-Inspired by Miroslav's patch, I've refactored the code to try to
-address the correction in two steps.
+This approach chooses to apply changes in the ntp_tick_length() only to
+the next tick, which allows us to calculate the freq correction before
+using the new tick length, which avoids accumulating error.
 
-1) Check the future freq error for the next tick, and if the frequency
-error is large, try to make sure we correct it so it doesn't cause
-much accumulated error.
-
-2) Then make a small single unit adjustment to correct any cumulative
-error that has collected over time.
-
-This method performs fairly well in the simulator Miroslav created.
-
-Major credit to Miroslav for pointing out the issue, providing the
-original patch to resolve this, a simulator for testing, as well as
-helping debug and resolve issues in my implementation so that it
-performed closer to his original implementation.
-
-I'd be very interested in feedback, thoughts, and testing.
+Credit to Miroslav for pointing this out and providing the original patch
+this functionality has been pulled out from, along with the rational.
 
 Cc: Miroslav Lichvar <mlichvar@redhat.com>
 Cc: Richard Cochran <richardcochran@gmail.com>
@@ -63,265 +47,58 @@ Cc: Prarit Bhargava <prarit@redhat.com>
 Reported-by: Miroslav Lichvar <mlichvar@redhat.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/timekeeper_internal.h |   3 +
- kernel/time/timekeeping.c           | 193 ++++++++++++++++--------------------
- 2 files changed, 86 insertions(+), 110 deletions(-)
+ include/linux/timekeeper_internal.h | 7 +++++++
+ kernel/time/timekeeping.c           | 5 ++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
-index c1825eb..4d398f1 100644
+index 4d398f1..4fddf6c 100644
 --- a/include/linux/timekeeper_internal.h
 +++ b/include/linux/timekeeper_internal.h
-@@ -41,6 +41,9 @@ struct timekeeper {
- 	 * ntp shifted nano seconds. */
- 	u32			ntp_error_shift;
+@@ -34,6 +34,13 @@ struct timekeeper {
+ 	/* Clock shifted nano seconds */
+ 	u64			xtime_nsec;
  
-+	/* Mult adjustment being applied to correct ntp_error */
-+	u32			ntp_err_mult;
-+
- 	/*
- 	 * wall_to_monotonic is what we need to add to xtime (or xtime corrected
- 	 * for sub jiffie times) to get to monotonic time.  Monotonic is pegged
++	/* The ntp_tick_length() value currently being used.
++	 * This cached copy ensures we consistently apply the tick
++	 * length for an entire tick, as ntp_tick_length may change
++	 * mid-tick, and we don't want to apply that new value to
++	 * the tick in progress.
++	 */
++	u64			ntp_tick;
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+ 	s64			ntp_error;
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 63f9ed7..d46bda2 100644
+index d46bda2..846603e 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -148,6 +148,7 @@ static void tk_setup_internals(struct timekeeper *tk, struct clocksource *clock)
- 	 * to counteract clock drifting.
- 	 */
- 	tk->mult = clock->mult;
-+	tk->ntp_err_mult = 0;
- }
+@@ -141,6 +141,7 @@ static void tk_setup_internals(struct timekeeper *tk, struct clocksource *clock)
  
- /* Timekeeper helper functions. */
-@@ -1049,125 +1050,34 @@ static int __init timekeeping_init_ops(void)
- 	register_syscore_ops(&timekeeping_syscore_ops);
- 	return 0;
- }
--
- device_initcall(timekeeping_init_ops);
+ 	tk->ntp_error = 0;
+ 	tk->ntp_error_shift = NTP_SCALE_SHIFT - clock->shift;
++	tk->ntp_tick = ntpinterval << tk->ntp_error_shift;
  
- /*
-- * If the error is already larger, we look ahead even further
-- * to compensate for late or lost adjustments.
-+ * Apply a multiplier adjustment to the timekeeper
-  */
--static __always_inline int timekeeping_bigadjust(struct timekeeper *tk,
--						 s64 error, s64 *interval,
--						 s64 *offset)
-+static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
-+							 s64 offset,
-+							 bool negative,
-+							 int adj_scale)
- {
--	s64 tick_error, i;
--	u32 look_ahead, adj;
--	s32 error2, mult;
--
--	/*
--	 * Use the current error value to determine how much to look ahead.
--	 * The larger the error the slower we adjust for it to avoid problems
--	 * with losing too many ticks, otherwise we would overadjust and
--	 * produce an even larger error.  The smaller the adjustment the
--	 * faster we try to adjust for it, as lost ticks can do less harm
--	 * here.  This is tuned so that an error of about 1 msec is adjusted
--	 * within about 1 sec (or 2^20 nsec in 2^SHIFT_HZ ticks).
--	 */
--	error2 = tk->ntp_error >> (NTP_SCALE_SHIFT + 22 - 2 * SHIFT_HZ);
--	error2 = abs(error2);
--	for (look_ahead = 0; error2 > 0; look_ahead++)
--		error2 >>= 2;
-+	s64 interval = tk->cycle_interval;
-+	s32 mult_adj = 1;
- 
--	/*
--	 * Now calculate the error in (1 << look_ahead) ticks, but first
--	 * remove the single look ahead already included in the error.
--	 */
--	tick_error = ntp_tick_length() >> (tk->ntp_error_shift + 1);
--	tick_error -= tk->xtime_interval >> 1;
--	error = ((error - tick_error) >> look_ahead) + tick_error;
--
--	/* Finally calculate the adjustment shift value.  */
--	i = *interval;
--	mult = 1;
--	if (error < 0) {
--		error = -error;
--		*interval = -*interval;
--		*offset = -*offset;
--		mult = -1;
-+	if (negative) {
-+		mult_adj = -mult_adj;
-+		interval = -interval;
-+		offset  = -offset;
- 	}
--	for (adj = 0; error > i; adj++)
--		error >>= 1;
--
--	*interval <<= adj;
--	*offset <<= adj;
--	return mult << adj;
--}
-+	mult_adj <<= adj_scale;
-+	interval <<= adj_scale;
-+	offset <<= adj_scale;
- 
--/*
-- * Adjust the multiplier to reduce the error value,
-- * this is optimized for the most common adjustments of -1,0,1,
-- * for other values we can do a bit more work.
-- */
--static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
--{
--	s64 error, interval = tk->cycle_interval;
--	int adj;
--
--	/*
--	 * The point of this is to check if the error is greater than half
--	 * an interval.
--	 *
--	 * First we shift it down from NTP_SHIFT to clocksource->shifted nsecs.
--	 *
--	 * Note we subtract one in the shift, so that error is really error*2.
--	 * This "saves" dividing(shifting) interval twice, but keeps the
--	 * (error > interval) comparison as still measuring if error is
--	 * larger than half an interval.
--	 *
--	 * Note: It does not "save" on aggravation when reading the code.
--	 */
--	error = tk->ntp_error >> (tk->ntp_error_shift - 1);
--	if (error > interval) {
--		/*
--		 * We now divide error by 4(via shift), which checks if
--		 * the error is greater than twice the interval.
--		 * If it is greater, we need a bigadjust, if its smaller,
--		 * we can adjust by 1.
--		 */
--		error >>= 2;
--		if (likely(error <= interval))
--			adj = 1;
--		else
--			adj = timekeeping_bigadjust(tk, error, &interval, &offset);
--	} else {
--		if (error < -interval) {
--			/* See comment above, this is just switched for the negative */
--			error >>= 2;
--			if (likely(error >= -interval)) {
--				adj = -1;
--				interval = -interval;
--				offset = -offset;
--			} else {
--				adj = timekeeping_bigadjust(tk, error, &interval, &offset);
--			}
--		} else {
--			goto out_adjust;
--		}
--	}
--
--	if (unlikely(tk->clock->maxadj &&
--		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
--		printk_once(KERN_WARNING
--			"Adjusting %s more than 11%% (%ld vs %ld)\n",
--			tk->clock->name, (long)tk->mult + adj,
--			(long)tk->clock->mult + tk->clock->maxadj);
--	}
  	/*
- 	 * So the following can be confusing.
- 	 *
--	 * To keep things simple, lets assume adj == 1 for now.
-+	 * To keep things simple, lets assume mult_adj == 1 for now.
- 	 *
--	 * When adj != 1, remember that the interval and offset values
-+	 * When mult_adj != 1, remember that the interval and offset values
- 	 * have been appropriately scaled so the math is the same.
- 	 *
- 	 * The basic idea here is that we're increasing the multiplier
-@@ -1211,12 +1121,76 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- 	 *
- 	 * XXX - TODO: Doc ntp_error calculation.
- 	 */
--	tk->mult += adj;
-+	tk->mult += mult_adj;
- 	tk->xtime_interval += interval;
- 	tk->xtime_nsec -= offset;
- 	tk->ntp_error -= (interval - offset) << tk->ntp_error_shift;
-+}
-+
-+/*
-+ * Calculate the multiplier adjustment needed to match the frequency
-+ * specified by NTP
-+ */
-+static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
-+							s64 offset)
-+{
-+	s64 interval = tk->cycle_interval;
-+	s64 xinterval = tk->xtime_interval;
-+	s64 tick_error;
-+	bool negative;
-+	u32 adj;
-+
-+	/* Remove any current error adj from freq calculation */
-+	if (tk->ntp_err_mult)
-+		xinterval -= tk->cycle_interval;
-+
-+	/* Calculate current error per tick */
-+	tick_error = ntp_tick_length() >> tk->ntp_error_shift;
-+	tick_error -= (xinterval + tk->xtime_remainder);
-+
-+	/* Don't worry about correcting it if its small */
-+	if (likely((tick_error >= 0) && (tick_error <= interval)))
-+		return;
-+
-+	/* preserve the direction of correction */
-+	negative = (tick_error < 0);
-+
-+	/* Sort out the magnitude of the correction */
-+	tick_error = abs(tick_error);
-+	for (adj = 0; tick_error > interval; adj++)
-+		tick_error >>= 1;
-+
-+	/* scale the corrections */
-+	timekeeping_apply_adjustment(tk, offset, negative, adj);
-+}
-+
-+/*
-+ * Adjust the timekeeper's multiplier to the correct frequency
-+ * and also to reduce the accumulated error value.
-+ */
-+static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
-+{
-+	/* Correct for the current frequency error */
-+	timekeeping_freqadjust(tk, offset);
-+
-+	/* Next make a small adjustment to fix any cumulative error */
-+	if (!tk->ntp_err_mult && (tk->ntp_error > 0)) {
-+		tk->ntp_err_mult = 1;
-+		timekeeping_apply_adjustment(tk, offset, 0, 0);
-+	} else if (tk->ntp_err_mult && (tk->ntp_error <= 0)) {
-+		/* Undo any existing error adjustment */
-+		timekeeping_apply_adjustment(tk, offset, 1, 0);
-+		tk->ntp_err_mult = 0;
-+	}
-+
-+	if (unlikely(tk->clock->maxadj &&
-+		(tk->mult > tk->clock->mult + tk->clock->maxadj))) {
-+		printk_once(KERN_WARNING
-+			"Adjusting %s more than 11%% (%ld vs %ld)\n",
-+			tk->clock->name, (long)tk->mult,
-+			(long)tk->clock->mult + tk->clock->maxadj);
-+	}
+ 	 * The timekeeper keeps its own mult values for the currently
+@@ -1144,6 +1145,8 @@ static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
+ 	if (tk->ntp_err_mult)
+ 		xinterval -= tk->cycle_interval;
  
--out_adjust:
- 	/*
- 	 * It may be possible that when we entered this function, xtime_nsec
- 	 * was very small.  Further, if we're slightly speeding the clocksource
-@@ -1236,7 +1210,6 @@ out_adjust:
- 		tk->xtime_nsec = 0;
- 		tk->ntp_error += neg << tk->ntp_error_shift;
- 	}
--
- }
++	tk->ntp_tick = ntp_tick_length();
++
+ 	/* Calculate current error per tick */
+ 	tick_error = ntp_tick_length() >> tk->ntp_error_shift;
+ 	tick_error -= (xinterval + tk->xtime_remainder);
+@@ -1289,7 +1292,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 	tk->raw_time.tv_nsec = raw_nsecs;
  
- /**
+ 	/* Accumulate error between NTP and clock interval */
+-	tk->ntp_error += ntp_tick_length() << shift;
++	tk->ntp_error += tk->ntp_tick << shift;
+ 	tk->ntp_error -= (tk->xtime_interval + tk->xtime_remainder) <<
+ 						(tk->ntp_error_shift + shift);
+ 
 -- 
 1.9.1
 
