@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbaEQWd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:33:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53776 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaEQWdz (ORCPT
+	id S1751818AbaEQWhT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:37:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51757 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750973AbaEQWhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:33:55 -0400
-From: Colin King <colin.king@canonical.com>
-To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] IB/mlx4: fix unitialised variable is_mcast
-Date: Sat, 17 May 2014 23:33:44 +0100
-Message-Id: <1400366024-18781-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.0.0.rc0
+	Sat, 17 May 2014 18:37:17 -0400
+Date: Sat, 17 May 2014 23:35:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: imx: fix error handling in ipu device
+	registration
+Message-ID: <20140517223555.GR3693@n2100.arm.linux.org.uk>
+References: <1400352033-18262-1-git-send-email-emilgoode@gmail.com> <20140517191821.GD16662@pengutronix.de> <20140517220836.GI15585@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140517220836.GI15585@mwanda>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Sun, May 18, 2014 at 01:08:36AM +0300, Dan Carpenter wrote:
+> Let's look at that error handling again.
+> 
+> err:  <-- the name is not descriptive.  the location is bad.
+> 		kfree(pdev->dev.dma_mask);  <- null dereference.
+> 		platform_device_put(pdev);  <- ok
+> 		return ERR_PTR(-ENODEV);    <- should be "return ERR_PTR(ret);"
+> 
+> 3 out of 4 of the lines are bad.
 
-Commit 297e0dad7 introduced a bug where is_mcast is now
-no longer initiialised on the non-multicast condition and so
-it can be any random value from the stack.  This issue was
-detected by cppcheck:
+2 out of 4.  kfree(NULL) is perfectly legal.
 
-[drivers/infiniband/hw/mlx4/ah.c:103]: (error) Uninitialized
-  variable: is_mcast
-
-Simple fix is to initialise is_mcast to zero.
-
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/infiniband/hw/mlx4/ah.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/infiniband/hw/mlx4/ah.c b/drivers/infiniband/hw/mlx4/ah.c
-index 170dca6..2d8c339 100644
---- a/drivers/infiniband/hw/mlx4/ah.c
-+++ b/drivers/infiniband/hw/mlx4/ah.c
-@@ -73,7 +73,7 @@ static struct ib_ah *create_iboe_ah(struct ib_pd *pd, struct ib_ah_attr *ah_attr
- {
- 	struct mlx4_ib_dev *ibdev = to_mdev(pd->device);
- 	struct mlx4_dev *dev = ibdev->dev;
--	int is_mcast;
-+	int is_mcast = 0;
- 	struct in6_addr in6;
- 	u16 vlan_tag;
- 
 -- 
-1.7.9.5
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
