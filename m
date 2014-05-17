@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558AbaEQQFx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 12:05:53 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:55019 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932115AbaEQQFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 12:05:52 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: gregkh@linuxfoundation.org, crope@iki.fi
-Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Martin Kepplinger <martink@posteo.de>
-Subject: [PATCHv2] staging: media: as102: replace custom dprintk() with dev_dbg()
-Date: Sat, 17 May 2014 18:05:38 +0200
-Message-Id: <1400342738-32652-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <53776B57.5050504@iki.fi>
-References: <53776B57.5050504@iki.fi>
+	id S964832AbaEQQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 12:25:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39555 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932115AbaEQQZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 12:25:28 -0400
+Message-ID: <53778D40.5020203@oracle.com>
+Date: Sat, 17 May 2014 12:24:32 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        price@mit.edu
+Subject: Re: BUG_ON drivers/char/random.c:986 (Was: perf: use after free in
+ perf_remove_from_context)
+References: <5370EBE9.6@oracle.com> <20140516153455.GV11096@twins.programming.kicks-ass.net> <53763775.3040602@linux.intel.com> <20140516162117.GY11096@twins.programming.kicks-ass.net> <1400287582.11005.118359877.7B81534B@webmail.messagingengine.com> <20140517021840.GA5513@thunk.org>
+In-Reply-To: <20140517021840.GA5513@thunk.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-don't reinvent dev_dbg(). remove dprintk() in as102_drv.c.
-use the common kernel coding style.
+On 05/16/2014 10:18 PM, Theodore Ts'o wrote:
+> On Fri, May 16, 2014 at 05:46:22PM -0700, Hannes Frederic Sowa wrote:
+>> > This should do the trick:
+>> > dd if=/dev/urandom of=/dev/zero bs=67108707
+>> > 
+>> > I suspect ee1de406ba6eb1 ("random: simplify accounting logic") as the
+>> > culprit.
+> Yep, that it's it.  Thanks for noticing this so quickly!  I'll push
+> the following patch to Linus.
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
----
-this applies to next-20140516. any more suggestions?
-more cleanup can be done when dprintk() is completely gone.
+Peter, could you describe the infrastructure you're running on? I don't
+think Dave or myself have ever hit this issue, and I wonder what made you
+stumble on it.
 
- drivers/staging/media/as102/as102_drv.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/media/as102/as102_drv.c b/drivers/staging/media/as102/as102_drv.c
-index 09d64cd..e0ee618 100644
---- a/drivers/staging/media/as102/as102_drv.c
-+++ b/drivers/staging/media/as102/as102_drv.c
-@@ -31,10 +31,6 @@
- #include "as102_fw.h"
- #include "dvbdev.h"
- 
--int as102_debug;
--module_param_named(debug, as102_debug, int, 0644);
--MODULE_PARM_DESC(debug, "Turn on/off debugging (default: off)");
--
- int dual_tuner;
- module_param_named(dual_tuner, dual_tuner, int, 0644);
- MODULE_PARM_DESC(dual_tuner, "Activate Dual-Tuner config (default: off)");
-@@ -74,7 +70,8 @@ static void as102_stop_stream(struct as102_dev_t *dev)
- 			return;
- 
- 		if (as10x_cmd_stop_streaming(bus_adap) < 0)
--			dprintk(debug, "as10x_cmd_stop_streaming failed\n");
-+			dev_dbg(&dev->bus_adap.usb_dev->dev,
-+				"as10x_cmd_stop_streaming failed\n");
- 
- 		mutex_unlock(&dev->bus_adap.lock);
- 	}
-@@ -112,14 +109,16 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
- 	int ret = -EFAULT;
- 
- 	if (mutex_lock_interruptible(&dev->bus_adap.lock)) {
--		dprintk(debug, "mutex_lock_interruptible(lock) failed !\n");
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"amutex_lock_interruptible(lock) failed !\n");
- 		return -EBUSY;
- 	}
- 
- 	switch (onoff) {
- 	case 0:
- 		ret = as10x_cmd_del_PID_filter(bus_adap, (uint16_t) pid);
--		dprintk(debug, "DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
-+			"DEL_PID_FILTER([%02d] 0x%04x) ret = %d\n",
- 			index, pid, ret);
- 		break;
- 	case 1:
-@@ -131,7 +130,7 @@ static int as10x_pid_filter(struct as102_dev_t *dev,
- 		filter.pid = pid;
- 
- 		ret = as10x_cmd_add_PID_filter(bus_adap, &filter);
--		dprintk(debug,
-+		dev_dbg(&dev->bus_adap.usb_dev->dev,
- 			"ADD_PID_FILTER([%02d -> %02d], 0x%04x) ret = %d\n",
- 			index, filter.idx, filter.pid, ret);
- 		break;
--- 
-1.7.10.4
-
+Thanks,
+Sasha
