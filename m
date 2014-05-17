@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326AbaEQTYP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 15:24:15 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63528 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaEQTXp (ORCPT
+	id S1751393AbaEQTZS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 15:25:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25317 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaEQTZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 15:23:45 -0400
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: standby24x7@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH 1/2] staging: rtl8821ae: fix double const in sw.c
-Date: Sat, 17 May 2014 21:23:37 +0200
-Message-Id: <1400354618-13471-2-git-send-email-bergo.torino@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1400354618-13471-1-git-send-email-bergo.torino@gmail.com>
-References: <1400354618-13471-1-git-send-email-bergo.torino@gmail.com>
+	Sat, 17 May 2014 15:25:17 -0400
+Date: Sat, 17 May 2014 22:24:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Jes.Sorensen@redhat.com,
+        Larry.Finger@lwfinger.net
+Subject: Re: [PATCH 1/2] staging: rtl8188eu: fix usage of uninit scalar in
+ rtw_drv_init()
+Message-ID: <20140517192450.GF16255@mwanda>
+References: <1400323138-32243-1-git-send-email-cengelma@gmx.at>
+ <1400323138-32243-2-git-send-email-cengelma@gmx.at>
+ <20140517144423.GA15585@mwanda>
+ <20140517205635.22c40685@spike>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140517205635.22c40685@spike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes the following sparse warning:
+On Sat, May 17, 2014 at 08:56:35PM +0200, Christian Engelmayer wrote:
+> On Sat, 17 May 2014 17:44:23 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Sat, May 17, 2014 at 12:38:57PM +0200, Christian Engelmayer wrote:
+> > > Function rtw_drv_init() is written in a way that assumes 'status' != _SUCCESS
+> > > as long as not explicitly set. Thus initialize 'status' to FAIL, in order to
+> > > prevent undefined behaviour if going through the exit paths. Detected by
+> > > Coverity - CID 1077832.
+> > > 
+> > > Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> > 
+> > This is a bugfix and we like to merge bugfixes without asking redo
+> > things, so don't redo.  But really the better fix is to get rid of the
+> > status variable completely.  Just return directly on the success path.
+> > 
+> > If we were to do that, then both patches would be merged together and
+> > called:  [patch] Staging: rtl8188eu: fix error handling in rtw_drv_init()
+> > 
+> > But this patch is also acceptable as-is.  Thanks for fixing the bug.  :)
+> 
+> I agree with You Dan. I'm no big fan of that status variable either. In this
+> case I was already tempted, but saw it as a recurring pattern in that file
+> in case cleanup is done. So I decided to just attack the bug in a small change
+> and leave the cleanup of the error handling pattern for a later, consistent
+> sweep over the whole file if that's wanted.
 
-drivers/staging/rtl8821ae/rtl8821ae/sw.c:
-    - 449:14: warning: duplicate const
+It's a mistake to try be consistent with the crap code in the rest of
+this file.  ;)  Next time just fix it so at least a couple lines in here
+are not terrible.
 
-Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
----
- drivers/staging/rtl8821ae/rtl8821ae/sw.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/rtl8821ae/rtl8821ae/sw.c b/drivers/staging/rtl8821ae/rtl8821ae/sw.c
-index a8d1755..c24d426 100644
---- a/drivers/staging/rtl8821ae/rtl8821ae/sw.c
-+++ b/drivers/staging/rtl8821ae/rtl8821ae/sw.c
-@@ -446,7 +446,7 @@ MODULE_PARM_DESC(ips, "using no link power save (default 1 is open)\n");
- MODULE_PARM_DESC(fwlps, "using linked fw control power save (default 1 is open)\n");
- 
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
--static const SIMPLE_DEV_PM_OPS(rtlwifi_pm_ops, rtl_pci_suspend, rtl_pci_resume);
-+static SIMPLE_DEV_PM_OPS(rtlwifi_pm_ops, rtl_pci_suspend, rtl_pci_resume);
- #endif
- 
- #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29))
--- 
-1.8.1.2
+regards,
+dan carpenter
 
