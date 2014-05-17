@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaEQV4j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 17:56:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39140 "EHLO
+	id S1751699AbaEQWJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:09:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40407 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbaEQV4i (ORCPT
+	with ESMTP id S1751263AbaEQWJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 17:56:38 -0400
-Date: Sun, 18 May 2014 00:56:15 +0300
+	Sat, 17 May 2014 18:09:28 -0400
+Date: Sun, 18 May 2014 01:08:36 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alan Cox <alan@linux.intel.com>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/4] cpupower: Remove redundant error check
-Message-ID: <20140517215615.GI16255@mwanda>
-References: <1400350980-30455-2-git-send-email-peter.senna@gmail.com>
- <20140517202255.GF15585@mwanda>
- <CA+MoWDqLtr-O=VQNC7qqNUJvWkEPtVr8cw9t5sB=adQWkywLZw@mail.gmail.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Emil Goode <emilgoode@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: imx: fix error handling in ipu device
+ registration
+Message-ID: <20140517220836.GI15585@mwanda>
+References: <1400352033-18262-1-git-send-email-emilgoode@gmail.com>
+ <20140517191821.GD16662@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CA+MoWDqLtr-O=VQNC7qqNUJvWkEPtVr8cw9t5sB=adQWkywLZw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140517191821.GD16662@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 11:34:46PM +0200, Peter Senna Tschudin wrote:
-> On Sat, May 17, 2014 at 10:22 PM, Dan Carpenter
-> <dan.carpenter@oracle.com> wrote:
-> > On Sat, May 17, 2014 at 08:22:58PM +0200, Peter Senna Tschudin wrote:
-> >> diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
-> >> index a416de8..4e2f35a 100644
-> >> --- a/tools/power/cpupower/utils/cpufreq-set.c
-> >> +++ b/tools/power/cpupower/utils/cpufreq-set.c
-> >> @@ -320,12 +320,11 @@ int cmd_freq_set(int argc, char **argv)
-> >>
-> >>               printf(_("Setting cpu: %d\n"), cpu);
-> >>               ret = do_one_cpu(cpu, &new_pol, freq, policychange);
-> >> -             if (ret)
-> >> +             if (ret) {
-> >> +                     print_error();
-> >>                       break;
-> >
-> > Just return directly instead of break return;
-> >
-> >> +             }
-> >>       }
-> >>
-> >> -     if (ret)
-> >> -             print_error();
-> >> -
-> >>       return ret;
-> >
-> > Are you sure this patch is correct?  Theoretically, it's possible to
-> > reach the end of this function without going hitting the
-> > "ret = do_one_cpu(...);" assignment.
-> >
-> > Don't be fooled by the "int ret = 0;" initialization, that is a trick
-> > initialization to mislead the unwary.  By the end of the do while loop
-> > then "ret" is always -1.
-> I have missed that, thank you for pointing this out. This patch is
-> wrong and should not be applied, please ignore it.
-> 
-> Dan, should I just leave this file as it is?
+On Sat, May 17, 2014 at 09:18:21PM +0200, Uwe Kleine-König wrote:
+> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> index fc4dd7cedc11..6bd7c3f37ac0 100644
+> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> @@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
+>  
+>  	pdev = platform_device_alloc("mx3-camera", 0);
+>  	if (!pdev)
+> -		goto err;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+>  	if (!pdev->dev.dma_mask)
 
-I think in reality we should always hit the "ret = do_one_cpu()"
-assignment.  But your static analysis tool should say that we don't know
-that, so that's why I brought it up.
+Emil, do this one, please and not the second suggestion.
 
-My guess is that the original code is bad and we should say:
+Direct returns are more readable.  Otherwise, you wonder what the goto
+is for and where it will take you and be annoyed to discover it is a
+waste of time, no-op goto.  Also you will wonder if platform_device_put()
+accepts NULL pointers.  Thirdly there is a small ugliness that the error
+code is not preserved.  What is the point of setting the error code to
+-ENOMEM only to discard it?
 
-		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
-		if (ret) {
-			print_error();
-			return ret;
-		}
-	}
+Let's look at that error handling again.
 
-	return 0;
+err:  <-- the name is not descriptive.  the location is bad.
+		kfree(pdev->dev.dma_mask);  <- null dereference.
+		platform_device_put(pdev);  <- ok
+		return ERR_PTR(-ENODEV);    <- should be "return ERR_PTR(ret);"
 
-I am currently involved in a number of threads, not just yours, where I
-am encouraging people to replace ambiguous returns with "return 0;".
-This is my life now.
+3 out of 4 of the lines are bad.
 
 regards,
 dan carpenter
