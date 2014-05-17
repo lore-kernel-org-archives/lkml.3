@@ -1,51 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927AbaEQFme (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 01:42:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57460 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677AbaEQFmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 01:42:32 -0400
-Message-ID: <5376F6C1.7000907@gmail.com>
-Date: Sat, 17 May 2014 13:42:25 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        gxt@mprc.pku.edu.cn, matanb@mellanox.com, ogerlitz@mellanox.com,
-        eyalpe@mellanox.com, amirv@mellanox.com, sbohrer@rgmadvisors.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] drivers: net: ethernet: mellanox: mlx4: let mlx4 depend
- on SMP
-References: <5376F2F8.3010603@gmail.com> <20140517.013655.349586284786993619.davem@davemloft.net>
-In-Reply-To: <20140517.013655.349586284786993619.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756865AbaEQF5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 01:57:43 -0400
+Received: from gnurou.org ([207.192.72.5]:38220 "EHLO mail.gnurou.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaEQF5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 01:57:42 -0400
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2] gpio: make of_get_named_gpiod_flags() private
+Date: Sat, 17 May 2014 14:54:50 +0900
+Message-Id: <1400306090-4092-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2014 01:36 PM, David Miller wrote:
-> From: Chen Gang <gang.chen.5i5j@gmail.com>
-> Date: Sat, 17 May 2014 13:26:16 +0800
-> 
->> 'struct irq_affinity_notify' and the related functions are only defined
->> when SMP enabled, so at present, mlx4 has to only run under SMP.
->>
->> The related error (allmodconfig under unicore32):
-> 
-> Making the entire driver depend upon SMP is not the answer,
-> other Mellanox developers said that a proper fix is pending
-> so please be patient.
-> 
+of_get_named_gpiod_flags() is visible and directly usable by GPIO
+consumers, but it really should not as the gpiod interface relies
+on the simpler gpiod_get() to provide properly-configured GPIOs.
 
-OK, thank you for your information. I shall bypass it, and continue.
+of_get_named_gpiod_flags() is just used internally by gpiolib to
+implement gpiod_get(), and by the old of_get_named_gpio_flags()
+function, therefore it makes sense to make it gpiolib-private.
 
-Thanks.
+As a side-effect, the unused (and unneeded) of_get_gpiod_flags()
+inline function is also removed, and of_get_named_gpio_flags() is moved
+from a static inline function to a regular one in gpiolib-of.c
+
+This results in all references to gpiod_* functions in of_gpio.h being
+gone, which is the way it should be since this file is part of the old
+integer GPIO interface.
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+Changes since v1:
+- Fixed compilation error when CONFIG_OF_GPIO is not defined
+- Fixed warning due to of_gpio_flags enum not being declared
+  in private gpiolib.h header
+
+ drivers/gpio/gpiolib-of.c | 14 ++++++++++++++
+ drivers/gpio/gpiolib.h    |  5 +++++
+ include/linux/of_gpio.h   | 35 +++--------------------------------
+ 3 files changed, 22 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index db98d3a..af7e25c 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -96,6 +96,20 @@ struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+ }
+ EXPORT_SYMBOL(of_get_named_gpiod_flags);
+ 
++int of_get_named_gpio_flags(struct device_node *np, const char *list_name,
++			    int index, enum of_gpio_flags *flags)
++{
++	struct gpio_desc *desc;
++
++	desc = of_get_named_gpiod_flags(np, list_name, index, flags);
++
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
++	else
++		return desc_to_gpio(desc);
++}
++EXPORT_SYMBOL(of_get_named_gpio_flags);
++
+ /**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+  * @gc:		pointer to the gpio_chip structure
+diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
+index cf09294..1a4103d 100644
+--- a/drivers/gpio/gpiolib.h
++++ b/drivers/gpio/gpiolib.h
+@@ -15,6 +15,8 @@
+ #include <linux/err.h>
+ #include <linux/device.h>
+ 
++enum of_gpio_flags;
++
+ /**
+  * struct acpi_gpio_info - ACPI GPIO specific information
+  * @gpioint: if %true this GPIO is of type GpioInt otherwise type is GpioIo
+@@ -46,4 +48,7 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
+ int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
+ void gpiochip_free_own_desc(struct gpio_desc *desc);
+ 
++struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
++		   const char *list_name, int index, enum of_gpio_flags *flags);
++
+ #endif /* GPIOLIB_H */
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index f14123a..38fc050 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -19,7 +19,6 @@
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+-#include <linux/gpio/consumer.h>
+ 
+ struct device_node;
+ 
+@@ -48,7 +47,7 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ 	return container_of(gc, struct of_mm_gpio_chip, gc);
+ }
+ 
+-extern struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
++extern int of_get_named_gpio_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags);
+ 
+ extern int of_mm_gpiochip_add(struct device_node *np,
+@@ -63,10 +62,10 @@ extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+ #else /* CONFIG_OF_GPIO */
+ 
+ /* Drivers may not strictly depend on the GPIO support, so let them link. */
+-static inline struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
++static inline int of_get_named_gpio_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags)
+ {
+-	return ERR_PTR(-ENOSYS);
++	return -ENOSYS;
+ }
+ 
+ static inline int of_gpio_simple_xlate(struct gpio_chip *gc,
+@@ -81,18 +80,6 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
+ 
+ #endif /* CONFIG_OF_GPIO */
+ 
+-static inline int of_get_named_gpio_flags(struct device_node *np,
+-		const char *list_name, int index, enum of_gpio_flags *flags)
+-{
+-	struct gpio_desc *desc;
+-	desc = of_get_named_gpiod_flags(np, list_name, index, flags);
+-
+-	if (IS_ERR(desc))
+-		return PTR_ERR(desc);
+-	else
+-		return desc_to_gpio(desc);
+-}
+-
+ /**
+  * of_gpio_named_count() - Count GPIOs for a device
+  * @np:		device node to count GPIOs for
+@@ -129,22 +116,6 @@ static inline int of_gpio_count(struct device_node *np)
+ 	return of_gpio_named_count(np, "gpios");
+ }
+ 
+-/**
+- * of_get_gpiod_flags() - Get a GPIO descriptor and flags to use with GPIO API
+- * @np:		device node to get GPIO from
+- * @index:	index of the GPIO
+- * @flags:	a flags pointer to fill in
+- *
+- * Returns GPIO descriptor to use with Linux generic GPIO API, or a errno
+- * value on the error condition. If @flags is not NULL the function also fills
+- * in flags for the GPIO.
+- */
+-static inline struct gpio_desc *of_get_gpiod_flags(struct device_node *np,
+-					int index, enum of_gpio_flags *flags)
+-{
+-	return of_get_named_gpiod_flags(np, "gpios", index, flags);
+-}
+-
+ static inline int of_get_gpio_flags(struct device_node *np, int index,
+ 		      enum of_gpio_flags *flags)
+ {
 -- 
-Chen Gang
+1.9.2
 
-Open, share, and attitude like air, water, and life which God blessed
