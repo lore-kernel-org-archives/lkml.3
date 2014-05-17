@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515AbaEQMCt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 08:02:49 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:30074 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247AbaEQMCr (ORCPT
+	id S932546AbaEQMHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 08:07:30 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60571 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247AbaEQMH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 08:02:47 -0400
-X-Nat-Received: from [202.181.97.72]:18032 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1400328165.10432
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: Fix theoretical division by 0 in super_cache_scan().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201405172102.GII52606.JtMOQOOFVHFLFS@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 17 May 2014 21:02:42 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16052014 #7937103, status: clean
+	Sat, 17 May 2014 08:07:29 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: tony.luck@intel.com
+Cc: bp@alien8.de, linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] x86/mce: Clear a useless global variable in mce.c
+Date: Sat, 17 May 2014 20:05:43 +0800
+Message-Id: <1400328343-6483-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 7a2ed4e9c91864736ce5ad89489fd5862d59542e Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sat, 17 May 2014 20:56:38 +0900
-Subject: [PATCH] fs: Fix theoretical division by 0 in super_cache_scan().
+The mce_entry, which was defined as a global variable in mce.c, was
+used in nmi_watchdog_tick().But nmi_watchdog_tick() has been discarded 
+in the new generic nmi_watchdog implementation - commit 1fb9d6ad2766. 
+So, of course, there is no need for the mce_entry.
 
-total_objects could be 0 and is used as a denom.
+This patch is just used to remove a useless global variable mce_entry
+and relative operations in mce.c.
 
-While total_objects is a "long", total_objects == 0 unlikely happens for
-3.12 and later kernels because 32-bit architectures would not be able to
-hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
-between 3.1 and 3.11 because total_objects in prune_super() was an "int"
-and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> # 3.1+
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
 ---
- fs/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/mce.h       |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c |    5 -----
+ 2 files changed, 7 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 48377f7..1408362 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -81,6 +81,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
- 	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
- 	total_objects = dentries + inodes + fs_objects + 1;
-+	if (!total_objects)
-+		total_objects = 1;
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index 6e4ce2d..958b90f 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -176,8 +176,6 @@ int mce_available(struct cpuinfo_x86 *c);
+ DECLARE_PER_CPU(unsigned, mce_exception_count);
+ DECLARE_PER_CPU(unsigned, mce_poll_count);
  
- 	/* proportion the scan between the caches */
- 	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+-extern atomic_t mce_entry;
+-
+ typedef DECLARE_BITMAP(mce_banks_t, MAX_NR_BANKS);
+ DECLARE_PER_CPU(mce_banks_t, mce_poll_banks);
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c8..8f520a1 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -60,8 +60,6 @@ static DEFINE_MUTEX(mce_chrdev_read_mutex);
+ 
+ #define SPINUNIT 100	/* 100ns */
+ 
+-atomic_t mce_entry;
+-
+ DEFINE_PER_CPU(unsigned, mce_exception_count);
+ 
+ struct mce_bank *mce_banks __read_mostly;
+@@ -1041,8 +1039,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	DECLARE_BITMAP(valid_banks, MAX_NR_BANKS);
+ 	char *msg = "Unknown";
+ 
+-	atomic_inc(&mce_entry);
+-
+ 	this_cpu_inc(mce_exception_count);
+ 
+ 	if (!cfg->banks)
+@@ -1172,7 +1168,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		mce_report_event(regs);
+ 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+ out:
+-	atomic_dec(&mce_entry);
+ 	sync_core();
+ }
+ EXPORT_SYMBOL_GPL(do_machine_check);
 -- 
-1.7.1
+1.7.10.4
+
