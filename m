@@ -1,156 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaEQKIc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 06:08:32 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:35066 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114AbaEQKIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 06:08:30 -0400
-Message-ID: <5377351A.6000609@gmail.com>
-Date: Sat, 17 May 2014 12:08:26 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        linus.walleij@linaro.org
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/7] pinctrl: berlin: add the core pinctrl driver for
- Marvell Berlin SoCs
-References: <1399267649-20218-1-git-send-email-antoine.tenart@free-electrons.com> <1399267649-20218-2-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1399267649-20218-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932363AbaEQKVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 06:21:25 -0400
+Received: from sauhun.de ([89.238.76.85]:38329 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932114AbaEQKVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 06:21:23 -0400
+Date: Sat, 17 May 2014 12:21:10 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V2 6/9] I2C: Add smbus word/block process call helper
+ function
+Message-ID: <20140517102110.GB2602@katana>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-7-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
+Content-Disposition: inline
+In-Reply-To: <1398695268-28645-7-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 07:27 AM, Antoine Ténart wrote:
-> The Marvell Berlin boards have a group based pinmuxing mechanism. This
-> adds the core driver support. We actually do not need any information
-> about the pins here and only have the definition of the groups.
-> 
-> Let's take the example of the uart0 pinmuxing on the BG2Q. Balls BK4 and
-> BH6 are muxed to respectively UART0 RX and TX if the group GSM12 is set
-> to mode 0:
-> 
-> Group	Modes	Offset Base	Offset	LSB	Bit Width
-> GSM12	3	sm_base		0x40	0x10	0x2
-> 
-> Ball	Group	Mode 0		Mode 1		Mode 2
-> BK4	GSM12	UART0_RX	IrDA0_RX	GPIO9
-> BH6	GSM12	UART0_TX	IrDA0_TX	GPIO10
-> 
-> So in order to configure BK4 -> UART0_TX and BH6 -> UART0_RX, we need
-> to set (sm_base + 0x40 + 0x10) &= ff3fffff.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+
+--9zSXsLTf0vkW971A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Apr 28, 2014 at 10:27:45PM +0800, Lan Tianyu wrote:
+> Add i2c_smbus_word/block_proc_call() helper function. These will be used
+> in the implementation of i2c ACPI address space handler.
+>=20
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 > ---
-[...]
-> +static int berlin_pinctrl_dt_node_to_map(struct pinctrl_dev *pctrl_dev,
-> +					 struct device_node *node,
-> +					 struct pinctrl_map **map,
-> +					 unsigned *num_maps)
+>  drivers/i2c/i2c-core.c | 56 ++++++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  include/linux/i2c.h    |  4 ++++
+>  2 files changed, 60 insertions(+)
+>=20
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 3bf0048..638befd 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -2306,6 +2306,30 @@ s32 i2c_smbus_write_word_data(const struct i2c_cli=
+ent *client, u8 command,
+>  EXPORT_SYMBOL(i2c_smbus_write_word_data);
+> =20
+>  /**
+> + * i2c_smbus_word_proc_call - SMBus "word proc call" protocol
+> + * @client: Handle to slave device
+> + * @command: Byte interpreted by slave
+> + * @value: 16-bit "word" being written
+> + *
+> + * This executes the SMBus "word proc all" protocol, returning negative =
+errno
+> + * else a 16-bit unsigned "word" received from the device.
+> + */
+> +s32 i2c_smbus_word_proc_call(const struct i2c_client *client, u8 command,
+> +			      u16 value)
 > +{
-
-Linus,
-
-thinking of your request to make "function"/"groups" standard
-properties, I guess you also had some corresponding helpers in
-mind.
-
-Looking at the map and free functions here, I can see no Berlin
-specific code at all. One option would be to make those functions
-a standard callback for .dt_node_to_map and .dt_free_map, i.e.
-pinctrl_utils_function_group_dt_node_to_map.
-
-IMHO, the more flexible option would be to rather have
-
-of_pinctrl_utils_read_function(node, &function_name, &ngroups)
-and
-of_pinctrl_for_each_function_group(node, group_name)
-swallowing the property names and reuse it like below.
-
-The simple option would be to just remove the marvell, prefix
-now and have a closer look at other pinctrl drivers to see what
-will be required, of course.
-
-Do you have any preference?
-
-Sebastian
-
-> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
-> +	struct property *prop;
-> +	const char *function_name, *group_name;
-> +	unsigned reserved_maps = 0;
-> +	int ret, ngroups;
+> +	union i2c_smbus_data data;
+> +	int status;
 > +
-> +	*map = NULL;
-> +	*num_maps = 0;
+> +	data.word =3D value;
+> +	status =3D i2c_smbus_xfer(client->adapter, client->addr, client->flags,
+> +			      I2C_SMBUS_READ, command,
+> +			      I2C_SMBUS_PROC_CALL, &data);
 > +
-> +	ret = of_property_read_string(node, "marvell,function", &function_name);
-> +	if (ret) {
-> +		dev_err(pctrl->dev,
-> +			"missing 'marvell,function' property in node %s\n",
-> +			node->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	ngroups = of_property_count_strings(node, "marvell,groups");
-> +	if (ngroups < 0) {
-> +		dev_err(pctrl->dev,
-> +			"missing 'marvell,groups' property in node %s\n",
-> +			node->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	ret = pinctrl_utils_reserve_map(pctrl_dev, map, &reserved_maps,
-> +					num_maps, ngroups);
-> +	if (ret) {
-> +		dev_err(pctrl->dev, "can't reserve map: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	of_property_for_each_string(node, "marvell,groups", prop, group_name) {
-> +		ret = pinctrl_utils_add_map_mux(pctrl_dev, map, &reserved_maps,
-> +						num_maps, group_name,
-> +						function_name);
-> +		if (ret) {
-> +			dev_err(pctrl->dev, "can't add map: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
+> +	return (status < 0) ? status : data.word;
 > +}
+> +EXPORT_SYMBOL(i2c_smbus_word_proc_call);
 > +
-> +static void berlin_pinctrl_dt_free_map(struct pinctrl_dev *pctrl_dev,
-> +				       struct pinctrl_map *map,
-> +				       unsigned nmaps)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < nmaps; i++) {
-> +		if (map[i].type == PIN_MAP_TYPE_MUX_GROUP) {
-> +			kfree(map[i].data.mux.group);
-> +
-> +			/* a function can be applied to multiple groups */
-> +			if (i == 0)
-> +				kfree(map[i].data.mux.function);
-> +		}
-> +	}
-> +
-> +	kfree(map);
-> +}
-> +
-> +static const struct pinctrl_ops berlin_pinctrl_ops = {
-> +	.get_groups_count	= &berlin_pinctrl_get_group_count,
-> +	.get_group_name		= &berlin_pinctrl_get_group_name,
-> +	.dt_node_to_map		= &berlin_pinctrl_dt_node_to_map,
-> +	.dt_free_map		= &berlin_pinctrl_dt_free_map,
-> +};
+> +/**
 
+Same as smbus_quick function before, documentation updates are missing.
+Also similar, we had such a function before which was removed due to no
+users? It looks very much like the function here, so we should stick to
+the old naming IMO. Is it the old one? Such information would be nice
+since it affects reviewing.
+
+>   * i2c_smbus_read_block_data - SMBus "block read" protocol
+>   * @client: Handle to slave device
+>   * @command: Byte interpreted by slave
+> @@ -2362,6 +2386,38 @@ s32 i2c_smbus_write_block_data(const struct i2c_cl=
+ient *client, u8 command,
+>  }
+>  EXPORT_SYMBOL(i2c_smbus_write_block_data);
+> =20
+> +/**
+> + * i2c_smbus_block_proc_call - SMBus "block write" protocol
+> + * @client: Handle to slave device
+> + * @command: Byte interpreted by slave
+> + * @length: Size of data block; SMBus allows at most 32 bytes
+> + * @values: Byte array which will be written.
+> + *
+> + * This executes the SMBus "block proc call" protocol, returning negativ=
+e errno
+> + * else the number of read bytes.
+> + */
+> +s32 i2c_smbus_block_proc_call(const struct i2c_client *client, u8 comman=
+d,
+> +			       u8 length, u8 *values)
+
+Please rename to "i2c_smbus_block_process_call" as the old function was
+named. Needs documentation updates.
+
+> +	if (length > I2C_SMBUS_BLOCK_MAX)
+> +		length =3D I2C_SMBUS_BLOCK_MAX;
+
+I think we should return an error here.
+
+BTW what were your test scenarios for these functions and smbus quick?
+
+
+--9zSXsLTf0vkW971A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdzgWAAoJEBQN5MwUoCm2DhMP/1eF1Yngua+m5AOI+7+vsm5u
+0IShycGgfu4fLWaE2IChiQbTyx/nBrerUG0M3+i50KWQ7t2BeO8h4xkHVUFmfkEH
+4rBITORQQn6gG+8L7KW3oFjUAfQUQrU/3H+fofAlGNMBEjnVOKJK+KLggJC4Tvyl
+YCwPEZgsAH2UhF+JfpVqyUtDyBosgjEc5JmBurUcbwkDN8B6TxZxG9O8V/4MGrvJ
+3/S3JWyLKq8uShYZrCTqY/zdHaQO7KPqvu19Ox0OnOb/w6dAc6uUeaeHdY8zaFHi
+2NX6WTh+tj1of0Y6YQf+q5g2YHy1NSokxr86CP8pBU+20Qf7uqx1PMK2VASRpK95
+PvftinwG/5RxUmsTgwng+vKQagTynUs7ibJGaQRDzHaV5RtG35ElFWN+pLVsI+GD
+6o9/oawDQlFMXhv63ir+6QPg1DIKw3sMSpJ4dhma7zjqO0DZ1Zy//lIPMZX/ueOD
+ZgqeVpys5WnUw8y+wIbE/tKkI4S2qq8YSWtttkhVfRkG1XIkLLY6p4zb93HzFvR9
+p5RO3ZjNu8f9oMKzJjPMQ1vFF6GNFLWzHYEqlrQ4iXdkwFaWgJi5GgwxoKtx6CSu
+hDmI+Cyn+UHdliZwH9IchJlY9i4xHhcVWydIr49+REh5Z8cwUdCWEJpAQpy4ZUdl
+maND4QFoI7qGpeWWcYpo
+=3bde
+-----END PGP SIGNATURE-----
+
+--9zSXsLTf0vkW971A--
