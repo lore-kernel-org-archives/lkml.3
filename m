@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651AbaEQMZi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 08:25:38 -0400
-Received: from mout.gmx.net ([212.227.17.20]:60128 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738AbaEQMZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 08:25:37 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: anton@tuxera.com
-Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] ntfs: Cleanup string initializations (char[] instead of char *)
-Date: Sat, 17 May 2014 14:25:22 +0200
-Message-Id: <1400329522-17875-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:+BBow0Q8dEtvp63tjjTq/XryAyZOI6RpzumX20PgSuKQiwOMW0i
- s+FHSmciAoNKnYBGjnAYjZgpqrxqcXm9AvJG21YU32LDUQPViKAoiefdiqzkKZazS8nZLB2
- 446WLivcXW1i34FiljnWNMeSu/+1sryk0m3IrG2xEp2PQdDv1B0BbpwvFGJw/nlbpA0quo3
- cIpqUpw7J7AxWf3iP6o9A==
+	id S932547AbaEQMfo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 08:35:44 -0400
+Received: from mxout5.netvision.net.il ([194.90.6.65]:33065 "EHLO
+	mxout5.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389AbaEQMfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 08:35:43 -0400
+X-Greylist: delayed 924 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 May 2014 08:35:43 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; format=flowed
+Message-id: <537753C9.3060101@gmail.com>
+Date: Sat, 17 May 2014 15:19:21 +0300
+From: Eli Billauer <eli.billauer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
+ Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+To: Tejun Heo <tj@kernel.org>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] dma-mapping: Add devm_ interface for dma_map_single()
+References: <1400228799-8832-1-git-send-email-eli.billauer@gmail.com>
+ <1400228799-8832-3-git-send-email-eli.billauer@gmail.com>
+ <20140516210805.GO5379@htj.dyndns.org>
+In-reply-to: <20140516210805.GO5379@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initializations like 'char *foo = "bar"' will create two variables: a static
-string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
-will allocate only a declare a single variable and will end up in shorter
-assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
+Hello Tejun,
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- fs/ntfs/inode.c |    2 +-
- fs/ntfs/super.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On 17/05/14 00:08, Tejun Heo wrote:
+>
+> Don't we wanna map the underlying operation - dma_map_single_attrs() -
+> instead?
+>    
 
-diff --git a/fs/ntfs/inode.c b/fs/ntfs/inode.c
-index f47af5e..3975798 100644
---- a/fs/ntfs/inode.c
-+++ b/fs/ntfs/inode.c
-@@ -2368,7 +2368,7 @@ int ntfs_truncate(struct inode *vi)
- 	ntfs_attr_search_ctx *ctx;
- 	MFT_RECORD *m;
- 	ATTR_RECORD *a;
--	const char *te = "  Leaving file length out of sync with i_size.";
-+	const char te[] = "  Leaving file length out of sync with i_size.";
- 	int err, mp_size, size_change, alloc_change;
- 	u32 attr_len;
- 
-diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
-index 9de2491..eb2c195 100644
---- a/fs/ntfs/super.c
-+++ b/fs/ntfs/super.c
-@@ -676,7 +676,7 @@ not_ntfs:
- static struct buffer_head *read_ntfs_boot_sector(struct super_block *sb,
- 		const int silent)
- {
--	const char *read_err_str = "Unable to read %s boot sector.";
-+	const char read_err_str[] = "Unable to read %s boot sector.";
- 	struct buffer_head *bh_primary, *bh_backup;
- 	sector_t nr_blocks = NTFS_SB(sb)->nr_blocks;
- 
--- 
-1.7.10.4
+I'll resubmit this patch promptly, with a follow-up patch for the diff 
+to implement dmam_map_single_attrs() instead. Plus a define-statement 
+for dmam_map_single(). I can't test the case of a non-NULL value for 
+@attrs however.
+
+>    
+>> +	if (dma_mapping_error(dev, dma_handle)) {
+>> +		devres_free(dr);
+>> +		return 0;
+>>      
+> Can't we just keep returning dma_handle?  Even if that means invoking
+> ->mapping_error() twice?  It's yucky to have subtly different error
+> return especially because in most cases it won't fail.
+>    
+Yucky it is indeed. There are however two problems with keeping the 
+existing API:
+
+* What to do if devres_alloc() fails. How do I signal back an error? The 
+only way I can think of is returning zero. But if the caller should know 
+that zero means failure, I've already broken the API. I might as well 
+return zero for any kind of failure.
+* It seems like a lot of dma_mapping_error() implementations always 
+return no-error, since the DMA mapping can't fail on specific 
+architectures. If callers use dma_mapping_error(), the possible 
+devres_alloc() failure will be missed.
+
+By the way, where I've seen dma_mapping_error() doing something, it 
+checks for dma_handle == 0.
+
+Submitting updated patches for the DMA mapping part soon.
+
+Regards,
+    Eli
+
 
