@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaEQTyh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 15:54:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27966 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaEQTyf (ORCPT
+	id S1751370AbaEQTzh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 15:55:37 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:65283 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaEQTzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 15:54:35 -0400
-Date: Sat, 17 May 2014 22:54:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/4] VMCI: Remove redundant error check
-Message-ID: <20140517195411.GE15585@mwanda>
-References: <1400350980-30455-1-git-send-email-peter.senna@gmail.com>
+	Sat, 17 May 2014 15:55:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400350980-30455-1-git-send-email-peter.senna@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140517.013655.349586284786993619.davem@davemloft.net>
+References: <5376F2F8.3010603@gmail.com>
+	<20140517.013655.349586284786993619.davem@davemloft.net>
+Date: Sat, 17 May 2014 22:55:34 +0300
+Message-ID: <CAJZOPZJN9YG2uAw0rSDkU0rQG=0FFDgSMnFDHpWS6hwZEqdwfA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: net: ethernet: mellanox: mlx4: let mlx4 depend
+ on SMP
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: gang.chen.5i5j@gmail.com, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, gxt@mprc.pku.edu.cn,
+        Matan Barak <matanb@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Eyal Perry <eyalpe@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I like this.  There is way too much code where it sets a variable and
-then checks it again a couple lines down instead of just handling it
-immediately so that every line is clear without having to keep track
-so many variables.
+On Sat, May 17, 2014 at 8:36 AM, David Miller <davem@davemloft.net> wrote:
+>
+> From: Chen Gang <gang.chen.5i5j@gmail.com>
+> Date: Sat, 17 May 2014 13:26:16 +0800
+>
+> > 'struct irq_affinity_notify' and the related functions are only defined
+> > when SMP enabled, so at present, mlx4 has to only run under SMP.
+> >
+> > The related error (allmodconfig under unicore32):
+>
+> Making the entire driver depend upon SMP is not the answer,
 
-But the automated patch doesn't really go far enough in cleaning up this
-function.
 
-On Sat, May 17, 2014 at 08:22:57PM +0200, Peter Senna Tschudin wrote:
->  drivers/misc/vmw_vmci/vmci_context.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/misc/vmw_vmci/vmci_context.c b/drivers/misc/vmw_vmci/vmci_context.c
-> index f866a4b..3995e64 100644
-> --- a/drivers/misc/vmw_vmci/vmci_context.c
-> +++ b/drivers/misc/vmw_vmci/vmci_context.c
-> @@ -836,12 +836,12 @@ int vmci_ctx_set_chkpt_state(u32 context_id,
->  	for (i = 0; i < num_ids && result == VMCI_SUCCESS; i++) {
+Indeed, we would do that just for the relevant portion,
 
-This for loop is nonsense.  Probably it was left over cruft.  It should
-be:
 
-	for (i = 0; i < num_ids; i++) {
-
->  		current_id = ((u32 *)cpt_buf)[i];
->  		result = vmci_ctx_add_notification(context_id, current_id);
-> -		if (result != VMCI_SUCCESS)
-> +		if (result != VMCI_SUCCESS) {
-> +			pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
-> +				 cpt_type, result);
->  			break;
-
-			return result;
-
-Why break when it's just going to return?  Eliminate the need to track
-this error.
-
-> +		}
->  	}
-> -	if (result != VMCI_SUCCESS)
-> -		pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
-> -			 cpt_type, result);
->  
->  	return result;
-
-	return VMCI_SUCCESS;
-
-Then we can remove the initialization for "result" as well to eliminate
-another forced look up to the start of the function and down.
-
-regards,
-dan carpenter
-
+>
+> other Mellanox developers said that a proper fix is pending
+> so please be patient.
