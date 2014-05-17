@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaEQUwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 16:52:13 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:43259 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaEQUwL (ORCPT
+	id S1751464AbaEQU5M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 16:57:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39328 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaEQU5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 16:52:11 -0400
+	Sat, 17 May 2014 16:57:11 -0400
+Date: Sat, 17 May 2014 22:57:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] timer fixes for 3.15
+Message-ID: <alpine.DEB.2.02.1405172251570.4084@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz>
-References: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
-	<alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz>
-Date: Sat, 17 May 2014 23:52:10 +0300
-Message-ID: <CAJZOPZJVxF6A-3s16feqoWCb5gOLTjyUmB3F+st1+1QWp+bJnQ@mail.gmail.com>
-Subject: Re: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected
- mode TX path
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>, Roland Dreier <roland@kernel.org>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 2:38 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sun, 11 May 2014, Or Gerlitz wrote:
+Linus,
 
->> This series is a refactored form of the one posted by Jiri Kosina
->> to LKML and netdev according to the discussion that followed
->> and the guidelines you provided here https://lkml.org/lkml/2014/3/5/250
+please pull the latest timers-urgent-for-linus git tree from:
 
->> Basically, the functionality changes introduced by this series fully
->> reside on the IB side of things, so I am only posting the actual patches
->> to linux-rdma with CC on the cover-letter to the lists that were on V0.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-> Thanks, I am fine with my Signoff on that.
-> Roland, is this going to be merged by you, or should this go to DaveM directly?
+A single bug fix for a long standing issue:
 
-Roland, we're soon on -rc6 and there's no reason for this to miss
-3.16, could you please comment whether you want it to go through your
-tree or net-next?
+ * Updating the expiry value of a relative timer _after_ letting the
+   idle logic select a target cpu for the timer based on its stale
+   expiry value is outright stupid. Thanks to Viresh for spotting the
+   brainfart.
 
-> Jiri Kosina
-> SUSE Labs
+Thanks,
+
+	tglx
+
+------------------>
+Viresh Kumar (1):
+      hrtimer: Set expiry time before switch_hrtimer_base()
+
+
+ kernel/hrtimer.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6b715c0..e0501fe 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -990,11 +990,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
+ 
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -1009,6 +1006,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
