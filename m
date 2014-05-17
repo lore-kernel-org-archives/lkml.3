@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaEQWnN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:43:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43471 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaEQWnL (ORCPT
+	id S1751839AbaEQWpo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:45:44 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:56058 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751370AbaEQWpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:43:11 -0400
-Date: Sun, 18 May 2014 01:42:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alan Cox <alan@linux.intel.com>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/4] cpupower: Remove redundant error check
-Message-ID: <20140517224255.GJ15585@mwanda>
-References: <1400350980-30455-2-git-send-email-peter.senna@gmail.com>
- <20140517202255.GF15585@mwanda>
- <CA+MoWDqLtr-O=VQNC7qqNUJvWkEPtVr8cw9t5sB=adQWkywLZw@mail.gmail.com>
- <20140517215615.GI16255@mwanda>
- <CA+MoWDqriZojBJAaxSjjFXEf1rpxDLqtsiuYYsRqDwtY1L6QyA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+MoWDqriZojBJAaxSjjFXEf1rpxDLqtsiuYYsRqDwtY1L6QyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sat, 17 May 2014 18:45:43 -0400
+Date: Sat, 17 May 2014 17:45:40 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <tj@kernel.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/5] workqueue: Create low-level unbound workqueues
+ cpumask
+In-Reply-To: <20140516234850.GA15350@mtj.dyndns.org>
+Message-ID: <alpine.DEB.2.10.1405171745130.10418@gentwo.org>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com> <1400257015-28222-4-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.10.1405161250350.492@gentwo.org> <20140516183500.GI5379@htj.dyndns.org> <alpine.DEB.2.10.1405161350360.1681@gentwo.org>
+ <20140516190042.GJ5379@htj.dyndns.org> <alpine.DEB.2.10.1405161431590.2126@gentwo.org> <CAOS58YPwkWQCtuE=sUReBzi+3ygvsawEovV-nfWLK2f3GDn9Kg@mail.gmail.com> <CAOS58YOTAEGP+=sgSGVDLW+X11QZ_s9jTyRwmpeUD9JQiWbjQQ@mail.gmail.com> <alpine.DEB.2.10.1405161802020.3336@gentwo.org>
+ <20140516234850.GA15350@mtj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 12:31:29AM +0200, Peter Senna Tschudin wrote:
-> >
-> > I am currently involved in a number of threads, not just yours, where I
-> > am encouraging people to replace ambiguous returns with "return 0;".
-> > This is my life now.
-> So maybe you like this list of 160 places in which the return variable
-> is initialized and only used as parameter to return(The list look
-> good, but I haven't reviewed all 160, so there could be problems):
-> http://pastebin.com/5kAbCP2e
+On Fri, 16 May 2014, Tejun Heo wrote:
 
-Fantastic!  :)  These things are easy to review because if it's wrong
-then the compile will break.
+> > Make the uevent stuff work on all of sysfs?
+>
+> I don't know.  Maybe.  Likely a lot more work involving user space
+> changes tho.  Also, it runs contrary to what we've been doing to other
+> top-level cgroup directories.  Any reason not to do, say,
+> /sys/devices/kernel?
 
-> 
-> Does it worth doing something about those trivial cases?
-> 
-> Do you have more examples of ambiguous returns, so I can help you hunt them?
-
-The main thing is what your check finds.  If you know that ret is zero
-then return zero.
-
-regards,
-dan carpenter
+The other kernel tunables are in /sys/kernel.
 
