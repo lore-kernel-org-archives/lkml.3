@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaEQVoI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 17:44:08 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:51185 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaEQVoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 17:44:06 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: [PATCH 4/4 V2] IB: Remove redundant error check
-Date: Sat, 17 May 2014 23:43:42 +0200
-Message-Id: <1400363022-7632-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751654AbaEQVwb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 17:52:31 -0400
+Received: from mout.gmx.net ([212.227.17.22]:50182 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751483AbaEQVwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 17:52:30 -0400
+From: Christian Engelmayer <cengelma@gmx.at>
+To: netdev@vger.kernel.org
+Cc: amirv@mellanox.com, linux-kernel@vger.kernel.org,
+        Christian Engelmayer <cengelma@gmx.at>
+Subject: [PATCH] net/mlx4_en: Fix uninitialized use of 'port_up' in mlx4_en_set_channels()
+Date: Sat, 17 May 2014 23:52:03 +0200
+Message-Id: <1400363523-18371-1-git-send-email-cengelma@gmx.at>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:v/YpgUBAsEcRTAAM/MTIlqcBLD/u7i1CzQGJ4dr6/CkP93vG2Mx
+ 2KMJtYsYRSRkS7+bwlAx1KL7b+0XPWFNbcjDmyfu5Y/F9/blhasYImqPhXRbpu899galU6G
+ Pyp4Pp4Pij+yLUeFIZrAiLERhKqzdYXakI2O1Ggw3Ij439GRjRXMXKR0NL9hHhG5ykP6nTm
+ 0LHS27kv3P8kckFU+23iw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double checks, and move calls to pr_err and printk to the
-first check. The simplified version of the coccinelle semantic
-patch that fixes this issue is as follows:
+Function mlx4_en_set_channels() stops running ports before performing the
+requested action. In that case local variable 'port_up' is set so that the
+port is restarted at the end of the function, however, in case the port was
+not stopped, variable 'port_up' is left uninitialized and the behaviour is
+undetermined. Detected by Coverity - CID 751497.
 
-// <smpl>
-@@
-expression E; identifier pr; expression list es;
-@@
-for(...;...;...){
-...
--	if (E) break;
-+	if (E){
-+		pr(es);
-+		break;
-+	}
-...
-}
-- if(E) pr(es);
-// </smpl>
-
-Tested by compilation only.
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
-Changes from V1:
- - Replaced break with a return
- - On success return 0 instead of status
+Compile tested. Applies against branch master in tree
+git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
+---
+ drivers/net/ethernet/mellanox/mlx4/en_ethtool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/infiniband/hw/ocrdma/ocrdma_hw.c |    6 +++---
- drivers/infiniband/ulp/srpt/ib_srpt.c    |    8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-index 3bbf201..62c2230 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_hw.c
-@@ -1839,13 +1839,13 @@ int ocrdma_reg_mr(struct ocrdma_dev *dev,
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c b/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
+index a72d99f..7ba3df3 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
+@@ -1121,7 +1121,7 @@ static int mlx4_en_set_channels(struct net_device *dev,
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_dev *mdev = priv->mdev;
+-	int port_up;
++	int port_up = 0;
+ 	int err = 0;
  
- 		status = ocrdma_mbx_reg_mr_cont(dev, hwmr, cur_pbl_cnt,
- 						pbl_offset, last);
--		if (status)
--			break;
-+		if (status) {
-+			pr_err("%s() err. status=%d\n", __func__, status);
-+			return status;
-+		}
- 	}
--	if (status)
--		pr_err("%s() err. status=%d\n", __func__, status);
- 
--	return status;
-+	return 0;
- }
- 
- bool ocrdma_is_qp_in_sq_flushlist(struct ocrdma_cq *cq, struct ocrdma_qp *qp)
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index fe09f27..ab23b07 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2875,13 +2875,13 @@ static int srpt_perform_rdmas(struct srpt_rdma_ch *ch,
- 			wr.send_flags = IB_SEND_SIGNALED;
- 
- 		ret = ib_post_send(ch->qp, &wr, &bad_wr);
--		if (ret)
-+		if (ret) {
-+			printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
-+			       __func__, __LINE__, ret, i, n_rdma);
- 			break;
-+		}
- 	}
- 
--	if (ret)
--		printk(KERN_ERR "%s[%d]: ib_post_send() returned %d for %d/%d",
--				 __func__, __LINE__, ret, i, n_rdma);
- 	if (ret && i > 0) {
- 		wr.num_sge = 0;
- 		wr.wr_id = encode_wr_id(SRPT_RDMA_ABORT, ioctx->ioctx.index);
+ 	if (channel->other_count || channel->combined_count ||
+-- 
+1.9.1
 
