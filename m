@@ -1,158 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483AbaEQPft (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 11:35:49 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:56627 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757412AbaEQPfq (ORCPT
+	id S1757513AbaEQPje (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 11:39:34 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:52870 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315AbaEQPjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 11:35:46 -0400
-Date: Sat, 17 May 2014 17:35:40 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: walter harms <wharms@bfs.de>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: imx: fix error handling
-Message-ID: <20140517153540.GA4309@lianli>
-References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
- <5375EB13.8000200@bfs.de>
- <20140516111646.GC4366@lianli>
- <5375FB36.8020004@bfs.de>
- <20140516193139.GQ16662@pengutronix.de>
+	Sat, 17 May 2014 11:39:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140516193139.GQ16662@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5372D1D9.4070503@gmail.com>
+References: <1400018609-20486-1-git-send-email-alexis.berlemont@gmail.com>
+	<5372D1D9.4070503@gmail.com>
+Date: Sat, 17 May 2014 17:39:32 +0200
+Message-ID: <CAMesUR5h0687dTFCDC3LhKSOFyKTFmH3vUjU+p6XuOpawPUwxQ@mail.gmail.com>
+Subject: Re: [PATCH 00/34] perf and kconfig / kbuild
+From: Alexis Berlemont <alexis.berlemont@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Uwe,
+Hello,
 
-On Fri, May 16, 2014 at 09:31:39PM +0200, Uwe Kleine-König wrote:
-> Hello Walter,
-> 
-> On Fri, May 16, 2014 at 01:49:10PM +0200, walter harms wrote:
-> > Am 16.05.2014 13:16, schrieb Emil Goode:
-> > > Hello Walter,
-> > > 
-> > > On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
-> > >>
-> > >>
-> > >> Am 16.05.2014 11:54, schrieb Emil Goode:
-> > >>> If we fail to allocate struct platform_device pdev we
-> > >>> dereference it after the goto label err.
-> > >>>
-> > >>> I have rearranged the error handling a bit to fix the issue
-> > >>> and also make it more clear.
-> > >>>
-> > >>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > >>> ---
-> > >>> v2: Changed to return -ENOMEM instead of ret where possible and
-> > >>>     updated the subject line.
-> > >>>
-> > >>>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
-> > >>>  1 file changed, 13 insertions(+), 9 deletions(-)
-> > >>>
-> > >>> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > >>> index fc4dd7c..68f2a4a 100644
-> > >>> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > >>> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > >>> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
-> > >>>  
-> > >>>  	pdev = platform_device_alloc("mx3-camera", 0);
-> > >>>  	if (!pdev)
-> > >>> -		goto err;
-> > >>> +		return ERR_PTR(-ENOMEM);
-> > >>>  
-> > >>>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
-> > >>>  	if (!pdev->dev.dma_mask)
-> > >>> -		goto err;
-> > >>> +		goto put_pdev;
-> > >>>  
-> > >>>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
-> > >>>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> > >>>  
-> > >>>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
-> > >>>  	if (ret)
-> > >>> -		goto err;
-> > >>> +		goto free_dma_mask;
-> > >>>  
-> > >>>  	if (pdata) {
-> > >>>  		struct mx3_camera_pdata *copied_pdata;
-> > >>>  
-> > >>>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> > >>> -		if (ret) {
-> > >>> -err:
-> > >>> -			kfree(pdev->dev.dma_mask);
-> > >>> -			platform_device_put(pdev);
-> > >>> -			return ERR_PTR(-ENODEV);
-> > >>> -		}
-> > >>> +		if (ret)
-> > >>> +			goto free_dma_mask;
-> > >>> +
-> > >>>  		copied_pdata = dev_get_platdata(&pdev->dev);
-> > >>>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
-> > >>
-> > >>
-> > >> the patch is fine, but what use is this copied_pdata ?
-> > >> It scope ends next line ?
-> > >>
-> > >> re,
-> > >>  wh
-> > > 
-> > > I also thought that looked a bit odd, but copied_pdata is a temporary
-> > > pointer to platform_data of the dev struct.
-> > > 
-> > > dev_get_platdata looks like this:
-> > > 
-> > > static inline void *dev_get_platdata(const struct device *dev)
-> > > {
-> > >         return dev->platform_data;
-> > > }
-> > > 
-> > > So I believe it's a more compact way of writing:
-> > > 
-> > > pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
-> It's not about compactness. The dev_get_platdata accessor exists to be
-> used instead of directly accessing dev->platform_data. I admit a comment
-> would be nice ...
-> 
-> Anyhow this is all ugly, actually you'd want to have the dma_dev member
-> already fixed when calling platform_device_add_data. But you cannot
-> simply do
-> 
-> 	pdata->dma_dev = &imx_ipu_coredev->dev;
-> 	ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> 
-> because *pdata is const.
+Sorry for the late reply,
 
-Thank you for the explanation. Regarding the possibility of using
-platform_device_register_full() to simplify this function. It seem to
-be possible, the following inline function is available to help with this.
+On Wed, May 14, 2014 at 4:15 AM, David Ahern <dsahern@gmail.com> wrote:
+> On 5/13/14, 4:02 PM, Alexis Berlemont wrote:
+>>
+>> Hello,
+>>
+>> A few months ago, I tried to make a proposal to introduce Kconfig in
+>> perf's generation procedure.
+>> (cf. https://lkml.org/lkml/2013/12/20/511)
+>>
+>> I started from David Ahern's work; I was not aware that Jiri Olsa
+>> pushed further the idea and proposed an alternative which integrated
+>> kbuild too.
+>>
+>> So, here is another proposal based on Jiri Olsa work (from April 2013).
+>> * Most of the NO_* and HAVE_* makefile variables were removed on
+>>    behalf of Kconfig's ones (CONFIG_*); perf source code was modified
+>>    accordingly;
+>> * These changes make the glue files tools/perf/config/Makefile.fix-*
+>> useless
+>> * The build test cases now relies on generated configuration files (in
+>>    tools/perf/tests/configs);
+>>
+>
+> Thanks for picking this up. I skimmed through all of the patches and
+> conceptually looks good. I doubt I will have time for a detailed review any
+> time soon.
+>
+> Looks like they apply to Linus' top of tree but with a few errors -- see
+> below. You should always run checkpatch.pl before sending out:
 
-imx_add_platform_device_dmamask()
+Sorry, I indeed did not run checkpatch. I will come back with a cleaner version.
 
-Available here:
+>
+> Applying: kbuild: Introduce KBUILD_AUTOCONF variable for auto.conf include
+> Applying: kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable for conf tool
+> Applying: perf tools: Kbuild builtin source related fixies
+> Applying: perf tools: Kbuild source related fixies
+> Applying: perf tools: Add kbuild support into Makefile.kbuild
+> Applying: perf kbuild: fix recursive invocation of config/features-checks
+> Applying: perf kbuild: store in config-detected missing variables (libdir,
+> ...)
+> Applying: perf kbuild: remove useless #ifdef directives
+> Applying: perf kbuild: fix a link issue if BUILTIN_TRACE is disabled
+> Applying: perf kbuild: add missing files and missing flags in Kbuild files
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:30: trailing
+> whitespace.
+> CFLAGS_Context.o += -Wno-redundant-decls -Wno-strict-prototypes
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:137: trailing
+> whitespace.
+> CFLAGS_trace-event-perl.o   += -Wno-redundant-decls -Wno-strict-prototypes
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:138: trailing
+> whitespace.
+> CFLAGS_trace-event-perl.o   += -Wno-unused-parameter -Wno-shadow -Wno-undef
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:143: trailing
+> whitespace.
+> CFLAGS_trace-event-python.o += -Wno-redundant-decls -Wno-strict-prototypes
+> warning: 4 lines applied after fixing whitespace errors.
+> Applying: perf kbuild: update kbuild files according to last changes
+> Applying: perf kbuild: remove legacy slang-related build variables
+> Applying: perf kbuild: remove legacy libaudit-related build variables
+> Applying: perf kbuild: remove legacy libgtk2-related build variables
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:204: trailing
+> whitespace.
+> #else
+> warning: 1 line applied after fixing whitespace errors.
+> Applying: perf kbuild: remove legacy libperl-related build variables
+> Applying: perf kbuild: remove legacy timerfd-related build variable
+> Applying: perf kbuild: remove legacy demangle-related build variables
+> Applying: perf kbuild: remove legacy on_exit-related build variable
+> Applying: perf kbuild: remove legacy backtrace-related build variable
+> Applying: perf kbuild: remove legacy numa-related build variable
+> Applying: perf kbuild: remove legacy bionic-related build variable
+> Applying: perf kbuild: remove legacy libelf-related build variables (1st
+> part)
+> Applying: perf kbuild: remove legacy libelf-related build variables (2nd
+> part)
+> Applying: perf kbuild: remove legacy libdwarf-related build variables
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:342: trailing
+> whitespace.
+>       endif # CONFIG_LIBDWARF_UNWIND
+> warning: 1 line applied after fixing whitespace errors.
+> Applying: perf kbuild: remove legacy libunwind-related build variables
+> Applying: perf kbuild: remove legacy libpython-related build variable
+> Applying: perf kbuild: add generated Kconfig build-test cases
+> Applying: perf kbuild: fix installation of traceevent plugins
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:74: trailing
+> whitespace.
+> make_pure           :=
+> warning: 1 line applied after fixing whitespace errors.
+> Applying: perf kbuild: fix tarpkg target in tests/make
+> Applying: perf kbuild: update Kbuild files with new and removed sources
+> Applying: perf kbuild: update build test configurations
+> /Users/dsa/sw/perf/ahern.git/.git/rebase-apply/patch:773: trailing
+> whitespace.
+>
+> warning: 1 line applied after fixing whitespace errors.
+> Applying: perf kbuild: relocate the configs generating script
+> Applying: perf kbuild: minor changes
+> Applying: perf kbuild: remove Makefile.perf
+>
+> David
+>
 
-arch/arm/mach-imx/devices/devices-common.h
-
-But as you mentioned above we need to allocate a new platform_device
-struct before we can assign &imx_ipu_coredev->dev to dma_dev, since
-pdata is const. I guess this assignment could be done after calling
-imx_add_platform_device_dmamask() but I don't think that makes the
-code easier to read.
-
-I think it's best to resend the current patch. (with updated subject line)
-
-Best regards,
-
-Emil Goode
-
-
-
+Alexis.
