@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404AbaEQK2B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 06:28:01 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51545 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932142AbaEQK2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 06:28:00 -0400
-Date: Sat, 17 May 2014 11:26:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
-Message-ID: <20140517102638.GQ3693@n2100.arm.linux.org.uk>
-References: <1364507176.1345.45.camel@x61.thuisdomein> <8309592.drxAj71PnZ@wuerfel> <1400059550.31197.12.camel@x220> <4305975.PvMXZQ020k@wuerfel> <1400232598.20342.16.camel@x220> <20140516125545.GO3693@n2100.arm.linux.org.uk> <20140517092337.GA67711@MacBook-Pro.local> <20140517094636.GP3693@n2100.arm.linux.org.uk> <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932396AbaEQKkq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 06:40:46 -0400
+Received: from mout.gmx.net ([212.227.15.15]:49745 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932142AbaEQKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 06:40:45 -0400
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        navin.patidar@gmail.com, Jes.Sorensen@redhat.com,
+        linux-kernel@vger.kernel.org, Christian Engelmayer <cengelma@gmx.at>
+Subject: [PATCH 0/2] staging: rtl8188eu: fix Coverity defects in rtw_drv_init() 
+Date: Sat, 17 May 2014 12:38:56 +0200
+Message-Id: <1400323138-32243-1-git-send-email-cengelma@gmx.at>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:DpQN8OYPKyZEisJOlBFv6PxtKAltgZoqw4PKZ+4q6Le+jAZSpMU
+ SeksJiMzQnEZXeoifk4bqT/IpR9V7qEDNlGkojNcNVUnQ00BlbZ+qN4bTXK4pOVIwRFEYwc
+ AIss9wyUo1PNUXTQe5aHs7kwTL1caLIzrBPvOnv/rokkXxcfUDw1m98vwhib6NV2PabnUrg
+ 6GV8acAkbG/3Mts5T4tcg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 10:56:02AM +0100, Catalin Marinas wrote:
-> > The difference between what you're proposing and what happened to ARMv3
-> > is that ARMv3 was broken for quite some time (we read from some of the
-> > CP15 registers which are read-only in ARMv3) and no one ever raised a
-> > problem with that.  So, after a sufficient period of time, it got removed
-> > - and no one batted an eyelid.  That's the correct way to do it - allow
-> > code to age, and if no one notices it's been broken, then it can be
-> > removed.
-> 
-> I’m more for pro-actively “breaking” it with a DEPRECATED
-> dependency. For example, if you suspect that some code like ARM710T is
-> no longer in use, we mark it and see if anyone complains about this over
-> a two years period. If not, it gets removed.
-> 
-> Waiting for code to get broken is another way but it’s less
-> predictable.
+This addresses two issues currently reported by static analysis for function
+rtw_drv_init() in drivers/staging/rtl8188eu/os_dep/usb_intf.c.
 
-When code being used gets broken, it's nice to think that we'll get
-bug reports which will tell us if it's still being used.  The problem
-with DEPRECATED is that it will get lost amongst all the thousands
-of other config options and won't be noticed.  Just like EXPERIMENTAL
-or any of the other similar options we've had.
+   CID 1077553 - Logically dead code
+   CID 1077832 - Uninitialized scalar variable
+
+Compile tested only. Applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+
+Christian Engelmayer (2):
+  staging: rtl8188eu: fix usage of uninit scalar in rtw_drv_init()
+  staging: rtl8188eu: remove dead code in rtw_drv_init()
+
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.9.1
+
