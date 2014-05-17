@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812AbaEQPZt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 11:25:49 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62988 "EHLO
+	id S964819AbaEQPep (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 11:34:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49213 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116AbaEQPZs (ORCPT
+	with ESMTP id S1757116AbaEQPeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 11:25:48 -0400
+	Sat, 17 May 2014 11:34:44 -0400
 X-Originating-IP: 108.223.40.66
-Message-ID: <53777F72.3000907@roeck-us.net>
-Date: Sat, 17 May 2014 08:25:38 -0700
+Message-ID: <5377818A.3020104@roeck-us.net>
+Date: Sat, 17 May 2014 08:34:34 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>
 CC: linux-kernel@vger.kernel.org
 Subject: Re: Dell Latitude E6440 & i8k
-References: <201405162037.41782@pali> <20140516211117.0c766287@endymion.delvare>
-In-Reply-To: <20140516211117.0c766287@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <201405162037.41782@pali> <20140516211117.0c766287@endymion.delvare> <201405162123.02112@pali>
+In-Reply-To: <201405162123.02112@pali>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 12:11 PM, Jean Delvare wrote:
-> Hi Pali,
->
-> On Fri, 16 May 2014 20:37:41 +0200, Pali Rohár wrote:
->> Hello,
+On 05/16/2014 12:23 PM, Pali RohÃ¡r wrote:
+> On Friday 16 May 2014 21:11:17 Jean Delvare wrote:
+>> Hi Pali,
 >>
->> on Dell Latitude E6440 driver i8k reporting total nonsense values
->
-> That's kind of excessive wording, the output isn't that bad.
->
->> $ sensors
->> i8k-virtual-0
->> Adapter: Virtual device
->> Right Fan:   93450 RPM
->> CPU:          +57.0°C
->> temp2:        +57.0°C
->> temp3:        +40.0°C
->> temp4:       +127.0°C
+>> On Fri, 16 May 2014 20:37:41 +0200, Pali RohÃ¡r wrote:
+>>> Hello,
+>>>
+>>> on Dell Latitude E6440 driver i8k reporting total nonsense
+>>> values
 >>
->> Right Fan and temp4 are for sure incorrect.
->
-> Driver is reverse-engineered so this is best effort and some tweaking
-> may be needed.
->
->> Value temp4 is always 127 and is never changing, but value for
->> Right Fan is increasing when fan is more noisy. So it looks like
->> value for Right Fan is not correctly normalized or multiplier is
->> incorrect.
+>> That's kind of excessive wording, the output isn't that bad.
 >>
->> And name "Right" is incorrect too. Fan is on left side of this
->> notebook, not right as reported by driver.
->>
->> It is possible to fix these problems?
 >
-> Load the i8k driver with fan_mult=1.
+> I mean fan RPM & temp4. Those are for sure incorrect.
+>
+>>> $ sensors
+>>> i8k-virtual-0
+>>> Adapter: Virtual device
+>>> Right Fan:   93450 RPM
+>>> CPU:          +57.0Â°C
+>>> temp2:        +57.0Â°C
+>>> temp3:        +40.0Â°C
+>>> temp4:       +127.0Â°C
+>>>
+>>> Right Fan and temp4 are for sure incorrect.
+>>
+>> Driver is reverse-engineered so this is best effort and some
+>> tweaking may be needed.
+>>
+>
+> Ok, if driver is developed without any documentation, then it
+> make sense that not working correctly on new machines...
+>
+> So is not there any documentation? I think that Dell released
+> some SMM/BIOS code... But I'm not sure about it.
 >
 
-Would it make sense to change the default multiplier to 1 ?
-Lots of people have problems with it, and trying to figure out
-affected machines one by one would be an all but impossible task.
+If you find it, please let us know.
 
 Guenter
 
