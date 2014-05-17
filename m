@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaEQJgW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 05:36:22 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:43964 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983AbaEQJgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 05:36:20 -0400
-Date: Sat, 17 May 2014 11:36:15 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, linux-kbuild@vger.kernel.org,
-        mmarek@suse.cz
-Subject: Re: [PATCH 8/8] Kbuild: add inline-account tool to find inline bloat
-Message-ID: <20140517093615.GA16926@ravnborg.org>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
- <1400276595-6965-9-git-send-email-andi@firstfloor.org>
- <20140517083144.GA16691@ravnborg.org>
+	id S964780AbaEQJlh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 05:41:37 -0400
+Received: from sauhun.de ([89.238.76.85]:38069 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757009AbaEQJle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 05:41:34 -0400
+Date: Sat, 17 May 2014 11:41:20 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V2 5/9] I2C: Add smbus quick read/write helper function
+Message-ID: <20140517094120.GA2602@katana>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-6-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
 Content-Disposition: inline
-In-Reply-To: <20140517083144.GA16691@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1398695268-28645-6-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 10:31:44AM +0200, Sam Ravnborg wrote:
-> Hi Andi.
-> 
-> On Fri, May 16, 2014 at 02:43:15PM -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > Add a tool to hunt for inline bloat. It uses objdump -S to account
-> > inlines.
-> I tried this on my sparc32 build - but it failed with:
-> objdump: can't disassemble for architecture UNKNOWN!
-> 
-> It looks simple to add CROSS_COMPILE support but I did not do so.
-> My python skills are non-existing.
 
-Patched the calls to nm and objdump - but it gave no output
-when I ran the script.
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-nm --print-size shows following output:
-00002910 00000024 r CSWTCH.946
-00002bd4 00000024 r CSWTCH.951
-         U PDE_DATA
-         U ROOT_DEV
-000000fc 00000014 T SyS_accept
-00002c98 000001a8 T SyS_accept4
-00000fc4 0000008c T SyS_bind
-00000eb4 00000094 T SyS_connect
-00000d98 00000094 T SyS_getpeername
-00000e2c 00000088 T SyS_getsockname
-00000c6c 00000090 T SyS_getsockopt
-00000f48 0000007c T SyS_listen
-00000128 00000018 T SyS_recv
-0000142c 000000f0 T SyS_recvfrom
-00001920 000000d0 T SyS_recvmmsg
-00001238 00000010 T SyS_recvmsg
-00000110 00000018 T SyS_send
-00001d38 00000010 T SyS_sendmmsg
-00001db0 00000010 T SyS_sendmsg
-000015f4 000000dc T SyS_sendto
-00000cfc 0000009c T SyS_setsockopt
-00000c0c 00000060 T SyS_shutdown
-00003020 000000b4 T SyS_socket
-000007ec 000001f8 T SyS_socketcall
-00002e40 000001e0 T SyS_socketpair
-000b776c 00000098 t T.1063
-000b762c 000000d0 t T.1064
+On Mon, Apr 28, 2014 at 10:27:44PM +0800, Lan Tianyu wrote:
+> Add i2c_smbus_quick_write/read() helper function. These will be used
+> in the implementation of i2c ACPI address space handler.
+>=20
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+
+We had such a function once but removed because of no users. Please
+check 67c2e66571c383404a5acd08189194da660da942 what it takes to bring
+them back. Especially missing are documentation updates...
+
+> +s32 i2c_smbus_quick_write(const struct i2c_client *client)
+
+=2E.. and I like the original function much better.
+
+1) It is named *_write_quick which follows other function name patterns
+2) It uses a parameter for the r/w bit. Make sense to me, since this bit
+is the information we send to the device. quick_read doesn't make sense
+to me. We don't receive a bit from the device.
 
 
-objdump -Sl shows following output:
-000000d4 <sock_mmap>:
-sock_mmap():
-      d4:       9d e3 bf a0     save  %sp, -96, %sp
-      d8:       c2 06 20 78     ld  [ %i0 + 0x78 ], %g1
-      dc:       94 10 00 19     mov  %i1, %o2
-      e0:       92 10 00 01     mov  %g1, %o1
-      e4:       c2 00 60 18     ld  [ %g1 + 0x18 ], %g1
-      e8:       c2 00 60 40     ld  [ %g1 + 0x40 ], %g1
-      ec:       9f c0 40 00     call  %g1
-      f0:       90 10 00 18     mov  %i0, %o0
-      f4:       81 c7 e0 08     ret
-      f8:       91 e8 00 08     restore  %g0, %o0, %o0
+--oyUTqETQ0mS9luUI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-000000fc <SyS_accept>:
-sys_accept():
-      fc:       96 10 20 00     clr  %o3
-     100:       82 13 c0 00     mov  %o7, %g1
-     104:       40 00 00 00     call  104 <SyS_accept+0x8>
-     108:       9e 10 40 00     mov  %g1, %o7
-     10c:       01 00 00 00     nop
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-00000110 <SyS_send>:
-SyS_send():
-     110:       98 10 20 00     clr  %o4        ! 0 <sock_from_file-0x4c>
-     114:       9a 10 20 00     clr  %o5
-     118:       82 13 c0 00     mov  %o7, %g1
-     11c:       40 00 00 00     call  11c <SyS_send+0xc>
-     120:       9e 10 40 00     mov  %g1, %o7
-     124:       01 00 00 00     nop
+iQIcBAEBAgAGBQJTdy7AAAoJEBQN5MwUoCm2NSUP/2EZxG4n2opUpSHD0ZrcWkVY
+KRqmpf0RkmKo49EyPtZvF43kBzqKB4yFSHdVR8J7oAgQkn8v7v7YDcRKy7cPW0jN
+JR9eKSi8ETvoUCO6hyxtyT/C3gYuCk0QAAsWh3Gkn59an4slL3knOKPD0D+yEK7W
+1wmkWP0SuE40a2TikN627uw+Du2Wyh+v+EecRUcctAD6Xbg0SF5jdPK2jH/giHbh
+n0bfX15mPPdkCD4aGh39LnAQZqw7TbV5o/TrYKGLM0MRj0qiEWNd9HctrupTwcMW
+lJydAauSHTNJNZ3FBMSb79Q/fcsf3HzhLpcqBkv1bX/Ldmtb+uXPi460XLorMLaX
+MBPzPvnTIxjwu4GVuKjXxiiFwTpf1T9dSaUaOPKBmEjGcjxNGrEnRukwGqJFbllz
+VPm5YHRTBEeL74Zx8qvC7brqGk0ttBtN9qSKFfjy3YQ2whid96cLEEcq/VA/tYej
+Nngw5ho6zs4X+ReeVZDZJlmuwTWiamTGCXqhf81UBDXbTVwbQJmlH29fSWM8O5m8
+PlH/ZDC1i1kBPlCdqmJYQ5fW2WWu4OqO+R8d6ywNRV4c5o7z+V0iWvgybO58DUQD
+C6cv65MjEMAbn4V5sU5bgiuE0rUewuJgHm7Eec4dZV1ra/e/AjPnqZP1VUa1vTdJ
+L3XtiCzNndwg6onviNfP
+=4bzq
+-----END PGP SIGNATURE-----
 
-00000128 <SyS_recv>:
-sys_recv():
-     128:       98 10 20 00     clr  %o4        ! 0 <sock_from_file-0x4c>
-     12c:       9a 10 20 00     clr  %o5
-     130:       82 13 c0 00     mov  %o7, %g1
-     134:       40 00 00 00     call  134 <SyS_recv+0xc>
-     138:       9e 10 40 00     mov  %g1, %o7
-     13c:       01 00 00 00     nop
-
-	Sam
+--oyUTqETQ0mS9luUI--
