@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaEQUvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 16:51:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39302 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaEQUvm (ORCPT
+	id S1751508AbaEQUwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 16:52:13 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:43259 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaEQUwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 16:51:42 -0400
-Date: Sat, 17 May 2014 22:51:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pll] irq updates for 3.15
-Message-ID: <alpine.DEB.2.02.1405172244130.4084@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 17 May 2014 16:52:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz>
+References: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
+	<alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz>
+Date: Sat, 17 May 2014 23:52:10 +0300
+Message-ID: <CAJZOPZJVxF6A-3s16feqoWCb5gOLTjyUmB3F+st1+1QWp+bJnQ@mail.gmail.com>
+Subject: Re: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected
+ mode TX path
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>, Roland Dreier <roland@kernel.org>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, May 13, 2014 at 2:38 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Sun, 11 May 2014, Or Gerlitz wrote:
 
-please pull the latest irq-urgent-for-linus git tree from:
+>> This series is a refactored form of the one posted by Jiri Kosina
+>> to LKML and netdev according to the discussion that followed
+>> and the guidelines you provided here https://lkml.org/lkml/2014/3/5/250
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+>> Basically, the functionality changes introduced by this series fully
+>> reside on the IB side of things, so I am only posting the actual patches
+>> to linux-rdma with CC on the cover-letter to the lists that were on V0.
 
-Two small updates from the irq departement:
+> Thanks, I am fine with my Signoff on that.
+> Roland, is this going to be merged by you, or should this go to DaveM directly?
 
- * Provide missing inline stub for a SMP only function
+Roland, we're soon on -rc6 and there's no reason for this to miss
+3.16, could you please comment whether you want it to go through your
+tree or net-next?
 
- * Add sub-maintainer for the drivers/irqchip/ part of the irq
-   subsystem. YAY!
-
-Thanks,
-
-	tglx
-
------------------->
-Arnd Bergmann (1):
-      genirq: Provide irq_force_affinity fallback for non-SMP
-
-Jason Cooper (1):
-      MAINTAINERS: Add co-maintainer for drivers/irqchip
-
-
- MAINTAINERS               |    8 ++++++++
- include/linux/interrupt.h |    5 +++++
- 2 files changed, 13 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6bef70b..4195801 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4818,6 +4818,14 @@ L:	linux-kernel@vger.kernel.org
- S:	Maintained
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
- F:	kernel/irq/
-+
-+IRQCHIP DRIVERS
-+M:	Thomas Gleixner <tglx@linutronix.de>
-+M:	Jason Cooper <jason@lakedaemon.net>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/core
-+T:	git git://git.infradead.org/users/jcooper/linux.git irqchip/core
- F:	drivers/irqchip/
- 
- IRQ DOMAINS (IRQ NUMBER MAPPING LIBRARY)
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 97ac926..051c850 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -272,6 +272,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
- 	return -EINVAL;
- }
- 
-+static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return 0;
-+}
-+
- static inline int irq_can_set_affinity(unsigned int irq)
- {
- 	return 0;
+> Jiri Kosina
+> SUSE Labs
