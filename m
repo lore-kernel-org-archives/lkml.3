@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992487AbaEQHMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 03:12:09 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:58887 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S2992439AbaEQHMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 03:12:08 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1071,1392159600"; 
-   d="scan'208";a="74201384"
-Date: Sat, 17 May 2014 15:12:02 +0800 (SGT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Fabio Estevam <festevam@gmail.com>
-cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        kernel-janitors@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mtd: delete unneeded call to platform_get_drvdata
-In-Reply-To: <CAOMZO5AymcCnC6Awt2LiGP9yz=baRA0HLoLRUSBgNeg3b5=9xQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1405171511140.2587@hadrien>
-References: <1400308369-24375-1-git-send-email-Julia.Lawall@lip6.fr> <CAOMZO5AymcCnC6Awt2LiGP9yz=baRA0HLoLRUSBgNeg3b5=9xQ@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S2992470AbaEQHTn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 03:19:43 -0400
+Received: from sauhun.de ([89.238.76.85]:37158 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756985AbaEQHTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 03:19:42 -0400
+Date: Sat, 17 May 2014 09:19:38 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.15
+Message-ID: <20140517071932.GA3087@katana>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Sat, 17 May 2014, Fabio Estevam wrote:
+Linus,
 
-> On Sat, May 17, 2014 at 3:32 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Platform_get_drvdata is an accessor function, and has no purpose if its
-> > result is not used.
-> >
-> > The semantic patch that fixes this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @@
-> > identifier x;
-> > type T;
-> > @@
-> > - T x = platform_get_drvdata(...);
-> > ... when != x
-> > // </smpl>
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> >  drivers/mtd/nand/bf5xx_nand.c |    4 ----
-> >  1 file changed, 4 deletions(-)
-> >
-> > diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
-> > index b7a2494..b5fbd48 100644
-> > --- a/drivers/mtd/nand/bf5xx_nand.c
-> > +++ b/drivers/mtd/nand/bf5xx_nand.c
-> > @@ -840,15 +840,11 @@ out_err_kzalloc:
-> >
-> >  static int bf5xx_nand_suspend(struct platform_device *dev, pm_message_t pm)
-> >  {
-> > -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
-> > -
-> >         return 0;
-> >  }
-> >
-> >  static int bf5xx_nand_resume(struct platform_device *dev)
-> >  {
-> > -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
-> > -
-> >         return 0;
->
-> In this case bf5xx_nand_suspend/resume could be removed?
+here are some I2C bugfixes for 3.15. Typical stuff, I'd say. Please
+pull.
 
-I don't know.  It looks like it is intentional to have a definition that
-returns an indication of success?  The complete set of definitions is:
+Thanks,
 
-#ifdef CONFIG_PM
+   Wolfram
 
-static int bf5xx_nand_suspend(struct platform_device *dev, pm_message_t
-pm)
-{
-        struct bf5xx_nand_info *info = platform_get_drvdata(dev);
 
-	return 0;
-}
+The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
 
-static int bf5xx_nand_resume(struct platform_device *dev)
-{
-        struct bf5xx_nand_info *info = platform_get_drvdata(dev);
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
 
-        return 0;
-}
+are available in the git repository at:
 
-#else
-#define bf5xx_nand_suspend NULL
-#define bf5xx_nand_resume NULL
-#endif
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
 
-julia
+for you to fetch changes up to d7653964c590ba846aa11a8f6edf409773cbc492:
+
+  i2c: rcar: bail out on zero length transfers (2014-05-14 18:59:57 +0200)
+
+----------------------------------------------------------------
+Andy Gross (1):
+      i2c: qup: Fix pm_runtime_get_sync usage
+
+Du, Wenkai (1):
+      i2c: designware: Mask all interrupts during i2c controller enable
+
+Olof Johansson (1):
+      i2c: s3c2410: resume race fix
+
+Ulf Hansson (1):
+      i2c: nomadik: Don't use IS_ERR for devm_ioremap
+
+Wolfram Sang (1):
+      i2c: rcar: bail out on zero length transfers
+
+ drivers/i2c/busses/i2c-designware-core.c | 3 +++
+ drivers/i2c/busses/i2c-nomadik.c         | 2 +-
+ drivers/i2c/busses/i2c-qup.c             | 2 +-
+ drivers/i2c/busses/i2c-rcar.c            | 9 ++++++++-
+ drivers/i2c/busses/i2c-s3c2410.c         | 2 +-
+ 5 files changed, 14 insertions(+), 4 deletions(-)
+
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTdw2EAAoJEBQN5MwUoCm2//IP/2DFFyi8tdYxj0CqJgFsaGrH
+E4ub9py4HcP/ibgtpKTv8LETSf5umpd6sF2ZA77s/TVKGFG8ITsK6Dt9IS/pDQoW
+hUnw77USQVfpn8kx0DW4WoVExHrbnv6yLoakZzrEy0yINLxQ0DLQgiXpuvF1IEnc
+WIgdgVtbCwQXRX0BhBebFUx0SoQ2xYnNWcgA3M7B1hf8NwFK0X6lpWR1s7/ReXK5
+G5iGM+a3Aavoo0FzsHHl/VIrNpuIdEpFPv8Xw9th3Iw4wcDURCqK92+sVlTp5phC
+fsb6bf5Nv7Kn2fj7kLFEDiipl2tufzKl40edJY7ywADSThXHpWfZKujHqOjkc0tf
+/wGopO3thCRNchwiRmKUK9/MP36rsAymesfC3YQG11V+RXron/Hlrn9f/Dgu+Dk+
+5jjo6EWqeu0BznM4r+osS558MIKbWjvd+P8xYVcpAhvkTbpwQWEqru8eSVRTFz/W
+1bpKKBFC6LNlJm7pVSGabs8iVWYFFE04XzRAwDZxPqn8IESlktiZiYSCROZuSkET
+Dofof0LmT6qH1ATOlMkHe1ezskWE/Hp9jOYqpgp6OGCsxRzSZE4bEWWT3bLd4gSI
+9Ak3xg3LnKlv0E0UJ7SD/+aBfnXdmDwJnEpFVzU+yauIby1kIsq5vd4AC1+Z/QuJ
+3gL7fMwHS1w2Ij+C58kC
+=J+oH
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
