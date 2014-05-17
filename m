@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaEQJXt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 05:23:49 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50021 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983AbaEQJXr (ORCPT
+	id S964786AbaEQJZg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 05:25:36 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15221 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978AbaEQJZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 05:23:47 -0400
-Date: Sat, 17 May 2014 10:23:37 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
-Message-ID: <20140517092337.GA67711@MacBook-Pro.local>
-References: <1364507176.1345.45.camel@x61.thuisdomein>
- <8309592.drxAj71PnZ@wuerfel>
- <1400059550.31197.12.camel@x220>
- <4305975.PvMXZQ020k@wuerfel>
- <1400232598.20342.16.camel@x220>
- <20140516125545.GO3693@n2100.arm.linux.org.uk>
+	Sat, 17 May 2014 05:25:33 -0400
+Date: Sat, 17 May 2014 11:24:14 +0200
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+To: Oren Twaig <oren@scalemp.com>
+CC: Dave Hansen <dave@sr71.net>, Thomas Gleixner <tglx@linutronix.de>,
+        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Shay Goikhman <shay.goikhman@huawei.com>,
+        Paul Mundt <paul.mundt@huawei.com>,
+        Carlos Villavieja <villavieja@hps.utexas.edu>,
+        Nacho Navarro <nacho.navarro@bsc.es>,
+        "Avi Mendelson" <avi.mendelson@tce.technion.ac.il>,
+        Yoav Etsion <yetsion@tce.technion.ac.il>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        linux-arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] x86, hugetlb: add missing TLB page invalidation for
+ hugetlb_cow()
+Message-ID: <20140517092355.GA38103@server-36.huawei.corp>
+References: <20140514092948.GA17391@server-36.huawei.corp>
+ <5372A067.9010808@sr71.net>
+ <20140515170035.GA15779@server-36.huawei.corp>
+ <53746721.6060408@scalemp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140516125545.GO3693@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53746721.6060408@scalemp.com>
+X-Originating-IP: [10.220.139.36]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 01:55:46PM +0100, Russell King - ARM Linux wrote:
-> There was a CPU called the ARM710, it was ARMv3 and it had no Thumb support.
+Hi Oren,
+
+On Thu, May 15, 2014 at 10:05:05AM +0300, Oren Twaig wrote:
 > 
-> There is also a CPU called the ARM710T, which is ARMv4 and has Thumb support.
+> On 05/15/2014 08:00 PM, Anthony Iliopoulos wrote:
+> > I have dismissed this case, since I assume that there are many more
+> > cycles spent in servicing the TLB invalidation IPI, walking the pgtable
+> > plus other related overhead (e.g. sched) than in updating the pte/pmd
+> > so I am not sure how possible it would be to hit this condition.
 > 
-> These are two completely different CPUs, the former was removed along with
-> the removal of ARMv3 support.  The latter remains because we still support
-> ARMv4.
+> Hi Anthony,
+> 
+> I have a question about the above statement. What will happen with multi
+> cpu VMs ? won't the race described above can happen ? I.e one virtual CPU
+> can will visit the host and the other will continue to encounter your race ?
 
-BTW, while clearly this patch was removing code for the wrong reasons, I
-think we should set a longer term timeline for getting rid of some of
-old features. Let's say in 10 years time we remove everything ARMv4,
-another 10 years ARMv5 and so on. We could make these milestones shorter
-but it really depends on what people use, we should not force them out
-of the kernel if still in use.
+I don't think there will be any race for the vcpu cases, since the sptes
+will be cleared via the mmu_notifier, so this should take care of it
+in the same manner as ptep_get_and_clear() does, as described by Dave
+earlier in this thread.
 
-We can start with ARM core and SoC code that we suspect people haven't
-used in a while (or at least not with mainline). We should not remove
-them straight away but give some advanced warning. My proposal is to add
-a CONFIG_DEPRECATED option and update it with a 2 year cadence. Code
-that we want to remove will depend on DEPRECATED and explicitly not
-covered by defconfig. This way we can get interested parties sending
-patches to remove the DEPRECATED dependency. Something like this:
-
-config DEPRECATED
-	bool "Enable deprecated kernel features"
-	help
-	  Kernel features no longer in use are marked as DEPRECATED for
-	  two years and removed at the end of this period. This option
-	  should only be enabled explicitly and must not be included in
-	  defconfig files. If you think a DEPRECATED kernel feature is
-	  still needed, please contact the corresponding maintainers to
-	  remove the DEPRECATED dependency.
-
-	  The next scheduled DEPRECATED code removal is planned for 2016.
-
-It would be even better if we make such option across the whole kernel,
-especially since we have significant ARM SoC code into drivers.
-Otherwise calling it ARM_DEPRECATED would work as well.
-
--- 
-Catalin
+Regards,
+Anthony
