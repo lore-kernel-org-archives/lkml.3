@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829AbaEQAEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:04:47 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53417 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167AbaEQAEq (ORCPT
+	id S1756068AbaEQARL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:17:11 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:45544 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143AbaEQARK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:04:46 -0400
-Message-ID: <5376A79B.30604@linaro.org>
-Date: Fri, 16 May 2014 17:04:43 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Miroslav Lichvar <mlichvar@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering
-References: <1398380677-8684-1-git-send-email-john.stultz@linaro.org> <20140425140421.GA7933@localhost>
-In-Reply-To: <20140425140421.GA7933@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 16 May 2014 20:17:10 -0400
+From: Masaru Nomura <massa.nomura@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgnc: dgnc_tty: Add a required space
+Date: Sat, 17 May 2014 01:17:07 +0100
+Message-Id: <1400285827-6501-1-git-send-email-massa.nomura@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 07:04 AM, Miroslav Lichvar wrote:
-> On Thu, Apr 24, 2014 at 04:04:34PM -0700, John Stultz wrote:
->> Continuing the sporadic work on improving the timekeeping
->> frequency steering logic when NOHZ is enabled, I've made a number
->> of changes to my re-implementation of Miroslav's patch (most
->> recently posted here: https://lkml.org/lkml/2014/2/12/401 ),
->> and I'm getting much closer results in the simulator.
-> Thanks, in my initial testing it seems to be working well. The results
-> from the simulator are much better than with the previous patch.
->
->> Compared with Miroslav's patch, this avoids doing any extra
->> divisions, and instead approximates the correction
->> logarithmically.
-> Hm, doesn't that basically make the code a software implementation of
-> division? It seems it needs about 4-8 iterations to get to the final
-> result.
->
-> I didn't measure it, but I think with this change it now may be close
-> or possibly even slower than my patch. The extra division and
-> multiplication in my patch are used only when the tick length changes
-> (normally once per second), otherwise the update is very cheap.
+Add a required space before an open parenthesis of if statement
+to meet kernel coding style.
 
-Fair enough. I've moved to your division method for the last patch in my
-series (instead of looping).
+Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
+---
+ drivers/staging/dgnc/dgnc_tty.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-I'm still not 100% convinced we need it, since I'm still worried the
-error seen in the simulator with the default options is somewhat
-contrived. For example, since it regularly skips 4k ticks, that
-exaggerates the accumulated error in the approximation case. But we can
-discuss this further w/ the new patch series.
-
-thanks!
--john
-
-
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+index f0b17c3..c63c355 100644
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ b/drivers/staging/dgnc/dgnc_tty.c
+@@ -661,7 +661,7 @@ void dgnc_input(struct channel_t *ch)
+ 	tp = ch->ch_tun.un_tty;
+ 
+ 	bd = ch->ch_bd;
+-	if(!bd || bd->magic != DGNC_BOARD_MAGIC)
++	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+ 		return;
+ 
+ 	DGNC_LOCK(ch->ch_lock, lock_flags);
+@@ -1044,7 +1044,7 @@ void dgnc_check_queue_flow_control(struct channel_t *ch)
+ 	if (qleft < 256) {
+ 		/* HWFLOW */
+ 		if (ch->ch_digi.digi_flags & CTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-			if(!(ch->ch_flags & CH_RECEIVER_OFF)) {
++			if (!(ch->ch_flags & CH_RECEIVER_OFF)) {
+ 				ch->ch_bd->bd_ops->disable_receiver(ch);
+ 				ch->ch_flags |= (CH_RECEIVER_OFF);
+ 				DPR_READ(("Internal queue hit hilevel mark (%d)! Turning off interrupts.\n",
+@@ -3061,7 +3061,7 @@ static int dgnc_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+ 
+ 		DGNC_LOCK(ch->ch_lock, lock_flags);
+ 
+-		if(((cmd == TCSBRK) && (!arg)) || (cmd == TCSBRKP)) {
++		if (((cmd == TCSBRK) && (!arg)) || (cmd == TCSBRKP)) {
+ 			ch->ch_bd->bd_ops->send_break(ch, 250);
+ 		}
+ 
+-- 
+1.7.9.5
 
