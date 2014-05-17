@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030267AbaEQRQK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 13:16:10 -0400
-Received: from sauhun.de ([89.238.76.85]:40964 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964844AbaEQRQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 13:16:07 -0400
-Date: Sat, 17 May 2014 19:15:56 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: rjw@rjwysocki.net, mika.westerberg@linux.intel.com, awilliam@redhat.com,
-        lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 5/9] I2C: Add smbus quick read/write helper function
-Message-ID: <20140517171555.GA2597@katana>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
- <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
- <1398695268-28645-6-git-send-email-tianyu.lan@intel.com>
- <20140517094120.GA2602@katana>
- <5377607F.9010800@intel.com>
+	id S1030280AbaEQRRc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 13:17:32 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43573 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964908AbaEQRR3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 13:17:29 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
-Content-Disposition: inline
-In-Reply-To: <5377607F.9010800@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFo99gatLzLpOu92N23bMQ=a25BTnK3QK2rAzoQJcU3oxMuMgA@mail.gmail.com>
+References: <1400190998-28153-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<5376025B.6010202@cogentembedded.com>
+	<CAFo99gatLzLpOu92N23bMQ=a25BTnK3QK2rAzoQJcU3oxMuMgA@mail.gmail.com>
+Date: Sat, 17 May 2014 13:17:28 -0400
+Message-ID: <CAHQdGtRd-uKvRU8DD9zK-MEF0B10=rESrQAPJoQ8hTunwG883A@mail.gmail.com>
+Subject: Re: [PATCH] Fix for possible null pointer dereference in auth.c
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 17, 2014 at 12:36 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Hi
+>
+> I have made a new patch according Sergei specification.
+>
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'll be happy to apply this patch once someone explains to me why we
+can't just remove that check for cred != NULL, however I'm not
+applying a patch purely in order to silence a warning from cppcheck.
+
+Cheers,
+   Trond
+
+> But there remains Tronds question though.
+>
+> Best regards
+> Rickard Strandqvist
+>
+>
+> 2014-05-16 14:19 GMT+02:00 Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>:
+>> Hello.
+>>
+>>
+>> On 16-05-2014 1:56, Rickard Strandqvist wrote:
+>>
+>>> There is otherwise a risk of a possible null pointer dereference.
+>>
+>>
+>>> Was largely found by using a static code analysis program called cppcheck.
+>>
+>>
+>>> Signed-off-by: Rickard Strandqvist
+>>> <rickard_strandqvist@spectrumdigital.se>
+>>> ---
+>>>   net/sunrpc/auth.c |   10 +++++++---
+>>>   1 fil ändrad, 7 tillägg(+), 3 borttagningar(-)
+>>
+>>
+>>> diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+>>> index 5285ead..3a55698 100644
+>>> --- a/net/sunrpc/auth.c
+>>> +++ b/net/sunrpc/auth.c
+>>> @@ -801,10 +801,14 @@ rpcauth_invalcred(struct rpc_task *task)
+>>>   {
+>>>         struct rpc_cred *cred = task->tk_rqstp->rq_cred;
+>>>
+>>> -       dprintk("RPC: %5u invalidating %s cred %p\n",
+>>> -               task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+>>> -       if (cred)
+>>> +       if (cred) {
+>>> +               dprintk("RPC: %5u invalidating %s cred %p\n",
+>>> +                       task->tk_pid, cred->cr_auth->au_ops->au_name,
+>>> cred);
+>>> +
+>>>                 clear_bit(RPCAUTH_CRED_UPTODATE, &cred->cr_flags);
+>>> +       }
+>>> +       else
+>>
+>>
+>>    } and *else* should be on the same line, and there should be {} in the
+>> *else* arm since there's {} in the *if* arm already, according to
+>> Documentation/CodingStyle.
+>>
+>>
+>>> +               dprintk("RPC: %5u invalidating is NULL\n", task->tk_pid);
+>>
+>>
+>>    That's not a proper English, I'm afraid.
+>>
+>>>   }
+>>
+>>
+>> WBR, Sergei
+>>
+>>
 
 
-> >2) It uses a parameter for the r/w bit. Make sense to me, since this bit
-> >is the information we send to the device. quick_read doesn't make sense
-> >to me. We don't receive a bit from the device.
-> >
->=20
-> Hi Wolfram:
-> 	Great thanks for your review. Ok. I will follow commit 67c2e665 to
-> bring i2c_smbus_write_quick(struct i2c_client *client, u8 value)
-> back.
->=20
-> BTW, how about i2c_probe_func_quick_read()? Should we replace it
-> with the original i2c_smbus_write_quick()?
 
-As said above "quick_read doesn't make sense to me. We don't receive a
-bit from the device."
+-- 
+Trond Myklebust
 
-Start implementing and you will see why we don't need it :)
+Linux NFS client maintainer, PrimaryData
 
-
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTd5lLAAoJEBQN5MwUoCm29ocP/0n3kCnsZhboHNy58x9TY6oM
-yHYu7WtSUGREecAOE04gVdSaM2K2/ttfuBujdj2HPzLDAPZV9md4X1mO2VHRJdBJ
-xKhRxpJbfxnh9XqcjNe+jN6ila22zV1Iigp8VMHKNPDzjIhu/upUSomrVvFN80B7
-VHgWQDk8ReySiF2/zwlVlAI5QOPyhEb8GuS1ke0aM5IJKdOAPS5QlcfBVJAH3nbJ
-pvtWcL1PngHuqlYd2OWCUezWe46LpU3jyHslCZuEml+fuXa58cqXHffFR4aufvPa
-nYD5kFFxiC5AEwU5DW+bySXmTWEzOxwNg58tzsf12OLLf3/LvXLipYJBOFdi1/+O
-BsanvqM+qscs1x0w/NcB8p2Ab1g6dcr7dwxRPlw91mTdjPPOXbGMUDtEzhzhavqH
-Y8c78zsSA95AJdNp3XA69aEhutwk2lWh4VX7ra9Hk7Sr64Mk3AaRqO6nJ7vqWw1o
-ABMihCy2uCAn1W3opHno3CWeBVxvGugMuV168mMSO9KH+myYT/0dfQZvybSG63sf
-qjo2NE2hflvMXctoQflEqJtt5fntHn+ckFcz1zE8RmypU+4Y/KwnthQ0XumQy/wK
-Xl2GexRtvMpEkpUzIc/eTw41t8vXZuf2NsEshiNdvBbYMuN2j9fRNlLDZDzS4gVf
-sPIKhACEM5qfTrF74Qss
-=qtS1
------END PGP SIGNATURE-----
-
---sm4nu43k4a2Rpi4c--
+trond.myklebust@primarydata.com
