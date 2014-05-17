@@ -1,203 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaEQA5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:57:55 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:48407 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885AbaEQA52 (ORCPT
+	id S1756158AbaEQBEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 21:04:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:56242 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143AbaEQBEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:57:28 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3/3] [RFC] timekeeping: Calculate freq adjustment directly
-Date: Fri, 16 May 2014 17:56:44 -0700
-Message-Id: <1400288204-414-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
-References: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
+	Fri, 16 May 2014 21:04:13 -0400
+From: Masaru Nomura <massa.nomura@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgnc: dgnc_tty: Remove a prohibited space
+Date: Sat, 17 May 2014 02:04:10 +0100
+Message-Id: <1400288650-9956-1-git-send-email-massa.nomura@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After working with Mirolsav's simulator and his initial patch,
-I've grown more comfortable with his approach of calculating
-the freq adjustment directly using a division, rather then
-trying to aproximate it over a number of ticks.
+Remove a prohibited space before a closed parenthesis of if statement
+to meet kernel coding style.
 
-Part of the rational here is that now the error adjustment
-is very small (only a 0 or 1 unit adjustment to the multiplier)
-it can take quite some time to reduce any accumulated error.
-
-The approximation method strains this, since it takes
-log(adjustment) number of updates to approximate, and we can
-accumulate quite a bit of error in that period.
-
-The downside with this approach is it requires doing a 64bit
-divide and a few multiplies to properly make and apply the
-calculation, which will occur about every second or whenever
-the ntp_tick_length() value is adjusted.
-
-The positive side of this approach is that we see very small
-error accumulation.
-
-I do have some concern that compared with the simulator, the
-scale of the error without this patch in the real world will
-be hard to ever observe, the extra overhead of the computation
-(particularly on 32bit systems) won't actually provide a benefit.
-
-Cc: Miroslav Lichvar <mlichvar@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
 ---
- include/linux/timekeeper_internal.h |  2 ++
- kernel/time/timekeeping.c           | 67 +++++++++++++------------------------
- 2 files changed, 25 insertions(+), 44 deletions(-)
+ drivers/staging/dgnc/dgnc_tty.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
-index 4fddf6c..03e5dff 100644
---- a/include/linux/timekeeper_internal.h
-+++ b/include/linux/timekeeper_internal.h
-@@ -48,6 +48,8 @@ struct timekeeper {
- 	 * ntp shifted nano seconds. */
- 	u32			ntp_error_shift;
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+index f0b17c3..13d7a14 100644
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ b/drivers/staging/dgnc/dgnc_tty.c
+@@ -1693,7 +1693,7 @@ static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
+ 		/*
+ 		 * turn off print device when closing print device.
+ 		 */
+-		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON) ) {
++		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON)) {
+ 			dgnc_wmove(ch, ch->ch_digi.digi_offstr,
+ 				(int) ch->ch_digi.digi_offlen);
+ 			ch->ch_flags &= ~CH_PRON;
+@@ -1753,7 +1753,7 @@ static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
+ 		/*
+ 		 * turn off print device when closing print device.
+ 		 */
+-		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON) ) {
++		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON)) {
+ 			dgnc_wmove(ch, ch->ch_digi.digi_offstr,
+ 				(int) ch->ch_digi.digi_offlen);
+ 			ch->ch_flags &= ~CH_PRON;
+@@ -1857,7 +1857,7 @@ static int dgnc_maxcps_room(struct tty_struct *tty, int bytes_available)
+ 	if (un->un_type != DGNC_PRINT)
+ 		return bytes_available;
  
-+	/* Mult adjustment being applied to correct freq error */
-+	u32			ntp_freq_mult;
- 	/* Mult adjustment being applied to correct ntp_error */
- 	u32			ntp_err_mult;
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 846603e..27c54a6 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -149,6 +149,7 @@ static void tk_setup_internals(struct timekeeper *tk, struct clocksource *clock)
- 	 * to counteract clock drifting.
- 	 */
- 	tk->mult = clock->mult;
-+	tk->ntp_freq_mult = clock->mult;
- 	tk->ntp_err_mult = 0;
- }
- 
-@@ -1058,20 +1059,20 @@ device_initcall(timekeeping_init_ops);
-  */
- static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
- 							 s64 offset,
--							 bool negative,
--							 int adj_scale)
-+							 int adj)
- {
- 	s64 interval = tk->cycle_interval;
--	s32 mult_adj = 1;
- 
--	if (negative) {
--		mult_adj = -mult_adj;
-+	if (!adj)
-+		return;
-+
-+	if (unlikely(abs(adj) > 1)) {
-+		interval *= adj;
-+		offset  *= adj;
-+	} else if (adj < 0) {
- 		interval = -interval;
- 		offset  = -offset;
- 	}
--	mult_adj <<= adj_scale;
--	interval <<= adj_scale;
--	offset <<= adj_scale;
- 
- 	/*
- 	 * So the following can be confusing.
-@@ -1079,7 +1080,7 @@ static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
- 	 * To keep things simple, lets assume mult_adj == 1 for now.
- 	 *
- 	 * When mult_adj != 1, remember that the interval and offset values
--	 * have been appropriately scaled so the math is the same.
-+	 * have been appropriately multiplied so the math is the same.
- 	 *
- 	 * The basic idea here is that we're increasing the multiplier
- 	 * by one, this causes the xtime_interval to be incremented by
-@@ -1122,7 +1123,7 @@ static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
- 	 *
- 	 * XXX - TODO: Doc ntp_error calculation.
- 	 */
--	tk->mult += mult_adj;
-+	tk->mult += adj;
- 	tk->xtime_interval += interval;
- 	tk->xtime_nsec -= offset;
- 	tk->ntp_error -= (interval - offset) << tk->ntp_error_shift;
-@@ -1135,36 +1136,13 @@ static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
- static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
- 							s64 offset)
- {
--	s64 interval = tk->cycle_interval;
--	s64 xinterval = tk->xtime_interval;
--	s64 tick_error;
--	bool negative;
--	u32 adj;
--
--	/* Remove any current error adj from freq calculation */
--	if (tk->ntp_err_mult)
--		xinterval -= tk->cycle_interval;
--
--	tk->ntp_tick = ntp_tick_length();
--
--	/* Calculate current error per tick */
--	tick_error = ntp_tick_length() >> tk->ntp_error_shift;
--	tick_error -= (xinterval + tk->xtime_remainder);
-+	s64 tick_ns;
- 
--	/* Don't worry about correcting it if its small */
--	if (likely((tick_error >= 0) && (tick_error <= interval)))
-+	if (likely(tk->ntp_tick == ntp_tick_length()))
- 		return;
--
--	/* preserve the direction of correction */
--	negative = (tick_error < 0);
--
--	/* Sort out the magnitude of the correction */
--	tick_error = abs(tick_error);
--	for (adj = 0; tick_error > interval; adj++)
--		tick_error >>= 1;
--
--	/* scale the corrections */
--	timekeeping_apply_adjustment(tk, offset, negative, adj);
-+	tk->ntp_tick = ntp_tick_length();
-+	tick_ns = (tk->ntp_tick >> tk->ntp_error_shift) - tk->xtime_remainder;
-+	tk->ntp_freq_mult = div64_u64(tick_ns, tk->cycle_interval);
- }
- 
- /*
-@@ -1173,18 +1151,19 @@ static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
-  */
- static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- {
-+	u32 new_mult;
-+
- 	/* Correct for the current frequency error */
- 	timekeeping_freqadjust(tk, offset);
- 
- 	/* Next make a small adjustment to fix any cumulative error */
--	if (!tk->ntp_err_mult && (tk->ntp_error > 0)) {
-+	if (tk->ntp_error > 0)
- 		tk->ntp_err_mult = 1;
--		timekeeping_apply_adjustment(tk, offset, 0, 0);
--	} else if (tk->ntp_err_mult && (tk->ntp_error <= 0)) {
--		/* Undo any existing error adjustment */
--		timekeeping_apply_adjustment(tk, offset, 1, 0);
-+	else
- 		tk->ntp_err_mult = 0;
--	}
-+
-+	new_mult = tk->ntp_freq_mult + tk->ntp_err_mult;
-+	timekeeping_apply_adjustment(tk, offset, new_mult - tk->mult);
- 
- 	if (unlikely(tk->clock->maxadj &&
- 		(tk->mult > tk->clock->mult + tk->clock->maxadj))) {
+-	if (ch->ch_digi.digi_maxcps > 0 && ch->ch_digi.digi_bufsize > 0 ) {
++	if (ch->ch_digi.digi_maxcps > 0 && ch->ch_digi.digi_bufsize > 0) {
+ 		int cps_limit = 0;
+ 		unsigned long current_time = jiffies;
+ 		unsigned long buffer_time = current_time +
 -- 
-1.9.1
+1.7.9.5
 
