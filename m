@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068AbaEQARL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 May 2014 20:17:11 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45544 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbaEQARK (ORCPT
+	id S2992461AbaEQA1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 May 2014 20:27:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:63686 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755929AbaEQA1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 May 2014 20:17:10 -0400
-From: Masaru Nomura <massa.nomura@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: dgnc: dgnc_tty: Add a required space
-Date: Sat, 17 May 2014 01:17:07 +0100
-Message-Id: <1400285827-6501-1-git-send-email-massa.nomura@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 16 May 2014 20:27:12 -0400
+Date: Fri, 16 May 2014 20:27:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Seth Jennings <sjenning@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140516202709.6e345117@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1405170002180.1615@pobox.suse.cz>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+	<20140505085537.GA32196@gmail.com>
+	<20140505132638.GA14432@treble.redhat.com>
+	<20140505141038.GA27403@localhost.localdomain>
+	<20140505184304.GA15137@gmail.com>
+	<5368CB6E.3090105@hitachi.com>
+	<20140506082604.31928cb9@gandalf.local.home>
+	<alpine.LNX.2.00.1405161822050.16459@pobox.suse.cz>
+	<20140516145533.4ef7bc22@gandalf.local.home>
+	<alpine.LNX.2.00.1405170002180.1615@pobox.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a required space before an open parenthesis of if statement
-to meet kernel coding style.
+On Sat, 17 May 2014 00:32:10 +0200 (CEST)
+Jiri Kosina <jkosina@suse.cz> wrote:
 
-Signed-off-by: Masaru Nomura <massa.nomura@gmail.com>
----
- drivers/staging/dgnc/dgnc_tty.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
-index f0b17c3..c63c355 100644
---- a/drivers/staging/dgnc/dgnc_tty.c
-+++ b/drivers/staging/dgnc/dgnc_tty.c
-@@ -661,7 +661,7 @@ void dgnc_input(struct channel_t *ch)
- 	tp = ch->ch_tun.un_tty;
- 
- 	bd = ch->ch_bd;
--	if(!bd || bd->magic != DGNC_BOARD_MAGIC)
-+	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
- 		return;
- 
- 	DGNC_LOCK(ch->ch_lock, lock_flags);
-@@ -1044,7 +1044,7 @@ void dgnc_check_queue_flow_control(struct channel_t *ch)
- 	if (qleft < 256) {
- 		/* HWFLOW */
- 		if (ch->ch_digi.digi_flags & CTSPACE || ch->ch_c_cflag & CRTSCTS) {
--			if(!(ch->ch_flags & CH_RECEIVER_OFF)) {
-+			if (!(ch->ch_flags & CH_RECEIVER_OFF)) {
- 				ch->ch_bd->bd_ops->disable_receiver(ch);
- 				ch->ch_flags |= (CH_RECEIVER_OFF);
- 				DPR_READ(("Internal queue hit hilevel mark (%d)! Turning off interrupts.\n",
-@@ -3061,7 +3061,7 @@ static int dgnc_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
- 
- 		DGNC_LOCK(ch->ch_lock, lock_flags);
- 
--		if(((cmd == TCSBRK) && (!arg)) || (cmd == TCSBRKP)) {
-+		if (((cmd == TCSBRK) && (!arg)) || (cmd == TCSBRKP)) {
- 			ch->ch_bd->bd_ops->send_break(ch, 250);
- 		}
- 
--- 
-1.7.9.5
+> That's true, and we come back to what has been said at the very beginning 
+> for both aproaches -- you can't really get away without manual human 
+> inspection of the patches that are being applied.
+> 
+> The case you have outlined is indeed problematic for the "lazy switching" 
+> aproach, and can be worked around (interim function, which takes both 
+> mutexes in well defined order, for example).
+> 
+> You can construct a broken locking scenario for stop_machine() aproach as 
+> well -- consider a case when you are exchaing a function which changes the 
+> locking order of two locks/mutexes. How do you deal with the rest of the 
+> code where the locks are being acquired, but not through the functions 
+> you've exchanged?
 
+I'm a bit confused by this. If you change locking order and there's
+other functions that acquire it in reverse order that's not in the
+patch, that sounds like you just introduced a new bug.
+
+> 
+> So again -- there is no disagreement, I believe, about the fact that "live 
+> patches" can't be reliably auto-generated, and human inspection will 
+> always be necessary. Given the intended use-case (serious CVEs mostly, 
+> handled by distro vendors), this is fine.
+> 
+
+Right, I absolutely agree that the real use case is to fix off by one
+errors and buffer overflows. Anything that is more complex really needs
+a reboot (at a minimum, a kexec reboot). I know our customers would love
+to see this upgrading entire kernels, but that's rather unrealistic.
+
+Why I still favor the stop_machine approach, is because the method of
+patching is a bit simpler that way. A "lazy" approach will be more
+complex and more likely to be buggy. The thing I'm arguing here is not
+the end result being a problem, but the implementation of the patching
+itself causing bugs.
+
+I rather have a "lazy" approach, but like ftrace and its breakpoint
+method, the stop_machine approach is the simpler way to make sure the
+patching works before we try to optimize it.
+
+-- Steve
