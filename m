@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030380AbaEQSkk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 14:40:40 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:53542 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964889AbaEQSkj (ORCPT
+	id S1750822AbaEQSoB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 14:44:01 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:36073 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964844AbaEQSny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 14:40:39 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v3] ARM: imx: fix error handling in ipu device registration
-Date: Sat, 17 May 2014 20:40:33 +0200
-Message-Id: <1400352033-18262-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 17 May 2014 14:43:54 -0400
+Message-ID: <5377ADE5.1030304@gmail.com>
+Date: Sat, 17 May 2014 20:43:49 +0200
+From: Gianluca Gennari <gennarone@gmail.com>
+Reply-To: gennarone@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Martin Kepplinger <martink@posteo.de>, Antti Palosaari <crope@iki.fi>,
+        gregkh@linuxfoundation.org,
+        Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] staging: media: as102: replace custom dprintk() with
+ dev_dbg()
+References: <53776B57.5050504@iki.fi> <1400342738-32652-1-git-send-email-martink@posteo.de> <53779A7F.8020007@iki.fi> <5377A1CC.7020104@posteo.de>
+In-Reply-To: <5377A1CC.7020104@posteo.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+Il 17/05/2014 19:52, Martin Kepplinger ha scritto:
+> Am 2014-05-17 19:21, schrieb Antti Palosaari:
+>> On 05/17/2014 07:05 PM, Martin Kepplinger wrote:
+>>> don't reinvent dev_dbg(). remove dprintk() in as102_drv.c.
+>>> use the common kernel coding style.
+>>>
+>>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+>>
+>> Reviewed-by: Antti Palosaari <crope@iki.fi>
+>>
+>>> ---
+>>> this applies to next-20140516. any more suggestions?
+>>> more cleanup can be done when dprintk() is completely gone.
+>>
+>> Do you have the device? I am a bit reluctant patching that driver
+>> without any testing as it has happened too many times something has gone
+>> totally broken.
+> I don't have the device and will, at most, change such style issues.
+> 
+>>
+>> IIRC Devin said it is in staging because of style issues and nothing
+>> more. Is that correct?
+> I haven't heard anything. A TODO file would help.
 
-I have rearranged the error handling a bit to fix the issue
-and also make it more clear.
+Hi Antti, Martin,
+if I remember correctly, the main issue with this driver is that the
+device does not work anymore after a reboot: it needs a power cycle to
+start working again. Probably this issue is enough to keep the driver in
+staging.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-v3: Made subject line more specific.
-v2: Changed to return -ENOMEM instead of ret where possible and
-    updated the subject line.
+Regards,
+Gianluca
 
- arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7c..68f2a4a 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
- 
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
--		goto err;
-+		goto put_pdev;
- 
- 	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
- 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
- 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
- 	if (ret)
--		goto err;
-+		goto free_dma_mask;
- 
- 	if (pdata) {
- 		struct mx3_camera_pdata *copied_pdata;
- 
- 		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
--		if (ret) {
--err:
--			kfree(pdev->dev.dma_mask);
--			platform_device_put(pdev);
--			return ERR_PTR(-ENODEV);
--		}
-+		if (ret)
-+			goto free_dma_mask;
-+
- 		copied_pdata = dev_get_platdata(&pdev->dev);
- 		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
- 	}
- 
- 	return pdev;
-+
-+free_dma_mask:
-+	kfree(pdev->dev.dma_mask);
-+put_pdev:
-+	platform_device_put(pdev);
-+
-+	return ERR_PTR(ret);
- }
- 
- struct platform_device *__init imx_add_mx3_sdc_fb(
--- 
-1.7.10.4
+> 
+>>
+>> regards
+>> Antti
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
