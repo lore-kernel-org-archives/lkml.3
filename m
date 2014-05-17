@@ -1,168 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaEQGwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 02:52:19 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:51639 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756956AbaEQGwS (ORCPT
+	id S1757083AbaEQHHm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 03:07:42 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:48094 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848AbaEQHHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 02:52:18 -0400
-Message-ID: <5377071C.1030104@semaphore.gr>
-Date: Sat, 17 May 2014 09:52:12 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 17 May 2014 03:07:40 -0400
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Doug Smythies <dsmythies@telus.net>, Yuyang Du <yuyang.du@intel.com>
-Subject: Re: [RFC PATCH] cpufreq: intel_pstate: Change the calculation of
- next pstate
-References: <5368255D.3090207@semaphore.gr> <536BEE89.3040602@gmail.com> <536CECB4.1090109@semaphore.gr> <53712F4B.7000101@semaphore.gr>
-In-Reply-To: <53712F4B.7000101@semaphore.gr>
+In-Reply-To: <1400308369-24375-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1400308369-24375-1-git-send-email-Julia.Lawall@lip6.fr>
+Date: Sat, 17 May 2014 04:07:39 -0300
+Message-ID: <CAOMZO5AymcCnC6Awt2LiGP9yz=baRA0HLoLRUSBgNeg3b5=9xQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mtd: delete unneeded call to platform_get_drvdata
+From: Fabio Estevam <festevam@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On Sat, May 17, 2014 at 3:32 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Platform_get_drvdata is an accessor function, and has no purpose if its
+> result is not used.
+>
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> identifier x;
+> type T;
+> @@
+> - T x = platform_get_drvdata(...);
+> ... when != x
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
+>  drivers/mtd/nand/bf5xx_nand.c |    4 ----
+>  1 file changed, 4 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/bf5xx_nand.c b/drivers/mtd/nand/bf5xx_nand.c
+> index b7a2494..b5fbd48 100644
+> --- a/drivers/mtd/nand/bf5xx_nand.c
+> +++ b/drivers/mtd/nand/bf5xx_nand.c
+> @@ -840,15 +840,11 @@ out_err_kzalloc:
+>
+>  static int bf5xx_nand_suspend(struct platform_device *dev, pm_message_t pm)
+>  {
+> -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
+> -
+>         return 0;
+>  }
+>
+>  static int bf5xx_nand_resume(struct platform_device *dev)
+>  {
+> -       struct bf5xx_nand_info *info = platform_get_drvdata(dev);
+> -
+>         return 0;
 
-On 12/05/2014 11:30 μμ, Stratos Karafotis wrote:
-> On 09/05/2014 05:56 μμ, Stratos Karafotis wrote:
->> Hi Dirk,
->>
->> On 08/05/2014 11:52 μμ, Dirk Brandewie wrote:
->>> On 05/05/2014 04:57 PM, Stratos Karafotis wrote:
->>>> Currently the driver calculates the next pstate proportional to
->>>> core_busy factor, scaled by the ratio max_pstate / current_pstate.
->>>>
->>>> Using the scaled load (core_busy) to calculate the next pstate
->>>> is not always correct, because there are cases that the load is
->>>> independent from current pstate. For example, a tight 'for' loop
->>>> through many sampling intervals will cause a load of 100% in
->>>> every pstate.
->>>>
->>>> So, change the above method and calculate the next pstate with
->>>> the assumption that the next pstate should not depend on the
->>>> current pstate. The next pstate should only be proportional
->>>> to measured load. Use the linear function to calculate the load:
->>>>
->>>> Next P-state = A + B * load
->>>>
->>>> where A = min_state and B = (max_pstate - min_pstate) / 100
->>>> If turbo is enabled the B = (turbo_pstate - min_pstate) / 100
->>>> The load is calculated using the kernel time functions.
->>>>
->>
->> Thank you very much for your comments and for your time to test my patch!
->>
->>
->>>
->>> This will hurt your power numbers under "normal" conditions where you
->>> are not running a performance workload. Consider the following:
->>>
->>>    1. The system is idle, all core at min P state and utilization is low say < 10%
->>>    2. You run something that drives the load as seen by the kernel to 100%
->>>       which scaled by the current P state.
->>>
->>> This would cause the P state to go from min -> max in one step.  Which is
->>> what you want if you are only looking at a single core.  But this will also
->>> drag every core in the package to the max P state as well.  This would be fine
->>
->> I think, this will also happen using the original driver (before your
->> new patch 4/5), after some sampling intervals.
->>
->>
->>> if the power vs frequency cure was linear all the cores would finish
->>> their work faster and go idle sooner (race to halt) and maybe spend
->>> more time in a deeper C state which dwarfs the amount of power we can
->>> save by controlling P states. Unfortunately this is *not* the case, 
->>> power vs frequency curve is non-linear and get very steep in the turbo
->>> range.  If it were linear there would be no reason to have P state
->>> control you could select the highest P state and walk away.
->>>
->>> Being conservative on the way up and aggressive on way down give you
->>> the best power efficiency on non-benchmark loads.  Most benchmarks
->>> are pretty useless for measuring power efficiency (unless they were
->>> designed for it) since they are measuring how fast something can be
->>> done which is measuring the efficiency at max performance.
->>>
->>> The performance issues you pointed out were caused by commit 
->>> fcb6a15c intel_pstate: Take core C0 time into account for core busy calculation
->>> and the ensuing problem is caused. These have been fixed in the patch set
->>>
->>>    https://lkml.org/lkml/2014/5/8/574
->>>
->>> The performance comparison between before/after this patch set, your patch
->>> and ondemand/acpi_cpufreq is available at:
->>>     http://openbenchmarking.org/result/1405085-PL-C0200965993
->>> ffmpeg was added to the set of benchmarks because there was a regression
->>> reported against this benchmark as well.
->>>     https://bugzilla.kernel.org/show_bug.cgi?id=75121
->>
->> Of course, I agree generally with your comments above. But I believe that
->> the we should scale the core as soon as we measure high load. 
->>
->> I tested your new patches and I confirm your benchmarks. But I think
->> they are against the above theory (at least on low loads).
->> With the new patches I get increased frequencies even on an idle system.
->> Please compare the results below.
->>
->> With your latest patches during a mp3 decoding (a non-benchmark load)
->> the energy consumption increased to 5187.52 J from 5036.57 J (almost 3%).
->>
->>
->> Thanks again,
->> Stratos
->>
-> 
-> I would like to explain a little bit further the logic behind this patch.
-> 
-> The patch is based on the following assumptions (some of them are pretty
-> obvious but please let me mention them):
-> 
-> 1) We define the load of the CPU as the percentage of sampling period that
-> CPU was busy (not idle), as measured by the kernel.
-> 
-> 2) It's not possible to predict (with accuracy) the load of a CPU in future
-> sampling periods.
-> 
-> 3) The load in the next sampling interval is most probable to be very
-> close to the current sampling interval. (Actually the load in the
-> next sampling interval could have any value, 0 - 100).
-> 
-> 4) In order to select the next performance state of the CPU we need to
-> calculate the load frequently (as fast as hardware permits) and change
-> the next state accordingly.
-> 
-> 5) At a given constant 0% (zero) load in a specific period, the CPU
-> performance state should be equal to minimum available state.
-> 
-> 6) At a given constant 100% load in a specific period, the CPU performance
-> state should be equal to maximum available state.
-> 
-> 7) Ideally, the CPU should execute instructions at maximum performance state.
-> 
-> 
-> According to the above if the measured load in a sampling interval is, for
-> example 50%, ideally the CPU should spent half of the next sampling period
-> to maximum pstate and half of the period to minimum pstate. Of course
-> it's impossible to increase the sampling frequency so much.
-> 
-> Thus, we consider that the best approximation would be:
-> 
-> Next performance state = min_perf + (max_perf - min_perf) * load / 100
-> 
-
-Any additional comments?
-Should I consider it a rejected approach?
-
-
-Thanks,
-Stratos
-
-
+In this case bf5xx_nand_suspend/resume could be removed?
