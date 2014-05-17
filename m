@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061AbaEQEyz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 00:54:55 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:35842 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011AbaEQEyx (ORCPT
+	id S1756403AbaEQFR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 01:17:59 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:53493 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029AbaEQFR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 00:54:53 -0400
+	Sat, 17 May 2014 01:17:58 -0400
+X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 May 2014 01:17:57 EDT
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: daniel@phunq.net
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, tux3@tux3.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Date: Sat, 17 May 2014 07:09:50 +0200
+Message-ID: <70017742.9QjfvMRmGT@merkaba>
+User-Agent: KMail/4.14 pre (Linux/3.15.0-rc5-tp520; KDE/4.12.4; x86_64; git-dfb5e56; 2014-05-16)
+In-Reply-To: <5376B273.7000800@partner.samsung.com>
+References: <5376B273.7000800@partner.samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <200048151.0RTJzuPcGp@vostro.rjw.lan>
-References: <1400237477-24831-1-git-send-email-chander.kashyap@linaro.org>
-	<CAKohpomYMcisB-UHp7TOEdxvQ9-1VzyRshQh=P-dQqYOuBz-5g@mail.gmail.com>
-	<200048151.0RTJzuPcGp@vostro.rjw.lan>
-Date: Sat, 17 May 2014 10:24:53 +0530
-Message-ID: <CAKohpokQk7jf30gLEX_UTaACGi_mPuSdWxeONEir3+U=0x3JPw@mail.gmail.com>
-Subject: Re: [PATCH] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 May 2014 04:33, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Is this -stable material?  If so, which -stable?
+Hi Daniel!
 
-3.7+
+Am Freitag, 16. Mai 2014, 17:50:59 schrieb Daniel Phillips:
+> We would like to offer Tux3 for review for mainline merge. We have
+> prepared a new repository suitable for pulling:
+
+At long last!
+
+Congrats for arriving at this point.
+
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
