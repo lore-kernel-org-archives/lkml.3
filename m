@@ -1,155 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793AbaEQOYc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 10:24:32 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:32792 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756793AbaEQOYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 10:24:31 -0400
-Message-ID: <53777113.3070909@gmail.com>
-Date: Sat, 17 May 2014 16:24:19 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757273AbaEQOiA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 10:38:00 -0400
+Received: from mout.gmx.net ([212.227.17.22]:64502 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756821AbaEQOh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 10:37:59 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: linus.walleij@linaro.org
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] pinctrl: Cleanup string initializations (char[] instead of char *)
+Date: Sat, 17 May 2014 16:37:25 +0200
+Message-Id: <1400337445-25750-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-3-git-send-email-holler@ahsoftware.de> <20140514140534.897F8C4153D@trevor.secretlab.ca>
-In-Reply-To: <20140514140534.897F8C4153D@trevor.secretlab.ca>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:2V+coJi2cuP1HQnnSZLREcGDkBshHP7OLBIpMHmL9GcV9LgiHB0
+ Dm6WPsm6rzWQ9HJQ9AYu7H5BhHu5wKfDupydD1PRmFTVa6vHWDCNGFPS+igLSD5gVtgy8vP
+ vb9C3ocaO8Eg4uX2o/CsOdmRgH+KJ/OgBN6OsAgNXeCX1PztNkIDjZUnCew+ZaWwqTBGWQw
+ ps15SLrG67YYo3DJY1GIw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Initializations like 'char *foo = "bar"' will create two variables: a static
+string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
+will declare a single variable and will end up in shorter
+assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
 
-On 14.05.2014 16:05, Grant Likely wrote:
-> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
->> Use the properties named 'dependencies' in binary device tree blobs to build
->> a dependency based initialization order for platform devices and drivers.
->>
->> This is done by building a directed acyclic graph using an adjacency list
->> and doing a topological sort to retrieve the order in which devices/drivers
->> should be created/initialized.
->>
->> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> 
-> Hi Alexander,
-> 
-> Thanks for looking at this. It is a difficult problem. I've made
-> comments below, but first I've got some general comments...
-> 
-> First, I'm going to be very cautious about this. It is a complicated
-> piece of code making the device initialization process a lot more
-> complicated than it already is. I'm the first one to admit that deferred
-> probe handles the problem in quite a naive manner, but it is simple,
-> correct (when drivers support deferred probe) and easy to audit. This
-> series digs deep into the registration order of *both* devices and
-> drivers which gives me the heebee jeebees.
-> 
-> Personally, I think the parts of this patch that manipulate the device registration
-> order is entirely the wrong way to handle it. If anything, I would say
-> continue to register the devices, even if the dependencies are unmet.
-> Instead, I would focus on the driver core (drivers/base) to catch
-> device probe attempts when a known dependency is not met, remember it,
-> and perform the probe after the other driver shows up. That is also
-> going to be a complicated bit of code, but it works for every kind of
-> device, not just platform_devices, and has far less impact on the
-> platform setup code.
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/pinctrl/pinctrl-mxs.c    |    6 +++---
+ drivers/pinctrl/pinctrl-single.c |    4 ++--
+ drivers/pinctrl/pinctrl-tegra.c  |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-Grant, I tend to disagree with you on this. While Alexander's solution
-has certain flaws (that I'm going to list further in my reply), I also
-believe that an approach based on device registration order is most
-likely the way to go. As compared to other possible approaches, here is
-the list of advantages I can see (in random order):
+diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
+index 40c76f2..cd4215e 100644
+--- a/drivers/pinctrl/pinctrl-mxs.c
++++ b/drivers/pinctrl/pinctrl-mxs.c
+@@ -351,7 +351,7 @@ static int mxs_pinctrl_parse_group(struct platform_device *pdev,
+ 	struct mxs_pinctrl_data *d = platform_get_drvdata(pdev);
+ 	struct mxs_group *g = &d->soc->groups[idx];
+ 	struct property *prop;
+-	const char *propname = "fsl,pinmux-ids";
++	const char propname[] = "fsl,pinmux-ids";
+ 	char *group;
+ 	int length = strlen(np->name) + SUFFIX_LEN;
+ 	u32 val, i;
+@@ -399,8 +399,8 @@ static int mxs_pinctrl_probe_dt(struct platform_device *pdev,
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct device_node *child;
+ 	struct mxs_function *f;
+-	const char *gpio_compat = "fsl,mxs-gpio";
+-	const char *fn, *fnull = "";
++	const char gpio_compat[] = "fsl,mxs-gpio";
++	const char *fn, fnull[] = "";
+ 	int i = 0, idxf = 0, idxg = 0;
+ 	int ret;
+ 	u32 val;
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 2960557..a3ed99f 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1561,8 +1561,8 @@ static struct of_device_id pcs_of_match[];
+ 
+ static int pcs_add_gpio_func(struct device_node *node, struct pcs_device *pcs)
+ {
+-	const char *propname = "pinctrl-single,gpio-range";
+-	const char *cellname = "#pinctrl-single,gpio-range-cells";
++	const char propname[] = "pinctrl-single,gpio-range";
++	const char cellname[] = "#pinctrl-single,gpio-range-cells";
+ 	struct of_phandle_args gpiospec;
+ 	struct pcs_gpiofunc_range *range;
+ 	int ret, i;
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index 6545809..43eeb1b 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -576,7 +576,7 @@ static void tegra_pinconf_config_dbg_show(struct pinctrl_dev *pctldev,
+ {
+ 	enum tegra_pinconf_param param = TEGRA_PINCONF_UNPACK_PARAM(config);
+ 	u16 arg = TEGRA_PINCONF_UNPACK_ARG(config);
+-	const char *pname = "unknown";
++	const char pname[] = "unknown";
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(cfg_params); i++) {
+-- 
+1.7.10.4
 
-1) If compared with resource-based approach, when you detect
-dependencies at runtime, based on existing resource specifiers (GPIOs,
-clocks, etc.), you don't need to change anything in the implementation
-whenever a new kind of resources is introduced. Moreover, there is no
-need to make device probing code aware of any resources or dependencies,
-because all you need to do is to register devices in certain order, as
-defined by precompiled dependency lists.
-
-2) If implemented properly, it helps solving problem of binding proper
-driver to a device with multiple compatible strings. Current way of
-handling this by Linux is _broken_, because the device will be bound to
-first driver that shows up and contains matching compatible string in
-its match table. Notice that this way the whole idea of having multiple
-compatible strings specified from most specific to most generic is made
-useless. Now you may wonder how both problems relate. Basically in both
-cases you need to wait until drivers for devices are available (e.g.
-registered in system-wide list), either to guarantee that registering a
-device means probing it (in first case) or to look through the list of
-available drivers and select the one that is a best match (in second case).
-
-3) DeviceTree is not the only firmware "interface" supported by Linux
-and so I'd be careful with pushing this into generic driver core that is
-also shared with board files and ACPI and possibly something else I'm
-not aware of. Moreover, I think the existing driver core is already
-quite complex and complicating it even more might not be the best idea,
-unless really the only option.
-
-4) This approach is far less complicated than anything mentioned above.
-What's so complicated in creating a graph of devices and registering
-them in certain order?
-
-> 
-> BTW, this has to be able to work at the level of struct device instead
-> of struct platform_device. There are far more kinds of devices than just
-> platform_device, and they all have the same problem.
-
-Agreed.
-
-> Also, may I suggest that the more pieces that you can break this series
-> up into, the greater chance you'll have of getting a smaller subset
-> merged earlier if it can be proven to be useful on its own.
-
-Agreed. It is usually a good idea to separate things that could live on
-their own and be useful.
-
-Now, I'll spare myself from judging the code, as until we get an
-accepted design, I don't think there is any point in discussing about
-implementation details, not even mentioning things like coding style
-(which is important, but not when much of the code might still be
-rewritten completely).
-
-OK, so I mentioned above what I like in this kind of approach. Now let's
-move to what I don't like.
-
-I think the part that alters driver registration and initcalls isn't
-really necessary. With current code, we can see that initcalls
-themselves (not driver code in terms of driver model) are already well
-ordered, as things happening there seems to work, without any need to
-defer anything. Now Alexander's approach relies on
-module_platform_driver() and similar macros to obtain the list of
-platform_drivers in the system, but I think this isn't necessary either.
-
-Now this is just a bit of guessing, as I still haven't been able to
-allocate time to take a deeper look into initcall and driver code, but
-what if we let the initcalls do their work, let's say up to
-late_initcall level and only then register drivers in our precomputed
-order? We seem to be already relying an assumption that on late_initcall
-level the devices should be already probed, as we have various calls
-disabling unused resources, such as regulators and clocks, at this
-level. I can see certain drivers being registered in late_initcalls, but
-this would be after our device registration, so most of dependencies
-should be already there and if not, we still have deferred probing.
-
-With such design in place, we would be able to also solve the other
-problem I mentioned above, the problem of matching devices with most
-appropriate drivers. Since at device registration and probing time,
-(almost) all the drivers would be already available, the matching code
-could select the right one to bind.
-
-Alright, that's my take on this. Looking forward to your comments.
-
-Best regards,
-Tomasz
