@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030297AbaEQRwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 13:52:19 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:41116 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964856AbaEQRwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 13:52:18 -0400
-Message-ID: <5377A1CC.7020104@posteo.de>
-Date: Sat, 17 May 2014 19:52:12 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Antti Palosaari <crope@iki.fi>, gregkh@linuxfoundation.org,
-        Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] staging: media: as102: replace custom dprintk() with
- dev_dbg()
-References: <53776B57.5050504@iki.fi> <1400342738-32652-1-git-send-email-martink@posteo.de> <53779A7F.8020007@iki.fi>
-In-Reply-To: <53779A7F.8020007@iki.fi>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1030351AbaEQRxi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 13:53:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35559 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964856AbaEQRxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 May 2014 13:53:35 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-arm-kernel@vger.kernel.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 0/2] irqchip: Broadcom Set Top Box Level-2 interrupt controller
+Date: Sat, 17 May 2014 10:52:51 -0700
+Message-Id: <1400349173-11045-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-05-17 19:21, schrieb Antti Palosaari:
-> On 05/17/2014 07:05 PM, Martin Kepplinger wrote:
->> don't reinvent dev_dbg(). remove dprintk() in as102_drv.c.
->> use the common kernel coding style.
->>
->> Signed-off-by: Martin Kepplinger <martink@posteo.de>
-> 
-> Reviewed-by: Antti Palosaari <crope@iki.fi>
-> 
->> ---
->> this applies to next-20140516. any more suggestions?
->> more cleanup can be done when dprintk() is completely gone.
-> 
-> Do you have the device? I am a bit reluctant patching that driver
-> without any testing as it has happened too many times something has gone
-> totally broken.
-I don't have the device and will, at most, change such style issues.
+Hi Thomas,
 
-> 
-> IIRC Devin said it is in staging because of style issues and nothing
-> more. Is that correct?
-I haven't heard anything. A TODO file would help.
+This patch set adds an irqchip driver for the Broadcom Set Top Box Level-2
+interrupt controller hardware, as well as a corresponding Device Tree binding
+document.
 
-> 
-> regards
-> Antti
-> 
+Thanks!
+
+Florian Fainelli (2):
+  irqchip: add Broadcom Set Top Box Level-2 interrupt controller
+  Documentation: add Broadcom STB Level-2 interrupt controller binding
+
+ .../bindings/interrupt-controller/brcm,l2-intc.txt |  29 +++
+ drivers/irqchip/Kconfig                            |   6 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-brcmstb-l2.c                   | 231 +++++++++++++++++++++
+ 4 files changed, 267 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
+ create mode 100644 drivers/irqchip/irq-brcmstb-l2.c
+
+-- 
+1.9.1
 
