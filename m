@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553AbaEQVUy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 17:20:54 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:33397 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaEQVUx (ORCPT
+	id S1751604AbaEQVVO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 17:21:14 -0400
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:64521 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaEQVVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 17:20:53 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        kernel-janitors@vger.kernel.org, dan.carpenter@oracle.com
-Subject: [PATCH 1/4 V2] VMCI: Remove redundant error check and code cleanup
-Date: Sat, 17 May 2014 23:20:19 +0200
-Message-Id: <1400361619-5323-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sat, 17 May 2014 17:21:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140517193927.GD15585@mwanda>
+References: <1400344254-13007-1-git-send-email-massa.nomura@gmail.com>
+	<1400344254-13007-4-git-send-email-massa.nomura@gmail.com>
+	<20140517193927.GD15585@mwanda>
+Date: Sat, 17 May 2014 22:14:52 +0100
+Message-ID: <CAAvxhqB0ACdZy3q6zbAd-JAtxSSojPYyQq3ZKTfdyisN+e5HjA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] staging: dgnc: dgnc_neo: Fix conditional part of if statement
+From: Masaru Nomura <massa.nomura@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, markh@compro.net,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double checks, and move the call to pr_devel. Remove the
-initialization of the result variable, and return VMCI_SUCCESS on
-success. Fix the condition of the for loop. Replace break with a
-return. The simplified version of the coccinelle semantic patch
-that find the redundant check issue is as follows:
+Hi Dan,
 
-// <smpl>
-@@
-expression E; identifier pr; expression list es;
-@@
-for(...;...;...){
-...
--	if (E) break;
-+	if (E){
-+		pr(es);
-+		break;
-+	}
-...
-}
-- if(E) pr(es);
-// </smpl>
+Thank you for your detailed explanation!
 
-Tested by compilation only.
+> This isn't the right way.  Write it like this:
+>
+>         if ((ch->ch_digi.digi_flags & CTSPACE) ||
+>             (ch->ch_digi.digi_flags & RTSPACE) ||
+>             (ch->ch_c_cflag & CRTSCTS) ||
+>             !(ch->ch_digi.digi_flags & DIGI_FORCEDCD) ||
+>             !(ch->ch_c_cflag & CLOCAL)) {
+>                 ier |= UART_IER_MSI;
+>         else
+>                 ier &= ~UART_IER_MSI;
+>
+> 1) The "||" operation goes at the end of the line.
+> 2) The conditions are all in a line.  The indenting is
+>
+> [tab][space][space][space][space](ch->ch_digi.digi_f...
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Sure, I'll modify this.
 
----
-Changes from V1:
- - Removed initialization of result
- - Return VMCI_SUCCESS instead of result on success
- - Fixed the for loop condition
- - Replaced break with a return
+> Also just fold this patch and [patch 2/4] together into one patch.  We
+> don't need two patches to fix one if statement.
+>
+> The one thing per patch rule is a bit tricky.  It means that you have to
+> say which one thing you are fixing.  Don't say "I am fixing three
+> things."  Say "I am fixing one if statement".
 
- drivers/misc/vmw_vmci/vmci_context.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+So in this case, do you think I could fold all four patches into one?
+As I just worked on the 'same' if statements and divided them into
+four patches, this could be the case. (but I'm not sure yet...)
 
-diff --git a/drivers/misc/vmw_vmci/vmci_context.c b/drivers/misc/vmw_vmci/vmci_context.c
-index f866a4b..78c1165 100644
---- a/drivers/misc/vmw_vmci/vmci_context.c
-+++ b/drivers/misc/vmw_vmci/vmci_context.c
-@@ -816,7 +816,7 @@ int vmci_ctx_set_chkpt_state(u32 context_id,
- {
- 	u32 i;
- 	u32 current_id;
--	int result = VMCI_SUCCESS;
-+	int result;
- 	u32 num_ids = buf_size / sizeof(u32);
- 
- 	if (cpt_type == VMCI_WELLKNOWN_CPT_STATE && num_ids > 0) {
-@@ -833,17 +833,17 @@ int vmci_ctx_set_chkpt_state(u32 context_id,
- 		return VMCI_ERROR_INVALID_ARGS;
- 	}
- 
--	for (i = 0; i < num_ids && result == VMCI_SUCCESS; i++) {
-+	for (i = 0; i < num_ids; i++) {
- 		current_id = ((u32 *)cpt_buf)[i];
- 		result = vmci_ctx_add_notification(context_id, current_id);
--		if (result != VMCI_SUCCESS)
--			break;
-+		if (result != VMCI_SUCCESS) {
-+			pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
-+				 cpt_type, result);
-+			return result;
-+		}
- 	}
--	if (result != VMCI_SUCCESS)
--		pr_devel("Failed to set cpt state (type=%d) (error=%d)\n",
--			 cpt_type, result);
- 
--	return result;
-+	return VMCI_SUCCESS;
- }
- 
- /*
+Also, should I put v[number] for the modified patches?
+Say [PATCH v2] staging: ...
+
+Thank you,
+Masaru
