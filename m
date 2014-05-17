@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaEQWwV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 18:52:21 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43240 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaEQWwT (ORCPT
+	id S1751872AbaEQWyW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 18:54:22 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:43532 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaEQWyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 18:52:19 -0400
-Message-ID: <1400367123.16727.0.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] target: fix memory leak on XCOPY
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 17 May 2014 15:52:03 -0700
-In-Reply-To: <alpine.LRH.2.02.1405170647430.15837@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1405170647430.15837@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Sat, 17 May 2014 18:54:21 -0400
+To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
+Subject: Re: Dell Latitude E6440 & i8k
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Sun, 18 May 2014 00:54:17 +0200
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2023768.syW3doBge0";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201405180054.17746@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-17 at 06:49 -0400, Mikulas Patocka wrote:
-> On each processed XCOPY command, two "kmalloc-512" memory objects are
-> leaked. These represent two allocations of struct xcopy_pt_cmd in
-> target_core_xcopy.c.
-> 
-> The reason for the memory leak is that the cmd_kref field is not
-> initialized (thus, it is zero because the allocations were done with
-> kzalloc). When we decrement zero kref in target_put_sess_cmd, the result
-> is not zero, thus target_release_cmd_kref is not called.
-> 
-> This patch fixes the bug by moving kref initialization from
-> target_get_sess_cmd to transport_init_se_cmd (this function is called from
-> target_core_xcopy.c, so it will correctly initialize cmd_kref). It can be
-> easily verified that all code that calls target_get_sess_cmd also calls
-> transport_init_se_cmd earlier, thus moving kref_init shouldn't introduce
-> any new problems.
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> Cc: stable@vger.kernel.org	# 3.12+
-> 
-> ---
->  drivers/target/target_core_transport.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-3.15-rc5/drivers/target/target_core_transport.c
-> ===================================================================
-> --- linux-3.15-rc5.orig/drivers/target/target_core_transport.c	2014-04-14 16:08:15.000000000 +0200
-> +++ linux-3.15-rc5/drivers/target/target_core_transport.c	2014-05-16 18:24:57.000000000 +0200
-> @@ -1113,6 +1113,7 @@ void transport_init_se_cmd(
->  	init_completion(&cmd->cmd_wait_comp);
->  	init_completion(&cmd->task_stop_comp);
->  	spin_lock_init(&cmd->t_state_lock);
-> +	kref_init(&cmd->cmd_kref);
->  	cmd->transport_state = CMD_T_DEV_ACTIVE;
->  
->  	cmd->se_tfo = tfo;
-> @@ -2357,7 +2358,6 @@ int target_get_sess_cmd(struct se_sessio
->  	unsigned long flags;
->  	int ret = 0;
->  
-> -	kref_init(&se_cmd->cmd_kref);
->  	/*
->  	 * Add a second kref if the fabric caller is expecting to handle
->  	 * fabric acknowledgement that requires two target_put_sess_cmd()
-> --
+--nextPart2023768.syW3doBge0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Applied.  Thanks alot Mikulas!
+On Friday 16 May 2014 21:11:17 you wrote:
+> Hi Pali,
+>=20
+> On Fri, 16 May 2014 20:37:41 +0200, Pali Roh=C3=A1r wrote:
+> > Hello,
+> >=20
+> > on Dell Latitude E6440 driver i8k reporting total nonsense
+> > values
+>=20
+> That's kind of excessive wording, the output isn't that bad.
+>=20
+> > $ sensors
+> > i8k-virtual-0
+> > Adapter: Virtual device
+> > Right Fan:   93450 RPM
+> > CPU:          +57.0=C2=B0C
+> > temp2:        +57.0=C2=B0C
+> > temp3:        +40.0=C2=B0C
+> > temp4:       +127.0=C2=B0C
+> >=20
+> > Right Fan and temp4 are for sure incorrect.
+>=20
+> Driver is reverse-engineered so this is best effort and some
+> tweaking may be needed.
+>=20
+> > Value temp4 is always 127 and is never changing, but value
+> > for Right Fan is increasing when fan is more noisy. So it
+> > looks like value for Right Fan is not correctly normalized
+> > or multiplier is incorrect.
+> >=20
+> > And name "Right" is incorrect too. Fan is on left side of
+> > this notebook, not right as reported by driver.
+> >=20
+> > It is possible to fix these problems?
+>=20
+> Load the i8k driver with fan_mult=3D1.
+>=20
+> Add the following to /etc/sensors.d/i8k.conf:
+>=20
+> chip "i8k-virtual-0"
+>=20
+>    label fan2 "Left Fan"
+>    ignore temp4
 
---nab
+I have some new info about temp4.
 
+When I read value from temp4 for first time it reports (possible)=20
+correct value:
+
+$ cat /sys/class/hwmon/hwmon2/temp4_input
+49000
+
+But every next call it returns 127000 which is incorrect.
+
+So this looks like bug in BIOS or incorrect usage of SMM call...
+
+Do you know if there is any way to extract BIOS SMM code? Or it=20
+is something which is not possible to do from OS/kernel side?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2023768.syW3doBge0
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlN36JkACgkQi/DJPQPkQ1KiuQCgsZoya3r3I5kxzBwHW1NUVc87
+sDUAnAg36IfhnoeJQ9CyK3eZmL6KjS1j
+=5JLv
+-----END PGP SIGNATURE-----
+
+--nextPart2023768.syW3doBge0--
