@@ -1,208 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaEROh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 10:37:28 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:40374 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaEROh0 (ORCPT
+	id S1751463AbaERO6W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 10:58:22 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:63683 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaERO6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 10:37:26 -0400
-Date: Sun, 18 May 2014 16:37:24 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: walter harms <wharms@bfs.de>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: imx: fix error handling
-Message-ID: <20140518143724.GA4310@lianli>
-References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
- <5375EB13.8000200@bfs.de>
- <20140516111646.GC4366@lianli>
- <5375FB36.8020004@bfs.de>
- <20140516193139.GQ16662@pengutronix.de>
- <20140517153540.GA4309@lianli>
- <20140517190546.GC16662@pengutronix.de>
+	Sun, 18 May 2014 10:58:20 -0400
+Message-ID: <5378CA88.3080105@gmail.com>
+Date: Sun, 18 May 2014 17:58:16 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140517190546.GC16662@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        Sagi Manole <sagi.manole@gmail.com>
+CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 00/22] Support ext4 on NV-DIMMs
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Uwe,
-
-On Sat, May 17, 2014 at 09:05:46PM +0200, Uwe Kleine-König wrote:
-> Hello Emil,
+On 03/23/2014 09:08 PM, Matthew Wilcox wrote:
+> One of the primary uses for NV-DIMMs is to expose them as a block device
+> and use a filesystem to store files on the NV-DIMM.  While that works,
+> it currently wastes memory and CPU time buffering the files in the page
+> cache.  We have support in ext2 for bypassing the page cache, but it
+> has some races which are unfixable in the current design.  This series
+> of patches rewrite the underlying support, and add support for direct
+> access to ext4.
 > 
-> On Sat, May 17, 2014 at 05:35:40PM +0200, Emil Goode wrote:
-> > On Fri, May 16, 2014 at 09:31:39PM +0200, Uwe Kleine-König wrote:
-> > > On Fri, May 16, 2014 at 01:49:10PM +0200, walter harms wrote:
-> > > > Am 16.05.2014 13:16, schrieb Emil Goode:
-> > > > > Hello Walter,
-> > > > > 
-> > > > > On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
-> > > > >>
-> > > > >>
-> > > > >> Am 16.05.2014 11:54, schrieb Emil Goode:
-> > > > >>> If we fail to allocate struct platform_device pdev we
-> > > > >>> dereference it after the goto label err.
-> > > > >>>
-> > > > >>> I have rearranged the error handling a bit to fix the issue
-> > > > >>> and also make it more clear.
-> > > > >>>
-> > > > >>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > > > >>> ---
-> > > > >>> v2: Changed to return -ENOMEM instead of ret where possible and
-> > > > >>>     updated the subject line.
-> > > > >>>
-> > > > >>>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
-> > > > >>>  1 file changed, 13 insertions(+), 9 deletions(-)
-> > > > >>>
-> > > > >>> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > > > >>> index fc4dd7c..68f2a4a 100644
-> > > > >>> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > > > >>> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > > > >>> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
-> > > > >>>  
-> > > > >>>  	pdev = platform_device_alloc("mx3-camera", 0);
-> > > > >>>  	if (!pdev)
-> > > > >>> -		goto err;
-> > > > >>> +		return ERR_PTR(-ENOMEM);
-> > > > >>>  
-> > > > >>>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
-> > > > >>>  	if (!pdev->dev.dma_mask)
-> > > > >>> -		goto err;
-> > > > >>> +		goto put_pdev;
-> > > > >>>  
-> > > > >>>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
-> > > > >>>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> > > > >>>  
-> > > > >>>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
-> > > > >>>  	if (ret)
-> > > > >>> -		goto err;
-> > > > >>> +		goto free_dma_mask;
-> > > > >>>  
-> > > > >>>  	if (pdata) {
-> > > > >>>  		struct mx3_camera_pdata *copied_pdata;
-> > > > >>>  
-> > > > >>>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> > > > >>> -		if (ret) {
-> > > > >>> -err:
-> > > > >>> -			kfree(pdev->dev.dma_mask);
-> > > > >>> -			platform_device_put(pdev);
-> > > > >>> -			return ERR_PTR(-ENODEV);
-> > > > >>> -		}
-> > > > >>> +		if (ret)
-> > > > >>> +			goto free_dma_mask;
-> > > > >>> +
-> > > > >>>  		copied_pdata = dev_get_platdata(&pdev->dev);
-> > > > >>>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
-> > > > >>
-> > > > >>
-> > > > >> the patch is fine, but what use is this copied_pdata ?
-> > > > >> It scope ends next line ?
-> > > > >>
-> > > > >> re,
-> > > > >>  wh
-> > > > > 
-> > > > > I also thought that looked a bit odd, but copied_pdata is a temporary
-> > > > > pointer to platform_data of the dev struct.
-> > > > > 
-> > > > > dev_get_platdata looks like this:
-> > > > > 
-> > > > > static inline void *dev_get_platdata(const struct device *dev)
-> > > > > {
-> > > > >         return dev->platform_data;
-> > > > > }
-> > > > > 
-> > > > > So I believe it's a more compact way of writing:
-> > > > > 
-> > > > > pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
-> > > It's not about compactness. The dev_get_platdata accessor exists to be
-> > > used instead of directly accessing dev->platform_data. I admit a comment
-> > > would be nice ...
-> > > 
-> > > Anyhow this is all ugly, actually you'd want to have the dma_dev member
-> > > already fixed when calling platform_device_add_data. But you cannot
-> > > simply do
-> > > 
-> > > 	pdata->dma_dev = &imx_ipu_coredev->dev;
-> > > 	ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> > > 
-> > > because *pdata is const.
-> > 
-> > Thank you for the explanation. Regarding the possibility of using
-> > platform_device_register_full() to simplify this function. It seem to
-> > be possible, the following inline function is available to help with this.
-> > 
-> > imx_add_platform_device_dmamask()
-> I'd prefer to use platform_device_register_full directly (and let the
-> wrapper die).
+> This iteration of the patchset rebases to Linus' 3.14-rc7 (plus Kirill's
+> patches in linux-next http://marc.info/?l=linux-mm&m=139206489208546&w=2)
+
+
+Hi Matthew
+
+We are experimenting with NV-DIMMs. The experiment will use its own
+FS not based on ext4 at all, more like the infamous PMFS but we want
+to start DAX based and not current XIP based. We want to make sure the proposed
+new API can be utilized stand alone and there are no extX based assumptions.
+(Like the need for direct directory access instead of the ext4
+ copy-from-nvdimm-to-ram directory)
+
+Could you please put these patches on a public tree somewhere, or perhaps some
+later version, that I can pull directly from? this would help alot.
+
+These patches are a bit hard to patch because it is not clear what
+Kirill's patches I need. I tried some linux-next version around 3.14-rc7 that
+also include Kirill's patches but it looks like there was farther work done
+then your base. I was able to produce a tree with V6 of your
+patches but I would hate to do that manual work yet again.
+(Any linux base is fine just that I can pull it)
+Thanks
+
+Also I'm curios. I see you guys where working on PMFS for a while
+fixing and enhancing stuff. Then development stopped and these DAX
+patches started showing. Now, PMFS is based on current XIP (I was able
+to easily port it to 3.14-rc7). Do you guys have an Internal attempt
+to port PMFS to DAX? (We might do it in future just as an exercise
+to get intimate with DAX and to make sure nothing is missing.)
+What are your plans with PMFS is it dead?
+
+Good day
+Boaz
+
+
+
+> and fixes several bugs:
 > 
-> > But as you mentioned above we need to allocate a new platform_device
-> > struct before we can assign &imx_ipu_coredev->dev to dma_dev, since
-> > pdata is const. I guess this assignment could be done after calling
-> > imx_add_platform_device_dmamask() but I don't think that makes the
-> No, that won't work, because after platform_device_register_full returns
-> you must assume that the device is already bound by a driver. And then
-> you must not change platform_data anymore.
+>  - Initialise cow_page in do_page_mkwrite() (Matthew Wilcox)
+>  - Clear new or unwritten blocks in page fault handler (Matthew Wilcox)
+>  - Only call get_block when necessary (Matthew Wilcox)
+>  - Reword Kconfig options (Matthew Wilcox / Vishal Verma)
+>  - Fix a race between page fault and truncate (Matthew Wilcox)
+>  - Fix a race between fault-for-read and fault-for-write (Matthew Wilcox)
+>  - Zero the correct bytes in dax_new_buf() (Toshi Kani)
+>  - Add DIO_LOCKING to an invocation of dax_do_io in ext4 (Ross Zwisler)
 > 
-> The only thing that would work is:
+> Relative to the last patchset, I folded the 'Add reporting of major faults'
+> patch into the patch that adds the DAX page fault handler.
 > 
-> 	struct mx3_camera_pdata tmppdata;
+> The v6 patchset had seven additional xfstests failures.  This patchset
+> now passes approximately as many xfstests as ext4 does on a ramdisk.
 > 
-> 	if (pdata) {
-> 		tmppdata = *pdata;
-> 		tmppdata.dma_dev = &imx_ipu_coredev->dev;
-> 
-> 		pdata = &tmppdata;
-> 	}
-> 
-> 	platform_device_register_full(... pdata ...)
 
-Looking at converting to platform_device_register_full() again
-it is a little bit more complicated than I first thought. The call
-to platform_device_add() is acctually done in a separate function.
-  
-The involed functions are these:
 
-mx31_3ds_init_camera()
-	imx31_alloc_mx3_camera()
-	dma_declare_coherent_memory()
-	platform_device_add()
-
-imx35_3ds_init_camera()
-	imx31_alloc_mx3_camera()
-	dma_declare_coherent_memory()
-	platform_device_add()
-
-When looking at similar code like the following function:
-
-arch/arm/mach-imx/mach-imx27_visstrim_m10.c +244
-
-visstrim_analog_camera_init()
-	imx27_add_mx2_camera()
-		imx_add_platform_device_dmamask()
-			platform_device_register_full()
-	dma_declare_coherent_memory()
-
-It seems to be ok to call dma_declare_coherent_memory() after
-calling platform_device_register_full().
-
-So I'm considering rearranging the calls in the following way:
-
-mx31_3ds_init_camera()
-	imx31_alloc_mx3_camera()
-		platform_device_register_full()
-	dma_declare_coherent_memory()
-
-Please let me know if you think this would not be ok.
-
-Best regards,
-
-Emil Goode
