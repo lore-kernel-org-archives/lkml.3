@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751071AbaERKor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 06:44:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46791 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaERKop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 06:44:45 -0400
-Date: Sun, 18 May 2014 13:43:14 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        kernel-janitors@vger.kernel.org, kernelnewbies@kernelnewbies.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] Remove useless return variables
-Message-ID: <20140518104314.GK15585@mwanda>
-References: <1400379310-10214-1-git-send-email-peter.senna@gmail.com>
- <87y4xzpti4.fsf@tassilo.jf.intel.com>
+	id S1751287AbaERKqE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 06:46:04 -0400
+Received: from mout.gmx.net ([212.227.17.22]:58252 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbaERKqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 06:46:01 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: davem@davemloft.net
+Cc: tedheadster@gmail.com, joe@perches.com, paul.gortmaker@windriver.com,
+        jg1.han@samsung.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] net: 8390: use time_after() for time comparison
+Date: Sun, 18 May 2014 12:45:48 +0200
+Message-Id: <1400409948-29399-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y4xzpti4.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:y5xbfzkJ4i814MTxpAkksgHvA6DY0v+XskAygWqMA/7fPNfta44
+ I0nuzHsAKNGq6c0UN8eu16VU1FxwhOwPfMmBJhUGuKy7747uHMtV1mODa95exAKN8t4ufFi
+ 6L3Ee8qmnlRalBwGXDrdqwvvnvqzZALfJjynyawQfdbVME5T+gKX56e9hC4PpmHfeKBW5qd
+ 1VdLVLpt5s8/JT/QtUHJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 10:04:35PM -0700, Andi Kleen wrote:
-> Peter Senna Tschudin <peter.senna@gmail.com> writes:
-> 
-> > This patch remove variables that are initialized with a constant,
-> > are never updated, and are only used as parameter of return.
-> > Return the constant instead of using a variable.
-> 
-> This ret variable pattern is pretty standard in Linux, as it makes it
-> easier to add new code that may trigger new errors
-> (using the usual "goto forest" error handling pattern)
-> 
-> I don't see any benefit in whole-sale removing it. The compiler
-> doesn't care about it and will generate the same code in any
-> case.
+To be future-proof and for better readability the time comparisons are modified
+to use time_after() instead of raw math.
 
-Peter is not selling this in the right way, it's not about saving
-memory.  The patch is good because:
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/net/ethernet/8390/ax88796.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-	return IRQ_HANDLED;
-
-is clearer to read than:
-
-	return ret;
-
-And then when you remove the one user, you may as well remove the unused
-variable.  You could leave it there for future work but really it's not
-hard to add it back if it's needed.
-
-regards,
-dan carpenter
+diff --git a/drivers/net/ethernet/8390/ax88796.c b/drivers/net/ethernet/8390/ax88796.c
+index 455d4c3..1d162cc 100644
+--- a/drivers/net/ethernet/8390/ax88796.c
++++ b/drivers/net/ethernet/8390/ax88796.c
+@@ -157,7 +157,7 @@ static void ax_reset_8390(struct net_device *dev)
+ 
+ 	/* This check _should_not_ be necessary, omit eventually. */
+ 	while ((ei_inb(addr + EN0_ISR) & ENISR_RESET) == 0) {
+-		if (jiffies - reset_start_time > 2 * HZ / 100) {
++		if (time_after(jiffies, reset_start_time + 2 * HZ / 100)) {
+ 			netdev_warn(dev, "%s: did not complete.\n", __func__);
+ 			break;
+ 		}
+@@ -293,7 +293,7 @@ static void ax_block_output(struct net_device *dev, int count,
+ 	dma_start = jiffies;
+ 
+ 	while ((ei_inb(nic_base + EN0_ISR) & ENISR_RDC) == 0) {
+-		if (jiffies - dma_start > 2 * HZ / 100) {		/* 20ms */
++		if (time_after(jiffies, dma_start + 2 * HZ / 100)) { /* 20ms */
+ 			netdev_warn(dev, "timeout waiting for Tx RDC.\n");
+ 			ax_reset_8390(dev);
+ 			ax_NS8390_init(dev, 1);
+-- 
+1.7.10.4
 
