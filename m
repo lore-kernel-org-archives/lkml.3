@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaERQDo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 12:03:44 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:63096 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaERQDm (ORCPT
+	id S1752152AbaERQFU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 12:05:20 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:64457 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaERQFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 12:03:42 -0400
+	Sun, 18 May 2014 12:05:18 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] s390: net: qeth_core_main.c:  Fix for possible null pointer dereference
-Date: Sun, 18 May 2014 18:04:27 +0200
-Message-Id: <1400429068-10607-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: bfa: bfa_fcs_lport.c:  Fix for possible null pointer dereference
+Date: Sun, 18 May 2014 18:06:03 +0200
+Message-Id: <1400429163-10747-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +27,28 @@ Was largely found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/s390/net/qeth_core_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/bfa/bfa_fcs_lport.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index 22470a3..5562665 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -1012,7 +1012,7 @@ static long __qeth_check_irb_error(struct ccw_device *cdev,
+diff --git a/drivers/scsi/bfa/bfa_fcs_lport.c b/drivers/scsi/bfa/bfa_fcs_lport.c
+index ff75ef8..542d5c6 100644
+--- a/drivers/scsi/bfa/bfa_fcs_lport.c
++++ b/drivers/scsi/bfa/bfa_fcs_lport.c
+@@ -5826,12 +5826,13 @@ bfa_fcs_lport_get_rport_max_speed(bfa_fcs_lport_t *port)
+ 	bfa_port_speed_t max_speed = 0;
+ 	struct bfa_port_attr_s port_attr;
+ 	bfa_port_speed_t port_speed, rport_speed;
+-	bfa_boolean_t trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
++	bfa_boolean_t trl_enabled;
  
- 	card = CARD_FROM_CDEV(cdev);
  
--	if (!IS_ERR(irb))
-+	if (!card || !IS_ERR(irb))
+ 	if (port == NULL)
  		return 0;
  
- 	switch (PTR_ERR(irb)) {
-@@ -1028,7 +1028,7 @@ static long __qeth_check_irb_error(struct ccw_device *cdev,
- 		QETH_CARD_TEXT(card, 2, "ckirberr");
- 		QETH_CARD_TEXT_(card, 2, "  rc%d", -ETIMEDOUT);
- 		if (intparm == QETH_RCD_PARM) {
--			if (card && (card->data.ccwdev == cdev)) {
-+			if (card->data.ccwdev == cdev) {
- 				card->data.state = CH_STATE_DOWN;
- 				wake_up(&card->wait_q);
- 			}
++	trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
+ 	fcs = port->fcs;
+ 
+ 	/* Get Physical port's current speed */
 -- 
 1.7.10.4
 
