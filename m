@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaERXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:15:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19782 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323AbaERXP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:15:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+5xwHdWG/ioPjzd/jjw1v9DAiK6zsYlQg=
-X-DKIM: OpenDKIM Filter v2.0.1 titan E97D95791D5
-Date: Sun, 18 May 2014 19:15:51 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jake Edge <jake@lwn.net>
-Cc: Anton Saraev <antonysaraev@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 1/1] staging/skein: rename files and clean up
- directory structure
-Message-ID: <20140518231551.GZ27822@titan.lakedaemon.net>
-References: <20140518125615.2df48ea9@chukar.edge2.net>
- <20140518225231.GW27822@titan.lakedaemon.net>
- <20140518170450.272a1381@chukar.edge2.net>
+	id S1752379AbaERXYE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:24:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33413 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100AbaERXYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 19:24:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,864,1392192000"; 
+   d="scan'208";a="533877626"
+Date: Sun, 18 May 2014 19:24:03 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        Sagi Manole <sagi.manole@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v7 00/22] Support ext4 on NV-DIMMs
+Message-ID: <20140518232403.GF6121@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <5378CA88.3080105@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140518170450.272a1381@chukar.edge2.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5378CA88.3080105@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 05:04:50PM -0600, Jake Edge wrote:
-> On Sun, 18 May 2014 18:52:31 -0400 Jason Cooper wrote:
-> 
-> > Jake, would you mind dropping this patch and perhaps assisting me with
-> > reviewing Anton's series?  I'll have him resend it as-is and we can go
-> > from there.
-> 
-> No, that's fine.  Guess I'll put my patches to clean up some other
-> stuff (function names, etc.) on hold and see how far Anton got ...
-> 
-> fwiw, I did look at the lists to see if someone had already been
-> working on this stuff, which is why it is such a good idea make sure the
-> patches get posted publicly ...
+On Sun, May 18, 2014 at 05:58:16PM +0300, Boaz Harrosh wrote:
+> We are experimenting with NV-DIMMs. The experiment will use its own
+> FS not based on ext4 at all, more like the infamous PMFS but we want
+> to start DAX based and not current XIP based. We want to make sure the proposed
+> new API can be utilized stand alone and there are no extX based assumptions.
+> (Like the need for direct directory access instead of the ext4
+>  copy-from-nvdimm-to-ram directory)
 
-Yes, I agree.  It was a perfect storm of "Are my first patches good
-enough for the mailinglist?", "Hey, Jason, thanks for taking on
-drivers/irqchip", and "We need to get everything in before -rc6 for the
-mvebu/arm-soc cutoff before the merge window".  Apparently, I'm not very
-good at juggling three separate rushes at once. :)
+Hi Boaz,
 
-Anton has the submission process down now, so from here on out he'll
-just send them to the list.
+Best of luck with your new filesystem.
 
-Thanks for your understanding.
+> Could you please put these patches on a public tree somewhere, or perhaps some
+> later version, that I can pull directly from? this would help alot.
 
-thx,
+I'm preparing a v8 right now; probably be availble by the end of the week.
 
-Jason.
+> Also I'm curios. I see you guys where working on PMFS for a while
+> fixing and enhancing stuff. Then development stopped and these DAX
+> patches started showing. Now, PMFS is based on current XIP (I was able
+> to easily port it to 3.14-rc7). Do you guys have an Internal attempt
+> to port PMFS to DAX? (We might do it in future just as an exercise
+> to get intimate with DAX and to make sure nothing is missing.)
+> What are your plans with PMFS is it dead?
+
+My group has no plans to do any more work with PMFS, and I'm not aware of
+anyone else planning on turning PMFS into a production-quality filesystem.
+But the code is out there and we can't stop anybody else from working
+on it.
+
+PMFS uses neither DAX nor XIP; it doesn't sit on top of a block device.
+We would probably have moved it to sit on top of a block device by now
+had we been developing it further.
