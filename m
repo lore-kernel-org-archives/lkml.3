@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaERWwh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 18:52:37 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51038 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752050AbaERWwg (ORCPT
+	id S1752386AbaERXBE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:01:04 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:63345 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaERXBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 18:52:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18No2baKY9rtNdZq390CuTA6S2Su1nz2dA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 82F42579185
-Date: Sun, 18 May 2014 18:52:31 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jake Edge <jake@lwn.net>, Anton Saraev <antonysaraev@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 1/1] staging/skein: rename files and clean up
- directory structure
-Message-ID: <20140518225231.GW27822@titan.lakedaemon.net>
-References: <20140518125615.2df48ea9@chukar.edge2.net>
+	Sun, 18 May 2014 19:01:02 -0400
+Date: Sun, 18 May 2014 16:00:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: linux-input@vger.kernel.org, andrew.smirnov@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: ims-pcu - fix uninitialized use of 'error' in
+ ims_pcu_buffers_alloc()
+Message-ID: <20140518230058.GA27053@core.coreip.homeip.net>
+References: <1400449278-14513-1-git-send-email-cengelma@gmx.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140518125615.2df48ea9@chukar.edge2.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1400449278-14513-1-git-send-email-cengelma@gmx.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jake, Anton,
+On Sun, May 18, 2014 at 11:41:18PM +0200, Christian Engelmayer wrote:
+> In case allocation via usb_alloc_coherent() fails in ims_pcu_buffers_alloc(),
+> the function jumps to the exit path without initializing local variable
+> 'error' that is used as return value. Detected by Coverity - CID 1016531.
+> 
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 
-On Sun, May 18, 2014 at 12:56:15PM -0600, Jake Edge wrote:
-> 
-> Clean up file names and locations.  Get rid of include/ directory and move
-> those up to the top-level.  Rename files to get rid of upper case.  Remove
-> skeinBlockNo3F.c as it was unused (temporary file or something?).
-> 
-> Signed-off-by: Jake Edge <jake@lwn.net>
+Applied, thank you.
+
 > ---
+> This is an allocation function and all currently coded error scenarios
+> result in -ENOMEM. Thus it would be possible to eliminate 'error' at all and
+> always return -ENOMEM in the error path.
+> 
+> Compile tested. Applies against branch next in tree
+> git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
+> ---
+>  drivers/input/misc/ims-pcu.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/input/misc/ims-pcu.c b/drivers/input/misc/ims-pcu.c
+> index 5a73639..719410f 100644
+> --- a/drivers/input/misc/ims-pcu.c
+> +++ b/drivers/input/misc/ims-pcu.c
+> @@ -1566,6 +1566,7 @@ static int ims_pcu_buffers_alloc(struct ims_pcu *pcu)
+>  	if (!pcu->urb_ctrl_buf) {
+>  		dev_err(pcu->dev,
+>  			"Failed to allocate memory for read buffer\n");
+> +		error = -ENOMEM;
+>  		goto err_free_urb_out_buf;
+>  	}
+>  
+> -- 
+> 1.9.1
+> 
 
-Ahh, crap.  I'm sorry.  I dropped the ball here.  A few weeks ago Anton
-(in the To:) sent me a series of patches offlist doing the exact same
-work this one does.  Anton sent this as part of his participation in the
-Eudyptula Challenge [1].
-
-So that series was about to be his first contribution to the Linux
-Kernel.  Unfortunately, I've been wrapped around the axle with life and
-hadn't had time to review his latest version yet.  It's completely my
-fault.  In my defense, I did keep in touch with him and let him know I
-was busy.  :)
-
-Jake, would you mind dropping this patch and perhaps assisting me with
-reviewing Anton's series?  I'll have him resend it as-is and we can go
-from there.
-
-Anton, sorry for the mixup, please resend your series as is and include
-everybody in the To and Cc of this email.  I can re-send it if you like,
-but I thought you might like to do the honors.  Either works for me.
-
-thx,
-
-Jason.
-
-[1] http://eudyptula-challenge.org/
+-- 
+Dmitry
