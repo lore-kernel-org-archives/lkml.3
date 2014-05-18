@@ -1,145 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaERUkO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 16:40:14 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:34432 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025AbaERUkM (ORCPT
+	id S1752272AbaERUvO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 16:51:14 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:44973 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025AbaERUvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 16:40:12 -0400
-Date: Sun, 18 May 2014 13:40:09 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH 1/3] drivers: input: keyboard: adp5589: add DT support
-Message-ID: <20140518204009.GB13276@core.coreip.homeip.net>
-References: <1399467644-27222-1-git-send-email-guido@vanguardiasur.com.ar>
- <1399467644-27222-2-git-send-email-guido@vanguardiasur.com.ar>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399467644-27222-2-git-send-email-guido@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 18 May 2014 16:51:12 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH 0/2] ARM: imx: bug fix and convertion to platform_device_register_full()
+Date: Sun, 18 May 2014 22:50:58 +0200
+Message-Id: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guido,
+This small series fixes a potential NULL pointer dereference bug and
+also converts the imx camera allocation and initialization functions
+to use platform_device_register_full().
 
-On Wed, May 07, 2014 at 10:00:42AM -0300, Guido Martínez wrote:
-> Add DT support for the Analog ADP5589 matrix keypad decoding functions.
-> 
-> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-> ---
->  drivers/input/keyboard/adp5589-keys.c | 207 +++++++++++++++++++++++++++++++++-
->  1 file changed, 206 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/input/keyboard/adp5589-keys.c b/drivers/input/keyboard/adp5589-keys.c
-> index 6329549..2b232c0 100644
-> --- a/drivers/input/keyboard/adp5589-keys.c
-> +++ b/drivers/input/keyboard/adp5589-keys.c
-> @@ -18,7 +18,10 @@
->  #include <linux/i2c.h>
->  #include <linux/gpio.h>
->  #include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/err.h>
->  
-> +#include <linux/input/matrix_keypad.h>
->  #include <linux/input/adp5589.h>
->  
->  /* ADP5589/ADP5585 Common Registers */
-> @@ -246,6 +249,14 @@ struct adp5589_kpad {
->  #endif
->  };
->  
-> +static struct of_device_id adp5589_of_match[] = {
-> +	{
-> +		.compatible = "adi,adp5589",
-> +		.data = (void *)ADP5589
-> +	},
-> +	{ },
-> +};
-> +
->  /*
->   *  ADP5589 / ADP5585 derivative / variant handling
->   */
-> @@ -858,6 +869,188 @@ static void adp5589_report_switch_state(struct adp5589_kpad *kpad)
->  	input_sync(kpad->input);
->  }
->  
-> +#ifdef CONFIG_OF
-> +static int adp5589_key(int row, int col)
-> +{
-> +	return col + row * 11;
-> +}
-> +
-> +static int adp5589_dt_read_keymap(struct device *dev,
-> +				  struct adp5589_kpad_platform_data *pdata,
-> +				  const struct device_node *node)
-> +{
-> +	int i;
-> +	const u32 *dt_keymap;
-> +	unsigned short *keymap;
-> +	int keymap_len;
-> +
-> +	dt_keymap = of_get_property(node, "linux,keymap", &keymap_len);
-> +	if (!dt_keymap) {
-> +		dev_err(dev, "missing dt keymap\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (keymap_len % sizeof(u32)) {
-> +		dev_err(dev, "malformed keymap (len=%i)\n", keymap_len);
-> +		return -EINVAL;
-> +	}
-> +
-> +	keymap_len /= sizeof(u32);
-> +
-> +	keymap = devm_kzalloc(dev, ADP5589_KEYMAPSIZE * sizeof(u32),
-> +			      GFP_KERNEL);
-> +	if (!keymap)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < keymap_len; i++) {
-> +		u32 val;
-> +		u16 key;
-> +		u8 row, col;
-> +
-> +		val = be32_to_cpup(&dt_keymap[i]);
-> +
-> +		row = KEY_ROW(val);
-> +		col = KEY_COL(val);
-> +		key = KEY_VAL(val);
-> +
-> +		if (row > ADP5589_MAX_ROW_NUM) {
-> +			dev_err(dev, "invalid row number (%i)\n", row);
-> +			return -EINVAL;
-> +		}
-> +
-> +		if (col > ADP5589_MAX_COL_NUM) {
-> +			dev_err(dev, "invalid column number (%i)\n", col);
-> +			return -EINVAL;
-> +		}
-> +
-> +		pdata->keypad_en_mask |= ADP_ROW(row);
-> +		pdata->keypad_en_mask |= ADP_COL(col);
-> +
-> +		keymap[adp5589_key(row, col)] = key;
-> +	}
-> +
-> +	pdata->keymap = keymap;
-> +	pdata->keymapsize = ADP5589_KEYMAPSIZE;
+The change the first patch makes is removed by the second patch, so the
+purpose of the first one is purely for easy backporting and git history.
 
-I was wondering if we could also move non-DT variant to matrix-keypad
-infrastructure and use matrix_keypad_build_keymap and friends to handle
-this uniformly.
+Emil Goode (2):
+  ARM: imx: fix error handling in ipu device registration
+  ARM: imx: convert camera init to use platform_device_register_full()
 
-Thanks.
+ arch/arm/mach-imx/devices/platform-ipu-core.c |   43 +++++++++----------------
+ arch/arm/mach-imx/mach-mx31_3ds.c             |    5 ++-
+ arch/arm/mach-imx/mach-mx31moboard.c          |    6 ++--
+ arch/arm/mach-imx/mach-mx35_3ds.c             |    5 ++-
+ arch/arm/mach-imx/mach-pcm037.c               |    5 ++-
+ 5 files changed, 23 insertions(+), 41 deletions(-)
 
 -- 
-Dmitry
+1.7.10.4
+
