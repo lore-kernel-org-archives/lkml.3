@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaERHRG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 03:17:06 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:37009 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaERHRF (ORCPT
+	id S1752126AbaERHpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 03:45:41 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:28896 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671AbaERHpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 03:17:05 -0400
-Message-ID: <53785E6C.9010300@acm.org>
-Date: Sun, 18 May 2014 09:17:00 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Mateusz Guzik <mguzik@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: Re: [PATCH v2] kref: warn on uninitialized kref
-References: <alpine.LRH.2.02.1405170647430.15837@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1405170650440.15837@file01.intranet.prod.int.rdu2.redhat.com> <20140517110454.GA1939@mguzik.redhat.com> <alpine.LRH.2.02.1405170836070.15837@file01.intranet.prod.int.rdu2.redhat.com> <53776918.7040402@acm.org> <alpine.LRH.2.02.1405171646290.32012@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1405171646290.32012@file01.intranet.prod.int.rdu2.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 18 May 2014 03:45:40 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AooVAF5keFNbskAH/2dsb2JhbABZgwaDP6c1BAEBAgEBBQGaJwICgQoXdIJTEz8YgQIkE4hFAdEvhVWIe4RHAQOPL4oqAZMagzk7gTEi
+Date: Sun, 18 May 2014 09:45:35 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        tytso <tytso@mit.edu>
+Subject: [PATCH 1/1] fs/jbd2/revoke.c: replace shift loop by fls
+Message-Id: <20140518094535.d9f0d55b5bc02ba63a327bfb@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/14 23:14, Mikulas Patocka wrote:
-> BTW. if we talk about performance - what about replacing:
-> 
-> 	if (atomic_dec_and_test(&variable)) {
-> 		... release(object);
-> 	}
-> 
-> with this:
-> 
-> 	if (atomic_read(&variable) == 1 || atomic_dec_and_test(&variable)) {
-> 		barrier();
-> 		... release(object);
-> 	}
-> 
-> It avoids the heavy atomic instruction if there is just one reference. Is 
-> there any problem with this? At least on x86 we could do this always 
-> (there is no read reordering in hardware, so barrier() is sufficient to 
-> prevent reads from being reordered with atomic_read). On the architectures 
-> that reorder reads, we could do it only if the release method doesn't 
-> contain any reads of the object being released.
+jbd2_journal_init_revoke is only called with positive hash_size
+(JOURNAL_REVOKE_DEFAULT_HASH) so we can replace loop shift by fls -1
 
-Although I'm not sure how big the performance impact is in this context,
-this change has a performance impact if variable > 1. The
-atomic_dec_and_test() triggers at most one cache line state transition.
-The atomic_read() + atomic_dec_and_test() triggers two cache line state
-transitions if "variable" is not in the local cache, namely first from
-invalid to shared and then from shared to exclusive. See also section
-"11.4 CACHE CONTROL PROTOCOL" and "Table 11-4 MESI Cache Line States" in
-the Intel Software Developer Manual, Volume 3 for more information.
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/jbd2/revoke.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-Bart.
+diff --git a/fs/jbd2/revoke.c b/fs/jbd2/revoke.c
+index 198c9c1..811d14b 100644
+--- a/fs/jbd2/revoke.c
++++ b/fs/jbd2/revoke.c
+@@ -227,19 +227,15 @@ record_cache_failure:
+ 
+ static struct jbd2_revoke_table_s *jbd2_journal_init_revoke_table(int hash_size)
+ {
+-	int shift = 0;
+-	int tmp = hash_size;
++	int i;
+ 	struct jbd2_revoke_table_s *table;
+ 
+ 	table = kmem_cache_alloc(jbd2_revoke_table_cache, GFP_KERNEL);
+ 	if (!table)
+ 		goto out;
+ 
+-	while((tmp >>= 1UL) != 0UL)
+-		shift++;
+-
+ 	table->hash_size = hash_size;
+-	table->hash_shift = shift;
++	table->hash_shift = fls(hash_size) - 1;
+ 	table->hash_table =
+ 		kmalloc(hash_size * sizeof(struct list_head), GFP_KERNEL);
+ 	if (!table->hash_table) {
+@@ -248,8 +244,8 @@ static struct jbd2_revoke_table_s *jbd2_journal_init_revoke_table(int hash_size)
+ 		goto out;
+ 	}
+ 
+-	for (tmp = 0; tmp < hash_size; tmp++)
+-		INIT_LIST_HEAD(&table->hash_table[tmp]);
++	for (i = 0; i < hash_size; i++)
++		INIT_LIST_HEAD(&table->hash_table[i]);
+ 
+ out:
+ 	return table;
+-- 
+1.8.4.5
 
