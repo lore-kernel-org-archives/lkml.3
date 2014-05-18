@@ -1,88 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaERXh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:37:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56765 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752485AbaERXh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:37:27 -0400
-Message-ID: <1400456236.17377.10.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH] x86: relocs: Make per_cpu_load_addr static
-From: Ben Hutchings <ben@decadent.org.uk>
-To: x86@kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Michael Tautschnig <mt@debian.org>,
-        748577@bugs.debian.org
-Date: Mon, 19 May 2014 00:37:16 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-lylj5EeaUcrO1mTSSLcn"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752378AbaERXqA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:46:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50356 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152AbaERXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 19:45:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,864,1392192000"; 
+   d="scan'208";a="513623306"
+Date: Sun, 18 May 2014 19:45:59 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, dave@sr71.net, riel@redhat.com, mgorman@suse.de,
+        aarcange@redhat.com
+Subject: Re: [RFC, PATCH] mm: unified interface to handle page table entries
+ on different levels?
+Message-ID: <20140518234559.GG6121@linux.intel.com>
+References: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 17, 2014 at 03:33:05AM +0300, Kirill A. Shutemov wrote:
+> Below is my attempt to play with the problem. I've took one function --
+> page_referenced_one() -- which looks ugly because of different APIs for
+> PTE/PMD and convert it to use vpte_t. vpte_t is union for pte_t, pmd_t
+> and pud_t.
+> 
+> Basically, the idea is instead of having different helpers to handle
+> PTE/PMD/PUD, we have one, which take pair of vpte_t + pglevel.
 
---=-lylj5EeaUcrO1mTSSLcn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I can't find my original attempt at this now (I am lost in a maze of
+twisted git trees, all subtly different), but I called it a vpe (Virtual
+Page Entry).
 
-per_cpu_load_addr is only used for 64-bit relocations, but is declared
-in both configurations of relocs.c - with different types.  This has
-undefined behaviour in general.  GNU ld is documented to use the
-larger size in this case, but other tools may differ and some warn
-about this.
+Rather than using a pair of vpte_t and pglevel, the vpe_t contained
+enough information to discern what level it was; that's only two bits
+and I think all the architectures have enough space to squeeze in two
+more bits to the PTE (the PMD and PUD obviously have plenty of space).
 
-References: https://bugs.debian.org/748577
-Reported-by: Michael Tautschnig <mt@debian.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/x86/tools/relocs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> +static inline unsigned long vpte_size(vpte_t vptep, enum ptlevel ptlvl)
+> +{
+> +	switch (ptlvl) {
+> +	case PTE:
+> +		return PAGE_SIZE;
+> +#ifdef PMD_SIZE
+> +	case PMD:
+> +		return PMD_SIZE;
+> +#endif
+> +#ifdef PUD_SIZE
+> +	case PUD:
+> +		return PUD_SIZE;
+> +#endif
+> +	default:
+> +		return 0; /* XXX */
 
-diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
-index bbb1d22..a5efb21 100644
---- a/arch/x86/tools/relocs.c
-+++ b/arch/x86/tools/relocs.c
-@@ -695,7 +695,7 @@ static void walk_relocs(int (*process)(struct section *=
-sec, Elf_Rel *rel,
-  *
-  */
- static int per_cpu_shndx	=3D -1;
--Elf_Addr per_cpu_load_addr;
-+static Elf_Addr per_cpu_load_addr;
-=20
- static void percpu_init(void)
- {
+As you say, XXX.  This needs to be an error ... perhaps VM_BUG_ON(1)
+in this case?
 
---=20
-Ben Hutchings
-It is easier to change the specification to fit the program than vice versa=
-.
-
---=-lylj5EeaUcrO1mTSSLcn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUAU3lEMee/yOyVhhEJAQojFw/8D+PQWWhbVYRxjU+dLQPhUOShTkcs3qaa
-pwGNM7eZPRefjyfKpVboM1Od1Cqp6wDGFEneE5LMeHUWG7319DxNPmHkZkWyaAVm
-4fd9n/+hChauFScd45Vwig8IL4ZrLzomx6xiVlHGikJrOGBd7Muv540GzKU/kAiH
-lO9Q8Cl5ZVguFQS3RIxu3so0PNRXXKaT4bpTszjttmFluKHAp5e6xAkpV6JJIBZD
-2/BbJ3yGpzMfGkotDSIc8r53gl21RUtwb2dFH5nj+iVEvlQxKp7wd1WFsXViNVK5
-LearYnG+zaxVqoXYIGi1fAaGXkmz2LdNvCazo0m/9mbc2fUXHbF+CrVTtsG4HkqL
-mHLEME58EX0ZM6xDtV7Sqv7KSQsIFnFDfA5bG4xGA+NbRUN3gJ3UrAclHA4BnmMC
-fevMrTabzpQngFdIJ/swsvSr1QxKenjnCUqah2Uk4jvqQgv9l8iMyBVkl1iRMmlI
-Dew44bQoeL3LnBq70lsruxjfP62q7jAMkdJ7d9B8WtfqiKe26lKpkx8xzF2lRXrz
-hPTuHoGWePDAk1VYvBozenBH4CTno17MUkTlm7qi/p6KJKQ9iT2ldA2ZZUQ6Hu71
-LF1aUkyN/1MZFBCumDN7RI4yQSyr6keOM4/OVUKrzrdVkys72AUifApKVdG6b5xJ
-r1Xrj0Ijqsg=
-=hhSO
------END PGP SIGNATURE-----
-
---=-lylj5EeaUcrO1mTSSLcn--
+> @@ -676,59 +676,39 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+>  	spinlock_t *ptl;
+>  	int referenced = 0;
+>  	struct page_referenced_arg *pra = arg;
+> +	vpte_t *vpte;
+> +	enum ptlevel ptlvl = PTE;
+>  
+> -	if (unlikely(PageTransHuge(page))) {
+> -		pmd_t *pmd;
+> +	ptlvl = unlikely(PageTransHuge(page)) ? PMD : PTE;
+>  
+> -		/*
+> -		 * rmap might return false positives; we must filter
+> -		 * these out using page_check_address_pmd().
+> -		 */
+> -		pmd = page_check_address_pmd(page, mm, address,
+> -					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
+> -		if (!pmd)
+> -			return SWAP_AGAIN;
+> -
+> -		if (vma->vm_flags & VM_LOCKED) {
+> -			spin_unlock(ptl);
+> -			pra->vm_flags |= VM_LOCKED;
+> -			return SWAP_FAIL; /* To break the loop */
+> -		}
+> +	/*
+> +	 * rmap might return false positives; we must filter these out using
+> +	 * page_check_address_vpte().
+> +	 */
+> +	vpte = page_check_address_vpte(page, mm, address, &ptl, 0);
+> +	if (!vpte)
+> +		return SWAP_AGAIN;
+> +
+> +	if (vma->vm_flags & VM_LOCKED) {
+> +		vpte_unmap_unlock(vpte, ptlvl, ptl);
+> +		pra->vm_flags |= VM_LOCKED;
+> +		return SWAP_FAIL; /* To break the loop */
+> +	}
+>  
+> -		/* go ahead even if the pmd is pmd_trans_splitting() */
+> -		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+> -			referenced++;
+> -		spin_unlock(ptl);
+> -	} else {
+> -		pte_t *pte;
+>  
+> +	/* go ahead even if the pmd is pmd_trans_splitting() */
+> +	if (vptep_clear_flush_young_notify(vma, address, vpte, ptlvl)) {
+>  		/*
+> -		 * rmap might return false positives; we must filter
+> -		 * these out using page_check_address().
+> +		 * Don't treat a reference through a sequentially read
+> +		 * mapping as such.  If the page has been used in
+> +		 * another mapping, we will catch it; if this other
+> +		 * mapping is already gone, the unmap path will have
+> +		 * set PG_referenced or activated the page.
+>  		 */
+> -		pte = page_check_address(page, mm, address, &ptl, 0);
+> -		if (!pte)
+> -			return SWAP_AGAIN;
+> -
+> -		if (vma->vm_flags & VM_LOCKED) {
+> -			pte_unmap_unlock(pte, ptl);
+> -			pra->vm_flags |= VM_LOCKED;
+> -			return SWAP_FAIL; /* To break the loop */
+> -		}
+> -
+> -		if (ptep_clear_flush_young_notify(vma, address, pte)) {
+> -			/*
+> -			 * Don't treat a reference through a sequentially read
+> -			 * mapping as such.  If the page has been used in
+> -			 * another mapping, we will catch it; if this other
+> -			 * mapping is already gone, the unmap path will have
+> -			 * set PG_referenced or activated the page.
+> -			 */
+> -			if (likely(!(vma->vm_flags & VM_SEQ_READ)))
+> -				referenced++;
+> -		}
+> -		pte_unmap_unlock(pte, ptl);
+> +		if (likely(!(vma->vm_flags & VM_SEQ_READ)))
+> +			referenced++;
+>  	}
+> +	vpte_unmap_unlock(vpte, ptlvl, ptl);
+>  
+>  	if (referenced) {
+>  		pra->referenced++;
+> -- 
+> 2.0.0.rc2
