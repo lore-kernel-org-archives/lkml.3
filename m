@@ -1,140 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaERVrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 17:47:21 -0400
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:39525 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752099AbaERVrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 17:47:20 -0400
-X-Greylist: delayed 48445 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 May 2014 17:47:20 EDT
-Message-ID: <aa949b75ae938371ecd3bd5b35577bca.squirrel@www.luminoussheep.net>
-In-Reply-To: <42308d5cdecee35097f0ac8ae3a0fbe8.squirrel@www.luminoussheep.net>
-References: <42308d5cdecee35097f0ac8ae3a0fbe8.squirrel@www.luminoussheep.net>
-Date: Sun, 18 May 2014 22:46:39 +0100
-Subject: Re: General protection fault - bug report 3.12.18
-From: "Martin" <martin@luminoussheep.net>
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.23 [SVN]
+	id S1752325AbaERWgz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 18:36:55 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:56704 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047AbaERWgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 18:36:53 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH] rtc: hym8563: add optional clock-output-names property
+Date: Mon, 19 May 2014 00:40:07 +0200
+Message-ID: <5506235.fsodQ5dNGb@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20140518224639_18158"
-X-Priority: 3 (Normal)
-Importance: Normal
-X-SA-Exim-Connect-IP: ::1
-X-SA-Exim-Mail-From: martin@luminoussheep.net
-X-SA-Exim-Scanned: No (on bee.mad); SAEximRunCond expanded to false
-X-Originating-smarthost01d-IP: [82.68.240.78]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20140518224639_18158
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
+This enables the setting of a custom clock name for the clock provided by
+the hym8563 rtc.
 
-> Hi,
->
-> I'm having regular issues with crashes, this time I was only browsing the
-> web.
-> Please could you let me know how best to report this if this isn't the
-> right way.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt | 3 +++
+ drivers/rtc/rtc-hym8563.c                               | 3 +++
+ 2 files changed, 6 insertions(+)
 
-This is an oops this time not sure if this is related.
-
-Thanks,
-M
-
-------=_20140518224639_18158
-Content-Type: text/plain; name="3.12.18-GPE-2.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="3.12.18-GPE-2.txt"
-
-Ck1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDgzNTMzXSBCVUc6IHVu
-YWJsZSB0byBoYW5kbGUga2VybmVsIHBhZ2luZyByZXF1ZXN0IGF0IDAwMDAwMDAwMDQwMDAwNDQK
-TWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODM1NThdIElQOiBbPGZm
-ZmZmZmZmODExZDZhNWM+XSB0aWRfZmRfcmV2YWxpZGF0ZSsweDZjLzB4MTcwCk1heSAxOCAyMjoz
-OTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDgzNTc3XSBQR0QgMCAKTWF5IDE4IDIyOjM5
-OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODM1ODRdIE9vcHM6IDAwMDAgWyMxXSBTTVAg
-Ck1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDgzNTk0XSBNb2R1bGVz
-IGxpbmtlZCBpbjogaGlkX211bHRpdG91Y2ggcGFycG9ydF9wYyBwcGRldiBscCBibmVwIHBhcnBv
-cnQgcmZjb21tIGJpbmZtdF9taXNjIHVpbnB1dCBuZnNkIGF1dGhfcnBjZ3NzIG9pZF9yZWdpc3Ry
-eSBuZnNfYWNsIG5mcyBsb2NrZCBmc2NhY2hlIHN1bnJwYyBmdXNlIGRtX2NyeXB0IGRtX21vZCBo
-aWRfc2Vuc29yX2d5cm9fM2QgaGlkX3NlbnNvcl9tYWduXzNkIGhpZF9zZW5zb3JfYWNjZWxfM2Qg
-aGlkX3NlbnNvcl9hbHMgaGlkX3NlbnNvcl90cmlnZ2VyIGluZHVzdHJpYWxpb190cmlnZ2VyZWRf
-YnVmZmVyIGtmaWZvX2J1ZiBoaWRfc2Vuc29yX2lpb19jb21tb24gaW5kdXN0cmlhbGlvIHV2Y3Zp
-ZGVvIHZpZGVvYnVmMl92bWFsbG9jIHZpZGVvYnVmMl9tZW1vcHMgdmlkZW9idWYyX2NvcmUgdmlk
-ZW9kZXYgbWVkaWEgaGlkX3NlbnNvcl9odWIgYnR1c2IgYmx1ZXRvb3RoIHNuZF9oZGFfY29kZWNf
-aGRtaSBzbmRfaGRhX2NvZGVjX3JlYWx0ZWsgaVRDT193ZHQgaVRDT192ZW5kb3Jfc3VwcG9ydCBq
-b3lkZXYgYXJjNCB4ODZfcGtnX3RlbXBfdGhlcm1hbCBjb3JldGVtcCBrdm1faW50ZWwga3ZtIGV2
-ZGV2IHBzbW91c2Ugc2VyaW9fcmF3IHBjc3BrciBpd2xtdm0gbWFjODAyMTEgc25kX2hkYV9pbnRl
-bCBiYXR0ZXJ5IHNuZF9oZGFfY29kZWMgc25kX2h3ZGVwIHNuZF9wY20gc25kX3BhZ2VfYWxsb2Mg
-c25kX3NlcSBzbmRfc2VxX2RldmljZSBzbmRfdGltZXIgaXdsd2lmaSBscGNfaWNoIG1mZF9jb3Jl
-IHNuZCBjZmc4MDIxMSByZmtpbGwgbWVpX21lIG1laSBpMmNfaTgwMSBpOTE1IHNvdW5kY29yZSB2
-aWRlbyBidXR0b24gZHJtX2ttc19oZWxwZXIgYWMgZHJtIGkyY19hbGdvX2JpdCBwcm9jZXNzb3Ig
-aTJjX2NvcmUgdXNiaGlkIGhpZCBleHQ0IGNyYzE2IG1iY2FjaGUgamJkMiBzZyBzZF9tb2QgY3Jj
-dDEwZGlmX2dlbmVyaWMgY3JjX3QxMGRpZiBjcmN0MTBkaWZfY29tbW9uIGNyYzMyX3BjbG11bCBj
-cmMzMmNfaW50ZWwgZ2hhc2hfY2xtdWxuaV9pbnRlbCBhZXNuaV9pbnRlbCBhZXNfeDg2XzY0IGFi
-bGtfaGVscGVyIGNyeXB0ZCBscncgZ2YxMjhtdWwgZ2x1ZV9oZWxwZXIgYWhjaSBsaWJhaGNpIGxp
-YmF0YSBzY3NpX21vZCBlaGNpX3BjaSBlaGNpX2hjZCB4aGNpX2hjZCB1c2Jjb3JlIHVzYl9jb21t
-b24gdGhlcm1hbCB0aGVybWFsX3N5cwpNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDog
-WyAyMTk2LjQ4Mzk0MV0gQ1BVOiAwIFBJRDogNTIzNSBDb21tOiBsc29mIE5vdCB0YWludGVkIDMu
-MTIuMTggIzEKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODM5NTdd
-IEhhcmR3YXJlIG5hbWU6IExFTk9WTyAyMDI2Ni9Zb2dhMiwgQklPUyA3NkNOMzFXVyAxMC8zMS8y
-MDEzCk1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDgzOTc0XSB0YXNr
-OiBmZmZmODgwMjE2YTc4MGMwIHRpOiBmZmZmODgwMDk4N2M0MDAwIHRhc2sudGk6IGZmZmY4ODAw
-OTg3YzQwMDAKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODM5OTNd
-IFJJUDogMDAxMDpbPGZmZmZmZmZmODExZDZhNWM+XSAgWzxmZmZmZmZmZjgxMWQ2YTVjPl0gdGlk
-X2ZkX3JldmFsaWRhdGUrMHg2Yy8weDE3MApNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5l
-bDogWyAyMTk2LjQ4NDAxNl0gUlNQOiAwMDE4OmZmZmY4ODAwOTg3YzVkZjAgIEVGTEFHUzogMDAw
-MTAyMDYKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODQwMzBdIFJB
-WDogZmZmZjg4MDI1MTFkMDM0MCBSQlg6IGZmZmY4ODAyNTExZTY3YjAgUkNYOiAwMDAwMDAwMDAw
-MDAwMjU1Ck1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0MDQ4XSBS
-RFg6IDAwMDAwMDAwMDQwMDAwMDAgUlNJOiAwMDAwMDAwMDAwMDAwMDAwIFJESTogZmZmZjg4MDI1
-MTFlNmQxMApNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4NDA2NV0g
-UkJQOiBmZmZmODgwMjFmNGVmZDIwIFIwODogZmZmZmZmZmY4MTFkNmI2MCBSMDk6IDAwMDAwMDAw
-MDAwMDAwMDEKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODQwODJd
-IFIxMDogMDAwMDAwMDAwMDAwMDAwMCBSMTE6IDAwMDAwMDAwMDAwMDAwMDAgUjEyOiBmZmZmODgw
-MjIwY2MzOTgwCk1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0MTAw
-XSBSMTM6IDAwMDAwMDAwMDAwMDAwM2QgUjE0OiBmZmZmZmZmZjgxMWQ2YjYwIFIxNTogZmZmZjg4
-MDA5ODdjNWYyMApNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4NDEx
-OF0gRlM6ICAwMDAwN2ZjYjU3MDRhNzAwKDAwMDApIEdTOmZmZmY4ODAyNWYyMDAwMDAoMDAwMCkg
-a25sR1M6MDAwMDAwMDAwMDAwMDAwMApNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDog
-WyAyMTk2LjQ4NDEzN10gQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAwIENSMDogMDAwMDAwMDA4
-MDA1MDAzMwpNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4NDE1Ml0g
-Q1IyOiAwMDAwMDAwMDA0MDAwMDQ0IENSMzogMDAwMDAwMDA4OTg2NjAwMCBDUjQ6IDAwMDAwMDAw
-MDAxNDA3ZjAKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODQxNjld
-IFN0YWNrOgpNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4NDE3NV0g
-IGZmZmY4ODAyMjBjYzM5ODAgZmZmZjg4MDIxZjRlZmQyMCBmZmZmODgwMjIwY2MzOTgwIDAwMDAw
-MDAwMDAwMDAwM2QKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODQx
-OThdICBmZmZmODgwMjFmM2FiOTAwIGZmZmZmZmZmODExZDZiY2UgZmZmZjg4MDIyMGNjMzk4MCBm
-ZmZmODgwMDk4N2M1ZWEzCk1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYu
-NDg0MjIwXSAgMDAwMDAwMDAwMDAwMDAwMiBmZmZmZmZmZjgxMWQzOGU4IGZmZmY4ODAyNTExZTY3
-YjAgMDAwMDAwMDIwMDAwMzEzNgpNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAy
-MTk2LjQ4NDI0MV0gQ2FsbCBUcmFjZToKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6
-IFsgMjE5Ni40ODQyNDldICBbPGZmZmZmZmZmODExZDZiY2U+XSA/IHByb2NfZmRfaW5zdGFudGlh
-dGUrMHg2ZS8weDkwCk1heSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0
-MjY3XSAgWzxmZmZmZmZmZjgxMWQzOGU4Pl0gPyBwcm9jX2ZpbGxfY2FjaGUrMHhiOC8weGUwCk1h
-eSAxOCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0MjgyXSAgWzxmZmZmZmZm
-ZjgxMWQ2ZTUzPl0gPyBwcm9jX3JlYWRmZF9jb21tb24rMHhjMy8weDFhMApNYXkgMTggMjI6Mzk6
-MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4NDI5N10gIFs8ZmZmZmZmZmY4MTFkNmI2MD5d
-ID8gdGlkX2ZkX3JldmFsaWRhdGUrMHgxNzAvMHgxNzAKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29y
-bSBrZXJuZWw6IFsgMjE5Ni40ODQzMTVdICBbPGZmZmZmZmZmODExODQxZmU+XSA/IGl0ZXJhdGVf
-ZGlyKzB4OWUvMHhkMApNYXkgMTggMjI6Mzk6MDEgc3VwZXJ3b3JtIGtlcm5lbDogWyAyMTk2LjQ4
-NDMzMF0gIFs8ZmZmZmZmZmY4MTE4NDVlZD5dID8gU3lTX2dldGRlbnRzKzB4OGQvMHgxMTAKTWF5
-IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni40ODQzNDVdICBbPGZmZmZmZmZm
-ODExODQzMDA+XSA/IGZpbGxvbmVkaXIrMHhkMC8weGQwCk1heSAxOCAyMjozOTowMSBzdXBlcndv
-cm0ga2VybmVsOiBbIDIxOTYuNDg0MzYxXSAgWzxmZmZmZmZmZjgxNDk0MzM5Pl0gPyBzeXN0ZW1f
-Y2FsbF9mYXN0cGF0aCsweDE2LzB4MWIKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6
-IFsgMjE5Ni40ODQzNzddIENvZGU6IGZmIDQ4IDg1IGMwIDBmIDg0IGRkIDAwIDAwIDAwIDQ4IDhi
-IDUwIDA4IDQ0IDNiIDJhIDBmIDgzIGM4IDAwIDAwIDAwIDQ4IDhiIDUyIDA4IDRhIDhkIDE0IGVh
-IDQ4IDhiIDEyIDQ4IDg1IGQyIDBmIDg0IGI0IDAwIDAwIDAwIDw0ND4gOGIgNjIgNDQgNDggODkg
-YzcgZTggNTggNjcgZmIgZmYgNDggOGQgYmIgNjAgMDUgMDAgMDAgZTggY2MgCk1heSAxOCAyMjoz
-OTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0NDcxXSBSSVAgIFs8ZmZmZmZmZmY4MTFk
-NmE1Yz5dIHRpZF9mZF9yZXZhbGlkYXRlKzB4NmMvMHgxNzAKTWF5IDE4IDIyOjM5OjAxIHN1cGVy
-d29ybSBrZXJuZWw6IFsgMjE5Ni40ODQ0ODddICBSU1AgPGZmZmY4ODAwOTg3YzVkZjA+Ck1heSAx
-OCAyMjozOTowMSBzdXBlcndvcm0ga2VybmVsOiBbIDIxOTYuNDg0NDk2XSBDUjI6IDAwMDAwMDAw
-MDQwMDAwNDQKTWF5IDE4IDIyOjM5OjAxIHN1cGVyd29ybSBrZXJuZWw6IFsgMjE5Ni41MDU0NDdd
-IC0tLVsgZW5kIHRyYWNlIDI5NzFkNTg5YWRiZjU3ODMgXS0tLQo=
-------=_20140518224639_18158--
+diff --git a/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+index 31406fd..5c199ee 100644
+--- a/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
++++ b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+@@ -9,6 +9,9 @@ Required properties:
+ - interrupts: rtc alarm/event interrupt
+ - #clock-cells: the value should be 0
+ 
++Optional properties:
++- clock-output-names: From common clock binding
++
+ Example:
+ 
+ hym8563: hym8563@51 {
+diff --git a/drivers/rtc/rtc-hym8563.c b/drivers/rtc/rtc-hym8563.c
+index e5f13c4..6442b5b 100644
+--- a/drivers/rtc/rtc-hym8563.c
++++ b/drivers/rtc/rtc-hym8563.c
+@@ -418,6 +418,9 @@ static struct clk *hym8563_clkout_register_clk(struct hym8563 *hym8563)
+ 	init.num_parents = 0;
+ 	hym8563->clkout_hw.init = &init;
+ 
++	/* optional override of the clockname */
++	of_property_read_string(node, "clock-output-names", &init.name);
++
+ 	/* register the clock */
+ 	clk = clk_register(&client->dev, &hym8563->clkout_hw);
+ 
+-- 
+1.9.0
 
 
