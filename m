@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969AbaERJyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 05:54:07 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44768 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaERJyF (ORCPT
+	id S1751071AbaERKBx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 06:01:53 -0400
+Received: from mout.gmx.net ([212.227.15.18]:55969 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812AbaERKBv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 05:54:05 -0400
-Message-ID: <53788329.5080008@ahsoftware.de>
-Date: Sun, 18 May 2014 11:53:45 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 2/9] dt: deps: dependency based device creation
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-3-git-send-email-holler@ahsoftware.de>	<20140514140534.897F8C4153D@trevor.secretlab.ca>	<53738261.4000000@ahsoftware.de>	<20140514200645.15984C4095B@trevor.secretlab.ca>	<5373DBCF.1080503@ahsoftware.de> <20140516110008.E2AC9C403C2@trevor.secretlab.ca>
-In-Reply-To: <20140516110008.E2AC9C403C2@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 18 May 2014 06:01:51 -0400
+Message-ID: <1400407278.4698.5.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH] fs: Cleanup string initializations (char[] instead of
+ char *)
+From: Manuel Schoelling <manuel.schoelling@gmx.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Altaparmakov <anton@tuxera.com>
+Date: Sun, 18 May 2014 12:01:18 +0200
+In-Reply-To: <20140517165345.GG18016@ZenIV.linux.org.uk>
+References: <1400338818-2853-1-git-send-email-manuel.schoelling@gmx.de>
+	 <20140517165345.GG18016@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:3noA7RJmpA8jYRuVB1X51q7O7ux+ay05xspMlNBAFeWLVzmPv81
+ kmmKnFYO2AWUgY1SmZ33rPrelNn/WxDM4j5UuF2/CmiSNR/sj36jO/KTJu9ttloXhpApE83
+ xuQTopsocbmk8bCtFnYs+GjXl2H0kDazH2L21a+0IppZUxiiTV3UOl3XSC4DvTEut4yUQT9
+ z1RSIoyGTac8alrYCnQIA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.05.2014 13:00, schrieb Grant Likely:
-> On Wed, 14 May 2014 23:10:39 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
->> Am 14.05.2014 22:06, schrieb Grant Likely:
->>> On Wed, 14 May 2014 16:49:05 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
->>>> Am 14.05.2014 16:05, schrieb Grant Likely:
->>>>> On Mon, 12 May 2014 18:47:53 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
->>
->>>> Hmm, I don't really care if that will be merged. I have no motivation to
->>>> fight with Linux kernel maintainers and I don't know if I will spend the
->>>> necessary time to do so.
->>>
->>> The people you need to convince are Rob, Greg, and me, and you've got my
->>> attention. If I'm convinced, then I can probably convince Greg also.
->>> You've got an interesting approach, and I hope you won't give up on it.
->>
->> Sorry, but that point of the view is already a problem. Why do I have to
->> convince you people?
->>
->> To summarize:
->>
->> Linux kernel maintainers
->>
->> - don't like code they haven't written theirself,
->> - don't like code which doesn't look like they have written it theirself,
->> - don't like ideas they haven't had themself,
->> - do feel good in their closed group they have formed,
->
-> I'm sorry that you feel that way and that you don't want to continue
-> with this. Best wishes.
+Thanks for the detailed review of my patches, guys!
 
-Sorry to hit you with reality, but it just will not happen that I will 
-try to convience any Linux kernel maintainer (anymore). It is their job 
-to decide what they want and not mine to convince them. I offer code and 
-arguments, but I will not offer my pride, ego or how you want to name 
-it. If Linux kernel maintainers are unable to deal with the power 
-they've got, that isn't my problem.
+I had a look at the assembler code now, too and you are right about
+this.
+I was misguided by the KernelJanitor's TODO list [1]. If there is
+consensus the corresponding paragraph from that list should be removed.
 
-Regards,
+[1] http://kernelnewbies.org/KernelJanitors/Todo
 
-Alexander Holler
+On Sa, 2014-05-17 at 17:53 +0100, Al Viro wrote:
+> On Sat, May 17, 2014 at 05:00:18PM +0200, Manuel Schölling wrote:
+> > Initializations like 'char *foo = "bar"' will create two variables: a static
+> > string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
+> > will declare a single variable and will end up in shorter
+> > assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
+> 
+> The hell it will.  Compare assembler generated e.g. for 32bit x86 before
+> and after.
+> 
+> >  {
+> >  	char *dp;
+> >  	char *status = "disabled";
+> > -	const char * flags = "flags: ";
+> > +	const char flags[] = "flags: ";
+> 
+> The first variant puts address of constant array into local variable
+> (on stack or in a register).  The second one fills local _array_ - the
+> string itself goes on stack.
+
+
