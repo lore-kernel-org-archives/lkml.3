@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaERVc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 17:32:57 -0400
-Received: from mout.gmx.net ([212.227.17.22]:52812 "EHLO mout.gmx.net"
+	id S1752271AbaERVlx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 17:41:53 -0400
+Received: from mout.gmx.net ([212.227.15.19]:55293 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751861AbaERVcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 17:32:55 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: chien.yen@oracle.com
-Cc: davem@davemloft.net, rds-devel@oss.oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] net: rds: Use time_after() for time comparison
-Date: Sun, 18 May 2014 23:32:49 +0200
-Message-Id: <1400448769-5945-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:zStPYcWJ9iSp8FvExo5VeqZlq5Ty1FqWtnZ+nmz1qbkzXnRXEIG
- Xk6wcLhB4XzHM6I8QDQ9kQrFTiIZ9/QMgbW75UAjXlR0FJd1BYyubGKLzCuaOGGhWaZe1xr
- IuDGFhUP9HW8B9sANcoGZCMVCzmaJHNJGoWjYgP/KFFS2jv2Ql4JZLUTqhBnlpLBWqRz1cC
- j0Q09XkTEEihuC+KEHw0w==
+	id S1751894AbaERVlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 17:41:52 -0400
+From: Christian Engelmayer <cengelma@gmx.at>
+To: linux-input@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, andrew.smirnov@gmail.com,
+        linux-kernel@vger.kernel.org, Christian Engelmayer <cengelma@gmx.at>
+Subject: [PATCH] Input: ims-pcu - fix uninitialized use of 'error' in ims_pcu_buffers_alloc()
+Date: Sun, 18 May 2014 23:41:18 +0200
+Message-Id: <1400449278-14513-1-git-send-email-cengelma@gmx.at>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:yroLkyOEmB0R/5TsTFGfS3yU3fNNyLROqLLOqD0EC5SXNZu/PWf
+ 6BlFsXE0EY2zLWuuncff3l7J2vtTOMwzA/EjMYthzQom5kyCt3jXYihBqpITgsfxL3Wo2qz
+ ncKwr2B7cICwmn8lk0KdQyn1lybWIF3SgXB7noENpHbsoMh661xUX1vhFnphvOxeIc9NOQK
+ qygjZ0qs/M6Sw0a7fOgqw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are modified
-to use time_after() instead of raw math.
+In case allocation via usb_alloc_coherent() fails in ims_pcu_buffers_alloc(),
+the function jumps to the exit path without initializing local variable
+'error' that is used as return value. Detected by Coverity - CID 1016531.
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- net/rds/ib_send.c |    4 ++--
- net/rds/iw_send.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+This is an allocation function and all currently coded error scenarios
+result in -ENOMEM. Thus it would be possible to eliminate 'error' at all and
+always return -ENOMEM in the error path.
 
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index 37be6e2..1dde91e 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -298,7 +298,7 @@ void rds_ib_send_cq_comp_handler(struct ib_cq *cq, void *context)
- 		rds_ib_stats_inc(s_ib_tx_cq_event);
+Compile tested. Applies against branch next in tree
+git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
+---
+ drivers/input/misc/ims-pcu.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/input/misc/ims-pcu.c b/drivers/input/misc/ims-pcu.c
+index 5a73639..719410f 100644
+--- a/drivers/input/misc/ims-pcu.c
++++ b/drivers/input/misc/ims-pcu.c
+@@ -1566,6 +1566,7 @@ static int ims_pcu_buffers_alloc(struct ims_pcu *pcu)
+ 	if (!pcu->urb_ctrl_buf) {
+ 		dev_err(pcu->dev,
+ 			"Failed to allocate memory for read buffer\n");
++		error = -ENOMEM;
+ 		goto err_free_urb_out_buf;
+ 	}
  
- 		if (wc.wr_id == RDS_IB_ACK_WR_ID) {
--			if (ic->i_ack_queued + HZ/2 < jiffies)
-+			if (time_after(jiffies, ic->i_ack_queued + HZ/2))
- 				rds_ib_stats_inc(s_ib_tx_stalled);
- 			rds_ib_ack_send_complete(ic);
- 			continue;
-@@ -315,7 +315,7 @@ void rds_ib_send_cq_comp_handler(struct ib_cq *cq, void *context)
- 
- 			rm = rds_ib_send_unmap_op(ic, send, wc.status);
- 
--			if (send->s_queued + HZ/2 < jiffies)
-+			if (time_after(jiffies, send->s_queued + HZ/2))
- 				rds_ib_stats_inc(s_ib_tx_stalled);
- 
- 			if (send->s_op) {
-diff --git a/net/rds/iw_send.c b/net/rds/iw_send.c
-index e40c3c5..9105ea0 100644
---- a/net/rds/iw_send.c
-+++ b/net/rds/iw_send.c
-@@ -232,7 +232,7 @@ void rds_iw_send_cq_comp_handler(struct ib_cq *cq, void *context)
- 		}
- 
- 		if (wc.wr_id == RDS_IW_ACK_WR_ID) {
--			if (ic->i_ack_queued + HZ/2 < jiffies)
-+			if (time_after(jiffies, ic->i_ack_queued + HZ/2))
- 				rds_iw_stats_inc(s_iw_tx_stalled);
- 			rds_iw_ack_send_complete(ic);
- 			continue;
-@@ -267,7 +267,7 @@ void rds_iw_send_cq_comp_handler(struct ib_cq *cq, void *context)
- 
- 			send->s_wr.opcode = 0xdead;
- 			send->s_wr.num_sge = 1;
--			if (send->s_queued + HZ/2 < jiffies)
-+			if (time_after(jiffies, send->s_queued + HZ/2))
- 				rds_iw_stats_inc(s_iw_tx_stalled);
- 
- 			/* If a RDMA operation produced an error, signal this right
 -- 
-1.7.10.4
+1.9.1
 
