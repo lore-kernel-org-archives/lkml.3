@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaERAJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 May 2014 20:09:47 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:36472 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaERAJp (ORCPT
+	id S1751829AbaERAYz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 May 2014 20:24:55 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:58384 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaERAYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 May 2014 20:09:45 -0400
-Date: Sat, 17 May 2014 21:09:08 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-To: Tony Lindgren <tony@atomide.com>
-Cc: George Cherian <george.cherian@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux@arm.linux.org.uk, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, bcousson@baylibre.com,
-        bigeasy@linutronix.de, yegorslists@googlemail.com, balbi@ti.com
-Subject: Re: [RFC PATCH] ARM: dts: am33xx: Re-arrange the USB dt to reflect
- the h/w configuration
-Message-ID: <20140518000908.GA2092@arch.cereza>
-References: <1399617068-19826-1-git-send-email-george.cherian@ti.com>
- <20140514215034.GL27426@atomide.com>
+	Sat, 17 May 2014 20:24:54 -0400
+Date: Sun, 18 May 2014 02:24:50 +0200
+From: Robin Schroer <sulamiification@gmail.com>
+To: daniel.vetter@ffwll.ch
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org
+Subject: [PATCH] drivers/gpu/drm/i915/intel_display: coding style fixes
+Message-ID: <20140518002450.GA26570@shodan.fritz.box>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140514215034.GL27426@atomide.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tony,
+Fixed several switch statements, curly braces, dereference operators
+and keywords.
 
-On 14 May 02:50 PM, Tony Lindgren wrote:
-> * George Cherian <george.cherian@ti.com> [140508 23:34]:
-> > Re arrange the USB dt for AM33xx to take it a bit closer
-> > to the hardware configuration.
-> > 
-[..]
-> 
-> Is this just a cosmetic change or is this trying to workaround
-> some edma related init order issue?
-> 
+Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-This was an attempt from George to workaround an that happens when
-the musb_am335x module is removed. However, we've agreed to prevent
-the removal instead. I've just (re)sent a patch for it:
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index b9256aa..ff21924 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -962,7 +962,7 @@ bool ibx_digital_port_connected(struct drm_i915_private *dev_priv,
+ 	u32 bit;
 
-See: [PATCH for v3.15] usb: musb: Fix panic upon musb_am335x module removal
+ 	if (HAS_PCH_IBX(dev_priv->dev)) {
+-		switch(port->port) {
++		switch (port->port) {
+ 		case PORT_B:
+ 			bit = SDE_PORTB_HOTPLUG;
+ 			break;
+@@ -976,7 +976,7 @@ bool ibx_digital_port_connected(struct drm_i915_private *dev_priv,
+ 			return true;
+ 		}
+ 	} else {
+-		switch(port->port) {
++		switch (port->port) {
+ 		case PORT_B:
+ 			bit = SDE_PORTB_HOTPLUG_CPT;
+ 			break;
+@@ -3221,9 +3221,8 @@ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+ 	udelay(100);
 
-AFAIK, this fixes a serious problem so I've marked it for stable.
+ 	/* Ironlake workaround, disable clock pointer after downing FDI */
+-	if (HAS_PCH_IBX(dev)) {
++	if (HAS_PCH_IBX(dev))
+ 		I915_WRITE(FDI_RX_CHICKEN(pipe), FDI_RX_PHASE_SYNC_POINTER_OVR);
+-	}
 
-For the DMA init order issue, I've done a new patch that forces the
-probe order in the driver. I'll post that soon.
--- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+ 	/* still set train pattern 1 */
+ 	reg = FDI_TX_CTL(pipe);
+@@ -5844,7 +5843,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+ 	} else {
+ 		i9xx_update_pll(intel_crtc,
+ 				has_reduced_clock ? &reduced_clock : NULL,
+-                                num_connectors);
++				num_connectors);
+ 	}
+
+ skip_dpll:
+@@ -6220,8 +6219,7 @@ static void ironlake_init_pch_refclk(struct drm_device *dev)
+ 			if (intel_panel_use_ssc(dev_priv) && can_ssc) {
+ 				DRM_DEBUG_KMS("Using SSC on eDP\n");
+ 				val |= DREF_CPU_SOURCE_OUTPUT_DOWNSPREAD;
+-			}
+-			else
++			} else
+ 				val |= DREF_CPU_SOURCE_OUTPUT_NONSPREAD;
+ 		} else
+ 			val |= DREF_CPU_SOURCE_OUTPUT_DISABLE;
+@@ -8844,7 +8842,7 @@ void intel_prepare_page_flip(struct drm_device *dev, int plane)
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ }
+
+-inline static void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
++static inline void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
+ {
+ 	/* Ensure that the work item is consistent when activating it ... */
+ 	smp_wmb();
+@@ -9054,7 +9052,7 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+ 	if (ret)
+ 		goto err;
+
+-	switch(intel_crtc->plane) {
++	switch (intel_crtc->plane) {
+ 	case PLANE_A:
+ 		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_A;
+ 		break;
+@@ -9333,7 +9331,7 @@ static void intel_modeset_commit_output_state(struct drm_device *dev)
+ }
+
+ static void
+-connected_sink_compute_bpp(struct intel_connector * connector,
++connected_sink_compute_bpp(struct intel_connector *connector,
+ 			   struct intel_crtc_config *pipe_config)
+ {
+ 	int bpp = pipe_config->pipe_bpp;
+--
+1.9.0
+
