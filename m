@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaERTB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 15:01:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35519 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbaERTBZ convert rfc822-to-8bit (ORCPT
+	id S1752050AbaERTJD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 15:09:03 -0400
+Received: from www17.your-server.de ([213.133.104.17]:55114 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaERTJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 15:01:25 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: alot/0.3.5
-To: torvalds@linux-foundation.org
-Message-ID: <20140518190116.9521.52593@quantum>
-Subject: [GIT PULL] clk: fixes for 3.15
-Date: Sun, 18 May 2014 12:01:16 -0700
+	Sun, 18 May 2014 15:09:00 -0400
+Message-ID: <1400440120.3400.5.camel@localhost.localdomain>
+Subject: Re: [Intel-gfx] 3.15-rc5: Regression in i915 driver?
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140512063355.GA3813@nuc-i3427.alporthouse.com>
+References: <1399796911.2442.7.camel@localhost.localdomain>
+	 <CAPM=9tzwkwSTC2i=KWSxmHkG74fXyyh8JiTzEaDwNgg-J_G7cw@mail.gmail.com>
+	 <CAKMK7uG4Gnn_sY44Ci8VbRhJQf8=5s_dod4tRX+PDYYs1EYFsQ@mail.gmail.com>
+	 <20140512063355.GA3813@nuc-i3427.alporthouse.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 May 2014 21:08:40 +0200
+Mime-Version: 1.0
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
+Am Montag, den 12.05.2014, 07:33 +0100 schrieb Chris Wilson:
+> On Sun, May 11, 2014 at 07:40:57PM +0200, Daniel Vetter wrote:
+> > On Sun, May 11, 2014 at 11:02 AM, Dave Airlie <airlied@gmail.com> wrote:
+> > > On 11 May 2014 18:28, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > >> Hi,
+> > >>
+> > >> 3.14.3 works as expected.
+> > >> 3.15-rc5 shows a strange behaviour: When resuming from ram the X server
+> > >> seems to be disfunctional.
+> > >>
+> > >> I see this WARNING in the kernel log before suspend to ram in the early
+> > >> boot process:
+> > 
+> > Doesn't ring a bell really.
+> 
+> Same symptoms as
+> https://bugs.freedesktop.org/show_bug.cgi?id=76554
+> -Chris
+> 
 
-  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
+bisected this to:
+# first bad commit: [78f2975eec9faff353a6194e854d3d39907bab68] drm/i915: Move all ring resets before setting the HWS page
 
-are available in the git repository at:
+commit 78f2975eec9faff353a6194e854d3d39907bab68
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Apr 2 16:36:07 2014 +0100
 
-  git://git.linaro.org/people/mike.turquette/linux.git tags/clk-fixes-for-linus
+    drm/i915: Move all ring resets before setting the HWS page
+    
+    In commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+    Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+    Date:   Wed Mar 12 16:39:40 2014 +0530
+    
+        drm/i915: disable rings before HW status page setup
+    
+    we reordered stopping the rings to do so before we set the HWS register.
+    However, there is an extra workaround for g45 to reset the rings twice,
+    and for consistency we should apply that workaround before setting the
+    HWS to be sure that the rings are truly stopped.
+    
+    Reference: http://lkml.kernel.org/r/20140423202248.GA3621@amd.pavel.ucw.cz
+    Tested-by: Pavel Machek <pavel@ucw.cz>
+    Cc: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 
-for you to fetch changes up to d2c834abe2b39a2d5a6c38ef44de87c97cbb34b4:
+Reverting above commit from current linus' master tree makes the display server behave correctly after resume from ram.
 
-  clk: tegra: Fix wrong value written to PLLE_AUX (2014-05-16 15:49:23 -0700)
+with kind regards
+thomas
 
-----------------------------------------------------------------
-Clock framework and driver fixes, all of which fix user-visible
-regressions. As usual most fixes are for platform-specific clock
-drivers, but there are also two fixes to the clk core after recent
-changes to the way that clock unregistration is handled.
 
-----------------------------------------------------------------
-Alex Elder (1):
-      clk: bcm281xx: don't use unnamed structs or unions
-
-Ben Dooks (1):
-      clk: shmobile: clk-mstp: change to using clock-indices
-
-Dinh Nguyen (1):
-      clk: socfpga: fix clock driver for 3.15
-
-Maxime COQUELIN (1):
-      clk: divider: Fix best div calculation for power-of-two and table dividers
-
-Mike Turquette (1):
-      Merge tag 'socfpga-clk-fix-for-3.15' of git://git.rocketboards.org/linux-socfpga-next into clk-fixes-socfpga
-
-Stephen Boyd (2):
-      clk: Fix double free due to devm_clk_register()
-      clk: Fix slab corruption in clk_unregister()
-
-Tuomas Tynkkynen (1):
-      clk: tegra: Fix wrong value written to PLLE_AUX
-
- .../bindings/clock/renesas,cpg-mstp-clocks.txt     |  2 +-
- drivers/clk/bcm/clk-kona-setup.c                   | 33 +++++-----
- drivers/clk/bcm/clk-kona.c                         | 64 ++++++++++---------
- drivers/clk/bcm/clk-kona.h                         | 28 ++++----
- drivers/clk/clk-divider.c                          | 37 ++++++++++-
- drivers/clk/clk.c                                  | 74 ++++++++++------------
- drivers/clk/shmobile/clk-mstp.c                    |  9 ++-
- drivers/clk/socfpga/clk-pll.c                      |  7 ++
- drivers/clk/socfpga/clk.c                          | 23 +------
- drivers/clk/tegra/clk-pll.c                        |  2 +-
- 10 files changed, 151 insertions(+), 128 deletions(-)
