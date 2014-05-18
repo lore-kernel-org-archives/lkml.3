@@ -1,265 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaEROJE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 10:09:04 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:63563 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaEROJC (ORCPT
+	id S1751384AbaEROh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 10:37:28 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40374 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaEROh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 10:09:02 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: bhelgaas@google.com
-Cc: will.deacon@arm.com, arnd@arndb.de, michals@xilinx.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH] PCI: Generic Configuration Access Mechanism support
-Date: Sun, 18 May 2014 19:38:45 +0530
-Message-Id: <1400422125-2209-1-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 18 May 2014 10:37:26 -0400
+Date: Sun, 18 May 2014 16:37:24 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: walter harms <wharms@bfs.de>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140518143724.GA4310@lianli>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+ <5375EB13.8000200@bfs.de>
+ <20140516111646.GC4366@lianli>
+ <5375FB36.8020004@bfs.de>
+ <20140516193139.GQ16662@pengutronix.de>
+ <20140517153540.GA4309@lianli>
+ <20140517190546.GC16662@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140517190546.GC16662@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for a generic CAM and ECAM configuration
-space accesses.
+Hello Uwe,
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
----
-This patch is created with reference from Will's patch series:
-1/3 - "ARM: kconfig: allow PCI support to be selected with ARCH_MULTIPLATFORM"
-2/3 - "PCI: ARM: add support for generic PCI host controller"
-3/3 - "MAINTAINERS: add entry for generic PCI host controller driver"
----
- drivers/pci/Makefile  |    2 +-
- drivers/pci/pci-cfg.c |  162 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h   |   34 +++++++++++
- 3 files changed, 197 insertions(+), 1 deletion(-)
- create mode 100644 drivers/pci/pci-cfg.c
+On Sat, May 17, 2014 at 09:05:46PM +0200, Uwe Kleine-König wrote:
+> Hello Emil,
+> 
+> On Sat, May 17, 2014 at 05:35:40PM +0200, Emil Goode wrote:
+> > On Fri, May 16, 2014 at 09:31:39PM +0200, Uwe Kleine-König wrote:
+> > > On Fri, May 16, 2014 at 01:49:10PM +0200, walter harms wrote:
+> > > > Am 16.05.2014 13:16, schrieb Emil Goode:
+> > > > > Hello Walter,
+> > > > > 
+> > > > > On Fri, May 16, 2014 at 12:40:19PM +0200, walter harms wrote:
+> > > > >>
+> > > > >>
+> > > > >> Am 16.05.2014 11:54, schrieb Emil Goode:
+> > > > >>> If we fail to allocate struct platform_device pdev we
+> > > > >>> dereference it after the goto label err.
+> > > > >>>
+> > > > >>> I have rearranged the error handling a bit to fix the issue
+> > > > >>> and also make it more clear.
+> > > > >>>
+> > > > >>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > > > >>> ---
+> > > > >>> v2: Changed to return -ENOMEM instead of ret where possible and
+> > > > >>>     updated the subject line.
+> > > > >>>
+> > > > >>>  arch/arm/mach-imx/devices/platform-ipu-core.c |   22 +++++++++++++---------
+> > > > >>>  1 file changed, 13 insertions(+), 9 deletions(-)
+> > > > >>>
+> > > > >>> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > > > >>> index fc4dd7c..68f2a4a 100644
+> > > > >>> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > > > >>> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> > > > >>> @@ -77,34 +77,38 @@ struct platform_device *__init imx_alloc_mx3_camera(
+> > > > >>>  
+> > > > >>>  	pdev = platform_device_alloc("mx3-camera", 0);
+> > > > >>>  	if (!pdev)
+> > > > >>> -		goto err;
+> > > > >>> +		return ERR_PTR(-ENOMEM);
+> > > > >>>  
+> > > > >>>  	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+> > > > >>>  	if (!pdev->dev.dma_mask)
+> > > > >>> -		goto err;
+> > > > >>> +		goto put_pdev;
+> > > > >>>  
+> > > > >>>  	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+> > > > >>>  	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> > > > >>>  
+> > > > >>>  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
+> > > > >>>  	if (ret)
+> > > > >>> -		goto err;
+> > > > >>> +		goto free_dma_mask;
+> > > > >>>  
+> > > > >>>  	if (pdata) {
+> > > > >>>  		struct mx3_camera_pdata *copied_pdata;
+> > > > >>>  
+> > > > >>>  		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+> > > > >>> -		if (ret) {
+> > > > >>> -err:
+> > > > >>> -			kfree(pdev->dev.dma_mask);
+> > > > >>> -			platform_device_put(pdev);
+> > > > >>> -			return ERR_PTR(-ENODEV);
+> > > > >>> -		}
+> > > > >>> +		if (ret)
+> > > > >>> +			goto free_dma_mask;
+> > > > >>> +
+> > > > >>>  		copied_pdata = dev_get_platdata(&pdev->dev);
+> > > > >>>  		copied_pdata->dma_dev = &imx_ipu_coredev->dev;
+> > > > >>
+> > > > >>
+> > > > >> the patch is fine, but what use is this copied_pdata ?
+> > > > >> It scope ends next line ?
+> > > > >>
+> > > > >> re,
+> > > > >>  wh
+> > > > > 
+> > > > > I also thought that looked a bit odd, but copied_pdata is a temporary
+> > > > > pointer to platform_data of the dev struct.
+> > > > > 
+> > > > > dev_get_platdata looks like this:
+> > > > > 
+> > > > > static inline void *dev_get_platdata(const struct device *dev)
+> > > > > {
+> > > > >         return dev->platform_data;
+> > > > > }
+> > > > > 
+> > > > > So I believe it's a more compact way of writing:
+> > > > > 
+> > > > > pdev->dev->platform_data->dma_dev = &imx_ipu_coredev->dev;
+> > > It's not about compactness. The dev_get_platdata accessor exists to be
+> > > used instead of directly accessing dev->platform_data. I admit a comment
+> > > would be nice ...
+> > > 
+> > > Anyhow this is all ugly, actually you'd want to have the dma_dev member
+> > > already fixed when calling platform_device_add_data. But you cannot
+> > > simply do
+> > > 
+> > > 	pdata->dma_dev = &imx_ipu_coredev->dev;
+> > > 	ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+> > > 
+> > > because *pdata is const.
+> > 
+> > Thank you for the explanation. Regarding the possibility of using
+> > platform_device_register_full() to simplify this function. It seem to
+> > be possible, the following inline function is available to help with this.
+> > 
+> > imx_add_platform_device_dmamask()
+> I'd prefer to use platform_device_register_full directly (and let the
+> wrapper die).
+> 
+> > But as you mentioned above we need to allocate a new platform_device
+> > struct before we can assign &imx_ipu_coredev->dev to dma_dev, since
+> > pdata is const. I guess this assignment could be done after calling
+> > imx_add_platform_device_dmamask() but I don't think that makes the
+> No, that won't work, because after platform_device_register_full returns
+> you must assume that the device is already bound by a driver. And then
+> you must not change platform_data anymore.
+> 
+> The only thing that would work is:
+> 
+> 	struct mx3_camera_pdata tmppdata;
+> 
+> 	if (pdata) {
+> 		tmppdata = *pdata;
+> 		tmppdata.dma_dev = &imx_ipu_coredev->dev;
+> 
+> 		pdata = &tmppdata;
+> 	}
+> 
+> 	platform_device_register_full(... pdata ...)
 
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index e04fe2d..37cfc33 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -4,7 +4,7 @@
- 
- obj-y		+= access.o bus.o probe.o host-bridge.o remove.o pci.o \
- 			pci-driver.o search.o pci-sysfs.o rom.o setup-res.o \
--			irq.o vpd.o setup-bus.o vc.o
-+			irq.o vpd.o setup-bus.o vc.o pci-cfg.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSFS) += slot.o
- 
-diff --git a/drivers/pci/pci-cfg.c b/drivers/pci/pci-cfg.c
-new file mode 100644
-index 0000000..2b15fe4
---- /dev/null
-+++ b/drivers/pci/pci-cfg.c
-@@ -0,0 +1,162 @@
-+/*
-+ * PCI generic configuration access mechanism
-+ *
-+ * Copyright (C) 2014 ARM Limited
-+ * Copyright (c) 2014 Xilinx, Inc.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/of_pci.h>
-+
-+/* CAM definitions */
-+#define PCI_CFG_CAM_BUS_NUM	16
-+#define PCI_CFG_CAM_DEV_NUM	8
-+
-+/* ECAM definitions */
-+#define PCI_CFG_ECAM_BUS_NUM	20
-+#define PCI_CFG_ECAM_DEV_NUM	12
-+
-+/* Invalid device/function value */
-+#define PCI_CFG_INVALID_DEVFN	0xFFFFFFFF
-+
-+/**
-+ * pci_cfg_map_bus_cam - Get the CAM based configuration space address
-+ * @bus: PCI Bus pointer
-+ * @devfn: Device/Function
-+ * @where: Offset from base
-+ *
-+ * Return: Configuration Space address
-+ */
-+static void __iomem *pci_cfg_map_bus_cam(struct pci_bus *bus,
-+					 unsigned int devfn,
-+					 int where)
-+{
-+	struct pci_sys_data *sys = bus->sysdata;
-+	struct pci_cfg_windows *cfg = sys->private_data;
-+	resource_size_t idx = bus->number - cfg->bus_range.start;
-+
-+	return cfg->win[idx] + ((devfn << PCI_CFG_CAM_DEV_NUM) | where);
-+}
-+
-+/**
-+ * pci_cfg_map_bus_ecam - Get the ECAM based configuration space address
-+ * @bus: PCI bus pointer
-+ * @devfn: Device/Function
-+ * @where: Offset from base
-+ *
-+ * Return: Configuration space address
-+ */
-+static void __iomem *pci_cfg_map_bus_ecam(struct pci_bus *bus,
-+					  unsigned int devfn,
-+					  int where)
-+{
-+	struct pci_sys_data *sys = bus->sysdata;
-+	struct pci_cfg_windows *cfg = sys->private_data;
-+	resource_size_t idx = bus->number - cfg->bus_range.start;
-+
-+	return cfg->win[idx] + ((devfn << PCI_CFG_ECAM_DEV_NUM) | where);
-+}
-+
-+/**
-+ * pci_cfg_read - Read configuration space
-+ * @bus: PCI bus pointer
-+ * @devfn: Device/function
-+ * @where: Offset from base
-+ * @size: Byte/word/dword
-+ * @val: Value to be read
-+ *
-+ * Return: PCIBIOS_SUCCESSFUL on success
-+ *	   PCIBIOS_DEVICE_NOT_FOUND on failure
-+ */
-+static int pci_cfg_read(struct pci_bus *bus, unsigned int devfn,
-+			int where, int size, unsigned int *val)
-+{
-+	void __iomem *addr;
-+	struct pci_sys_data *sys = bus->sysdata;
-+	struct pci_cfg_windows *cfg = sys->private_data;
-+
-+	if (cfg->ops->is_valid_cfg_access) {
-+		if (!cfg->ops->is_valid_cfg_access(bus, devfn)) {
-+			*val = PCI_CFG_INVALID_DEVFN;
-+			return PCIBIOS_DEVICE_NOT_FOUND;
-+		}
-+	}
-+
-+	addr = cfg->ops->map_bus(bus, devfn, where);
-+
-+	switch (size) {
-+	case 1:
-+		*val = readb(addr);
-+		break;
-+	case 2:
-+		*val = readw(addr);
-+		break;
-+	default:
-+		*val = readl(addr);
-+	}
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+/**
-+ * pci_cfg_write - Write configuration space
-+ * @bus: PCI bus pointer
-+ * @devfn: Device/function
-+ * @where: Offset from base
-+ * @size: Byte/word/dword
-+ * @val: Value to write
-+ *
-+ * Return: PCIBIOS_SUCCESSFUL on success
-+ *	   PCIBIOS_DEVICE_NOT_FOUND on failure
-+ */
-+static int pci_cfg_write(struct pci_bus *bus, unsigned int devfn,
-+			 int where, int size, unsigned int val)
-+{
-+	void __iomem *addr;
-+	struct pci_sys_data *sys = bus->sysdata;
-+	struct pci_cfg_windows *cfg = sys->private_data;
-+
-+	if (cfg->ops->is_valid_cfg_access)
-+		if (!cfg->ops->is_valid_cfg_access(bus, devfn))
-+			return PCIBIOS_DEVICE_NOT_FOUND;
-+
-+	addr = cfg->ops->map_bus(bus, devfn, where);
-+
-+	switch (size) {
-+	case 1:
-+		writeb(val, addr);
-+		break;
-+	case 2:
-+		writew(val, addr);
-+		break;
-+	default:
-+		writel(val, addr);
-+	}
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+/* Generic PCI CAM/ECAM Configuration Bus Operations */
-+
-+struct pci_cfg_bus_ops pci_cfg_cam_bus_ops = {
-+	.bus_shift	= PCI_CFG_CAM_BUS_NUM,
-+	.map_bus	= pci_cfg_map_bus_cam,
-+};
-+EXPORT_SYMBOL_GPL(pci_cfg_cam_bus_ops);
-+
-+struct pci_cfg_bus_ops pci_cfg_ecam_bus_ops = {
-+	.bus_shift	= PCI_CFG_ECAM_BUS_NUM,
-+	.map_bus	= pci_cfg_map_bus_ecam,
-+};
-+EXPORT_SYMBOL_GPL(pci_cfg_ecam_bus_ops);
-+
-+struct pci_ops pci_cfg_ops = {
-+	.read	= pci_cfg_read,
-+	.write	= pci_cfg_write,
-+};
-+EXPORT_SYMBOL_GPL(pci_cfg_ops);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index aab57b4..6ebe21e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1806,4 +1806,38 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
-  */
- struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev);
- 
-+/**
-+ * struct pci_cfg_bus_ops - PCI bus configuration operations
-+ * @bus_shift: Bus number
-+ * @map_bus: Function pointer to get the configuration space address
-+ * @is_valid_cfg_access: Function pointer to check for a valid device/function
-+ */
-+struct pci_cfg_bus_ops {
-+	u32 bus_shift;
-+	void __iomem *(*map_bus)(struct pci_bus *, unsigned int, int);
-+	/*
-+	 * This function pointer is to check if we are addressing a valid
-+	 * device's function under a particular bus.
-+	 */
-+	int (*is_valid_cfg_access)(struct pci_bus *, unsigned int);
-+};
-+
-+/**
-+ * struct pci_cfg_windows - PCI bus configuration memory windows
-+ * @res: Configuration space resource
-+ * @bus_range: Bus range
-+ * @win: Configuration space memory windows
-+ * @ops: PCI bus configuration operations
-+ */
-+struct pci_cfg_windows {
-+	struct resource	res;
-+	struct resource	bus_range;
-+	void __iomem **win;
-+	struct pci_cfg_bus_ops *ops;
-+};
-+
-+extern struct pci_ops pci_cfg_ops;
-+extern struct pci_cfg_bus_ops pci_cfg_ecam_bus_ops;
-+extern struct pci_cfg_bus_ops pci_cfg_cam_bus_ops;
-+
- #endif /* LINUX_PCI_H */
--- 
-1.7.9.5
+Looking at converting to platform_device_register_full() again
+it is a little bit more complicated than I first thought. The call
+to platform_device_add() is acctually done in a separate function.
+  
+The involed functions are these:
 
+mx31_3ds_init_camera()
+	imx31_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
+
+imx35_3ds_init_camera()
+	imx31_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
+
+When looking at similar code like the following function:
+
+arch/arm/mach-imx/mach-imx27_visstrim_m10.c +244
+
+visstrim_analog_camera_init()
+	imx27_add_mx2_camera()
+		imx_add_platform_device_dmamask()
+			platform_device_register_full()
+	dma_declare_coherent_memory()
+
+It seems to be ok to call dma_declare_coherent_memory() after
+calling platform_device_register_full().
+
+So I'm considering rearranging the calls in the following way:
+
+mx31_3ds_init_camera()
+	imx31_alloc_mx3_camera()
+		platform_device_register_full()
+	dma_declare_coherent_memory()
+
+Please let me know if you think this would not be ok.
+
+Best regards,
+
+Emil Goode
