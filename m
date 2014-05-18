@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaERXgY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:36:24 -0400
-Received: from ozlabs.org ([103.22.144.67]:49008 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152AbaERXgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:36:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mpm@selenic.com, herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org,
-        akong@redhat.com, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH 1/2] virtio-rng: fix boot with virtio-rng device
-In-Reply-To: <1400160104-1888-1-git-send-email-sasha.levin@oracle.com>
-References: <1400160104-1888-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 16 May 2014 11:39:35 +0930
-Message-ID: <8738galbj4.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752510AbaERXh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:37:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56765 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752485AbaERXh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 19:37:27 -0400
+Message-ID: <1400456236.17377.10.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] x86: relocs: Make per_cpu_load_addr static
+From: Ben Hutchings <ben@decadent.org.uk>
+To: x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Michael Tautschnig <mt@debian.org>,
+        748577@bugs.debian.org
+Date: Mon, 19 May 2014 00:37:16 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-lylj5EeaUcrO1mTSSLcn"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> writes:
-> Commit "virtio-rng: support multiple virtio-rng devices" has broken
-> boot with a virtio-rng device because the 'init' callback of the
-> virtio-rng device was left unitialized to garbage, and got called
-> by the hwrng infrastructure, killing the guest on boot.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->
-> Also, do we really need multiple virtio-rng devices? I know it's
-> nice to have, but if there isn't a solid use-case behind it we're
-> just adding bugs to working code without any benefit.
 
-Hmm, thanks for this.  It's my fault, I should have gone through this
-with a fine-tooth comb once I saw the const change in hwrng.
+--=-lylj5EeaUcrO1mTSSLcn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-As Amos pointed out in the commit message, qemu support multiple entropy
-sources.  It's a line ball: since you've done the work, I'll apply it
-(if you'd just submitted a bug report I'd probably revert the commit).
+per_cpu_load_addr is only used for 64-bit relocations, but is declared
+in both configurations of relocs.c - with different types.  This has
+undefined behaviour in general.  GNU ld is documented to use the
+larger size in this case, but other tools may differ and some warn
+about this.
 
-AFAICT Amos owes you a beer :)
+References: https://bugs.debian.org/748577
+Reported-by: Michael Tautschnig <mt@debian.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/tools/relocs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
-Rusty.
-PS: Added Fixes: line.
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index bbb1d22..a5efb21 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -695,7 +695,7 @@ static void walk_relocs(int (*process)(struct section *=
+sec, Elf_Rel *rel,
+  *
+  */
+ static int per_cpu_shndx	=3D -1;
+-Elf_Addr per_cpu_load_addr;
++static Elf_Addr per_cpu_load_addr;
+=20
+ static void percpu_init(void)
+ {
 
->  drivers/char/hw_random/virtio-rng.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-> index 12e242b..5b25daa 100644
-> --- a/drivers/char/hw_random/virtio-rng.c
-> +++ b/drivers/char/hw_random/virtio-rng.c
-> @@ -95,7 +95,7 @@ static int probe_common(struct virtio_device *vdev)
->  	int err, i;
->  	struct virtrng_info *vi = NULL;
->  
-> -	vi = kmalloc(sizeof(struct virtrng_info), GFP_KERNEL);
-> +	vi = kzalloc(sizeof(struct virtrng_info), GFP_KERNEL);
->  	vi->hwrng.name = kmalloc(40, GFP_KERNEL);
->  	init_completion(&vi->have_data);
->  
-> -- 
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--=20
+Ben Hutchings
+It is easier to change the specification to fit the program than vice versa=
+.
+
+--=-lylj5EeaUcrO1mTSSLcn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU3lEMee/yOyVhhEJAQojFw/8D+PQWWhbVYRxjU+dLQPhUOShTkcs3qaa
+pwGNM7eZPRefjyfKpVboM1Od1Cqp6wDGFEneE5LMeHUWG7319DxNPmHkZkWyaAVm
+4fd9n/+hChauFScd45Vwig8IL4ZrLzomx6xiVlHGikJrOGBd7Muv540GzKU/kAiH
+lO9Q8Cl5ZVguFQS3RIxu3so0PNRXXKaT4bpTszjttmFluKHAp5e6xAkpV6JJIBZD
+2/BbJ3yGpzMfGkotDSIc8r53gl21RUtwb2dFH5nj+iVEvlQxKp7wd1WFsXViNVK5
+LearYnG+zaxVqoXYIGi1fAaGXkmz2LdNvCazo0m/9mbc2fUXHbF+CrVTtsG4HkqL
+mHLEME58EX0ZM6xDtV7Sqv7KSQsIFnFDfA5bG4xGA+NbRUN3gJ3UrAclHA4BnmMC
+fevMrTabzpQngFdIJ/swsvSr1QxKenjnCUqah2Uk4jvqQgv9l8iMyBVkl1iRMmlI
+Dew44bQoeL3LnBq70lsruxjfP62q7jAMkdJ7d9B8WtfqiKe26lKpkx8xzF2lRXrz
+hPTuHoGWePDAk1VYvBozenBH4CTno17MUkTlm7qi/p6KJKQ9iT2ldA2ZZUQ6Hu71
+LF1aUkyN/1MZFBCumDN7RI4yQSyr6keOM4/OVUKrzrdVkys72AUifApKVdG6b5xJ
+r1Xrj0Ijqsg=
+=hhSO
+-----END PGP SIGNATURE-----
+
+--=-lylj5EeaUcrO1mTSSLcn--
