@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbaERUvk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 16:51:40 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:65142 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125AbaERUvN (ORCPT
+	id S1752167AbaERVLB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 17:11:01 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39211 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaERVK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 16:51:13 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH 1/2 v4] ARM: imx: fix error handling in ipu device registration
-Date: Sun, 18 May 2014 22:50:59 +0200
-Message-Id: <1400446261-27085-2-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
-References: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
+	Sun, 18 May 2014 17:10:59 -0400
+Message-ID: <537921DE.3030107@gmail.com>
+Date: Sun, 18 May 2014 23:10:54 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?B?QW50b2luZSBUw6luYQ==?= =?UTF-8?B?cnQ=?= 
+	<antoine.tenart@free-electrons.com>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        zhiming Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/7] ARM: berlin: add pinctrl support
+References: <1399267649-20218-1-git-send-email-antoine.tenart@free-electrons.com> <CACRpkdYJU3HN2u=eFPUyM4eMmuT1Xw19zxjpb5nj9nXnar3_-A@mail.gmail.com>
+In-Reply-To: <CACRpkdYJU3HN2u=eFPUyM4eMmuT1Xw19zxjpb5nj9nXnar3_-A@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to allocate struct platform_device pdev we
-dereference it after the goto label err.
+On 05/16/2014 02:43 PM, Linus Walleij wrote:
+> On Mon, May 5, 2014 at 7:27 AM, Antoine Ténart
+> <antoine.tenart@free-electrons.com> wrote:
+> 
+>> This series adds support for the Marvell Berlin pin-controller, allowing
+>> to configure the pin muxing from the device tree.
+> 
+> OK looking good!
+> 
+> I've applied patches 1,2,3,4 and 6 to the pin control tree.
 
-This bug was found using coccinelle.
+Linus,
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-v4: Simplified version that just fixes the bug.
-    Also updated the changelog.
-v3: Made subject line more specific.
-v2: Changed to return -ENOMEM instead of ret where possible and
-    updated the subject line.
+thanks for taking the driver. Unfortunately, while working on
+clock drivers, I forgot you may take it in before I made up my
+mind with the register set pinctrl _and_ clock are in.
 
- arch/arm/mach-imx/devices/platform-ipu-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Mike came up with a request to try to expose as little of the
+clock internals as possible [1]. Also, after looking hours and
+hours at the chip-ctrl and system-ctrl registers of Berlin SoCs,
+I think using regmaps will be the only option.
 
-diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-index fc4dd7c..6bd7c3f 100644
---- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-+++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-@@ -77,7 +77,7 @@ struct platform_device *__init imx_alloc_mx3_camera(
- 
- 	pdev = platform_device_alloc("mx3-camera", 0);
- 	if (!pdev)
--		goto err;
-+		return ERR_PTR(-ENOMEM);
- 
- 	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
- 	if (!pdev->dev.dma_mask)
--- 
-1.7.10.4
+I have reworked berlin's pinctrl drivers so they use a mmio regmap
+instead of ioremapped addresses. Instead of "independent" pinctrl
+nodes, there will be common chip-ctrl/system-ctrl nodes that provide
+both clocks and pinctrl (and reset, padmux, ...).
+
+Except regmap, there is no functional change in the driver itself,
+just the way the DT compatible and node are accessed.
+
+I need Alexandre and Antoine to add the necessary changes for BG2Q
+clocks and pinctrl respectively first, but do you prefer proper
+follow-up patches or can you squash them into the ones you've just
+taken?
+
+[1] https://lkml.kernel.org/r/20140515044106.19795.57249@quantum
+
+> Please carry patches 5 and 7 in the MVEBU tree or wherever
+> the core SoC is stashed up. It'd not be necessary to pull in the
+> pin control tree I think since you're just selecting symbols and
+> adding device trees. (The dependencies will magically fall in
+> during the merge window, so this is bisectable.)
+
+Yeah, sure, as soon as we have an agreement with Mike on the clocks
+and you on the groups/function binding I'll post reworked patches
+5 and 7 that fit.
+
+Sebastian
 
