@@ -1,155 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaERXqA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:46:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50356 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152AbaERXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:45:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,864,1392192000"; 
-   d="scan'208";a="513623306"
-Date: Sun, 18 May 2014 19:45:59 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, dave@sr71.net, riel@redhat.com, mgorman@suse.de,
-        aarcange@redhat.com
-Subject: Re: [RFC, PATCH] mm: unified interface to handle page table entries
- on different levels?
-Message-ID: <20140518234559.GG6121@linux.intel.com>
-References: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1752373AbaERXyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:54:45 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:55939 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaERXyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 19:54:43 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53794841.6080308@lge.com>
+Date: Mon, 19 May 2014 08:54:41 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400286785-26639-1-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Barry Song <21cnbao@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?IuydtOqxtO2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKUFPVO2MgA==?=
+	 =?UTF-8?B?KGd1bmhvLmxlZUBsZ2UuY29tKSI=?= <gunho.lee@lge.com>,
+        gurugio@gmail.com
+Subject: Re: [PATCH] [RFC] ARM: MM: remove phy_base field of struct
+References: <53742B55.1060507@lge.com> <CAGsJ_4xXq++1KKMM5VjBCKbKGEWXK3QJK4R8-wzyURTcckxjpw@mail.gmail.com>
+In-Reply-To: <CAGsJ_4xXq++1KKMM5VjBCKbKGEWXK3QJK4R8-wzyURTcckxjpw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 03:33:05AM +0300, Kirill A. Shutemov wrote:
-> Below is my attempt to play with the problem. I've took one function --
-> page_referenced_one() -- which looks ugly because of different APIs for
-> PTE/PMD and convert it to use vpte_t. vpte_t is union for pte_t, pmd_t
-> and pud_t.
-> 
-> Basically, the idea is instead of having different helpers to handle
-> PTE/PMD/PUD, we have one, which take pair of vpte_t + pglevel.
+Thank you. It's my mistake.
 
-I can't find my original attempt at this now (I am lost in a maze of
-twisted git trees, all subtly different), but I called it a vpe (Virtual
-Page Entry).
-
-Rather than using a pair of vpte_t and pglevel, the vpe_t contained
-enough information to discern what level it was; that's only two bits
-and I think all the architectures have enough space to squeeze in two
-more bits to the PTE (the PMD and PUD obviously have plenty of space).
-
-> +static inline unsigned long vpte_size(vpte_t vptep, enum ptlevel ptlvl)
-> +{
-> +	switch (ptlvl) {
-> +	case PTE:
-> +		return PAGE_SIZE;
-> +#ifdef PMD_SIZE
-> +	case PMD:
-> +		return PMD_SIZE;
-> +#endif
-> +#ifdef PUD_SIZE
-> +	case PUD:
-> +		return PUD_SIZE;
-> +#endif
-> +	default:
-> +		return 0; /* XXX */
-
-As you say, XXX.  This needs to be an error ... perhaps VM_BUG_ON(1)
-in this case?
-
-> @@ -676,59 +676,39 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
->  	spinlock_t *ptl;
->  	int referenced = 0;
->  	struct page_referenced_arg *pra = arg;
-> +	vpte_t *vpte;
-> +	enum ptlevel ptlvl = PTE;
->  
-> -	if (unlikely(PageTransHuge(page))) {
-> -		pmd_t *pmd;
-> +	ptlvl = unlikely(PageTransHuge(page)) ? PMD : PTE;
->  
-> -		/*
-> -		 * rmap might return false positives; we must filter
-> -		 * these out using page_check_address_pmd().
-> -		 */
-> -		pmd = page_check_address_pmd(page, mm, address,
-> -					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
-> -		if (!pmd)
-> -			return SWAP_AGAIN;
-> -
-> -		if (vma->vm_flags & VM_LOCKED) {
-> -			spin_unlock(ptl);
-> -			pra->vm_flags |= VM_LOCKED;
-> -			return SWAP_FAIL; /* To break the loop */
-> -		}
-> +	/*
-> +	 * rmap might return false positives; we must filter these out using
-> +	 * page_check_address_vpte().
-> +	 */
-> +	vpte = page_check_address_vpte(page, mm, address, &ptl, 0);
-> +	if (!vpte)
-> +		return SWAP_AGAIN;
-> +
-> +	if (vma->vm_flags & VM_LOCKED) {
-> +		vpte_unmap_unlock(vpte, ptlvl, ptl);
-> +		pra->vm_flags |= VM_LOCKED;
-> +		return SWAP_FAIL; /* To break the loop */
-> +	}
->  
-> -		/* go ahead even if the pmd is pmd_trans_splitting() */
-> -		if (pmdp_clear_flush_young_notify(vma, address, pmd))
-> -			referenced++;
-> -		spin_unlock(ptl);
-> -	} else {
-> -		pte_t *pte;
->  
-> +	/* go ahead even if the pmd is pmd_trans_splitting() */
-> +	if (vptep_clear_flush_young_notify(vma, address, vpte, ptlvl)) {
->  		/*
-> -		 * rmap might return false positives; we must filter
-> -		 * these out using page_check_address().
-> +		 * Don't treat a reference through a sequentially read
-> +		 * mapping as such.  If the page has been used in
-> +		 * another mapping, we will catch it; if this other
-> +		 * mapping is already gone, the unmap path will have
-> +		 * set PG_referenced or activated the page.
->  		 */
-> -		pte = page_check_address(page, mm, address, &ptl, 0);
-> -		if (!pte)
-> -			return SWAP_AGAIN;
-> -
-> -		if (vma->vm_flags & VM_LOCKED) {
-> -			pte_unmap_unlock(pte, ptl);
-> -			pra->vm_flags |= VM_LOCKED;
-> -			return SWAP_FAIL; /* To break the loop */
-> -		}
-> -
-> -		if (ptep_clear_flush_young_notify(vma, address, pte)) {
-> -			/*
-> -			 * Don't treat a reference through a sequentially read
-> -			 * mapping as such.  If the page has been used in
-> -			 * another mapping, we will catch it; if this other
-> -			 * mapping is already gone, the unmap path will have
-> -			 * set PG_referenced or activated the page.
-> -			 */
-> -			if (likely(!(vma->vm_flags & VM_SEQ_READ)))
-> -				referenced++;
-> -		}
-> -		pte_unmap_unlock(pte, ptl);
-> +		if (likely(!(vma->vm_flags & VM_SEQ_READ)))
-> +			referenced++;
->  	}
-> +	vpte_unmap_unlock(vpte, ptlvl, ptl);
->  
->  	if (referenced) {
->  		pra->referenced++;
-> -- 
-> 2.0.0.rc2
+2014-05-18 오후 10:18, Barry Song 쓴 글:
+> 2014-05-15 10:49 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
+>> Hi,
+>>
+>> It's not a big deal but I've found that phy_base field of struct
+>> l2x0_regs is not used anywhere.
+>> I've removed it on my board. It seems to be working fine.
+>>
+>> Why do we need physical address of L2 cache controller?
+>> Is it removable?
+>
+> if you read the source codes of arch/arm/mach-imx/suspend-imx6.S, you
+> will find it is needed.
+>
+>>
+>>
+>> ------------------------ 8< --------------------------
+>>  From cc0d98f4ef8b6f8f139a7c6179ed0b03e9ad7d07 Mon Sep 17 00:00:00 2001
+>> From: Gioh Kim <gioh.kim@lge.com>
+>> Date: Thu, 15 May 2014 11:26:20 +0900
+>> Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct l2x0_regs
+>>
+>> Remove unused field, phy_base of struct l2x0_regs
+>>
+>> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+>> ---
+>>   arch/arm/include/asm/hardware/cache-l2x0.h |    1 -
+>>   arch/arm/kernel/asm-offsets.c              |    1 -
+>>   arch/arm/mm/cache-l2x0.c                   |    2 --
+>>   3 files changed, 4 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h
+>> b/arch/arm/include/asm/hardware/cache-l2x0.h
+>> index 6795ff7..6dec6da 100644
+>> --- a/arch/arm/include/asm/hardware/cache-l2x0.h
+>> +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
+>> @@ -118,7 +118,6 @@ static inline int l2x0_of_init(u32 aux_val, u32
+>> aux_mask)
+>>   #endif
+>>
+>>   struct l2x0_regs {
+>> -       unsigned long phy_base;
+>>          unsigned long aux_ctrl;
+>>          /*
+>>           * Whether the following registers need to be saved/restored
+>> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
+>> index 85598b5..9b0ff94 100644
+>> --- a/arch/arm/kernel/asm-offsets.c
+>> +++ b/arch/arm/kernel/asm-offsets.c
+>> @@ -100,7 +100,6 @@ int main(void)
+>>     DEFINE(S_FRAME_SIZE,         sizeof(struct pt_regs));
+>>     BLANK();
+>>   #ifdef CONFIG_CACHE_L2X0
+>> -  DEFINE(L2X0_R_PHY_BASE,      offsetof(struct l2x0_regs, phy_base));
+>>     DEFINE(L2X0_R_AUX_CTRL,      offsetof(struct l2x0_regs, aux_ctrl));
+>>     DEFINE(L2X0_R_TAG_LATENCY,   offsetof(struct l2x0_regs, tag_latency));
+>>     DEFINE(L2X0_R_DATA_LATENCY,  offsetof(struct l2x0_regs, data_latency));
+>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>> index 7abde2c..728d644 100644
+>> --- a/arch/arm/mm/cache-l2x0.c
+>> +++ b/arch/arm/mm/cache-l2x0.c
+>> @@ -985,8 +985,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>>          if (!l2x0_base)
+>>                  return -ENOMEM;
+>>
+>> -       l2x0_saved_regs.phy_base = res.start;
+>> -
+>>          data = of_match_node(l2x0_ids, np)->data;
+>>
+>>          /* L2 configuration can only be changed if the cache is disabled */
+>> --
+>> 1.7.9.5
+>
+> -barry
+>
