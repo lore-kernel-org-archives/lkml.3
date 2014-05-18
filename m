@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaERWnd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 18:43:33 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:33977 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaERWnb (ORCPT
+	id S1752336AbaERWwh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 18:52:37 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51038 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752050AbaERWwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 18:43:31 -0400
+	Sun, 18 May 2014 18:52:36 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18No2baKY9rtNdZq390CuTA6S2Su1nz2dA=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 82F42579185
+Date: Sun, 18 May 2014 18:52:31 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jake Edge <jake@lwn.net>, Anton Saraev <antonysaraev@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v2 1/1] staging/skein: rename files and clean up
+ directory structure
+Message-ID: <20140518225231.GW27822@titan.lakedaemon.net>
+References: <20140518125615.2df48ea9@chukar.edge2.net>
 MIME-Version: 1.0
-In-Reply-To: <CANoiuGJC4CcZf-dzBQjFE72eBsb0zXTy4vxeE87cngT=kEiTVA@mail.gmail.com>
-References: <1400385604-21086-1-git-send-email-matlackdavid@gmail.com>
- <1400385604-21086-2-git-send-email-matlackdavid@gmail.com>
- <1400386345.14720.3.camel@joe-AO725> <CANoiuGJC4CcZf-dzBQjFE72eBsb0zXTy4vxeE87cngT=kEiTVA@mail.gmail.com>
-From: David Matlack <matlackdavid@gmail.com>
-Date: Sun, 18 May 2014 15:43:10 -0700
-Message-ID: <CANoiuGK-ys5Sf5Stw5cxRJ1y8SrH4RWYteZdhZwNxchoV4Hbvw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging: slicoss: rewrite eeprom checksum code
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Lior Dotan <liodot@gmail.com>,
-        charrer@alacritech.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140518125615.2df48ea9@chukar.edge2.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 9:51 PM, David Matlack <matlackdavid@gmail.com> wrote:
-> On Sat, May 17, 2014 at 9:12 PM, Joe Perches <joe@perches.com> wrote:
->> The if seems unnecessary.
->>
->> Perhaps declare a u16 return var or use
->>
->>         return lower_16 + upper_16;
->
-> I agree it's fishy... but using overflow doesn't produce the same result:
->
->          (u16) 65536   == 0
->          65536 - 65535 == 1
->
-> Now which is the correct result, I have no idea.
+Jake, Anton,
 
-I think the checksum algorithm being used here is RFC 1071 [1]. Which means the
-if is correct and just accounting for double overflow.
+On Sun, May 18, 2014 at 12:56:15PM -0600, Jake Edge wrote:
+> 
+> Clean up file names and locations.  Get rid of include/ directory and move
+> those up to the top-level.  Rename files to get rid of upper case.  Remove
+> skeinBlockNo3F.c as it was unused (temporary file or something?).
+> 
+> Signed-off-by: Jake Edge <jake@lwn.net>
+> ---
 
-> The eeprom on this device is
-> small (0x80 bytes max, not enough to trigger overflow) and I have no
+Ahh, crap.  I'm sorry.  I dropped the ball here.  A few weeks ago Anton
+(in the To:) sent me a series of patches offlist doing the exact same
+work this one does.  Anton sent this as part of his participation in the
+Eudyptula Challenge [1].
 
-Sorry, I was wrong about this. I was thinking in terms of summing bytes,
-but the checksum is summing words. Overflow _does_ get triggered.
+So that series was about to be his first contribution to the Linux
+Kernel.  Unfortunately, I've been wrapped around the axle with life and
+hadn't had time to review his latest version yet.  It's completely my
+fault.  In my defense, I did keep in touch with him and let him know I
+was busy.  :)
 
+Jake, would you mind dropping this patch and perhaps assisting me with
+reviewing Anton's series?  I'll have him resend it as-is and we can go
+from there.
 
-I think I'll go over this patch again while looking at the RFC to make sure
-everything is ok. Thanks!
+Anton, sorry for the mixup, please resend your series as is and include
+everybody in the To and Cc of this email.  I can re-send it if you like,
+but I thought you might like to do the honors.  Either works for me.
 
-[1] http://tools.ietf.org/html/rfc1071
+thx,
+
+Jason.
+
+[1] http://eudyptula-challenge.org/
