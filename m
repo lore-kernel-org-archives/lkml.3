@@ -1,177 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaERNNm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 09:13:42 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:44049 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaERNNk (ORCPT
+	id S1751391AbaERNTQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 09:19:16 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:41374 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaERNTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 09:13:40 -0400
+	Sun, 18 May 2014 09:19:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <5374532D.7030602@lge.com>
-References: <5374532D.7030602@lge.com>
+In-Reply-To: <53742B55.1060507@lge.com>
+References: <53742B55.1060507@lge.com>
 From: Barry Song <21cnbao@gmail.com>
-Date: Sun, 18 May 2014 21:13:20 +0800
-Message-ID: <CAGsJ_4zN39jeHz574_r9y_hjdn1Acbkr9gQhE=1L-Fs82-vDkw@mail.gmail.com>
-Subject: Re: [RFC PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+Date: Sun, 18 May 2014 21:18:54 +0800
+Message-ID: <CAGsJ_4xXq++1KKMM5VjBCKbKGEWXK3QJK4R8-wzyURTcckxjpw@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] ARM: MM: remove phy_base field of struct
 To: Gioh Kim <gioh.kim@lge.com>
 Cc: Russell King <linux@arm.linux.org.uk>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
         LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+        =?UTF-8?B?7J206rG07Zi4L+yxheyehOyXsOq1rOybkC9TVyBQbGF0Zm9ybSjsl7ApQU9U7YyAKGd1bmhvLmxlZUBs?=
+	 =?UTF-8?B?Z2UuY29tKQ==?= <gunho.lee@lge.com>,
+        gurugio@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-15 13:39 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
->
+2014-05-15 10:49 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
 > Hi,
 >
-> My board is using Trustzone and running kernel is non-secure mode.
-> But setup function of PL310 driver is only for secure mode kernel.
+> It's not a big deal but I've found that phy_base field of struct
+> l2x0_regs is not used anywhere.
+> I've removed it on my board. It seems to be working fine.
 >
-> What about adding an entry for non-secure mode setup function?
->
-> I'm sorry for my poor code but I just wanna say what I need .
+> Why do we need physical address of L2 cache controller?
+> Is it removable?
 
-Gioh,
-
-i don't really understand what is the user scenarios for this, if you
-are running linux in non-secure mode, your security-mode codes have
-enabled L2, so this makes non-secure linux have no chance to execute
-setup at all:
- 992         /* L2 configuration can only be changed if the cache is disabled */
- 993         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
- 994                 if (data->setup)
- 995                         data->setup(np, &aux_val, &aux_mask);
-
-anyway, cache-l2x0.c supported non-secure linux as you can read:
- 387         /*
- 388          * Check if l2x0 controller is already enabled.
- 389          * If you are booting from non-secure mode
- 390          * accessing the below registers will fault.
- 391          */
- 392         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
- 393                 /* Make sure that I&D is not locked down when starting */
- 394                 l2x0_unlock(cache_id);
- 395
- 396                 /* l2x0 controller is disabled */
- 397                 writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
- 398
- 399                 l2x0_inv_all();
- 400
- 401                 /* enable L2X0 */
- 402                 writel_relaxed(L2X0_CTRL_EN, l2x0_base + L2X0_CTRL);
- 403         }
-
-
+if you read the source codes of arch/arm/mach-imx/suspend-imx6.S, you
+will find it is needed.
 
 >
-> ------------------------------ 8< -------------------------------
-> From ee4b03fb2c12038c6bbb9f752558abae8d500c07 Mon Sep 17 00:00:00 2001
+>
+> ------------------------ 8< --------------------------
+> From cc0d98f4ef8b6f8f139a7c6179ed0b03e9ad7d07 Mon Sep 17 00:00:00 2001
 > From: Gioh Kim <gioh.kim@lge.com>
-> Date: Thu, 15 May 2014 14:06:36 +0900
-> Subject: [PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+> Date: Thu, 15 May 2014 11:26:20 +0900
+> Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct l2x0_regs
 >
-> For some platforms using Trustzone and running kernel in non-secure mode,
-> another l2 setup function is necessary.
+> Remove unused field, phy_base of struct l2x0_regs
 >
-> Signed-off-by: Gioh Kim <gioh.kim@lge.c>
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 > ---
->  arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++++
->  arch/arm/mm/cache-l2x0.c                   |   26 +++++++++++++++++++++++++-
->  2 files changed, 34 insertions(+), 1 deletion(-)
+>  arch/arm/include/asm/hardware/cache-l2x0.h |    1 -
+>  arch/arm/kernel/asm-offsets.c              |    1 -
+>  arch/arm/mm/cache-l2x0.c                   |    2 --
+>  3 files changed, 4 deletions(-)
 >
-> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
-> index 6dec6da..de31114 100644
+> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h
+> b/arch/arm/include/asm/hardware/cache-l2x0.h
+> index 6795ff7..6dec6da 100644
 > --- a/arch/arm/include/asm/hardware/cache-l2x0.h
 > +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
-> @@ -21,6 +21,7 @@
->  #define __ASM_ARM_HARDWARE_L2X0_H
->
->  #include <linux/errno.h>
-> +#include <linux/of.h>
->
->  #define L2X0_CACHE_ID                  0x000
->  #define L2X0_CACHE_TYPE                        0x004
-> @@ -110,11 +111,19 @@
->  extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
->  #if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_OF)
->  extern int l2x0_of_init(u32 aux_val, u32 aux_mask);
-> +extern int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
-> +                       void (*fp)(const struct device_node *, u32 *, u32 *));
->  #else
->  static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
->  {
->         return -ENODEV;
->  }
-> +static inline int l2x0_of_set_setup_nonsecure(const char *compatible,
-> +                                             size_t len,
-> +                     void (*fp)(const struct device_node *, u32 *, u32 *))
-> +{
-> +       return -ENODEV;
-> +}
+> @@ -118,7 +118,6 @@ static inline int l2x0_of_init(u32 aux_val, u32
+> aux_mask)
 >  #endif
 >
 >  struct l2x0_regs {
+> -       unsigned long phy_base;
+>         unsigned long aux_ctrl;
+>         /*
+>          * Whether the following registers need to be saved/restored
+> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
+> index 85598b5..9b0ff94 100644
+> --- a/arch/arm/kernel/asm-offsets.c
+> +++ b/arch/arm/kernel/asm-offsets.c
+> @@ -100,7 +100,6 @@ int main(void)
+>    DEFINE(S_FRAME_SIZE,         sizeof(struct pt_regs));
+>    BLANK();
+>  #ifdef CONFIG_CACHE_L2X0
+> -  DEFINE(L2X0_R_PHY_BASE,      offsetof(struct l2x0_regs, phy_base));
+>    DEFINE(L2X0_R_AUX_CTRL,      offsetof(struct l2x0_regs, aux_ctrl));
+>    DEFINE(L2X0_R_TAG_LATENCY,   offsetof(struct l2x0_regs, tag_latency));
+>    DEFINE(L2X0_R_DATA_LATENCY,  offsetof(struct l2x0_regs, data_latency));
 > diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index 728d644..582ea37 100644
+> index 7abde2c..728d644 100644
 > --- a/arch/arm/mm/cache-l2x0.c
 > +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -45,6 +45,7 @@ struct l2x0_regs l2x0_saved_regs;
->  struct l2x0_of_data {
->         void (*setup)(const struct device_node *, u32 *, u32 *);
->         void (*save)(void);
-> +       void (*setup_nonsecure)(const struct device_node *, u32 *, u32 *);
->         struct outer_cache_fns outer_cache;
->  };
+> @@ -985,8 +985,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>         if (!l2x0_base)
+>                 return -ENOMEM;
 >
-> @@ -968,6 +969,23 @@ static const struct of_device_id l2x0_ids[] __initconst = {
->         {}
->  };
->
-> +int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
-> +                       void (*fp)(const struct device_node *, u32 *, u32 *))
-> +{
-> +       const struct of_device_id *id;
-> +
-> +       for (id = &l2x0_ids[0]; id->compatible != NULL; id++) {
-> +               if (strncmp(id->compatible, compatible, len) == 0) {
-> +                       struct l2x0_of_data *data = id->data;
-> +
-> +                       data->setup_nonsecure = fp;
-> +                       return 0;
-> +               }
-> +       }
-> +
-> +       return -EINVAL;
-> +}
-> +
->  int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
->  {
->         struct device_node *np;
-> @@ -989,8 +1007,14 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+> -       l2x0_saved_regs.phy_base = res.start;
+> -
+>         data = of_match_node(l2x0_ids, np)->data;
 >
 >         /* L2 configuration can only be changed if the cache is disabled */
->         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
-> -               if (data->setup)
-> +
-> +               if (data->setup_nonsecure)
-> +                       data->setup_nonsecure(np, &aux_val, &aux_mask);
-> +               else if (data->setup)
->                         data->setup(np, &aux_val, &aux_mask);
-> +               else
-> +                       /* no function to enable cache */
-> +                       return -ENODEV;
->
->                 /* For aurora cache in no outer mode select the
->                  * correct mode using the coprocessor*/
 > --
 > 1.7.9.5
-
 
 -barry
