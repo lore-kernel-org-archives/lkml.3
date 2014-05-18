@@ -1,155 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaERNtc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 09:49:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36234 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaERNta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 09:49:30 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Mark Brown <broonie@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Cc: Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 1/3] mfd-core: Don't register supplies from add_device, add register_supply_aliases()
-Date: Sun, 18 May 2014 15:49:11 +0200
-Message-Id: <1400420953-20705-2-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
-References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
+	id S1751492AbaERNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 09:55:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55623 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751172AbaERNzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 09:55:24 -0400
+Message-ID: <1400421311.2647.67.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.2 00/34] 3.2.59-rc1 review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>, akpm@linux-foundation.org
+Date: Sun, 18 May 2014 14:55:11 +0100
+In-Reply-To: <20140516155547.GA32499@roeck-us.net>
+References: <lsq.1400244440.390103756@decadent.org.uk>
+	 <20140516155547.GA32499@roeck-us.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-HVwHNaT4yj+NsgWMS2zm"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:58c6:ee08:6ebf:6631
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cannot register supply alias in mfd_add_device before calling
-platform_add_device, for 2 reasons:
-1) devm resources may not be registered before the (platform) drivers probe
-   method runs
-2) The platform-dev's name must be set before registering the aliases which
-   happens from platform_add_device.
 
-So stop registering supply aliases from mfd_add_device, and add a
-mfd_register_supply_aliases helper functions for the cell's plaform driver
-probe method to use.
+--=-HVwHNaT4yj+NsgWMS2zm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
- include/linux/mfd/core.h |  6 +++++-
- 2 files changed, 26 insertions(+), 17 deletions(-)
+On Fri, 2014-05-16 at 08:55 -0700, Guenter Roeck wrote:
+> On Fri, May 16, 2014 at 01:47:20PM +0100, Ben Hutchings wrote:
+> > This is the start of the stable review cycle for the 3.2.59 release.
+> > There are 34 patches in this series, which will be posted as responses
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >=20
+> > Responses should be made by Sun May 18 12:47:20 UTC 2014.
+> > Anything received after that time might be too late.
+> >=20
+> Build results:
+> 	total: 131 pass: 97 skipped: 23 fail: 11
+>=20
+> qemu tests all passed.
+>=20
+> Build results look worse than usual, but that is due to changes in
+> my test environment, not due to changes in the code.
+>=20
+> powerpc:allmodconfig fails because it is now build it with gcc 4.8.1.
+> You'll need to pull in commit 8fe9c93e7 (powerpc: Add vr save/restore
+> functions) to fix this problem.
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 2676492..d1f929a 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -102,13 +102,6 @@ static int mfd_add_device(struct device *parent, int id,
- 	pdev->dev.dma_mask = parent->dma_mask;
- 	pdev->dev.dma_parms = parent->dma_parms;
- 
--	ret = devm_regulator_bulk_register_supply_alias(
--			&pdev->dev, cell->parent_supplies,
--			parent, cell->parent_supplies,
--			cell->num_parent_supplies);
--	if (ret < 0)
--		goto fail_res;
--
- 	if (parent->of_node && cell->of_compatible) {
- 		for_each_child_of_node(parent->of_node, np) {
- 			if (of_device_is_compatible(np, cell->of_compatible)) {
-@@ -122,12 +115,12 @@ static int mfd_add_device(struct device *parent, int id,
- 		ret = platform_device_add_data(pdev,
- 					cell->platform_data, cell->pdata_size);
- 		if (ret)
--			goto fail_alias;
-+			goto fail_res;
- 	}
- 
- 	ret = mfd_platform_add_cell(pdev, cell, usage_count);
- 	if (ret)
--		goto fail_alias;
-+		goto fail_res;
- 
- 	for (r = 0; r < cell->num_resources; r++) {
- 		res[r].name = cell->resources[r].name;
-@@ -162,17 +155,17 @@ static int mfd_add_device(struct device *parent, int id,
- 		if (!cell->ignore_resource_conflicts) {
- 			ret = acpi_check_resource_conflict(&res[r]);
- 			if (ret)
--				goto fail_alias;
-+				goto fail_res;
- 		}
- 	}
- 
- 	ret = platform_device_add_resources(pdev, res, cell->num_resources);
- 	if (ret)
--		goto fail_alias;
-+		goto fail_res;
- 
- 	ret = platform_device_add(pdev);
- 	if (ret)
--		goto fail_alias;
-+		goto fail_res;
- 
- 	if (cell->pm_runtime_no_callbacks)
- 		pm_runtime_no_callbacks(&pdev->dev);
-@@ -181,10 +174,6 @@ static int mfd_add_device(struct device *parent, int id,
- 
- 	return 0;
- 
--fail_alias:
--	devm_regulator_bulk_unregister_supply_alias(&pdev->dev,
--						    cell->parent_supplies,
--						    cell->num_parent_supplies);
- fail_res:
- 	kfree(res);
- fail_device:
-@@ -286,5 +275,21 @@ int mfd_clone_cell(const char *cell, const char **clones, size_t n_clones)
- }
- EXPORT_SYMBOL(mfd_clone_cell);
- 
-+int mfd_register_supply_aliases(struct platform_device *pdev)
-+{
-+	const struct mfd_cell *cell;
-+
-+	if (pdev->dev.type != &mfd_dev_type)
-+		return -EINVAL;
-+
-+	cell = mfd_get_cell(pdev);
-+
-+	return devm_regulator_bulk_register_supply_alias(
-+			&pdev->dev, cell->parent_supplies,
-+			pdev->dev.parent, cell->parent_supplies,
-+			cell->num_parent_supplies);
-+}
-+EXPORT_SYMBOL(mfd_register_supply_aliases);
-+
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Ian Molton, Dmitry Baryshkov");
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index bdba8c6..a467307 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -61,7 +61,9 @@ struct mfd_cell {
- 	bool			pm_runtime_no_callbacks;
- 
- 	/* A list of regulator supplies that should be mapped to the MFD
--	 * device rather than the child device when requested
-+	 * device rather than the child device when requested.
-+	 * Drivers using this must call mfd_register_supply_aliases()
-+	 * from their probe method.
- 	 */
- 	const char		**parent_supplies;
- 	int			num_parent_supplies;
-@@ -110,4 +112,6 @@ extern int mfd_add_devices(struct device *parent, int id,
- 
- extern void mfd_remove_devices(struct device *parent);
- 
-+extern int mfd_register_supply_aliases(struct platform_device *pdev);
-+
- #endif
--- 
-1.9.0
+I'll put that in the next update.
 
+> powerpc:allmodconfig and powerpc:ppc64e_defconfig fail if built with binu=
+tils
+> 2.24 due to a changed ABI in the powerpc assembler. This currently fails =
+with
+> all releases; a patch to solve the problem is pending acceptance and upst=
+ream
+> integration.
+>=20
+> unicore32:defconfig fails to build with all releases.
+>=20
+> Details are available at http://server.roeck-us.net:8010/builders.
+>=20
+> On a side note, can you add my e-mail (linux@roeck-us.net) to Cc: for the
+> review request e-mail ?
+
+Yes, I'll do that.
+
+Thanks for testing!
+
+Ben.
+
+--=20
+Ben Hutchings
+Usenet is essentially a HUGE group of people passing notes in class.
+                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
+'
+
+--=-HVwHNaT4yj+NsgWMS2zm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU3i7xue/yOyVhhEJAQrhNg/9HR8vpZDtv391jaXfn663JksmG9LyeZuB
+oCvqEstNCVLCoajD6QJMcT+Q7BQPBqoIsjsVSb+b1Lc/JGmtK+gftqL2iDl58K1i
+i/+GLJd/8zyYCD+Oe0pU2J6QhblZMWEXsHHK+5DaXWycdll1ObNrVb/Eydu696nP
+DxKeeP3+6tl0qzIN4Hyw+I04sr+I5phZrkzAoqi1vks6wLTpvz3FL29MI0Eb9cLH
+es16Ct7ZmC2zorztjpK8q5NqHo1GENhW6/XmR26KXSCApXI7JGVZsSyhPqYHVa1U
+JxdFUPzw+RQlX1P4/VKxy2Ea7pmkUed4NXumM0bjPqb94cjgomT/8tjz+21cpBQu
+CnteBioVNy6H2t7Pe/QQZdpiZe0+vldeqIB+AetjsQjE1NmVCMoQ7E3Z1TjVrWIA
+mRjnKrhOSy8WuSSMwAaN3Z8uxDJKEWCjehhwHkEoifHAQtzUMHigkJl7Jd50spSu
+CkNOK5mkXiaK0Qk17uTv1dduOVeYCWo6spZG3fJPtrcaVE6E5mEvfjyelWvSIJdh
+Z/4f33qT60NgVNojKNRLkSU/hn2AZgb8zje/xb5ez6Gr0IN6HVgLhPcbAdlnoCHD
+AFR51WaVdVJlaDgaKdlvvgS37TfdmxIc9cm5qkC/4KkjA3v5do14rVgZYVGk7IMm
+jGMBmUdBITg=
+=vSAS
+-----END PGP SIGNATURE-----
+
+--=-HVwHNaT4yj+NsgWMS2zm--
