@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaERRgT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 13:36:19 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49502 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaERRgR (ORCPT
+	id S1752064AbaERSBu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 14:01:50 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:1181 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877AbaERSBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 13:36:17 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma reserved memory when not used
-In-Reply-To: <20140515015842.GB10116@js1304-P5Q-DELUXE>
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <8761l8ah04.fsf@linux.vnet.ibm.com> <20140515015842.GB10116@js1304-P5Q-DELUXE>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 18 May 2014 23:06:08 +0530
-Message-ID: <87lhtzng53.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051817-3864-0000-0000-00000E457A06
+	Sun, 18 May 2014 14:01:49 -0400
+Message-ID: <1400436100.9463.4.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 3/5] ipc,msg: always respect MSG_NOERROR
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: akpm@linux-foundation.org, aswin@hp.com, linux-kernel@vger.kernel.org
+Date: Sun, 18 May 2014 11:01:40 -0700
+In-Reply-To: <53784ABD.8080209@colorfullife.com>
+References: <1400012857-11733-1-git-send-email-davidlohr@hp.com>
+	 <1400012857-11733-4-git-send-email-davidlohr@hp.com>
+	 <53784ABD.8080209@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Sun, 2014-05-18 at 07:53 +0200, Manfred Spraul wrote:
+> On 05/13/2014 10:27 PM, Davidlohr Bueso wrote:
+> > When specifying the MSG_NOERROR flag, receivers can avoid returning
+> > error (E2BIG) and just truncate the message text, if it is too large.
+> >
+> > Currently, this logic is only respected when there are already pending
+> > messages in the queue.
+> Do you have a test case? The code should handle that
+> (See below)
+> >   Fix this for the case when there are only
+> > receivers waiting for a msg to be sent. In order for this to work, save
+> > the flags in the msg_receiver struct as it must be used later when
+> > doing the pipeline send.
+> No, it is sufficient to set the message size to infinity.
+> 
+> > Also do some pipeline_send() cleanups while at it.
+> No - please don't mix cleanups with bugfixes.
+> 
+> >   
+> >   long do_msgsnd(int msqid, long mtype, void __user *mtext,
+> > @@ -901,6 +907,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+> >   		list_add_tail(&msr_d.r_list, &msq->q_receivers);
+> >   		msr_d.r_tsk = current;
+> >   		msr_d.r_msgtype = msgtyp;
+> > +		msr_d.r_msgflg = msgflg;
+> >   		msr_d.r_mode = mode;
+> >   		if (msgflg & MSG_NOERROR)
+> >   			msr_d.r_maxsize = INT_MAX;
+>     ^^^^^^
+> This code should handle MSG_NOERROR:
+> If MSG_NOERROR is set, then maxsize is set to INT_MAX, therefore -E2BIG 
+> should never be returned.
 
-> On Wed, May 14, 2014 at 02:12:19PM +0530, Aneesh Kumar K.V wrote:
->> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
->> 
->> 
->> 
->> Another issue i am facing with the current code is the atomic allocation
->> failing even with large number of CMA pages around. In my case we never
->> reclaimed because large part of the memory is consumed by the page cache and
->> for that, free memory check doesn't include at free_cma. I will test
->> with this patchset and update here once i have the results.
->> 
->
-> Hello,
->
-> Could you elaborate more on your issue?
-> I can't completely understand your problem.
-> So your atomic allocation is movable? And although there are many free
-> cma pages, that request is fail?
->
+Yeah, I noticed that, but I'd still prefer keeping the check, even if
+redundant. It's free and by keeping both scenarios where there are and
+aren't msg waiting in the queue the code becomes easier to read.
 
-non movable atomic allocations are failing because we don't have
-anything other than CMA pages left and kswapd is yet to catchup ?
-
-
-  swapper/0: page allocation failure: order:0, mode:0x20
-  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.23-1500.pkvm2_1.5.ppc64 #1
-  Call Trace:
- [c000000ffffcb610] [c000000000017330] .show_stack+0x130/0x200 (unreliable)
- [c000000ffffcb6e0] [c00000000087a8c8] .dump_stack+0x28/0x3c
- [c000000ffffcb750] [c0000000001e06f0] .warn_alloc_failed+0x110/0x160
- [c000000ffffcb800] [c0000000001e5984] .__alloc_pages_nodemask+0x9d4/0xbf0
- [c000000ffffcb9e0] [c00000000023775c] .alloc_pages_current+0xcc/0x1b0
- [c000000ffffcba80] [c0000000007098d4] .__netdev_alloc_frag+0x1a4/0x1d0
- [c000000ffffcbb20] [c00000000070d750] .__netdev_alloc_skb+0xc0/0x130
- [c000000ffffcbbb0] [d000000009639b40] .tg3_poll_work+0x900/0x1110 [tg3]
- [c000000ffffcbd10] [d00000000963a3a4] .tg3_poll_msix+0x54/0x200 [tg3]
- [c000000ffffcbdb0] [c00000000071fcec] .net_rx_action+0x1dc/0x310
- [c000000ffffcbe90] [c0000000000c1b08] .__do_softirq+0x158/0x330
- [c000000ffffcbf90] [c000000000025744] .call_do_softirq+0x14/0x24
- [c000000ffffc7e00] [c000000000011684] .do_softirq+0xf4/0x130
- [c000000ffffc7e90] [c0000000000c1f18] .irq_exit+0xc8/0x110
- [c000000ffffc7f10] [c000000000011258] .__do_irq+0xc8/0x1f0
- [c000000ffffc7f90] [c000000000025768] .call_do_irq+0x14/0x24
- [c00000000137b750] [c00000000001142c] .do_IRQ+0xac/0x130
- [c00000000137b800] [c000000000002a64]
- hardware_interrupt_common+0x164/0x180
-
-....
-
-
- Node 0 DMA: 408*64kB (C) 408*128kB (C) 408*256kB (C) 408*512kB (C) 408*1024kB (C) 406*2048kB (C) 199*4096kB (C) 97*8192kB (C) 6*16384kB (C) =
- 3348992kB
- Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=16384kB
- Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=16777216kB
-
-meminfo details:
-
- MemTotal:       65875584 kB
- MemFree:         8001856 kB
- Buffers:        49330368 kB
- Cached:           178752 kB
- SwapCached:            0 kB
- Active:         28550464 kB
- Inactive:       25476416 kB
- Active(anon):    3771008 kB
- Inactive(anon):   767360 kB
- Active(file):   24779456 kB
- Inactive(file): 24709056 kB
- Unevictable:       15104 kB
- Mlocked:           15104 kB
- SwapTotal:       8384448 kB
- SwapFree:        8384448 kB
- Dirty:                 0 kB
-
--aneesh
+Thanks,
+Davidlohr
 
