@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaERQXL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 12:23:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50297 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaERQXJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 12:23:09 -0400
-Date: Sun, 18 May 2014 19:22:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Masood Mehmood <ody.guru@gmail.com>
-Subject: Re: [PATCH] Fix for possible null pointer dereference in node.c
-Message-ID: <20140518162253.GM15585@mwanda>
-References: <1400190833-27882-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140515224327.GA16255@mwanda>
- <CAFo99gYEf6GrAjuWNc5+DEEuBV82eejRuy7QtiJuLD+sRccLRA@mail.gmail.com>
- <20140517185615.GB15585@mwanda>
- <CAFo99gbnN8j8WgY3O1eDgkpkmJU11X8-9cCU_0_s7TRN8wNW+Q@mail.gmail.com>
+	id S1751654AbaERQf3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 12:35:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45782 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381AbaERQf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 12:35:28 -0400
+Date: Sun, 18 May 2014 18:35:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH] x86/mce: Distirbute the clear operation of mces_seen to
+ Per-CPU rather than only monarch CPU
+Message-ID: <20140518163508.GA8003@pd.tnic>
+References: <1400425504-8821-1-git-send-email-slaoub@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAFo99gbnN8j8WgY3O1eDgkpkmJU11X8-9cCU_0_s7TRN8wNW+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1400425504-8821-1-git-send-email-slaoub@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 05:49:52PM +0200, Rickard Strandqvist wrote:
-> Hi
-> 
-> When I run cppcheck find the about 5,000 errors, of these, I selected
-> the 100 most serious and has made patches. But my ability to immerse
-> myself in each failure has been limited unfortunately.
-> 
+On Sun, May 18, 2014 at 11:05:04PM +0800, Chen Yucong wrote:a
+> mces_seen is a Per-CPU variable which should only be accessed by
+> Per-CPU as possible. So the clear operation of mces_seen should also
+> be lcoal to Per-CPU rather than monarch CPU.
 
-I am familiar with that feeling.  ;)
+No, you need to do the cleaning in mce_reign because the monarch cpu has
+to run last after all other cpus have scanned their mce banks.
 
-With Smatch, I ignore inconsistent NULL checking like this when we know
-that the parameter is always non-NULL.  It was just too much hassle to
-deal with.
+> Meanwhile, there is also a potential risk that mces_seen will not
+> be be cleared if a timeout occors in mce_end for monarch CPU. As a
+> reuslt, the stale value of mces_seen will reappear on the next mce.
 
-These days I tend to report more bugs instead of fixing them myself.  I
-run on linux-next and complain to the original author as soon as the
-buggy code is merged.  If the code is old, then my experience is that no
-one will fix it.
+If that happens, we have a bigger problem.
 
-Also 5000 inconsistent NULL checks seems like too high of a figure.  For
-my inconsistent NULL checks I get 215 of these warnings:
+Is that a real issue you're trying to address?
 
-	sound/i2c/other/ak4xxx-adda.c:808 build_adc_controls()
-	error: we previously assumed 'ak->adc_info' could be null (see line 789)
+-- 
+Regards/Gruss,
+    Boris.
 
-And 75 of these:
-
-	fs/efs/inode.c:298 efs_map_block()
-	warn: variable dereferenced before check 'bh' (see line 292)
-
-regards,
-dan carpenter
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
