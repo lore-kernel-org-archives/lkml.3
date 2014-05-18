@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaERQAh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 12:00:37 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:60077 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaERQAf (ORCPT
+	id S1752065AbaERQCN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 12:02:13 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:34524 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaERQCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 12:00:35 -0400
+	Sun, 18 May 2014 12:02:12 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        netdev@vger.kernel.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Marta Rybczynska <rybczynska@gmail.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] net: ethernet: ibm: ehea: ehea_qmr.c:  Fix for possible null pointer dereference
-Date: Sun, 18 May 2014 18:01:21 +0200
-Message-Id: <1400428881-10310-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] pci: hotplug: cpqphp_ctrl.c:  Fix for possible null pointer dereference
+Date: Sun, 18 May 2014 18:02:57 +0200
+Message-Id: <1400428977-10464-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +27,23 @@ Was largely found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/ethernet/ibm/ehea/ehea_qmr.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/pci/hotplug/cpqphp_ctrl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/ibm/ehea/ehea_qmr.c b/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
-index 9b03033..a0820f7 100644
---- a/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
-+++ b/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
-@@ -103,12 +103,14 @@ out_nomem:
+diff --git a/drivers/pci/hotplug/cpqphp_ctrl.c b/drivers/pci/hotplug/cpqphp_ctrl.c
+index 11845b7..a319d07 100644
+--- a/drivers/pci/hotplug/cpqphp_ctrl.c
++++ b/drivers/pci/hotplug/cpqphp_ctrl.c
+@@ -709,7 +709,8 @@ static struct pci_resource *get_max_resource(struct pci_resource **head, u32 siz
+ 				temp = temp->next;
+ 			}
  
- static void hw_queue_dtor(struct hw_queue *queue)
- {
--	int pages_per_kpage = PAGE_SIZE / queue->pagesize;
-+	int pages_per_kpage;
- 	int i, nr_pages;
+-			temp->next = max->next;
++			if(temp)
++				temp->next = max->next;
+ 		}
  
- 	if (!queue || !queue->queue_pages)
- 		return;
- 
-+	pages_per_kpage = PAGE_SIZE / queue->pagesize;
-+
- 	nr_pages = queue->queue_length / queue->pagesize;
- 
- 	for (i = 0; i < nr_pages; i += pages_per_kpage)
+ 		max->next = NULL;
 -- 
 1.7.10.4
 
