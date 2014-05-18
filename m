@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaERNqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 09:46:30 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:40685 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169AbaERNq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 09:46:26 -0400
-Date: Sun, 18 May 2014 13:46:15 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Chung-Lin Tang <cltang@codesourcery.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-In-Reply-To: <5376AE23.10905@zytor.com>
-Message-ID: <Pine.LNX.4.64.1405181325520.4608@digraph.polyomino.org.uk>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com>
- <4706636.rTYoqSXXOR@wuerfel> <Pine.LNX.4.64.1405151949160.911@digraph.polyomino.org.uk>
- <9236147.lyD24Zv5SZ@wuerfel> <53769B27.2090407@zytor.com>
- <Pine.LNX.4.64.1405162336150.24114@digraph.polyomino.org.uk> <5376AE23.10905@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 18 May 2014 13:46:18.0978 (UTC) FILETIME=[8BEA2C20:01CF729F]
+	id S1751534AbaERNtd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 09:49:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751304AbaERNta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 09:49:30 -0400
+From: Hans de Goede <hdegoede@redhat.com>
+To: Mark Brown <broonie@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Carlo Caione <carlo@caione.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
+Subject: [PATCH 0/3] Fix WARN_ON caused by "mfd: Allow mapping regulator supplies to MFD device from children"
+Date: Sun, 18 May 2014 15:49:10 +0200
+Message-Id: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 May 2014, H. Peter Anvin wrote:
+Hi all,
 
-> > Adding snseconds_t to POSIX seems pointless when there is no need for this 
-> > field to store values that can't fit in "long".  Even if it were added, 
-> > good practice would say that implementations should keep using "long" 
-> > whenever possible for compatibility with existing applications (just like 
-> > the ISO C recommendation "The types used for size_t and ptrdiff_t should 
-> > not have an integer conversion rank greater than that of signed long int 
-> > unless the implementation supports objects large enough to make this 
-> > necessary.").
-> 
-> That is a very different thing, though.
+I hit this WARN_ON:
 
-It's advising against breaking compatibility with existing applications 
-(in that case, C90 applications that assume sizes can be cast to unsigned 
-long for printing, etc.) unless necessary.
+WARNING: CPU: 0 PID: 1 at drivers/base/dd.c:286 driver_probe_device...
+Which points to this line:
 
-Rich Felker suggests 
-<https://sourceware.org/bugzilla/show_bug.cgi?id=16438> there are similar 
-security risks from various types in the x32 ABI being wider than size_t.  
-That seems entirely plausible, if unconfirmed; I don't think there's been 
-much effort to look for such issues where applications expect types to be 
-no wider than size_t when there's no use to them being wider than size_t.  
-Most of those choices are valid but may be risky to existing software much 
-as IL32LLP64 can be risky to existing software.
+	WARN_ON(!list_empty(&dev->devres_head));
 
-> > If you were designing from scratch, no doubt a typedef such as snseconds_t 
-> > would be there, but with real-world APIs that have accumulated over time, 
-> > deviating from "long" now is a bad idea.
-> 
-> Given that you already have a long long member of the same structure, it
-> seems unlikely that adding another long long to this is a problem.
-> 
-> Anyway, this was discussed back in 2011:
-> 
-> https://lkml.org/lkml/2011/8/31/244
+While testing Carlo Caione's axp20x regulator patches on top of
+3.15-rc5. The problem is that mfd_add_device() from drivers/mfd/mfd-core.c
+makes a call to devm_regulator_bulk_register_supply_alias() before doing the
+platform_device_add, which results in dev->devres_head not being empty,
+triggering the warning.
 
-Just because one buggy port (I consider this quite clearly a bug at the 
-glibc level, whatever the kernel does, agreeing with Rich Felker in 
-<https://sourceware.org/bugzilla/show_bug.cgi?id=16437>) managed to get 
-into glibc does not mean any more should be added.  glibc's function is to 
-provide POSIX (and other) interfaces on top of the underlying kernel, 
-which includes fixing any mismatch between the kernel and POSIX interfaces 
-(such as converting from userspace POSIX struct timespec to the form in 
-which times are passed to the kernel, by copying and zeroing padding, if 
-necessary).  That's just like implementing POSIX threads on top of clone - 
-or, if future POSIX disallows newlines in filenames (something that's been 
-discussed for some time but doesn't seem to have seen much action lately) 
-but the Linux kernel doesn't follow, making such checks on filenames 
-before passing them to the kernel.  Of course, one would hope that the 
-underlying kernel interfaces are designed to make it straightforward to 
-implement POSIX on top of them (as well as other things not envisaged by 
-POSIX).
+The code triggering this was introduced by this commit:
+"mfd: Allow mapping regulator supplies to MFD device from children" :
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7fcd4274
 
-The userspace ABI for struct timespec with 64-bit time_t and 32-bit long 
-should use long tv_nsec in any future ports, with appropriate conversion 
-code in glibc if the kernel interface is different (for ports that started 
-out with 32-bit time_t, conversion code will be needed anyway to convert 
-to the 32-bit structure if the new syscalls are unavailable at runtime and 
-so the old syscalls need to be used, but if the kernel's structure with 
-64-bit time_t is different from that in userspace then both old and new 
-kernels need conversion code).  Given Rich Felker's bug reports, it seems 
-reasonable to suppose that musl will wish to do this as well as glibc.
+Which puts the registering of the aliases before the
+platform_device_add, so lets try moving it to below the platform_device_add.
 
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+This changes the messages about the alias addition from:
+
+[    1.386371] Adding alias for supply acin,(null) -> acin,0-0034
+[    1.392205] Adding alias for supply vin2,(null) -> vin2,0-0034
+[    1.398112] Adding alias for supply vin3,(null) -> vin3,0-0034
+[    1.403995] Adding alias for supply ldo24in,(null) -> ldo24in,0-0034
+[    1.410344] Adding alias for supply ldo3in,(null) -> ldo3in,0-0034
+[    1.416551] Adding alias for supply ldo5in,(null) -> ldo5in,0-0034
+
+To:
+
+[    1.410545] Adding alias for supply acin,axp20x-regulator -> acin,0-0034
+[    1.417288] Adding alias for supply vin2,axp20x-regulator -> vin2,0-0034
+[    1.424002] Adding alias for supply vin3,axp20x-regulator -> vin3,0-0034
+[    1.430695] Adding alias for supply ldo24in,axp20x-regulator -> ldo24in,0-003
+4
+[    1.437922] Adding alias for supply ldo3in,axp20x-regulator -> ldo3in,0-0034
+[    1.444973] Adding alias for supply ldo5in,axp20x-regulator -> ldo5in,0-0034
+
+Which looks more correct, but this leads to other problems:
+
+[    1.386241] LDO1: 1300 mV
+[    1.388989] axp20x-regulator axp20x-regulator: Failed to find supply acin
+[    1.395978] axp20x-regulator axp20x-regulator: Failed to register LDO1
+[    1.402513] platform axp20x-regulator: Driver axp20x-regulator requests probe
+ deferral
+
+Followed by:
+[    2.191834] WARNING: CPU: 0 PID: 6 at drivers/base/dd.c:286 driver_probe_devi
+ce+0xe0/0x344()
+[    2.200323] Modules linked in:
+[    2.203422] CPU: 0 PID: 6 Comm: kworker/u4:0 Not tainted 3.15.0-rc5+ #143
+[    2.210209] Workqueue: deferwq deferred_probe_work_func
+
+So the exact same problem, what happens here is that the driver probe gets deferred,
+then we add the aliases, and then when the deferred probe runs we're in the
+same situation again that the devres list is not empty at probe time.
+
+Looking more into this, I also noticed that mfd_add_device also has a
+call to devm_regulator_bulk_unregister_supply_alias(), which is weird because
+the whole idea of devm functions is that they cleanup after themselves.
+
+All this together has led me to the conclusion that the current approach is
+simply wrong, and that the regulator alias registering should be done in
+the platform drivers probe method. 
+
+So that is what this patch set does. Note I've kept most of the related code
+the same. Esp. including the listing of the parent supplies in the cell info,
+as I feel that that is the right place for it.
+
+Regards,
+
+Hans
