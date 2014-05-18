@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaERPWo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 11:22:44 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36206 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaERPWn (ORCPT
+	id S1752246AbaERPW6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 11:22:58 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:58160 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212AbaERPW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 11:22:43 -0400
+	Sun, 18 May 2014 11:22:57 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 10/28] staging:rtl8188eu: Remove unused function phy_DbmToTxPwrIdx()
-Date: Sun, 18 May 2014 20:49:03 +0530
-Message-Id: <1400426361-19596-11-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 11/28] staging: rtl8188eu: Remove unused funtion PHY_GetTxPowerLevel8188E()
+Date: Sun, 18 May 2014 20:49:04 +0530
+Message-Id: <1400426361-19596-12-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
 References: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
@@ -23,64 +23,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c |   44 -----------------------
- 1 file changed, 44 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c |   46 -----------------------
+ 1 file changed, 46 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-index 7cc7f44..16f46c3 100644
+index 16f46c3..099345f 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-@@ -633,50 +633,6 @@ int PHY_RFConfig8188E(struct adapter *Adapter)
+@@ -665,52 +665,6 @@ static int phy_TxPwrIdxToDbm(struct adapter *Adapter, enum wireless_mode Wireles
+ 	return PwrOutDbm;
+ }
  
- /*  */
- /*	Description: */
--/*		Map dBm into Tx power index according to */
--/*		current HW model, for example, RF and PA, and */
--/*		current wireless mode. */
--/*	By Bruce, 2008-01-29. */
--/*  */
--static	u8 phy_DbmToTxPwrIdx(struct adapter *Adapter, enum wireless_mode WirelessMode, int PowerInDbm)
+-
+-/*-----------------------------------------------------------------------------
+- * Function:    GetTxPowerLevel8190()
+- *
+- * Overview:    This function is export to "common" moudule
+- *
+- * Input:       struct adapter *Adapter
+- *			psByte			Power Level
+- *
+- * Output:      NONE
+- *
+- * Return:      NONE
+- *
+- *---------------------------------------------------------------------------*/
+-void PHY_GetTxPowerLevel8188E(struct adapter *Adapter, u32 *powerlevel)
 -{
--	u8 TxPwrIdx = 0;
--	int				Offset = 0;
--
+-	struct hal_data_8188e	*pHalData = GET_HAL_DATA(Adapter);
+-	u8 TxPwrLevel = 0;
+-	int			TxPwrDbm;
 -
 -	/*  */
--	/*  Tested by MP, we found that CCK Index 0 equals to 8dbm, OFDM legacy equals to */
--	/*  3dbm, and OFDM HT equals to 0dbm respectively. */
--	/*  Note: */
--	/*	The mapping may be different by different NICs. Do not use this formula for what needs accurate result. */
--	/*  By Bruce, 2008-01-29. */
+-	/*  Because the Tx power indexes are different, we report the maximum of them to */
+-	/*  meet the CCX TPC request. By Bruce, 2008-01-31. */
 -	/*  */
--	switch (WirelessMode) {
--	case WIRELESS_MODE_B:
--		Offset = -7;
--		break;
 -
--	case WIRELESS_MODE_G:
--	case WIRELESS_MODE_N_24G:
--	default:
--		Offset = -8;
--		break;
--	}
+-	/*  CCK */
+-	TxPwrLevel = pHalData->CurrentCckTxPwrIdx;
+-	TxPwrDbm = phy_TxPwrIdxToDbm(Adapter, WIRELESS_MODE_B, TxPwrLevel);
 -
--	if ((PowerInDbm - Offset) > 0)
--		TxPwrIdx = (u8)((PowerInDbm - Offset) * 2);
--	else
--		TxPwrIdx = 0;
+-	/*  Legacy OFDM */
+-	TxPwrLevel = pHalData->CurrentOfdm24GTxPwrIdx + pHalData->LegacyHTTxPowerDiff;
 -
--	/*  Tx Power Index is too large. */
--	if (TxPwrIdx > MAX_TXPWR_IDX_NMODE_92S)
--		TxPwrIdx = MAX_TXPWR_IDX_NMODE_92S;
+-	/*  Compare with Legacy OFDM Tx power. */
+-	if (phy_TxPwrIdxToDbm(Adapter, WIRELESS_MODE_G, TxPwrLevel) > TxPwrDbm)
+-		TxPwrDbm = phy_TxPwrIdxToDbm(Adapter, WIRELESS_MODE_G, TxPwrLevel);
 -
--	return TxPwrIdx;
+-	/*  HT OFDM */
+-	TxPwrLevel = pHalData->CurrentOfdm24GTxPwrIdx;
+-
+-	/*  Compare with HT OFDM Tx power. */
+-	if (phy_TxPwrIdxToDbm(Adapter, WIRELESS_MODE_N_24G, TxPwrLevel) > TxPwrDbm)
+-		TxPwrDbm = phy_TxPwrIdxToDbm(Adapter, WIRELESS_MODE_N_24G, TxPwrLevel);
+-
+-	*powerlevel = TxPwrDbm;
 -}
 -
--/*  */
--/*	Description: */
- /*		Map Tx power index into dBm according to */
- /*		current HW model, for example, RF and PA, and */
- /*		current wireless mode. */
+ static void getTxPowerIndex88E(struct adapter *Adapter, u8 channel, u8 *cckPowerLevel,
+ 			       u8 *ofdmPowerLevel, u8 *BW20PowerLevel,
+ 			       u8 *BW40PowerLevel)
 -- 
 1.7.10.4
 
