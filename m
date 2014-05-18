@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaERPcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 11:32:48 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49037 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaERPcr (ORCPT
+	id S1751565AbaERPfs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 11:35:48 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:34271 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbaERPfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 11:32:47 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 13/28] staging: rtl8188eu: Remove unused funtion PHY_ScanOperationBackup8188E()
-Date: Sun, 18 May 2014 21:02:18 +0530
-Message-Id: <1400427138-19749-1-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 18 May 2014 11:35:47 -0400
+MIME-Version: 1.0
+Date: Sun, 18 May 2014 18:35:46 +0300
+Message-ID: <CACiqTEObccUuhyCcr8HZ0qZunxwdtkPLNYsp9xJRG6H6hxGo7Q@mail.gmail.com>
+Subject: 3.13-1 dm cache possible race condition
+From: roma1390 <roma1390@gmail.com>
+To: linux-kernel@vger.kernel.org, Morgan Mears <Morgan.Mears@netapp.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c |    8 --------
- 1 file changed, 8 deletions(-)
+I think that somehow is got broken cache->nr_dirty
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-index a7872c8..941ff74 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-@@ -754,14 +754,6 @@ PHY_SetTxPowerLevel8188E(
- 	rtl8188e_PHY_RF6052SetOFDMTxPower(Adapter, &ofdmPowerLevel[0], &BW20PowerLevel[0], &BW40PowerLevel[0], channel);
- }
+# dmsetup status foo0
+0 32768 cache 7/4096 1728240 256 1675650 0 0 64 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
 
--void
--PHY_ScanOperationBackup8188E(
--		struct adapter *Adapter,
--		u8 Operation
--	)
--{
--}
--
- /*-----------------------------------------------------------------------------
-  * Function:    PHY_SetBWModeCallback8192C()
-  *
---
-1.7.10.4
 
+See: 4294967295 this is -1 as is not OK.
+
+
+Kernel: Debian stock 3.13-1-amd64
+
+Actions taken:
+
+ modprobe brd
+ BLOCKS=$[`blockdev --getsize64 /dev/ram0`/512]
+ METADATA_DEV=/dev/ram0
+ CACHE_DEV=/dev/ram1
+ DATA_DEV=/dev/ram2
+ dmsetup create foo0 --table "0 $BLOCKS cache $METADATA_DEV $CACHE_DEV
+$DATA_DEV 512 1 writeback default 0"
+
+Test:
+one terminal window:
+  while true; do dd if=/dev/zero of=/dev/mapper/foo0 bs=512; done
+second window:
+  while sleep .1; do dmsetup status foo0; done
+
+
+after some time from 0 i get to 4294967295, which is think is not
+expected value.
+
+
+More info:
+device just created:
+0 32768 cache 10/4096 1728259 256 1675650 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+after some (~20) writes:
+0 32768 cache 10/4096 1790456 256 1737543 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+started full speed test, after 2 sec:
+0 32768 cache 10/4096 2475934 256 2417479 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2485872 256 2428545 0 0 0 64 5 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2495964 256 2437959 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2506447 256 2447365 0 0 0 64 20 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2515948 256 2458439 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2526687 256 2466631 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+after ~10sec:
+0 32768 cache 10/4096 2667754 256 2609991 0 0 0 64 0 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2678571 256 2618183 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+0 32768 cache 10/4096 2687846 256 2630471 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+0 32768 cache 10/4096 2698349 256 2638663 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+0 32768 cache 10/4096 2708082 256 2648514 0 0 0 64 5 1 writeback 2
+migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+0 32768 cache 10/4096 2717700 256 2659143 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+0 32768 cache 10/4096 2728596 256 2667335 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+0 32768 cache 10/4096 2737453 256 2679623 0 0 0 64 4294967295 1
+writeback 2 migration_threshold 2048 4 random_threshold 4
+sequential_threshold 512
+^C
