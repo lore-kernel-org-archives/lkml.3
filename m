@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaERPWX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 11:22:23 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:49422 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbaERPWV (ORCPT
+	id S1752198AbaERPWo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 11:22:44 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36206 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaERPWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 11:22:21 -0400
+	Sun, 18 May 2014 11:22:43 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 09/28] staging: rtl8188eu: Remove unused function PHY_UpdateTxPowerDbm8188E()
-Date: Sun, 18 May 2014 20:49:02 +0530
-Message-Id: <1400426361-19596-10-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 10/28] staging:rtl8188eu: Remove unused function phy_DbmToTxPwrIdx()
+Date: Sun, 18 May 2014 20:49:03 +0530
+Message-Id: <1400426361-19596-11-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
 References: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
@@ -23,70 +23,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c    |   37 --------------------
- drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h |    1 -
- 2 files changed, 38 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c |   44 -----------------------
+ 1 file changed, 44 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-index 79f86db..7cc7f44 100644
+index 7cc7f44..16f46c3 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
-@@ -878,43 +878,6 @@ PHY_SetTxPowerLevel8188E(
- 	rtl8188e_PHY_RF6052SetOFDMTxPower(Adapter, &ofdmPowerLevel[0], &BW20PowerLevel[0], &BW40PowerLevel[0], channel);
- }
+@@ -633,50 +633,6 @@ int PHY_RFConfig8188E(struct adapter *Adapter)
  
+ /*  */
+ /*	Description: */
+-/*		Map dBm into Tx power index according to */
+-/*		current HW model, for example, RF and PA, and */
+-/*		current wireless mode. */
+-/*	By Bruce, 2008-01-29. */
 -/*  */
--/*	Description: */
--/*		Update transmit power level of all channel supported. */
--/*  */
--/*	TODO: */
--/*		A mode. */
--/*	By Bruce, 2008-02-04. */
--/*  */
--bool
--PHY_UpdateTxPowerDbm8188E(
--		struct adapter *Adapter,
--		int		powerInDbm
--	)
+-static	u8 phy_DbmToTxPwrIdx(struct adapter *Adapter, enum wireless_mode WirelessMode, int PowerInDbm)
 -{
--	struct hal_data_8188e	*pHalData = GET_HAL_DATA(Adapter);
--	u8 idx;
--	u8 rf_path;
+-	u8 TxPwrIdx = 0;
+-	int				Offset = 0;
 -
--	/*  TODO: A mode Tx power. */
--	u8 CckTxPwrIdx = phy_DbmToTxPwrIdx(Adapter, WIRELESS_MODE_B, powerInDbm);
--	u8 OfdmTxPwrIdx = phy_DbmToTxPwrIdx(Adapter, WIRELESS_MODE_N_24G, powerInDbm);
 -
--	if (OfdmTxPwrIdx - pHalData->LegacyHTTxPowerDiff > 0)
--		OfdmTxPwrIdx -= pHalData->LegacyHTTxPowerDiff;
--	else
--		OfdmTxPwrIdx = 0;
+-	/*  */
+-	/*  Tested by MP, we found that CCK Index 0 equals to 8dbm, OFDM legacy equals to */
+-	/*  3dbm, and OFDM HT equals to 0dbm respectively. */
+-	/*  Note: */
+-	/*	The mapping may be different by different NICs. Do not use this formula for what needs accurate result. */
+-	/*  By Bruce, 2008-01-29. */
+-	/*  */
+-	switch (WirelessMode) {
+-	case WIRELESS_MODE_B:
+-		Offset = -7;
+-		break;
 -
--	for (idx = 0; idx < 14; idx++) {
--		for (rf_path = 0; rf_path < 2; rf_path++) {
--			pHalData->TxPwrLevelCck[rf_path][idx] = CckTxPwrIdx;
--			pHalData->TxPwrLevelHT40_1S[rf_path][idx] =
--			pHalData->TxPwrLevelHT40_2S[rf_path][idx] = OfdmTxPwrIdx;
--		}
+-	case WIRELESS_MODE_G:
+-	case WIRELESS_MODE_N_24G:
+-	default:
+-		Offset = -8;
+-		break;
 -	}
--	return true;
+-
+-	if ((PowerInDbm - Offset) > 0)
+-		TxPwrIdx = (u8)((PowerInDbm - Offset) * 2);
+-	else
+-		TxPwrIdx = 0;
+-
+-	/*  Tx Power Index is too large. */
+-	if (TxPwrIdx > MAX_TXPWR_IDX_NMODE_92S)
+-		TxPwrIdx = MAX_TXPWR_IDX_NMODE_92S;
+-
+-	return TxPwrIdx;
 -}
 -
- void
- PHY_ScanOperationBackup8188E(
- 		struct adapter *Adapter,
-diff --git a/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h b/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
-index 25cae81..260ea6b 100644
---- a/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
-+++ b/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
-@@ -224,7 +224,6 @@ void rtl8192c_PHY_GetHWRegOriginalValue(struct adapter *adapter);
- /*  BB TX Power R/W */
- void PHY_GetTxPowerLevel8188E(struct adapter *adapter, u32 *powerlevel);
- void PHY_SetTxPowerLevel8188E(struct adapter *adapter, u8 channel);
--bool PHY_UpdateTxPowerDbm8188E(struct adapter *adapter, int power);
- 
- void PHY_ScanOperationBackup8188E(struct adapter *Adapter, u8 Operation);
- 
+-/*  */
+-/*	Description: */
+ /*		Map Tx power index into dBm according to */
+ /*		current HW model, for example, RF and PA, and */
+ /*		current wireless mode. */
 -- 
 1.7.10.4
 
