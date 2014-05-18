@@ -1,659 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaERMrk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 08:47:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaERMrg (ORCPT
+	id S1751349AbaERNNm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 09:13:42 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44049 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaERNNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 08:47:36 -0400
-Date: Sun, 18 May 2014 05:47:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.91
-Message-ID: <20140518124734.GB11692@kroah.com>
-References: <20140518124723.GA11692@kroah.com>
+	Sun, 18 May 2014 09:13:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140518124723.GA11692@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5374532D.7030602@lge.com>
+References: <5374532D.7030602@lge.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sun, 18 May 2014 21:13:20 +0800
+Message-ID: <CAGsJ_4zN39jeHz574_r9y_hjdn1Acbkr9gQhE=1L-Fs82-vDkw@mail.gmail.com>
+Subject: Re: [RFC PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index aa1001213eb1..16899b9ba84f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 90
-+SUBLEVEL = 91
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/powerpc/lib/crtsavres.S b/arch/powerpc/lib/crtsavres.S
-index 1c893f05d224..21ecdf5e55f9 100644
---- a/arch/powerpc/lib/crtsavres.S
-+++ b/arch/powerpc/lib/crtsavres.S
-@@ -230,6 +230,87 @@ _GLOBAL(_rest32gpr_31_x)
- 	mr	1,11
- 	blr
- 
-+#ifdef CONFIG_ALTIVEC
-+/* Called with r0 pointing just beyond the end of the vector save area.  */
-+
-+_GLOBAL(_savevr_20)
-+	li	r11,-192
-+	stvx	vr20,r11,r0
-+_GLOBAL(_savevr_21)
-+	li	r11,-176
-+	stvx	vr21,r11,r0
-+_GLOBAL(_savevr_22)
-+	li	r11,-160
-+	stvx	vr22,r11,r0
-+_GLOBAL(_savevr_23)
-+	li	r11,-144
-+	stvx	vr23,r11,r0
-+_GLOBAL(_savevr_24)
-+	li	r11,-128
-+	stvx	vr24,r11,r0
-+_GLOBAL(_savevr_25)
-+	li	r11,-112
-+	stvx	vr25,r11,r0
-+_GLOBAL(_savevr_26)
-+	li	r11,-96
-+	stvx	vr26,r11,r0
-+_GLOBAL(_savevr_27)
-+	li	r11,-80
-+	stvx	vr27,r11,r0
-+_GLOBAL(_savevr_28)
-+	li	r11,-64
-+	stvx	vr28,r11,r0
-+_GLOBAL(_savevr_29)
-+	li	r11,-48
-+	stvx	vr29,r11,r0
-+_GLOBAL(_savevr_30)
-+	li	r11,-32
-+	stvx	vr30,r11,r0
-+_GLOBAL(_savevr_31)
-+	li	r11,-16
-+	stvx	vr31,r11,r0
-+	blr
-+
-+_GLOBAL(_restvr_20)
-+	li	r11,-192
-+	lvx	vr20,r11,r0
-+_GLOBAL(_restvr_21)
-+	li	r11,-176
-+	lvx	vr21,r11,r0
-+_GLOBAL(_restvr_22)
-+	li	r11,-160
-+	lvx	vr22,r11,r0
-+_GLOBAL(_restvr_23)
-+	li	r11,-144
-+	lvx	vr23,r11,r0
-+_GLOBAL(_restvr_24)
-+	li	r11,-128
-+	lvx	vr24,r11,r0
-+_GLOBAL(_restvr_25)
-+	li	r11,-112
-+	lvx	vr25,r11,r0
-+_GLOBAL(_restvr_26)
-+	li	r11,-96
-+	lvx	vr26,r11,r0
-+_GLOBAL(_restvr_27)
-+	li	r11,-80
-+	lvx	vr27,r11,r0
-+_GLOBAL(_restvr_28)
-+	li	r11,-64
-+	lvx	vr28,r11,r0
-+_GLOBAL(_restvr_29)
-+	li	r11,-48
-+	lvx	vr29,r11,r0
-+_GLOBAL(_restvr_30)
-+	li	r11,-32
-+	lvx	vr30,r11,r0
-+_GLOBAL(_restvr_31)
-+	li	r11,-16
-+	lvx	vr31,r11,r0
-+	blr
-+
-+#endif /* CONFIG_ALTIVEC */
-+
- #else /* CONFIG_PPC64 */
- 
- .globl	_savegpr0_14
-@@ -353,6 +434,111 @@ _restgpr0_31:
- 	mtlr	r0
- 	blr
- 
-+#ifdef CONFIG_ALTIVEC
-+/* Called with r0 pointing just beyond the end of the vector save area.  */
-+
-+.globl	_savevr_20
-+_savevr_20:
-+	li	r12,-192
-+	stvx	vr20,r12,r0
-+.globl	_savevr_21
-+_savevr_21:
-+	li	r12,-176
-+	stvx	vr21,r12,r0
-+.globl	_savevr_22
-+_savevr_22:
-+	li	r12,-160
-+	stvx	vr22,r12,r0
-+.globl	_savevr_23
-+_savevr_23:
-+	li	r12,-144
-+	stvx	vr23,r12,r0
-+.globl	_savevr_24
-+_savevr_24:
-+	li	r12,-128
-+	stvx	vr24,r12,r0
-+.globl	_savevr_25
-+_savevr_25:
-+	li	r12,-112
-+	stvx	vr25,r12,r0
-+.globl	_savevr_26
-+_savevr_26:
-+	li	r12,-96
-+	stvx	vr26,r12,r0
-+.globl	_savevr_27
-+_savevr_27:
-+	li	r12,-80
-+	stvx	vr27,r12,r0
-+.globl	_savevr_28
-+_savevr_28:
-+	li	r12,-64
-+	stvx	vr28,r12,r0
-+.globl	_savevr_29
-+_savevr_29:
-+	li	r12,-48
-+	stvx	vr29,r12,r0
-+.globl	_savevr_30
-+_savevr_30:
-+	li	r12,-32
-+	stvx	vr30,r12,r0
-+.globl	_savevr_31
-+_savevr_31:
-+	li	r12,-16
-+	stvx	vr31,r12,r0
-+	blr
-+
-+.globl	_restvr_20
-+_restvr_20:
-+	li	r12,-192
-+	lvx	vr20,r12,r0
-+.globl	_restvr_21
-+_restvr_21:
-+	li	r12,-176
-+	lvx	vr21,r12,r0
-+.globl	_restvr_22
-+_restvr_22:
-+	li	r12,-160
-+	lvx	vr22,r12,r0
-+.globl	_restvr_23
-+_restvr_23:
-+	li	r12,-144
-+	lvx	vr23,r12,r0
-+.globl	_restvr_24
-+_restvr_24:
-+	li	r12,-128
-+	lvx	vr24,r12,r0
-+.globl	_restvr_25
-+_restvr_25:
-+	li	r12,-112
-+	lvx	vr25,r12,r0
-+.globl	_restvr_26
-+_restvr_26:
-+	li	r12,-96
-+	lvx	vr26,r12,r0
-+.globl	_restvr_27
-+_restvr_27:
-+	li	r12,-80
-+	lvx	vr27,r12,r0
-+.globl	_restvr_28
-+_restvr_28:
-+	li	r12,-64
-+	lvx	vr28,r12,r0
-+.globl	_restvr_29
-+_restvr_29:
-+	li	r12,-48
-+	lvx	vr29,r12,r0
-+.globl	_restvr_30
-+_restvr_30:
-+	li	r12,-32
-+	lvx	vr30,r12,r0
-+.globl	_restvr_31
-+_restvr_31:
-+	li	r12,-16
-+	lvx	vr31,r12,r0
-+	blr
-+
-+#endif /* CONFIG_ALTIVEC */
-+
- #endif /* CONFIG_PPC64 */
- 
- #endif
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 279f05dcbc87..1175e57104cc 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2104,7 +2104,7 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- 	if (!req->bio)
- 		return false;
- 
--	trace_block_rq_complete(req->q, req);
-+	trace_block_rq_complete(req->q, req, nr_bytes);
- 
- 	/*
- 	 * For fs requests, rq is just carrier of independent bio's
-diff --git a/drivers/scsi/megaraid/megaraid_mm.c b/drivers/scsi/megaraid/megaraid_mm.c
-index 25506c777381..9bec1717047e 100644
---- a/drivers/scsi/megaraid/megaraid_mm.c
-+++ b/drivers/scsi/megaraid/megaraid_mm.c
-@@ -486,6 +486,8 @@ mimd_to_kioc(mimd_t __user *umimd, mraid_mmadp_t *adp, uioc_t *kioc)
- 
- 	pthru32->dataxferaddr	= kioc->buf_paddr;
- 	if (kioc->data_dir & UIOC_WR) {
-+		if (pthru32->dataxferlen > kioc->xferlen)
-+			return -EINVAL;
- 		if (copy_from_user(kioc->buf_vaddr, kioc->user_data,
- 						pthru32->dataxferlen)) {
- 			return (-EFAULT);
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 37818fbfbb0e..fa0376b38019 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1996,7 +1996,9 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
- 				tty->ops->flush_chars(tty);
- 		} else {
- 			while (nr > 0) {
-+				mutex_lock(&tty->output_lock);
- 				c = tty->ops->write(tty, b, nr);
-+				mutex_unlock(&tty->output_lock);
- 				if (c < 0) {
- 					retval = c;
- 					goto break_out;
-diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
-index ac2cf6dcc598..3b15bcac3766 100644
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -192,6 +192,8 @@ tgafb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 
- 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
- 		return -EINVAL;
-+	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
-+		return -EINVAL;
- 	if (var->nonstd)
- 		return -EINVAL;
- 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
-@@ -272,6 +274,7 @@ tgafb_set_par(struct fb_info *info)
- 	par->yres = info->var.yres;
- 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
- 	par->bits_per_pixel = info->var.bits_per_pixel;
-+	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 
- 	tga_type = par->tga_type;
- 
-@@ -1318,6 +1321,7 @@ tgafb_init_fix(struct fb_info *info)
- 	int tga_bus_tc = TGA_BUS_TC(par->dev);
- 	u8 tga_type = par->tga_type;
- 	const char *tga_type_name = NULL;
-+	unsigned memory_size;
- 
- 	switch (tga_type) {
- 	case TGA_TYPE_8PLANE:
-@@ -1325,21 +1329,25 @@ tgafb_init_fix(struct fb_info *info)
- 			tga_type_name = "Digital ZLXp-E1";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E1";
-+		memory_size = 2097152;
- 		break;
- 	case TGA_TYPE_24PLANE:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E2";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E2";
-+		memory_size = 8388608;
- 		break;
- 	case TGA_TYPE_24PLUSZ:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E3";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E3";
-+		memory_size = 16777216;
- 		break;
- 	default:
- 		tga_type_name = "Unknown";
-+		memory_size = 16777216;
- 		break;
- 	}
- 
-@@ -1351,9 +1359,8 @@ tgafb_init_fix(struct fb_info *info)
- 			    ? FB_VISUAL_PSEUDOCOLOR
- 			    : FB_VISUAL_DIRECTCOLOR);
- 
--	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 	info->fix.smem_start = (size_t) par->tga_fb_base;
--	info->fix.smem_len = info->fix.line_length * par->yres;
-+	info->fix.smem_len = memory_size;
- 	info->fix.mmio_start = (size_t) par->tga_regs_base;
- 	info->fix.mmio_len = 512;
- 
-@@ -1478,6 +1485,9 @@ tgafb_register(struct device *dev)
- 		modedb_tga = &modedb_tc;
- 		modedbsize_tga = 1;
- 	}
-+
-+	tgafb_init_fix(info);
-+
- 	ret = fb_find_mode(&info->var, info,
- 			   mode_option ? mode_option : mode_option_tga,
- 			   modedb_tga, modedbsize_tga, NULL,
-@@ -1495,7 +1505,6 @@ tgafb_register(struct device *dev)
- 	}
- 
- 	tgafb_set_par(info);
--	tgafb_init_fix(info);
- 
- 	if (register_framebuffer(info) < 0) {
- 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
-diff --git a/include/linux/net.h b/include/linux/net.h
-index ff8097592f1d..d40ccb796e8d 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -259,6 +259,29 @@ extern struct socket *sockfd_lookup(int fd, int *err);
- #define		     sockfd_put(sock) fput(sock->file)
- extern int	     net_ratelimit(void);
- 
-+#define net_ratelimited_function(function, ...)			\
-+do {								\
-+	if (net_ratelimit())					\
-+		function(__VA_ARGS__);				\
-+} while (0)
-+
-+#define net_emerg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
-+#define net_alert_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
-+#define net_crit_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
-+#define net_err_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
-+#define net_notice_ratelimited(fmt, ...)			\
-+	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
-+#define net_warn_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
-+#define net_info_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
-+#define net_dbg_ratelimited(fmt, ...)				\
-+	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
-+
- #define net_random()		random32()
- #define net_srandom(seed)	srandom32((__force u32)seed)
- 
-diff --git a/include/net/netfilter/nf_conntrack_extend.h b/include/net/netfilter/nf_conntrack_extend.h
-index 96755c3798a5..0066409f86c7 100644
---- a/include/net/netfilter/nf_conntrack_extend.h
-+++ b/include/net/netfilter/nf_conntrack_extend.h
-@@ -37,8 +37,8 @@ enum nf_ct_ext_id {
- /* Extensions: optional stuff which isn't permanently in struct. */
- struct nf_ct_ext {
- 	struct rcu_head rcu;
--	u8 offset[NF_CT_EXT_NUM];
--	u8 len;
-+	u16 offset[NF_CT_EXT_NUM];
-+	u16 len;
- 	char data[0];
- };
- 
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index 05c5e61f0a7c..048e2658d895 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -81,6 +81,7 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * block_rq_complete - block IO operation completed by device driver
-  * @q: queue containing the block operation request
-  * @rq: block operations request
-+ * @nr_bytes: number of completed bytes
-  *
-  * The block_rq_complete tracepoint event indicates that some portion
-  * of operation request has been completed by the device driver.  If
-@@ -88,11 +89,37 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * do for the request. If @rq->bio is non-NULL then there is
-  * additional work required to complete the request.
-  */
--DEFINE_EVENT(block_rq_with_error, block_rq_complete,
-+TRACE_EVENT(block_rq_complete,
- 
--	TP_PROTO(struct request_queue *q, struct request *rq),
-+	TP_PROTO(struct request_queue *q, struct request *rq,
-+		 unsigned int nr_bytes),
- 
--	TP_ARGS(q, rq)
-+	TP_ARGS(q, rq, nr_bytes),
-+
-+	TP_STRUCT__entry(
-+		__field(  dev_t,	dev			)
-+		__field(  sector_t,	sector			)
-+		__field(  unsigned int,	nr_sector		)
-+		__field(  int,		errors			)
-+		__array(  char,		rwbs,	RWBS_LEN	)
-+		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
-+		__entry->sector    = blk_rq_pos(rq);
-+		__entry->nr_sector = nr_bytes >> 9;
-+		__entry->errors    = rq->errors;
-+
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
-+		blk_dump_cmd(__get_str(cmd), rq);
-+	),
-+
-+	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs, __get_str(cmd),
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->errors)
- );
- 
- DECLARE_EVENT_CLASS(block_rq,
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd0308741c..b0eeda6a798b 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -685,6 +685,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  * blk_add_trace_rq - Add a trace for a request oriented action
-  * @q:		queue the io is for
-  * @rq:		the source request
-+ * @nr_bytes:	number of completed bytes
-  * @what:	the action
-  *
-  * Description:
-@@ -692,7 +693,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  *
-  **/
- static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
--			     u32 what)
-+			     unsigned int nr_bytes, u32 what)
- {
- 	struct blk_trace *bt = q->blk_trace;
- 
-@@ -701,11 +702,11 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
- 
- 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
- 		what |= BLK_TC_ACT(BLK_TC_PC);
--		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
-+		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
- 				what, rq->errors, rq->cmd_len, rq->cmd);
- 	} else  {
- 		what |= BLK_TC_ACT(BLK_TC_FS);
--		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
-+		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
- 				rq->cmd_flags, what, rq->errors, 0, NULL);
- 	}
- }
-@@ -713,33 +714,34 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
- static void blk_add_trace_rq_abort(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
- }
- 
- static void blk_add_trace_rq_insert(void *ignore,
- 				    struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
- }
- 
- static void blk_add_trace_rq_issue(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
- }
- 
- static void blk_add_trace_rq_requeue(void *ignore,
- 				     struct request_queue *q,
- 				     struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
- }
- 
- static void blk_add_trace_rq_complete(void *ignore,
- 				      struct request_queue *q,
--				      struct request *rq)
-+				      struct request *rq,
-+				      unsigned int nr_bytes)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
-+	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
- }
- 
- /**
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 23d8560dbc56..7840b3486db3 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -638,6 +638,9 @@ static int tracepoint_module_coming(struct module *mod)
- 	struct tp_module *tp_mod, *iter;
- 	int ret = 0;
- 
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	/*
- 	 * We skip modules that taint the kernel, especially those with different
- 	 * module headers (for forced load), to make sure we don't cause a crash.
-@@ -681,6 +684,9 @@ static int tracepoint_module_going(struct module *mod)
- {
- 	struct tp_module *pos;
- 
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	mutex_lock(&tracepoints_mutex);
- 	tracepoint_update_probe_range(mod->tracepoints_ptrs,
- 		mod->tracepoints_ptrs + mod->num_tracepoints);
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index 5fe2ff3b01ef..f381fa16bdc9 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net *net, struct ebt_replace *repl,
- 	if (repl->num_counters &&
- 	   copy_to_user(repl->counters, counterstmp,
- 	   repl->num_counters * sizeof(struct ebt_counter))) {
--		ret = -EFAULT;
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
- 	}
--	else
--		ret = 0;
- 
- 	/* decrease module count and free resources */
- 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
-diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
-index fd7a3f68917f..bcb6e6197595 100644
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net, const char *name,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
-index 24e556e83a3b..f98a1cf54c5b 100644
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1227,8 +1227,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
-index 9d4e15559319..6fe8ced0068f 100644
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index c4e7d1510f9d..62ed15a03515 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -569,12 +569,16 @@ static int ignore_undef_symbol(struct elf_info *info, const char *symname)
- 		if (strncmp(symname, "_restgpr_", sizeof("_restgpr_") - 1) == 0 ||
- 		    strncmp(symname, "_savegpr_", sizeof("_savegpr_") - 1) == 0 ||
- 		    strncmp(symname, "_rest32gpr_", sizeof("_rest32gpr_") - 1) == 0 ||
--		    strncmp(symname, "_save32gpr_", sizeof("_save32gpr_") - 1) == 0)
-+		    strncmp(symname, "_save32gpr_", sizeof("_save32gpr_") - 1) == 0 ||
-+		    strncmp(symname, "_restvr_", sizeof("_restvr_") - 1) == 0 ||
-+		    strncmp(symname, "_savevr_", sizeof("_savevr_") - 1) == 0)
- 			return 1;
- 	if (info->hdr->e_machine == EM_PPC64)
- 		/* Special register function linked on all modules during final link of .ko */
- 		if (strncmp(symname, "_restgpr0_", sizeof("_restgpr0_") - 1) == 0 ||
--		    strncmp(symname, "_savegpr0_", sizeof("_savegpr0_") - 1) == 0)
-+		    strncmp(symname, "_savegpr0_", sizeof("_savegpr0_") - 1) == 0 ||
-+		    strncmp(symname, "_restvr_", sizeof("_restvr_") - 1) == 0 ||
-+		    strncmp(symname, "_savevr_", sizeof("_savevr_") - 1) == 0)
- 			return 1;
- 	/* Do not ignore this symbol */
- 	return 0;
+2014-05-15 13:39 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
+>
+> Hi,
+>
+> My board is using Trustzone and running kernel is non-secure mode.
+> But setup function of PL310 driver is only for secure mode kernel.
+>
+> What about adding an entry for non-secure mode setup function?
+>
+> I'm sorry for my poor code but I just wanna say what I need .
+
+Gioh,
+
+i don't really understand what is the user scenarios for this, if you
+are running linux in non-secure mode, your security-mode codes have
+enabled L2, so this makes non-secure linux have no chance to execute
+setup at all:
+ 992         /* L2 configuration can only be changed if the cache is disabled */
+ 993         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+ 994                 if (data->setup)
+ 995                         data->setup(np, &aux_val, &aux_mask);
+
+anyway, cache-l2x0.c supported non-secure linux as you can read:
+ 387         /*
+ 388          * Check if l2x0 controller is already enabled.
+ 389          * If you are booting from non-secure mode
+ 390          * accessing the below registers will fault.
+ 391          */
+ 392         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+ 393                 /* Make sure that I&D is not locked down when starting */
+ 394                 l2x0_unlock(cache_id);
+ 395
+ 396                 /* l2x0 controller is disabled */
+ 397                 writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
+ 398
+ 399                 l2x0_inv_all();
+ 400
+ 401                 /* enable L2X0 */
+ 402                 writel_relaxed(L2X0_CTRL_EN, l2x0_base + L2X0_CTRL);
+ 403         }
+
+
+
+>
+> ------------------------------ 8< -------------------------------
+> From ee4b03fb2c12038c6bbb9f752558abae8d500c07 Mon Sep 17 00:00:00 2001
+> From: Gioh Kim <gioh.kim@lge.com>
+> Date: Thu, 15 May 2014 14:06:36 +0900
+> Subject: [PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+>
+> For some platforms using Trustzone and running kernel in non-secure mode,
+> another l2 setup function is necessary.
+>
+> Signed-off-by: Gioh Kim <gioh.kim@lge.c>
+> ---
+>  arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++++
+>  arch/arm/mm/cache-l2x0.c                   |   26 +++++++++++++++++++++++++-
+>  2 files changed, 34 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
+> index 6dec6da..de31114 100644
+> --- a/arch/arm/include/asm/hardware/cache-l2x0.h
+> +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
+> @@ -21,6 +21,7 @@
+>  #define __ASM_ARM_HARDWARE_L2X0_H
+>
+>  #include <linux/errno.h>
+> +#include <linux/of.h>
+>
+>  #define L2X0_CACHE_ID                  0x000
+>  #define L2X0_CACHE_TYPE                        0x004
+> @@ -110,11 +111,19 @@
+>  extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
+>  #if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_OF)
+>  extern int l2x0_of_init(u32 aux_val, u32 aux_mask);
+> +extern int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
+> +                       void (*fp)(const struct device_node *, u32 *, u32 *));
+>  #else
+>  static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
+>  {
+>         return -ENODEV;
+>  }
+> +static inline int l2x0_of_set_setup_nonsecure(const char *compatible,
+> +                                             size_t len,
+> +                     void (*fp)(const struct device_node *, u32 *, u32 *))
+> +{
+> +       return -ENODEV;
+> +}
+>  #endif
+>
+>  struct l2x0_regs {
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index 728d644..582ea37 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -45,6 +45,7 @@ struct l2x0_regs l2x0_saved_regs;
+>  struct l2x0_of_data {
+>         void (*setup)(const struct device_node *, u32 *, u32 *);
+>         void (*save)(void);
+> +       void (*setup_nonsecure)(const struct device_node *, u32 *, u32 *);
+>         struct outer_cache_fns outer_cache;
+>  };
+>
+> @@ -968,6 +969,23 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+>         {}
+>  };
+>
+> +int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
+> +                       void (*fp)(const struct device_node *, u32 *, u32 *))
+> +{
+> +       const struct of_device_id *id;
+> +
+> +       for (id = &l2x0_ids[0]; id->compatible != NULL; id++) {
+> +               if (strncmp(id->compatible, compatible, len) == 0) {
+> +                       struct l2x0_of_data *data = id->data;
+> +
+> +                       data->setup_nonsecure = fp;
+> +                       return 0;
+> +               }
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+>  int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>  {
+>         struct device_node *np;
+> @@ -989,8 +1007,14 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>
+>         /* L2 configuration can only be changed if the cache is disabled */
+>         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+> -               if (data->setup)
+> +
+> +               if (data->setup_nonsecure)
+> +                       data->setup_nonsecure(np, &aux_val, &aux_mask);
+> +               else if (data->setup)
+>                         data->setup(np, &aux_val, &aux_mask);
+> +               else
+> +                       /* no function to enable cache */
+> +                       return -ENODEV;
+>
+>                 /* For aurora cache in no outer mode select the
+>                  * correct mode using the coprocessor*/
+> --
+> 1.7.9.5
+
+
+-barry
