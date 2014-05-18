@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaERPfs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 11:35:48 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:34271 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaERPfr (ORCPT
+	id S1751677AbaERPin (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 11:38:43 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:55560 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433AbaERPil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 11:35:47 -0400
+	Sun, 18 May 2014 11:38:41 -0400
+Date: Sun, 18 May 2014 17:38:51 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: walter harms <wharms@bfs.de>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: imx: fix error handling
+Message-ID: <20140518153851.GB4310@lianli>
+References: <1400234045-6022-1-git-send-email-emilgoode@gmail.com>
+ <5375EB13.8000200@bfs.de>
+ <20140516111646.GC4366@lianli>
+ <5375FB36.8020004@bfs.de>
+ <20140516193139.GQ16662@pengutronix.de>
+ <20140517153540.GA4309@lianli>
+ <20140517190546.GC16662@pengutronix.de>
 MIME-Version: 1.0
-Date: Sun, 18 May 2014 18:35:46 +0300
-Message-ID: <CACiqTEObccUuhyCcr8HZ0qZunxwdtkPLNYsp9xJRG6H6hxGo7Q@mail.gmail.com>
-Subject: 3.13-1 dm cache possible race condition
-From: roma1390 <roma1390@gmail.com>
-To: linux-kernel@vger.kernel.org, Morgan Mears <Morgan.Mears@netapp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140517190546.GC16662@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that somehow is got broken cache->nr_dirty
+I appologise for providing incomplete information in my previous message.
 
-# dmsetup status foo0
-0 32768 cache 7/4096 1728240 256 1675650 0 0 64 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
+The involved call sites are the following:
 
+arch/arm/mach-imx/mach-mx35_3ds.c +265
 
-See: 4294967295 this is -1 as is not OK.
+imx35_3ds_init_camera()
+	imx35_alloc_mx3_camera()
+		imx_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
 
+arch/arm/mach-imx/mach-mx31moboard.c +477
 
-Kernel: Debian stock 3.13-1-amd64
+mx31moboard_init_cam()
+	imx31_alloc_mx3_camera()
+		imx_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
 
-Actions taken:
+arch/arm/mach-imx/mach-mx31_3ds.c +182
 
- modprobe brd
- BLOCKS=$[`blockdev --getsize64 /dev/ram0`/512]
- METADATA_DEV=/dev/ram0
- CACHE_DEV=/dev/ram1
- DATA_DEV=/dev/ram2
- dmsetup create foo0 --table "0 $BLOCKS cache $METADATA_DEV $CACHE_DEV
-$DATA_DEV 512 1 writeback default 0"
+mx31_3ds_init_camera()
+	imx31_alloc_mx3_camera()
+		imx_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
 
-Test:
-one terminal window:
-  while true; do dd if=/dev/zero of=/dev/mapper/foo0 bs=512; done
-second window:
-  while sleep .1; do dmsetup status foo0; done
+arch/arm/mach-imx/mach-pcm037.c +413
 
+pcm037_init_camera()
+	imx31_alloc_mx3_camera()
+		imx_alloc_mx3_camera()
+	dma_declare_coherent_memory()
+	platform_device_add()
 
-after some time from 0 i get to 4294967295, which is think is not
-expected value.
+Sorry about the mistake!
 
+Best regards,
 
-More info:
-device just created:
-0 32768 cache 10/4096 1728259 256 1675650 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-after some (~20) writes:
-0 32768 cache 10/4096 1790456 256 1737543 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-started full speed test, after 2 sec:
-0 32768 cache 10/4096 2475934 256 2417479 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2485872 256 2428545 0 0 0 64 5 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2495964 256 2437959 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2506447 256 2447365 0 0 0 64 20 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2515948 256 2458439 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2526687 256 2466631 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-after ~10sec:
-0 32768 cache 10/4096 2667754 256 2609991 0 0 0 64 0 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2678571 256 2618183 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-0 32768 cache 10/4096 2687846 256 2630471 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-0 32768 cache 10/4096 2698349 256 2638663 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-0 32768 cache 10/4096 2708082 256 2648514 0 0 0 64 5 1 writeback 2
-migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
-0 32768 cache 10/4096 2717700 256 2659143 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-0 32768 cache 10/4096 2728596 256 2667335 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-0 32768 cache 10/4096 2737453 256 2679623 0 0 0 64 4294967295 1
-writeback 2 migration_threshold 2048 4 random_threshold 4
-sequential_threshold 512
-^C
+Emil Goode
