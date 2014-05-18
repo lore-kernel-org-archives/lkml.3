@@ -1,111 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373AbaERXyp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:54:45 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55939 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaERXyn (ORCPT
+	id S1752467AbaERX4A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:56:00 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:18103 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752195AbaERXz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:54:43 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53794841.6080308@lge.com>
-Date: Mon, 19 May 2014 08:54:41 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 18 May 2014 19:55:59 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvtMAK1HeVN5LL1sPGdsb2JhbABZgwZRgnCnLgsBAQEBAQEGmisBgQoXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwctG4glDtBHFoU/iHsHgyuBFQSZWZZvKzA
+Date: Mon, 19 May 2014 09:55:55 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: daniel@phunq.net
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, tux3@tux3.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Message-ID: <20140518235555.GC18954@dastard>
+References: <5376B273.7000800@partner.samsung.com>
 MIME-Version: 1.0
-To: Barry Song <21cnbao@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        =?UTF-8?B?IuydtOqxtO2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKUFPVO2MgA==?=
-	 =?UTF-8?B?KGd1bmhvLmxlZUBsZ2UuY29tKSI=?= <gunho.lee@lge.com>,
-        gurugio@gmail.com
-Subject: Re: [PATCH] [RFC] ARM: MM: remove phy_base field of struct
-References: <53742B55.1060507@lge.com> <CAGsJ_4xXq++1KKMM5VjBCKbKGEWXK3QJK4R8-wzyURTcckxjpw@mail.gmail.com>
-In-Reply-To: <CAGsJ_4xXq++1KKMM5VjBCKbKGEWXK3QJK4R8-wzyURTcckxjpw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5376B273.7000800@partner.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you. It's my mistake.
+On Fri, May 16, 2014 at 05:50:59PM -0700, Daniel Phillips wrote:
+> We would like to offer Tux3 for review for mainline merge. We have
+> prepared a new repository suitable for pulling:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/
+> 
+> Tux3 kernel module files are here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/tree/fs/tux3
+> 
+> Tux3 userspace tools and tests are here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/tree/fs/tux3/user?h=user
 
-2014-05-18 오후 10:18, Barry Song 쓴 글:
-> 2014-05-15 10:49 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
->> Hi,
->>
->> It's not a big deal but I've found that phy_base field of struct
->> l2x0_regs is not used anywhere.
->> I've removed it on my board. It seems to be working fine.
->>
->> Why do we need physical address of L2 cache controller?
->> Is it removable?
->
-> if you read the source codes of arch/arm/mach-imx/suspend-imx6.S, you
-> will find it is needed.
->
->>
->>
->> ------------------------ 8< --------------------------
->>  From cc0d98f4ef8b6f8f139a7c6179ed0b03e9ad7d07 Mon Sep 17 00:00:00 2001
->> From: Gioh Kim <gioh.kim@lge.com>
->> Date: Thu, 15 May 2014 11:26:20 +0900
->> Subject: [PATCH] [RFC] ARM: MM: remove phy_base field of struct l2x0_regs
->>
->> Remove unused field, phy_base of struct l2x0_regs
->>
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->> ---
->>   arch/arm/include/asm/hardware/cache-l2x0.h |    1 -
->>   arch/arm/kernel/asm-offsets.c              |    1 -
->>   arch/arm/mm/cache-l2x0.c                   |    2 --
->>   3 files changed, 4 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h
->> b/arch/arm/include/asm/hardware/cache-l2x0.h
->> index 6795ff7..6dec6da 100644
->> --- a/arch/arm/include/asm/hardware/cache-l2x0.h
->> +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
->> @@ -118,7 +118,6 @@ static inline int l2x0_of_init(u32 aux_val, u32
->> aux_mask)
->>   #endif
->>
->>   struct l2x0_regs {
->> -       unsigned long phy_base;
->>          unsigned long aux_ctrl;
->>          /*
->>           * Whether the following registers need to be saved/restored
->> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
->> index 85598b5..9b0ff94 100644
->> --- a/arch/arm/kernel/asm-offsets.c
->> +++ b/arch/arm/kernel/asm-offsets.c
->> @@ -100,7 +100,6 @@ int main(void)
->>     DEFINE(S_FRAME_SIZE,         sizeof(struct pt_regs));
->>     BLANK();
->>   #ifdef CONFIG_CACHE_L2X0
->> -  DEFINE(L2X0_R_PHY_BASE,      offsetof(struct l2x0_regs, phy_base));
->>     DEFINE(L2X0_R_AUX_CTRL,      offsetof(struct l2x0_regs, aux_ctrl));
->>     DEFINE(L2X0_R_TAG_LATENCY,   offsetof(struct l2x0_regs, tag_latency));
->>     DEFINE(L2X0_R_DATA_LATENCY,  offsetof(struct l2x0_regs, data_latency));
->> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
->> index 7abde2c..728d644 100644
->> --- a/arch/arm/mm/cache-l2x0.c
->> +++ b/arch/arm/mm/cache-l2x0.c
->> @@ -985,8 +985,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
->>          if (!l2x0_base)
->>                  return -ENOMEM;
->>
->> -       l2x0_saved_regs.phy_base = res.start;
->> -
->>          data = of_match_node(l2x0_ids, np)->data;
->>
->>          /* L2 configuration can only be changed if the cache is disabled */
->> --
->> 1.7.9.5
->
-> -barry
->
+Post patches for review, please.  Go and look at the process used to
+merge f2fs for an example of how to filesystem merged....
+
+Ignoring this, I had a quick look at the code.  This is not a code
+review - it's a message to tell everyone else not to waste their
+time looking at the code right now...
+
+The code is a dog's breakfast of #ifdef hackery, stuff that doesn't
+work (lots of code surrounded by "#if 0"), there's "#if __KERNEL__
+...  #else .... #endif" all through the code, etc. The "declarations
+within code" stuff is just horrible - it's not even used
+consistently so it just looks like laziness to me.  IOWs, the code
+is an ugly mess and needs a serious amount of cleanup work. Example:
+
+static const struct inode_operations tux_file_iops = {
+//      .permission     = ext4_permission,
+        .setattr        = tux3_setattr,
+        .getattr        = tux3_getattr,
+#ifdef CONFIG_EXT4DEV_FS_XATTR
+//      .setxattr       = generic_setxattr,
+//      .getxattr       = generic_getxattr,
+//      .listxattr      = ext4_listxattr,
+//      .removexattr    = generic_removexattr,
+#endif
+//      .fallocate      = ext4_fallocate,
+//      .fiemap         = ext4_fiemap,
+        .update_time    = tux3_file_update_time,
+};
+
+That's code ready for review and merging? Really?
+
+The hacks around VFS and MM functionality need to have demonstrated
+methods for being removed. We're not going to merge that page
+forking stuff (like you were told at LSF 2013 more than a year ago:
+http://lwn.net/Articles/548091/) without rigorous design review and
+a demonstration of the solutions to all the hard corner cases it
+has. The current code doesn't solve them (e.g. direct IO doesn't
+work in tux3), and there's no clear patch set we can review that
+demonstrates how it is all supposed to work. i.e. you need to
+separate out all the page forking code into a separate patchset for
+review, independent of the tux3 code and applies to the core mm/
+code.
+
+Then there's all the writeback hacks. You've simply copy-n-pasted
+most of fs-writeback.c, including duplicating structures like struct
+wb_writeback_work and then hacked in crap (kallsyms lookups!) to be
+able to access core structures from kernel module context
+(tux3_setup_writeback(), I'm looking at you). This is completely
+unacceptible for a merge. Again, you need to separate out all the
+writeback changes you need into an independent patchset so that they
+can be reviewed independently of the tux3 code that uses it. 
+
+Now, one of the big features tux3 you hyped is built-in snapshotting
+capability. All that talk efficient pointer trees (or whatever they
+were called) and being so much better than ZFS/btrfs-like COW.
+Well, I can't find it anywhere in the code - the only references to
+snapshots are 5 comments like this:
+
+	* FIXME: what happen if snapshot was introduced?
+
+IOWs, tux3 is just a prototype of a standard journaling filesystem.
+The tux3 code is still missing large parts of it's intended core
+functionality and there is nothing to tell us when that might
+appear. It really appears to me that tux3 is where btrfs was 5-6
+years ago - the core of an idea, but a long, long way from being
+feature complete or production ready. btrfs still doesn't handle
+ENOSPC well and given that tux3's is following the same development
+path (BUG on ENOSPC) it doesn't fill me with any confidence that
+tux3 is going to turn out any better than btrfs in 5 years time.
+
+Really, I don't see how you plan to bring tux3 to be feature
+complete and production ready in less than 2-3 years. The current
+code is barely functional at this point and there's still questions
+that haven't been answered about whether core tux3 functionality can
+even be made to work properly, let alone integrated effectively.
+
+IMO, it's a waste of time right now asking anyone to review this
+code for inclusion until it has been cleaned up, the core
+infrastructure problems have been solved and the core filesystem
+code is much closer to feature complete.....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
