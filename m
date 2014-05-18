@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaERHpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 03:45:41 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:28896 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751671AbaERHpk (ORCPT
+	id S1752153AbaERH6v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 03:58:51 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:34526 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaERH6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 03:45:40 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AooVAF5keFNbskAH/2dsb2JhbABZgwaDP6c1BAEBAgEBBQGaJwICgQoXdIJTEz8YgQIkE4hFAdEvhVWIe4RHAQOPL4oqAZMagzk7gTEi
-Date: Sun, 18 May 2014 09:45:35 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        tytso <tytso@mit.edu>
-Subject: [PATCH 1/1] fs/jbd2/revoke.c: replace shift loop by fls
-Message-Id: <20140518094535.d9f0d55b5bc02ba63a327bfb@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 18 May 2014 03:58:50 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH 0/6] ipc/sem.c: Fix semctl(,,{GETNCNT,GETZCNT})
+Date: Sun, 18 May 2014 09:58:31 +0200
+Message-Id: <1400399917-17583-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jbd2_journal_init_revoke is only called with positive hash_size
-(JOURNAL_REVOKE_DEFAULT_HASH) so we can replace loop shift by fls -1
+Hi Andrew,
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jbd2/revoke.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+I've applied the changes recommended by Michael and Davidlohr - and I don't 
+have any open points on my list, either.
 
-diff --git a/fs/jbd2/revoke.c b/fs/jbd2/revoke.c
-index 198c9c1..811d14b 100644
---- a/fs/jbd2/revoke.c
-+++ b/fs/jbd2/revoke.c
-@@ -227,19 +227,15 @@ record_cache_failure:
- 
- static struct jbd2_revoke_table_s *jbd2_journal_init_revoke_table(int hash_size)
- {
--	int shift = 0;
--	int tmp = hash_size;
-+	int i;
- 	struct jbd2_revoke_table_s *table;
- 
- 	table = kmem_cache_alloc(jbd2_revoke_table_cache, GFP_KERNEL);
- 	if (!table)
- 		goto out;
- 
--	while((tmp >>= 1UL) != 0UL)
--		shift++;
--
- 	table->hash_size = hash_size;
--	table->hash_shift = shift;
-+	table->hash_shift = fls(hash_size) - 1;
- 	table->hash_table =
- 		kmalloc(hash_size * sizeof(struct list_head), GFP_KERNEL);
- 	if (!table->hash_table) {
-@@ -248,8 +244,8 @@ static struct jbd2_revoke_table_s *jbd2_journal_init_revoke_table(int hash_size)
- 		goto out;
- 	}
- 
--	for (tmp = 0; tmp < hash_size; tmp++)
--		INIT_LIST_HEAD(&table->hash_table[tmp]);
-+	for (i = 0; i < hash_size; i++)
-+		INIT_LIST_HEAD(&table->hash_table[i]);
- 
- out:
- 	return table;
--- 
-1.8.4.5
+Therefore: Could you add the series to -mm and move it towards mainline?
 
+Background:
+
+SUSv4 and the man page of semop() clearly define how semncnt or semzcnt must
+be updated: Exactly for the single sop that cannot proceed.
+
+The Linux implementation always tried to be clever and to increase the counters
+for all operations that might be the reason why a task sleeps.
+
+The following patches fix that and make the code conform to the standard and
+the documentation.
+
+The series got fairly long, because I also noticed that semzcnt was calculated
+incorrectly.
+
+--
+	Manfred
