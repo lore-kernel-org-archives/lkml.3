@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaERRHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 13:07:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36170 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaERRHI (ORCPT
+	id S1751861AbaERROW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 13:14:22 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:60432 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaERROU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 13:07:08 -0400
-Date: Sun, 18 May 2014 09:49:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benjamin Romer <benjamin.romer@unisys.com>
-Cc: sparmaintainer@unisys.com, linux-kernel@vger.kernel.org, jkc@redhat.com,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 2/7] staging: unisys: move uislib/platform proc entry to
- debugfs
-Message-ID: <20140518164918.GA10285@kroah.com>
-References: <1399912715-16142-1-git-send-email-benjamin.romer@unisys.com>
- <1399912715-16142-3-git-send-email-benjamin.romer@unisys.com>
+	Sun, 18 May 2014 13:14:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399912715-16142-3-git-send-email-benjamin.romer@unisys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140518162253.GM15585@mwanda>
+References: <1400190833-27882-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140515224327.GA16255@mwanda>
+	<CAFo99gYEf6GrAjuWNc5+DEEuBV82eejRuy7QtiJuLD+sRccLRA@mail.gmail.com>
+	<20140517185615.GB15585@mwanda>
+	<CAFo99gbnN8j8WgY3O1eDgkpkmJU11X8-9cCU_0_s7TRN8wNW+Q@mail.gmail.com>
+	<20140518162253.GM15585@mwanda>
+Date: Sun, 18 May 2014 19:14:20 +0200
+Message-ID: <CAFo99gYAOZesd69GcDMnLAJKrY60Exsxea=z0tgD0sY3=j_Yeg@mail.gmail.com>
+Subject: Re: [PATCH] Fix for possible null pointer dereference in node.c
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Masood Mehmood <ody.guru@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 12:38:30PM -0400, Benjamin Romer wrote:
-> Convert /proc/uislib/platform to an equivalent entry in debugfs.
-> 
-> Signed-off-by: Benjamin Romer <benjamin.romer@unisys.com>
-> ---
->  drivers/staging/unisys/uislib/uislib.c | 62 ++++++++++------------------------
->  1 file changed, 17 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
-> index fdc23676..b71f387 100644
-> --- a/drivers/staging/unisys/uislib/uislib.c
-> +++ b/drivers/staging/unisys/uislib/uislib.c
-> @@ -23,6 +23,7 @@
->  #include <config/modversions.h>
->  #endif
->  #include <linux/module.h>
-> +#include <linux/debugfs.h>
->  
->  #include "commontypes.h"
->  
-> @@ -91,19 +92,23 @@ static int Go_Polling_Device_Channels;
->  static struct proc_dir_entry *uislib_proc_dir;
->  static struct proc_dir_entry *uislib_proc_vbus_dir;
->  static struct proc_dir_entry *info_proc_entry;
-> -static struct proc_dir_entry *platformnumber_proc_entry;
->  static struct proc_dir_entry *cycles_before_wait_proc_entry;
->  static struct proc_dir_entry *smart_wakeup_proc_entry;
->  
->  #define DIR_PROC_ENTRY "uislib"
->  #define DIR_VBUS_PROC_ENTRY "vbus"
->  #define INFO_PROC_ENTRY_FN "info"
-> -#define PLATFORMNUMBER_PROC_ENTRY_FN "platform"
->  #define CYCLES_BEFORE_WAIT_PROC_ENTRY_FN "cycles_before_wait"
->  #define SMART_WAKEUP_PROC_ENTRY_FN "smart_wakeup"
->  #define CALLHOME_PROC_ENTRY_FN "callhome"
->  #define CALLHOME_THROTTLED_PROC_ENTRY_FN "callhome_throttled"
->  
-> +#define DIR_DEBUGFS_ENTRY "uislib"
-> +static struct dentry *dir_debugfs;
-> +
-> +#define PLATFORMNUMBER_DEBUGFS_ENTRY_FN "platform"
-> +static struct dentry *platformnumber_debugfs_read;
+Hi
 
-There's no need to keep this dentry around, you can just remove all the
-debugfs files in your directory recursively when you exit.  That will
-save you code and logic overall.
+The approximately 5,000 errors were not only null pointers, but
+uninitialized variables, etc. also a mixture of error and warnings.
+Same I did not consider a reall error. Then a bunch of warnings for
+printf("%d", unsigned int)  and vice versa, which I have not even
+bothered to check even.
 
-I'll leave this for now, you can clean that up in a future patch.
+Regarding the possible use of NULL pointer that I started with, so
+reacts cppcheck that there is a check of NULL in some places, but not
+others.
+As examples:
 
-Also, why are these entries moving to debugfs at all?  Why are they
-needed?  Who will use them?  Are tools relying on them to be there?
+drivers/staging/tidspbridge/rmgr/node.c : 2365] ->
+[drivers/staging/tidspbridge/rmgr/node.c : 2368] :  (warning) Possible
+null pointer dereference :  hnode - otherwise it is redundant to check
+it against null.
 
-thanks,
+So suppose a lot of it stems from the old code then.
 
-greg k-h
+
+Best regards
+Rickard Strandqvist
+
+
+2014-05-18 18:22 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Sun, May 18, 2014 at 05:49:52PM +0200, Rickard Strandqvist wrote:
+>> Hi
+>>
+>> When I run cppcheck find the about 5,000 errors, of these, I selected
+>> the 100 most serious and has made patches. But my ability to immerse
+>> myself in each failure has been limited unfortunately.
+>>
+>
+> I am familiar with that feeling.  ;)
+>
+> With Smatch, I ignore inconsistent NULL checking like this when we know
+> that the parameter is always non-NULL.  It was just too much hassle to
+> deal with.
+>
+> These days I tend to report more bugs instead of fixing them myself.  I
+> run on linux-next and complain to the original author as soon as the
+> buggy code is merged.  If the code is old, then my experience is that no
+> one will fix it.
+>
+> Also 5000 inconsistent NULL checks seems like too high of a figure.  For
+> my inconsistent NULL checks I get 215 of these warnings:
+>
+>         sound/i2c/other/ak4xxx-adda.c:808 build_adc_controls()
+>         error: we previously assumed 'ak->adc_info' could be null (see line 789)
+>
+> And 75 of these:
+>
+>         fs/efs/inode.c:298 efs_map_block()
+>         warn: variable dereferenced before check 'bh' (see line 292)
+>
+> regards,
+> dan carpenter
+>
