@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaESORN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:17:13 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:57328 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981AbaESORM (ORCPT
+	id S1754683AbaESORr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:17:47 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:41261 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbaESORq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:17:12 -0400
-Message-ID: <537A1272.1020206@linaro.org>
-Date: Mon, 19 May 2014 16:17:22 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 10:17:46 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@driverdev.osuosl.org>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <shigekatsu.tateno@atmel.com>
+Subject: [PATCH] staging: ozwpan: Change Maintainer
+Date: Mon, 19 May 2014 15:17:30 +0100
+Message-ID: <1400509050-6300-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clocksource: qcom: Implement read_current_timer for udelay
-References: <1400022060-30118-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1400022060-30118-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2014 01:01 AM, Stephen Boyd wrote:
-> Setup the same timer used as the clocksource to be used as the
-> read_current_timer implementation. This allows us to support a
-> stable udelay implementation on MSMs where it's possible for the
-> CPUs to scale speeds independently of one another.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+I will be not able to work on ozwpan driver anymore.
+Remove my name & add Tateno as maintainer.
 
-Applied to my tree for 3.16
+Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+---
+ MAINTAINERS                 |    2 +-
+ drivers/staging/ozwpan/TODO |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks
-   -- Daniel
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0de64a5..3a9e4d83 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8466,7 +8466,7 @@ S:	Maintained
+ F:	drivers/staging/olpc_dcon/
+ 
+ STAGING - OZMO DEVICES USB OVER WIFI DRIVER
+-M:	Rupesh Gujare <rupesh.gujare@atmel.com>
++M:	Shigekatsu Tateno <shigekatsu.tateno@atmel.com>
+ S:	Maintained
+ F:	drivers/staging/ozwpan/
+ 
+diff --git a/drivers/staging/ozwpan/TODO b/drivers/staging/ozwpan/TODO
+index b4febd7..f32c1c0 100644
+--- a/drivers/staging/ozwpan/TODO
++++ b/drivers/staging/ozwpan/TODO
+@@ -10,5 +10,5 @@ TODO:
+ 	- testing with as many devices as possible.
+ 
+ Please send any patches for this driver to
+-Rupesh Gujare <rupesh.gujare@atmel.com>
++Shigekatsu Tateno <shigekatsu.tateno@atmel.com>
+ and Greg Kroah-Hartman <gregkh@linuxfoundation.org>.
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.9.5
 
