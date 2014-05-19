@@ -1,143 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaESWBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:01:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21606 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaESWBF convert rfc822-to-8bit (ORCPT
+	id S1751389AbaESWGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:06:16 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:38375 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaESWGP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:01:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,869,1392192000"; 
-   d="scan'208";a="534460656"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Andi Kleen <andi@firstfloor.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-CC: "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/8] ixgbe: Out of line ixgbe_read/write_reg
-Thread-Topic: [PATCH 1/8] ixgbe: Out of line ixgbe_read/write_reg
-Thread-Index: AQHPcVAZKKq1T2MZKk2zTQ/UkJwTz5tI7lIA
-Date: Mon, 19 May 2014 22:00:52 +0000
-Message-ID: <7477F573-2AED-4D26-8D5F-DB80DFA7EDEF@intel.com>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
- <1400276595-6965-2-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1400276595-6965-2-git-send-email-andi@firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.24.17.254]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <5E2FA198A0EE724CAE7A735130867AB2@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 May 2014 18:06:15 -0400
 MIME-Version: 1.0
+In-Reply-To: <537A445E.5030604@intel.com>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
+ <20140519130114.GA3140@dhcp22.suse.cz> <20140519143540.BE9F6E009B@blue.fi.intel.com>
+ <20140519143837.GA5228@infradead.org> <20140519150238.67898E009B@blue.fi.intel.com>
+ <20140519151104.GA16736@infradead.org> <20140519151758.A2162E009B@blue.fi.intel.com>
+ <CAMSv6X1-17HMTO=b6QOZA0Xm1combFxV4wuX1gPMUqC02EKrJA@mail.gmail.com>
+ <20140519155336.86E93E009B@blue.fi.intel.com> <CAMSv6X2EmhgVou03oLTAhpGbNv712mbNWCpL2PXWCXpW9M2nCQ@mail.gmail.com>
+ <537A445E.5030604@intel.com>
+From: Armin Rigo <arigo@tunes.org>
+Date: Tue, 20 May 2014 00:05:34 +0200
+X-Google-Sender-Auth: lHWKupfxHMfW19FtqCqXighlE1s
+Message-ID: <CAMSv6X37NL0JHQgtbhqdNXM_-bCcxK42YQDHqA9m=uMj3SAZxQ@mail.gmail.com>
+Subject: Re: remap_file_pages() use
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Kenny Simpson <theonetruekenny@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 16, 2014, at 2:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
+Hi Dave,
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> ixgbe_read_reg and ixgbe_write_reg are frequently called and are very big
-> because they have complex error handling code.
+On 19 May 2014 19:50, Dave Hansen <dave.hansen@intel.com> wrote:
+> We keep the current count as mm->map_count in the kernel, and the limit
+> is available because it's a sysctl.  It wouldn't be hard to dump
+> mm->map_count out in a /proc file somewhere if it would be useful to
+> you.  Would that work, or is there some other interface that would be
+> more convenient?
 
-Actually, this patch doesn't do anything to ixgbe_write_reg, which would almost certainly be very bad for performance, but instead changes ixgbe_write_reg64. The latter is not in a performance-sensitive path, but is only called from one site, so there is little reason to take it out-of-line.
+We can keep an in-process estimate of this value anyway.  The sysctl
+to get vm.max_map_count is all we need.  That is, unless the limit is
+moved to be per-user instead of per-process, as I think was discussed
+here --- which would complicate further our job :-/
 
-I already have a patch in queue to make ixgbe_read_reg out-of-line, because it does have a very costly memory footprint inline, as you have found.
 
-> Moving them out of line saves ~27k text in the ixgbe driver.
-> 
->   text	   data	    bss	    dec	    hex	filename
-> 14220873	2008072	1507328	17736273	10ea251	vmlinux-before-ixgbe
-> 14193673	2003976	1507328	17704977	10e2811	vmlinux-ixgbe
-> 
-> Cc: netdev@vger.kernel.org
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
-> drivers/net/ethernet/intel/ixgbe/ixgbe_common.h | 22 ++--------------------
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   | 22 ++++++++++++++++++++++
-> 2 files changed, 24 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-> index f12c40f..05f094d 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-> @@ -162,28 +162,10 @@ static inline void writeq(u64 val, void __iomem *addr)
-> }
-> #endif
-> 
-> -static inline void ixgbe_write_reg64(struct ixgbe_hw *hw, u32 reg, u64 value)
-> -{
-> -	u8 __iomem *reg_addr = ACCESS_ONCE(hw->hw_addr);
-> +void ixgbe_write_reg64(struct ixgbe_hw *hw, u32 reg, u64 value);
-> +u32 ixgbe_read_reg(struct ixgbe_hw *hw, u32 reg);
-> 
-> -	if (ixgbe_removed(reg_addr))
-> -		return;
-> -	writeq(value, reg_addr + reg);
-> -}
-> #define IXGBE_WRITE_REG64(a, reg, value) ixgbe_write_reg64((a), (reg), (value))
-> -
-> -static inline u32 ixgbe_read_reg(struct ixgbe_hw *hw, u32 reg)
-> -{
-> -	u8 __iomem *reg_addr = ACCESS_ONCE(hw->hw_addr);
-> -	u32 value;
-> -
-> -	if (ixgbe_removed(reg_addr))
-> -		return IXGBE_FAILED_READ_REG;
-> -	value = readl(reg_addr + reg);
-> -	if (unlikely(value == IXGBE_FAILED_READ_REG))
-> -		ixgbe_check_remove(hw, reg);
-> -	return value;
-> -}
-> #define IXGBE_READ_REG(a, reg) ixgbe_read_reg((a), (reg))
-> 
-> #define IXGBE_WRITE_REG_ARRAY(a, reg, offset, value) \
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> index d62e7a2..5f81f62 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> @@ -371,6 +371,28 @@ void ixgbe_write_pci_cfg_word(struct ixgbe_hw *hw, u32 reg, u16 value)
-> 	pci_write_config_word(adapter->pdev, reg, value);
-> }
-> 
-> +void ixgbe_write_reg64(struct ixgbe_hw *hw, u32 reg, u64 value)
-> +{
-> +	u8 __iomem *reg_addr = ACCESS_ONCE(hw->hw_addr);
-> +
-> +	if (ixgbe_removed(reg_addr))
-> +		return;
-> +	writeq(value, reg_addr + reg);
-> +}
-> +
-> +u32 ixgbe_read_reg(struct ixgbe_hw *hw, u32 reg)
-> +{
-> +	u8 __iomem *reg_addr = ACCESS_ONCE(hw->hw_addr);
-> +	u32 value;
-> +
-> +	if (ixgbe_removed(reg_addr))
-> +		return IXGBE_FAILED_READ_REG;
-> +	value = readl(reg_addr + reg);
-> +	if (unlikely(value == IXGBE_FAILED_READ_REG))
-> +		ixgbe_check_remove(hw, reg);
-> +	return value;
-> +}
-> +
-> static void ixgbe_service_event_complete(struct ixgbe_adapter *adapter)
-> {
-> 	BUG_ON(!test_bit(__IXGBE_SERVICE_SCHED, &adapter->state));
-> -- 
-> 1.9.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+A bientôt,
 
--- 
-Mark Rustad, Networking Division, Intel Corporation
-
+Armin.
