@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbaESNMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:12:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59517 "EHLO
+	id S932421AbaESNMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:12:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59518 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaESNMS (ORCPT
+	with ESMTP id S932398AbaESNMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:12:18 -0400
-Date: Mon, 19 May 2014 06:11:10 -0700
+	Mon, 19 May 2014 09:12:22 -0400
+Date: Mon, 19 May 2014 06:11:21 -0700
 From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-f5c1e1af91b2a4238d7c2a6dc4aa0076908b5864@git.kernel.org>
+Message-ID: <tip-5658b4f43e63f8c7b4a27995dcb2cf43a52ee398@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
         linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140515130306.61aae7db@cuia.bos.redhat.com>
-References: <20140515130306.61aae7db@cuia.bos.redhat.com>
+In-Reply-To: <20140516001332.67f91af2@annuminas.surriel.com>
+References: <20140516001332.67f91af2@annuminas.surriel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched,numa: Update migrate_improves/
- degrades_locality
-Git-Commit-ID: f5c1e1af91b2a4238d7c2a6dc4aa0076908b5864
+Subject: [tip:sched/core] sched,numa: Decay wakee_flips instead of zeroing
+Git-Commit-ID: 5658b4f43e63f8c7b4a27995dcb2cf43a52ee398
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,118 +31,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f5c1e1af91b2a4238d7c2a6dc4aa0076908b5864
-Gitweb:     http://git.kernel.org/tip/f5c1e1af91b2a4238d7c2a6dc4aa0076908b5864
+Commit-ID:  5658b4f43e63f8c7b4a27995dcb2cf43a52ee398
+Gitweb:     http://git.kernel.org/tip/5658b4f43e63f8c7b4a27995dcb2cf43a52ee398
 Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Thu, 15 May 2014 13:03:06 -0400
+AuthorDate: Fri, 16 May 2014 00:13:32 -0400
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 19 May 2014 22:02:43 +0900
 
-sched,numa: Update migrate_improves/degrades_locality
+sched,numa: Decay wakee_flips instead of zeroing
 
-Update the migrate_improves/degrades_locality functions with
-knowledge of pseudo-interleaving.
+Affine wakeups have the potential to interfere with NUMA placement.
+If a task wakes up too many other tasks, affine wakeups will get
+disabled.
 
-Do not consider moving tasks around within the set of group's active
-nodes as improving or degrading locality. Instead, leave the load
-balancer free to balance the load between a numa_group's active nodes.
+However, regardless of how many other tasks it wakes up, it gets
+re-enabled once a second, potentially interfering with NUMA
+placement of other tasks.
 
-Also, switch from the group/task_weight functions to the group/task_fault
-functions. The "weight" functions involve a division, but both calls use
-the same divisor, so there's no point in doing that from these functions.
+By decaying wakee_wakes in half instead of zeroing it, we can avoid
+that problem for some workloads.
 
-On a 4 node (x10 core) system, performance of SPECjbb2005 seems
-unaffected, though the number of migrations with 2 8-warehouse wide
-instances seems to have almost halved, due to the scheduler running
-each instance on a single node.
-
-Cc: mgorman@suse.de
 Cc: chegu_vinod@hp.com
 Cc: mingo@kernel.org
+Cc: umgwanakikbuti@gmail.com
 Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140515130306.61aae7db@cuia.bos.redhat.com
+Link: http://lkml.kernel.org/r/20140516001332.67f91af2@annuminas.surriel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c | 42 +++++++++++++++++++++++++++++-------------
- 1 file changed, 29 insertions(+), 13 deletions(-)
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b899613..503f750 100644
+index 503f750..c9617b7 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5123,6 +5123,7 @@ task_hot(struct task_struct *p, u64 now)
- /* Returns true if the destination node has incurred more faults */
- static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- {
-+	struct numa_group *numa_group = rcu_dereference(p->numa_group);
- 	int src_nid, dst_nid;
+@@ -4065,7 +4065,7 @@ static void record_wakee(struct task_struct *p)
+ 	 * about the loss.
+ 	 */
+ 	if (jiffies > current->wakee_flip_decay_ts + HZ) {
+-		current->wakee_flips = 0;
++		current->wakee_flips >>= 1;
+ 		current->wakee_flip_decay_ts = jiffies;
+ 	}
  
- 	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults_memory ||
-@@ -5136,21 +5137,29 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	if (src_nid == dst_nid)
- 		return false;
- 
--	/* Always encourage migration to the preferred node. */
--	if (dst_nid == p->numa_preferred_nid)
--		return true;
-+	if (numa_group) {
-+		/* Task is already in the group's interleave set. */
-+		if (node_isset(src_nid, numa_group->active_nodes))
-+			return false;
-+
-+		/* Task is moving into the group's interleave set. */
-+		if (node_isset(dst_nid, numa_group->active_nodes))
-+			return true;
- 
--	/* If both task and group weight improve, this move is a winner. */
--	if (task_weight(p, dst_nid) > task_weight(p, src_nid) &&
--	    group_weight(p, dst_nid) > group_weight(p, src_nid))
-+		return group_faults(p, dst_nid) > group_faults(p, src_nid);
-+	}
-+
-+	/* Encourage migration to the preferred node. */
-+	if (dst_nid == p->numa_preferred_nid)
- 		return true;
- 
--	return false;
-+	return task_faults(p, dst_nid) > task_faults(p, src_nid);
- }
- 
- 
- static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
- {
-+	struct numa_group *numa_group = rcu_dereference(p->numa_group);
- 	int src_nid, dst_nid;
- 
- 	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
-@@ -5165,16 +5174,23 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
- 	if (src_nid == dst_nid)
- 		return false;
- 
-+	if (numa_group) {
-+		/* Task is moving within/into the group's interleave set. */
-+		if (node_isset(dst_nid, numa_group->active_nodes))
-+			return false;
-+
-+		/* Task is moving out of the group's interleave set. */
-+		if (node_isset(src_nid, numa_group->active_nodes))
-+			return true;
-+
-+		return group_faults(p, dst_nid) < group_faults(p, src_nid);
-+	}
-+
- 	/* Migrating away from the preferred node is always bad. */
- 	if (src_nid == p->numa_preferred_nid)
- 		return true;
- 
--	/* If either task or group weight get worse, don't do it. */
--	if (task_weight(p, dst_nid) < task_weight(p, src_nid) ||
--	    group_weight(p, dst_nid) < group_weight(p, src_nid))
--		return true;
--
--	return false;
-+	return task_faults(p, dst_nid) < task_faults(p, src_nid);
- }
- 
- #else
