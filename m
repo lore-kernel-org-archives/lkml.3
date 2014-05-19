@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168AbaESOBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:01:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37823 "EHLO mga01.intel.com"
+	id S1754616AbaESOCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:02:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60436 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291AbaESOBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:01:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,867,1392192000"; 
-   d="scan'208";a="534215261"
-Message-ID: <537A117A.7050802@linux.intel.com>
-Date: Mon, 19 May 2014 17:13:14 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753291AbaESOCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:02:51 -0400
+Date: Mon, 19 May 2014 16:02:48 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-ID: <20140519140248.GD3017@dhcp22.suse.cz>
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+ <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bin.yang@intel.com, Darren Hart <dvhart@linux.intel.com>,
-        "Holmberg, Hans" <hans.holmberg@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-References: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com> <CACRpkdZ67KoaMWUzpPm5g7yvQ-_q9zxuS+4wcXP0u18MW=XovA@mail.gmail.com> <53794FDC.6080908@linux.intel.com>
-In-Reply-To: <53794FDC.6080908@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 03:27 AM, Zhu, Lejun wrote:
+On Fri 16-05-14 15:00:16, Greg Thelen wrote:
+> On Tue, May 13 2014, Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > If somebody really cares because reparented pages, which would be
+> > dropped otherwise, push out more important ones then we should fix the
+> > reparenting code and put pages to the tail.
+> 
+> I should mention a case where I've needed to use memory.force_empty: to
+> synchronously flush stats from child to parent.  Without force_empty
+> memory.stat is temporarily inconsistent until async css_offline
+> reparents charges.  Here is an example on v3.14 showing that
+> parent/memory.stat contents are in-flux immediately after rmdir of
+> parent/child.
+
+OK, it is true that the delayed offlining makes this little bit
+complicated because there is no direct user visible relation between
+rmdir and css_offline.
+
+> $ cat /test
+> #!/bin/bash
+> 
+> # Create parent and child.  Add some non-reclaimable anon rss to child,
+> # then move running task to parent.
+> mkdir p p/c
+> (echo $BASHPID > p/c/cgroup.procs && exec sleep 1d) &
+> pid=$!
+> sleep 1
+> echo $pid > p/cgroup.procs 
+> 
+> grep 'rss ' {p,p/c}/memory.stat
+> if [[ $1 == force ]]; then
+>   echo 1 > p/c/memory.force_empty
+> fi
+> rmdir p/c
+> 
+> echo 'For a small time the p/c memory has not been reparented to p.'
+> grep 'rss ' {p,p/c}/memory.stat
+> 
+> sleep 1
+> echo 'After waiting all memory has been reparented'
+> grep 'rss ' {p,p/c}/memory.stat
+> 
+> kill $pid
+> rmdir p
 > 
 > 
-> On 5/17/2014 1:33 AM, Linus Walleij wrote:
->> On Wed, May 14, 2014 at 5:44 PM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
->>
->>> Devices based on Intel SoC products such as Baytrail have a Power
->>> Management IC. In the PMIC there are subsystems for voltage regulation,
->>> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
->>> Crystal Cove.
->>>
->>> This patch adds support for the GPIO function in Crystal Cove.
->>>
->>> Signed-off-by: Yang, Bin <bin.yang@intel.com>
->>> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
->>
->> (...)
->>
->>> +config GPIO_INTEL_SOC_PMIC
->>> +       bool "GPIO on Intel SoC PMIC"
->>> +       depends on INTEL_SOC_PMIC
+> -- First, demonstrate that just rmdir, without memory.force_empty,
+>    temporarily hides reparented child memory stats.
 > 
-> Thank you. That's a long list and all of them indeed need to be fixed.
-> I'll work on them and submit v2 when ready.
+> $ /test
+> p/memory.stat:rss 0
+> p/memory.stat:total_rss 69632
+> p/c/memory.stat:rss 69632
+> p/c/memory.stat:total_rss 69632
+> For a small time the p/c memory has not been reparented to p.
+> p/memory.stat:rss 0
+> p/memory.stat:total_rss 0
+
+OK, this is a bug. Our iterators skip the children because css_tryget
+fails on it but css_offline still not done. This is fixable, though,
+and force_empty is just a workaround so I wouldn't see this as a proper
+justification to keep it alive.
+
+One possible way to fix this is to iterate children even when css_tryget
+fails for them if they haven't finished css_offline yet.
+There are some changes in the cgroups core which should make this easier
+and Johannes claimed he has some work in that area.
+
+Anyway this is a useful testcase. Thanks Greg!
+
+> grep: p/c/memory.stat: No such file or directory
+> After waiting all memory has been reparented
+> p/memory.stat:rss 69632
+> p/memory.stat:total_rss 69632
+> grep: p/c/memory.stat: No such file or directory
+> /test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
 > 
+> -- Demonstrate that using memory.force_empty before rmdir, behaves more
+>    sensibly.  Stats for reparented child memory are not hidden.
+> 
+> $ /test force
+> p/memory.stat:rss 0
+> p/memory.stat:total_rss 69632
+> p/c/memory.stat:rss 69632
+> p/c/memory.stat:total_rss 69632
+> For a small time the p/c memory has not been reparented to p.
+> p/memory.stat:rss 69632
+> p/memory.stat:total_rss 69632
+> grep: p/c/memory.stat: No such file or directory
+> After waiting all memory has been reparented
+> p/memory.stat:rss 69632
+> p/memory.stat:total_rss 69632
+> grep: p/c/memory.stat: No such file or directory
+> /test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
 
-Shouldn't there be a .remove function undoing everything probe did?
-Freeing interrupts, removing irq domains, calling gpiochip_remove etc.
-
-Or is there something I'm missing?
-I see there's no option to compile this as module, but It might be added later so
-proper remove function would still be nice.
-
--Mathias
-
-
-
-
-
+-- 
+Michal Hocko
+SUSE Labs
