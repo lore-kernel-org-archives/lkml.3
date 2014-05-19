@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaESNgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:36:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34910 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214AbaESNf7 (ORCPT
+	id S1754490AbaESNjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:39:06 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:18323 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaESNjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:35:59 -0400
-Message-ID: <537A08BC.7060501@canonical.com>
-Date: Mon, 19 May 2014 15:35:56 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 09:39:05 -0400
+X-IronPort-AV: E=Sophos;i="4.98,867,1392163200"; 
+   d="scan'208";a="132390340"
+Message-ID: <537A0974.40302@citrix.com>
+Date: Mon, 19 May 2014 14:39:00 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        airlied@linux.ie
-CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
- for fences
-References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com> <5374E1B5.2020408@vodafone.de> <5374E410.1080203@canonical.com> <5374E792.4070607@vodafone.de> <5379BA04.8000901@canonical.com> <5379C06D.3050507@vodafone.de> <5379D8AD.1000904@canonical.com> <5379F96C.1060806@vodafone.de>
-In-Reply-To: <5379F96C.1060806@vodafone.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <mjg59@srcf.ucam.org>, <jeremy@goop.org>, <matt.fleming@intel.com>,
+        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        <mingo@redhat.com>, <david.vrabel@citrix.com>, <jbeulich@suse.com>,
+        <hpa@zytor.com>, <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
+        <eshelton@pobox.com>
+Subject: Re: [Xen-devel] [PATCH v4 3/5] xen: Put EFI machinery in place
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com> <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.18]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 19-05-14 14:30, Christian König schreef:
-> Am 19.05.2014 12:10, schrieb Maarten Lankhorst:
->> op 19-05-14 10:27, Christian König schreef:
->>> Am 19.05.2014 10:00, schrieb Maarten Lankhorst:
->>> [SNIP]
->>> The problem here is that the whole approach collides with the way we do reset handling from a conceptual point of view. Every IOCTL or other call chain into the driver is protected by the read side of the exclusive_lock semaphore. So in the case of a GPU lockup we can take the write side of the semaphore and so make sure that we have nobody else accessing the hardware or internal driver structures only changed at init time.
->>>
->>> Leaking a drivers IRQ context into another driver as well as calling into a driver in atomic context is just a quite uncommon approach and should be considered very carefully.
->>>
->>> I would rather vote for a completely synchronous interface only allowing blocking waits and checks if a fence is signaled from not atomic context.
->>>
->>> If a driver needs to avoid blocking it should just use a workqueue and checking a fence outside your own driver is probably be better done in a bottom halve handler anyway.
->>
->> Except that you might want to do something like
->> fence_is_signaled() in another driver to check whether you need to
->> defer, or can submit the batch buffer immediately, saving a bunch of
->> context switches. Running the is_signaled atomic is really useful here
->> because it means you can't do too many scary things in your is_signaled
->> handler.
->
-> This is indeed a nice optimization, but nothing more. If you want to provide a is_signalled interface for atomic context then this should be optional, not mandatory.
-See below.
->> In case of enable_signaling it was the only sane solution, because
->> fence_signal can be called from irq context, and any calls after that to
->> fence_add_callback and fence_wait aren't allowed to do anything, so
->> fence_enable_sw_signaling and the default wait implementation must be
->> atomic. fence_wait itself doesn't have to be, so it's easy to grab
->> exclusive_lock there.
->
-> I don't think you understood my point here: Completely drop enable_signaling, it's unnecessary and only complicates the interface.
->
-> We purposely avoided exactly this paradigm in the past and I haven't seen any good argument to start with it now.
+On 16/05/14 21:41, Daniel Kiper wrote:
+> @@ -0,0 +1,374 @@
+> +/*
+> + * EFI support for Xen.
+> + *
+> + * Copyright (C) 1999 VA Linux Systems
+> + * Copyright (C) 1999 Walt Drummond <drummond@valinux.com>
+> + * Copyright (C) 1999-2002 Hewlett-Packard Co.
+> + *	David Mosberger-Tang <davidm@hpl.hp.com>
+> + *	Stephane Eranian <eranian@hpl.hp.com>
+> + * Copyright (C) 2005-2008 Intel Co.
+> + *	Fenghua Yu <fenghua.yu@intel.com>
+> + *	Bibo Mao <bibo.mao@intel.com>
+> + *	Chandramouli Narayanan <mouli@linux.intel.com>
+> + *	Huang Ying <ying.huang@intel.com>
+> + * Copyright (C) 2011 Novell Co.
+> + *	Jan Beulich <JBeulich@suse.com>
+> + * Copyright (C) 2011-2012 Oracle Co.
+> + *	Liang Tang <liang.tang@oracle.com>
+> + * Copyright (c) 2014 Daniel Kiper, Oracle Corporation
+> + */
+> +
+> +#include <linux/bug.h>
+> +#include <linux/efi.h>
+> +#include <linux/init.h>
+> +#include <linux/string.h>
+> +
+> +#include <xen/interface/xen.h>
+> +#include <xen/interface/platform.h>
+> +
+> +#include <asm/xen/hypercall.h>
+> +
+> +#define call (op.u.efi_runtime_call)
 
-In the common case a lot more fences will be emitted than will be waited on.
-This means it makes sense to delay signaling a fence with fence_signal for
-as long as possible. But when a fence user wants to work with a fence
-some way is needed to ensure that the fence will complete. This is the idea
-behind .enable_signaling, it tells the fence driver to call fence_signal on
-the fence 'soon' because there are now waiters for it.
+I think not.
 
-The atomic .signaled is optional, and can be set to NULL, but there is
-no guarantee that fence_is_signaled will ever return true in that case,
-unless fence_enable_sw_signaling is called (which calls .enable_signaling).
+> +#define DECLARE_CALL(what) \
+> +	struct xen_platform_op op; \
+> +	op.cmd = XENPF_efi_runtime_call; \
+> +	call.function = XEN_EFI_##what; \
+> +	call.misc = 0
 
-Providing a custom wait function is optional in the interface, if the default wait
-function is used all waiters are signaled when fence_signal is called.
+Macros like this which explicitly create local variable with implicit
+names are evil when reading code.
 
-Removing enable_signaling would only make sense if fence_signal was removed too,
-but that would mean that fence_is_signaled could no longer exist in the core fence
-code, and would mean completely rewriting the interface.
+If you want to do initialisation like this, then at least do something like:
 
-~Maarten
+#define INIT_EFI_CALL(what) \
+{ .cmd = XENPF_efi_runtime_call, \
+   .u.efi_runtime_call.function = XEN_EFI_##what, \
+   .u.efi_runtime_call.misc = 0 }
 
+And use it as:
+
+struct xen_platform_op op = INIT_EFI_CALL(foo);
+
+~Andrew
