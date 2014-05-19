@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaESNlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:41:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39538 "EHLO arroyo.ext.ti.com"
+	id S1754669AbaESNl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:41:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46429 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793AbaESNlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:41:12 -0400
+	id S1754024AbaESNlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:41:24 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
 CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
         <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v4 0/6] Add support for SW babble Control
-Date: Mon, 19 May 2014 19:09:30 +0530
-Message-ID: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v4 1/6] usb: musb: core: Handle Babble condition only in HOST mode
+Date: Mon, 19 May 2014 19:09:31 +0530
+Message-ID: <1400506776-2816-2-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
+References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+BABBLE and RESET share the same interrupt. The interrupt
+is considered to be RESET if MUSB is in peripheral mode and
+as a BABBLE if MUSB is in HOST mode.
 
-Subject: [PATCH v3 0/5] Add support for SW babble Control
+Handle babble condition iff MUSB is in HOST mode.
 
-Series add support for SW babble control logic found in 
-new silicon versions of AM335x. Runtime differentiation of
-silicon version is done by checking the BABBLE_CTL register.
-For newer silicon the register default value read is 0x4 and
-for older versions its 0x0.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/musb/musb_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Patch 1 -> Handle Babble only if MUSB is in HOST mode
-Patch 2 -> Convert recover work to delayed work.
-Patch 3 -> usb_phy_vbus_(off/_on) are NOPs for am335x PHY
-	   so use usb_phy(_shutdown/_init) in musb_platform_reset()
-Patch 4 -> Add return value for musb_platform_reset() in prepration
-	   to support SW babble_ctrl
-Patch 5 -> Add the sw_babble_control()
-Patch 6 -> Enable sw babble control for newer silicon
-
-v3 -> v4 : Fixes an issue in gagdet mode - BUS RESET should not
-	   be handled as a BABBLE. Added a check for the same.(Patch #1)
-	   Enable sw babble control properly (Patch #6)
-	   	
-v2 -> v3 : Modify musb_platform_reset() to return zero on success.
-
-George Cherian (6):
-  usb: musb: core: Handle Babble condition only in HOST mode
-  usb: musb: core: Convert babble recover work to delayed work
-  usb: musb: dsps: Call usb_phy(_shutdown/_init) during
-    musb_platform_reset()
-  usb: musb: core: Convert the musb_platform_reset to have a return
-    value.
-  usb: musb: dsps: Add the sw_babble_control()
-  usb: musb: dsps: Enable sw babble control for newer silicon
-
- drivers/usb/musb/musb_core.c | 51 ++++++++++++++------------
- drivers/usb/musb/musb_core.h | 12 ++++---
- drivers/usb/musb/musb_dsps.c | 86 ++++++++++++++++++++++++++++++++++++++++++--
- drivers/usb/musb/musb_regs.h |  7 ++++
- 4 files changed, 125 insertions(+), 31 deletions(-)
-
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 61da471..eff3c5c 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -849,7 +849,7 @@ b_host:
+ 	}
+ 
+ 	/* handle babble condition */
+-	if (int_usb & MUSB_INTR_BABBLE)
++	if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
+ 		schedule_work(&musb->recover_work);
+ 
+ #if 0
 -- 
 1.8.3.1
 
