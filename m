@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaESA6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 20:58:33 -0400
-Received: from chicago.guarana.org ([192.210.136.102]:51238 "EHLO
-	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaESA6c (ORCPT
+	id S1752507AbaESBMl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 21:12:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44272 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461AbaESBMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 20:58:32 -0400
-X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 May 2014 20:58:32 EDT
-Date: Mon, 19 May 2014 11:51:38 +1000
-From: Kevin Easton <kevin@guarana.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Manuel Sch?lling <manuel.schoelling@gmx.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: Cleanup string initializations (char[] instead of
- char *)
-Message-ID: <20140519015138.GA5639@chicago.guarana.org>
-References: <1400338818-2853-1-git-send-email-manuel.schoelling@gmx.de>
- <20140517165345.GG18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140517165345.GG18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 18 May 2014 21:12:39 -0400
+Date: Sun, 18 May 2014 21:12:37 -0400 (EDT)
+Message-Id: <20140518.211237.1637671513066247487.davem@davemloft.net>
+To: rickard_strandqvist@spectrumdigital.se
+Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdn: hisax: l3dss1.c: Fix for possible null pointer
+ dereference
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1400347101-25476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1400347101-25476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 18 May 2014 18:12:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 05:53:45PM +0100, Al Viro wrote:
-> On Sat, May 17, 2014 at 05:00:18PM +0200, Manuel Sch?lling wrote:
-> > Initializations like 'char *foo = "bar"' will create two variables: a static
-> > string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
-> > will declare a single variable and will end up in shorter
-> > assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Sat, 17 May 2014 19:18:21 +0200
+
+> There is otherwise a risk of a possible null pointer dereference.
 > 
-> The hell it will.  Compare assembler generated e.g. for 32bit x86 before
-> and after.
+> Was largely found by using a static code analysis program called cppcheck.
 > 
-> >  {
-> >  	char *dp;
-> >  	char *status = "disabled";
-> > -	const char * flags = "flags: ";
-> > +	const char flags[] = "flags: ";
-> 
-> The first variant puts address of constant array into local variable
-> (on stack or in a register).  The second one fills local _array_ - the
-> string itself goes on stack.
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+ ...
 
-Right - if you're going to do this, you ireally want to make the array
-static as well:
+> @@ -2208,8 +2208,12 @@ static int l3dss1_cmd_global(struct PStack *st, isdn_ctrl *ic)
+>  				{ free_invoke_id(st, id);
+>  					return (-2);
+>  				}
+> -			pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+> -			pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
+> +
+> +			if (pc)
+> +			{
+> +				pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+> +				pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
+> +			}
 
-	static const char flags[] = "flags: ";
-
-(it's very unlikely that you would want a const array that isn't static).
-
-As Al showed though, usually the optimiser will figure things out on its
-own, and the pointer variable in the original variant gets optimised away.
-There's also optimisations that apply to string literals but don't apply to
-arrays, like string literal merging, which mean that the original could
-well still be preferred.
-
-    - Kevin
-
-
+I think rather the intention was to put these pc-> assignments in the
+timeout > 0 code block.
