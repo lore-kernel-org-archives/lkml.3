@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaESWjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:39:43 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:27133 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaESWjm (ORCPT
+	id S932127AbaESWk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:40:28 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59427 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932070AbaESWkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:39:42 -0400
-Message-ID: <1400539179.6399.7.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [tip:locking/core] rwsem: Support optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org
-Cc: torvalds@linux-foundation.org, peterz@infradead.org,
-        peter@hurleysoftware.com, jason.low2@hp.com, alex.shi@linaro.org,
-        riel@redhat.com, akpm@linux-foundation.org, aarcange@redhat.com,
-        tglx@linutronix.de, scott.norton@hp.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, andi@firstfloor.org, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, walken@google.com, aswin@hp.com,
-        linux-tip-commits@vger.kernel.org
-Date: Mon, 19 May 2014 15:39:39 -0700
-In-Reply-To: <1400536056.6399.3.camel@buesod1.americas.hpqcorp.net>
-References: <1399055055.6275.15.camel@buesod1.americas.hpqcorp.net>
-	 <tip-746c198007a8a5a155c4f74cb42f9a36f55272cf@git.kernel.org>
-	 <1400536056.6399.3.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 18:40:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-acpi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dyoung@redhat.com
+Subject: Re: [Patch v3 1/2] introduce variable acpi_lapic into ia64
+Date: Tue, 20 May 2014 00:57:19 +0200
+Message-ID: <18692765.A1lGfe6rx4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399265306-8553-1-git-send-email-bhe@redhat.com>
+References: <1399265306-8553-1-git-send-email-bhe@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 14:47 -0700, Davidlohr Bueso wrote:
-> Andrew had put this patch in -next for a while, and Stephen Rothwell was
-> able to trigger some warnings: https://lkml.org/lkml/2014/5/19/627
+On Monday, May 05, 2014 12:48:25 PM Baoquan He wrote:
+> This variable was defined and assigned in x86, is used to indicate
+> whether LAPIC exists in MADT. Now introduce it into ia64 to help
+> make correct judgment when get information for acpi processor later.
 > 
-> 8<----------------------------------------------------------------
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> Subject: [PATCH] rwsem: Fix warnings for CONFIG_RWSEM_GENERIC_SPINLOCK
-> 
-> Optimistic spinning is only used by the xadd variant
-> of rw-semaphores. Make sure that we use the old version
-> of the __RWSEM_INITIALIZER macro for systems that rely
-> on the spinlock one, otherwise warnings can be triggered,
-> such as the following reported on an arm box:
-> 
-> ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
-> ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
-> ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
-> ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+
+This and [2/2] queued up for 3.16, thanks!
+
 > ---
->  include/linux/rwsem.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/ia64/include/asm/acpi.h | 1 +
+>  arch/ia64/kernel/acpi.c      | 3 +++
+>  2 files changed, 4 insertions(+)
 > 
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 3e108f1..091d993 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
->  # define __RWSEM_DEP_MAP_INIT(lockname)
->  #endif
+> diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+> index d651102..b478219 100644
+> --- a/arch/ia64/include/asm/acpi.h
+> +++ b/arch/ia64/include/asm/acpi.h
+> @@ -85,6 +85,7 @@ ia64_acpi_release_global_lock (unsigned int *lock)
+>  	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
 >  
-> -#ifdef CONFIG_SMP
-> +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
+>  #ifdef	CONFIG_ACPI
+> +extern int acpi_lapic;
+>  #define acpi_disabled 0	/* ACPI always enabled on IA64 */
+>  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
+>  #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
+> diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+> index 0d407b3..615ef81 100644
+> --- a/arch/ia64/kernel/acpi.c
+> +++ b/arch/ia64/kernel/acpi.c
+> @@ -56,6 +56,7 @@
+>  
+>  #define PREFIX			"ACPI: "
+>  
+> +int acpi_lapic;
+>  unsigned int acpi_cpei_override;
+>  unsigned int acpi_cpei_phys_cpuid;
+>  
+> @@ -676,6 +677,8 @@ int __init early_acpi_boot_init(void)
+>  	if (ret < 1)
+>  		printk(KERN_ERR PREFIX
+>  		       "Error parsing MADT - no LAPIC entries\n");
+> +	else
+> +		acpi_lapic = 1;
+>  
+>  #ifdef CONFIG_SMP
+>  	if (available_cpus == 0) {
+> 
 
-Of course, we can also use the following. I have no preference.
-
-#if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
