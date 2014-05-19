@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaESIGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:06:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18544 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaESIGy (ORCPT
+	id S1753163AbaESIG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:06:59 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:54700 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771AbaESIG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:06:54 -0400
-Date: Mon, 19 May 2014 11:06:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org, markh@compro.net,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] staging: dgap: implement error handling in
- dgap_tty_register()
-Message-ID: <20140519080634.GM16255@mwanda>
-References: <20140519021030.GA1051@devel.8.8.4.4>
+	Mon, 19 May 2014 04:06:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519021030.GA1051@devel.8.8.4.4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <87eh07bu60.fsf@rustcorp.com.au>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+	<87wqf1oi22.fsf@rustcorp.com.au>
+	<20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
+	<871tw9c6kt.fsf@rustcorp.com.au>
+	<53678ED6.4070502@infradead.org>
+	<87eh07bu60.fsf@rustcorp.com.au>
+Date: Mon, 19 May 2014 05:06:54 -0300
+Message-ID: <CA+ToGPFQ0Ku0odkAaU4FKDtGq0TK8hJ+HWvJr8J3wJVwYaO2mg@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+From: Diego Viola <diego.viola@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 11:10:30AM +0900, Daeseok Youn wrote:
-> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-> index d7cfc45..e4cb7aa 100644
-> --- a/drivers/staging/dgap/dgap.c
-> +++ b/drivers/staging/dgap/dgap.c
-> @@ -1212,7 +1212,9 @@ static int dgap_tty_register(struct board_t *brd)
->  {
->  	int rc = 0;
+e.g. should be written as e.g. or e.g.,
 
-Oh, and you may as well remove this initialization while you are at it.
+There's no need to add another colon ":" after the one that it's already there.
 
-regards,
-dan carpenter
+See, http://en.wikipedia.org/wiki/E.g.#e.g.
 
+Please fix that.
+
+Thanks,
+
+Diego
+
+On Mon, May 5, 2014 at 9:57 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Randy Dunlap <rdunlap@infradead.org> writes:
+>> All looks good to me except for 2 instances of "eg" which should be
+>> "e.g." (just above and about 4 paragraphs below here).
+>
+> Thanks, fixed:
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 56a4c2d0c741..a42b9dd6b46b 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -14,7 +14,7 @@ environment, others are passed as command line arguments to init.
+>  Everything after "--" is passed as an argument to init.
+>
+>  Module parameters can be specified in two ways: via the kernel command
+> -line with a module name prefix, or via modprobe, eg:
+> +line with a module name prefix, or via modprobe, e.g.:
+>
+>         (kernel command line) usbcore.blinkenlights=1
+>         (modprobe command line) modprobe usbcore blinkenlights=1
+> @@ -30,7 +30,7 @@ Hyphens (dashes) and underscores are equivalent in parameter names, so
+>  can also be entered as
+>         log-buf-len=1M print_fatal_signals=1
+>
+> -Double-quotes can be used to protect spaces in values, eg:
+> +Double-quotes can be used to protect spaces in values, e.g.:
+>         param="spaces in here"
+>
+>  This document may not be entirely up to date and comprehensive. The command
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
