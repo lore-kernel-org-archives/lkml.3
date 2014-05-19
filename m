@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaESKXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:23:47 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:47484
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753527AbaESKXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:23:44 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <shawn.guo@linaro.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>, Jingchang Lu <b35083@freescale.com>
-Subject: [PATCHv4 1/3] clocksource: ftm: Add FlexTimer Module (FTM) Timer devicetree Documentation
-Date: Mon, 19 May 2014 17:36:06 +0800
-Message-ID: <1400492168-12813-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1400492168-12813-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1400492168-12813-1-git-send-email-Li.Xiubo@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(79102001)(36756003)(31966008)(74662001)(62966002)(50466002)(21056001)(81542001)(81156002)(48376002)(89996001)(74502001)(88136002)(87936001)(6806004)(50226001)(50986999)(77982001)(4396001)(46102001)(76482001)(2201001)(81342001)(92566001)(92726001)(83072002)(85852003)(87286001)(86362001)(93916002)(80022001)(77096999)(84676001)(83322001)(68736004)(102836001)(69596002)(19580405001)(44976005)(97736001)(76176999)(99396002)(77156001)(19580395003)(47776003)(64706001)(20776003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB480;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1753845AbaESKZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:25:14 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:37274 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaESKZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 06:25:12 -0400
+Message-ID: <5379DBFE.4010000@gmail.com>
+Date: Mon, 19 May 2014 12:25:02 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 021670B4D2
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Tushar Behera <tushar.behera@linaro.org>, Tomasz Figa <t.figa@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line
+ on Exynos SoCs
+References: <1400175151-27779-1-git-send-email-t.figa@samsung.com> <1400175151-27779-4-git-send-email-t.figa@samsung.com> <5379AFB9.9030608@linaro.org>
+In-Reply-To: <5379AFB9.9030608@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FTM binding could be used on Vybrid and LS1+, add a binding
-document for it.
+Hi Tushar,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Jingchang Lu <b35083@freescale.com>
----
- .../devicetree/bindings/timer/fsl,ftm-timer.txt    | 31 ++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/fsl,ftm-timer.txt
+On 19.05.2014 09:16, Tushar Behera wrote:
+> On 05/15/2014 11:02 PM, Tomasz Figa wrote:
+>> This patch introduces a driver that handles configuration of CLKOUT pin
+>> of Exynos SoCs that can be used to output certain clocks from inside of
+>> the SoC to a dedicated output pin.
+>>
+>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+>> ---
+> 
+> Tested the series on Exynos5420-based peach-pit board for audio playback
+> (with an internal patch to set CLK_FIN_PLL as the parent of clkout).
+> 
+> Tested-by: Tushar Behera <tushar.behera@linaro.org>
+> 
 
-diff --git a/Documentation/devicetree/bindings/timer/fsl,ftm-timer.txt b/Documentation/devicetree/bindings/timer/fsl,ftm-timer.txt
-new file mode 100644
-index 0000000..aa8c402
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/fsl,ftm-timer.txt
-@@ -0,0 +1,31 @@
-+Freescale FlexTimer Module (FTM) Timer
-+
-+Required properties:
-+
-+- compatible : should be "fsl,ftm-timer"
-+- reg : Specifies base physical address and size of the register sets for the
-+  clock event device and clock source device.
-+- interrupts : Should be the clock event device interrupt.
-+- clocks : The clocks provided by the SoC to drive the timer, must contain an
-+  entry for each entry in clock-names.
-+- clock-names : Must include the following entries:
-+  o "ftm-evt"
-+  o "ftm-src"
-+  o "ftm-evt-counter-en"
-+  o "ftm-src-counter-en"
-+- big-endian: One boolean property, the big endian mode will be in use if it is
-+  present, or the little endian mode will be in use for all the device registers.
-+
-+Example:
-+ftm: ftm@400b8000 {
-+	compatible = "fsl,ftm-timer";
-+	reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
-+	interrupts = <0 44 IRQ_TYPE_LEVEL_HIGH>;
-+	clock-names = "ftm-evt", "ftm-src",
-+		"ftm-evt-counter-en", "ftm-src-counter-en";
-+	clocks = <&clks VF610_CLK_FTM2>,
-+		<&clks VF610_CLK_FTM3>,
-+		<&clks VF610_CLK_FTM2_EXT_FIX_EN>,
-+		<&clks VF610_CLK_FTM3_EXT_FIX_EN>;
-+	big-endian;
-+};
--- 
-1.8.4
+Thank you for testing.
 
+>>  Example :
+>>  pmu_system_controller: system-controller@10040000 {
+>>  	compatible = "samsung,exynos5250-pmu", "syscon";
+>>  	reg = <0x10040000 0x5000>;
+>> +	#clock-cells = <0>;
+>> +	clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
+>> +			"clkout4", "clkout8", "clkout9";
+>> +	clocks = <&clock CLK_OUT_DMC>, <&clock CLK_OUT_TOP>,
+>> +		<&clock CLK_OUT_LEFTBUS>, <&clock CLK_OUT_RIGHTBUS>,
+>> +		<&clock CLK_OUT_CPU>, <&clock CLK_XXTI>,
+>> +		<&clock CLK_XUSBXTI>;
+>>  };
+> 
+> Adding an usage example in the documentation would be helpful.
+
+Right, that's usually a good idea, I don't know why I haven't added one.
+Thanks.
+
+Best regards,
+Tomasz
