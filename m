@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaESReI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:34:08 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:57672 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533AbaESReH (ORCPT
+	id S932734AbaESRfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:35:33 -0400
+Received: from smtprelay0070.hostedemail.com ([216.40.44.70]:33319 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754863AbaESRfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:34:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140519143540.BE9F6E009B@blue.fi.intel.com>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
-	<20140519130114.GA3140@dhcp22.suse.cz>
-	<20140519143540.BE9F6E009B@blue.fi.intel.com>
-Date: Mon, 19 May 2014 13:34:05 -0400
-Message-ID: <CALN0BAu0E9r0hdy_Vc6GoKiXXk_w0vetRdumW-3eFFzOPqsFSQ@mail.gmail.com>
-Subject: Re: remap_file_pages() use
-From: Kenny Simpson <theonetruekenny@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Armin Rigo <arigo@tunes.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 May 2014 13:35:31 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6691:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12049:12114:12438:12517:12519:12740:13069:13071:13149:13161:13229:13230:13311:13357:13894:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: toy09_8740f07380a02
+X-Filterd-Recvd-Size: 2358
+Message-ID: <1400520928.30820.23.camel@joe-AO725>
+Subject: Re: [PATCH] net: vxge: Use time_is_before_jiffies() for time
+ comparison
+From: Joe Perches <joe@perches.com>
+To: Manuel =?ISO-8859-1?Q?Sch=F6lling?= <manuel.schoelling@gmx.de>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Mon, 19 May 2014 10:35:28 -0700
+In-Reply-To: <1400518318-12386-2-git-send-email-manuel.schoelling@gmx.de>
+References: <1400518056-12089-1-git-send-email-manuel.schoelling@gmx.de>
+	 <1400518318-12386-1-git-send-email-manuel.schoelling@gmx.de>
+	 <1400518318-12386-2-git-send-email-manuel.schoelling@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the circular buffer case, yes I could make some temp file under
-/dev/shm, unlink it, mmap() it multiple times, etc... its just makes
-it a little more hairy.
-https://lkml.org/lkml/2011/3/19/94
+On Mon, 2014-05-19 at 18:51 +0200, Manuel Schölling wrote:
+> To be future-proof and for better readability the time comparisons are modified
+> to use time_is_before_jiffies() instead of plain, error-prone math.
 
-For the other cases I had used the remapping to have more of a sliding
-window over a disk-backed file where I also was using aliasing to
-eliminate the corner cases of hitting the end of a window and needing
-to split records due to crossing boundaries, etc..  These were done
-for other projects in the past, but I am no longer on those projects
-(or with some of the companies), so I can't as easily double check the
-code or make changes.
-Being able to replace mappings in-place was logically simpler than
-doing mmap() over the old mappings.  I was also under the impression
-that it should have less pressure on the mm_sem - I'm pretty sure I
-did profile it many years ago (>5), but many things have changed since
-then so maybe this is not a big deal any more.  This use case was more
-performance-critical than the one-time setup of the anonymous circular
-buffer as it was more like a transaction log/journal.
+Hi again Manuel.
 
-All that said, if remap_file_pages were to go away as of a mainline
-kernel this year, the projects I had worked on would probably not be
-impacted for many years and would probably have been retired/rewritten
-before they would ever see the change (unless some Linux vendor in
-N.C. backported its removal).  Since valgrind doesn't support it, I
-tend to write fallback/debug variants anyway.
+Just a couple of FYIs/nits:
 
--Kenny
+The "net: " prefix in your patch subject is a little
+misleading.  One reading might be that the patch is
+to the net/ subsystem but it's for a driver.
+
+It might be better as:
+
+[PATCH] vxge: Use time_is_before_jiffies
+
+Generally, just use the last directory name
+for the subject prefix.
+
+ie:  patching: foo/bar/baz/qux.c
+
+subject prefix is generally:
+
+[PATCH] baz: whatever changed...
+
+and a single patch to a number of different files
+in foo/bar/baz/*.[ch] is still
+
+[PATCH] baz: etc...
+
+Also, the time_is_(before|after)_jiffies variants
+are not used particularly often in the kernel.
+
+The form using of time_<foo>(jiffies, ...)
+is used _far_ more often (and it saves a little
+typing too).
+
+time_before(<foo>, jiffies)
+time_is_before_jiffies(<foo>)
+
+$ git grep -E -w "time_is_(before|after|before_eq|after_eq)_jiffies" | wc -l
+93
+$ git grep -E "\btime_(before|after|before_eq|after_eq)+\s*\(.*jiffies" | wc -l
+1695
+
+<shrug>  Maybe there's some reading clarity using
+the time_is_(before|after)_jiffies variants.
 
 
-On Mon, May 19, 2014 at 10:35 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Michal Hocko wrote:
->> [CCing Kirill and other people involved]
->>
->> On Sun 18-05-14 00:03:28, Kenny Simpson wrote:
->> > I saw that remap_file_pages() was possibly going away to be replaced
->> > by some emulation. I've used this call in several projects over the
->> > years mostly as a way of mapping multiple virtual memory pages to
->> > alias the same private or shared memory region (to do things like
->> > circular buffers). mmap()
->> > in the case of anonymous memory doesn't work as well since there is
->> > not a file descriptor to reference.
->> >
->> > Would this sort of thing be supported in the emulation, or should I be
->> > planning on reimplementing/rewriting some things?
->
-> From functional POV, emulation *should* be identical to original
-> remap_file_pages(), but slower. It would be nice, if you test it early.
->
-> It's not clear yet how long emulation will be there.
-> Is there a reason why you can't use fd from shared memory (shm_open() or
-> direct open() on /dev/shm/xxx)?
->
-> --
->  Kirill A. Shutemov
