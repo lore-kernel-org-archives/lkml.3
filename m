@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938AbaESRhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:37:07 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36642 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964853AbaESRhA (ORCPT
+	id S1755048AbaESRhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:37:37 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:40838 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964894AbaESRg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:37:00 -0400
+	Mon, 19 May 2014 13:36:58 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
@@ -15,9 +15,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         zmxu@marvell.com, jszhang@marvell.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 7/7] ARM: dts: berlin: add the pinctrl node and muxing setup for uarts
-Date: Mon, 19 May 2014 19:36:35 +0200
-Message-Id: <1400520995-27365-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 6/7] dt-binding: ARM: add pinctrl binding docs for Marvell Berlin2 SoCs
+Date: Mon, 19 May 2014 19:36:34 +0200
+Message-Id: <1400520995-27365-7-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1400520995-27365-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1400520995-27365-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,15 +26,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-Add pinctrl bindings and system control nodes to what we currently know
-about Berlin SoCs. Where available, also set default pinctrl property
-for uarts, when there is only one pinmux option for it.
+Add pin control binding documentation to the SoC binding documentaion
+as pinctrl is part of chip/system control registers. The documentation
+also explains how to configure this group based controller.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Changelog:
 v3->v4:
+- move documentation of an exclusive pinctrl node to the Berlin SoC
+  binding documentation of chip/system control nodes instead.
 - remove "marvell," prefix from pinctrl function/groups property
 
 Cc: Linus Walleij <linus.walleij@linaro.org>
@@ -46,142 +48,86 @@ Cc: jszhang@marvell.com
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/berlin2.dtsi   | 26 ++++++++++++++++++++++++++
- arch/arm/boot/dts/berlin2cd.dtsi | 12 ++++++++++++
- arch/arm/boot/dts/berlin2q.dtsi  | 19 +++++++++++++++++++
- 3 files changed, 57 insertions(+)
+ .../devicetree/bindings/arm/marvell,berlin.txt     | 54 ++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 591d4b8c1c2b..2477dac4d643 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -296,6 +296,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <8>;
- 				clocks = <&refclk>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
+diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+index 744a7ea569d4..94013a9a8769 100644
+--- a/Documentation/devicetree/bindings/arm/marvell,berlin.txt
++++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+@@ -41,6 +41,18 @@ Required properties:
+   BG2/BG2CD: chip control register set
+   BG2Q: chip control register set and cpu pll registers
  
-@@ -306,6 +308,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <9>;
- 				clocks = <&refclk>;
-+				pinctrl-0 = <&uart1_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
++* Marvell Berlin2 system control binding
++
++Marvell Berlin SoCs have a system control register set providing several
++individual registers dealing with pinmux, padmux, and reset.
++
++Required properties:
++- compatible: should be one of
++	"marvell,berlin2-system-ctrl" for BG2
++	"marvell,berlin2cd-system-ctrl" for BG2CD
++	"marvell,berlin2q-system-ctrl" for BG2Q
++- reg: address and length of the system control register set
++
+ * Clock provider binding
  
-@@ -316,9 +320,31 @@
- 				reg-io-width = <1>;
- 				interrupts = <10>;
- 				clocks = <&refclk>;
-+				pinctrl-0 = <&uart2_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
+ As clock related registers are spread among the chip control registers, the
+@@ -61,6 +73,23 @@ Clocks provided by core clocks shall be referenced by a clock specifier
+ indexing one of the provided clocks. Refer to dt-bindings/clock/berlin<soc>.h
+ for the corresponding index mapping.
  
-+			sysctrl: system-controller@d000 {
-+				compatible = "marvell,berlin2-system-ctrl";
-+				reg = <0xd000 0x100>;
++* Pin controller binding
 +
-+				uart0_pmux: uart0-pmux {
-+					groups = "GSM4";
-+					function = "uart0";
-+				};
++Pin control registers are part of both register sets, chip control and system
++control. The pins controlled are organized in groups, so no actual pin
++information is needed.
 +
-+				uart1_pmux: uart1-pmux {
-+					groups = "GSM5";
-+					function = "uart1";
-+				};
++A pin-controller node should contain subnodes representing the pin group
++configurations, one per function. Each subnode has the group name and the muxing
++function used.
 +
-+				uart2_pmux: uart2-pmux {
-+					groups = "GSM3";
-+					function = "uart2";
-+				};
-+			};
++Be aware the Marvell Berlin datasheets use the keyword 'mode' for what is called
++a 'function' in the pin-controller subsystem.
 +
- 			sic: interrupt-controller@e000 {
- 				compatible = "snps,dw-apb-ictl";
- 				reg = <0xe000 0x400>;
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index 1385caa6d029..cc1df65da504 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -234,6 +234,11 @@
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
++Required subnode-properties:
++- groups: a list of strings describing the group names.
++- function: a string describing the function used to mux the groups.
 +
-+			uart0_pmux: uart0-pmux {
-+				groups = "G6";
-+				function = "uart0";
-+			};
- 		};
+ Example:
  
- 		apb@fc0000 {
-@@ -281,6 +286,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <8>;
- 				clocks = <&refclk>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-@@ -294,6 +301,11 @@
- 				status = "disabled";
- 			};
- 
-+			sysctrl: system-controller@d000 {
-+				compatible = "marvell,berlin2cd-system-ctrl";
-+				reg = <0xd000 0x100>;
-+			};
+ chip: chip-control@ea0000 {
+@@ -69,4 +98,29 @@ chip: chip-control@ea0000 {
+ 	reg = <0xea0000 0x400>;
+ 	clocks = <&refclk>, <&externaldev 0>;
+ 	clock-names = "refclk", "video_ext0";
 +
- 			sic: interrupt-controller@e000 {
- 				compatible = "snps,dw-apb-ictl";
- 				reg = <0xe000 0x400>;
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index cd3287c95f1a..81712f5954ef 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -294,6 +294,8 @@
- 				interrupts = <8>;
- 				clocks = <&refclk>;
- 				reg-shift = <2>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-@@ -304,9 +306,26 @@
- 				interrupts = <9>;
- 				clocks = <&refclk>;
- 				reg-shift = <2>;
-+				pinctrl-0 = <&uart1_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-+			sysctrl: pin-controller@d000 {
-+				compatible = "marvell,berlin2q-system-ctrl";
-+				reg = <0xd000 0x100>;
++	spi1_pmux: spi1-pmux {
++		groups = "G0";
++		function = "spi1";
++	};
++};
 +
-+				uart0_pmux: uart0-pmux {
-+					groups = "GSM12";
-+					function = "uart0";
-+				};
++sysctrl: system-controller@d000 {
++	compatible = "marvell,berlin2-system-ctrl";
++	reg = <0xd000 0x100>;
 +
-+				uart1_pmux: uart1-pmux {
-+					groups = "GSM14";
-+					function = "uart1";
-+				};
-+			};
++	uart0_pmux: uart0-pmux {
++		groups = "GSM4";
++		function = "uart0";
++	};
 +
- 			sic: interrupt-controller@e000 {
- 				compatible = "snps,dw-apb-ictl";
- 				reg = <0xe000 0x30>;
++	uart1_pmux: uart1-pmux {
++		groups = "GSM5";
++		function = "uart1";
++	};
++
++	uart2_pmux: uart2-pmux {
++		groups = "GSM3";
++		function = "uart2";
++	};
+ };
 -- 
 1.9.1
 
