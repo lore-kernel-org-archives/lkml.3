@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942AbaESQWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:22:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19233 "EHLO mga01.intel.com"
+	id S964958AbaESQXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:23:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34735 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171AbaESQWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:22:49 -0400
+	id S1754171AbaESQW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:22:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="534295516"
+   d="scan'208";a="534295561"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -25,9 +25,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch Part1 V2 11/29] x86, ioapic: kill unused global variable timer_through_8259
-Date: Tue, 20 May 2014 00:22:55 +0800
-Message-Id: <1400516594-11544-12-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part1 V2 12/29] x86, ioapic: kill static variable nr_irqs_gsi
+Date: Tue, 20 May 2014 00:22:56 +0800
+Message-Id: <1400516594-11544-13-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,55 +35,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Static variable nr_irqs_gsi is used to maintain the lowest dynamic
+allocatable IRQ number. It may cause trouble when enabling dynamic
+IRQ allocation for IOAPIC, so use arch_dynirq_lower_bound() to
+avoid directly accessing nr_irqs_gsi and kill nr_irqs_gsi.
+
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/io_apic.h |    4 ----
- arch/x86/kernel/apic/io_apic.c |    3 ---
- 2 files changed, 7 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   24 +++++-------------------
+ 1 file changed, 5 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 8dd1e13f2989..de3d8b04cf64 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -130,9 +130,6 @@ extern int noioapicquirk;
- /* -1 if "noapic" boot option passed */
- extern int noioapicreroute;
- 
--/* 1 if the timer IRQ uses the '8259A Virtual Wire' mode */
--extern int timer_through_8259;
--
- /*
-  * If we use the IO-APIC for IRQ routing, disable automatic
-  * assignment of PCI IRQ's.
-@@ -212,7 +209,6 @@ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- 
- #define io_apic_assign_pci_irqs 0
- #define setup_ioapic_ids_from_mpc x86_init_noop
--static const int timer_through_8259 = 0;
- static inline void ioapic_insert_resources(void) { }
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 4d7d46650faa..e8dd12a04cea 100644
+index e8dd12a04cea..397fb9a02e11 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2649,8 +2649,6 @@ static int __init disable_timer_pin_setup(char *arg)
- }
- early_param("disable_timer_pin_1", disable_timer_pin_setup);
+@@ -118,9 +118,6 @@ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+ /* # of MP IRQ source entries */
+ int mp_irq_entries;
  
--int timer_through_8259 __initdata;
+-/* GSI interrupts */
+-static int nr_irqs_gsi = NR_IRQS_LEGACY;
 -
- /*
-  * This code may look a bit paranoid, but it's supposed to cooperate with
-  * a wide range of boards and BIOS bugs.  Fortunately only the timer IRQ
-@@ -2755,7 +2753,6 @@ static inline void __init check_timer(void)
- 		legacy_pic->unmask(0);
- 		if (timer_irq_works()) {
- 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
--			timer_through_8259 = 1;
- 			goto out;
- 		}
- 		/*
+ #ifdef CONFIG_EISA
+ int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+@@ -3333,20 +3330,11 @@ static int __init io_apic_get_redir_entries(int ioapic)
+ 	return reg_01.bits.entries + 1;
+ }
+ 
+-static void __init probe_nr_irqs_gsi(void)
+-{
+-	int nr;
+-
+-	nr = gsi_top + NR_IRQS_LEGACY;
+-	if (nr > nr_irqs_gsi)
+-		nr_irqs_gsi = nr;
+-
+-	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
+-}
+-
+ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ {
+-	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
++	unsigned int min = gsi_top + NR_IRQS_LEGACY;
++
++	return from < min ? min : from;
+ }
+ 
+ int __init arch_probe_nr_irqs(void)
+@@ -3356,12 +3344,12 @@ int __init arch_probe_nr_irqs(void)
+ 	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
+ 		nr_irqs = NR_VECTORS * nr_cpu_ids;
+ 
+-	nr = nr_irqs_gsi + 8 * nr_cpu_ids;
++	nr = (gsi_top + NR_IRQS_LEGACY) + 8 * nr_cpu_ids;
+ #if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
+ 	/*
+ 	 * for MSI and HT dyn irq
+ 	 */
+-	nr += nr_irqs_gsi * 16;
++	nr += (gsi_top + NR_IRQS_LEGACY) * 16;
+ #endif
+ 	if (nr < nr_irqs)
+ 		nr_irqs = nr;
+@@ -3634,8 +3622,6 @@ fake_ioapic_page:
+ 		ioapic_res->end = ioapic_phys + IO_APIC_SLOT_SIZE - 1;
+ 		ioapic_res++;
+ 	}
+-
+-	probe_nr_irqs_gsi();
+ }
+ 
+ void __init ioapic_insert_resources(void)
 -- 
 1.7.10.4
 
