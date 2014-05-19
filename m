@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaESNjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:39:06 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:18323 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907AbaESNjF (ORCPT
+	id S1754588AbaESNkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:40:53 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:14710 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538AbaESNkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:39:05 -0400
-X-IronPort-AV: E=Sophos;i="4.98,867,1392163200"; 
-   d="scan'208";a="132390340"
-Message-ID: <537A0974.40302@citrix.com>
-Date: Mon, 19 May 2014 14:39:00 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Mon, 19 May 2014 09:40:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 19 May 2014 06:35:04 -0700
+Date: Mon, 19 May 2014 16:40:49 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: pull request for Tegra clock fixes for 3.16
+Message-ID: <20140519134049.GA20109@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <mjg59@srcf.ucam.org>, <jeremy@goop.org>, <matt.fleming@intel.com>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <mingo@redhat.com>, <david.vrabel@citrix.com>, <jbeulich@suse.com>,
-        <hpa@zytor.com>, <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        <eshelton@pobox.com>
-Subject: Re: [Xen-devel] [PATCH v4 3/5] xen: Put EFI machinery in place
-References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com> <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.18]
-X-DLP: MIA2
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/05/14 21:41, Daniel Kiper wrote:
-> @@ -0,0 +1,374 @@
-> +/*
-> + * EFI support for Xen.
-> + *
-> + * Copyright (C) 1999 VA Linux Systems
-> + * Copyright (C) 1999 Walt Drummond <drummond@valinux.com>
-> + * Copyright (C) 1999-2002 Hewlett-Packard Co.
-> + *	David Mosberger-Tang <davidm@hpl.hp.com>
-> + *	Stephane Eranian <eranian@hpl.hp.com>
-> + * Copyright (C) 2005-2008 Intel Co.
-> + *	Fenghua Yu <fenghua.yu@intel.com>
-> + *	Bibo Mao <bibo.mao@intel.com>
-> + *	Chandramouli Narayanan <mouli@linux.intel.com>
-> + *	Huang Ying <ying.huang@intel.com>
-> + * Copyright (C) 2011 Novell Co.
-> + *	Jan Beulich <JBeulich@suse.com>
-> + * Copyright (C) 2011-2012 Oracle Co.
-> + *	Liang Tang <liang.tang@oracle.com>
-> + * Copyright (c) 2014 Daniel Kiper, Oracle Corporation
-> + */
-> +
-> +#include <linux/bug.h>
-> +#include <linux/efi.h>
-> +#include <linux/init.h>
-> +#include <linux/string.h>
-> +
-> +#include <xen/interface/xen.h>
-> +#include <xen/interface/platform.h>
-> +
-> +#include <asm/xen/hypercall.h>
-> +
-> +#define call (op.u.efi_runtime_call)
+Hi Mike,
 
-I think not.
+A number of fixes which are needed by the upcoming XHCI and SATA drivers.
 
-> +#define DECLARE_CALL(what) \
-> +	struct xen_platform_op op; \
-> +	op.cmd = XENPF_efi_runtime_call; \
-> +	call.function = XEN_EFI_##what; \
-> +	call.misc = 0
+Thanks,
 
-Macros like this which explicitly create local variable with implicit
-names are evil when reading code.
+Peter.
 
-If you want to do initialisation like this, then at least do something like:
+The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
 
-#define INIT_EFI_CALL(what) \
-{ .cmd = XENPF_efi_runtime_call, \
-   .u.efi_runtime_call.function = XEN_EFI_##what, \
-   .u.efi_runtime_call.misc = 0 }
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
 
-And use it as:
+are available in the git repository at:
+  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-v3.16
 
-struct xen_platform_op op = INIT_EFI_CALL(foo);
+Andrew Bresticker (2):
+      clk: tegra: Fix xusb_hs_src clock hierarchy
+      clk: tegra: Initialize xusb clocks
 
-~Andrew
+Jim Lin (2):
+      clk: tegra: Enable hardware control of PLLE
+      clk: tegra: Fix xusb_fs_src mux
+
+ drivers/clk/tegra/clk-id.h               |    1 +
+ drivers/clk/tegra/clk-pll.c              |   33 +++++++++++++++++++++++++++++-
+ drivers/clk/tegra/clk-tegra-periph.c     |   10 ++++++++-
+ drivers/clk/tegra/clk-tegra114.c         |   22 ++++++++++----------
+ drivers/clk/tegra/clk-tegra124.c         |   21 ++++++++++---------
+ include/dt-bindings/clock/tegra114-car.h |    3 +-
+ include/dt-bindings/clock/tegra124-car.h |    3 +-
+ 7 files changed, 68 insertions(+), 25 deletions(-)
