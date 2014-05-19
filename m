@@ -1,156 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbaESP3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:29:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51327 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754957AbaESP3p (ORCPT
+	id S1754703AbaESPc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:32:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39247 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751074AbaESPcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:29:45 -0400
+	Mon, 19 May 2014 11:32:55 -0400
+Date: Mon, 19 May 2014 16:32:20 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Larry Bassel <larry.bassel@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v3 2/2] arm64: enable context tracking
+Message-ID: <20140519153220.GH15130@arm.com>
+References: <1399672310-9061-1-git-send-email-larry.bassel@linaro.org>
+ <1399672310-9061-3-git-send-email-larry.bassel@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CACiqTEMeRiaio55cj0dc_ErCZe5XTGsQUwqBb90Jg22uN=FvLQ@mail.gmail.com>
-References: <CACiqTEMeRiaio55cj0dc_ErCZe5XTGsQUwqBb90Jg22uN=FvLQ@mail.gmail.com>
-Date: Mon, 19 May 2014 08:29:44 -0700
-Message-ID: <CALJ65z=AYx9i-zU6AjZ2E519J4FzhF1QP7T2YivQcvcR-WTFMg@mail.gmail.com>
-Subject: Re: bcache errors
-From: Kent Overstreet <kmo@daterainc.com>
-To: roma1390 <roma1390@gmail.com>
-Cc: Neil Brown <neilb@suse.de>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        linux-raid@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399672310-9061-3-git-send-email-larry.bassel@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll be sending the fix out in the next pull request, in the next day or so.
+On Fri, May 09, 2014 at 10:51:50PM +0100, Larry Bassel wrote:
+> Make calls to ct_user_enter when the kernel is exited
+> and ct_user_exit when the kernel is entered (in el0_da,
+> el0_ia, el0_svc, el0_irq and all of the "error" paths).
+> 
+> These macros expand to function calls which will only work
+> properly if el0_sync and related code has been rearranged
+> (in a previous patch of this series).
+> 
+> The calls to ct_user_exit are made after hw debugging has been
+> enabled (enable_dbg).
+> 
+> The call to ct_user_enter is made at the beginning of the
+> kernel_exit macro.
+> 
+> This patch is based on earlier work by Kevin Hilman.
 
-On Mon, May 19, 2014 at 8:10 AM, roma1390 <roma1390@gmail.com> wrote:
-> Hello
->
-> tryed bcache on 3.13-1-amd64 (from debian)
->
-> Steps:
->
-> git clone https://github.com/g2p/bcache-tools.git
-> cd bcache-tools/
-> make
->
-> dd if=/dev/zero of=data bs=1M count=64
-> losetup -d /dev/loop0; losetup /dev/loop0 /tmp/bb/bcache-tools/data
-> make-bcache -C /dev/ram0 -B /dev/ram1
-> modprobe bcache
-> echo /dev/ram0 > /sys/fs/bcache/register
-> echo /dev/loop0 > /sys/fs/bcache/register
->
-> Got:
-> May 19 17:32:55 bump kernel: [670838.280487] bcache: register_bdev()
-> registered backing device ram0
-> May 19 17:33:02 bump kernel: [670845.209612] bcache: run_cache_set()
-> invalidating existing data
-> May 19 17:33:02 bump kernel: [670845.277214] bcache:
-> bch_cached_dev_attach() Caching ram0 as bcache0 on set
-> d01c215c-f038-4e85-9f7f-d1133f080b55
-> May 19 17:33:02 bump kernel: [670845.277230] bcache: register_cache()
-> registered cache device loop0
-> May 19 17:35:28 bump kernel: [670991.228242] INFO: task
-> bcache_writebac:6378 blocked for more than 120 seconds.
-> May 19 17:35:28 bump kernel: [670991.228246]       Tainted: G
-> C   3.13-1-amd64 #1
-> May 19 17:35:28 bump kernel: [670991.228247] "echo 0 >
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> May 19 17:35:28 bump kernel: [670991.228248] bcache_writebac D
-> ffff8804f2ab2350     0  6378      2 0x00000000
-> May 19 17:35:28 bump kernel: [670991.228251]  ffff8804f2ab2010
-> 0000000000000046 0000000000014280 0000000000014280
-> May 19 17:35:28 bump kernel: [670991.228252]  ffff880725423fd8
-> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-> May 19 17:35:28 bump kernel: [670991.228254]  ffffffffa0866790
-> 0000000000000000 0000000000000000 0000000000000000
-> May 19 17:35:28 bump kernel: [670991.228255] Call Trace:
-> May 19 17:35:28 bump kernel: [670991.228262]  [<ffffffffa0866790>] ?
-> write_dirty_finish+0x210/0x210 [bcache]
-> May 19 17:35:28 bump kernel: [670991.228265]  [<ffffffff8107bb2d>] ?
-> kthread+0x9d/0xe0
-> May 19 17:35:28 bump kernel: [670991.228266]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:35:28 bump kernel: [670991.228270]  [<ffffffff814aeacc>] ?
-> ret_from_fork+0x7c/0xb0
-> May 19 17:35:28 bump kernel: [670991.228271]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:37:28 bump kernel: [671111.112160] INFO: task
-> bcache_writebac:6378 blocked for more than 120 seconds.
-> May 19 17:37:28 bump kernel: [671111.112165]       Tainted: G
-> C   3.13-1-amd64 #1
-> May 19 17:37:28 bump kernel: [671111.112166] "echo 0 >
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> May 19 17:37:28 bump kernel: [671111.112167] bcache_writebac D
-> ffff8804f2ab2350     0  6378      2 0x00000000
-> May 19 17:37:28 bump kernel: [671111.112170]  ffff8804f2ab2010
-> 0000000000000046 0000000000014280 0000000000014280
-> May 19 17:37:28 bump kernel: [671111.112172]  ffff880725423fd8
-> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-> May 19 17:37:28 bump kernel: [671111.112174]  ffffffffa0866790
-> 0000000000000000 0000000000000000 0000000000000000
-> May 19 17:37:28 bump kernel: [671111.112175] Call Trace:
-> May 19 17:37:28 bump kernel: [671111.112183]  [<ffffffffa0866790>] ?
-> write_dirty_finish+0x210/0x210 [bcache]
-> May 19 17:37:28 bump kernel: [671111.112186]  [<ffffffff8107bb2d>] ?
-> kthread+0x9d/0xe0
-> May 19 17:37:28 bump kernel: [671111.112188]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:37:28 bump kernel: [671111.112191]  [<ffffffff814aeacc>] ?
-> ret_from_fork+0x7c/0xb0
-> May 19 17:37:28 bump kernel: [671111.112193]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:39:28 bump kernel: [671230.996097] INFO: task
-> bcache_writebac:6378 blocked for more than 120 seconds.
-> May 19 17:39:28 bump kernel: [671230.996101]       Tainted: G
-> C   3.13-1-amd64 #1
-> May 19 17:39:28 bump kernel: [671230.996102] "echo 0 >
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> May 19 17:39:28 bump kernel: [671230.996103] bcache_writebac D
-> ffff8804f2ab2350     0  6378      2 0x00000000
-> May 19 17:39:28 bump kernel: [671230.996106]  ffff8804f2ab2010
-> 0000000000000046 0000000000014280 0000000000014280
-> May 19 17:39:28 bump kernel: [671230.996108]  ffff880725423fd8
-> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-> May 19 17:39:28 bump kernel: [671230.996109]  ffffffffa0866790
-> 0000000000000000 0000000000000000 0000000000000000
-> May 19 17:39:28 bump kernel: [671230.996111] Call Trace:
-> May 19 17:39:28 bump kernel: [671230.996118]  [<ffffffffa0866790>] ?
-> write_dirty_finish+0x210/0x210 [bcache]
-> May 19 17:39:28 bump kernel: [671230.996121]  [<ffffffff8107bb2d>] ?
-> kthread+0x9d/0xe0
-> May 19 17:39:28 bump kernel: [671230.996123]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:39:28 bump kernel: [671230.996126]  [<ffffffff814aeacc>] ?
-> ret_from_fork+0x7c/0xb0
-> May 19 17:39:28 bump kernel: [671230.996127]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:41:28 bump kernel: [671350.880041] INFO: task
-> bcache_writebac:6378 blocked for more than 120 seconds.
-> May 19 17:41:28 bump kernel: [671350.880045]       Tainted: G
-> C   3.13-1-amd64 #1
-> May 19 17:41:28 bump kernel: [671350.880046] "echo 0 >
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> May 19 17:41:28 bump kernel: [671350.880047] bcache_writebac D
-> ffff8804f2ab2350     0  6378      2 0x00000000
-> May 19 17:41:28 bump kernel: [671350.880050]  ffff8804f2ab2010
-> 0000000000000046 0000000000014280 0000000000014280
-> May 19 17:41:28 bump kernel: [671350.880051]  ffff880725423fd8
-> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-> May 19 17:41:28 bump kernel: [671350.880060]  ffffffffa0866790
-> 0000000000000000 0000000000000000 0000000000000000
-> May 19 17:41:28 bump kernel: [671350.880062] Call Trace:
-> May 19 17:41:28 bump kernel: [671350.880069]  [<ffffffffa0866790>] ?
-> write_dirty_finish+0x210/0x210 [bcache]
-> May 19 17:41:28 bump kernel: [671350.880073]  [<ffffffff8107bb2d>] ?
-> kthread+0x9d/0xe0
-> May 19 17:41:28 bump kernel: [671350.880074]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
-> May 19 17:41:28 bump kernel: [671350.880078]  [<ffffffff814aeacc>] ?
-> ret_from_fork+0x7c/0xb0
-> May 19 17:41:28 bump kernel: [671350.880079]  [<ffffffff8107ba90>] ?
-> kthread_create_on_node+0x180/0x180
+[...]
+
+> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+> index 720e70b..301ea6a 100644
+> --- a/arch/arm64/include/asm/thread_info.h
+> +++ b/arch/arm64/include/asm/thread_info.h
+> @@ -108,6 +108,7 @@ static inline struct thread_info *current_thread_info(void)
+>  #define TIF_SINGLESTEP		21
+>  #define TIF_32BIT		22	/* 32bit process */
+>  #define TIF_SWITCH_MM		23	/* deferred switch_mm */
+> +#define TIF_NOHZ                24
+>  
+>  #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
+>  #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 136bb7d..c839bab 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -30,6 +30,44 @@
+>  #include <asm/unistd32.h>
+>  
+>  /*
+> + * Context tracking subsystem.  Used to instrument transitions
+> + * between user and kernel mode.
+> + */
+> +	.macro ct_user_exit, save = 0
+> +#ifdef CONFIG_CONTEXT_TRACKING
+> +	bl	context_tracking_user_exit
+> +	.if \save == 1
+
+It would be clearer to refer to the parameter as `restore' for the exit
+case, I reckon.
+
+> +	/*
+> +	 * save/restore needed during syscalls.  Restore syscall arguments from
+> +	 * the values already saved on stack during kernel_entry
+> +	 */
+> +	ldp	x0, x1, [sp]
+> +	ldp	x2, x3, [sp, #S_X2]
+> +	ldp	x4, x5, [sp, #S_X4]
+> +	ldp	x6, x7, [sp, #S_X6]
+> +	.endif
+> +#endif
+> +	.endm
+
+[...]
+
+>  	.macro	kernel_exit, el, ret = 0
+>  	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
+>  	.if	\el == 0
+> +	ct_user_enter \ret
+>  	ldr	x23, [sp, #S_SP]		// load return stack pointer
+>  	.endif
+>  	.if	\ret
+
+You should check how this patch applies against my debug exception rework:
+
+2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault paths where
+possible") in today's next.
+
+As well as addressing the conflicts, it's worth nothing that the thread_info
+becomes available in tsk much earlier for exceptions from userspace with
+that patch applied.
+
+Will
