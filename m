@@ -1,184 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965006AbaESRkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:40:03 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:37544 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523AbaESRkA (ORCPT
+	id S965023AbaESRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:40:26 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:60561 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964780AbaESRkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:40:00 -0400
-Date: Mon, 19 May 2014 18:39:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        johannes.thumshirn@men.de, thomas.schnuerer@men.de, wernerandy@gmx.de
-Subject: Re: [PATCH 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
- MFD Core driver
-Message-ID: <20140519173953.GA20874@lee--X1>
-References: <cover.1400258021.git.andreas.werner@men.de>
- <58de41a38511a107941d9c3b2cea314c0becfff7.1400258021.git.andreas.werner@men.de>
- <5377849E.7020001@roeck-us.net>
- <20140519124324.GB398@awelinux>
- <537A05D4.6080308@roeck-us.net>
+	Mon, 19 May 2014 13:40:24 -0400
+From: bsegall@google.com
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, pjt@google.com,
+        chris.j.arges@canonical.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
+References: <87mwej0yja.wl%klamm@yandex-team.ru>
+	<xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<87lhu215ky.wl%klamm@yandex-team.ru>
+	<xm264n0p4ndk.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	<87wqdi9g8e.wl%klamm@yandex-team.ru>
+Date: Mon, 19 May 2014 10:40:22 -0700
+In-Reply-To: <87wqdi9g8e.wl%klamm@yandex-team.ru> (Roman Gushchin's message of
+	"Mon, 19 May 2014 15:10:09 +0400")
+Message-ID: <xm26iop13bw9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537A05D4.6080308@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Guenter Roeck wrote:
+Roman Gushchin <klamm@yandex-team.ru> writes:
 
-> On 05/19/2014 05:43 AM, Andreas Werner wrote:
-> >aOn Sat, May 17, 2014 at 08:47:42AM -0700, Guenter Roeck wrote:
-> >>On 05/16/2014 09:37 AM, Andreas Werner wrote:
-> >>>The MEN 14F021P00 Board Management Controller provides an
-> >>>I2C interface to the host to access the feature implemented in the BMC.
-> >>>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> >>>and on a few Box/Display Computer.
-> >>>
-> >>>Added MFD Core driver, supporting the I2C communication to the device.
-> >>>
-> >>>The MFD driver currently supports the following features:
-> >>>	- Watchdog
-> >>>	- LEDs
-> >>>
-> >>>Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> >>>---
-> >>>  drivers/mfd/Kconfig           |  12 +++
-> >>>  drivers/mfd/Makefile          |   1 +
-> >>>  drivers/mfd/menf21bmc.c       | 193 ++++++++++++++++++++++++++++++++++++++++++
-> >>>  include/linux/mfd/menf21bmc.h |  32 +++++++
-> >>>  4 files changed, 238 insertions(+)
-> >>>  create mode 100644 drivers/mfd/menf21bmc.c
-> >>>  create mode 100644 include/linux/mfd/menf21bmc.h
-> >>>
-> >>>diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>>index ab5a43c..7c2e8d2 100644
-> >>>--- a/drivers/mfd/Kconfig
-> >>>+++ b/drivers/mfd/Kconfig
-> >>>@@ -427,6 +427,18 @@ config MFD_MAX8998
-> >>>  	  additional drivers must be enabled in order to use the functionality
-> >>>  	  of the device.
-> >>>
-> >>>+config MFD_MENF21BMC
-> >>>+	tristate "MEN 14F021P00 Board Management Controller Support"
-> >>>+	depends on I2C=y
-> >>>+	select MFD_CORE
-> >>>+	help
-> >>>+	  Say yes here to add support for the MEN 14F021P00 BMC
-> >>>+	  which is a Board Management Controller connected to the I2C bus.
-> >>>+	  This driver provides common support for accessing the devices;
-> >>>+	  additional drivers must be enabled in order to use the
-> >>>+	  functionality of the BMC device.
-> >>>+
-> >>>+
-> >>>  config EZX_PCAP
-> >>>  	bool "Motorola EZXPCAP Support"
-> >>>  	depends on SPI_MASTER
-> >>>diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> >>>index 5913208..8f2be38 100644
-> >>>--- a/drivers/mfd/Makefile
-> >>>+++ b/drivers/mfd/Makefile
-> >>>@@ -167,3 +167,4 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
-> >>>  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
-> >>>  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-> >>>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-> >>>+obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
-> >>>diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
-> >>>new file mode 100644
-> >>>index 0000000..77de1a8
-> >>>--- /dev/null
-> >>>+++ b/drivers/mfd/menf21bmc.c
-> >>>@@ -0,0 +1,193 @@
-> >>>+/*
-> >>>+ *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
-> >>>+ *
-> >>>+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> >>>+ *  Author: Andreas Werner <andreas.werner@men.de>
-> >>>+ *  All rights reserved.
-> >>>+ *
-> >>>+ *  This program is free software; you can redistribute  it and/or modify it
-> >>>+ *  under  the terms of  the GNU General  Public License as published by the
-> >>>+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-> >>>+ *  option) any later version.
-> >>>+ *
-> >>>+ */
-> >>>+
-> >>>+#include <linux/kernel.h>
-> >>>+#include <linux/device.h>
-> >>>+#include <linux/module.h>
-> >>>+#include <linux/i2c.h>
-> >>>+#include <linux/mfd/core.h>
-> >>>+#include <linux/mfd/menf21bmc.h>
-> >>>+
-> >>>+#define BMC_CMD_REV_MAJOR	0x80
-> >>>+#define BMC_CMD_REV_MINOR	0x81
-> >>>+#define BMC_CMD_REV_MAIN	0x82
-> >>>+#define BMC_CMD_REV_BUILD	0x83
-> >>>+#define BMC_CMD_REV_VERI	0x84
-> >>>+
-> >>>+static struct mfd_cell menf21bmc_cell[] = {
-> >>>+	{
-> >>>+		.name = "menf21bmc_wd",
-> >>>+	},
-> >>>+	{
-> >>>+		.name = "menf21bmc_led",
-> >>>+	},
-> >>>+};
-> >>>+
-> >>>+static int
-> >>>+menf21bmc_read_byte_data(struct i2c_client *client, u8 reg, uint8_t *val)
-> >>>+{
-> >>>+	int ret;
-> >>>+	struct menf21bmc *data = i2c_get_clientdata(client);
-> >>>+
-> >>>+	mutex_lock(&data->lock);
-> >>>+	ret = i2c_smbus_read_byte_data(client, reg);
-> >>>+	mutex_unlock(&data->lock);
-> >>>+
-> >>>+	if (ret < 0) {
-> >>>+		dev_err(&client->dev, "failed to read byte at 0x%02x\n", reg);
-> >>>+		return ret;
-> >>>+	}
-> >>>+
-> >>>+	*val = (uint8_t)ret;
-> >>>+
-> >>>+	return 0;
-> >>>+}
-> >>>+
-> >>I personally would prefer if you would retain the original API, which returns both value
-> >>and error code as return value. I don't see the benefit of changing the API as you did -
-> >>it just complicates the code.
-> >>
-> >>Thanks,
-> >>Guenter
-> >>
-> >I think it is ok for a wrapper like this because it does not really change an API because
-> >it is menf21bmc related.
-> >
-> >I did the same in rtc-rx8581, and it was already done in rtc_ds1307.c.
-> >
-> >I personally prefer this way because the return of the function and the return
-> >value of the i2c_smbus_read - which is the value read from the device - are seperated.
-> >
-> >If it is a no go for the mfd/wdt core i can change it back to the original i2c_smbus API.
-> >If it is ok on your side for a wrapper like this, we can let it as it is.
-> >
-> 
-> Not my call to make; depends on the mfd maintainer. I would not accept it, as I see it
-> as unnecessary, adding complexity, and pointless. Sure, you can always find examples
-> for everything somewhere in the kernel, but that doesn't make it better.
+> tg_set_cfs_bandwidth() sets cfs_b->timer_active to 0 to
+> force the period timer restart. It's not safe, because
+> can lead to deadlock, described in commit 927b54fccbf0:
+> "__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+> waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+> runs for another loop iteration, the hrtimer can attempt to take
+> rq->lock, resulting in deadlock."
+> Three CPUs must be involved:
+> CPU0               CPU1                         CPU2
+> take rq->lock      period timer fired
+> ...                take cfs_b lock
+> ...                ...                          tg_set_cfs_bandwidth()
+> throttle_cfs_rq()  release cfs_b lock           take cfs_b lock
+> ...                distribute_cfs_runtime()     timer_active = 0
+> take cfs_b->lock   wait for rq->lock            ...
+> __start_cfs_bandwidth()
+> {wait for timer callback
+>  break if timer_active == 1}
+>
+> So, CPU0 and CPU1 are deadlocked.
+>
+> Instead of resetting cfs_b->timer_active, tg_set_cfs_bandwidth can
+> wait for period timer callbacks (ignoring cfs_b->timer_active) and
+> restart the timer explicitly.
+>
+> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> Cc: Ben Segall <bsegall@google.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: pjt@google.com
+> Cc: Chris J Arges <chris.j.arges@canonical.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Ben Segall <bsegall@google.com>
 
-I'm inclined to agree with Guenter, this patch is just noise.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> ---
+>  kernel/sched/core.c  |    3 +--
+>  kernel/sched/fair.c  |    8 ++++----
+>  kernel/sched/sched.h |    2 +-
+>  3 files changed, 6 insertions(+), 7 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b4308d7..e122774 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -7826,8 +7826,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+>  	/* restart the period timer (if active) to handle new period expiry */
+>  	if (runtime_enabled && cfs_b->timer_active) {
+>  		/* force a reprogram */
+> -		cfs_b->timer_active = 0;
+> -		__start_cfs_bandwidth(cfs_b);
+> +		__start_cfs_bandwidth(cfs_b, true);
+>  	}
+>  	raw_spin_unlock_irq(&cfs_b->lock);
+>  
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c7ab8ea..54939f8 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2117,7 +2117,7 @@ static int assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+>  		 */
+>  		if (!cfs_b->timer_active) {
+>  			__refill_cfs_bandwidth_runtime(cfs_b);
+> -			__start_cfs_bandwidth(cfs_b);
+> +			__start_cfs_bandwidth(cfs_b, false);
+>  		}
+>  
+>  		if (cfs_b->runtime > 0) {
+> @@ -2298,7 +2298,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+>  	raw_spin_lock(&cfs_b->lock);
+>  	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
+>  	if (!cfs_b->timer_active)
+> -		__start_cfs_bandwidth(cfs_b);
+> +		__start_cfs_bandwidth(cfs_b, false);
+>  	raw_spin_unlock(&cfs_b->lock);
+>  }
+>  
+> @@ -2681,7 +2681,7 @@ static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+>  }
+>  
+>  /* requires cfs_b->lock, may release to reprogram timer */
+> -void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+> +void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force)
+>  {
+>  	/*
+>  	 * The timer may be active because we're trying to set a new bandwidth
+> @@ -2696,7 +2696,7 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+>  		cpu_relax();
+>  		raw_spin_lock(&cfs_b->lock);
+>  		/* if someone else restarted the timer then we're done */
+> -		if (cfs_b->timer_active)
+> +		if (!force && cfs_b->timer_active)
+>  			return;
+>  	}
+>  
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index dfa31d5..bc150a6 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -209,7 +209,7 @@ extern void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
+>  extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
+>  
+>  extern void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b);
+> -extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
+> +extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force);
+>  extern void unthrottle_cfs_rq(struct cfs_rq *cfs_rq);
+>  
+>  extern void free_rt_sched_group(struct task_group *tg);
