@@ -1,246 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaESMTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:19:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34294 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaESMT1 (ORCPT
+	id S1753989AbaESMUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:20:32 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46451 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaESMUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:19:27 -0400
-Message-ID: <5379F6C1.70202@canonical.com>
-Date: Mon, 19 May 2014 05:19:13 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 08:20:30 -0400
+Message-ID: <5379F6BD.1090809@linux.vnet.ibm.com>
+Date: Mon, 19 May 2014 17:49:09 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, miklos@szeredi.hu,
-        jmorris@namei.org, selinux@tycho.nsa.gov
-CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM
- module.
-References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp> <201405122222.CFI35406.tMFFLJOVOSOHFQ@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405122222.CFI35406.tMFFLJOVOSOHFQ@I-love.SAKURA.ne.jp>
-X-Enigmail-Version: 1.5.2
+To: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org, fweisbec@gmail.com
+CC: paulmck@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@kernel.org, rusty@rustcorp.com.au, hch@infradead.org,
+        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, oleg@redhat.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 UPDATEDv2 3/3] CPU hotplug, smp: Flush any pending IPI
+ callbacks before CPU offline
+References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com> <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com>
+In-Reply-To: <537518D6.6030006@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051912-8878-0000-0000-00000C80D01F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 06:22 AM, Tetsuo Handa wrote:
->>From 579cfccf7ba49a53ff0f5fefe73f0b8dc618d878 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 12 May 2014 21:05:52 +0900
-> Subject: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM module.
+On 05/16/2014 01:13 AM, Srivatsa S. Bhat wrote:
+> -----------------------------------------------------------------------
 > 
-> TOMOYO and AppArmor distinguish a directory's pathname and a non-directory's
-> pathname by whether the pathname ends with / character or not. Upon rename(),
-> they appended / character to the target dentry's pathname if the source
-> dentry's inode refers a directory, for the target dentry's inode will refer
-> a directory after successful rename(). This assumption was correct until
-> commit da1ce067 "vfs: add cross-rename" is introduced.
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> [PATCH v5 UPDATED 3/3] CPU hotplug, smp: Flush any pending IPI callbacks before CPU offline
 > 
-> Commit da1ce067 changed security_{inode,path}_rename() to call LSM module
-> with reversed arguments if the rename flags contains RENAME_EXCHANGE. But
-> this is not sufficient for TOMOYO and AppArmor because RENAME_EXCHANGE
-> allows exchange of a directory's inode and a non-directory's inode. Also,
-> this is redundant for SMACK because there is no need to call
-> security_inode_rename() with reversed arguments.
-> 
-> To fix this regression, the rename flags needs to be passed to LSM module.
-> This patch is for allowing TOMOYO and AppArmor to handle RENAME_EXCHANGE
-> case differently, and for allowing SMACK to avoid needlessly checking
-> the same permission twice.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Acked-by: Casey Schaufler <casey@schaufler-ca.com> [smack]
+[...]
+> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> index 288f7fe..6b3a2f3 100644
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/smpboot.h>
+>  #include <linux/atomic.h>
+>  #include <linux/lglock.h>
+> +#include <linux/smp.h>
+>  
+>  /*
+>   * Structure to determine completion condition and record errors.  May
+> @@ -224,6 +225,16 @@ static int multi_cpu_stop(void *data)
+>  					local_irq_disable();
+>  					hard_irq_disable();
+>  				}
+> +
+> +				/*
+> +				 * IPIs (from the inactive CPUs) might arrive
+> +				 * late due to hardware latencies. So flush
+> +				 * out any pending IPI callbacks explicitly,
+> +				 * to ensure that the outgoing CPU doesn't go
+> +				 * offline with work still pending (during
+> +				 * CPU hotplug).
+> +				 */
+> +				flush_smp_call_function_queue();
+>  				break;
 
-This looks good
-Reviewed-by: John Johansen <john.johansen@canonical.com>
+I just realized that since flush_smp_call_function_queue() is called outside
+of the "if (is_active)" block, it will get executed by all CPUs (even the
+inactive ones) unnecessarily. We need only the active-cpu to run it; the others
+don't have to.
 
-> ---
->  include/linux/security.h   |    8 ++++++--
->  security/apparmor/lsm.c    |    3 ++-
->  security/capability.c      |    6 ++++--
->  security/security.c        |   10 ++++++----
->  security/selinux/hooks.c   |    3 ++-
->  security/smack/smack_lsm.c |    4 +++-
->  security/tomoyo/tomoyo.c   |    4 +++-
->  7 files changed, 26 insertions(+), 12 deletions(-)
-> 
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 6478ce3..5158611 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -446,6 +446,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *	@old_dentry contains the dentry structure of the old link.
->   *	@new_dir contains the inode structure for parent of the new link.
->   *	@new_dentry contains the dentry structure of the new link.
-> + *	@flags contains rename flags.
->   *	Return 0 if permission is granted.
->   * @path_rename:
->   *	Check for permission to rename a file or directory.
-> @@ -453,6 +454,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *	@old_dentry contains the dentry structure of the old link.
->   *	@new_dir contains the path structure for parent of the new link.
->   *	@new_dentry contains the dentry structure of the new link.
-> + *	@flags contains rename flags.
->   *	Return 0 if permission is granted.
->   * @path_chmod:
->   *	Check for permission to change DAC's permission of a file or directory.
-> @@ -1492,7 +1494,8 @@ struct security_operations {
->  	int (*path_link) (struct dentry *old_dentry, struct path *new_dir,
->  			  struct dentry *new_dentry);
->  	int (*path_rename) (struct path *old_dir, struct dentry *old_dentry,
-> -			    struct path *new_dir, struct dentry *new_dentry);
-> +			    struct path *new_dir, struct dentry *new_dentry,
-> +			    unsigned int flags);
->  	int (*path_chmod) (struct path *path, umode_t mode);
->  	int (*path_chown) (struct path *path, kuid_t uid, kgid_t gid);
->  	int (*path_chroot) (struct path *path);
-> @@ -1515,7 +1518,8 @@ struct security_operations {
->  	int (*inode_mknod) (struct inode *dir, struct dentry *dentry,
->  			    umode_t mode, dev_t dev);
->  	int (*inode_rename) (struct inode *old_dir, struct dentry *old_dentry,
-> -			     struct inode *new_dir, struct dentry *new_dentry);
-> +			     struct inode *new_dir, struct dentry *new_dentry,
-> +			     unsigned int flags);
->  	int (*inode_readlink) (struct dentry *dentry);
->  	int (*inode_follow_link) (struct dentry *dentry, struct nameidata *nd);
->  	int (*inode_permission) (struct inode *inode, int mask);
-> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-> index 9981000..c0b4366 100644
-> --- a/security/apparmor/lsm.c
-> +++ b/security/apparmor/lsm.c
-> @@ -315,7 +315,8 @@ static int apparmor_path_link(struct dentry *old_dentry, struct path *new_dir,
->  }
->  
->  static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
-> -				struct path *new_dir, struct dentry *new_dentry)
-> +				struct path *new_dir, struct dentry *new_dentry,
-> +				unsigned int flags)
->  {
->  	struct aa_profile *profile;
->  	int error = 0;
-> diff --git a/security/capability.c b/security/capability.c
-> index ad0d4de..620ba79 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -176,7 +176,8 @@ static int cap_inode_mknod(struct inode *inode, struct dentry *dentry,
->  }
->  
->  static int cap_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
-> -			    struct inode *new_inode, struct dentry *new_dentry)
-> +			    struct inode *new_inode, struct dentry *new_dentry,
-> +			    unsigned int flags)
->  {
->  	return 0;
->  }
-> @@ -280,7 +281,8 @@ static int cap_path_link(struct dentry *old_dentry, struct path *new_dir,
->  }
->  
->  static int cap_path_rename(struct path *old_path, struct dentry *old_dentry,
-> -			   struct path *new_path, struct dentry *new_dentry)
-> +			   struct path *new_path, struct dentry *new_dentry,
-> +			   unsigned int flags)
->  {
->  	return 0;
->  }
-> diff --git a/security/security.c b/security/security.c
-> index 8b774f3..81d7ffe 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -442,13 +442,14 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
->  
->  	if (flags & RENAME_EXCHANGE) {
->  		int err = security_ops->path_rename(new_dir, new_dentry,
-> -						    old_dir, old_dentry);
-> +						    old_dir, old_dentry,
-> +						    flags);
->  		if (err)
->  			return err;
->  	}
->  
->  	return security_ops->path_rename(old_dir, old_dentry, new_dir,
-> -					 new_dentry);
-> +					 new_dentry, flags);
->  }
->  EXPORT_SYMBOL(security_path_rename);
->  
-> @@ -542,13 +543,14 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
->  
->  	if (flags & RENAME_EXCHANGE) {
->  		int err = security_ops->inode_rename(new_dir, new_dentry,
-> -						     old_dir, old_dentry);
-> +						     old_dir, old_dentry,
-> +						     flags);
->  		if (err)
->  			return err;
->  	}
->  
->  	return security_ops->inode_rename(old_dir, old_dentry,
-> -					   new_dir, new_dentry);
-> +					  new_dir, new_dentry, flags);
->  }
->  
->  int security_inode_readlink(struct dentry *dentry)
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 2c7341d..33f6f56 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -2749,7 +2749,8 @@ static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry, umode_t
->  }
->  
->  static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
-> -				struct inode *new_inode, struct dentry *new_dentry)
-> +				struct inode *new_inode, struct dentry *new_dentry,
-> +				unsigned int flags)
->  {
->  	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
->  }
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 14f52be..4c1933f 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -697,6 +697,7 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
->   * @old_dentry: unused
->   * @new_inode: the new directory
->   * @new_dentry: unused
-> + * @flags: unused
->   *
->   * Read and write access is required on both the old and
->   * new directories.
-> @@ -706,7 +707,8 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
->  static int smack_inode_rename(struct inode *old_inode,
->  			      struct dentry *old_dentry,
->  			      struct inode *new_inode,
-> -			      struct dentry *new_dentry)
-> +			      struct dentry *new_dentry,
-> +			      unsigned int flags)
->  {
->  	int rc;
->  	char *isp;
-> diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
-> index f0b756e..ac7dd97 100644
-> --- a/security/tomoyo/tomoyo.c
-> +++ b/security/tomoyo/tomoyo.c
-> @@ -287,13 +287,15 @@ static int tomoyo_path_link(struct dentry *old_dentry, struct path *new_dir,
->   * @old_dentry: Pointer to "struct dentry".
->   * @new_parent: Pointer to "struct path".
->   * @new_dentry: Pointer to "struct dentry".
-> + * @flags:      Rename flags.
->   *
->   * Returns 0 on success, negative value otherwise.
->   */
->  static int tomoyo_path_rename(struct path *old_parent,
->  			      struct dentry *old_dentry,
->  			      struct path *new_parent,
-> -			      struct dentry *new_dentry)
-> +			      struct dentry *new_dentry,
-> +			      unsigned int flags)
->  {
->  	struct path path1 = { old_parent->mnt, old_dentry };
->  	struct path path2 = { new_parent->mnt, new_dentry };
-> 
+I must have been carried away by the name of the state (which has _ACTIVE in it)
+and thought that only the active CPUs will run it. So, here is an updated patch.
+
+-----------------------------------------------------------------------------
+
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+[PATCH v5 UPDATEDv2 3/3] CPU hotplug, smp: Flush any pending IPI callbacks before CPU offline
+
+During CPU offline, in the stop-machine loop, we use 2 separate stages to
+disable interrupts, to ensure that the CPU going offline doesn't get any new
+IPIs from the other CPUs after it has gone offline.
+
+However, an IPI sent much earlier might arrive late on the target CPU
+(possibly _after_ the CPU has gone offline) due to hardware latencies,
+and due to this, the smp-call-function callbacks queued on the outgoing
+CPU might not get noticed (and hence not executed) at all.
+
+This is somewhat theoretical, but in any case, it makes sense to explicitly
+loop through the call_single_queue and flush any pending callbacks before the
+CPU goes completely offline. So, flush the queued smp-call-function callbacks
+in the MULTI_STOP_DISABLE_IRQ_ACTIVE stage, after disabling interrupts on the
+active CPU. That way, we would have handled all the queued callbacks before
+going offline, and also, no new IPIs can be sent by the other CPUs to the
+outgoing CPU at that point, because they will all be executing the stop-machine
+code with interrupts disabled.
+
+Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ include/linux/smp.h   |    2 ++
+ kernel/smp.c          |   33 +++++++++++++++++++++++++++++++++
+ kernel/stop_machine.c |   11 +++++++++++
+ 3 files changed, 46 insertions(+)
+
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 633f5ed..7924191 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -52,6 +52,8 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+ 
+ int smp_call_function_single_async(int cpu, struct call_single_data *csd);
+ 
++void flush_smp_call_function_queue(void);
++
+ #ifdef CONFIG_SMP
+ 
+ #include <linux/preempt.h>
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 306f818..f361681 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -212,6 +212,39 @@ void generic_smp_call_function_single_interrupt(void)
+ 	}
+ }
+ 
++/**
++ * flush_smp_call_function_queue - Flush pending smp-call-function callbacks
++ *
++ * Flush any pending smp-call-function callbacks queued on this CPU (including
++ * those for which the source CPU's IPIs might not have been received on this
++ * CPU yet). This is invoked by a CPU about to go offline, to ensure that all
++ * pending IPI functions are run before it goes completely offline.
++ *
++ * Loop through the call_single_queue and run all the queued functions.
++ * Must be called with interrupts disabled.
++ */
++void flush_smp_call_function_queue(void)
++{
++	struct llist_head *head;
++	struct llist_node *entry;
++	struct call_single_data *csd, *csd_next;
++
++	WARN_ON(!irqs_disabled());
++
++	head = &__get_cpu_var(call_single_queue);
++
++	if (likely(llist_empty(head)))
++		return;
++
++	entry = llist_del_all(head);
++	entry = llist_reverse_order(entry);
++
++	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
++		csd->func(csd->info);
++		csd_unlock(csd);
++	}
++}
++
+ /*
+  * smp_call_function_single - Run a function on a specific CPU
+  * @func: The function to run. This must be fast and non-blocking.
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 288f7fe..8581d20 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -21,6 +21,7 @@
+ #include <linux/smpboot.h>
+ #include <linux/atomic.h>
+ #include <linux/lglock.h>
++#include <linux/smp.h>
+ 
+ /*
+  * Structure to determine completion condition and record errors.  May
+@@ -223,6 +224,16 @@ static int multi_cpu_stop(void *data)
+ 				if (is_active) {
+ 					local_irq_disable();
+ 					hard_irq_disable();
++
++					/*
++					 * IPIs (from the inactive CPUs) might
++					 * arrive late due to hardware latencies.
++					 * So flush out any pending IPI callbacks
++					 * explicitly, to ensure that the outgoing
++					 * CPU doesn't go offline with work still
++					 * pending (during CPU hotplug).
++					 */
++					flush_smp_call_function_queue();
+ 				}
+ 				break;
+ 			case MULTI_STOP_RUN:
+
 
