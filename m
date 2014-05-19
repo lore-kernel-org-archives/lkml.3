@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaESU7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:59:12 -0400
-Received: from mout.gmx.net ([212.227.15.15]:63522 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754AbaESU7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:59:10 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: jdmason@kudzu.us
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, joe@perches.com,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] vxge: Use time_before()
-Date: Mon, 19 May 2014 22:59:04 +0200
-Message-Id: <1400533144-8473-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1400520928.30820.23.camel@joe-AO725>
-References: <1400520928.30820.23.camel@joe-AO725>
+	id S1751828AbaESU71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:59:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:65502 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751046AbaESU7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 16:59:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        inderpal.s@samsung.com, pavel@ucw.cz, nm@ti.com,
+        chander.kashyap@linaro.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
+Date: Mon, 19 May 2014 23:16:20 +0200
+Message-ID: <1458497.gJ29RmexAd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <4765191.0FhyvSGyvF@vostro.rjw.lan>
+References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org> <ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org> <4765191.0FhyvSGyvF@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:ibkimXP67vQfYF5SiDAGFlDTftYpn7D8HIjm6Q/aNffSQjMb1h9
- /mtDPnvl2oN3MmOuZr/kq6bUw8enYNM3aiv8k14wk4ZCv2ZSqbSKpGiuBk6LvH8QVOT1ZqX
- XfA25+Xmc+Jy8bwcxxEk4L1k5+4qwf6RcER9SzmValWReybtcp7jJMpd3YrQTVmGODGfWIn
- mCJfxdO3UwbjJVTacSz8Q==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are modified
-to use time_before() instead of plain, error-prone math.
+On Monday, May 19, 2014 11:13:24 PM Rafael J. Wysocki wrote:
+> On Monday, May 19, 2014 11:59:11 AM Viresh Kumar wrote:
+> > All drivers expecting CPU's OPPs from device tree initialize OPP table using
+> > of_init_opp_table() and there is nothing driver specific in that. They all do it
+> > in the same way adding to code redundancy.
+> > 
+> > It would be better if we can get rid of code redundancy by initializing CPU OPPs
+> > from core code for all CPUs that have a "operating-points" property defined in
+> > their node.
+> > 
+> > This patch initializes OPPs as soon as CPU device is registered in
+> > register_cpu().
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > Cc: Kukjin Kim <kgene.kim@samsung.com>
+> > Cc: Shawn Guo <shawn.guo@linaro.org>
+> > Cc: Sudeep Holla <sudeep.holla@arm.com>
+> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- drivers/net/ethernet/neterion/vxge/vxge-main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Do patches [2-5/5] depend on this one BTW?
 
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-index d107bcb..7a0dead 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-@@ -2122,7 +2122,7 @@ static int vxge_open_vpaths(struct vxgedev *vdev)
- static void adaptive_coalesce_tx_interrupts(struct vxge_fifo *fifo)
- {
- 	fifo->interrupt_count++;
--	if (jiffies > fifo->jiffies + HZ / 100) {
-+	if (time_before(fifo->jiffies + HZ / 100, jiffies)) {
- 		struct __vxge_hw_fifo *hw_fifo = fifo->handle;
- 
- 		fifo->jiffies = jiffies;
-@@ -2150,7 +2150,7 @@ static void adaptive_coalesce_tx_interrupts(struct vxge_fifo *fifo)
- static void adaptive_coalesce_rx_interrupts(struct vxge_ring *ring)
- {
- 	ring->interrupt_count++;
--	if (jiffies > ring->jiffies + HZ / 100) {
-+	if (time_before(ring->jiffies + HZ / 100, jiffies)) {
- 		struct __vxge_hw_ring *hw_ring = ring->handle;
- 
- 		ring->jiffies = jiffies;
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
