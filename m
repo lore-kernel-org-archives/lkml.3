@@ -1,225 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaESLm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:42:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44828 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaESLmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:42:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,866,1392192000"; 
-   d="scan'208";a="433916599"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 4/4] ACPI / LPSS: support for fractional divider clock
-Date: Mon, 19 May 2014 14:42:07 +0300
-Message-Id: <1400499727-27605-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400161226-24067-5-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1400161226-24067-5-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1753546AbaESLo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:44:28 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:55890 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaESLo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 07:44:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.11.1405141456420.2268@eggly.anvils>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
+	<alpine.LSU.2.11.1405132118330.4401@eggly.anvils>
+	<537396A2.9090609@cybernetics.com>
+	<alpine.LSU.2.11.1405141456420.2268@eggly.anvils>
+Date: Mon, 19 May 2014 13:44:25 +0200
+Message-ID: <CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Tony Battersby <tonyb@cybernetics.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Kristian Hogsberg <krh@bitplanet.net>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This creates fractional divider type clock for the ones that
-have it. It is needed by the UART driver as the clock rate must
-accommodate to the requested baud rate.
+Hi
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/acpi/acpi_lpss.c | 75 +++++++++++++++++++++++++++++++++---------------
- 1 file changed, 52 insertions(+), 23 deletions(-)
+On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
+> The aspect which really worries me is this: the maintenance burden.
+> This approach would add some peculiar new code, introducing a rare
+> special case: which we might get right today, but will very easily
+> forget tomorrow when making some other changes to mm.  If we compile
+> a list of danger areas in mm, this would surely belong on that list.
 
-Hi Rafael,
+I tried doing the page-replacement in the last 4 days, but honestly,
+it's far more complex than I thought. So if no-one more experienced
+with mm/ comes up with a simple implementation, I'll have to delay
+this for some more weeks.
 
-I had to make one more version of this patch..
+However, I still wonder why we try to fix this as part of this
+patchset. Using FUSE, a DIRECT-IO call can be delayed for an arbitrary
+amount of time. Same is true for network block-devices, NFS, iscsi,
+maybe loop-devices, ... This means, _any_ once mapped page can be
+written to after an arbitrary delay. This can break any feature that
+makes FS objects read-only (remounting read-only, setting S_IMMUTABLE,
+sealing, ..).
 
-This changes also the Broadwells to use lpt_i2c_dev_desc with the I2C
-devices. Just like on Haswells, on Broadwells the I2C does not have
-the dividers, just the gate. No other changes.
+Shouldn't we try to fix the _cause_ of this?
 
+Isn't there a simple way to lock/mark/.. affected vmas in
+get_user_pages(_fast)() and release them once done? We could increase
+i_mmap_writable on all affected address_space and decrease it on
+release. This would at least prevent sealing and could be check on
+other operations, too (like setting S_IMMUTABLE).
+This should be as easy as checking page_mapping(page) != NULL and then
+adjusting ->i_mmap_writable in
+get_writable_user_pages/put_writable_user_pages, right?
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index c314d70..0576423 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -29,6 +29,7 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_LTR_SIZE	0x18
- 
- /* Offsets relative to LPSS_PRIVATE_OFFSET */
-+#define LPSS_CLK_DIVIDER_DEF_MASK	(BIT(1) | BIT(16))
- #define LPSS_GENERAL			0x08
- #define LPSS_GENERAL_LTR_MODE_SW	BIT(2)
- #define LPSS_GENERAL_UART_RTS_OVRD	BIT(3)
-@@ -60,6 +61,7 @@ struct lpss_device_desc {
- 	bool ltr_required;
- 	unsigned int prv_offset;
- 	size_t prv_size_override;
-+	bool clk_divider;
- 	bool clk_gate;
- 	bool save_ctx;
- 	struct lpss_shared_clock *shared_clock;
-@@ -97,6 +99,14 @@ static struct lpss_device_desc lpt_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
-+	.clk_divider = true,
-+	.clk_gate = true,
-+};
-+
-+static struct lpss_device_desc lpt_i2c_dev_desc = {
-+	.clk_required = true,
-+	.prv_offset = 0x800,
-+	.ltr_required = true,
- 	.clk_gate = true,
- };
- 
-@@ -104,6 +114,7 @@ static struct lpss_device_desc lpt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.setup = lpss_uart_setup,
- };
-@@ -125,31 +136,21 @@ static struct lpss_device_desc byt_pwm_dev_desc = {
- 	.shared_clock = &pwm_clock,
- };
- 
--static struct lpss_shared_clock uart_clock = {
--	.name = "uart_clk",
--	.rate = 44236800,
--};
--
- static struct lpss_device_desc byt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.save_ctx = true,
--	.shared_clock = &uart_clock,
- 	.setup = lpss_uart_setup,
- };
- 
--static struct lpss_shared_clock spi_clock = {
--	.name = "spi_clk",
--	.rate = 50000000,
--};
--
- static struct lpss_device_desc byt_spi_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x400,
-+	.clk_divider = true,
- 	.clk_gate = true,
- 	.save_ctx = true,
--	.shared_clock = &spi_clock,
- };
- 
- static struct lpss_device_desc byt_sdio_dev_desc = {
-@@ -175,8 +176,8 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	/* Lynxpoint LPSS devices */
- 	{ "INT33C0", (unsigned long)&lpt_dev_desc },
- 	{ "INT33C1", (unsigned long)&lpt_dev_desc },
--	{ "INT33C2", (unsigned long)&lpt_dev_desc },
--	{ "INT33C3", (unsigned long)&lpt_dev_desc },
-+	{ "INT33C2", (unsigned long)&lpt_i2c_dev_desc },
-+	{ "INT33C3", (unsigned long)&lpt_i2c_dev_desc },
- 	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
-@@ -193,8 +194,8 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 
- 	{ "INT3430", (unsigned long)&lpt_dev_desc },
- 	{ "INT3431", (unsigned long)&lpt_dev_desc },
--	{ "INT3432", (unsigned long)&lpt_dev_desc },
--	{ "INT3433", (unsigned long)&lpt_dev_desc },
-+	{ "INT3432", (unsigned long)&lpt_i2c_dev_desc },
-+	{ "INT3433", (unsigned long)&lpt_i2c_dev_desc },
- 	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
- 	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
-@@ -222,9 +223,11 @@ static int register_device_clock(struct acpi_device *adev,
- {
- 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
- 	struct lpss_shared_clock *shared_clock = dev_desc->shared_clock;
-+	const char *devname = dev_name(&adev->dev);
- 	struct clk *clk = ERR_PTR(-ENODEV);
- 	struct lpss_clk_data *clk_data;
--	const char *parent;
-+	const char *parent, *clk_name;
-+	void __iomem *prv_base;
- 
- 	if (!lpss_clk_dev)
- 		lpt_register_clock_device();
-@@ -235,7 +238,7 @@ static int register_device_clock(struct acpi_device *adev,
- 
- 	if (dev_desc->clkdev_name) {
- 		clk_register_clkdev(clk_data->clk, dev_desc->clkdev_name,
--				    dev_name(&adev->dev));
-+				    devname);
- 		return 0;
- 	}
- 
-@@ -244,6 +247,7 @@ static int register_device_clock(struct acpi_device *adev,
- 		return -ENODATA;
- 
- 	parent = clk_data->name;
-+	prv_base = pdata->mmio_base + dev_desc->prv_offset;
- 
- 	if (shared_clock) {
- 		clk = shared_clock->clk;
-@@ -257,16 +261,41 @@ static int register_device_clock(struct acpi_device *adev,
- 	}
- 
- 	if (dev_desc->clk_gate) {
--		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
--					pdata->mmio_base + dev_desc->prv_offset,
--					0, 0, NULL);
--		pdata->clk = clk;
-+		clk = clk_register_gate(NULL, devname, parent, 0,
-+					prv_base, 0, 0, NULL);
-+		parent = devname;
-+	}
-+
-+	if (dev_desc->clk_divider) {
-+		/* Prevent division by zero */
-+		if (!readl(prv_base))
-+			writel(LPSS_CLK_DIVIDER_DEF_MASK, prv_base);
-+
-+		clk_name = kasprintf(GFP_KERNEL, "%s-div", devname);
-+		if (!clk_name)
-+			return -ENOMEM;
-+		clk = clk_register_fractional_divider(NULL, clk_name, parent,
-+						      0, prv_base,
-+						      1, 15, 16, 15, 0, NULL);
-+		parent = clk_name;
-+
-+		clk_name = kasprintf(GFP_KERNEL, "%s-update", devname);
-+		if (!clk_name) {
-+			kfree(parent);
-+			return -ENOMEM;
-+		}
-+		clk = clk_register_gate(NULL, clk_name, parent,
-+					CLK_SET_RATE_PARENT | CLK_SET_RATE_GATE,
-+					prv_base, 31, 0, NULL);
-+		kfree(parent);
-+		kfree(clk_name);
- 	}
- 
- 	if (IS_ERR(clk))
- 		return PTR_ERR(clk);
- 
--	clk_register_clkdev(clk, NULL, dev_name(&adev->dev));
-+	pdata->clk = clk;
-+	clk_register_clkdev(clk, NULL, devname);
- 	return 0;
- }
- 
--- 
-2.0.0.rc2
-
+Thanks
+David
