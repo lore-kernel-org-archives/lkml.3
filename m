@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaESIN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:13:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:41834 "EHLO ozlabs.org"
+	id S1752957AbaESIRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:17:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55446 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874AbaESINX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:13:23 -0400
-Date: Mon, 19 May 2014 18:13:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>
-Subject: linux-next: build warning after merge of the akpm tree
-Message-ID: <20140519181314.1b92c548@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1750852AbaESIRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:17:00 -0400
+Message-ID: <5379BDB9.50905@ti.com>
+Date: Mon, 19 May 2014 13:45:53 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/1GYj_T+i9QUSP4Ekhm.Mi/P"; protocol="application/pgp-signature"
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>, <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v3 09/13] dt/bindings: ti,edma: Remove redundant properties
+ from documentation
+References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-10-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1400242640-9902-10-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/1GYj_T+i9QUSP4Ekhm.Mi/P
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
++ DT maintainers
 
-Hi Andrew,
+On Friday 16 May 2014 05:47 PM, Peter Ujfalusi wrote:
+> From CCCFG register of eDMA3 we can get all the needed information for the
+> driver about the IP:
+> Number of channels: NUM_DMACH
+> Number of regions: NUM_REGN
+> Number of slots (PaRAM sets): NUM_PAENTRY
+> Number of TC/EQ: NUM_EVQUE
+> 
+> The ti,edma-regions; ti,edma-slots and dma-channels in DT are
+> redundant since the very same information can be obtained from the HW.
+> The mentioned properties are deprecated.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-After merging the akpm tree, today's linux-next build (arm
-multi_v7_defconfig) produced these warnings:
+DT maintainers,
 
+Can I get an ack on deprecation of these bindings? We are using hardware
+to detect the same properties so it should not cause any backward
+compatibility issue when moving to newer kernels while keeping the same DTB.
 
-ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [=
-enabled by default]
-ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.r=
-wsem') [enabled by default]
-ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [=
-enabled by default]
-ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.r=
-wsem') [enabled by default]
+Link to last mail on this topic as part of v2 thread:
 
-and many more in other files ...
+http://lkml.iu.edu/hypermail/linux/kernel/1405.1/05152.html
 
-Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
-spinning").
+Thanks,
+Sekhar
 
-I reverted that commit (and
-"rwsem-support-optimistic-spinning-checkpatch-fixes") for today.
+> ---
+>  Documentation/devicetree/bindings/dma/ti-edma.txt | 13 +++++++------
+>  1 file changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> index 68ff2137bae7..5ba525a10035 100644
+> --- a/Documentation/devicetree/bindings/dma/ti-edma.txt
+> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+> @@ -2,11 +2,8 @@ TI EDMA
+>  
+>  Required properties:
+>  - compatible : "ti,edma3"
+> -- ti,edma-regions: Number of regions
+> -- ti,edma-slots: Number of slots
+>  - #dma-cells: Should be set to <1>
+>                Clients should use a single channel number per DMA request.
+> -- dma-channels: Specify total DMA channels per CC
+>  - reg: Memory map for accessing module
+>  - interrupt-parent: Interrupt controller the interrupt is routed through
+>  - interrupts: Exactly 3 interrupts need to be specified in the order:
+> @@ -17,6 +14,13 @@ Optional properties:
+>  - ti,hwmods: Name of the hwmods associated to the EDMA
+>  - ti,edma-xbar-event-map: Crossbar event to channel map
+>  
+> +Deprecated properties:
+> +Listed here in case one wants to boot an old kernel with new DTB. These
+> +properties might need to be added to the new DTS files.
+> +- ti,edma-regions: Number of regions
+> +- ti,edma-slots: Number of slots
+> +- dma-channels: Specify total DMA channels per CC
+> +
+>  Example:
+>  
+>  edma: edma@49000000 {
+> @@ -26,9 +30,6 @@ edma: edma@49000000 {
+>  	compatible = "ti,edma3";
+>  	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+>  	#dma-cells = <1>;
+> -	dma-channels = <64>;
+> -	ti,edma-regions = <4>;
+> -	ti,edma-slots = <256>;
+>  	ti,edma-xbar-event-map = /bits/ 16 <1 12
+>  					    2 13>;
+>  };
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/1GYj_T+i9QUSP4Ekhm.Mi/P
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTeb0gAAoJEMDTa8Ir7ZwVHfwP/Rsc9lTL9dbwBbhFYnnr1XBD
-gdFDM0yKSwzG9C0QOCLzqYBg5mYsxD9NU9zyXjxMSTeQkPukBw8C83b22M9Q0kSS
-OuBAe3KBVbOvBWCns78ADj8synYWFgjpb+z/xbB+L7edlmVZDjtaBUv08QoVuUL1
-2xToip8x80VMHBlnkmvYHTAd+OgGCqN/NeAbFt5nWv6NOydes0BjxAQdnNY085BU
-HIZjySe6cycFt0dRsqfGlqsFyQonTZeRk9T9N8l4xQhcURSNU4Qu9Kbi984vtOQw
-PykN98rdIfG2+JbqoAEwFzoa35KbL1QzUtR5bg420qtGOPe+hmqmOagwq2ckF0nD
-pPO8yJfKEJdmDh8YQ2u7ieO9q0TjS+rGSZU+1yyT21sjkT+7ebWcxgKsRJlpF4Nf
-sAKZqqqaCYZ2UsSL3bl++2pkhvQbd62VI0fKeKJyebnM2XH9ppLwEisnJVWY/Es/
-7zLN56scQIDVLI/MjqlyXUVgCrfti75rOcSF/Z6tqT9mE+OWoYeJJ4in6C6jmf2J
-TADIPXfZi5oQhxmtnZEnA9ztavy12kRXPrnqp0pUbshTwNxeNLxW115JLNRM92qg
-jzXpR7pFaF1M5QahI0hLXPeZ6XmFei2bAshB5Iq220jqQmEV7Giuns/r5SkUe3sB
-dbPejhTbfL61YKgeks25
-=T5Ib
------END PGP SIGNATURE-----
-
---Sig_/1GYj_T+i9QUSP4Ekhm.Mi/P--
