@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaESK1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:27:17 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:51194 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbaESK1K (ORCPT
+	id S1754184AbaESK1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:27:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32839 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937AbaESK1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:27:10 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        davem@davemloft.net
-Subject: [PATCH 3/4 V2] atm: idt77252: Remove redundant error check
-Date: Mon, 19 May 2014 12:26:52 +0200
-Message-Id: <1400495212-9150-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 19 May 2014 06:27:09 -0400
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>
+CC: <arnd@arndb.de>, <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
+        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [Patch v3 3/5] ARM: keystone: remove redundant reset stuff
+Date: Mon, 19 May 2014 13:25:53 +0300
+Message-ID: <1400495155-11136-4-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double checks, convert printk to pr_warn, and move the call to
-pr_warn to the first check. The simplified version of the coccinelle
-semantic patch that find this issue is as follows:
+Remove reset stuff in flavour of using keystone reset driver:
+driver/power/reset/keystone-reset.c
 
-// <smpl>
-@@
-expression E; identifier pr; expression list es;
-@@
-while(...){
-...
--       if (E) break;
-+       if (E){
-+               pr(es);
-+               break;
-+       }
-...
-}
-- if(E) pr(es);
-// </smpl>
-
-Tested by compilation only.
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
-Changes from V1:
- - Convert printk(KERN_WARNING ... to pr_warn(...
+ arch/arm/mach-keystone/keystone.c | 35 -----------------------------------
+ 1 file changed, 35 deletions(-)
 
- drivers/atm/idt77252.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
-index 1bdf104..b621f56 100644
---- a/drivers/atm/idt77252.c
-+++ b/drivers/atm/idt77252.c
-@@ -2551,12 +2551,12 @@ done:
- 		timeout = 5 * 1000;
- 		while (atomic_read(&vc->scq->used) > 0) {
- 			timeout = msleep_interruptible(timeout);
--			if (!timeout)
-+			if (!timeout) {
-+				pr_warn("%s: SCQ drain timeout: %u used\n",
-+					card->name, atomic_read(&vc->scq->used));
- 				break;
-+			}
- 		}
--		if (!timeout)
--			printk("%s: SCQ drain timeout: %u used\n",
--			       card->name, atomic_read(&vc->scq->used));
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+index e0b9e1b..c96e2a4 100644
+--- a/arch/arm/mach-keystone/keystone.c
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -23,24 +23,8 @@
  
- 		writel(TCMDQ_HALT | vc->index, SAR_REG_TCMDQ);
- 		clear_scd(card, vc->scq, vc->class);
+ #include "keystone.h"
+ 
+-#define PLL_RESET_WRITE_KEY_MASK		0xffff0000
+-#define PLL_RESET_WRITE_KEY			0x5a69
+-#define PLL_RESET				BIT(16)
+-
+-static void __iomem *keystone_rstctrl;
+-
+ static void __init keystone_init(void)
+ {
+-	struct device_node *node;
+-
+-	node = of_find_compatible_node(NULL, NULL, "ti,keystone-reset");
+-	if (WARN_ON(!node))
+-		pr_warn("ti,keystone-reset node undefined\n");
+-
+-	keystone_rstctrl = of_iomap(node, 0);
+-	if (WARN_ON(!keystone_rstctrl))
+-		pr_warn("ti,keystone-reset iomap error\n");
+-
+ 	keystone_pm_runtime_init();
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+@@ -50,24 +34,6 @@ static const char *keystone_match[] __initconst = {
+ 	NULL,
+ };
+ 
+-void keystone_restart(enum reboot_mode mode, const char *cmd)
+-{
+-	u32 val;
+-
+-	BUG_ON(!keystone_rstctrl);
+-
+-	/* Enable write access to RSTCTRL */
+-	val = readl(keystone_rstctrl);
+-	val &= PLL_RESET_WRITE_KEY_MASK;
+-	val |= PLL_RESET_WRITE_KEY;
+-	writel(val, keystone_rstctrl);
+-
+-	/* Reset the SOC */
+-	val = readl(keystone_rstctrl);
+-	val &= ~PLL_RESET;
+-	writel(val, keystone_rstctrl);
+-}
+-
+ DT_MACHINE_START(KEYSTONE, "Keystone")
+ #if defined(CONFIG_ZONE_DMA) && defined(CONFIG_ARM_LPAE)
+ 	.dma_zone_size	= SZ_2G,
+@@ -75,5 +41,4 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
+ 	.smp		= smp_ops(keystone_smp_ops),
+ 	.init_machine	= keystone_init,
+ 	.dt_compat	= keystone_match,
+-	.restart	= keystone_restart,
+ MACHINE_END
 -- 
-1.8.3.1
+1.8.3.2
 
