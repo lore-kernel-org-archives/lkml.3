@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314AbaESNo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:44:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40418 "EHLO comal.ext.ti.com"
+	id S1754805AbaESNpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:45:14 -0400
+Received: from tex.lwn.net ([70.33.254.29]:55522 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754794AbaESNo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:44:26 -0400
-Message-ID: <537A0AC9.7040607@ti.com>
-Date: Mon, 19 May 2014 16:44:41 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751331AbaESNpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:45:11 -0400
+Date: Mon, 19 May 2014 07:45:10 -0600
+From: Jake Edge <jake@lwn.net>
+To: Anton Saraev <antonysaraev@gmail.com>
+Cc: gregkh@linuxfoundation.org, jason@lakedaemon.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 06/06] staging: crypto: skein: rename files
+Message-ID: <20140519074510.74e622fd@chukar.edge2.net>
+In-Reply-To: <a5204985750d7adf9b20752f889fbf2a2147de94.1399675445.git.antonysaraev@gmail.com>
+References: <cover.1399675444.git.antonysaraev@gmail.com>
+	<abebc2187151826190d6f664acc654241b352ffa.1399675444.git.antonysaraev@gmail.com>
+	<dad2a43d54d03ba2b4fae9136331df060c48154c.1399675444.git.antonysaraev@gmail.com>
+	<cba3f6453b416ea04b03ad2d165f600e3e39f152.1399675444.git.antonysaraev@gmail.com>
+	<b4028782c333773298763d58e14753067c6ae745.1399675444.git.antonysaraev@gmail.com>
+	<2eac124c6a3815c72e91679c8cde729af712bb74.1399675445.git.antonysaraev@gmail.com>
+	<a5204985750d7adf9b20752f889fbf2a2147de94.1399675445.git.antonysaraev@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: DTS: omap54xx-clocks: Correct abe_iclk clock
- node
-References: <1398858096-32144-1-git-send-email-peter.ujfalusi@ti.com> <1398858096-32144-2-git-send-email-peter.ujfalusi@ti.com> <5360ED2A.5070605@ti.com>
-In-Reply-To: <5360ED2A.5070605@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 03:31 PM, Tero Kristo wrote:
-> On 04/30/2014 02:41 PM, Peter Ujfalusi wrote:
->> abe_iclk's parent is aess_fclk and not abe_clk.
->> Also correct the parameters for clock rate calculation as used for OMAP4
->> since in PRCM level there's no difference between the two platform
->> regarding to AESS/ABE clocking.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->
-> Acked-by: Tero Kristo <t-kristo@ti.com>
+On Mon, 19 May 2014 12:09:59 +0400 Anton Saraev wrote:
 
-Queued also for 3.15-rc/clk-dt.
+> --- a/drivers/staging/skein/Makefile
+> +++ b/drivers/staging/skein/Makefile
+> @@ -4,10 +4,10 @@
+>  subdir-ccflags-y := -I$(src)/include/
 
--Tero
+as part of the rearranging of files, I think you want to get rid of
+this include directory, move the files up to the main directory and
+include them as "skein.h" (rather than <skein.h>).
 
->
->> ---
->>   arch/arm/boot/dts/omap54xx-clocks.dtsi | 9 +++++----
->>   1 file changed, 5 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> b/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> index d784ff5d3904..86fc507a0567 100644
->> --- a/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> +++ b/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> @@ -143,10 +143,11 @@
->>
->>       abe_iclk: abe_iclk {
->>           #clock-cells = <0>;
->> -        compatible = "fixed-factor-clock";
->> -        clocks = <&abe_clk>;
->> -        clock-mult = <1>;
->> -        clock-div = <2>;
->> +        compatible = "ti,divider-clock";
->> +        clocks = <&aess_fclk>;
->> +        ti,bit-shift = <24>;
->> +        reg = <0x0528>;
->> +        ti,dividers = <2>, <1>;
->>       };
->>
->>       abe_lp_clk_div: abe_lp_clk_div {
->>
->
+Then this line can be removed from the Makefile.
 
+> --- a/drivers/staging/skein/threefish1024Block.c
+> +++ b/drivers/staging/skein/threefish_1024_block.c
+> @@ -1,5 +1,5 @@
+>  #include <linux/string.h>
+> -#include <threefishApi.h>
+> +#include <threefish_api.h>
+
+incidentally, none of the threefish_*_block.c files actually needs
+linux/string.h ... there may be other files where that's true too, it
+seems to have just gotten added everywhere ...
+
+jake
+
+-- 
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
