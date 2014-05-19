@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168AbaESFkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 01:40:09 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:56343 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaESFkH convert rfc822-to-8bit (ORCPT
+	id S1752045AbaESFkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 01:40:39 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:48118 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaESFkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 01:40:07 -0400
-Date: Mon, 19 May 2014 07:39:47 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
-        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Fix for possible null pointer dereference in dma.c
-Message-ID: <20140519073947.66bb2c46@ipc1.ka-ro>
-In-Reply-To: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Mon, 19 May 2014 01:40:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+	<1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+Date: Mon, 19 May 2014 11:10:36 +0530
+Message-ID: <CANuQgHH1_O-8XHhRREdu5WjOwz1oeASdVf7TQFdGxjr0WDSvhQ@mail.gmail.com>
+Subject: Re: [PATCH v6 0/6] add cpuidle support for Exynos5420
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Daniel/Kgene,
 
-Rickard Strandqvist wrote:
-> There is otherwise a risk of a possible null pointer dereference.
-> 
-> Was largely found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  sound/soc/samsung/dma.c |   10 ++++++----
->  1 fil ändrad, 6 tillägg(+), 4 borttagningar(-)
-> 
-> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-> index dc09b71..b1f6757 100644
-> --- a/sound/soc/samsung/dma.c
-> +++ b/sound/soc/samsung/dma.c
-> @@ -115,17 +115,19 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
->  static void audio_buffdone(void *data)
->  {
->  	struct snd_pcm_substream *substream = data;
-> -	struct runtime_data *prtd = substream->runtime->private_data;
-> +	struct runtime_data *prtd = NULL;
->  
->  	pr_debug("Entered %s\n", __func__);
->  
-> -	if (prtd->state & ST_RUNNING) {
-> +	if(substream)
+On 16 May 2014 13:33, Chander Kashyap <chander.kashyap@linaro.org> wrote:
+> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
 >
-Missing space.
+> This patchset adds cpuidle support for Exynos5420 SoC based on
+> generic big.little cpuidle driver.
+>
+> Tested on SMDK5420.
+>
+> This patch set depends on:
+>         1. [PATCH 0/5] MCPM backend for Exynos5420
+>            http://www.spinics.net/lists/arm-kernel/msg331100.html
+> Changelog is in respective patches.
+> Chander Kashyap (5):
+>   driver: cpuidle-big-little: add of_device_id structure
+>   arm: exynos: add generic function to calculate cpu number
+>   cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
+>     driver
+>   driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+>   exynos: cpuidle: do not allow cpuidle registration for Exynos5420
+>   mcpm: exynos: populate suspend and powered_up callbacks
+>
+>  arch/arm/mach-exynos/exynos.c        |    4 +++-
+>  arch/arm/mach-exynos/mcpm-exynos.c   |   36 ++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
+>  drivers/cpuidle/Kconfig.arm          |    2 +-
+>  drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
+>  5 files changed, 60 insertions(+), 3 deletions(-)
+>
+> --
+> 1.7.9.5
+>
 
+As dependency patches are merged. If their are no further comment, can
+these patches be taken?
 
-Lothar Waßmann
 -- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+with warm regards,
+Chander Kashyap
