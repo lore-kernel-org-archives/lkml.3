@@ -1,153 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158AbaESWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:12:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59367 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaESWMX (ORCPT
+	id S1751483AbaESWSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:18:01 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64759 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751253AbaESWR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:12:23 -0400
-Date: Mon, 19 May 2014 15:11:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jan Kara <jack@suse.cz>
-cc: David Herrmann <dh.herrmann@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kristian Hogsberg <krh@bitplanet.net>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
-In-Reply-To: <20140519160942.GD3427@quack.suse.cz>
-Message-ID: <alpine.LSU.2.11.1405191403280.969@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405132118330.4401@eggly.anvils> <537396A2.9090609@cybernetics.com> <alpine.LSU.2.11.1405141456420.2268@eggly.anvils> <CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
- <20140519160942.GD3427@quack.suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 19 May 2014 18:17:59 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Enrico Etxe Arte <goitizena.generoa@gmail.com>
+Subject: Re: [PATCH v3 2/2] ACPI: Fix the issue that the DSDT local copy is conflict with the customized DSDT.
+Date: Tue, 20 May 2014 00:34:54 +0200
+Message-ID: <7468570.jHKW67l4I5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <e10c2a17e698dd9a2594320388b8aa4da6c28418.1399880919.git.lv.zheng@intel.com>
+References: <cover.1396925060.git.lv.zheng@intel.com> <e10c2a17e698dd9a2594320388b8aa4da6c28418.1399880919.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Jan Kara wrote:
-> On Mon 19-05-14 13:44:25, David Herrmann wrote:
-> > On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
-> > > The aspect which really worries me is this: the maintenance burden.
-> > > This approach would add some peculiar new code, introducing a rare
-> > > special case: which we might get right today, but will very easily
-> > > forget tomorrow when making some other changes to mm.  If we compile
-> > > a list of danger areas in mm, this would surely belong on that list.
-> > 
-> > I tried doing the page-replacement in the last 4 days, but honestly,
-> > it's far more complex than I thought. So if no-one more experienced
-
-To be honest, I'm quite glad to hear that: it is still a solution worth
-considering, but I'd rather continue the search for a better solution.
-
-> > with mm/ comes up with a simple implementation, I'll have to delay
-> > this for some more weeks.
-> > 
-> > However, I still wonder why we try to fix this as part of this
-> > patchset. Using FUSE, a DIRECT-IO call can be delayed for an arbitrary
-> > amount of time. Same is true for network block-devices, NFS, iscsi,
-> > maybe loop-devices, ... This means, _any_ once mapped page can be
-> > written to after an arbitrary delay. This can break any feature that
-> > makes FS objects read-only (remounting read-only, setting S_IMMUTABLE,
-> > sealing, ..).
-
-We need to fix it together with your sealing patchset, because your
-patchset is all about introducing a new kind of guarantee: a guarantee
-which this async i/o issue makes impossible to give, as things stand.
-
-Exasperating for you, I understand; but that's how it is.
-A new feature may make new demands on the infrastructure.
-
-I can imagine existing problems, but (I may be out of touch) I have
-not heard of them as problems in practice.  Certainly they would not
-be recent regressions: mm-page versus fs-file has worked in this way
-for as long as I've known them (pages released independently of
-unmapping the file, with the understanding that i/o might still
-be in progress, so care taken not to free the pages too soon).
-
-> > 
-> > Shouldn't we try to fix the _cause_ of this?
-
-Nobody is against fixing the cause: we are all looking for the
-simplest way of doing so,
-
-> > 
-> > Isn't there a simple way to lock/mark/.. affected vmas in
-> > get_user_pages(_fast)() and release them once done? We could increase
-> > i_mmap_writable on all affected address_space and decrease it on
-> > release. This would at least prevent sealing and could be check on
-> > other operations, too (like setting S_IMMUTABLE).
-> > This should be as easy as checking page_mapping(page) != NULL and then
-> > adjusting ->i_mmap_writable in
-> > get_writable_user_pages/put_writable_user_pages, right?
->   Doing this would be quite a bit of work. Currently references returned by
-> get_user_pages() are page references like any other and thus are released
-> by put_page() or similar. Now you would make them special and they need
-> special releasing and there are lots of places in kernel where
-> get_user_pages() is used that would need changing.
-
-Lots of places that would need changing, yes; but we have often
-wondered in the past whether there should be a put_user_pages().
-Though I'm not sure that it would actually solve anything...
-
+On Monday, May 12, 2014 03:50:16 PM Lv Zheng wrote:
+> This patch fixes the following issue:
+> If DSDT is customized, no local DSDT copy is needed.
 > 
-> Another aspect is that it could have performance implications - if there
-> are several processes using get_user_pages[_fast]() on a file, they would
-> start contending on modifying i_mmap_writeable.
+> Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=69711
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Signed-off-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
+> Cc: <stable@vger.kernel.org> # 2.6.35.x: aa2110cb: ACPI: add boot option acpi=copy_dsdt to fix corrupt DSDT
 
-Doing extra vma work in get_user_pages() wouldn't be so bad.  But doing
-any vma work in get_user_pages_fast() would upset almost all its users:
-get_user_pages_fast() is a fast-path which expressly avoids the vmas,
-and hates additional cachelines being added to its machinations.
+Queued up for 3.16, thanks!
 
-If sealing had appeared before get_user_pages_fast(), maybe we wouldn't
-have let get_user_pages_fast() in; but now it's the other way around.
-
-I would be more interested in attacking from the get_user_pages() and
-get_user_pages_fast() end, if I could convince myself that they do
-actually delimit the problem; maybe they do, but I'm not yet convinced.
-
+> ---
+>  drivers/acpi/bus.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
 > 
-> One somewhat crazy idea I have is that maybe we could delay unmapping of a
-> page if this was last VMA referencing it until all extra page references of
-> pages in there are dropped. That would make i_mmap_writeable reliable for
-> you and it would also close those races with remount. Hugh, do you think
-> this might be viable?
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index 610261a..cfd2318 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -52,6 +52,12 @@ struct proc_dir_entry *acpi_root_dir;
+>  EXPORT_SYMBOL(acpi_root_dir);
+>  
+>  #ifdef CONFIG_X86
+> +#ifdef CONFIG_ACPI_CUSTOM_DSDT
+> +static inline int set_copy_dsdt(const struct dmi_system_id *id)
+> +{
+> +	return 0;
+> +}
+> +#else
+>  static int set_copy_dsdt(const struct dmi_system_id *id)
+>  {
+>  	printk(KERN_NOTICE "%s detected - "
+> @@ -59,6 +65,7 @@ static int set_copy_dsdt(const struct dmi_system_id *id)
+>  	acpi_gbl_copy_dsdt_locally = 1;
+>  	return 0;
+>  }
+> +#endif
+>  
+>  static struct dmi_system_id dsdt_dmi_table[] __initdata = {
+>  	/*
+> 
 
-It is definitely worth pursuing further, but I'm not very hopeful on it.
-In a world of free page flags and free struct page fields, maybe.  (And
-I don't see sealing as a feature sensibly restricted to 64-bit only.)
-
-I think we would have to set a page flag, maybe bump a count, for every
-leftover page that raises i_mmap_writable; and lower it (potentially from
-interrupt context) at put_page() time.  Easy to make i_mmap_writable an
-atomic rather than guarded by i_mmap_mutex, but we still need to
-synchronize on it falling to 0.
-
-And how would we recognize the relevant, decrementing, put_page()?
-page_count divided into "read_"count and write_count?  Ugh!
-
-I also have a strong instinct against adding delays into munmap+exit;
-though that mainly comes from the urge to free memory, and here we are
-only delaying until a page becomes freeable, so maybe I should abandon
-that bias in this case.
-
-I did start thinking in this direction last week, but stuck somewhere
-and retreated, I forget on what issue.  At this moment I'm not really
-in that zone, but anxious to complete my promised responses to David's
-patches, which I almost but not quite completed last night.
-
-Hugh
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
