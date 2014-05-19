@@ -1,128 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaESWIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:08:21 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46290 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaESWIS (ORCPT
+	id S1751158AbaESWM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:12:26 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59367 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaESWMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:08:18 -0400
+	Mon, 19 May 2014 18:12:23 -0400
+Date: Mon, 19 May 2014 15:11:04 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jan Kara <jack@suse.cz>
+cc: David Herrmann <dh.herrmann@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Kristian Hogsberg <krh@bitplanet.net>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
+In-Reply-To: <20140519160942.GD3427@quack.suse.cz>
+Message-ID: <alpine.LSU.2.11.1405191403280.969@eggly.anvils>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405132118330.4401@eggly.anvils> <537396A2.9090609@cybernetics.com> <alpine.LSU.2.11.1405141456420.2268@eggly.anvils> <CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
+ <20140519160942.GD3427@quack.suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Mon, 19 May 2014 15:08:18 -0700
-Message-ID: <CAJAp7Oj5e8_zqNsHUxex8pd1zh4_sSzZMvp+67YSE39JDkoLAQ@mail.gmail.com>
-Subject: Re: [PATCH RFC 00/12] Add Qualcomm SD Card Controller support.
-From: Bjorn Andersson <bjorn@kryo.se>
-To: srinivas.kandagatla@linaro.org
-Cc: linux-mmc@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com, linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 2:43 PM,  <srinivas.kandagatla@linaro.org> wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-[snip]
->
-> This patches are tested in PIO mode on IFC8064 board with both eMMC and
-> external SD card. I would appreciate any feedback/suggestions on the overall
-> approach.
+On Mon, 19 May 2014, Jan Kara wrote:
+> On Mon 19-05-14 13:44:25, David Herrmann wrote:
+> > On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
+> > > The aspect which really worries me is this: the maintenance burden.
+> > > This approach would add some peculiar new code, introducing a rare
+> > > special case: which we might get right today, but will very easily
+> > > forget tomorrow when making some other changes to mm.  If we compile
+> > > a list of danger areas in mm, this would surely belong on that list.
+> > 
+> > I tried doing the page-replacement in the last 4 days, but honestly,
+> > it's far more complex than I thought. So if no-one more experienced
 
-Hi Srini,
+To be honest, I'm quite glad to hear that: it is still a solution worth
+considering, but I'd rather continue the search for a better solution.
 
-I finally got around to give this series a spin on our APQ8064 based
-devices as well. I had a few reported CRC issues on our msm8960 based
-devices, but thinks seems functionally "ok".
+> > with mm/ comes up with a simple implementation, I'll have to delay
+> > this for some more weeks.
+> > 
+> > However, I still wonder why we try to fix this as part of this
+> > patchset. Using FUSE, a DIRECT-IO call can be delayed for an arbitrary
+> > amount of time. Same is true for network block-devices, NFS, iscsi,
+> > maybe loop-devices, ... This means, _any_ once mapped page can be
+> > written to after an arbitrary delay. This can break any feature that
+> > makes FS objects read-only (remounting read-only, setting S_IMMUTABLE,
+> > sealing, ..).
 
-On APQ8064, the kernel finds the onboard eMMC and when mounting it I
-get the following:
+We need to fix it together with your sealing patchset, because your
+patchset is all about introducing a new kind of guarantee: a guarantee
+which this async i/o issue makes impossible to give, as things stand.
 
-[    1.624118] mmc0: new high speed MMC card at address 0001
-[    1.627521] mmcblk0: mmc0:0001 MAG2GA 14.5 GiB
-[    1.632714] mmcblk0boot0: mmc0:0001 MAG2GA partition 1 2.00 MiB
-[    1.636989] mmcblk0boot1: mmc0:0001 MAG2GA partition 2 2.00 MiB
-[    1.637393] Freeing unused kernel memory: 332K (c09c6000 - c0a19000)
-[    1.663379] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    1.663659] mmcblk0: error -84 transferring data, sector 30535648,
-nr 8, cmd response 0x900, card status 0xb00
-[    1.669851] mmcblk0: retrying using single block read
-[    1.681534] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    1.686758]  mmcblk0: p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13
-p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 p24 p25 p26
-mkdir: can't create directory '/dev': File exists
-[    1.712644]  mmcblk0boot1: unknown partition table
-[    1.717419]  mmcblk0boot0: unknown partition table
-[    2.255625] EXT3-fs (mmcblk0p24): error: couldn't mount because of
-unsupported optional features (40)
-[    2.256687] EXT2-fs (mmcblk0p24): error: couldn't mount because of
-unsupported optional features (40)
-[    2.277945] mmcblk0: error -84 transferring data, sector 160824, nr
-232, cmd response 0x900, card status 0xb00
-[    2.277985] mmcblk0: retrying using single block read
-[    2.288518] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.292914] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.300985] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.311787] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.316151] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.322986] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.329640] end_request: I/O error, dev mmcblk0, sector 160853
-[    2.337266] end_request: I/O error, dev mmcblk0, sector 160856
-[    2.343093] end_request: I/O error, dev mmcblk0, sector 160864
-[    2.348826] end_request: I/O error, dev mmcblk0, sector 160872
-[    2.354720] end_request: I/O error, dev mmcblk0, sector 160880
-[    2.360458] end_request: I/O error, dev mmcblk0, sector 160888
-[    2.366346] end_request: I/O error, dev mmcblk0, sector 160896
-[    2.372175] end_request: I/O error, dev mmcblk0, sector 160904
-[    2.377906] end_request: I/O error, dev mmcblk0, sector 160912
-[    2.383802] end_request: I/O error, dev mmcblk0, sector 160920
-[    2.393204] EXT4-fs (mmcblk0p24): mounted filesystem with ordered
-data mode. Opts: (null)
-[    2.407231] EXT3-fs (mmcblk0p26): error: couldn't mount because of
-unsupported optional features (40)
-[    2.408196] EXT2-fs (mmcblk0p26): error: couldn't mount because of
-unsupported optional features (44)
-[    2.416686] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.426058] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.446754] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.510905] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.559272] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.622231] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.623297] mmcblk0: error -84 transferring data, sector 5492888,
-nr 192, cmd response 0x900, card status 0xb00
-[    2.628702] mmcblk0: retrying using single block read
-[    2.640005] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.645574] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.652991] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.659765] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.668126] mmcblk0: response CRC error sending r/w cmd command,
-card status 0xb00
-[    2.674257] JBD2: Failed to read block at offset 283
-[    2.681602] JBD2: recovery failed
-[    2.686819] EXT4-fs (mmcblk0p26): error loading journal
+Exasperating for you, I understand; but that's how it is.
+A new feature may make new demands on the infrastructure.
 
-Any suggestions of what I could do to help you debug this?
+I can imagine existing problems, but (I may be out of touch) I have
+not heard of them as problems in practice.  Certainly they would not
+be recent regressions: mm-page versus fs-file has worked in this way
+for as long as I've known them (pages released independently of
+unmapping the file, with the understanding that i/o might still
+be in progress, so care taken not to free the pages too soon).
 
-Regards,
-Bjorn
+> > 
+> > Shouldn't we try to fix the _cause_ of this?
+
+Nobody is against fixing the cause: we are all looking for the
+simplest way of doing so,
+
+> > 
+> > Isn't there a simple way to lock/mark/.. affected vmas in
+> > get_user_pages(_fast)() and release them once done? We could increase
+> > i_mmap_writable on all affected address_space and decrease it on
+> > release. This would at least prevent sealing and could be check on
+> > other operations, too (like setting S_IMMUTABLE).
+> > This should be as easy as checking page_mapping(page) != NULL and then
+> > adjusting ->i_mmap_writable in
+> > get_writable_user_pages/put_writable_user_pages, right?
+>   Doing this would be quite a bit of work. Currently references returned by
+> get_user_pages() are page references like any other and thus are released
+> by put_page() or similar. Now you would make them special and they need
+> special releasing and there are lots of places in kernel where
+> get_user_pages() is used that would need changing.
+
+Lots of places that would need changing, yes; but we have often
+wondered in the past whether there should be a put_user_pages().
+Though I'm not sure that it would actually solve anything...
+
+> 
+> Another aspect is that it could have performance implications - if there
+> are several processes using get_user_pages[_fast]() on a file, they would
+> start contending on modifying i_mmap_writeable.
+
+Doing extra vma work in get_user_pages() wouldn't be so bad.  But doing
+any vma work in get_user_pages_fast() would upset almost all its users:
+get_user_pages_fast() is a fast-path which expressly avoids the vmas,
+and hates additional cachelines being added to its machinations.
+
+If sealing had appeared before get_user_pages_fast(), maybe we wouldn't
+have let get_user_pages_fast() in; but now it's the other way around.
+
+I would be more interested in attacking from the get_user_pages() and
+get_user_pages_fast() end, if I could convince myself that they do
+actually delimit the problem; maybe they do, but I'm not yet convinced.
+
+> 
+> One somewhat crazy idea I have is that maybe we could delay unmapping of a
+> page if this was last VMA referencing it until all extra page references of
+> pages in there are dropped. That would make i_mmap_writeable reliable for
+> you and it would also close those races with remount. Hugh, do you think
+> this might be viable?
+
+It is definitely worth pursuing further, but I'm not very hopeful on it.
+In a world of free page flags and free struct page fields, maybe.  (And
+I don't see sealing as a feature sensibly restricted to 64-bit only.)
+
+I think we would have to set a page flag, maybe bump a count, for every
+leftover page that raises i_mmap_writable; and lower it (potentially from
+interrupt context) at put_page() time.  Easy to make i_mmap_writable an
+atomic rather than guarded by i_mmap_mutex, but we still need to
+synchronize on it falling to 0.
+
+And how would we recognize the relevant, decrementing, put_page()?
+page_count divided into "read_"count and write_count?  Ugh!
+
+I also have a strong instinct against adding delays into munmap+exit;
+though that mainly comes from the urge to free memory, and here we are
+only delaying until a page becomes freeable, so maybe I should abandon
+that bias in this case.
+
+I did start thinking in this direction last week, but stuck somewhere
+and retreated, I forget on what issue.  At this moment I'm not really
+in that zone, but anxious to complete my promised responses to David's
+patches, which I almost but not quite completed last night.
+
+Hugh
