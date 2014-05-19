@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119AbaESTgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:36:21 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:44063 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaESTgT (ORCPT
+	id S964824AbaESTgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:36:25 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:54685 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaESTgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:36:19 -0400
+	Mon, 19 May 2014 15:36:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1405191527520.1538-100000@iolanthe.rowland.org>
-References: <1400526693-29776-3-git-send-email-ricardo.ribalda@gmail.com> <Pine.LNX.4.44L0.1405191527520.1538-100000@iolanthe.rowland.org>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 19 May 2014 21:35:59 +0200
-Message-ID: <CAPybu_3hnb+_V5kkzxaYFtc4GeKCs84VzPRVbAhJbfqO57tcsA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] usb: gadget: net2280: Use S_I macros
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "balbi@ti.com" <balbi@ti.com>,
+In-Reply-To: <1400524052-25625-1-git-send-email-bp@alien8.de>
+References: <1400524052-25625-1-git-send-email-bp@alien8.de>
+Date: Mon, 19 May 2014 12:36:20 -0700
+X-Google-Sender-Auth: M_DfRInk_0DZexoxohxvuRDLZLM
+Message-ID: <CAGXu5jL3TPZimdRo0L2VgjQwBmhbDgHDDSs6-g73Yg4uy5DQEA@mail.gmail.com>
+Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Amit Uttamchandani <auttamchandani@logicube.com>
+        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
-
-What about using octal notation in all the file and merge the patch
-with the other big patch of the series? I am trying to have some
-consistency in the file :)
-
-
-Thanks!
-
-On Mon, May 19, 2014 at 9:30 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
+On Mon, May 19, 2014 at 11:27 AM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Borislav Petkov <bp@suse.de>
 >
->> Instead of octal notation, to be consistent around the file.
->>
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->> ---
->>  drivers/usb/gadget/net2280.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
->> index c3205ec..5b2ab68 100644
->> --- a/drivers/usb/gadget/net2280.c
->> +++ b/drivers/usb/gadget/net2280.c
->> @@ -111,7 +111,7 @@ module_param(use_msi, bool, S_IRUGO);
->>  static ushort fifo_mode = 0;
->>
->>  /* "modprobe net2280 fifo_mode=1" etc */
->> -module_param (fifo_mode, ushort, 0644);
->> +module_param(fifo_mode, ushort, S_IRUGO | S_IWUSR);
+> ... instead of naked numbers.
 >
-> I don't think this is necessary, in and of itself.  In my opinion, the
-> macros are a lot harder to figure out than the octal values.
+> Stuff in sysrq.c used to set it to 8 which is supposed to mean above
+> default level so set it to DEBUG instead as we're terminating/killing
+> all tasks and we want to be verbose there.
 >
-> Don't bother making this change.  It's useless churn.
+> There should be no functionality change resulting from this patch.
 >
-> Alan Stern
->
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: x86@kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Cc: kgdb-bugreport@lists.sourceforge.net
+> Cc: Hedi Berriche <hedi@sgi.com>
+> Cc: Mike Travis <travis@sgi.com>
+> Cc: Dimitri Sivanich <sivanich@sgi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
 
+Yes, please. Good clean-up. :)
 
+Acked-by: Kees Cook <keescook@chromium.org>
 
 -- 
-Ricardo Ribalda
+Kees Cook
+Chrome OS Security
