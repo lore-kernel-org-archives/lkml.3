@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaESUn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:43:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55044 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751758AbaESUnx (ORCPT
+	id S1752392AbaESUpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:45:18 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55834 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaESUpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:43:53 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 resend 10/11] leds: leds-pwm: retrieve configured pwm period
-Date: Mon, 19 May 2014 22:42:41 +0200
-Message-Id: <1400532162-29483-11-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 19 May 2014 16:45:15 -0400
+Date: Mon, 19 May 2014 16:34:57 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2014-05-15
+Message-ID: <20140519203456.GK7650@tuxdriver.com>
+References: <20140515135600.GB1966@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140515135600.GB1966@joana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PWM core is now able to initialize the PWM period. Use it and if it is not
-configured, use the supplied pwm_period_ns.
+On Thu, May 15, 2014 at 10:56:00AM -0300, Gustavo Padovan wrote:
+> Hi John,
+> 
+> This pull request contains a very important fix for 3.15. Here we fix the
+> permissions of a debugfs file that would otherwise allow unauthorized users
+> to write content to it.
+> 
+> Please pull! Thanks.
+> 
+>         Gustavo
+> 
+> ---
+> The following changes since commit 1fb4e09a7e780b915dbd172592ae7e2a4c071065:
+> 
+>   Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-25 09:47:16 +0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git master
+> 
+> for you to fetch changes up to 40b9397a1a61a37917b93e7d57e6f2faf3a086b4:
+> 
+>   Bluetooth: Fix L2CAP LE debugfs entries permissions (2014-05-14 09:07:07 -0700)
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/leds/leds-pwm.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Pulling now...
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index 7d0aaed1e23a..aa770ec1e892 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -181,7 +181,6 @@ static int led_pwm_probe(struct platform_device *pdev)
- 			led_dat->cdev.name = cur_led->name;
- 			led_dat->cdev.default_trigger = cur_led->default_trigger;
- 			led_dat->active_low = cur_led->active_low;
--			led_dat->period = cur_led->pwm_period_ns;
- 			led_dat->cdev.brightness_set = led_pwm_set;
- 			led_dat->cdev.brightness = LED_OFF;
- 			led_dat->cdev.max_brightness = cur_led->max_brightness;
-@@ -191,6 +190,10 @@ static int led_pwm_probe(struct platform_device *pdev)
- 			if (led_dat->can_sleep)
- 				INIT_WORK(&led_dat->work, led_pwm_work);
- 
-+			led_dat->period = pwm_get_period(led_dat->pwm);
-+			if (!led_dat->period && (cur_led->pwm_period_ns > 0))
-+				led_dat->period = cur_led->pwm_period_ns;
-+
- 			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
- 			if (ret < 0)
- 				goto err;
 -- 
-1.9.1
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
