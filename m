@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaESJbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:31:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16340 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793AbaESJbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:31:36 -0400
-Date: Mon, 19 May 2014 11:30:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Sharp <dhsharp@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, namhyung@kernel.org
-Subject: Re: perf: TRACING_DATA header.size is invalid
-Message-ID: <20140519093058.GB2089@krava.brq.redhat.com>
-References: <CAJL_eksGD+-8it08wOrKtFsXovk0Bz7OoxtqiJbTBacOr7xpyw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJL_eksGD+-8it08wOrKtFsXovk0Bz7OoxtqiJbTBacOr7xpyw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753999AbaESJcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:32:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53024 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaESJcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 05:32:45 -0400
+Message-ID: <1400491887.8467.15.camel@weser.hi.pengutronix.de>
+Subject: Re: [PATCH 3/4] drm/nouveau: hook up cache sync functions
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>, gnurou@gmail.com,
+        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+Date: Mon, 19 May 2014 11:31:27 +0200
+In-Reply-To: <1400483458-9648-4-git-send-email-acourbot@nvidia.com>
+References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
+	 <1400483458-9648-4-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 04:40:23PM -0700, David Sharp wrote:
-> We ran into an issue recently where a parser we have for perf.data
-> could not handle TRACING_DATA events. It has a default behaviour of
-> skipping event types it does not understand by using the header.size,
-> since that seems to be how perf.data files are formatted.
+Am Montag, den 19.05.2014, 16:10 +0900 schrieb Alexandre Courbot:
+> From: Lucas Stach <dev@lynxeye.de>
 > 
-> However, for TRACING_DATA events, header.size is set to
-> sizeof(ev.tracing_data), even though all of the tracing data
-> immediately follows the event.
+> Signed-off-by: Lucas Stach <dev@lynxeye.de>
+> [acourbot@nvidia.com: make conditional and platform-friendly]
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_bo.c  | 32 ++++++++++++++++++++++++++++++++
+>  drivers/gpu/drm/nouveau/nouveau_bo.h  | 20 ++++++++++++++++++++
+>  drivers/gpu/drm/nouveau/nouveau_gem.c |  8 +++++++-
+>  3 files changed, 59 insertions(+), 1 deletion(-)
 > 
-> The simple fix would seem to be to set header.size to the size of the
-> tracing data (plus sizeof ev.tracing_data). However, header.size is
-> only 16 bits, and I imagine TRACING_DATA often exceeds UINT16_MAX,
-> which is probably why the (u32) size was added outside the header.
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> index b6dc85c614be..0886f47e5244 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> @@ -407,6 +407,8 @@ nouveau_bo_validate(struct nouveau_bo *nvbo, bool interruptible,
+>  {
+>  	int ret;
+>  
+> +	nouveau_bo_sync_for_device(nvbo);
+> +
+>  	ret = ttm_bo_validate(&nvbo->bo, &nvbo->placement,
+>  			      interruptible, no_wait_gpu);
+>  	if (ret)
+> @@ -487,6 +489,36 @@ nouveau_bo_invalidate_caches(struct ttm_bo_device *bdev, uint32_t flags)
+>  	return 0;
+>  }
+>  
+> +#ifdef NOUVEAU_NEED_CACHE_SYNC
 
-yep, you're right..
+I don't like this ifdef at all. I know calling this functions will add a
+little overhead to x86 where it isn't strictly required, but I think
+it's negligible.
 
-(gdb) p event->tracing_data
-$5 = {header = {type = 66, misc = 0, size = 12}, size = 4563912}
+When I looked at them the dma_sync_single_for_[device|cpu] functions
+which are called here map out to just a drain of the PCI store buffer on
+x86, which should be fast enough to be done unconditionally. They won't
+so any time-consuming cache synchronization on PCI coherent arches.
 
-> 
-> So I'm not sure we can fix this for real.
-> 
-> But, I do have an idea to mitigate damage: set header.size to zero.
-> This will cause one of a few things to happen to a parser that doesn't
-> understand TRACING_DATA events:
-> - Ideally: It will realize that a zero size is nonsense and bail.
-> - It will try to advance by zero bytes and enter an infinite loop
-> (this happened to our parser after it skipped around some bogus data
-> and happened upon some data that had zero where size would be). I
-> argue this is better than reading garbage.
-> - I can also imagine an implementation that read()s only
-> sizeof(header), then extends the read() by (header.size -
-> sizeof(header)) additional bytes, and this would end up overflowing
-> the unsigned values, and that could also cause bugs, but hopefully by
-> reading to EOF.
+Regards,
+Lucas
 
-so in a current perf.data parser we have following code:
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
-        if ((skip = perf_session__process_event(session, event, tool, head)) < 0) {
-                pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
-                       head, event->header.size, event->header.type);
-                err = -EINVAL;
-                goto out_err;
-        }
-
-        head += size;
-
-        if (skip > 0)
-                head += skip;
-
-
-so skip is added to the header->size if needed.. and this skip makes
-sure we could handle this case, because the TRACING_DATA handler
-perf_event__process_tracing_data returns this number
-
-> 
-> Any better ideas?
-> 
-> A more difficult solution would be to split TRACING_DATA into
-> UINT16_MAX-sized chunks, but would this needlessly break older readers
-> of data produced by newer perf, even if they already know how to read
-> TRACING_DATA correctly?
-
-hm, I understand the solution we have is not very nice (generic enough)
-
-so given that PERF_RECORD_HEADER_TRACING_DATA for pipe mode is now
-'broken' anyway, I guess we could introduce PERF_RECORD_HEADER_TRACING_DATA2,
-which would break down the tracing data into UINT16_MAX-sized chunks
-and its related process report callback would be able to handle that
-
-jirka
