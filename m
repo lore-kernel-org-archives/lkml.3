@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaESXKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:10:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50195 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752123AbaESXKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:10:03 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Nishanth Menon <nm@ti.com>
-Cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, pavel@ucw.cz,
-        Len Brown <len.brown@intel.com>, gregkh@linuxfoundation.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Subject: Re: [PATCH] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
-Date: Tue, 20 May 2014 01:26:57 +0200
-Message-ID: <1589010.LoIeM7LX94@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGo_u6oQiOJzp2DCCFUfwWWPLKKw=pgZPgdr9LBqfYs-GKb9zg@mail.gmail.com>
-References: <1400237477-24831-1-git-send-email-chander.kashyap@linaro.org> <CAGo_u6oQiOJzp2DCCFUfwWWPLKKw=pgZPgdr9LBqfYs-GKb9zg@mail.gmail.com>
+	id S932153AbaESXKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:10:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41223 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395AbaESXKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 19:10:33 -0400
+Date: Tue, 20 May 2014 01:10:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [GIT PULL] EFI changes for v3.16
+Message-ID: <20140519231012.GF6311@pd.tnic>
+References: <20140503130447.GW26088@console-pimps.org>
+ <20140519105129.GF4798@console-pimps.org>
+ <537A8A03.8060604@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <537A8A03.8060604@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 19, 2014 08:04:30 AM Nishanth Menon wrote:
-> On Fri, May 16, 2014 at 5:51 AM, Chander Kashyap
-> <chander.kashyap@linaro.org> wrote:
-> > In of_init_opp_table function, if a failure to add an OPP is
-> > detected, the count of OPPs, yet to be added is not updated.
-> > Fix this by decrementing this count on failure as well.
-> >
-> > Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> > Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> > ---
-> >  drivers/base/power/opp.c |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> > index d9e376a..faae9cf 100644
-> > --- a/drivers/base/power/opp.c
-> > +++ b/drivers/base/power/opp.c
-> > @@ -643,11 +643,9 @@ int of_init_opp_table(struct device *dev)
-> >                 unsigned long freq = be32_to_cpup(val++) * 1000;
-> >                 unsigned long volt = be32_to_cpup(val++);
-> >
-> > -               if (dev_pm_opp_add(dev, freq, volt)) {
-> > +               if (dev_pm_opp_add(dev, freq, volt))
-> >                         dev_warn(dev, "%s: Failed to add OPP %ld\n",
-> >                                  __func__, freq);
-> > -                       continue;
-> > -               }
-> >                 nr -= 2;
-> >         }
-> Good Catch. Thanks.
+On Mon, May 19, 2014 at 03:47:31PM -0700, H. Peter Anvin wrote:
+> >     efi_call can happen in an irq context (pstore) and there we really need
+> >     to make sure we're not scribbling over FPU state while we've interrupted
+> >     a thread or kernel mode with a live FPU state. Therefore, use the
+> >     kernel_fpu_begin/end() variants which do that check.
 > 
-> Acked-by: Nishanth Menon <nm@ti.com>
+> How on earth does this solve anything?  The only thing we add here is a
+> WARN_ON_ONCE()... but the above text already tells us we have a problem.
+> 
+> It seems, rather, that we need to figure out how to deal with a pstore
+> in this case.  There are a few possibilities:
+> 
+> 1. We could keep an XSAVE buffer area around for this particular use.
+>    I am *assuming* we don't let more than one CPU into EFI, because I
+>    cannot for my life imagine that this is safe in typical CPUs.
+> 
+> 2. Drop the pstore on the floor if !irq_fpu_usable().
+> 
+> 3. Allow the pstore, then die (on the assumption that we're dead
+>    anyway.)
+> 
+> Comments?
 
-Since my pull request for 3.15-rc6 has been sent already, I'm going to push
-this for -rc7.  Thanks!
+The question is, why can't that pstore mumbo jumbo go and do its dance
+in !irq context?
 
+And how useful is the whole deal really, btw? I wanted to use it for
+saving oopses into it, for example, but Tony said its write speed is
+horribly low for that.
+
+So why do we even bother with this thing and do the dance in irq context
+for it? Is it worth it at all?
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
