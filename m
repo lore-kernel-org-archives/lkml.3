@@ -1,127 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391AbaESOuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:50:00 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:50372 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaESOtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932362AbaESOt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932302AbaESOtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 10:49:16 -0400
-X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [RFC 1/2] cfg80211: Add channel flags limiting availability to OCB mode only
-Date: Mon, 19 May 2014 16:49:04 +0200
-Message-Id: <1400510945-24868-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0.rc0
-In-Reply-To: <1400510945-24868-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-References: <1400510945-24868-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+Date: Mon, 19 May 2014 15:50:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Add mem_cgroup_charge_anon() into
+	uprobe_write_opcode()
+Message-ID: <20140519135000.GA20010@redhat.com>
+References: <20140505151320.GA25611@redhat.com> <20140519124134.GB3017@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519124134.GB3017@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IEEE 802.11p operates in its own 5.9GHz band. When there will
-be a record for the 5.9GHz band in the regulatory daemon,
-it must be limited to the OCB mode only -- using the newly
-added flags.
+On 05/19, Michal Hocko wrote:
+>
+> On Mon 05-05-14 17:13:20, Oleg Nesterov wrote:
+>
+> Ups, this really slipped through...
+> Sorry about that.
+>
+> > Hugh says:
+> >
+> >     The one I noticed was that it forgets all about memcg (because
+> >     it was copied from KSM, and there the replacement page has already
+> >     been charged to a memcg). See how mm/memory.c do_anonymous_page()
+> >     does a mem_cgroup_charge_anon().
+> >
+> > Hopefully not a big problem, uprobes is a system-wide thing and only
+> > root can insert the probes. But I agree, should be fixed anyway.
+>
+> I am not familiar with uprobes but AFAIU this can be a non-trivial of
+> (now) uncharged memory. The fact that only root is allowed to install
+> probes doesn't change the fact that this is still unaccounted memory and
+> so setups which are tuned to not trigger OOM killer would be broken.
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/cfg80211.h       | 2 ++
- include/uapi/linux/nl80211.h | 5 +++++
- net/wireless/nl80211.c       | 3 +++
- net/wireless/reg.c           | 2 ++
- 4 files changed, 12 insertions(+)
+Sorry for confusion. I only tried to say that a user can't exploit this
+problem. And "system-wide" means that installing a uprobe has other
+negative impacts on the whole system. IOW, I do not think that, say, this
+fix is -stable material.
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 5c7169b..6722ab2 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -115,6 +115,7 @@ enum ieee80211_band {
-  *	on this channel.
-  * @IEEE80211_CHAN_NO_10MHZ: 10 MHz bandwidth is not permitted
-  *	on this channel.
-+ * @IEEE80211_CHAN_OCB_ONLY: only OCB is allowed on this channel.
-  *
-  */
- enum ieee80211_channel_flags {
-@@ -131,6 +132,7 @@ enum ieee80211_channel_flags {
- 	IEEE80211_CHAN_GO_CONCURRENT	= 1<<10,
- 	IEEE80211_CHAN_NO_20MHZ		= 1<<11,
- 	IEEE80211_CHAN_NO_10MHZ		= 1<<12,
-+	IEEE80211_CHAN_OCB_ONLY         = 1<<13,
- };
- 
- #define IEEE80211_CHAN_NO_HT40 \
-diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
-index 406010d..970c5df 100644
---- a/include/uapi/linux/nl80211.h
-+++ b/include/uapi/linux/nl80211.h
-@@ -2362,6 +2362,8 @@ enum nl80211_band_attr {
-  *	on this channel in current regulatory domain.
-  * @NL80211_FREQUENCY_ATTR_NO_10MHZ: 10 MHz operation is not allowed
-  *	on this channel in current regulatory domain.
-+ * @NL80211_FREQUENCY_ATTR_OCB_ONLY: no other than OCB networks are
-+ *	permitted on this channel in current regulatory domain.
-  * @NL80211_FREQUENCY_ATTR_MAX: highest frequency attribute number
-  *	currently defined
-  * @__NL80211_FREQUENCY_ATTR_AFTER_LAST: internal use
-@@ -2390,6 +2392,7 @@ enum nl80211_frequency_attr {
- 	NL80211_FREQUENCY_ATTR_GO_CONCURRENT,
- 	NL80211_FREQUENCY_ATTR_NO_20MHZ,
- 	NL80211_FREQUENCY_ATTR_NO_10MHZ,
-+	NL80211_FREQUENCY_ATTR_OCB_ONLY,
- 
- 	/* keep last */
- 	__NL80211_FREQUENCY_ATTR_AFTER_LAST,
-@@ -2558,6 +2561,7 @@ enum nl80211_sched_scan_match_attr {
-  * @NL80211_RRF_AUTO_BW: maximum available bandwidth should be calculated
-  *	base on contiguous rules and wider channels will be allowed to cross
-  *	multiple contiguous/overlapping frequency ranges.
-+ * @NL80211_RRF_OCB_ONLY: no other than OCB is allowed
-  */
- enum nl80211_reg_rule_flags {
- 	NL80211_RRF_NO_OFDM		= 1<<0,
-@@ -2570,6 +2574,7 @@ enum nl80211_reg_rule_flags {
- 	NL80211_RRF_NO_IR		= 1<<7,
- 	__NL80211_RRF_NO_IBSS		= 1<<8,
- 	NL80211_RRF_AUTO_BW		= 1<<11,
-+	NL80211_RRF_OCB_ONLY            = 1<<12,
- };
- 
- #define NL80211_RRF_PASSIVE_SCAN	NL80211_RRF_NO_IR
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 0f1b18f2..c766c31 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -633,6 +633,9 @@ static int nl80211_msg_put_channel(struct sk_buff *msg,
- 		if ((chan->flags & IEEE80211_CHAN_NO_10MHZ) &&
- 		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_10MHZ))
- 			goto nla_put_failure;
-+		if ((chan->flags & IEEE80211_CHAN_OCB_ONLY) &&
-+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_OCB_ONLY))
-+			goto nla_put_failure;
- 	}
- 
- 	if (nla_put_u32(msg, NL80211_FREQUENCY_ATTR_MAX_TX_POWER,
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index e78f532..74e41f7 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -906,6 +906,8 @@ static u32 map_regdom_flags(u32 rd_flags)
- 		channel_flags |= IEEE80211_CHAN_NO_OFDM;
- 	if (rd_flags & NL80211_RRF_NO_OUTDOOR)
- 		channel_flags |= IEEE80211_CHAN_INDOOR_ONLY;
-+	if (rd_flags & NL80211_RRF_OCB_ONLY)
-+		channel_flags |= IEEE80211_CHAN_OCB_ONLY;
- 	return channel_flags;
- }
- 
--- 
-2.0.0.rc0
+> > Add mem_cgroup_{un,}charge_anon() into uprobe_write_opcode(). To simplify
+> > the error handling (and avoid the new "uncharge" label) the patch also
+> > moves anon_vma_prepare() up before we alloc/charge the new page.
+> >
+> > While at it fix the comment about ->mmap_sem, it is held for write.
+>
+> > Suggested-by: Hugh Dickins <hughd@google.com>
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks!
+
+Oleg.
 
