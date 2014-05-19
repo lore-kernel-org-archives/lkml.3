@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaESDV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 23:21:59 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:62292 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaESDV6 (ORCPT
+	id S1752323AbaESDat (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 23:30:49 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:47176 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaESDar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 23:21:58 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 19 May 2014 12:24:41 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>
-Subject: Re: [PATCH v6] mm: support madvise(MADV_FREE)
-Message-ID: <20140519032441.GB13248@bbox>
-References: <1399857988-2880-1-git-send-email-minchan@kernel.org>
- <20140515154657.GA2720@cmpxchg.org>
- <20140516063427.GC27599@bbox>
- <20140516193800.GA7273@node.dhcp.inet.fi>
+	Sun, 18 May 2014 23:30:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516193800.GA7273@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5374CA1C.8000207@samsung.com>
+References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>
+	<1399640410-30957-2-git-send-email-tushar.behera@linaro.org>
+	<536DA243.6000600@samsung.com>
+	<53705243.1030704@linaro.org>
+	<CAPdUM4N=k-pPxdhPQgVHh0fb+nqkgs7StwM2Pb6C8gcjx6dw-w@mail.gmail.com>
+	<5374CA1C.8000207@samsung.com>
+Date: Mon, 19 May 2014 09:00:46 +0530
+Message-ID: <CAHbNUh03TVxbXZcT3e6618zPdu_53_y6nVjwJE7cWa6zxLMpqA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] clk: samsung: out: Add infrastructure to register CLKOUT
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Rahul Sharma <rahul.sharma@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, sunil joshi <joshi@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 10:38:00PM +0300, Kirill A. Shutemov wrote:
-> On Fri, May 16, 2014 at 03:34:27PM +0900, Minchan Kim wrote:
-> > > > +static inline unsigned long lazyfree_pmd_range(struct mmu_gather *tlb,
-> > > > +				struct vm_area_struct *vma, pud_t *pud,
-> > > > +				unsigned long addr, unsigned long end)
-> > > > +{
-> > > > +	pmd_t *pmd;
-> > > > +	unsigned long next;
-> > > > +
-> > > > +	pmd = pmd_offset(pud, addr);
-> > > > +	do {
-> > > > +		next = pmd_addr_end(addr, end);
-> > > > +		if (pmd_trans_huge(*pmd))
-> > > > +			split_huge_page_pmd(vma, addr, pmd);
-> > > 
-> > > /* XXX */ as well? :)
-> > 
-> > You meant huge page unit lazyfree rather than 4K page unit?
-> > If so, I will add.
-> 
-> Please, free huge page if range cover it. 
+On 15 May 2014 19:37, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Rahul, Tushar,
+>
+> On 15.05.2014 15:44, Rahul Sharma wrote:
+>> Hi Tushar,
+>>
+>> Basically you are adding a new clock-type for Clkout. IMO clkout
+>> is not a special hardware. Existing clock types can be reused to
+>> support clkout. I see 3 major problem here:
+>>
+>> 1) Clkout -> (Mux + Gate). You clubbed mux and gate together, and
+>> exposing as a single clock which is something like a composite clock.
+>> IMO this is not a recommended way in CCF.
+>>
+>> 2) New Clock Type: Since clkout is just a combination of a simple
+>> mux and gate which are already supported, it is a unnecessary
+>> duplication.
+>>
+>> 3) Clkout registered along with CMU: which is not correct. Clkout is in PMU
+>> (Separate physical IP) and should be registered as a independent Clock
+>> provider which provides 1 mux and 1 gate clock (As if now). It should also be
+>> well connected with main CMU.
+>>
+>> I understand the challenge in using regmap interface for a clock provider. But
+>> we need to identify a clean solution. IMHO a independent clock provider with
+>> iomap, is relatively cleaner approach till CCF is not ready with regmap based
+>> reg access for clock registers.
+>>
+>> Experts!! please comment.
+>
+> It's quite unfortunate that Tushar has duplicated the effort to create a
+> clkout driver, considering the fact that we did have such driver
+> internally at SRPOL and it was quite nice and simple.
+>
+
+I had no idea that you had some solutions to this available to be posted :(
+
+Now that the new series is posted, I will test that at my end and
+update you later.
+
+> I will post a cleaned-up version today, that is about 2 times smaller in
+> terms of lines of added code and provides the same functionality,
+> without introducing custom clock types. In addition, it models the
+> clkout properly as a feature of PMU, not CMU (CMU only provides outputs
+> of particular sub-blocks that are fed into the PMU).
+>
+> Best regards,
+> Tomasz
 
 
-Yeb, We could do further patches if current patch's design is done
-from reviewers.
-
-Thanks.
-
-> 
-> -- 
->  Kirill A. Shutemov
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Kind regards,
-Minchan Kim
+Tushar Behera
