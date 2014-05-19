@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaESOiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:38:54 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:20512 "EHLO
+	id S1754875AbaESOjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:39:35 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:24020 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587AbaESOiw (ORCPT
+	with ESMTP id S1752794AbaESOje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:38:52 -0400
-X-Nat-Received: from [202.181.97.72]:22890 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1400510253.14312
+	Mon, 19 May 2014 10:39:34 -0400
+X-Nat-Received: from [202.181.97.72]:12094 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1400510344.18648
 To: dchinner@redhat.com, glommer@openvz.org, mgorman@suse.de, airlied@linux.ie
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+Subject: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201405192337.CJG57825.FMOFLSJQOHtFOV@I-love.SAKURA.ne.jp>
+Message-Id: <201405192339.JIJ04144.FHQFVFOtOSLJOM@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Mon, 19 May 2014 23:37:32 +0900
+Date: Mon, 19 May 2014 23:39:03 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 19052014 #7951212, status: clean
@@ -24,156 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d0d57745ba23faf605b0f249b57d283fe1a8ee60 Mon Sep 17 00:00:00 2001
+>From e314a1a1583e585d062dfc30c8aad8bf5380510b Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 19 May 2014 17:59:03 +0900
-Subject: [PATCH] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+Date: Mon, 19 May 2014 18:43:21 +0900
+Subject: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
 
-Commit 7dc19d5a "drivers: convert shrinkers to new count/scan API" added
-deadlock warnings that ttm_page_pool_free() and ttm_dma_page_pool_free()
-are currently doing GFP_KERNEL allocation.
+I can observe that RHEL7 environment stalls with 100% CPU usage when a
+certain type of memory pressure is given. While the shrinker functions
+are called by shrink_slab() before the OOM killer is triggered, the stall
+lasts for many minutes.
 
-But these functions did not get updated to receive gfp_t argument.
-This patch explicitly passes sc->gfp_mask or GFP_KERNEL to these functions,
-and removes the deadlock warning.
+I added debug printk() and observed that many threads are blocked for more
+than 10 seconds at ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan()
+functions. Since the kswapd can call these functions later, the current
+thread can return from these functions as soon as chosen by the OOM killer.
+
+This patch changes "mutex_lock();" to "if (mutex_lock_killable()) return ...;"
+so that any threads can promptly give up. (By the way, as far as I tested,
+changing to "if (!mutex_trylock()) return ...;" likely shortens the duration
+of stall. Maybe we don't need to wait for mutex if someone is already calling
+these functions.)
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c     | 19 ++++++++++---------
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 19 +++++++++----------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 863bef9..ba8f78e 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -297,8 +297,10 @@ static void ttm_pool_update_free_locked(struct ttm_page_pool *pool,
-  *
-  * @pool: to free the pages from
-  * @free_all: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
-+static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
-+			      gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct page *p;
-@@ -309,8 +311,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
- 	if (NUM_PAGES_TO_ALLOC < nr_free)
- 		npages_to_free = NUM_PAGES_TO_ALLOC;
- 
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
- 	if (!pages_to_free) {
- 		pr_err("Failed to allocate memory for pool free operation\n");
- 		return 0;
-@@ -382,9 +383,7 @@ out:
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_page_pool_free() does memory allocation using GFP_KERNEL.  that means
-- * this can deadlock when called a sc->gfp_mask that is not equal to
-- * GFP_KERNEL.
-+ * We need to pass sc->gfp_mask to ttm_page_pool_free().
-  *
-  * This code is crying out for a shrinker per pool....
-  */
-@@ -405,7 +404,8 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (shrink_pages == 0)
- 			break;
- 		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
--		shrink_pages = ttm_page_pool_free(pool, nr_free);
-+		shrink_pages = ttm_page_pool_free(pool, nr_free,
-+						  sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 	}
- 	return freed;
-@@ -706,7 +706,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
- 	if (npages)
--		ttm_page_pool_free(pool, npages);
-+		ttm_page_pool_free(pool, npages, GFP_KERNEL);
- }
- 
- /*
-@@ -846,7 +846,8 @@ void ttm_page_alloc_fini(void)
- 	ttm_pool_mm_shrink_fini(_manager);
- 
- 	for (i = 0; i < NUM_POOLS; ++i)
--		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES);
-+		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
-+				   GFP_KERNEL);
- 
- 	kobject_put(&_manager->kobj);
- 	_manager = NULL;
 diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f..1b79bf0 100644
+index 1b79bf0..f75dab8 100644
 --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
 +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -411,8 +411,10 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
-  *
-  * @pool: to free the pages from
-  * @nr_free: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
-+static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
-+				       gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct dma_page *dma_p, *tmp;
-@@ -430,8 +432,7 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
- 			 npages_to_free, nr_free);
- 	}
- #endif
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
+@@ -1012,7 +1012,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 	if (list_empty(&_manager->pools))
+ 		return SHRINK_STOP;
  
- 	if (!pages_to_free) {
- 		pr_err("%s: Failed to allocate memory for pool free operation\n",
-@@ -530,7 +531,7 @@ static void ttm_dma_free_pool(struct device *dev, enum pool_type type)
- 		if (pool->type != type)
- 			continue;
- 		/* Takes a spinlock.. */
--		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES);
-+		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
- 		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
- 		/* This code path is called after _all_ references to the
- 		 * struct device has been dropped - so nobody should be
-@@ -983,7 +984,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+-	mutex_lock(&_manager->lock);
++	if (mutex_lock_killable(&_manager->lock))
++		return SHRINK_STOP;
+ 	pool_offset = pool_offset % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
+@@ -1043,7 +1044,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
+ 	struct device_pools *p;
+ 	unsigned long count = 0;
  
- 	/* shrink pool if necessary (only on !is_cached pools)*/
- 	if (npages)
--		ttm_dma_page_pool_free(pool, npages);
-+		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
- 	ttm->state = tt_unpopulated;
- }
- EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-@@ -993,10 +994,7 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_dma_page_pool_free() does GFP_KERNEL memory allocation, and so attention
-- * needs to be paid to sc->gfp_mask to determine if this can be done or not.
-- * GFP_KERNEL memory allocation in a GFP_ATOMIC reclaim context woul dbe really
-- * bad.
-+ * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
-  *
-  * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
-  * shrinkers
-@@ -1027,7 +1025,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (++idx < pool_offset)
- 			continue;
- 		nr_free = shrink_pages;
--		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
-+		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
-+						      sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 
- 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
+-	mutex_lock(&_manager->lock);
++	if (mutex_lock_killable(&_manager->lock))
++		return 0;
+ 	list_for_each_entry(p, &_manager->pools, pools)
+ 		count += p->pool->npages_free;
+ 	mutex_unlock(&_manager->lock);
 -- 
 1.8.3.1
