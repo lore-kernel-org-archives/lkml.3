@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaESPIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:08:04 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:61994 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaESPID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:08:03 -0400
+	id S1754908AbaESPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:08:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44795 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853AbaESPIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:08:54 -0400
+Message-ID: <537A1E2C.8040102@ti.com>
+Date: Mon, 19 May 2014 11:07:24 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140519132822.GA9728@ulmo>
-References: <1400306090-4092-1-git-send-email-acourbot@nvidia.com> <20140519132822.GA9728@ulmo>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 20 May 2014 00:07:40 +0900
-Message-ID: <CAAVeFu+c1t=QJzL9-pZVaTzvTD2Ydrv__yKHnn+-SA11zsxu_A@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: make of_get_named_gpiod_flags() private
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
+        <ijc+devicetree@hellion.org.uk>, <arnd@arndb.de>
+CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
+        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>, <olof@lixom.net>,
+        <w-kwok2@ti.com>, <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch v3 0/5] Introduce keystone reset driver
+References: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 10:28 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Sat, May 17, 2014 at 02:54:50PM +0900, Alexandre Courbot wrote:
->> of_get_named_gpiod_flags() is visible and directly usable by GPIO
->> consumers, but it really should not as the gpiod interface relies
->> on the simpler gpiod_get() to provide properly-configured GPIOs.
->>
->> of_get_named_gpiod_flags() is just used internally by gpiolib to
->> implement gpiod_get(), and by the old of_get_named_gpio_flags()
->> function, therefore it makes sense to make it gpiolib-private.
->>
->> As a side-effect, the unused (and unneeded) of_get_gpiod_flags()
->> inline function is also removed, and of_get_named_gpio_flags() is moved
->> from a static inline function to a regular one in gpiolib-of.c
->>
->> This results in all references to gpiod_* functions in of_gpio.h being
->> gone, which is the way it should be since this file is part of the old
->> integer GPIO interface.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->> Changes since v1:
->> - Fixed compilation error when CONFIG_OF_GPIO is not defined
->> - Fixed warning due to of_gpio_flags enum not being declared
->>   in private gpiolib.h header
->>
->>  drivers/gpio/gpiolib-of.c | 14 ++++++++++++++
->>  drivers/gpio/gpiolib.h    |  5 +++++
->>  include/linux/of_gpio.h   | 35 +++--------------------------------
->>  3 files changed, 22 insertions(+), 32 deletions(-)
->
-> There are cases where GPIOs need to be obtained from device tree nodes
-> without a corresponding struct device. Do you have any ideas on how to
-> support such use-cases?
->
-> There's currently no API to do that except of_get_named_gpio_flags().
-> But that doesn't handled flags automatically in a way that gpiod_get()
-> does.
 
-Yeah, there is probably some legacy stuff that will need a few more
-functions to be handled using gpiod.
 
-As much as possible I'd like to avoid provider-specific functions, but
-in the worst case we can imagine making another function available for
-that:
+On Monday 19 May 2014 06:25 AM, Ivan Khoronzhuk wrote:
+> These patches introduce keystone reset driver.
+> 
+> The keystone SoC can be rebooted in several ways. By external reset
+> pin, by soft and by watchdogs. This driver allows software reset and reset
+> by one of the watchdogs. Also added opportunity to set soft/hard reset type.
+> 
+> Based on v3.15-rc5
+> 
+Arnd,
+Can I have have your ack/reviewed-by please since you did gave few comments
+on previous version.
 
-struct gpio_desc *of_gpiod_get_index(struct device_node *np, const
-char *con_id, unsigned int idx);
+Dmitry, David W,
+Are you ok to get the drivers/power/reset/ related changes merged via arm-soc
+tree ? If not, we can split the series accordingly.
 
-that will handle flags properly and everything. Would that do the trick?
+Am hoping to get the series merged for v3.16 so do let me know your preference
+as early as you can.
+
+
+
+> v2..v3
+>   Power: reset: keystone-reset: introduce keystone reset driver
+> 	- no functional changes, only sanity
+>   Power: reset: add bindings for keystone reset driver
+>   	- corrected WDT numeration in examples
+> 	- extended description of wdt_list property
+> 
+> v1..v2
+> 	- re basedon on v3.15-rc1 without changes
+> 
+> Ivan Khoronzhuk (5):
+>   Power: reset: keystone-reset: introduce keystone reset driver
+>   Power: reset: add bindings for keystone reset driver
+>   ARM: keystone: remove redundant reset stuff
+>   ARM: dts: keystone: update reset node to work with reset driver
+>   ARM: keystone: enable reset driver support
+> 
+>  .../bindings/power/reset/keystone-reset.txt        |  61 ++++++++
+>  arch/arm/boot/dts/keystone.dtsi                    |   4 +-
+>  arch/arm/configs/keystone_defconfig                |   3 +
+>  arch/arm/mach-keystone/keystone.c                  |  35 -----
+>  drivers/power/reset/Kconfig                        |   7 +
+>  drivers/power/reset/Makefile                       |   1 +
+>  drivers/power/reset/keystone-reset.c               | 171 +++++++++++++++++++++
+>  7 files changed, 246 insertions(+), 36 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+>  create mode 100644 drivers/power/reset/keystone-reset.c
+> 
+
+Regards,
+Santosh
