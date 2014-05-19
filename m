@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304AbaESMpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:45:09 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:57650 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaESMpG (ORCPT
+	id S1754336AbaESMqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:46:23 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53842 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631AbaESMqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:45:06 -0400
-Message-ID: <5379FCD0.2030506@cogentembedded.com>
-Date: Mon, 19 May 2014 16:45:04 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 08:46:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Santosh Shilimkar'" <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org, rogerq@ti.com,
+        balajitk@ti.com, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Marek Vasut'" <marex@denx.de>
+Subject: Re: [PATCH 06/17] pci: host: pcie-designware: Use *base-mask* for configuring the iATU
+Date: Mon, 19 May 2014 14:45:47 +0200
+Message-ID: <5193704.9YxYic1Nyf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5375D3C8.1060204@ti.com>
+References: <1399383244-14556-1-git-send-email-kishon@ti.com> <5281007.CFRjW0Yeu2@wuerfel> <5375D3C8.1060204@ti.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/13] libertas: make return of 0 explicit
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SKUCaNZob9sLE1M5WIg3LySkejBFqTSo9zHwzWtxHBA
+ DpN5r+03C7xvAXI+o4yKdtSMBVff1TSToVZvrk5OtsKkQHgtc9
+ FJ9bm5eJmE9dlp0yrcVRtCAm/xdkl1X7YPVbiaGSqomsJnMyPQ
+ 8PGXwhlJF1wwieST6cXjbrIz4enJw/heQXT8NjFnZ6/cTmP6P1
+ 0u5CptXFfVsp/RieEHz9CTnklKGgv7EJ3z3N2tiCqb8YecRVbE
+ 4eIUmhn6RZu403Dy2DW0LA6bpvLOZt5nPXAROw5xlLajulOdX7
+ bmK/9qNtGbYEopX5MLH/1l/YJVlasPzOrrBNfqQdfmlBD+/wBO
+ DX4416tWbz/nX6X2aKqY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Friday 16 May 2014 14:30:56 Kishon Vijay Abraham I wrote:
+> On Wednesday 14 May 2014 06:15 PM, Arnd Bergmann wrote:
+> > On Wednesday 14 May 2014 11:14:45 Kishon Vijay Abraham I wrote:
+> > / {
+> >       #address-cells = <1>; // or <2> if you support > 4GB address space
+> >       #size-cells = <1>;
+> > 
+> >       soc {
+> >               #address-cells <1>;
+> >               #size-cells = <1>;
+> >               ranges;
+> >               dma-ranges;
+> > 
+> >               ... // all normal devices
+> > 
+> >               axi@20000000 {
+> >                       #size-cells = <1>;
+> >                       #address-cells = <1>;
+> >                       dma-ranges; // can access all 4GB outbound
+> >                       ranges = <0 0x20000000 0x10000000>; // 28-bit bus
+> > 
+> >                       pci@0 {
+> >                               reg = <0x0    0x1000>, // internal regs
+> >                                     <0x1000 0x2000>; // config space
+> 
+> The internal reg address space starts at 0x51000000. By Using this <0
+> 0x20000000 0x10000000>; as ranges, we are not able to get the memory resource
+> properly. Can we use multiple ranges? how do we specify which ranges the *reg*
+> property to use?
 
-On 19-05-2014 8:31, Julia Lawall wrote:
+Yes, multiple ranges will work fine. You can make up a representation
+yourself if you don't know what the hardware really does.
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+Two possible ways of doing this would be
 
-> Delete unnecessary local variable whose value is always 0 and that hides
-> the fact that the result is always 0.
+a)
 
-> A simplified version of the semantic patch that fixes this problem is as
-> follows: (http://coccinelle.lip6.fr/)
+	/* two separate physical connections represented as one logical bus */
+	axi@20000000 {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges = <0 0 0x20000000 0x10000000>, /* configurable registers */
+			 <1 0 0x51000000 0x01000000>; /* PCI host registers */
 
-> // <smpl>
-> @r exists@
-> local idexpression ret;
-> expression e;
-> position p;
-> @@
->
-> -ret = 0;
-> ... when != ret = e
-> return
-> - ret
-> + 0
->    ;
-> // </smpl>
+		pci@1.0 {
+			reg = <1 0 0x01000000>, /* host registers */
+				<0 0x1000 0x2000>; /* config space */
+		}
 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+	};
 
-> ---
-> Alternatively, was an error code intended in the bad length case, as is
-> done in process_brxed_802_11_packet?
+b) 
 
->   drivers/net/wireless/libertas/rx.c |    7 ++-----
->   1 file changed, 2 insertions(+), 5 deletions(-)
+	/* one physical bus, with some address munging */
+	axi@20000000 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0x20000000 0x10000000>, /* configurable registers */
+			 <0x51000000 0x51000000 0x01000000>; /* PCI host registers */
 
-> diff --git a/drivers/net/wireless/libertas/rx.c b/drivers/net/wireless/libertas/rx.c
-> index c7366b0..807c5b8 100644
-> --- a/drivers/net/wireless/libertas/rx.c
-> +++ b/drivers/net/wireless/libertas/rx.c
-[...]
-> @@ -154,10 +152,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
->   	else
->   		netif_rx_ni(skb);
->
-> -	ret = 0;
->   done:
-> -	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", ret);
-> -	return ret;
-> +	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", 0);
+		pci@1.0 {
+			reg = <0x51000000 0x01000000>, /* host registers */
+				<0x1000 0x2000>; /* config space */
+		}
 
-    Why not just "ret 0"?
+	};
 
-> +	return 0;
 
-WBR, Sergei
+> Btw I was using *simple-bus* as compatible to *axi*. Or should I create a new
+> *axi* driver to create the pcie memory resources myself?
 
+simple-bus is best here, since you don't have a complex bus that needs to
+be set up using register accesses or that generates interrupts.
+
+	Arnd
