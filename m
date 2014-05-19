@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750766AbaESEJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:09:20 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:53508 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaESEJT (ORCPT
+	id S1750852AbaESEL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:11:57 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:50041 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaESEL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 00:09:19 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, hannes@cmpxchg.org, shli@kernel.org,
-        minchan@kernel.org, riel@redhat.com, nasa4836@gmail.com,
-        mgorman@suse.de, cmetcalf@tilera.com, aquini@redhat.com,
-        mhocko@suse.cz, vdavydov@parallels.com, glommer@openvz.org,
-        dchinner@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm/vmscan.c: use DIV_ROUND_UP for calculation of zone's balance_gap and correct comments.
-Date: Mon, 19 May 2014 12:08:30 +0800
-Message-Id: <1400472510-24375-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc3
+	Mon, 19 May 2014 00:11:56 -0400
+From: Anton Saraev <antonysaraev@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: antonysaraev@gmail.com, jason@lakedaemon.net, jake@lwn.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 00/06] staging: crypto: skein: fixing style issues
+Date: Mon, 19 May 2014 12:09:53 +0400
+Message-Id: <cover.1399675444.git.antonysaraev@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use (zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-KSWAPD_ZONE_BALANCE_GAP_RATIO to avoid a zero gap value. It's better to
-use DIV_ROUND_UP macro for neater code and clear meaning.
+Hi! To prepare skein driver for mainline inclusion we fixing most of
+style issues (wrong names of functions, vars, macros, files) and 
+checkpatch problems in this patch set. For example, existing code 
+is widely use camelCase names. This patch fix it.
 
-Besides, the gap value is calculated against the per-zone "managed pages",
-not "present pages". This patch also corrects the comment and do some
-rephrasing.
+Anton Saraev (6):
+  staging: crypto: skein: rename camelcase functions
+  staging: crypto: skein: rename camelcase vars
+  staging: crypto: skein: rename skein1024_ctx to skein_1024_ctx
+  staging: crypto: skein: rename enums
+  staging: crypto: skein: rename macros
+  staging: crypto: skein: rename files
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- include/linux/swap.h |  8 ++++----
- mm/vmscan.c          | 10 ++++------
- 2 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/staging/skein/Makefile                     |  10 +-
+ drivers/staging/skein/TODO                         |   3 -
+ drivers/staging/skein/include/skein.h              | 180 +++----
+ .../skein/include/{skeinApi.h => skein_api.h}      |  66 +--
+ drivers/staging/skein/include/skein_block.h        |  12 +-
+ drivers/staging/skein/include/skein_iv.h           |   6 +-
+ .../include/{threefishApi.h => threefish_api.h}    |  84 +--
+ drivers/staging/skein/skein.c                      | 577 +++++++++++----------
+ drivers/staging/skein/{skeinApi.c => skein_api.c}  | 170 +++---
+ drivers/staging/skein/skein_block.c                | 411 +++++++--------
+ .../{skeinBlockNo3F.c => skein_block_no_3f.c}      |  62 +--
+ drivers/staging/skein/threefishApi.c               |  79 ---
+ ...threefish1024Block.c => threefish_1024_block.c} |  80 +--
+ .../{threefish256Block.c => threefish_256_block.c} |  32 +-
+ .../{threefish512Block.c => threefish_512_block.c} |  48 +-
+ drivers/staging/skein/threefish_api.c              |  78 +++
+ 16 files changed, 959 insertions(+), 939 deletions(-)
+ rename drivers/staging/skein/include/{skeinApi.h => skein_api.h} (79%)
+ rename drivers/staging/skein/include/{threefishApi.h => threefish_api.h} (66%)
+ rename drivers/staging/skein/{skeinApi.c => skein_api.c} (52%)
+ rename drivers/staging/skein/{skeinBlockNo3F.c => skein_block_no_3f.c} (66%)
+ delete mode 100644 drivers/staging/skein/threefishApi.c
+ rename drivers/staging/skein/{threefish1024Block.c => threefish_1024_block.c} (98%)
+ rename drivers/staging/skein/{threefish256Block.c => threefish_256_block.c} (96%)
+ rename drivers/staging/skein/{threefish512Block.c => threefish_512_block.c} (97%)
+ create mode 100644 drivers/staging/skein/threefish_api.c
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 5a14b92..58e1696 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -166,10 +166,10 @@ enum {
- #define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
- 
- /*
-- * Ratio between the present memory in the zone and the "gap" that
-- * we're allowing kswapd to shrink in addition to the per-zone high
-- * wmark, even for zones that already have the high wmark satisfied,
-- * in order to provide better per-zone lru behavior. We are ok to
-+ * Ratio between zone->managed_pages and the "gap" that above the per-zone
-+ * "high_wmark". While balancing nodes, We allow kswapd to shrink zones that
-+ * do not meet the (high_wmark + gap) watermark, even which already met the
-+ * high_wmark, in order to provide better per-zone lru behavior. We are ok to
-  * spend not more than 1% of the memory for this zone balancing "gap".
-  */
- #define KSWAPD_ZONE_BALANCE_GAP_RATIO 100
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 32c661d..9ef9f6c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2268,9 +2268,8 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
- 	 * there is a buffer of free pages available to give compaction
- 	 * a reasonable chance of completing and allocating the page
- 	 */
--	balance_gap = min(low_wmark_pages(zone),
--		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
--			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
-+			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
- 	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
- 	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
- 
-@@ -2891,9 +2890,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 	 * high wmark plus a "gap" where the gap is either the low
- 	 * watermark or 1% of the zone, whichever is smaller.
- 	 */
--	balance_gap = min(low_wmark_pages(zone),
--		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
--		KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
-+			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
- 
- 	/*
- 	 * If there is no low memory pressure or the zone is balanced then no
 -- 
-2.0.0-rc3
+1.9.2
 
