@@ -1,67 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964989AbaESRjE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:39:04 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40935 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932670AbaESRi6 (ORCPT
+	id S965006AbaESRkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:40:03 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:37544 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932523AbaESRkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:38:58 -0400
-Date: Mon, 19 May 2014 19:38:51 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>
-cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: hanging aio process
-Message-ID: <alpine.LFD.2.11.1405191908450.1847@denkbrett>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Mon, 19 May 2014 13:40:00 -0400
+Date: Mon, 19 May 2014 18:39:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        johannes.thumshirn@men.de, thomas.schnuerer@men.de, wernerandy@gmx.de
+Subject: Re: [PATCH 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
+ MFD Core driver
+Message-ID: <20140519173953.GA20874@lee--X1>
+References: <cover.1400258021.git.andreas.werner@men.de>
+ <58de41a38511a107941d9c3b2cea314c0becfff7.1400258021.git.andreas.werner@men.de>
+ <5377849E.7020001@roeck-us.net>
+ <20140519124324.GB398@awelinux>
+ <537A05D4.6080308@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463784958-477581573-1400521132=:1847"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051917-8372-0000-0000-000009BD5612
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537A05D4.6080308@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 19 May 2014, Guenter Roeck wrote:
 
----1463784958-477581573-1400521132=:1847
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+> On 05/19/2014 05:43 AM, Andreas Werner wrote:
+> >aOn Sat, May 17, 2014 at 08:47:42AM -0700, Guenter Roeck wrote:
+> >>On 05/16/2014 09:37 AM, Andreas Werner wrote:
+> >>>The MEN 14F021P00 Board Management Controller provides an
+> >>>I2C interface to the host to access the feature implemented in the BMC.
+> >>>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> >>>and on a few Box/Display Computer.
+> >>>
+> >>>Added MFD Core driver, supporting the I2C communication to the device.
+> >>>
+> >>>The MFD driver currently supports the following features:
+> >>>	- Watchdog
+> >>>	- LEDs
+> >>>
+> >>>Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> >>>---
+> >>>  drivers/mfd/Kconfig           |  12 +++
+> >>>  drivers/mfd/Makefile          |   1 +
+> >>>  drivers/mfd/menf21bmc.c       | 193 ++++++++++++++++++++++++++++++++++++++++++
+> >>>  include/linux/mfd/menf21bmc.h |  32 +++++++
+> >>>  4 files changed, 238 insertions(+)
+> >>>  create mode 100644 drivers/mfd/menf21bmc.c
+> >>>  create mode 100644 include/linux/mfd/menf21bmc.h
+> >>>
+> >>>diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> >>>index ab5a43c..7c2e8d2 100644
+> >>>--- a/drivers/mfd/Kconfig
+> >>>+++ b/drivers/mfd/Kconfig
+> >>>@@ -427,6 +427,18 @@ config MFD_MAX8998
+> >>>  	  additional drivers must be enabled in order to use the functionality
+> >>>  	  of the device.
+> >>>
+> >>>+config MFD_MENF21BMC
+> >>>+	tristate "MEN 14F021P00 Board Management Controller Support"
+> >>>+	depends on I2C=y
+> >>>+	select MFD_CORE
+> >>>+	help
+> >>>+	  Say yes here to add support for the MEN 14F021P00 BMC
+> >>>+	  which is a Board Management Controller connected to the I2C bus.
+> >>>+	  This driver provides common support for accessing the devices;
+> >>>+	  additional drivers must be enabled in order to use the
+> >>>+	  functionality of the BMC device.
+> >>>+
+> >>>+
+> >>>  config EZX_PCAP
+> >>>  	bool "Motorola EZXPCAP Support"
+> >>>  	depends on SPI_MASTER
+> >>>diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> >>>index 5913208..8f2be38 100644
+> >>>--- a/drivers/mfd/Makefile
+> >>>+++ b/drivers/mfd/Makefile
+> >>>@@ -167,3 +167,4 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+> >>>  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+> >>>  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+> >>>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+> >>>+obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+> >>>diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
+> >>>new file mode 100644
+> >>>index 0000000..77de1a8
+> >>>--- /dev/null
+> >>>+++ b/drivers/mfd/menf21bmc.c
+> >>>@@ -0,0 +1,193 @@
+> >>>+/*
+> >>>+ *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
+> >>>+ *
+> >>>+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> >>>+ *  Author: Andreas Werner <andreas.werner@men.de>
+> >>>+ *  All rights reserved.
+> >>>+ *
+> >>>+ *  This program is free software; you can redistribute  it and/or modify it
+> >>>+ *  under  the terms of  the GNU General  Public License as published by the
+> >>>+ *  Free Software Foundation;  either version 2 of the  License, or (at your
+> >>>+ *  option) any later version.
+> >>>+ *
+> >>>+ */
+> >>>+
+> >>>+#include <linux/kernel.h>
+> >>>+#include <linux/device.h>
+> >>>+#include <linux/module.h>
+> >>>+#include <linux/i2c.h>
+> >>>+#include <linux/mfd/core.h>
+> >>>+#include <linux/mfd/menf21bmc.h>
+> >>>+
+> >>>+#define BMC_CMD_REV_MAJOR	0x80
+> >>>+#define BMC_CMD_REV_MINOR	0x81
+> >>>+#define BMC_CMD_REV_MAIN	0x82
+> >>>+#define BMC_CMD_REV_BUILD	0x83
+> >>>+#define BMC_CMD_REV_VERI	0x84
+> >>>+
+> >>>+static struct mfd_cell menf21bmc_cell[] = {
+> >>>+	{
+> >>>+		.name = "menf21bmc_wd",
+> >>>+	},
+> >>>+	{
+> >>>+		.name = "menf21bmc_led",
+> >>>+	},
+> >>>+};
+> >>>+
+> >>>+static int
+> >>>+menf21bmc_read_byte_data(struct i2c_client *client, u8 reg, uint8_t *val)
+> >>>+{
+> >>>+	int ret;
+> >>>+	struct menf21bmc *data = i2c_get_clientdata(client);
+> >>>+
+> >>>+	mutex_lock(&data->lock);
+> >>>+	ret = i2c_smbus_read_byte_data(client, reg);
+> >>>+	mutex_unlock(&data->lock);
+> >>>+
+> >>>+	if (ret < 0) {
+> >>>+		dev_err(&client->dev, "failed to read byte at 0x%02x\n", reg);
+> >>>+		return ret;
+> >>>+	}
+> >>>+
+> >>>+	*val = (uint8_t)ret;
+> >>>+
+> >>>+	return 0;
+> >>>+}
+> >>>+
+> >>I personally would prefer if you would retain the original API, which returns both value
+> >>and error code as return value. I don't see the benefit of changing the API as you did -
+> >>it just complicates the code.
+> >>
+> >>Thanks,
+> >>Guenter
+> >>
+> >I think it is ok for a wrapper like this because it does not really change an API because
+> >it is menf21bmc related.
+> >
+> >I did the same in rtc-rx8581, and it was already done in rtc_ds1307.c.
+> >
+> >I personally prefer this way because the return of the function and the return
+> >value of the i2c_smbus_read - which is the value read from the device - are seperated.
+> >
+> >If it is a no go for the mfd/wdt core i can change it back to the original i2c_smbus API.
+> >If it is ok on your side for a wrapper like this, we can let it as it is.
+> >
+> 
+> Not my call to make; depends on the mfd maintainer. I would not accept it, as I see it
+> as unnecessary, adding complexity, and pointless. Sure, you can always find examples
+> for everything somewhere in the kernel, but that doesn't make it better.
 
-Hello,
+I'm inclined to agree with Guenter, this patch is just noise.
 
-on the latest kernel a fio job with 4 workers using libaio hangs.
-
-git bisect points to:
-	commit e02ba72aabfade4c9cd6e3263e9b57bf890ad25c
-	Author: Anatol Pomozov <anatol.pomozov@gmail.com>
-	Date:   Tue Apr 15 11:31:33 2014 -0700
-
-	    aio: block io_destroy() until all context requests are completed
-
-
-The fio workers are on the wait_for_completion in sys_io_destroy.
-
-Regards,
-Sebastian
----1463784958-477581573-1400521132=:1847
-Content-Type: TEXT/PLAIN; charset=US-ASCII; name=fio.job
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LFD.2.11.1405191938510.1847@denkbrett>
-Content-Description: 
-Content-Disposition: attachment; filename=fio.job
-
-W2dsb2JhbF0NCmJsb2Nrc2l6ZT00Sw0Kc2l6ZT0yNTZNDQpydz1yYW5kcncN
-CnZlcmlmeT1tZDUNCmlvZGVwdGg9MzINCmlvZW5naW5lPWxpYmFpbw0KZGly
-ZWN0PTENCmVuZF9mc3luYz0xDQoNCltmaWxlMV0NCmZpbGVuYW1lPS9kZXYv
-c2NtYQ0KDQpbZmlsZTJdDQpmaWxlbmFtZT0vZGV2L3NjbWJ3DQoNCltmaWxl
-M10NCmZpbGVuYW1lPS9kZXYvc2NtYw0KDQpbZmlsZTRdDQpmaWxlbmFtZT0v
-ZGV2L3NjbXgNCg==
-
----1463784958-477581573-1400521132=:1847--
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
