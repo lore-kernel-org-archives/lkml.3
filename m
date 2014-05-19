@@ -1,182 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaESLsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:48:21 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35213 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaESLsS (ORCPT
+	id S1753437AbaESLuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:50:52 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:29938 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751499AbaESLuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:48:18 -0400
-Message-ID: <5379EF0E.6090504@linux.vnet.ibm.com>
-Date: Mon, 19 May 2014 17:16:22 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 19 May 2014 07:50:50 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-6.tower-178.messagelabs.com!1400500245!27919280!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 19 May 2014 13:50:45 +0200
+Date: Mon, 19 May 2014 14:43:24 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
+        <johannes.thumshirn@men.de>, <thomas.schnuerer@men.de>,
+        <wernerandy@gmx.de>
+Subject: Re: [PATCH 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
+ MFD Core driver
+Message-ID: <20140519124324.GB398@awelinux>
+References: <cover.1400258021.git.andreas.werner@men.de>
+ <58de41a38511a107941d9c3b2cea314c0becfff7.1400258021.git.andreas.werner@men.de>
+ <5377849E.7020001@roeck-us.net>
 MIME-Version: 1.0
-To: Pedro Alves <palves@redhat.com>
-CC: mikey@neuling.org, avagin@openvz.org, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, michael@ellerman.id.au, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com> <53730326.6000400@linux.vnet.ibm.com> <53735044.5030008@redhat.com> <537479FD.2010200@linux.vnet.ibm.com> <5374AE24.1030302@redhat.com>
-In-Reply-To: <5374AE24.1030302@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051911-5564-0000-0000-00000DC37C8C
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5377849E.7020001@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 05:38 PM, Pedro Alves wrote:
-> On 05/15/2014 09:25 AM, Anshuman Khandual wrote:
->> On 05/14/2014 04:45 PM, Pedro Alves wrote:
->>> On 05/14/14 06:46, Anshuman Khandual wrote:
->>>> On 05/13/2014 10:43 PM, Pedro Alves wrote:
->>>>> On 05/05/14 08:54, Anshuman Khandual wrote:
->>>>>> This patch enables get and set of transactional memory related register
->>>>>> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
->>>>>> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
->>>>>> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
->>>>>> ELF core note types added previously in this regard.
->>>>>>
->>>>>> 	(1) NT_PPC_TM_SPR
->>>>>> 	(2) NT_PPC_TM_CGPR
->>>>>> 	(3) NT_PPC_TM_CFPR
->>>>>> 	(4) NT_PPC_TM_CVMX
->>>>>
->>>>> Sorry that I couldn't tell this from the code, but, what does the
->>>>> kernel return when the ptracer requests these registers and the
->>>>> program is not in a transaction?  Specifically I'm wondering whether
->>>>> this follows the same semantics as the s390 port.
->>>>>
->>>>
->>>> Right now, it still returns the saved state of the registers from thread
->>>> struct. I had assumed that the user must know the state of the transaction
->>>> before initiating the ptrace request. I guess its better to check for
->>>> the transaction status before processing the request. In case if TM is not
->>>> active on that thread, we should return -EINVAL.
->>>
->>> I think s390 returns ENODATA in that case.
->>>
->>>  https://sourceware.org/ml/gdb-patches/2013-06/msg00273.html
->>>
->>> We'll want some way to tell whether the system actually
->>> supports this.  That could be ENODATA vs something-else (EINVAL
->>> or perhaps better EIO for "request is invalid").
->>
->> As Mickey has pointed out, the transaction memory support in the system can be
->> checked from the HWCAP2 flags. So when the transaction is not active, we will
->> return ENODATA instead for TM related ptrace regset requests.
+aOn Sat, May 17, 2014 at 08:47:42AM -0700, Guenter Roeck wrote:
+> On 05/16/2014 09:37 AM, Andreas Werner wrote:
+> >The MEN 14F021P00 Board Management Controller provides an
+> >I2C interface to the host to access the feature implemented in the BMC.
+> >The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> >and on a few Box/Display Computer.
+> >
+> >Added MFD Core driver, supporting the I2C communication to the device.
+> >
+> >The MFD driver currently supports the following features:
+> >	- Watchdog
+> >	- LEDs
+> >
+> >Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> >---
+> >  drivers/mfd/Kconfig           |  12 +++
+> >  drivers/mfd/Makefile          |   1 +
+> >  drivers/mfd/menf21bmc.c       | 193 ++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/menf21bmc.h |  32 +++++++
+> >  4 files changed, 238 insertions(+)
+> >  create mode 100644 drivers/mfd/menf21bmc.c
+> >  create mode 100644 include/linux/mfd/menf21bmc.h
+> >
+> >diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> >index ab5a43c..7c2e8d2 100644
+> >--- a/drivers/mfd/Kconfig
+> >+++ b/drivers/mfd/Kconfig
+> >@@ -427,6 +427,18 @@ config MFD_MAX8998
+> >  	  additional drivers must be enabled in order to use the functionality
+> >  	  of the device.
+> >
+> >+config MFD_MENF21BMC
+> >+	tristate "MEN 14F021P00 Board Management Controller Support"
+> >+	depends on I2C=y
+> >+	select MFD_CORE
+> >+	help
+> >+	  Say yes here to add support for the MEN 14F021P00 BMC
+> >+	  which is a Board Management Controller connected to the I2C bus.
+> >+	  This driver provides common support for accessing the devices;
+> >+	  additional drivers must be enabled in order to use the
+> >+	  functionality of the BMC device.
+> >+
+> >+
+> >  config EZX_PCAP
+> >  	bool "Motorola EZXPCAP Support"
+> >  	depends on SPI_MASTER
+> >diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> >index 5913208..8f2be38 100644
+> >--- a/drivers/mfd/Makefile
+> >+++ b/drivers/mfd/Makefile
+> >@@ -167,3 +167,4 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+> >  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+> >  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+> >  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+> >+obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+> >diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
+> >new file mode 100644
+> >index 0000000..77de1a8
+> >--- /dev/null
+> >+++ b/drivers/mfd/menf21bmc.c
+> >@@ -0,0 +1,193 @@
+> >+/*
+> >+ *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
+> >+ *
+> >+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> >+ *  Author: Andreas Werner <andreas.werner@men.de>
+> >+ *  All rights reserved.
+> >+ *
+> >+ *  This program is free software; you can redistribute  it and/or modify it
+> >+ *  under  the terms of  the GNU General  Public License as published by the
+> >+ *  Free Software Foundation;  either version 2 of the  License, or (at your
+> >+ *  option) any later version.
+> >+ *
+> >+ */
+> >+
+> >+#include <linux/kernel.h>
+> >+#include <linux/device.h>
+> >+#include <linux/module.h>
+> >+#include <linux/i2c.h>
+> >+#include <linux/mfd/core.h>
+> >+#include <linux/mfd/menf21bmc.h>
+> >+
+> >+#define BMC_CMD_REV_MAJOR	0x80
+> >+#define BMC_CMD_REV_MINOR	0x81
+> >+#define BMC_CMD_REV_MAIN	0x82
+> >+#define BMC_CMD_REV_BUILD	0x83
+> >+#define BMC_CMD_REV_VERI	0x84
+> >+
+> >+static struct mfd_cell menf21bmc_cell[] = {
+> >+	{
+> >+		.name = "menf21bmc_wd",
+> >+	},
+> >+	{
+> >+		.name = "menf21bmc_led",
+> >+	},
+> >+};
+> >+
+> >+static int
+> >+menf21bmc_read_byte_data(struct i2c_client *client, u8 reg, uint8_t *val)
+> >+{
+> >+	int ret;
+> >+	struct menf21bmc *data = i2c_get_clientdata(client);
+> >+
+> >+	mutex_lock(&data->lock);
+> >+	ret = i2c_smbus_read_byte_data(client, reg);
+> >+	mutex_unlock(&data->lock);
+> >+
+> >+	if (ret < 0) {
+> >+		dev_err(&client->dev, "failed to read byte at 0x%02x\n", reg);
+> >+		return ret;
+> >+	}
+> >+
+> >+	*val = (uint8_t)ret;
+> >+
+> >+	return 0;
+> >+}
+> >+
+> I personally would prefer if you would retain the original API, which returns both value
+> and error code as return value. I don't see the benefit of changing the API as you did -
+> it just complicates the code.
 > 
-> Returning ENODATA when the transaction is not active, like
-> s390 is great.  Thank you.
+> Thanks,
+> Guenter
 > 
-> But I think it's worth it to consider what should the kernel
-> return when the machine doesn't have these registers at all.
-> 
-> Sure, for this case we happen to have the hwcap flag.  But in
-> general, I don't know whether we will always have a hwcap bit
-> for each register set that is added.  Maybe we will, so that
-> the info ends up in core dumps.
-> 
-> Still, I think it's worth to consider this case in the
-> general sense, irrespective of hwcap.
-> 
-> That is, what should PTRACE_GETREGSET/PTRACE_SETREGSET return
-> when the machine doesn't have the registers at all.  We shouldn't
-> need to consult something elsewhere (like hwcap) to determine
-> what ENODATA means.  The kernel knows it right there.  I think
-> s390 goofed here.
-> 
-> Taking a look at x86, for example, we see:
-> 
-> 	[REGSET_XSTATE] = {
-> 		.core_note_type = NT_X86_XSTATE,
-> 		.size = sizeof(u64), .align = sizeof(u64),
-> 		.active = xstateregs_active, .get = xstateregs_get,
-> 		.set = xstateregs_set
-> 	},
-> 
-> Note that it installs the ".active" hook.
-> 
->  24 /**
->  25  * user_regset_active_fn - type of @active function in &struct user_regset
->  26  * @target:     thread being examined
->  27  * @regset:     regset being examined
->  28  *
->  29  * Return -%ENODEV if not available on the hardware found.
->  30  * Return %0 if no interesting state in this thread.
->  31  * Return >%0 number of @size units of interesting state.
->  32  * Any get call fetching state beyond that number will
->  33  * see the default initialization state for this data,
->  34  * so a caller that knows what the default state is need
->  35  * not copy it all out.
->  36  * This call is optional; the pointer is %NULL if there
->  37  * is no inexpensive check to yield a value < @n.
->  38  */
->  39 typedef int user_regset_active_fn(struct task_struct *target,
->  40                                   const struct user_regset *regset);
->  41
-> 
-> Note the mention of ENODEV.
-> 
-> I couldn't actually find any arch that currently returns -ENODEV in
-> the "active" hook.  I see that binfmt_elf.c doesn't handle
-> regset->active() returning < 0.  Guess that may be why.  Looks like
-> something that could be cleaned up, to me.
->
+I think it is ok for a wrapper like this because it does not really change an API because
+it is menf21bmc related.
 
-Also it does not consider the return value of regset->active(t->task, regset)
-(whose objective is to figure out whether we need to request regset->n number
-of elements or less than that) in the subsequent call to regset->get function.
+I did the same in rtc-rx8581, and it was already done in rtc_ds1307.c.
 
-> Anyway, notice x86's REGSET_XSTATE regset->get hook:
-> 
-> int xstateregs_get(struct task_struct *target, const struct user_regset *regset,
-> 		unsigned int pos, unsigned int count,
-> 		void *kbuf, void __user *ubuf)
-> {
-> 	int ret;
-> 
-> 	if (!cpu_has_xsave)
-> 		return -ENODEV;
->         ^^^^^^^^^^^^^^^^^^^^^^
-> 
-> And then we see that xfpregs_get has a similar ENODEV case.
-> 
-> So in sum, it very much looks like the intention is for
-> PTRACE_GETREGSET/PTRACE_SETREGSET to return ENODEV in the
-> case the regset doesn't exist on the running machine, and then
-> it looks like at least x86 works that way.
+I personally prefer this way because the return of the function and the return 
+value of the i2c_smbus_read - which is the value read from the device - are seperated.
 
-Okay. Looks like for all the "get/set" hooks I have added for the brand new regsets,
-we need to implement ENODATA error condition as that of s390 when TM is not active
-on the thread in target and implement ENODEV error condition as that of x86 when
-TM supports is not at all available on the system. So the code snippet which should
-be added to all the new "get/set" functions will be something like this.
+If it is a no go for the mfd/wdt core i can change it back to the original i2c_smbus API.
+If it is ok on your side for a wrapper like this, we can let it as it is.
 
-+       if (!cpu_has_feature(CPU_FTR_TM))
-+               return -ENODEV;
-+
-+       if(!MSR_TM_ACTIVE(target->thread.regs->msr))
-+               return -ENODATA;
-
-
-Now coming to the installation of the .active hooks part for all the new regsets, it
-should be pretty straight forward as well. Though its optional and used for elf_core_dump
-purpose only, its worth adding them here. Example of an active function should be something
-like this. The function is inexpensive as required.
-
-+static int tm_spr_active(struct task_struct *target,
-+                               const struct user_regset *regset)
-+{
-+       if (!cpu_has_feature(CPU_FTR_TM))
-+               return -ENODEV;
-+
-+       if(!MSR_TM_ACTIVE(target->thread.regs->msr))
-+               return 0;
-+
-+       return regset->n;
-+}
+Thanks
+Andy
 
