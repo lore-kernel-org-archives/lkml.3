@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaESXJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:09:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50498 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaESXJr (ORCPT
+	id S1752319AbaESXKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:10:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50195 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752123AbaESXKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:09:47 -0400
-Date: Mon, 19 May 2014 16:09:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 mmots] fs/hfsplus/wrapper.c: replace shift loop by
- fls
-Message-Id: <20140519160946.84e79c832dfc4db0fbae573b@linux-foundation.org>
-In-Reply-To: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
-References: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 19:10:03 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Nishanth Menon <nm@ti.com>
+Cc: Chander Kashyap <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, pavel@ucw.cz,
+        Len Brown <len.brown@intel.com>, gregkh@linuxfoundation.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Subject: Re: [PATCH] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
+Date: Tue, 20 May 2014 01:26:57 +0200
+Message-ID: <1589010.LoIeM7LX94@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGo_u6oQiOJzp2DCCFUfwWWPLKKw=pgZPgdr9LBqfYs-GKb9zg@mail.gmail.com>
+References: <1400237477-24831-1-git-send-email-chander.kashyap@linaro.org> <CAGo_u6oQiOJzp2DCCFUfwWWPLKKw=pgZPgdr9LBqfYs-GKb9zg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014 22:38:15 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+On Monday, May 19, 2014 08:04:30 AM Nishanth Menon wrote:
+> On Fri, May 16, 2014 at 5:51 AM, Chander Kashyap
+> <chander.kashyap@linaro.org> wrote:
+> > In of_init_opp_table function, if a failure to add an OPP is
+> > detected, the count of OPPs, yet to be added is not updated.
+> > Fix this by decrementing this count on failure as well.
+> >
+> > Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> > Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+> > ---
+> >  drivers/base/power/opp.c |    4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> > index d9e376a..faae9cf 100644
+> > --- a/drivers/base/power/opp.c
+> > +++ b/drivers/base/power/opp.c
+> > @@ -643,11 +643,9 @@ int of_init_opp_table(struct device *dev)
+> >                 unsigned long freq = be32_to_cpup(val++) * 1000;
+> >                 unsigned long volt = be32_to_cpup(val++);
+> >
+> > -               if (dev_pm_opp_add(dev, freq, volt)) {
+> > +               if (dev_pm_opp_add(dev, freq, volt))
+> >                         dev_warn(dev, "%s: Failed to add OPP %ld\n",
+> >                                  __func__, freq);
+> > -                       continue;
+> > -               }
+> >                 nr -= 2;
+> >         }
+> Good Catch. Thanks.
+> 
+> Acked-by: Nishanth Menon <nm@ti.com>
 
-> Replace while blocksize;shift by fls -1
-> 
-> Suggested-By: Joe Perches <joe@perches.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
-> v2: rebased on top of mmots
->     compiles without including bitops
-> 
->  fs/hfsplus/wrapper.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-> index 284c90f..8e8cf50d 100644
-> --- a/fs/hfsplus/wrapper.c
-> +++ b/fs/hfsplus/wrapper.c
-> @@ -231,9 +231,7 @@ reread:
->  	if (blocksize < HFSPLUS_SECTOR_SIZE || ((blocksize - 1) & blocksize))
->  		goto out_free_backup_vhdr;
->  	sbi->alloc_blksz = blocksize;
-> -	sbi->alloc_blksz_shift = 0;
-> -	while ((blocksize >>= 1) != 0)
-> -		sbi->alloc_blksz_shift++;
-> +	sbi->alloc_blksz_shift = fls(blocksize) - 1;
->  	blocksize = min_t(u32, sbi->alloc_blksz, PAGE_SIZE);
+Since my pull request for 3.15-rc6 has been sent already, I'm going to push
+this for -rc7.  Thanks!
 
-fls() always makes my brain hurt.  ilog() is nicer?
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
