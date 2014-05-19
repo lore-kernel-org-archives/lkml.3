@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516AbaESSgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:36:51 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65253 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470AbaESSgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:36:49 -0400
-Message-ID: <537A4F3D.7000401@gmail.com>
-Date: Mon, 19 May 2014 20:36:45 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752648AbaESSlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:41:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254AbaESSly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 14:41:54 -0400
+Date: Mon, 19 May 2014 20:40:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] uprobes: Shift ->readpage check from __copy_insn() to
+	uprobe_register()
+Message-ID: <20140519184054.GA6750@redhat.com>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-CC: mtk.manpages@gmail.com,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: OFD locks and deadlock detection
-References: <537A0495.60107@gmail.com> <20140519102802.16dee141@tlielax.poochiereds.net>
-In-Reply-To: <20140519102802.16dee141@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 04:28 PM, Jeff Layton wrote:
-> On Mon, 19 May 2014 15:18:13 +0200
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
-> 
->> Hi Jeff,
->>
->> I just happened to notice :
->>
->>     commit 57b65325fe34ec4c917bc4e555144b4a94d9e1f7
->>     Author: Jeff Layton <jlayton@redhat.com>
->>     Date:   Mon Feb 3 12:13:09 2014 -0500
->>
->>         locks: skip deadlock detection on FL_FILE_PVT locks
->>
->> And then this thread:
->>
->>     http://thread.gmane.org/gmane.linux.file-systems/81318/focus=81327
->>     From: Jeff Layton <jlayton <at> redhat.com>
->>     Subject: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
->>     Date: 2014-01-09 14:19:46 GMT
->>
->> I think it's pretty important to document that. All implementations
->> of traditional process-associated (.k.a. "POSIX") locks that I've ever 
->> come across do detect deadlocks, so it's important to note that OFD locks 
->> do not.
->>
->> I plan to add the following text to the fcntl(2) page:
->>
->> [[
->> In the current implementation,
->> no deadlock detection is performed for open file description locks.
->> (This contrasts with process-associated record locks,
->> for which the kernel does perform deadlock detection.)
->> ]]
->>
->> Okay?
->>
->> cheers,
->>
->> Michael
->>
->>
-> 
-> (note: I'm no longer with Red Hat, so jlayton@redhat.com no longer works)
+Sorry for double-posting, but it seems that this patch didn't reach
+lkml. Let me resend it just on case. Plus another patch in reply, on
+top of this change.
 
-Ahh -- okay. Caches cleared.
+-------------------------------------------------------------------------------
+Subject: [PATCH] uprobes: Shift ->readpage check from __copy_insn() to uprobe_register()
 
-> Sounds fine to me.
+copy_insn() fails with -EIO if ->readpage == NULL, but this error
+is not propagated unless uprobe_register() path finds ->mm which
+already mmaps this file. In this case (say) "perf record" does not
+actually install the probe, but the user can't know about this.
 
-Okay.
+Move this check into uprobe_register() so that this problem can be
+detected earlier and reported to user.
 
-> FWIW, the deadlock detection for process-associated record locks is
-> pretty worthless except in certain narrow circumstances.
+Note: this is still not perfect,
 
-Can you say some more about that, please? Maybe there's something 
-worth putting into the man page. (Are there cases where deadlocks
-are not detected?)
+	- copy_insn() and arch_uprobe_analyze_insn() should be called
+	  by uprobe_register() but this is not simple, we need vm_file
+	  for read_mapping_page() (although perhaps we can pass NULL),
+	  and we need ->mm for is_64bit_mm() (although this logic is
+	  broken anyway).
 
-> At some point, we probably should have a discussion as to whether
-> deadlock detection is really something we want to keep. The current
-> implementation requires a global spinlock which has obvious
-> consequences for scalability.
+	- uprobe_register() should be called by create_trace_uprobe(),
+	  not by probe_event_enable(), so that an error can be detected
+	  at "perf probe -x" time. This also needs more changes in the
+	  core uprobe code, uprobe register/unregister interface was
+	  poorly designed from the very beginning.
 
-Could be tricky. I wonder if there's code out there that depends
-on deadlock detection.
+Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Cheers,
-
-Michael
-
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 3b02c72..c56b13e 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -536,9 +536,6 @@ static int __copy_insn(struct address_space *mapping, struct file *filp,
+ 			void *insn, int nbytes, loff_t offset)
+ {
+ 	struct page *page;
+-
+-	if (!mapping->a_ops->readpage)
+-		return -EIO;
+ 	/*
+ 	 * Ensure that the page that has the original instruction is
+ 	 * populated and in page-cache.
+@@ -879,6 +876,9 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 	if (!uc->handler && !uc->ret_handler)
+ 		return -EINVAL;
+ 
++	/* copy_insn()->read_mapping_page() needs ->readpage() */
++	if (!inode->i_mapping->a_ops->readpage)
++		return -EIO;
+ 	/* Racy, just to catch the obvious mistakes */
+ 	if (offset > i_size_read(inode))
+ 		return -EINVAL;
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.5.5.1
+
+
