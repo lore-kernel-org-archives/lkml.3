@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaESU41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:56:27 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:8385 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaESU4W (ORCPT
+	id S1751742AbaESU4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:56:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57424 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751626AbaESU4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:56:22 -0400
-Message-ID: <1400532980.6399.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: linux-next: build warning after merge of the akpm tree
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
-Date: Mon, 19 May 2014 13:56:20 -0700
-In-Reply-To: <20140519124850.7d4470e179c237552f363658@linux-foundation.org>
-References: <20140519181314.1b92c548@canb.auug.org.au>
-	 <1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
-	 <20140519124850.7d4470e179c237552f363658@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 16:56:31 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        inderpal.s@samsung.com, pavel@ucw.cz, nm@ti.com,
+        chander.kashyap@linaro.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
+Date: Mon, 19 May 2014 23:13:24 +0200
+Message-ID: <4765191.0FhyvSGyvF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>
+References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org> <ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 12:48 -0700, Andrew Morton wrote:
-> On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+On Monday, May 19, 2014 11:59:11 AM Viresh Kumar wrote:
+> All drivers expecting CPU's OPPs from device tree initialize OPP table using
+> of_init_opp_table() and there is nothing driver specific in that. They all do it
+> in the same way adding to code redundancy.
 > 
-> > > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
-> > > spinning").
-> > 
-> > If CONFIG_SMP, we add two new fields to the rwsem structure
-> > (include/linux/rwsem.h) and likewise we update the
-> > __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
-> > something like that is to be using the spinlock variant
-> > (rwsem-spinlock.h).
-> > 
-> > The fix for that would be:
-> > 
-> > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> > index 3e108f1..091d993 100644
-> > --- a/include/linux/rwsem.h
-> > +++ b/include/linux/rwsem.h
-> > @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
-> >  # define __RWSEM_DEP_MAP_INIT(lockname)
-> >  #endif
-> >  
-> > -#ifdef CONFIG_SMP
-> > +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
-> >  #define __RWSEM_INITIALIZER(name)                      \
-> >         { RWSEM_UNLOCKED_VALUE,                         \
-> >           __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),     \
+> It would be better if we can get rid of code redundancy by initializing CPU OPPs
+> from core code for all CPUs that have a "operating-points" property defined in
+> their node.
 > 
-> that squishes the warnings for me.
+> This patch initializes OPPs as soon as CPU device is registered in
+> register_cpu().
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V1-V2:
+> A colleague spotted some extra debug prints in my first mail :(
+> 
+> Replace
+> + pr_err("****%s: failed to init OPP table for cpu%d, err: %d\n",
+> with
+> + pr_err("%s: failed to init OPP table for cpu%d, err: %d\n",
+> 
+>  drivers/base/cpu.c | 14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 006b1bc..74ce944 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/of.h>
+>  #include <linux/cpufeature.h>
+> +#include <linux/pm_opp.h>
+>  
+>  #include "base.h"
+>  
+> @@ -349,11 +350,20 @@ int register_cpu(struct cpu *cpu, int num)
+>  	if (cpu->hotpluggable)
+>  		cpu->dev.groups = hotplugable_cpu_attr_groups;
+>  	error = device_register(&cpu->dev);
+> -	if (!error)
 
-You guys know best, but shouldn't this change be routed through -tip?
+What about
 
+	if (error)
+		return error;
 
+and then you'd save an indentation level?
+
+Anyway, I find adding of_node* stuff directly to the driver core this way
+kind of disgusting as there still are platforms that don't use it.
+
+Can we have a call to a function that will change into an empty stub on such
+platforms here, please?
+
+> +	if (!error) {
+>  		per_cpu(cpu_sys_devices, num) = &cpu->dev;
+> -	if (!error)
+>  		register_cpu_under_node(num, cpu_to_node(num));
+>  
+> +		/* Initialize CPUs OPP table */
+> +		if (of_node_get(cpu->dev.of_node)) {
+> +			error = of_init_opp_table(&cpu->dev);
+> +			if (error && error != -ENODEV)
+> +				pr_err("%s: failed to init OPP table for cpu%d, err: %d\n",
+> +					__func__, num, error);
+> +			of_node_put(cpu->dev.of_node);
+> +		}
+> +	}
+> +
+>  	return error;
+>  }
+>  
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
