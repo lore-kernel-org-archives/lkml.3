@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137AbaESQ6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:58:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50648 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017AbaESQ6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:58:48 -0400
-Date: Mon, 19 May 2014 09:58:46 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: time to move fs/bio.c to block/ ?
-Message-ID: <20140519165846.GC663@infradead.org>
-References: <20140519141309.GB21570@infradead.org>
- <537A11CC.5060708@kernel.dk>
- <20140519142519.GI18016@ZenIV.linux.org.uk>
- <537A15B9.6000102@kernel.dk>
- <20140519143416.GC568@infradead.org>
- <20140519163942.GJ18016@ZenIV.linux.org.uk>
+	id S932580AbaESQ7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:59:32 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:58542 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932164AbaESQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:59:31 -0400
+Message-ID: <537A386E.10602@mev.co.uk>
+Date: Mon, 19 May 2014 17:59:26 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519163942.GJ18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Raghavendra Ganiga <ravi23ganiga@gmail.com>,
+        <hsweeten@visionengravers.com>, <gregkh@linuxfoundation.org>,
+        <devel@driverdev.osuosl.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: fixed warnings reported by checkpatch
+ tool on comedi_test.c file
+References: <1400516343-9880-1-git-send-email-ravi23ganiga@gmail.com>
+In-Reply-To: <1400516343-9880-1-git-send-email-ravi23ganiga@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 05:39:42PM +0100, Al Viro wrote:
-> ACK on ioprio.c (BTW, looking at block...  WTF is the story with that
-> pile of blk-* in there?  IOW, why blk-exec.c is better than exec.c,
-> etc.?)
-> 
-> As for fs/no-block.c...  IMO that's a bad idea - it makes sense only
-> if we take fs/block.c there as well, and that one wants fs/internal.h.
+On 2014-05-19 17:19, Raghavendra Ganiga wrote:
+> This is a patch to remove warnings reported by checkpatch tool on
+> comedi_test.c file
+>
+> Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/comedi_test.c | 2 ++
+>   1 file changed, 2 insertions(+)
 
-Right, we still have block_dev.c which is more VFS than block.  Makes
-sense to keep no-block.c then.
+Thanks!
 
-> Why do we need that ->llseek = noop_llseek there, while we are at it?
-> Its ->open() always fails, so how is ->llseek() going to get looked at,
-> let alone called?
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-Looks like a larger mechanical conversation of lseek instances..
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
