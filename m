@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaESNLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:11:39 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:48037 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754279AbaESNLg (ORCPT
+	id S932345AbaESNLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:11:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59489 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaESNLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:11:36 -0400
-Date: Mon, 19 May 2014 15:12:33 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] sched/dl: Fix race between dl_task_timer() and
- sched_setaffinity()
-Message-Id: <20140519151233.5043b749361e1b384f1e5562@gmail.com>
-In-Reply-To: <20140516213003.10384.7946.stgit@localhost>
-References: <20140516213003.10384.7946.stgit@localhost>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 09:11:46 -0400
+Date: Mon, 19 May 2014 06:10:36 -0700
+From: "tip-bot for xiaofeng.yan" <tipbot@zytor.com>
+Message-ID: <tip-c07a16f784dfb8083c3b0157fbef18cb1292b9fc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, xiaofeng.yan@huawei.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, xiaofeng.yan@huawei.com
+In-Reply-To: <1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com>
+References: <1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/rt:
+  Fix a comment in struct sched_dl_entity
+Git-Commit-ID: c07a16f784dfb8083c3b0157fbef18cb1292b9fc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 May 2014 01:30:03 +0400
-Kirill Tkhai <tkhai@yandex.ru> wrote:
+Commit-ID:  c07a16f784dfb8083c3b0157fbef18cb1292b9fc
+Gitweb:     http://git.kernel.org/tip/c07a16f784dfb8083c3b0157fbef18cb1292b9fc
+Author:     xiaofeng.yan <xiaofeng.yan@huawei.com>
+AuthorDate: Fri, 9 May 2014 03:21:27 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 19 May 2014 22:02:42 +0900
 
-> The race is in unlocked task_rq() access. In pair with parallel
-> call of sched_setaffinity() it may be a reason of corruption
-> of internal rq's data.
-> 
+sched/rt: Fix a comment in struct sched_dl_entity
 
-Sure, the thing can happen!
+Change sched_setscheduler2() to sched_setattr() in the comments.
+There isn't function sched_setscheduler2() in the main line.
+The previous EDF version defines this function
+before being merged into the main line.
+User should use sched_setattr() instead of
+sched_setscheduler2() now.
 
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Juri Lelli <juri.lelli@gmail.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@redhat.com>
-> Cc: <stable@vger.kernel.org> # v3.14
-> ---
->  kernel/sched/deadline.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 800e99b..ffb023a 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -513,9 +513,16 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
->  						     struct sched_dl_entity,
->  						     dl_timer);
->  	struct task_struct *p = dl_task_of(dl_se);
-> -	struct rq *rq = task_rq(p);
-> +	struct rq *rq;
+Cc: mingo@redhat.com
+Signed-off-by: xiaofeng.yan <xiaofeng.yan@huawei.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/sched.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-We could maybe add a comment here, in line with what we have below, to
-document why we need this.
-
-Thanks,
-
-- Juri
-
-> +again:
-> +	rq = task_rq(p);
->  	raw_spin_lock(&rq->lock);
->  
-> +	if (unlikely(rq != task_rq(p))) {
-> +		raw_spin_unlock(&rq->lock);
-> +		goto again;
-> +	}
-> +
->  	/*
->  	 * We need to take care of a possible races here. In fact, the
->  	 * task might have changed its scheduling policy to something
-> 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 725eef1..0f91d00 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1175,8 +1175,8 @@ struct sched_dl_entity {
+ 
+ 	/*
+ 	 * Original scheduling parameters. Copied here from sched_attr
+-	 * during sched_setscheduler2(), they will remain the same until
+-	 * the next sched_setscheduler2().
++	 * during sched_setattr(), they will remain the same until
++	 * the next sched_setattr().
+ 	 */
+ 	u64 dl_runtime;		/* maximum runtime for each instance	*/
+ 	u64 dl_deadline;	/* relative deadline of each instance	*/
