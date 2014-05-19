@@ -1,198 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaESA20 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 20:28:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26450 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752234AbaESA2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 20:28:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,864,1392192000"; 
-   d="scan'208";a="513632384"
-Message-ID: <53795016.2080601@linux.intel.com>
-Date: Mon, 19 May 2014 08:28:06 +0800
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752445AbaESA34 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 20:29:56 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52808 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258AbaESA3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 20:29:55 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53795080.1010007@lge.com>
+Date: Mon, 19 May 2014 09:29:52 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bin.yang@intel.com
-Subject: Re: [PATCH] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-References: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com> <CAAVeFuLK6TcGBtiVWFui9NunantvqNUqCmJErsFLN8DeC3C3nw@mail.gmail.com>
-In-Reply-To: <CAAVeFuLK6TcGBtiVWFui9NunantvqNUqCmJErsFLN8DeC3C3nw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Barry Song <21cnbao@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Subject: Re: [RFC PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure
+ mode
+References: <5374532D.7030602@lge.com> <CAGsJ_4zN39jeHz574_r9y_hjdn1Acbkr9gQhE=1L-Fs82-vDkw@mail.gmail.com>
+In-Reply-To: <CAGsJ_4zN39jeHz574_r9y_hjdn1Acbkr9gQhE=1L-Fs82-vDkw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 5/17/2014 10:37 PM, Alexandre Courbot wrote:
-> On Thu, May 15, 2014 at 12:44 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
->> Devices based on Intel SoC products such as Baytrail have a Power
->> Management IC. In the PMIC there are subsystems for voltage regulation,
->> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
->> Crystal Cove.
+2014-05-18 오후 10:13, Barry Song 쓴 글:
+> 2014-05-15 13:39 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
 >>
->> This patch adds support for the GPIO function in Crystal Cove.
+>> Hi,
 >>
->> Signed-off-by: Yang, Bin <bin.yang@intel.com>
->> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+>> My board is using Trustzone and running kernel is non-secure mode.
+>> But setup function of PL310 driver is only for secure mode kernel.
+>>
+>> What about adding an entry for non-secure mode setup function?
+>>
+>> I'm sorry for my poor code but I just wanna say what I need .
+>
+> Gioh,
+>
+> i don't really understand what is the user scenarios for this, if you
+> are running linux in non-secure mode, your security-mode codes have
+> enabled L2, so this makes non-secure linux have no chance to execute
+> setup at all:
+
+My platform runs linux kernel before L2 cache activation.
+And the L2 cache is activated when the kernel sends command to Trustzone firmware.
+At this moment L2 is not activated. Linux should send command for L2 activation to Trustzone at the moment.
+
+>   992         /* L2 configuration can only be changed if the cache is disabled */
+>   993         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+>   994                 if (data->setup)
+>   995                         data->setup(np, &aux_val, &aux_mask);
+>
+> anyway, cache-l2x0.c supported non-secure linux as you can read:
+
+If non-secure linux try to access l2x0 register, it would generate fault.
+If L2 is not activated at l2x0_of_init, follow code can generate fault.
+So the L2 should be activated before the follow code.
+
+>   387         /*
+>   388          * Check if l2x0 controller is already enabled.
+>   389          * If you are booting from non-secure mode
+>   390          * accessing the below registers will fault.
+>   391          */
+>   392         if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+>   393                 /* Make sure that I&D is not locked down when starting */
+>   394                 l2x0_unlock(cache_id);
+>   395
+>   396                 /* l2x0 controller is disabled */
+>   397                 writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
+>   398
+>   399                 l2x0_inv_all();
+>   400
+>   401                 /* enable L2X0 */
+>   402                 writel_relaxed(L2X0_CTRL_EN, l2x0_base + L2X0_CTRL);
+>   403         }
+>
+>
+>
+>>
+>> ------------------------------ 8< -------------------------------
+>>  From ee4b03fb2c12038c6bbb9f752558abae8d500c07 Mon Sep 17 00:00:00 2001
+>> From: Gioh Kim <gioh.kim@lge.com>
+>> Date: Thu, 15 May 2014 14:06:36 +0900
+>> Subject: [PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+>>
+>> For some platforms using Trustzone and running kernel in non-secure mode,
+>> another l2 setup function is necessary.
+>>
+>> Signed-off-by: Gioh Kim <gioh.kim@lge.c>
 >> ---
->>  drivers/gpio/Kconfig            |   9 ++
->>  drivers/gpio/Makefile           |   1 +
->>  drivers/gpio/gpio-crystalcove.c | 323 ++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 333 insertions(+)
->>  create mode 100644 drivers/gpio/gpio-crystalcove.c
+>>   arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++++
+>>   arch/arm/mm/cache-l2x0.c                   |   26 +++++++++++++++++++++++++-
+>>   2 files changed, 34 insertions(+), 1 deletion(-)
 >>
->> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
->> index a86c49a..95bb5a0 100644
->> --- a/drivers/gpio/Kconfig
->> +++ b/drivers/gpio/Kconfig
->> @@ -440,6 +440,15 @@ config GPIO_ARIZONA
->>         help
->>           Support for GPIOs on Wolfson Arizona class devices.
+>> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
+>> index 6dec6da..de31114 100644
+>> --- a/arch/arm/include/asm/hardware/cache-l2x0.h
+>> +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
+>> @@ -21,6 +21,7 @@
+>>   #define __ASM_ARM_HARDWARE_L2X0_H
 >>
->> +config GPIO_INTEL_SOC_PMIC
->> +       bool "GPIO on Intel SoC PMIC"
->> +       depends on INTEL_SOC_PMIC
->> +       help
->> +         Support for GPIO pins on Intel SoC PMIC, such as Crystal
->> +         Cove.
->> +         Say Y if you have a tablet with Intel SoC (e.g. Baytrail)
->> +         inside.
->> +
->>  config GPIO_LP3943
->>         tristate "TI/National Semiconductor LP3943 GPIO expander"
->>         depends on MFD_LP3943
->> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
->> index 6309aff..5380608 100644
->> --- a/drivers/gpio/Makefile
->> +++ b/drivers/gpio/Makefile
->> @@ -30,6 +30,7 @@ obj-$(CONFIG_GPIO_F7188X)     += gpio-f7188x.o
->>  obj-$(CONFIG_GPIO_GE_FPGA)     += gpio-ge.o
->>  obj-$(CONFIG_GPIO_GRGPIO)      += gpio-grgpio.o
->>  obj-$(CONFIG_GPIO_ICH)         += gpio-ich.o
->> +obj-$(CONFIG_GPIO_INTEL_SOC_PMIC)      += gpio-crystalcove.o
->>  obj-$(CONFIG_GPIO_IOP)         += gpio-iop.o
->>  obj-$(CONFIG_GPIO_IT8761E)     += gpio-it8761e.o
->>  obj-$(CONFIG_GPIO_JANZ_TTL)    += gpio-janz-ttl.o
->> diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
->> new file mode 100644
->> index 0000000..974f9b8
->> --- /dev/null
->> +++ b/drivers/gpio/gpio-crystalcove.c
->> @@ -0,0 +1,323 @@
->> +/*
->> + * gpio-crystalcove.c - Intel Crystal Cove GPIO Driver
->> + *
->> + * Copyright (C) 2012, 2014 Intel Corporation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License version
->> + * 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + * Author: Yang, Bin <bin.yang@intel.com>
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/slab.h>
->> +#include <linux/io.h>
->> +#include <linux/delay.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/device.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/seq_file.h>
->> +#include <linux/sched.h>
->> +#include <linux/mfd/intel_soc_pmic.h>
->> +#include <linux/gpio.h>
->> +
->> +#define NUM_GPIO               16
->> +
->> +#define UPDATE_TYPE            (1 << 0)
->> +#define UPDATE_MASK            (1 << 1)
->> +
->> +#define GPIO0IRQ               0x0b
->> +#define GPIO1IRQ               0x0c
->> +#define MGPIO0IRQS0            0x19
->> +#define MGPIO1IRQS0            0x1a
->> +#define MGPIO0IRQSX            0x1b
->> +#define MGPIO1IRQSX            0x1c
->> +#define GPIO0P0CTLO            0x2b
->> +#define GPIO0P0CTLI            0x33
->> +#define GPIO1P0CTLO            0x3b
->> +#define GPIO1P0CTLI            0x43
->> +
->> +#define CTLI_INTCNT_NE         (1 << 1)
->> +#define CTLI_INTCNT_PE         (2 << 1)
->> +#define CTLI_INTCNT_BE         (3 << 1)
->> +
->> +#define CTLO_DIR_OUT           (1 << 5)
->> +#define CTLO_DRV_CMOS          (0 << 4)
->> +#define CTLO_DRV_OD            (1 << 4)
->> +#define CTLO_DRV_REN           (1 << 3)
->> +#define CTLO_RVAL_2KDW         (0)
->> +#define CTLO_RVAL_2KUP         (1 << 1)
->> +#define CTLO_RVAL_50KDW                (2 << 1)
->> +#define CTLO_RVAL_50KUP                (3 << 1)
->> +
->> +#define CTLO_INPUT_DEF (CTLO_DRV_CMOS | CTLO_DRV_REN | CTLO_RVAL_2KUP)
->> +#define CTLO_OUTPUT_DEF        (CTLO_DIR_OUT | CTLO_INPUT_DEF)
->> +
->> +struct crystalcove_gpio {
->> +       struct mutex            buslock; /* irq_bus_lock */
->> +       struct gpio_chip        chip;
->> +       int                     irq;
->> +       int                     irq_base;
->> +       int                     update;
->> +       int                     trigger_type;
->> +       int                     irq_mask;
->> +};
->> +static struct crystalcove_gpio gpio_info;
->> +
->> +static void __crystalcove_irq_mask(int gpio, int mask)
+>>   #include <linux/errno.h>
+>> +#include <linux/of.h>
+>>
+>>   #define L2X0_CACHE_ID                  0x000
+>>   #define L2X0_CACHE_TYPE                        0x004
+>> @@ -110,11 +111,19 @@
+>>   extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
+>>   #if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_OF)
+>>   extern int l2x0_of_init(u32 aux_val, u32 aux_mask);
+>> +extern int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
+>> +                       void (*fp)(const struct device_node *, u32 *, u32 *));
+>>   #else
+>>   static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
+>>   {
+>>          return -ENODEV;
+>>   }
+>> +static inline int l2x0_of_set_setup_nonsecure(const char *compatible,
+>> +                                             size_t len,
+>> +                     void (*fp)(const struct device_node *, u32 *, u32 *))
 >> +{
->> +       u8 mirqs0 = gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0;
->> +       int offset = gpio < 8 ? gpio : gpio - 8;
+>> +       return -ENODEV;
+>> +}
+>>   #endif
+>>
+>>   struct l2x0_regs {
+>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>> index 728d644..582ea37 100644
+>> --- a/arch/arm/mm/cache-l2x0.c
+>> +++ b/arch/arm/mm/cache-l2x0.c
+>> @@ -45,6 +45,7 @@ struct l2x0_regs l2x0_saved_regs;
+>>   struct l2x0_of_data {
+>>          void (*setup)(const struct device_node *, u32 *, u32 *);
+>>          void (*save)(void);
+>> +       void (*setup_nonsecure)(const struct device_node *, u32 *, u32 *);
+>>          struct outer_cache_fns outer_cache;
+>>   };
+>>
+>> @@ -968,6 +969,23 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+>>          {}
+>>   };
+>>
+>> +int l2x0_of_set_setup_nonsecure(const char *compatible, size_t len,
+>> +                       void (*fp)(const struct device_node *, u32 *, u32 *))
+>> +{
+>> +       const struct of_device_id *id;
 >> +
->> +       if (mask)
->> +               intel_soc_pmic_setb(mirqs0, 1 << offset);
->> +       else
->> +               intel_soc_pmic_clearb(mirqs0, 1 << offset);
+>> +       for (id = &l2x0_ids[0]; id->compatible != NULL; id++) {
+>> +               if (strncmp(id->compatible, compatible, len) == 0) {
+>> +                       struct l2x0_of_data *data = id->data;
+>> +
+>> +                       data->setup_nonsecure = fp;
+>> +                       return 0;
+>> +               }
+>> +       }
+>> +
+>> +       return -EINVAL;
 >> +}
 >> +
->> +static void __crystalcove_irq_type(int gpio, int type)
->> +{
->> +       u8 ctli = gpio < 8 ? GPIO0P0CTLI + gpio : GPIO1P0CTLI + (gpio - 8);
-> 
-> Not a big comment, but wouldn't it be safer to factorize this logic
-> (which is repeated in many places) into some macro? e.g. something
-> like:
-> 
-> #define GPIOP0CTL(gpio, dir) ((gpio < 8 ? GPIO0P0CTL ## dir :
-> GPIO1P0CTL ## dir) + (gpio & ~0x8))
-> 
-> ...
-> 
-> u8 ctli = GPIOP0CTL(gpio, I);
-> 
-> Feel free to come with a better macro (or to ignore that comment
-> altogether if you think it makes the code less readable), but I think
-> it would be less error-prone if you did not have to copy-paste that
-> code all over the place.
-> 
-
-Thank you. I'll fix them in v2 as well.
-
-Best Regards
-Lejun
-
+>>   int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>>   {
+>>          struct device_node *np;
+>> @@ -989,8 +1007,14 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
+>>
+>>          /* L2 configuration can only be changed if the cache is disabled */
+>>          if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+>> -               if (data->setup)
+>> +
+>> +               if (data->setup_nonsecure)
+>> +                       data->setup_nonsecure(np, &aux_val, &aux_mask);
+>> +               else if (data->setup)
+>>                          data->setup(np, &aux_val, &aux_mask);
+>> +               else
+>> +                       /* no function to enable cache */
+>> +                       return -ENODEV;
+>>
+>>                  /* For aurora cache in no outer mode select the
+>>                   * correct mode using the coprocessor*/
+>> --
+>> 1.7.9.5
+>
+>
+> -barry
+>
