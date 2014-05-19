@@ -1,72 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbaESXSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:18:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52752 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaESXSI (ORCPT
+	id S1751837AbaESXTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:19:31 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:59242 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaESXTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:18:08 -0400
-Date: Tue, 20 May 2014 08:18:16 +0900 (JST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-cc: LKML <linux-kernel@vger.kernel.org>, linux@openrisc.net,
-        jonas@southpole.se, Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH v2] openrisc: irq: use irqchip framework
-In-Reply-To: <1400530303-29182-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-Message-ID: <alpine.DEB.2.02.1405200809260.5204@ionos.tec.linutronix.de>
-References: <1400530303-29182-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 19 May 2014 19:19:30 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 20 May 2014 08:22:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Laura Abbott <lauraa@codeaurora.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma
+ reserved memory when not used
+Message-ID: <20140519232215.GB21636@bbox>
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140513030057.GC32092@bbox>
+ <20140515015301.GA10116@js1304-P5Q-DELUXE>
+ <53742A4B.4090901@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53742A4B.4090901@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Stefan Kristiansson wrote:
-> +static void or1k_pic_ack(struct irq_data *data)
-> +{
-> +	/* EDGE-triggered interrupts need to be ack'ed in order to clear
-> +	 * the latch.
-> +	 * LEVEL-triggered interrupts do not need to be ack'ed; however,
-> +	 * ack'ing the interrupt has no ill-effect and is quicker than
-> +	 * trying to figure out what type it is...
-> +	 */
+On Thu, May 15, 2014 at 11:45:31AM +0900, Heesub Shin wrote:
+> Hello,
+> 
+> On 05/15/2014 10:53 AM, Joonsoo Kim wrote:
+> >On Tue, May 13, 2014 at 12:00:57PM +0900, Minchan Kim wrote:
+> >>Hey Joonsoo,
+> >>
+> >>On Thu, May 08, 2014 at 09:32:23AM +0900, Joonsoo Kim wrote:
+> >>>CMA is introduced to provide physically contiguous pages at runtime.
+> >>>For this purpose, it reserves memory at boot time. Although it reserve
+> >>>memory, this reserved memory can be used for movable memory allocation
+> >>>request. This usecase is beneficial to the system that needs this CMA
+> >>>reserved memory infrequently and it is one of main purpose of
+> >>>introducing CMA.
+> >>>
+> >>>But, there is a problem in current implementation. The problem is that
+> >>>it works like as just reserved memory approach. The pages on cma reserved
+> >>>memory are hardly used for movable memory allocation. This is caused by
+> >>>combination of allocation and reclaim policy.
+> >>>
+> >>>The pages on cma reserved memory are allocated if there is no movable
+> >>>memory, that is, as fallback allocation. So the time this fallback
+> >>>allocation is started is under heavy memory pressure. Although it is under
+> >>>memory pressure, movable allocation easily succeed, since there would be
+> >>>many pages on cma reserved memory. But this is not the case for unmovable
+> >>>and reclaimable allocation, because they can't use the pages on cma
+> >>>reserved memory. These allocations regard system's free memory as
+> >>>(free pages - free cma pages) on watermark checking, that is, free
+> >>>unmovable pages + free reclaimable pages + free movable pages. Because
+> >>>we already exhausted movable pages, only free pages we have are unmovable
+> >>>and reclaimable types and this would be really small amount. So watermark
+> >>>checking would be failed. It will wake up kswapd to make enough free
+> >>>memory for unmovable and reclaimable allocation and kswapd will do.
+> >>>So before we fully utilize pages on cma reserved memory, kswapd start to
+> >>>reclaim memory and try to make free memory over the high watermark. This
+> >>>watermark checking by kswapd doesn't take care free cma pages so many
+> >>>movable pages would be reclaimed. After then, we have a lot of movable
+> >>>pages again, so fallback allocation doesn't happen again. To conclude,
+> >>>amount of free memory on meminfo which includes free CMA pages is moving
+> >>>around 512 MB if I reserve 512 MB memory for CMA.
+> >>>
+> >>>I found this problem on following experiment.
+> >>>
+> >>>4 CPUs, 1024 MB, VIRTUAL MACHINE
+> >>>make -j24
+> >>>
+> >>>CMA reserve:		0 MB		512 MB
+> >>>Elapsed-time:		234.8		361.8
+> >>>Average-MemFree:	283880 KB	530851 KB
+> >>>
+> >>>To solve this problem, I can think following 2 possible solutions.
+> >>>1. allocate the pages on cma reserved memory first, and if they are
+> >>>    exhausted, allocate movable pages.
+> >>>2. interleaved allocation: try to allocate specific amounts of memory
+> >>>    from cma reserved memory and then allocate from free movable memory.
+> >>
+> >>I love this idea but when I see the code, I don't like that.
+> >>In allocation path, just try to allocate pages by round-robin so it's role
+> >>of allocator. If one of migratetype is full, just pass mission to reclaimer
+> >>with hint(ie, Hey reclaimer, it's non-movable allocation fail
+> >>so there is pointless if you reclaim MIGRATE_CMA pages) so that
+> >>reclaimer can filter it out during page scanning.
+> >>We already have an tool to achieve it(ie, isolate_mode_t).
+> >
+> >Hello,
+> >
+> >I agree with leaving fast allocation path as simple as possible.
+> >I will remove runtime computation for determining ratio in
+> >__rmqueue_cma() and, instead, will use pre-computed value calculated
+> >on the other path.
+> >
+> >I am not sure that whether your second suggestion(Hey relaimer part)
+> >is good or not. In my quick thought, that could be helpful in the
+> >situation that many free cma pages remained. But, it would be not helpful
+> >when there are neither free movable and cma pages. In generally, most
+> >workloads mainly uses movable pages for page cache or anonymous mapping.
+> >Although reclaim is triggered by non-movable allocation failure, reclaimed
+> >pages are used mostly by movable allocation. We can handle these allocation
+> >request even if we reclaim the pages just in lru order. If we rotate
+> >the lru list for finding movable pages, it could cause more useful
+> >pages to be evicted.
+> >
+> >This is just my quick thought, so please let me correct if I am wrong.
+> 
+> We have an out of tree implementation that is completely the same
+> with the approach Minchan said and it works, but it has definitely
+> some side-effects as you pointed, distorting the LRU and evicting
+> hot pages. I do not attach code fragments in this thread for some
+> reasons, but it must be easy for yourself. I am wondering if it
+> could help also in your case.
+> 
+> Thanks,
+> Heesub
 
-The right thing to do here is to have two interrupt chips. One for
-level and one for ack. So you do not need a runtime check and you
-avoid the ack for the level type.
+Heesub, To be sure, did you try round-robin allocate like Joonsoo's
+approach and happend such LRU churning problem?
 
-> +	/* The OpenRISC 1000 spec says to write a 1 to the bit to ack the
-> +	 * interrupt, but the OR1200 does this backwards and requires a 0
-> +	 * to be written...
-> +	 */
-> +
-> +#ifdef CONFIG_OR1K_1200
-> +	/* There are two oddities with the OR1200 PIC implementation:
-> +	 * i)  LEVEL-triggered interrupts are latched and need to be cleared
-> +	 * ii) the interrupt latch is cleared by writing a 0 to the bit,
-> +	 *     as opposed to a 1 as mandated by the spec
-> +	 */
-> +
-> +	mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
-> +#else
-> +	mtspr(SPR_PICSR, (1UL << data->hwirq));
-> +#endif
-
-Again, you could set the write 1/0 variant at runtime.
-
-> +static int or1k_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
-> +{
-> +	irq_set_chip_and_handler_name(irq, &or1k_dev,
-> +				      handle_level_irq, "level");
-
-It's wrong to use the level flow handler for edge type interrupts as
-you might lose edges.
-
-Thanks,
-
-	tglx
+-- 
+Kind regards,
+Minchan Kim
