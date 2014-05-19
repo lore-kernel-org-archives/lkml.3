@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaESUuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:50:04 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:37487 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaESUuC (ORCPT
+	id S1752068AbaESUuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:50:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28559 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaESUuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:50:02 -0400
+	Mon, 19 May 2014 16:50:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19yX4vEr7PhqpBEN2LTD8EH
+Date: Mon, 19 May 2014 13:49:54 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCHv2 resend 04/11] ARM: OMAP3: Beagle: initialize all the
+ struct pwm_lookup members
+Message-ID: <20140519204954.GD11945@atomide.com>
+References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1400532162-29483-5-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140519091650.GS15585@mwanda>
-References: <1400385604-21086-1-git-send-email-matlackdavid@gmail.com>
- <1400385604-21086-2-git-send-email-matlackdavid@gmail.com> <20140519091650.GS15585@mwanda>
-From: David Matlack <matlackdavid@gmail.com>
-Date: Mon, 19 May 2014 13:49:41 -0700
-Message-ID: <CANoiuGLzE=xbNjsFEsm9RAJrtEcGkd0rTy9t8ODzYEsGMUmNUQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging: slicoss: rewrite eeprom checksum code
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        charrer@alacritech.com, linux-kernel@vger.kernel.org,
-        Lior Dotan <liodot@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400532162-29483-5-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 2:16 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> This patch is great, thanks, don't resend.  But I wish the subject said
-> "fix" instead of "rewrite".  I was expecting it to just be a cleanup.
->
-> It helps a lot if `git log --oneline` says which patches should be
-> backported.
->
-> regards,
-> dan carpenter
->
+* Alexandre Belloni <alexandre.belloni@free-electrons.com> [140519 13:44]:
+> This will allow to get rid of the .pwm_period_ns member of struct led_pwm as the
+> period will be set by the PWM core.
 
-Thanks for the review Dan. I know you said not resend but I'd like to clean up
-the patch a bit if you don't mind:
+This should not conflict with anything I have:
 
-* Add a comment making it clear this is RFC 1071
-
-* Remove the byte swapping code. Specifically,
-
-+       if ((unsigned long) eeprom & 1) {
-+               leading_byte = bp;
-+               bp++;
-        }
-
-and
-
-+       if (leading_byte) {
-+               checksum = __reduce(checksum);
-+               checksum <<= 8;
-+
-+               final_word = *leading_byte;
-+               if (trailing_byte)
-+                       final_word |= *trailing_byte << 8;
-+       }
-
-  After reading the RFC [1], I don't think the it's correct in either
-  implementation (the bytes in the final result are in the wrong order). And
-  since this function is only used to checksum the eeprom, and not checksum a
-  fragment of a IP packet, it's not needed. So we can just remove it.
-
-* s/rewrite/fix/ in the subject
-
-[1] http://tools.ietf.org/html/rfc1071 (see Section 2.(A) and 2.(B))
+Acked-by: Tony Lindgren <tony@atomide.com>
+ 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-omap2/board-omap3beagle.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+> index d6ed819ff15c..f27e1ec90b5e 100644
+> --- a/arch/arm/mach-omap2/board-omap3beagle.c
+> +++ b/arch/arm/mach-omap2/board-omap3beagle.c
+> @@ -61,7 +61,14 @@
+>  
+>  static struct pwm_lookup pwm_lookup[] = {
+>  	/* LEDB -> PMU_STAT */
+> -	PWM_LOOKUP("twl-pwmled", 1, "leds_pwm", "beagleboard::pmu_stat"),
+> +	{
+> +		.provider = "twl-pwmled",
+> +		.index = 1,
+> +		.dev_id = "leds_pwm",
+> +		.con_id = "beagleboard::pmu_stat",
+> +		.period = 7812500,
+> +		.polarity = PWM_POLARITY_NORMAL,
+> +	},
+>  };
+>  
+>  static struct led_pwm pwm_leds[] = {
+> -- 
+> 1.9.1
+> 
