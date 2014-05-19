@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799AbaESRme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:42:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932450AbaESRmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:42:33 -0400
-Message-ID: <537A4282.804@redhat.com>
-Date: Mon, 19 May 2014 13:42:26 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
-References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset=UTF-8
+	id S932782AbaESRo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:44:57 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41345 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932438AbaESRo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 13:44:56 -0400
+Message-ID: <1400521493.5367.61.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] macvlan: Fix checksum errors when ip_summed is
+ CHECKSUM_PARTIAL
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michael Spang <spang@chromium.org>
+Cc: Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@free.fr>
+Date: Mon, 19 May 2014 10:44:53 -0700
+In-Reply-To: <1400520254-5142-1-git-send-email-spang@chromium.org>
+References: <1400520254-5142-1-git-send-email-spang@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 10:40 AM, Tetsuo Handa wrote:
->>From f016db5d7f84d6321132150b13c5888ef67d694f Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 19 May 2014 23:24:11 +0900
-> Subject: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+On Mon, 2014-05-19 at 13:24 -0400, Michael Spang wrote:
+> Changing ip_summed from CHECKSUM_PARTIAL to CHECKSUM_UNNECESSARY
+> will result in an incorrect checksum if the packet is sent off the box.
 > 
-> I can observe that commit 35cd7815 "vmscan: throttle direct reclaim when
-> too many pages are isolated already" causes RHEL7 environment to stall with
-> 0% CPU usage when a certain type of memory pressure is given.
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Michael Spang <spang@chromium.org>
+> ---
+>  drivers/net/macvlan.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+> index 753a8c2..806b56a 100644
+> --- a/drivers/net/macvlan.c
+> +++ b/drivers/net/macvlan.c
+> @@ -267,7 +267,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+>  
+>  	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
+>  		const struct ethhdr *eth = (void *)skb->data;
+> -		skb->ip_summed = CHECKSUM_UNNECESSARY;
+> +
+> +		if (skb->ip_summed == CHECKSUM_NONE)
+> +			skb->ip_summed = CHECKSUM_UNNECESSARY;
+>  
+>  		/* send to other bridge ports directly */
+>  		if (is_multicast_ether_addr(eth->h_dest)) {
 
-> Since the kernel worker thread needs to escape from the while loop so that
-> alloc_page() can allocate memory (and eventually allow xfs_vm_writepage()
-> to release memory), I think that we should not block forever. This patch
-> introduces 30 seconds timeout for userspace processes and 5 seconds timeout
-> for kernel processes.
+Hi Michael
 
-I suspect the fundamental problem is that other processes can
-drive the system back to the limit, and unlucky processes can
-end up starved forever.
+Any idea why commit 12a2856b604476c27d85a5f9a57ae1661fc46019
+added this stuff then ?
 
-This makes your fix (or something like it) necessary.
+You should give more infos of your use case.
 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC Daniel Lezcano <daniel.lezcano@free.fr>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I removed stable@ , as stable submissions are not done like that.
 
--- 
-All rights reversed
+
