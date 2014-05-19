@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaESBnM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 21:43:12 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:40488 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443AbaESBnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 21:43:11 -0400
-Date: Mon, 19 May 2014 10:42:32 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Subject: [PATCH V2] staging: dgap: implement error handling in
- dgap_tty_register()
-Message-ID: <20140519014232.GA847@devel.8.8.4.4>
+	id S1752599AbaESBnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 21:43:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:57143 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444AbaESBnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 21:43:47 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Hugh Dickins <hughd@google.com>,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
+In-Reply-To: <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 19 May 2014 09:42:46 +0930
+Message-ID: <87wqdik4n5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3acdda98e73a153a5fb32c2cd401d2dde1653b0a Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Fri, 25 Apr 2014 16:04:59 +0900
-Subject: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
+Hugh Dickins <hughd@google.com> writes:
+> On Thu, 15 May 2014, Madhavan Srinivasan wrote:
+>> 
+>> Hi Ingo,
+>> 
+>> 	Do you have any comments for the latest version of the patchset. If
+>> not, kindly can you pick it up as is.
+>> 
+>> 
+>> With regards
+>> Maddy
+>> 
+>> > Kirill A. Shutemov with 8c6e50b029 commit introduced
+>> > vm_ops->map_pages() for mapping easy accessible pages around
+>> > fault address in hope to reduce number of minor page faults.
+>> > 
+>> > This patch creates infrastructure to modify the FAULT_AROUND_ORDER
+>> > value using mm/Kconfig. This will enable architecture maintainers
+>> > to decide on suitable FAULT_AROUND_ORDER value based on
+>> > performance data for that architecture. First patch also defaults
+>> > FAULT_AROUND_ORDER Kconfig element to 4. Second patch list
+>> > out the performance numbers for powerpc (platform pseries) and
+>> > initialize the fault around order variable for pseries platform of
+>> > powerpc.
+>
+> Sorry for not commenting earlier - just reminded by this ping to Ingo.
+>
+> I didn't study your numbers, but nowhere did I see what PAGE_SIZE you use.
+>
+> arch/powerpc/Kconfig suggests that Power supports base page size of
+> 4k, 16k, 64k or 256k.
+>
+> I would expect your optimal fault_around_order to depend very much on
+> the base page size.
 
-- alloc_tty_driver() is deprecated so it is changed to
-tty_alloc_driver()
-- Pointers which are allocated by alloc_tty_driver() and kzalloc()
-can be NULL so it need to check NULL for them.
-- If one of those is failed, it need to add proper handler for
-avoiding memory leak.
-- If both of drivers are registered normally, and
-then set TRUE to dgap_major_serial{print}_registered. If one
-of drivers is failed to register, leave a default value as
-FALSE.
+It was 64k, which is what PPC64 uses on all the major distributions.
+You really only get a choice of 4k and 64k with 64 bit power.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-V2: rebased on staging-next branch
+> Perhaps fault_around_size would provide a more useful default?
 
- drivers/staging/dgap/dgap.c |   49 +++++++++++++++++++++++++++++++++---------
- 1 files changed, 38 insertions(+), 11 deletions(-)
+That seems to fit.  With 4k pages and order 4, you're asking for 64k.
+Maddy's result shows 64k is also reasonable for 64k pages.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index d7cfc45..e4cb7aa 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -1212,7 +1212,9 @@ static int dgap_tty_register(struct board_t *brd)
- {
- 	int rc = 0;
- 
--	brd->serial_driver = alloc_tty_driver(MAXPORTS);
-+	brd->serial_driver = tty_alloc_driver(MAXPORTS, 0);
-+	if (IS_ERR(brd->serial_driver))
-+		return PTR_ERR(brd->serial_driver);
- 
- 	snprintf(brd->serial_name, MAXTTYNAMELEN, "tty_dgap_%d_",
- 		 brd->boardnum);
-@@ -1231,8 +1233,10 @@ static int dgap_tty_register(struct board_t *brd)
- 	/* The kernel wants space to store pointers to tty_structs */
- 	brd->serial_driver->ttys =
- 		kzalloc(MAXPORTS * sizeof(struct tty_struct *), GFP_KERNEL);
--	if (!brd->serial_driver->ttys)
--		return -ENOMEM;
-+	if (!brd->serial_driver->ttys) {
-+		rc = -ENOMEM;
-+		goto free_serial_drv;
-+	}
- 
- 	/*
- 	 * Entry points for driver.  Called by the kernel from
-@@ -1245,7 +1249,11 @@ static int dgap_tty_register(struct board_t *brd)
- 	 * again, separately so we don't get the LD confused about what major
- 	 * we are when we get into the dgap_tty_open() routine.
- 	 */
--	brd->print_driver = alloc_tty_driver(MAXPORTS);
-+	brd->print_driver = tty_alloc_driver(MAXPORTS, 0);
-+	if (IS_ERR(brd->print_driver)) {
-+		rc = PTR_ERR(brd->print_driver);
-+		goto free_serial_ttys;
-+	}
- 
- 	snprintf(brd->print_name, MAXTTYNAMELEN, "pr_dgap_%d_",
- 		 brd->boardnum);
-@@ -1264,8 +1272,10 @@ static int dgap_tty_register(struct board_t *brd)
- 	/* The kernel wants space to store pointers to tty_structs */
- 	brd->print_driver->ttys =
- 		kzalloc(MAXPORTS * sizeof(struct tty_struct *), GFP_KERNEL);
--	if (!brd->print_driver->ttys)
--		return -ENOMEM;
-+	if (!brd->print_driver->ttys) {
-+		rc = -ENOMEM;
-+		goto free_print_drv;
-+	}
- 
- 	/*
- 	 * Entry points for driver.  Called by the kernel from
-@@ -1276,20 +1286,37 @@ static int dgap_tty_register(struct board_t *brd)
- 	/* Register tty devices */
- 	rc = tty_register_driver(brd->serial_driver);
- 	if (rc < 0)
--		return rc;
--	brd->dgap_major_serial_registered = TRUE;
--	dgap_boards_by_major[brd->serial_driver->major] = brd;
--	brd->dgap_serial_major = brd->serial_driver->major;
-+		goto free_print_ttys;
- 
- 	/* Register Transparent Print devices */
- 	rc = tty_register_driver(brd->print_driver);
- 	if (rc < 0)
--		return rc;
-+		goto unregister_serial_drv;
-+
-+	brd->dgap_major_serial_registered = TRUE;
-+	dgap_boards_by_major[brd->serial_driver->major] = brd;
-+	brd->dgap_serial_major = brd->serial_driver->major;
-+
- 	brd->dgap_major_transparent_print_registered = TRUE;
- 	dgap_boards_by_major[brd->print_driver->major] = brd;
- 	brd->dgap_transparent_print_major = brd->print_driver->major;
- 
- 	return rc;
-+
-+unregister_serial_drv:
-+	tty_unregister_driver(brd->serial_driver);
-+free_print_ttys:
-+	kfree(brd->print_driver->ttys);
-+	brd->print_driver->ttys = NULL;
-+free_print_drv:
-+	put_tty_driver(brd->print_driver);
-+free_serial_ttys:
-+	kfree(brd->serial_driver->ttys);
-+	brd->serial_driver->ttys = NULL;
-+free_serial_drv:
-+	put_tty_driver(brd->serial_driver);
-+
-+	return rc;
- }
- 
- /*
--- 
-1.7.1
+Perhaps we try to generalize from two data points (a slight improvement
+over doing it from 1!), eg:
 
+/* 4 seems good for 4k-page x86, 0 seems good for 64k page ppc64, so: */
+unsigned int fault_around_order __read_mostly =
+        (16 - PAGE_SHIFT < 0 ? 0 : 16 - PAGE_SHIFT);
+
+Cheers,
+Rusty.
