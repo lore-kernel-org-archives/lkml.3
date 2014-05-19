@@ -1,155 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaESTQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:16:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932711AbaESTOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:14:40 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: jolsa@redhat.com
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/7] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Date: Mon, 19 May 2014 15:13:48 -0400
-Message-Id: <1400526833-141779-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
-References: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
+	id S964962AbaESTQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:16:26 -0400
+Received: from smtprelay0242.hostedemail.com ([216.40.44.242]:37969 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932431AbaESTQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 15:16:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3874:4250:4321:4384:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bat39_8ec42503e6418
+X-Filterd-Recvd-Size: 1236
+Message-ID: <1400526979.14238.16.camel@joe-AO725>
+Subject: Re: [PATCH 5/5] usb: gadget: net2280: Use pr_* function
+From: Joe Perches <joe@perches.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, auttamchandani@logicube.com,
+        stern@rowland.harvard.edu
+Date: Mon, 19 May 2014 12:16:19 -0700
+In-Reply-To: <1400526693-29776-6-git-send-email-ricardo.ribalda@gmail.com>
+References: <1400526693-29776-1-git-send-email-ricardo.ribalda@gmail.com>
+	 <1400526693-29776-6-git-send-email-ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
+On Mon, 2014-05-19 at 21:11 +0200, Ricardo Ribalda Delgado wrote:
+> VDEBUG has also been replaced by DEBUG because the same	functionality
+> (or even better) can be achieved with dynamic printk.
 
-Re-enable the mmap2 interface as we will have a user soon.
+dev_vdbg exists for that purpose.
 
-Since things have changed since perf disabled mmap2, small tweaks
-to the revert had to be done:
-
-o commit 9d4ecc88 forced (n!=8) to become (n<7)
-o a new libunwind test needed updating to use mmap2 interface
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
-v2: added a better changelog
-    fix a unwind test (thanks Jiri)
----
- kernel/events/core.c            |  4 ----
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/event.c         | 36 +++++++++++++++++++-----------------
- tools/perf/util/evsel.c         |  1 +
- 4 files changed, 21 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 0711cc9..c793cb0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6882,10 +6882,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
- 
--	/* disabled for now */
--	if (attr->mmap2)
--		return -EINVAL;
--
- 	if (attr->__reserved_1)
- 		return -EINVAL;
- 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index 108f0cd..96adb73 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -15,7 +15,7 @@ static int mmap_handler(struct perf_tool *tool __maybe_unused,
- 			struct perf_sample *sample __maybe_unused,
- 			struct machine *machine)
- {
--	return machine__process_mmap_event(machine, event, NULL);
-+	return machine__process_mmap2_event(machine, event, NULL);
- }
- 
- static int init_live_machine(struct machine *machine)
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 65795b8..5e7c722 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -178,13 +178,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP;
-+	event->header.type = PERF_RECORD_MMAP2;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
-+		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -195,14 +196,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
--		       &event->mmap.start, &event->mmap.len, prot,
--		       &event->mmap.pgoff,
--		       execname);
--		/*
-- 		 * Anon maps don't have the execname.
-- 		 */
--		if (n < 4)
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
-+		       &event->mmap2.start, &event->mmap2.len, prot,
-+		       &event->mmap2.pgoff, &event->mmap2.maj,
-+		       &event->mmap2.min,
-+		       &ino, execname);
-+
-+		event->mmap2.ino = (u64)ino;
-+
-+		if (n < 7)
- 			continue;
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
-@@ -223,15 +225,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
- 
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap.filename, execname, size);
-+		memcpy(event->mmap2.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap.len -= event->mmap.start;
--		event->mmap.header.size = (sizeof(event->mmap) -
--					(sizeof(event->mmap.filename) - size));
--		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--		event->mmap.header.size += machine->id_hdr_size;
--		event->mmap.pid = tgid;
--		event->mmap.tid = pid;
-+		event->mmap2.len -= event->mmap.start;
-+		event->mmap2.header.size = (sizeof(event->mmap2) -
-+					(sizeof(event->mmap2.filename) - size));
-+		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
-+		event->mmap2.header.size += machine->id_hdr_size;
-+		event->mmap2.pid = tgid;
-+		event->mmap2.tid = pid;
- 
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5c28d82..21154da 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		perf_evsel__set_sample_bit(evsel, WEIGHT);
- 
- 	attr->mmap  = track;
-+	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
- 
- 	if (opts->sample_transaction)
--- 
-1.7.11.7
 
