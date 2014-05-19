@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaESBnu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 21:43:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:57143 "EHLO ozlabs.org"
+	id S1752540AbaESBnt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 21:43:49 -0400
+Received: from ozlabs.org ([103.22.144.67]:33508 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaESBnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751790AbaESBnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 May 2014 21:43:47 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
-        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
-        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
-In-Reply-To: <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Amos Kong <akong@redhat.com>, linux-kernel@vger.kernel.org
+Cc: "Sasha Levin" <sasha.levin@oracle.com>
+Subject: Re: [PATCH 1/2] virtio-rng: cope if struct hwrng.name is changed to const
+In-Reply-To: <20140515153140.49b8028b@canb.auug.org.au>
+References: <20140515153140.49b8028b@canb.auug.org.au>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 19 May 2014 09:42:46 +0930
-Message-ID: <87wqdik4n5.fsf@rustcorp.com.au>
+Date: Mon, 19 May 2014 09:30:53 +0930
+Message-ID: <87zjiek56y.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins <hughd@google.com> writes:
-> On Thu, 15 May 2014, Madhavan Srinivasan wrote:
->> 
->> Hi Ingo,
->> 
->> 	Do you have any comments for the latest version of the patchset. If
->> not, kindly can you pick it up as is.
->> 
->> 
->> With regards
->> Maddy
->> 
->> > Kirill A. Shutemov with 8c6e50b029 commit introduced
->> > vm_ops->map_pages() for mapping easy accessible pages around
->> > fault address in hope to reduce number of minor page faults.
->> > 
->> > This patch creates infrastructure to modify the FAULT_AROUND_ORDER
->> > value using mm/Kconfig. This will enable architecture maintainers
->> > to decide on suitable FAULT_AROUND_ORDER value based on
->> > performance data for that architecture. First patch also defaults
->> > FAULT_AROUND_ORDER Kconfig element to 4. Second patch list
->> > out the performance numbers for powerpc (platform pseries) and
->> > initialize the fault around order variable for pseries platform of
->> > powerpc.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/char/hw_random/virtio-rng.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 >
-> Sorry for not commenting earlier - just reminded by this ping to Ingo.
->
-> I didn't study your numbers, but nowhere did I see what PAGE_SIZE you use.
->
-> arch/powerpc/Kconfig suggests that Power supports base page size of
-> 4k, 16k, 64k or 256k.
->
-> I would expect your optimal fault_around_order to depend very much on
-> the base page size.
+> Based on the current virtio tree in linux-next.
 
-It was 64k, which is what PPC64 uses on all the major distributions.
-You really only get a choice of 4k and 64k with 64 bit power.
+Actually, Sasha Levin did a nice cleanup which replaces these two,
+and restores the const.
 
-> Perhaps fault_around_size would provide a more useful default?
+I've applied them, so you should have it in today's linux-next.
 
-That seems to fit.  With 4k pages and order 4, you're asking for 64k.
-Maddy's result shows 64k is also reasonable for 64k pages.
-
-Perhaps we try to generalize from two data points (a slight improvement
-over doing it from 1!), eg:
-
-/* 4 seems good for 4k-page x86, 0 seems good for 64k page ppc64, so: */
-unsigned int fault_around_order __read_mostly =
-        (16 - PAGE_SHIFT < 0 ? 0 : 16 - PAGE_SHIFT);
-
-Cheers,
+Thanks,
 Rusty.
