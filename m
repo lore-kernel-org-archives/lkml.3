@@ -1,126 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964877AbaESTqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:46:20 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:61231 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835AbaESTqS (ORCPT
+	id S1755151AbaESTsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:48:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48289 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaESTsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:46:18 -0400
-Message-ID: <537A5F85.4090709@gmail.com>
-Date: Mon, 19 May 2014 21:46:13 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jisheng Zhang <jszhang@marvell.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] Marvell Berlin full clock support
-References: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 May 2014 15:48:52 -0400
+Date: Mon, 19 May 2014 12:48:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the akpm tree
+Message-Id: <20140519124850.7d4470e179c237552f363658@linux-foundation.org>
+In-Reply-To: <1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
+References: <20140519181314.1b92c548@canb.auug.org.au>
+	<1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 06:43 PM, Sebastian Hesselbarth wrote:
-> Mike,
-> 
-> this is v2 of the Berlin SoC clock driver [1] but with a reworked DT
-> binding as requested [2]. We decided to not even try to split up the chip
-> control registers that deal with pinmux, padmux, clock, reset, and evil
-> stuff we haven't even looked at. Instead we keep a single node that clock
-> driver will remap early, while proper platform_drivers use a regmap
-> instead. Although clock and other drivers share the same register range,
-> they use individual registers exclusively.
-> 
-> There are some functional fixes in the single clock drivers, I noticed
-> while retesting each individial driver. There will be more to fixup but
-> without any drivers actually using the clocks, it is hard to tell what
-> isn't working now.
-> 
-> Anyway, the current binding should match what you requested and having
-> a clock driver for v3.16 will really be a huge benefit for us to work
-> on more driver support.
-> 
-> If you are fine with it, please take patches 2-7 and I'll pick up
-> 1,8-10 in berlin branch.
+On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-nit: I also take patch 2 as it is the required DT include. Makes 3-7
-to pick up for you.
+> > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
+> > spinning").
+> 
+> If CONFIG_SMP, we add two new fields to the rwsem structure
+> (include/linux/rwsem.h) and likewise we update the
+> __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
+> something like that is to be using the spinlock variant
+> (rwsem-spinlock.h).
+> 
+> The fix for that would be:
+> 
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index 3e108f1..091d993 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+>  # define __RWSEM_DEP_MAP_INIT(lockname)
+>  #endif
+>  
+> -#ifdef CONFIG_SMP
+> +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
+>  #define __RWSEM_INITIALIZER(name)                      \
+>         { RWSEM_UNLOCKED_VALUE,                         \
+>           __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),     \
 
-Sebastian
-
-> [1] https://lkml.kernel.org/r/1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com
-> [2] https://lkml.kernel.org/r/20140515044106.19795.57249@quantum
-> 
-> Alexandre Belloni (4):
->   clk: berlin: add driver for BG2x simple PLLs
->   clk: berlin: add driver for BG2x complex divider cells
->   clk: berlin: add core clock driver for BG2Q
->   ARM: dts: berlin: convert BG2Q to DT clock nodes
-> 
-> Sebastian Hesselbarth (6):
->   dt-binding: ARM: add clock binding docs for Marvell Berlin2 SoCs
->   clk: berlin: add binding include for Berlin SoC clock ids
->   clk: berlin: add driver for BG2x audio/video PLL
->   clk: berlin: add core clock driver for BG2/BG2CD
->   ARM: dts: berlin: convert BG2CD to DT clock nodes
->   ARM: dts: berlin: convert BG2 to DT clock nodes
-> 
->  .../devicetree/bindings/arm/marvell,berlin.txt     |  47 ++
->  arch/arm/boot/dts/berlin2.dtsi                     |  56 +-
->  arch/arm/boot/dts/berlin2cd.dtsi                   |  53 +-
->  arch/arm/boot/dts/berlin2q.dtsi                    |  54 +-
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/berlin/Makefile                        |   4 +
->  drivers/clk/berlin/berlin2-avpll.c                 | 393 ++++++++++++
->  drivers/clk/berlin/berlin2-avpll.h                 |  36 ++
->  drivers/clk/berlin/berlin2-div.c                   | 265 ++++++++
->  drivers/clk/berlin/berlin2-div.h                   |  89 +++
->  drivers/clk/berlin/berlin2-pll.c                   | 117 ++++
->  drivers/clk/berlin/berlin2-pll.h                   |  37 ++
->  drivers/clk/berlin/bg2.c                           | 691 +++++++++++++++++++++
->  drivers/clk/berlin/bg2q.c                          | 389 ++++++++++++
->  drivers/clk/berlin/common.h                        |  29 +
->  include/dt-bindings/clock/berlin2.h                |  45 ++
->  include/dt-bindings/clock/berlin2q.h               |  31 +
->  17 files changed, 2240 insertions(+), 97 deletions(-)
->  create mode 100644 drivers/clk/berlin/Makefile
->  create mode 100644 drivers/clk/berlin/berlin2-avpll.c
->  create mode 100644 drivers/clk/berlin/berlin2-avpll.h
->  create mode 100644 drivers/clk/berlin/berlin2-div.c
->  create mode 100644 drivers/clk/berlin/berlin2-div.h
->  create mode 100644 drivers/clk/berlin/berlin2-pll.c
->  create mode 100644 drivers/clk/berlin/berlin2-pll.h
->  create mode 100644 drivers/clk/berlin/bg2.c
->  create mode 100644 drivers/clk/berlin/bg2q.c
->  create mode 100644 drivers/clk/berlin/common.h
->  create mode 100644 include/dt-bindings/clock/berlin2.h
->  create mode 100644 include/dt-bindings/clock/berlin2q.h
-> 
-> ---
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: Jisheng Zhang <jszhang@marvell.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> 
-
+that squishes the warnings for me.
