@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008AbaESRup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:50:45 -0400
+	id S932759AbaESRul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:50:41 -0400
 Received: from mga09.intel.com ([134.134.136.24]:23092 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589AbaESRun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:50:43 -0400
+	id S1752589AbaESRuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 13:50:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="542992479"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH] x86: remove obsolete comment in uapi/e820.h
-Date: Mon, 19 May 2014 11:50:24 -0600
-Message-Id: <1400521824-21040-1-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
+   d="scan'208";a="542992340"
+Message-ID: <537A445E.5030604@intel.com>
+Date: Mon, 19 May 2014 10:50:22 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Armin Rigo <arigo@tunes.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Kenny Simpson <theonetruekenny@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: remap_file_pages() use
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com> <20140519130114.GA3140@dhcp22.suse.cz> <20140519143540.BE9F6E009B@blue.fi.intel.com> <20140519143837.GA5228@infradead.org> <20140519150238.67898E009B@blue.fi.intel.com> <20140519151104.GA16736@infradead.org> <20140519151758.A2162E009B@blue.fi.intel.com> <CAMSv6X1-17HMTO=b6QOZA0Xm1combFxV4wuX1gPMUqC02EKrJA@mail.gmail.com> <20140519155336.86E93E009B@blue.fi.intel.com> <CAMSv6X2EmhgVou03oLTAhpGbNv712mbNWCpL2PXWCXpW9M2nCQ@mail.gmail.com>
+In-Reply-To: <CAMSv6X2EmhgVou03oLTAhpGbNv712mbNWCpL2PXWCXpW9M2nCQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A comment introduced by this commit:
+On 05/19/2014 09:42 AM, Armin Rigo wrote:
+> If there is an official way to know in advance how many remappings our
+> process is allowed to perform, then we could adapt as the size
+> increases.  Or maybe catching ENOMEM and doubling the remapping size
+> (in some process-wide synchronization point).  All in all, thanks for
+> the note: it looks like there are solutions (even if less elegant than
+> remap_file_pages from the user's perspective).
 
-028b785888c5 x86 boot: extend some internal memory map arrays to handle
-	larger EFI input
-
-had to do with some nested preprocessor directives.  The directives were
-split into separate files by this commit:
-
-af170c5061dd  UAPI: (Scripted) Disintegrate arch/x86/include/asm
-
-The comment explaining their interaction was retained and is now present
-in arch/x86/include/uapi/asm/e820.h.  This comment is no longer correct,
-so delete it.
-
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
----
- arch/x86/include/uapi/asm/e820.h | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/x86/include/uapi/asm/e820.h b/arch/x86/include/uapi/asm/e820.h
-index bbae024..d993e33 100644
---- a/arch/x86/include/uapi/asm/e820.h
-+++ b/arch/x86/include/uapi/asm/e820.h
-@@ -21,11 +21,6 @@
-  * this size.
-  */
- 
--/*
-- * Odd: 'make headers_check' complains about numa.h if I try
-- * to collapse the next two #ifdef lines to a single line:
-- *	#if defined(__KERNEL__) && defined(CONFIG_EFI)
-- */
- #ifndef __KERNEL__
- #define E820_X_MAX E820MAX
- #endif
--- 
-1.9.0
-
+We keep the current count as mm->map_count in the kernel, and the limit
+is available because it's a sysctl.  It wouldn't be hard to dump
+mm->map_count out in a /proc file somewhere if it would be useful to
+you.  Would that work, or is there some other interface that would be
+more convenient?
