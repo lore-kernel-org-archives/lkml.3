@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaESXFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:05:33 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63117 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752137AbaESXFS (ORCPT
+	id S932143AbaESXFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:05:49 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:31535 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaESXFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:05:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] cpufreq: powernow-k8: Suppress checkpatch warnings
-Date: Tue, 20 May 2014 01:22:12 +0200
-Message-ID: <2759682.X7CU1JTh4P@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponF4KKjq5JwTSjeHKPfyfvi=2Qpv8+6NNODPO1DxDVrvQ@mail.gmail.com>
-References: <536FB2B8.1060505@semaphore.gr> <CAKohponF4KKjq5JwTSjeHKPfyfvi=2Qpv8+6NNODPO1DxDVrvQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 May 2014 19:05:47 -0400
+Message-ID: <1400540222.18128.6.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI/hotplug: Fix STARTING/DYING action in
+ acpi_cpu_soft_notify()
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 19 May 2014 16:57:02 -0600
+In-Reply-To: <2011129.WMiXDPUasW@vostro.rjw.lan>
+References: <1399557539-7282-1-git-send-email-toshi.kani@hp.com>
+	 <2011129.WMiXDPUasW@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 12, 2014 09:52:06 AM Viresh Kumar wrote:
-> On 11 May 2014 22:56, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> > Suppress the following checkpatch.pl warnings:
-> >
-> > - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
-> > - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
-> > - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
-> > - WARNING: quoted string split across lines
-> > - WARNING: please, no spaces at the start of a line
-> >
-> > Also, define the pr_fmt macro instead of PFX for the module name.
-> >
-> > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-
-Queued up for 3.16, thanks!
-
-> > ---
-> >
-> > Changes v1 -> v2
-> >         - Use pr_err_once instead of printk_once
-> >         - Change missing_pss_msg to macro (because pr_err_once
-> >         doesn't compile otherwise)
-> >         - Put one pr_err message in a single line instead of two
-> >         - Ignore "line over 80 characters" warnings
-> >         - Change the word "Fix" in the subject of the patch to
-> >         "Suppress" as the patch doesn't really fix anything
-> >
-> >  drivers/cpufreq/powernow-k8.c | 180 +++++++++++++++++-------------------------
-> >  drivers/cpufreq/powernow-k8.h |   2 +-
-> >  2 files changed, 74 insertions(+), 108 deletions(-)
+On Tue, 2014-05-20 at 00:55 +0200, Rafael J. Wysocki wrote:
+> On Thursday, May 08, 2014 07:58:59 AM Toshi Kani wrote:
+> > During CPU online/offline testing on a large system, one of the
+> > processors got stuck after the message "bad: scheduling from the
+> > idle thread!".  The problem is that acpi_cpu_soft_notify() calls
+> > acpi_bus_get_device() for all action types.  CPU_STARTING and
+> > CPU_DYING do not allow the notify handlers to sleep.  However,
+> > acpi_bus_get_device() can sleep in acpi_ut_acquire_mutex().
+> > 
+> > Change acpi_cpu_soft_notify() to return immediately for CPU_STARTING
+> > and CPU_DYING as they have no action in this handler.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Queued up for 3.16, thanks!
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Great! Thanks Rafael!
+-Toshi
+
