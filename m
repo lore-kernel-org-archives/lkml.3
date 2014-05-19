@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaESHME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:12:04 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11793 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaESHL2 (ORCPT
+	id S1752711AbaESHQT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:16:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45141 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaESHQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:11:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 19 May 2014 00:06:36 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/4] drm/ttm: introduce dma cache sync helpers
-Date: Mon, 19 May 2014 16:10:56 +0900
-Message-ID: <1400483458-9648-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
-References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 19 May 2014 03:16:16 -0400
+Message-ID: <5379AFB9.9030608@linaro.org>
+Date: Mon, 19 May 2014 12:46:09 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line
+ on Exynos SoCs
+References: <1400175151-27779-1-git-send-email-t.figa@samsung.com> <1400175151-27779-4-git-send-email-t.figa@samsung.com>
+In-Reply-To: <1400175151-27779-4-git-send-email-t.figa@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lucas Stach <dev@lynxeye.de>
+On 05/15/2014 11:02 PM, Tomasz Figa wrote:
+> This patch introduces a driver that handles configuration of CLKOUT pin
+> of Exynos SoCs that can be used to output certain clocks from inside of
+> the SoC to a dedicated output pin.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
 
-On arches with non-coherent PCI, we need to flush caches ourselfes at
-the appropriate places. Introduce two small helpers to make things easy
-for TTM based drivers.
+Tested the series on Exynos5420-based peach-pit board for audio playback
+(with an internal patch to set CLK_FIN_PLL as the parent of clkout).
 
-Signed-off-by: Lucas Stach <dev@lynxeye.de>
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/ttm/ttm_tt.c    | 25 +++++++++++++++++++++++++
- include/drm/ttm/ttm_bo_driver.h | 28 ++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
+Tested-by: Tushar Behera <tushar.behera@linaro.org>
 
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 75f319090043..05a316b71ad1 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -38,6 +38,7 @@
- #include <linux/swap.h>
- #include <linux/slab.h>
- #include <linux/export.h>
-+#include <linux/dma-mapping.h>
- #include <drm/drm_cache.h>
- #include <drm/drm_mem_util.h>
- #include <drm/ttm/ttm_module.h>
-@@ -248,6 +249,30 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
- }
- EXPORT_SYMBOL(ttm_dma_tt_fini);
- 
-+void ttm_dma_tt_cache_sync_for_device(struct ttm_dma_tt *ttm_dma,
-+				      struct device *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
-+		dma_sync_single_for_device(dev, ttm_dma->dma_address[i],
-+					   PAGE_SIZE, DMA_TO_DEVICE);
-+	}
-+}
-+EXPORT_SYMBOL(ttm_dma_tt_cache_sync_for_device);
-+
-+void ttm_dma_tt_cache_sync_for_cpu(struct ttm_dma_tt *ttm_dma,
-+				   struct device *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
-+		dma_sync_single_for_cpu(dev, ttm_dma->dma_address[i],
-+					PAGE_SIZE, DMA_FROM_DEVICE);
-+	}
-+}
-+EXPORT_SYMBOL(ttm_dma_tt_cache_sync_for_cpu);
-+
- void ttm_tt_unbind(struct ttm_tt *ttm)
- {
- 	int ret;
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index a5183da3ef92..52fb709568fc 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -41,6 +41,7 @@
- #include <linux/fs.h>
- #include <linux/spinlock.h>
- #include <linux/reservation.h>
-+#include <linux/device.h>
- 
- struct ttm_backend_func {
- 	/**
-@@ -690,6 +691,33 @@ extern int ttm_tt_swapout(struct ttm_tt *ttm,
-  */
- extern void ttm_tt_unpopulate(struct ttm_tt *ttm);
- 
-+/**
-+ * ttm_dma_tt_cache_sync_for_device:
-+ *
-+ * @ttm A struct ttm_tt of the type returned by ttm_dma_tt_init.
-+ * @dev A struct device representing the device to which to sync.
-+ *
-+ * This function will flush the CPU caches on arches where snooping in the
-+ * TT is not available. On fully coherent arches this will turn into an (almost)
-+ * noop. This makes sure that data written by the CPU is visible to the device.
-+ */
-+extern void ttm_dma_tt_cache_sync_for_device(struct ttm_dma_tt *ttm_dma,
-+					     struct device *dev);
-+
-+/**
-+ * ttm_dma_tt_cache_sync_for_cpu:
-+ *
-+ * @ttm A struct ttm_tt of the type returned by ttm_dma_tt_init.
-+ * @dev A struct device representing the device from which to sync.
-+ *
-+ * This function will invalidate the CPU caches on arches where snooping in the
-+ * TT is not available. On fully coherent arches this will turn into an (almost)
-+ * noop. This makes sure that the CPU does not read any stale cached or
-+ * prefetched data.
-+ */
-+extern void ttm_dma_tt_cache_sync_for_cpu(struct ttm_dma_tt *ttm_dma,
-+					  struct device *dev);
-+
- /*
-  * ttm_bo.c
-  */
+>  Example :
+>  pmu_system_controller: system-controller@10040000 {
+>  	compatible = "samsung,exynos5250-pmu", "syscon";
+>  	reg = <0x10040000 0x5000>;
+> +	#clock-cells = <0>;
+> +	clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
+> +			"clkout4", "clkout8", "clkout9";
+> +	clocks = <&clock CLK_OUT_DMC>, <&clock CLK_OUT_TOP>,
+> +		<&clock CLK_OUT_LEFTBUS>, <&clock CLK_OUT_RIGHTBUS>,
+> +		<&clock CLK_OUT_CPU>, <&clock CLK_XXTI>,
+> +		<&clock CLK_XUSBXTI>;
+>  };
+
+Adding an usage example in the documentation would be helpful.
+
+
 -- 
-1.9.2
-
+Tushar Behera
