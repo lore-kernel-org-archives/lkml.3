@@ -1,339 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaESS1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:27:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49274 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaESS1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:27:53 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] printk: Use symbolic defines for console loglevels
-Date: Mon, 19 May 2014 20:27:32 +0200
-Message-Id: <1400524052-25625-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
+	id S1752746AbaESSbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:31:25 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:45732 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaESSbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 14:31:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.11.1405191908450.1847@denkbrett>
+References: <alpine.LFD.2.11.1405191908450.1847@denkbrett>
+Date: Mon, 19 May 2014 11:31:22 -0700
+Message-ID: <CAOMFOmUzTJLJdUTCVwSt1H=LDiproX-X19p0bjoDMHJrkyTR9g@mail.gmail.com>
+Subject: Re: hanging aio process
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Hi
 
-... instead of naked numbers.
+On Mon, May 19, 2014 at 10:38 AM, Sebastian Ott
+<sebott@linux.vnet.ibm.com> wrote:
+> Hello,
+>
+> on the latest kernel a fio job with 4 workers using libaio hangs.
+>
+> git bisect points to:
+>         commit e02ba72aabfade4c9cd6e3263e9b57bf890ad25c
+>         Author: Anatol Pomozov <anatol.pomozov@gmail.com>
+>         Date:   Tue Apr 15 11:31:33 2014 -0700
+>
+>             aio: block io_destroy() until all context requests are completed
+>
+>
+> The fio workers are on the wait_for_completion in sys_io_destroy.
 
-Stuff in sysrq.c used to set it to 8 which is supposed to mean above
-default level so set it to DEBUG instead as we're terminating/killing
-all tasks and we want to be verbose there.
+I ran your script on my dev machine (kernel built from current HEAD
+v3.15-rc5-77-g14186fe) and fio (versions 1.35 and 2.1.9) - it works
+fine. I use only 1 partition as it is what I have on my dev machine.
 
-There should be no functionality change resulting from this patch.
+dev:~# uname -a
+Linux lpa12 3.15.0-smp-DEV #1 SMP Mon May 19 10:43:11 PDT 2014 x86_64 GNU/Linux
+dev:~# ./fio fio.config
+file1: (g=0): rw=randrw, bs=4K-4K/4K-4K/4K-4K, ioengine=libaio, iodepth=32
+fio-2.1.9
+Starting 1 process
+Jobs: 1 (f=1): [V] [97.7% done] [23148KB/0KB/0KB /s] [5787/0/0 iops]
+[eta 00m:06s]
+file1: (groupid=0, jobs=1): err= 0: pid=8886: Mon May 19 11:28:01 2014
+  read : io=262144KB, bw=1030.4KB/s, iops=257, runt=254422msec
+    slat (usec): min=2, max=6661.1K, avg=1683383.24, stdev=2043757.55
+    clat (usec): min=502, max=1790.7K, avg=101036.69, stdev=130084.58
+     lat (usec): min=516, max=6670.5K, avg=1784420.38, stdev=1967789.22
+    clat percentiles (msec):
+     |  1.00th=[    5],  5.00th=[    6], 10.00th=[    6], 20.00th=[    6],
+     | 30.00th=[    6], 40.00th=[    6], 50.00th=[    6], 60.00th=[   96],
+     | 70.00th=[  151], 80.00th=[  206], 90.00th=[  285], 95.00th=[  359],
+     | 99.00th=[  523], 99.50th=[  586], 99.90th=[  758], 99.95th=[  840],
+     | 99.99th=[ 1090]
+    bw (KB  /s): min=  354, max=  738, per=51.26%, avg=527.94, stdev=56.33
+  write: io=130924KB, bw=538931B/s, iops=131, runt=248763msec
+    slat (usec): min=3, max=211966, avg=111.03, stdev=2891.12
+    clat (usec): min=24, max=278755, avg=46127.52, stdev=40482.33
+     lat (usec): min=432, max=278772, avg=46238.99, stdev=40477.33
+    clat percentiles (usec):
+     |  1.00th=[  636],  5.00th=[ 1032], 10.00th=[ 3184], 20.00th=[ 9920],
+     | 30.00th=[18560], 40.00th=[28544], 50.00th=[38656], 60.00th=[48896],
+     | 70.00th=[59648], 80.00th=[73216], 90.00th=[96768], 95.00th=[128512],
+     | 99.00th=[183296], 99.50th=[201728], 99.90th=[236544], 99.95th=[250880],
+     | 99.99th=[276480]
+    bw (KB  /s): min=  262, max=  788, per=100.00%, avg=527.29, stdev=86.42
+    lat (usec) : 50=0.01%, 100=0.01%, 250=0.04%, 500=0.02%, 750=0.82%
+    lat (usec) : 1000=0.83%
+    lat (msec) : 2=0.97%, 4=1.72%, 10=36.38%, 20=4.35%, 50=11.45%
+    lat (msec) : 100=14.21%, 250=20.03%, 500=8.34%, 750=0.76%, 1000=0.07%
+    lat (msec) : 2000=0.01%
+  cpu          : usr=0.71%, sys=0.65%, ctx=96595, majf=0, minf=775
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=99.9%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.1%, 64=0.0%, >=64=0.0%
+     issued    : total=r=65536/w=32731/d=0, short=r=0/w=0/d=0
+     latency   : target=0, window=0, percentile=100.00%, depth=32
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: x86@kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: kgdb-bugreport@lists.sourceforge.net
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/head64.c      |  2 +-
- arch/x86/platform/uv/uv_nmi.c |  2 +-
- drivers/nubus/nubus.c         | 18 +++++++++---------
- drivers/tty/sysrq.c           |  8 ++++----
- include/linux/printk.h        | 15 +++++++++++++--
- init/main.c                   |  4 ++--
- kernel/debug/kdb/kdb_bt.c     |  2 +-
- kernel/debug/kdb/kdb_io.c     |  2 +-
- kernel/debug/kdb/kdb_main.c   |  2 +-
- kernel/printk/printk.c        | 13 +++----------
- 10 files changed, 36 insertions(+), 32 deletions(-)
+Run status group 0 (all jobs):
+   READ: io=262144KB, aggrb=1030KB/s, minb=1030KB/s, maxb=1030KB/s,
+mint=254422msec, maxt=254422msec
+  WRITE: io=130924KB, aggrb=526KB/s, minb=526KB/s, maxb=526KB/s,
+mint=248763msec, maxt=248763msec
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 068054f4bf20..eda1a865641e 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	 */
- 	load_ucode_bsp();
- 
--	if (console_loglevel == 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		early_printk("Kernel alive\n");
- 
- 	clear_page(init_level4_pgt);
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index be27da60dc8f..c89c93320c12 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -85,7 +85,7 @@ static cpumask_var_t uv_nmi_cpu_mask;
-  * Default is all stack dumps go to the console and buffer.
-  * Lower level to send to log buffer only.
-  */
--static int uv_nmi_loglevel = 7;
-+static int uv_nmi_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
- module_param_named(dump_loglevel, uv_nmi_loglevel, int, 0644);
- 
- /*
-diff --git a/drivers/nubus/nubus.c b/drivers/nubus/nubus.c
-index 43926cd25ae8..5066a7ef7b6c 100644
---- a/drivers/nubus/nubus.c
-+++ b/drivers/nubus/nubus.c
-@@ -473,7 +473,7 @@ static struct nubus_dev* __init
- 	if (slot == 0 && (unsigned long)dir.base % 2)
- 		dir.base += 1;
- 	
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_functional_resource: parent is 0x%p, dir is 0x%p\n",
- 		       parent->base, dir.base);
- 
-@@ -568,7 +568,7 @@ static int __init nubus_get_vidnames(struct nubus_board* board,
- 
- 	printk(KERN_INFO "    video modes supported:\n");
- 	nubus_get_subdir(parent, &dir);
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_vidnames: parent is 0x%p, dir is 0x%p\n",
- 		       parent->base, dir.base);
- 
-@@ -629,7 +629,7 @@ static int __init nubus_get_vendorinfo(struct nubus_board* board,
- 
- 	printk(KERN_INFO "    vendor info:\n");
- 	nubus_get_subdir(parent, &dir);
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_vendorinfo: parent is 0x%p, dir is 0x%p\n",
- 		       parent->base, dir.base);
- 
-@@ -654,7 +654,7 @@ static int __init nubus_get_board_resource(struct nubus_board* board, int slot,
- 	struct nubus_dirent ent;
- 	
- 	nubus_get_subdir(parent, &dir);
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_board_resource: parent is 0x%p, dir is 0x%p\n",
- 		       parent->base, dir.base);
- 
-@@ -753,19 +753,19 @@ static void __init nubus_find_rom_dir(struct nubus_board* board)
- 	if (nubus_readdir(&dir, &ent) == -1)
- 		goto badrom;
- 
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_INFO "nubus_get_rom_dir: entry %02x %06x\n", ent.type, ent.data);
- 	/* This one takes us to where we want to go. */
- 	if (nubus_readdir(&dir, &ent) == -1) 
- 		goto badrom;
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_rom_dir: entry %02x %06x\n", ent.type, ent.data);
- 	nubus_get_subdir(&ent, &dir);
- 
- 	/* Resource ID 01, also an "Unknown Macintosh" */
- 	if (nubus_readdir(&dir, &ent) == -1) 
- 		goto badrom;
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_rom_dir: entry %02x %06x\n", ent.type, ent.data);
- 
- 	/* FIXME: the first one is *not* always the right one.  We
-@@ -780,7 +780,7 @@ static void __init nubus_find_rom_dir(struct nubus_board* board)
- 	   path to that address... */
- 	if (nubus_readdir(&dir, &ent) == -1)
- 		goto badrom;
--	if (console_loglevel >= 10)
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
- 		printk(KERN_DEBUG "nubus_get_rom_dir: entry %02x %06x\n", ent.type, ent.data);
- 	
- 	/* Bwahahahaha... */
-@@ -816,7 +816,7 @@ static struct nubus_board* __init nubus_add_board(int slot, int bytelanes)
- 	board->fblock = rp;
- 
- 	/* Dump the format block for debugging purposes */
--	if (console_loglevel >= 10) {
-+	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG) {
- 		int i;
- 		printk(KERN_DEBUG "Slot %X, format block at 0x%p\n",
- 		       slot, rp);
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index ce396ecdf412..b767a64e49d9 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -88,7 +88,7 @@ static void sysrq_handle_loglevel(int key)
- 	int i;
- 
- 	i = key - '0';
--	console_loglevel = 7;
-+	console_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
- 	printk("Loglevel set to %d\n", i);
- 	console_loglevel = i;
- }
-@@ -343,7 +343,7 @@ static void send_sig_all(int sig)
- static void sysrq_handle_term(int key)
- {
- 	send_sig_all(SIGTERM);
--	console_loglevel = 8;
-+	console_loglevel = CONSOLE_LOGLEVEL_DEBUG;
- }
- static struct sysrq_key_op sysrq_term_op = {
- 	.handler	= sysrq_handle_term,
-@@ -387,7 +387,7 @@ static struct sysrq_key_op sysrq_thaw_op = {
- static void sysrq_handle_kill(int key)
- {
- 	send_sig_all(SIGKILL);
--	console_loglevel = 8;
-+	console_loglevel = CONSOLE_LOGLEVEL_DEBUG;
- }
- static struct sysrq_key_op sysrq_kill_op = {
- 	.handler	= sysrq_handle_kill,
-@@ -520,7 +520,7 @@ void __handle_sysrq(int key, bool check_mask)
- 	 * routing in the consumers of /proc/kmsg.
- 	 */
- 	orig_log_level = console_loglevel;
--	console_loglevel = 7;
-+	console_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
- 	printk(KERN_INFO "SysRq : ");
- 
-         op_p = __sysrq_get_key_op(key);
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 8752f7595b27..0325b231d100 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -30,6 +30,17 @@ static inline const char *printk_skip_level(const char *buffer)
- 	return buffer;
- }
- 
-+/* printk's without a loglevel use this.. */
-+#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-+
-+/* We show everything that is MORE important than this.. */
-+#define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
-+#define CONSOLE_LOGLEVEL_MIN	 1 /* Minimum loglevel we let people use */
-+#define CONSOLE_LOGLEVEL_QUIET	 4 /* Shhh ..., when booted with "quiet" */
-+#define CONSOLE_LOGLEVEL_DEFAULT 7 /* anything MORE serious than KERN_DEBUG */
-+#define CONSOLE_LOGLEVEL_DEBUG	10 /* issue debug messages */
-+#define CONSOLE_LOGLEVEL_MOTORMOUTH 15	/* You can't shut this one up */
-+
- extern int console_printk[];
- 
- #define console_loglevel (console_printk[0])
-@@ -39,13 +50,13 @@ extern int console_printk[];
- 
- static inline void console_silent(void)
- {
--	console_loglevel = 0;
-+	console_loglevel = CONSOLE_LOGLEVEL_SILENT;
- }
- 
- static inline void console_verbose(void)
- {
- 	if (console_loglevel)
--		console_loglevel = 15;
-+		console_loglevel = CONSOLE_LOGLEVEL_MOTORMOUTH;
- }
- 
- struct va_format {
-diff --git a/init/main.c b/init/main.c
-index eb0ea86aefde..46923e7e1668 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -203,13 +203,13 @@ EXPORT_SYMBOL(loops_per_jiffy);
- 
- static int __init debug_kernel(char *str)
- {
--	console_loglevel = 10;
-+	console_loglevel = CONSOLE_LOGLEVEL_DEBUG;
- 	return 0;
- }
- 
- static int __init quiet_kernel(char *str)
- {
--	console_loglevel = 4;
-+	console_loglevel = CONSOLE_LOGLEVEL_QUIET;
- 	return 0;
- }
- 
-diff --git a/kernel/debug/kdb/kdb_bt.c b/kernel/debug/kdb/kdb_bt.c
-index b03e0e814e43..fe15fff5df53 100644
---- a/kernel/debug/kdb/kdb_bt.c
-+++ b/kernel/debug/kdb/kdb_bt.c
-@@ -21,7 +21,7 @@
- static void kdb_show_stack(struct task_struct *p, void *addr)
- {
- 	int old_lvl = console_loglevel;
--	console_loglevel = 15;
-+	console_loglevel = CONSOLE_LOGLEVEL_MOTORMOUTH;
- 	kdb_trap_printk++;
- 	kdb_set_current_task(p);
- 	if (addr) {
-diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 14ff4849262c..7c70812caea5 100644
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -710,7 +710,7 @@ kdb_printit:
- 	}
- 	if (logging) {
- 		saved_loglevel = console_loglevel;
--		console_loglevel = 0;
-+		console_loglevel = CONSOLE_LOGLEVEL_SILENT;
- 		printk(KERN_INFO "%s", kdb_buffer);
- 	}
- 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 0b097c8a1e50..2f7c760305ca 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1091,7 +1091,7 @@ static int kdb_reboot(int argc, const char **argv)
- static void kdb_dumpregs(struct pt_regs *regs)
- {
- 	int old_lvl = console_loglevel;
--	console_loglevel = 15;
-+	console_loglevel = CONSOLE_LOGLEVEL_MOTORMOUTH;
- 	kdb_trap_printk++;
- 	show_regs(regs);
- 	kdb_trap_printk--;
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7228258b85ec..9cef0425bdcf 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -54,18 +54,11 @@
- #include "console_cmdline.h"
- #include "braille.h"
- 
--/* printk's without a loglevel use this.. */
--#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
--
--/* We show everything that is MORE important than this.. */
--#define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
--#define DEFAULT_CONSOLE_LOGLEVEL 7 /* anything MORE serious than KERN_DEBUG */
--
- int console_printk[4] = {
--	DEFAULT_CONSOLE_LOGLEVEL,	/* console_loglevel */
-+	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
- 	DEFAULT_MESSAGE_LOGLEVEL,	/* default_message_loglevel */
--	MINIMUM_CONSOLE_LOGLEVEL,	/* minimum_console_loglevel */
--	DEFAULT_CONSOLE_LOGLEVEL,	/* default_console_loglevel */
-+	CONSOLE_LOGLEVEL_MIN,		/* minimum_console_loglevel */
-+	CONSOLE_LOGLEVEL_DEFAULT,	/* default_console_loglevel */
- };
- 
- /*
--- 
-1.9.0
+Disk stats (read/write):
+  sdb: ios=65536/32734, merge=0/0, ticks=6599230/1502876,
+in_queue=8102038, util=100.00%
 
+
+
+
+
++1 what Benjamin said, provide kernel stack traces for stuck processes
+(use sysrq for it). And add other relevant information how to repro
+the issue.
