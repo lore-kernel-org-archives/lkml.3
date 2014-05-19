@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaESIL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:11:28 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44321 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaESILY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:11:24 -0400
-Date: Mon, 19 May 2014 09:11:19 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd: ipaq-micro: Use devm_ioremap_resource()
-Message-ID: <20140519081119.GG2339@lee--X1>
-References: <001d01cf6f23$00900250$01b006f0$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <001d01cf6f23$00900250$01b006f0$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753346AbaESILk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:11:40 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:47207 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967AbaESILg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:11:36 -0400
+Message-ID: <1400487050.1464.13.camel@iivanov-dev>
+Subject: Re: [PATCH 4/4] spi: qup: Add support for v1.1.1
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Mon, 19 May 2014 11:10:50 +0300
+In-Reply-To: <1400016884-9568-5-git-send-email-agross@codeaurora.org>
+References: <1400016884-9568-1-git-send-email-agross@codeaurora.org>
+	 <1400016884-9568-5-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Use devm_ioremap_resource() because devm_request_and_ioremap() is
-> obsoleted by devm_ioremap_resource().
+On Tue, 2014-05-13 at 16:34 -0500, Andy Gross wrote:
+> This patch adds support for v1.1.1 of the SPI QUP controller.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/mfd/ipaq-micro.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
 
-Applied with Linus' Ack, thanks.
+Except Stephen comment this looks fine. Thank you.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+
+
