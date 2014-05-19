@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaESMGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:06:48 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:64261 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757AbaESMGp (ORCPT
+	id S1753633AbaESMHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:07:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:51105 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaESMHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:06:45 -0400
-Message-ID: <5379F3CE.8030404@linaro.org>
-Date: Mon, 19 May 2014 17:36:38 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Doug Anderson <dianders@chromium.org>, alsa-devel@alsa-project.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+	Mon, 19 May 2014 08:07:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        sbkim73@samsung.com, Randy Dunlap <rdunlap@infradead.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
-References: <20140424133920.GA12304@sirena.org.uk> <5359E18B.60600@linaro.org> <20140429222915.GU15125@sirena.org.uk> <5360E5E7.8090807@linaro.org> <20140430180314.GA3245@sirena.org.uk> <53623004.5010805@linaro.org> <20140501141510.GW3245@sirena.org.uk> <CAD=FV=Wa4CovkxBng0SkUUAryiFqa=m63tro1Yv1jRgp4e95aw@mail.gmail.com> <20140501164003.GC3245@sirena.org.uk> <53632568.5020200@linaro.org> <20140502165643.GQ3245@sirena.org.uk>
-In-Reply-To: <20140502165643.GQ3245@sirena.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware core driver
+Date: Mon, 19 May 2014 14:06:36 +0200
+Message-ID: <5671513.YgJm44AVLV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5376748B.7080302@ti.com>
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <22200719.Jb5jnJylJH@wuerfel> <5376748B.7080302@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LOfFdmcTTHYJ4yVnnVYz8qKJDvORPDqvJymrvcGqL+0
+ G7c/plXGmae8gG0RLx95IYPPvybzHfPyUj5mKE4GJOnJcrj69Z
+ zmdnvPV2NtFyhVw96V/8lwvDZmYTgNmm3MBWrf6PTFzGsCmqzh
+ vCENHtzLVzskG4YYts60kTj+koLDs3qij293cRfQHJ5yOph9bL
+ PDw8RonuaekB8UHO7tgEffVScvyiL4YyBJV9Slx52p9biqU+Am
+ aLUUIok0QuRjhL6S74GIv96QYzNh1sb7JA8EQL1uQFsQDW6oXc
+ eU0cFIkGf1QxwaCvH7XxNaG46L3pmmejm8UyR8oIRveaI4DmNL
+ QUu52d3GdLAmhxWlE9Uc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 05/02/2014 10:26 PM, Mark Brown wrote:
-> On Fri, May 02, 2014 at 10:26:08AM +0530, Tushar Behera wrote:
->> On 05/01/2014 10:10 PM, Mark Brown wrote:
+On Friday 16 May 2014 16:26:51 Murali Karicheri wrote:
+> On 5/15/2014 2:20 PM, Arnd Bergmann wrote:
+> > On Thursday 15 May 2014 13:45:08 Murali Karicheri wrote:
+> >>>> +#ifdef CONFIG_PCI_KEYSTONE
+> >>>> +/*
+> >>>> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+> >>>> + */
+> >>>> +static void quirk_limit_readrequest(struct pci_dev *dev)
+> >>>> +{
+> >>>> +    int readrq = pcie_get_readrq(dev);
+> >>>> +
+> >>>> +    if (readrq > 256)
+> >>>> +            pcie_set_readrq(dev, 256);
+> >>>> +}
+> >>>> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+> >>>> +#endif /* CONFIG_PCI_KEYSTONE */
+> >>> This doesn't work: you can't just limit do this for all devices just based
+> >>> on PCI_KEYSTONE being enabled, you have to check if you are actually using
+> >>> this controller.
+> >>>
+> >>>        Arnd
+> >>    I assume, I need to check if PCI controller's vendor ID/ device ID
+> >> match with the keystone
+> >>    PCI controller's ID and call pcie_set_readrq() for all of the slave
+> >> PCI devices and do this fixup.
+> >> Is this correct understanding?  If you can point me to an example code
+> >> for this that will be
+> >> really helpful so that I can avoid re-inventing the wheel.
+> > I think it would be best to move the quirk into the keystone pci driver
+> > and compare compare the dev->driver pointer of the PCI controller device.
+> >
+> >       Arnd
+> Arnd,
 > 
->>> There's patches been posted by (IIRC) Sylvester Nawrocki for
->>> this which I think Mike was basically happy with - I don't
->>> immediately see them in -next though, but I may be looking in
->>> the wrong place.
-> 
->> Right, there are some patches from Sylwester regarding this. I
->> dont' think the patches are accepted yet as Rob has some
->> reservations against the clock parents.
-> 
->> https://lkml.org/lkml/2014/4/9/173
-> 
-> Well, OK - that's the bit to fix.  Speaking to Mike the other day
-> he said there was also another competing implementation of this.
-> 
+> I will move this quirk to keystone pci driver. So in that case, I guess 
+> your original comment
+> is not applicable as  this quirk gets enabled only with PCI keystone 
+> driver enabled. Right?
 
-Instead of setting the parent clock, setting the desired rate on
-XCLKOUT works for audio playback.
+Of course you still have to fix the bug, not just move the code into
+the driver. Otherwise it's still broken for every machine after the keystone
+driver is enabled.
 
-Will it be okay to do a 'clk_set_rate(mclk, 24000000)' in sound card
-driver or should we wait for Sylwester's patch to get merged?
+I also agree with Jason that changing the PCI core to call
+pcie_bus_configure_settings() would be a better way of dealing with this
+if it solves the problem.
 
-- -- 
-Tushar Behera
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJTefPOAAoJELqclMPPkq4N6UIH/i5W7KYjyKTQtX+AGdUmJwIx
-3TTwyWVz5YQ6gFpLHwwy5AwIkj4mygox2e7l0qWU6yOXCMceaXrvzxOK+B/LRXlp
-+s8xjd+C+Idxhs0T6V4GkJRA9jtari3gcIGfz4tFtWY5O0l0eNTUduILhAvmE/Sw
-c4m8aOwK33P0kvkTIp/ShSujYa8v82XosMRuf4P0iEz9I3qw3syJkWWvqNZFrnPs
-B7i+9ZiZkyttsUVBOAWMBfOdLP5sMtxKDdk1GTkN1plxAE8lKdNVATR5htQL4bxo
-ZFcWJxE14pWQ770gEJVXkDT9o8dhmVNrDVp4eGe3m+43gN+Bssh+9kgdxb3vmIY=
-=gXaJ
------END PGP SIGNATURE-----
+	Arnd
