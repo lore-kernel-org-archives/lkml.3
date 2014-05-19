@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaESEgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:36:01 -0400
+	id S1752863AbaESEgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:36:05 -0400
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14034 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750869AbaESEcw (ORCPT
+	by vger.kernel.org with ESMTP id S1750706AbaESEcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 00:32:52 -0400
+	Mon, 19 May 2014 00:32:51 -0400
 X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="74474217"
+   d="scan'208";a="74474215"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/13] usb: gadget: make return of 0 explicit
-Date: Mon, 19 May 2014 06:31:07 +0200
-Message-Id: <1400473875-22228-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/13] CLK: TI: DRA7: make return of 0 explicit
+Date: Mon, 19 May 2014 06:31:05 +0200
+Message-Id: <1400473875-22228-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -28,6 +26,8 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Delete unnecessary local variable whose value is always 0 and that hides
 the fact that the result is always 0.
+
+Additionally dropped some unneeded braces in an affected if.
 
 A simplified version of the semantic patch that fixes this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -50,58 +50,53 @@ return
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/usb/gadget/composite.c |    6 ++----
- drivers/usb/gadget/dummy_hcd.c |    4 +---
- 2 files changed, 3 insertions(+), 7 deletions(-)
+Alternatively, is an error code wanted in either of the MAX_APLL_WAIT_TRIES
+cases?
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 042c66b..f801519 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -1312,9 +1312,7 @@ static void fill_ext_compat(struct usb_configuration *c, u8 *buf)
- static int count_ext_prop(struct usb_configuration *c, int interface)
+ drivers/clk/ti/apll.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
+index b986f61..659032a 100644
+--- a/drivers/clk/ti/apll.c
++++ b/drivers/clk/ti/apll.c
+@@ -37,7 +37,7 @@
+ static int dra7_apll_enable(struct clk_hw *hw)
  {
- 	struct usb_function *f;
--	int j, res;
--
--	res = 0;
-+	int j;
+ 	struct clk_hw_omap *clk = to_clk_hw_omap(hw);
+-	int r = 0, i = 0;
++	int i = 0;
+ 	struct dpll_data *ad;
+ 	const char *clk_name;
+ 	u8 state = 1;
+@@ -55,7 +55,7 @@ static int dra7_apll_enable(struct clk_hw *hw)
+ 	v = ti_clk_ll_ops->clk_readl(ad->idlest_reg);
  
- 	f = c->interface[interface];
- 	for (j = 0; j < f->os_desc_n; ++j) {
-@@ -1326,7 +1324,7 @@ static int count_ext_prop(struct usb_configuration *c, int interface)
- 		if (d && d->ext_compat_id)
- 			return d->ext_prop_count;
+ 	if ((v & ad->idlest_mask) == state)
+-		return r;
++		return 0;
+ 
+ 	v = ti_clk_ll_ops->clk_readl(ad->control_reg);
+ 	v &= ~ad->enable_mask;
+@@ -74,17 +74,14 @@ static int dra7_apll_enable(struct clk_hw *hw)
+ 		udelay(1);
  	}
--	return res;
+ 
+-	if (i == MAX_APLL_WAIT_TRIES) {
++	if (i == MAX_APLL_WAIT_TRIES)
+ 		pr_warn("clock: %s failed transition to '%s'\n",
+ 			clk_name, (state) ? "locked" : "bypassed");
+-	} else {
++	else
+ 		pr_debug("clock: %s transition to '%s' in %d loops\n",
+ 			 clk_name, (state) ? "locked" : "bypassed", i);
+ 
+-		r = 0;
+-	}
+-
+-	return r;
 +	return 0;
  }
  
- static int len_ext_prop(struct usb_configuration *c, int interface)
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index 8c06430..2b54955 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -561,7 +561,6 @@ static int dummy_disable(struct usb_ep *_ep)
- 	struct dummy_ep		*ep;
- 	struct dummy		*dum;
- 	unsigned long		flags;
--	int			retval;
- 
- 	ep = usb_ep_to_dummy_ep(_ep);
- 	if (!_ep || !ep->desc || _ep->name == ep0name)
-@@ -571,12 +570,11 @@ static int dummy_disable(struct usb_ep *_ep)
- 	spin_lock_irqsave(&dum->lock, flags);
- 	ep->desc = NULL;
- 	ep->stream_en = 0;
--	retval = 0;
- 	nuke(dum, ep);
- 	spin_unlock_irqrestore(&dum->lock, flags);
- 
- 	dev_dbg(udc_dev(dum), "disabled %s\n", _ep->name);
--	return retval;
-+	return 0;
- }
- 
- static struct usb_request *dummy_alloc_request(struct usb_ep *_ep,
+ static void dra7_apll_disable(struct clk_hw *hw)
 
