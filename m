@@ -1,129 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262AbaESJm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:42:27 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11564 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752701AbaESJm0 (ORCPT
+	id S1753466AbaESJnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:43:04 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:57130 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaESJnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:42:26 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches\@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH 2/2] irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
-In-Reply-To: <1400278813-3048-3-git-send-email-fkan@apm.com> (Feng Kan's
-	message of "Fri, 16 May 2014 23:20:13 +0100")
-Organization: ARM Ltd
-References: <1400278813-3048-1-git-send-email-fkan@apm.com>
-	<1400278813-3048-3-git-send-email-fkan@apm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Mon, 19 May 2014 10:42:23 +0100
-Message-ID: <878upynlz4.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 19 May 2014 05:43:02 -0400
+X-Google-Original-From: Anil Belur
+From: Anil Belur <askb23@gmail.com>
+To: rupesh.gujare@atmel.com
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/1] staging: ozwpan: ozproto.c fix for "WARNING: Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)"
+Date: Mon, 19 May 2014 19:42:48 +1000
+Message-Id: <1400492568-18210-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16 2014 at 11:20:13 pm BST, Feng Kan <fkan@apm.com> wrote:
-> This change is made to preserve the GIC v2 bypass bits in the
-> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-> This code will preserve all bits configured by the bootloader regarding
-> v2 bypass group bits. In the X-Gene platform, the bypass functionality
-> is not used and bypass bits should not be changed by the kernel gic
-> code as it could lead to incorrect behavior.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> Reviewed-by: Anup Patel <apatel@apm.com>
-> ---
->  drivers/irqchip/irq-gic.c | 29 ++++++++++++++++++++++++++---
->  1 file changed, 26 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index e6698a2..9840ddc 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -61,6 +61,7 @@
->  #define GIC_INT_DISABLE_MASK	0xffffffff
->  #define GIC_INT_SGI_MASK	0x0000ffff
->  #define GIC_INT_LVL_TRIGGER	0x0
-> +#define GIC_DIS_BYPASS_MASK	0x1e0
->  
->  union gic_base {
->  	void __iomem *common_base;
-> @@ -391,6 +392,20 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
->  	return mask;
->  }
->  
-> +static void gic_cpu_if_up(void)
-> +{
-> +	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-> +	u32 bypass;
-> +
-> +	/*
-> +	 * Preserve bypass disable bits to be written back later
-> +	 */
-> +	bypass = readl(cpu_base + GIC_CPU_CTRL);
-> +	bypass &= GIC_DIS_BYPASS_MASK;
-> +
-> +	writel_relaxed(bypass | GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
-> +}
-> +
->  static void __init gic_dist_init(struct gic_chip_data *gic)
->  {
->  	unsigned int i;
-> @@ -471,13 +486,21 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  				dist_base + GIC_DIST_PRI + i * 4 / 4);
->  
->  	writel_relaxed(GIC_INT_PRI_THRESHOLD, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(GIC_CPU_ENABLE, base + GIC_CPU_CTRL);
-> +	gic_cpu_if_up();
->  }
->  
->  void gic_cpu_if_down(void)
->  {
->  	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-> -	writel_relaxed(GIC_CPU_DISABLE, cpu_base + GIC_CPU_CTRL);
-> +	u32 bypass;
-> +
-> +	/*
-> +	 * Preserve bypass disable bits to be written back later
-> +	 */
-> +	bypass = readl(cpu_base + GIC_CPU_CTRL);
-> +	bypass &= GIC_DIS_BYPASS_MASK;
-> +
-> +	writel_relaxed(bypass | GIC_CPU_DISABLE, cpu_base + GIC_CPU_CTRL);
+From: Anil Belur <askb23@gmail.com>
 
-Given that on the way down, you know that the configuration is sane, you
-can write this as:
+Fixed the warning message by replacing memcpy() with ether_addr_copy()
 
-    val =  readl(cpu_base + GIC_CPU_CTRL);
-    val &= ~GIC_CPU_ENABLE;
-    writel_relaxed(val, cpu_base + GIC_CPU_CTRL);
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/ozwpan/ozproto.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think it looks a bit better.
-
->  }
->  
->  #ifdef CONFIG_CPU_PM
-> @@ -613,7 +636,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  					dist_base + GIC_DIST_PRI + i * 4);
->  
->  	writel_relaxed(GIC_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
-> +	gic_cpu_if_up();
-
-Have you tested the save/restore path? It seems that we dont save
-GICC_CTLR, so it may not do what you think it will...
-
->  }
->  
->  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
-
+diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
+index f09acd0..1c80132 100644
+--- a/drivers/staging/ozwpan/ozproto.c
++++ b/drivers/staging/ozwpan/ozproto.c
+@@ -792,7 +792,7 @@ int oz_get_pd_list(struct oz_mac_addr *addr, int max_count)
+ 		if (count >= max_count)
+ 			break;
+ 		pd = container_of(e, struct oz_pd, link);
+-		memcpy(&addr[count++], pd->mac_addr, ETH_ALEN);
++		ether_addr_copy((u8 *)&addr[count++], pd->mac_addr);
+ 	}
+ 	spin_unlock_bh(&g_polling_lock);
+ 	return count;
 -- 
-Jazz is not dead. It just smells funny.
+1.9.0
+
