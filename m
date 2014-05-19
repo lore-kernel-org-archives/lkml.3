@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaESXho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:37:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50617 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaESXhm (ORCPT
+	id S932072AbaESXhw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:37:52 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:29268 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752397AbaESXht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:37:42 -0400
-Date: Mon, 19 May 2014 16:37:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock
- and need_sched() contention
-Message-Id: <20140519163741.55998ce65534ed73d913ee2c@linux-foundation.org>
-In-Reply-To: <1400233673-11477-1-git-send-email-vbabka@suse.cz>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
-	<1400233673-11477-1-git-send-email-vbabka@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 19:37:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjgHAO2UelN5LL1s/2dsb2JhbABZgwaDQac7AQEBAQEBBpopAYEXF3SCJQEBBTocIxAIAw4EBgklDwUlAw0UE4hA0lIXFoU/iHoHgyuBFQSZWZMbg0kr
+Date: Tue, 20 May 2014 09:37:34 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Mateusz Guzik <mguzik@redhat.com>,
+        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        sandeen@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Josef Bacik <jbacik@fb.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
+ filesystems
+Message-ID: <20140519233733.GD18954@dastard>
+References: <20140514223745.GF5421@dastard>
+ <5373F0D6.4090600@redhat.com>
+ <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
+ <20140515104746.GF10637@mguzik.redhat.com>
+ <20140515222135.GZ26353@dastard>
+ <20140515223439.GA24089@mguzik.redhat.com>
+ <20140515225141.GA26353@dastard>
+ <20140515231908.GB24089@mguzik.redhat.com>
+ <20140516001156.GI5421@dastard>
+ <20140519094313.GA3427@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519094313.GA3427@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014 11:47:53 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
+On Mon, May 19, 2014 at 11:43:13AM +0200, Jan Kara wrote:
+> On Fri 16-05-14 10:11:56, Dave Chinner wrote:
+> > On Fri, May 16, 2014 at 01:19:09AM +0200, Mateusz Guzik wrote:
+> > > On Fri, May 16, 2014 at 08:51:41AM +1000, Dave Chinner wrote:
+> > > > On Fri, May 16, 2014 at 12:34:40AM +0200, Mateusz Guzik wrote:
+> > > > > On Fri, May 16, 2014 at 08:21:35AM +1000, Dave Chinner wrote:
+> > > > > > > IOW, a new column in mountinfo. For frozen filesystems it would contain
+> > > > > > > 'frozen_by=[%s]:[%d]' (escaped comm, pid).
+> > > > > > 
+> > > > > > I really don't see that the process that froze the filesystem is
+> > > > > > particularly useful - it many cases that process is long gone (e.g.
+> > > > > > fsfreeze is being used to allow a HW array to take a snapshot). Just
+> > > > > > the fact it is in the process of freezing (if stuck, stack trace in
+> > > > > > sysrq-w should be present) or frozen (freezing process may be long
+> > > > > > gone, and is mostly irrelevant because you're now tracking down why
+> > > > > > a thaw hasn't happened)...
+> > > > > 
+> > > > > There are deamons which perform freezing and unfreezing on their own.
+> > > > > Thus storing the name along with pid helps to determine whether someone
+> > > > > went behind such daemon's back, or maybe it's the daemon which "forgot" to
+> > > > > unfreeze after all.
+> > > > 
+> > > > Such a daemon should be logging the fact that it's freezing and
+> > > > thawing the filesystem. The kernel is not the place to track what
+> > > > buggy userspace applications are doing wrong.
+> > > > 
+> > > 
+> > > Except there is no log entry if /var got frozen (and this is not an
+> > > imaginary example).
+> > 
+> > Freezing the filesystem that the freezing daemon logs to is, well, a
+> > major application architecture fail. Sorry, catering for the lowest
+> > common denominator (i.e. stupidity) is not an valid argument for
+> > adding stuff to the kernel....
+>   Sure it's not a good architecture but it happens either because of a bug
+> or a wrong architecture. So you need to debug it and traces from sysrq-w
+> don't tell you who froze the filesystem. Currently you have to use
+> tracepoints or similar stuff to find that out (e.g. in one case I was
+> debugging it was rpm running a post-install script that froze the fs,
+> believe me that was really unexpected :)). But tracepoints aren't useful
+> after the fact so sometimes it would be useful to be able to find out
+> after the fact who froze the fs (PID and command name to help with
+> situations when the process isn't running anymore). Since this is mostly
+> debug stuff I'd be OK with dumping this information on sysrq request or as
+> Ted suggested from some fs-freeze hang check timer... Hmm?
 
-> Compaction uses compact_checklock_irqsave() function to periodically check for
-> lock contention and need_resched() to either abort async compaction, or to
-> free the lock, schedule and retake the lock. When aborting, cc->contended is
-> set to signal the contended state to the caller. Two problems have been
-> identified in this mechanism.
-> 
-> First, compaction also calls directly cond_resched() in both scanners when no
-> lock is yet taken. This call either does not abort async compaction, or set
-> cc->contended appropriately. This patch introduces a new compact_should_abort()
-> function to achieve both. In isolate_freepages(), the check frequency is
-> reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
-> scanner does in the preliminary page checks. In case a pageblock is found
-> suitable for calling isolate_freepages_block(), the checks within there are
-> done on higher frequency.
-> 
-> Second, isolate_freepages() does not check if isolate_freepages_block()
-> aborted due to contention, and advances to the next pageblock. This violates
-> the principle of aborting on contention, and might result in pageblocks not
-> being scanned completely, since the scanning cursor is advanced. This patch
-> makes isolate_freepages_block() check the cc->contended flag and abort.
-> 
-> In case isolate_freepages() has already isolated some pages before aborting
-> due to contention, page migration will proceed, which is OK since we do not
-> want to waste the work that has been done, and page migration has own checks
-> for contention. However, we do not want another isolation attempt by either
-> of the scanners, so cc->contended flag check is added also to
-> compaction_alloc() and compact_finished() to make sure compaction is aborted
-> right after the migration.
+Sure, along with all the memory allocation, copying and freeing
+stuff that isn't guaranteed to be around if a hang occurs. And it
+has to be per-sb, because you can indepenently freeze multiple
+filesystems at the same time, and so on. I just don't see the
+complexity as being worthwhile given how rare freeze problems are...
 
-What are the runtime effect of this change?
+Cheers,
 
-> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-What did Joonsoo report?  Perhaps this is the same thing..
-
->
-> ...
->
-> @@ -718,9 +739,11 @@ static void isolate_freepages(struct zone *zone,
->  		/*
->  		 * This can iterate a massively long zone without finding any
->  		 * suitable migration targets, so periodically check if we need
-> -		 * to schedule.
-> +		 * to schedule, or even abort async compaction.
->  		 */
-> -		cond_resched();
-> +		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-> +						&& compact_should_abort(cc))
-
-This seems rather gratuitously inefficient and isn't terribly clear. 
-What's wrong with
-
-	if ((++foo % SWAP_CLUSTER_MAX) == 0 && compact_should_abort(cc))
-
-?
-
-(Assumes that SWAP_CLUSTER_MAX is power-of-2 and that the compiler will
-use &)
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
