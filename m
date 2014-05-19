@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaESOTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:19:43 -0400
-Received: from hawking.rebel.net.au ([203.20.69.83]:45354 "EHLO
-	hawking.rebel.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604AbaESOTm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:19:42 -0400
-Message-ID: <537A12EA.4060604@davidnewall.com>
-Date: Mon, 19 May 2014 23:49:22 +0930
-From: David Newall <davidn@davidnewall.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753614AbaESOVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:21:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48423 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680AbaESOVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:21:51 -0400
+Message-ID: <537A1354.6010408@ti.com>
+Date: Mon, 19 May 2014 19:51:08 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Florian Westphal <fw@strlen.de>
-CC: Stephen Hemminger <stephen@networkplumber.org>,
-        Netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge : Sanitize
- skb before it enters the IP stack)
-References: <537621AC.1060409@davidnewall.com> <5379FFFD.1050705@davidnewall.com> <20140519140119.GA24523@breakpoint.cc>
-In-Reply-To: <20140519140119.GA24523@breakpoint.cc>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mark Rutland <mark.rutland@arm.com>, Lee Jones <lee.jones@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.torgue@st.com" <alexandre.torgue@st.com>
+Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org> <1392377036-12816-4-git-send-email-lee.jones@linaro.org> <20140305075548.GG20016@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140305075548.GG20016@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the reply.  I've been hanging out for it!
+Hi,
 
-On 19/05/14 23:31, Florian Westphal wrote:
-> Well, did you test what happens if we try to refrag a packet
-> containing ip options after the revert?
->
-> can happen e.g. when using netfilter conntrack on top of a bridge.
+On Wednesday 05 March 2014 01:25 PM, Mark Rutland wrote:
+> On Fri, Feb 14, 2014 at 11:23:56AM +0000, Lee Jones wrote:
+>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+>> devices. It has 2 ports which it can use for either; both SATA, both
+>> PCIe or one of each in any configuration.
+>>
+>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>  drivers/phy/Kconfig         |  10 +
+>>  drivers/phy/Makefile        |   1 +
+>>  drivers/phy/phy-miphy365x.c | 614 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 625 insertions(+)
+>>  create mode 100644 drivers/phy/phy-miphy365x.c
+> 
+> [...]
+> 
+>> +enum miphy_sata_gen {
+>> +       SATA_GEN1 = 1,
+>> +       SATA_GEN2,
+>> +       SATA_GEN3
+>> +};
+> 
+> It would be nice to have a comment here that these values are ABI and
+> cannot change.
+> 
+> [...]
+> 
+>> +static struct phy *miphy365x_phy_xlate(struct device *dev,
+>> +                                      struct of_phandle_args *args)
+>> +{
+>> +       struct miphy365x_dev *state = dev_get_drvdata(dev);
+>> +       u8 port = args->args[0];
+>> +       u8 type = args->args[1];
+> 
+> In case of a bad dt, it would be nice to check args->arg_count == 2.
+> 
+> ALso, we throw away the top 24 bits, which may have been set
+> erroneously. If we want to make use of those in future we should test
+> they are clear here to force people to do the right thing.
 
-No.  I expect it would panic, as was reported prior to the commit.
+I don't seem to have the update patch series? Can you resend please?
 
-I tried to persevere with the commit: I recalculated checksum, which 
-left routes and times improperly updated in options.  Then I tried 
-calling ip_forward_options, which looks like it would correctly update 
-RR and TS (not to mention checksum)m but that bombed because skb_rtable 
-returned NULL.  I think calling skb_set_dst would answer that, but I 
-don't know how to get a valid dst.  (I asked for help but no answer.)
-
-I see three ways to progress:
-
-1. Possibly call ip_forward_option, but that requires somebody who 
-understands this code to help;
-2. Just recalculate the checksum, leaving crap in the options; or
-3. Revert the commit.
-
-Option 1 doesn't look like it's going to happen; option 2 is stupid; 
-leaving option 3, and I begin to think that's the right way to go if 
-bridge is supposed to be a bridge and not a router.  The idea that 
-bridge is doing too much seems to have quite a lot of currency, so think 
-of reversion as chopping off a canker.  Or we keep fixing bugs, adding 
-to bridge, until it replicates all of IP.
-
-How does a packet get fragmented in this case?  Does it only happen when 
-bridging to a device with smaller MTU?  That scenario sounds quite 
-un-bridge-like.  It also sounds like something that can be handled by 
-real routing.
+Thanks
+Kishon
+> 
+> Otherwise, this looks fine to me.
+> 
+> With those additions:
+> 
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> 
+> Cheers,
+> Mark.
+> 
