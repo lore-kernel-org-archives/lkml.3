@@ -1,38 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaESHso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:48:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34467 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaESHsn (ORCPT
+	id S1753189AbaESHtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:49:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43018 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753015AbaESHs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:48:43 -0400
-Date: Mon, 19 May 2014 08:48:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Mark Brown <broonie@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+	Mon, 19 May 2014 03:48:59 -0400
+Date: Mon, 19 May 2014 08:48:55 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Hans de Goede <hdegoede@redhat.com>, Mark Brown <broonie@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-sunxi@googlegroups.com
 Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
- add register_supply_aliases()
-Message-ID: <20140519074838.GF2339@lee--X1>
-References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
- <1400420953-20705-2-git-send-email-hdegoede@redhat.com>
- <20140519074705.GE2339@lee--X1>
+	add register_supply_aliases()
+Message-ID: <20140519074855.GP25203@opensource.wolfsonmicro.com>
+References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com> <1400420953-20705-2-git-send-email-hdegoede@redhat.com> <20140519074705.GE2339@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 In-Reply-To: <20140519074705.GE2339@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 19, 2014 at 08:47:05AM +0100, Lee Jones wrote:
 > > We cannot register supply alias in mfd_add_device before calling
 > > platform_add_device, for 2 reasons:
 > > 1) devm resources may not be registered before the (platform) drivers probe
@@ -54,12 +51,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > changes.  If he's okay with them I think it's best for this set to go
 > through the MFD tree as a whole.
 
-For my own benefit, rather than a go-ahead for Mark to apply them: ;)
+This should already be fixed by this patch:
 
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+mfd: core: Don't use devres functions before device is added
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You had posted to say it was applied although I haven't checked
+your tree for it directly.
+
+Thanks,
+Charles
