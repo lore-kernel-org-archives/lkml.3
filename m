@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaESL0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:26:54 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:52126 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaESL0x convert rfc822-to-8bit (ORCPT
+	id S1754237AbaESL1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:27:18 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:42114 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754188AbaESL1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:26:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
-Date: Mon, 19 May 2014 13:26:48 +0200
-Message-ID: <5053472.zFAHKQVpbv@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
-References: <1364507176.1345.45.camel@x61.thuisdomein> <20140517094636.GP3693@n2100.arm.linux.org.uk> <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
+	Mon, 19 May 2014 07:27:15 -0400
+Date: Mon, 19 May 2014 12:27:04 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-efi <linux-efi@vger.kernel.org>
+Subject: Re: kernel 3.14.2 oops: seems related to EFI
+Message-ID: <20140519112704.GG4798@console-pimps.org>
+References: <53777F7B.8060407@gmail.com>
+ <20140518134206.GA8040@pd.tnic>
+ <5379AE46.3000407@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:4dK6C5DCU5RkwacmfzU6+NirElEyNirMaZZB78ipsQU
- Po7EqaZ1xPr+19I+mAQIrzeHjrFLmv2L2IwML24BU7iFs5WbSJ
- MEtDIkz1VYPpve4t3Gw/TdWCtPKgADGyKXj9YmfqA3byqggP4T
- REocn/QhbD2CwG/wBwqihJAzU9ELLImLAwelCnX1N9rFx/uC2V
- UUWjyqC4XNuiC+uYfw/RbYRmhQ5smDPVhxlDFcKgD0TBwmehyn
- DmgD93KkVET5uuZe7+l6kQMHW8aGOxp4L7WHShSeef17mJMb6X
- QG3HmsnsT1+xsx6jRjiwOdiRw3RDyr9hr0y5avmxYzVSzKNHU3
- Dp9FZCXlGDxbaPxWyg8o=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5379AE46.3000407@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 17 May 2014 10:56:02 Catalin Marinas wrote:
-> > The difference between what you're proposing and what happened to ARMv3
-> > is that ARMv3 was broken for quite some time (we read from some of the
-> > CP15 registers which are read-only in ARMv3) and no one ever raised a
-> > problem with that.  So, after a sufficient period of time, it got removed
-> > - and no one batted an eyelid.  That's the correct way to do it - allow
-> > code to age, and if no one notices it's been broken, then it can be
-> > removed.
+On Mon, 19 May, at 09:09:58AM, Francis Moreau wrote:
+> On 05/18/2014 03:42 PM, Borislav Petkov wrote:
+> > On Sat, May 17, 2014 at 05:25:47PM +0200, Francis Moreau wrote:
+> >> [  +0.018677] general protection fault: 0000 [#1] PREEMPT SMP
+> >> [  +0.000068] Modules linked in: usb_storage tun raid1 md_mod loop fuse
+> >> joydev coretemp hwmon arc4 intel_rapl x86_pkg_temp_thermal
+> >> intel_powerclamp kvm_intel nls_iso8859_1 nls_cp437 iTCO_wdt kvm vfat fat
+> >> iTCO_vendor_support iwldvm uvcvideo led_class crct10dif_pclmul
+> >> crc32_pclmul crc32c_intel ghash_clmulni_intel mac80211 videobuf2_vmalloc
+> >> videobuf2_memops videobuf2_core aesni_intel videodev aes_x86_64
+> >> snd_hda_codec_hdmi lrw gf128mul mousedev glue_helper btusb
+> >> snd_hda_codec_via ablk_helper media cryptd iwlwifi snd_hda_codec_generic
+> >> bluetooth psmouse microcode i2c_i801 serio_raw cfg80211 6lowpan_iphc
+> >> rtsx_pci_ms r8169 memstick rfkill lpc_ich mii snd_hda_intel
+> >> snd_hda_codec thermal snd_hwdep wmi snd_pcm tpm_infineon snd_timer
+> >> tpm_tis mei_me snd tpm mei shpchp evdev soundcore processor battery
+> >> mac_hid ac
+> >> [  +0.000803]  ext4 crc16 mbcache jbd2 hid_generic usbhid hid bcache
+> >> sd_mod sr_mod crc_t10dif cdrom crct10dif_common rtsx_pci_sdmmc mmc_core
+> >> atkbd libps2 ahci libahci ehci_pci libata xhci_hcd ehci_hcd scsi_mod
+> >> rtsx_pci usbcore usb_common i8042 serio i915 video button intel_gtt
+> >> i2c_algo_bit drm_kms_helper drm i2c_core
+> >> [  +0.000328] CPU: 0 PID: 30835 Comm: systemd-udevd Not tainted
+> >> 3.14.2-1-ARCH #1
+> >> [  +0.000064] Hardware name: CLEVO CO.                        W55xEU
+> >>                       /W55xEU                          , BIOS 4.6.5
+> >> 03/05/2013
+> >> [  +0.000102] task: ffff880405ee6bf0 ti: ffff880400f4a000 task.ti:
+> >> ffff880400f4a000
+> >> [  +0.000060] RIP: 0010:[<ffffffff810655af>]  [<ffffffff810655af>]
+> >> efi_call5+0x6f/0xf0
+> >> [  +0.000071] RSP: 0018:ffff880400f4bdb0  EFLAGS: 00010002
+> >> [  +0.000045] RAX: 0000000080050033 RBX: ffff8804040e3000 RCX:
+> >> ffff8804040e3000
+> >> [  +0.000055] RDX: ffff8804040e3400 RSI: ffff8804040e3000 RDI:
+> >> bff7fffff7afffff
+> > 
+> > So you get a #GP while executing call *rdi and %rdi is supposed to
+> > contain ->get_variable. But instead it contains some very funky shit:
+> > 
+> > 0xbff7fffff7afffff
+> > 
+> > Who made it contain that nuisance of a pointer which thinks it is
+> > ->get_variable, huh? If only I could get my hands on that guy! :-P
+> > 
+> > Ok, seriously, how reproducible is this?
 > 
-> I’m more for pro-actively “breaking” it with a DEPRECATED
-> dependency. For example, if you suspect that some code like ARM710T is
-> no longer in use, we mark it and see if anyone complains about this over
-> a two years period. If not, it gets removed.
-> 
-> Waiting for code to get broken is another way but it’s less
-> predictable.
+> I don't really know how to reproduce this, I only can say that it
+> usually happens while partitioning the loop device or perhaps when the
+> kernel reads the partition table afterwards.
+ 
+It looks like it's oopsing as a result of systemd-udevd trying to
+read a variable via the efivarfs mount,
 
-We used to have 'feature-removal-schedule.txt' file in the Documentation.
-It never worked, and I don't see a reason to introduce something like that
-again.
+ Call Trace:
+  [<ffffffff81064901>] ? virt_efi_get_variable+0x51/0x80
+  [<ffffffff813dbb71>] efivar_entry_size+0x41/0x80
+  [<ffffffff81245659>] efivarfs_file_read+0x49/0x100
+  [<ffffffff811ba797>] vfs_read+0x97/0x160
+  [<ffffffff811bb2e9>] SyS_read+0x59/0xd0
+  [<ffffffff81517629>] system_call_fastpath+0x16/0x1b
 
-Yes, this means we will keep going through things that may or may not be
-considered obsolete occasionally asking whether it's already dead. There
-are a number of platforms we removed in the past years (e.g. shark,
-h720x, bcmring, pnx4008, ixp2xxx, tcc8k and others before) and we haven't
-had to revert any of those back. The rule has always been that even if
-someone later comes and wants them back, we will revert the removal.
-Others have been given temporary (e.g. gemini) or permanent (e.g. ixp4xx)
-extensions, based on the feedback from the maintainers or remaining
-users.
-
-For the case of ARM710T, I think the last remaining user that can be
-configured is mach-integrator, but I don't know if anybody even has that
-CPU tile, or wants to keep using it. If Russell and Linus as the only
-people that have cared about Integrator in the past years want to
-cut down the number of supported CPUs, that would be a different matter:
-quite a number of CPUs are not supported in any other platform.
-Note that the integrator target in qemu does not support any ARM7, only
-StrongARM, ARM9 or later. I also double-checked about mach-clps711x,
-but I'm pretty sure those SoCs are all either ARM710a (no longer supported)
-or ARM720T (quite active).
-
-	Arnd
+-- 
+Matt Fleming, Intel Open Source Technology Center
