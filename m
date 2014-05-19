@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaESHQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:16:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45141 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaESHQQ (ORCPT
+	id S1752835AbaESHSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:18:25 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40486 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798AbaESHSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:16:16 -0400
-Message-ID: <5379AFB9.9030608@linaro.org>
-Date: Mon, 19 May 2014 12:46:09 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH RFC 3/4] clk: samsung: Add driver to control CLKOUT line
- on Exynos SoCs
-References: <1400175151-27779-1-git-send-email-t.figa@samsung.com> <1400175151-27779-4-git-send-email-t.figa@samsung.com>
-In-Reply-To: <1400175151-27779-4-git-send-email-t.figa@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 May 2014 03:18:23 -0400
+Date: Mon, 19 May 2014 09:18:17 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: gather_hugetbl_stats() doesn't use huge_pte...() variants
+Message-ID: <20140519091817.559e550b@mschwide>
+In-Reply-To: <537645D1.7020403@intel.com>
+References: <537645D1.7020403@intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051907-3548-0000-0000-0000091CA278
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 11:02 PM, Tomasz Figa wrote:
-> This patch introduces a driver that handles configuration of CLKOUT pin
-> of Exynos SoCs that can be used to output certain clocks from inside of
-> the SoC to a dedicated output pin.
-> 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
+Hi Dave,
 
-Tested the series on Exynos5420-based peach-pit board for audio playback
-(with an internal patch to set CLK_FIN_PLL as the parent of clkout).
+On Fri, 16 May 2014 10:07:29 -0700
+Dave Hansen <dave.hansen@intel.com> wrote:
 
-Tested-by: Tushar Behera <tushar.behera@linaro.org>
+> Is the numa maps gather_hugetbl_stats() buggy on s390?  It uses the
+> normal pte_ variants.
 
->  Example :
->  pmu_system_controller: system-controller@10040000 {
->  	compatible = "samsung,exynos5250-pmu", "syscon";
->  	reg = <0x10040000 0x5000>;
-> +	#clock-cells = <0>;
-> +	clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
-> +			"clkout4", "clkout8", "clkout9";
-> +	clocks = <&clock CLK_OUT_DMC>, <&clock CLK_OUT_TOP>,
-> +		<&clock CLK_OUT_LEFTBUS>, <&clock CLK_OUT_RIGHTBUS>,
-> +		<&clock CLK_OUT_CPU>, <&clock CLK_XXTI>,
-> +		<&clock CLK_XUSBXTI>;
->  };
-
-Adding an usage example in the documentation would be helpful.
-
+That would be broken if we ever enable CONFIG_NUMA. Right now s390 does
+not support NUMA, the gather_hugetbl_stats code is dead code for us.
 
 -- 
-Tushar Behera
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
