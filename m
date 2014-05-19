@@ -1,59 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaESGSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:18:38 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:46966 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaESGSe (ORCPT
+	id S1752788AbaESG0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:26:07 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59440 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaESG0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:18:34 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        inderpal.s@samsung.com, pavel@ucw.cz, nm@ti.com,
-        chander.kashyap@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 5/5] cpufreq: exynos5440: don't initialize opp table
-Date: Mon, 19 May 2014 11:47:25 +0530
-Message-Id: <d6f95326b625df13fb3102ed9e70445eab5470f2.1400480033.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1400480033.git.viresh.kumar@linaro.org>
-References: <cover.1400480033.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1400480033.git.viresh.kumar@linaro.org>
-References: <cover.1400480033.git.viresh.kumar@linaro.org>
+	Mon, 19 May 2014 02:26:05 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
+Subject: [PATCH 01/20] perf tools: Add ->cmp(), ->collapse() and ->sort() to perf_hpp_fmt
+Date: Mon, 19 May 2014 15:25:43 +0900
+Message-Id: <1400480762-22852-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
+References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OPP tables are already initialized for CPU0 by cpufreq core and so we don't need
-to reinitialize them from exynos5440's driver.
+Those function pointers will be used to sort report output based on
+the selected fields.  This is a preparation of later change.
 
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/cpufreq/exynos5440-cpufreq.c | 6 ------
- 1 file changed, 6 deletions(-)
+ tools/perf/ui/hist.c   | 39 +++++++++++++++++++++++++++++++++++----
+ tools/perf/util/hist.h |  3 +++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index f33f25b..72a4206 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -360,12 +360,6 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
- 		goto err_put_node;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 0912805c08f4..d4a4f2e7eb43 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -192,6 +192,14 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			  hpp_entry_scnprintf, true);				\
+ }
+ 
++#define __HPP_SORT_FN(_type, _field)						\
++static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
++{										\
++	s64 __a = he_get_##_field(a);						\
++	s64 __b = he_get_##_field(b);						\
++	return __a - __b;							\
++}
++
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ {										\
+@@ -206,16 +214,27 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			  hpp_entry_scnprintf, false);				\
+ }
+ 
++#define __HPP_SORT_RAW_FN(_type, _field)					\
++static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
++{										\
++	s64 __a = he_get_raw_##_field(a);					\
++	s64 __b = he_get_raw_##_field(b);					\
++	return __a - __b;							\
++}
++
++
+ #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
+ __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+ __HPP_COLOR_PERCENT_FN(_type, _field)					\
+-__HPP_ENTRY_PERCENT_FN(_type, _field)
++__HPP_ENTRY_PERCENT_FN(_type, _field)					\
++__HPP_SORT_FN(_type, _field)
+ 
+ #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
+ __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+-__HPP_ENTRY_RAW_FN(_type, _field)
++__HPP_ENTRY_RAW_FN(_type, _field)					\
++__HPP_SORT_RAW_FN(_type, _field)
+ 
+ 
+ HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
+@@ -227,19 +246,31 @@ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
+ HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
+ HPP_RAW_FNS(period, "Period", period, 12, 12)
+ 
++static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
++			    struct hist_entry *b __maybe_unused)
++{
++	return 0;
++}
++
+ #define HPP__COLOR_PRINT_FNS(_name)			\
+ 	{						\
+ 		.header	= hpp__header_ ## _name,	\
+ 		.width	= hpp__width_ ## _name,		\
+ 		.color	= hpp__color_ ## _name,		\
+-		.entry	= hpp__entry_ ## _name		\
++		.entry	= hpp__entry_ ## _name,		\
++		.cmp	= hpp__nop_cmp,			\
++		.collapse = hpp__nop_cmp,		\
++		.sort	= hpp__sort_ ## _name,		\
  	}
  
--	ret = of_init_opp_table(dvfs_info->dev);
--	if (ret) {
--		dev_err(dvfs_info->dev, "failed to init OPP table: %d\n", ret);
--		goto err_put_node;
--	}
--
- 	ret = dev_pm_opp_init_cpufreq_table(dvfs_info->dev,
- 					    &dvfs_info->freq_table);
- 	if (ret) {
+ #define HPP__PRINT_FNS(_name)				\
+ 	{						\
+ 		.header	= hpp__header_ ## _name,	\
+ 		.width	= hpp__width_ ## _name,		\
+-		.entry	= hpp__entry_ ## _name		\
++		.entry	= hpp__entry_ ## _name,		\
++		.cmp	= hpp__nop_cmp,			\
++		.collapse = hpp__nop_cmp,		\
++		.sort	= hpp__sort_ ## _name,		\
+ 	}
+ 
+ struct perf_hpp_fmt perf_hpp__format[] = {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 38c3e874c164..36dbe00e3cc8 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -160,6 +160,9 @@ struct perf_hpp_fmt {
+ 		     struct hist_entry *he);
+ 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 		     struct hist_entry *he);
++	int64_t (*cmp)(struct hist_entry *a, struct hist_entry *b);
++	int64_t (*collapse)(struct hist_entry *a, struct hist_entry *b);
++	int64_t (*sort)(struct hist_entry *a, struct hist_entry *b);
+ 
+ 	struct list_head list;
+ };
 -- 
-2.0.0.rc2
+1.9.2
 
