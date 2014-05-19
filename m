@@ -1,178 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaESGve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:51:34 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11083 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaESGvc (ORCPT
+	id S1751311AbaESGww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:52:52 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10251 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaESGwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:51:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 18 May 2014 23:45:46 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 1/2] drm/gk20a/fb: fix huge memory leak
-Date: Mon, 19 May 2014 15:51:07 +0900
-Message-ID: <1400482268-4971-2-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400482268-4971-1-git-send-email-acourbot@nvidia.com>
-References: <1400482268-4971-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 19 May 2014 02:52:51 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-5e-5379aa3b80d6
+Message-id: <1400482362.4382.0.camel@AMDC1943>
+Subject: Re: [PATCH] clk: s2mps11: Simplify s2mps11_clk_probe unwind paths
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 May 2014 08:52:42 +0200
+In-reply-to: <1400428295.15403.3.camel@phoenix>
+References: <1400428295.15403.3.camel@phoenix>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xy7rWqyqDDV79tLA4Mucrs8XlXXPY
+	LJ5OuMhmMWf6OyYHFo+2n2Ued67tYfPo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujItHHzEW
+	bOauOLXoPWsD4wzOLkZODgkBE4mjx9pYIWwxiQv31rN1MXJxCAksZZQ48GwNC4TzmVHieucW
+	IIeDg1dAT2JzlzZIg7CAl8Se7QuZQWw2AWOJzcuXsIHYIgJKEqvuX2YBsZkFKiTenHgDZrMI
+	qEqcmrkbrJ5TQF9i44wOsMVCQCO3989nhqhXl5g0bxEzxEHKEvP2H2MCsXkFBCV+TL4HNVNe
+	YvOat8wTGAVmIWmZhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCQvfLDsbF
+	x6wOMQpwMCrx8H5IqAwWYk0sK67MPcQowcGsJML7yRsoxJuSWFmVWpQfX1Sak1p8iJGJg1Oq
+	gbE+4Bf7Ql2OU9d59ruJTozavevt9BIXpuWq+up/LF5fVPv48G07v7Pzi5XCIZNOlDuaFR3U
+	PmO5N+iS+XynqLM8U9dwz7B3iPFg95hTkMIRdmHFtsVLpRqU1q386uN0dZ3opKfONoab1ZaX
+	TjqprNYp/r8vX/3BxJyVHjcdTQ3k7pQHF7+y1lBiKc5INNRiLipOBADbRPEGOwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CMA-allocated memory must be freed by an exact mirror call to
-dma_release_from_contiguous(). It cannot be freed page-by-page as was
-previously believed without severe memory leakage.
+On nie, 2014-05-18 at 23:51 +0800, Axel Lin wrote:
+> The devm_clk_unregister() in probe error paths are not necessary as it will be
+> automatically called when probe fails.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/clk/clk-s2mps11.c | 14 ++++----------
+>  1 file changed, 4 insertions(+), 10 deletions(-)
 
-This page records the address and size of every allocated memory chunk
-so they can be properly freed when needed.
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c | 74 ++++++++++++++---------
- 1 file changed, 46 insertions(+), 28 deletions(-)
+Best regards,
+Krzysztof
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-index 7effd1a63458..5904af52e6d6 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
-@@ -28,28 +28,34 @@
- #include <linux/types.h>
- #include <linux/dma-contiguous.h>
- 
-+struct gk20a_mem_chunk {
-+	struct list_head list;
-+	struct page *pages;
-+	u32 npages;
-+};
-+
-+struct gk20a_mem {
-+	struct nouveau_mem base;
-+	struct list_head head;
-+};
-+
- static void
- gk20a_ram_put(struct nouveau_fb *pfb, struct nouveau_mem **pmem)
- {
- 	struct device *dev = nv_device_base(nv_device(pfb));
--	struct nouveau_mem *mem = *pmem;
--	int i;
-+	struct gk20a_mem *mem = container_of(*pmem, struct gk20a_mem, base);
-+	struct gk20a_mem_chunk *chunk, *n;
- 
- 	*pmem = NULL;
- 	if (unlikely(mem == NULL))
- 		return;
- 
--	for (i = 0; i < mem->size; i++) {
--		struct page *page;
--
--		if (mem->pages[i] == 0)
--			break;
--
--		page = pfn_to_page(mem->pages[i] >> PAGE_SHIFT);
--		dma_release_from_contiguous(dev, page, 1);
-+	list_for_each_entry_safe(chunk, n, &mem->head, list) {
-+		dma_release_from_contiguous(dev, chunk->pages, chunk->npages);
-+		kfree(chunk);
- 	}
- 
--	kfree(mem->pages);
-+	kfree(mem->base.pages);
- 	kfree(mem);
- }
- 
-@@ -58,9 +64,8 @@ gk20a_ram_get(struct nouveau_fb *pfb, u64 size, u32 align, u32 ncmin,
- 	     u32 memtype, struct nouveau_mem **pmem)
- {
- 	struct device *dev = nv_device_base(nv_device(pfb));
--	struct nouveau_mem *mem;
-+	struct gk20a_mem *mem;
- 	int type = memtype & 0xff;
--	dma_addr_t dma_addr;
- 	int npages;
- 	int order;
- 	int i;
-@@ -95,44 +100,57 @@ gk20a_ram_get(struct nouveau_fb *pfb, u64 size, u32 align, u32 ncmin,
- 	if (!mem)
- 		return -ENOMEM;
- 
--	mem->size = npages;
--	mem->memtype = type;
-+	mem->base.size = npages;
-+	mem->base.memtype = type;
- 
--	mem->pages = kzalloc(sizeof(dma_addr_t) * npages, GFP_KERNEL);
--	if (!mem) {
-+	mem->base.pages = kzalloc(sizeof(dma_addr_t) * npages, GFP_KERNEL);
-+	if (!mem->base.pages) {
- 		kfree(mem);
- 		return -ENOMEM;
- 	}
- 
-+	INIT_LIST_HEAD(&mem->head);
-+
-+	*pmem = &mem->base;
-+
- 	while (npages) {
--		struct page *pages;
-+		struct gk20a_mem_chunk *chunk;
-+		dma_addr_t addr;
- 		int pos = 0;
- 
- 		/* don't overflow in case size is not a multiple of ncmin */
- 		if (ncmin > npages)
- 			ncmin = npages;
- 
--		pages = dma_alloc_from_contiguous(dev, ncmin, order);
--		if (!pages) {
--			gk20a_ram_put(pfb, &mem);
-+		chunk = kzalloc(sizeof(*chunk), GFP_KERNEL);
-+		if (!chunk) {
-+			gk20a_ram_put(pfb, pmem);
- 			return -ENOMEM;
- 		}
- 
--		dma_addr = (dma_addr_t)(page_to_pfn(pages) << PAGE_SHIFT);
-+		chunk->pages = dma_alloc_from_contiguous(dev, ncmin, order);
-+		if (!chunk->pages) {
-+			kfree(chunk);
-+			gk20a_ram_put(pfb, pmem);
-+			return -ENOMEM;
-+		}
- 
--		nv_debug(pfb, "  alloc count: %x, order: %x, addr: %pad\n", ncmin,
--			 order, &dma_addr);
-+		chunk->npages = ncmin;
-+		list_add_tail(&chunk->list, &mem->head);
-+
-+		addr = (dma_addr_t)(page_to_pfn(chunk->pages) << PAGE_SHIFT);
-+
-+		nv_debug(pfb, "  alloc count: %x, order: %x, addr: %pad\n",
-+			 ncmin, order, &addr);
- 
- 		for (i = 0; i < ncmin; i++)
--			mem->pages[pos + i] = dma_addr + (PAGE_SIZE * i);
-+			mem->base.pages[pos + i] = addr + (PAGE_SIZE * i);
- 
- 		pos += ncmin;
- 		npages -= ncmin;
- 	}
- 
--	mem->offset = (u64)mem->pages[0];
--
--	*pmem = mem;
-+	mem->base.offset = (u64)mem->base.pages[0];
- 
- 	return 0;
- }
--- 
-1.9.2
+
+
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index f2f62a1b..aeaa61c 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -210,7 +210,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>  					sizeof(struct clk_lookup), GFP_KERNEL);
+>  		if (!s2mps11_clk->lookup) {
+>  			ret = -ENOMEM;
+> -			goto err_lup;
+> +			goto err_reg;
+>  		}
+>  
+>  		s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
+> @@ -231,16 +231,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>  	platform_set_drvdata(pdev, s2mps11_clks);
+>  
+>  	return ret;
+> -err_lup:
+> -	devm_clk_unregister(&pdev->dev, s2mps11_clk->clk);
+> +
+>  err_reg:
+> -	while (s2mps11_clk > s2mps11_clks) {
+> -		if (s2mps11_clk->lookup) {
+> -			clkdev_drop(s2mps11_clk->lookup);
+> -			devm_clk_unregister(&pdev->dev, s2mps11_clk->clk);
+> -		}
+> -		s2mps11_clk--;
+> -	}
+> +	while (--i >= 0)
+> +		clkdev_drop(s2mps11_clks[i].lookup);
+>  
+>  	return ret;
+>  }
 
