@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694AbaESI7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:59:21 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:50224 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659AbaESI7T (ORCPT
+	id S1753454AbaESJBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:01:18 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:57685 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaESJBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:59:19 -0400
+	Mon, 19 May 2014 05:01:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140515184534.GB3138@developer>
+In-Reply-To: <20140516173226.GE2856@e102654-lin.cambridge.arm.com>
 References: <1399559880-20562-1-git-send-email-amit.daniel@samsung.com>
 	<1399559880-20562-3-git-send-email-amit.daniel@samsung.com>
-	<20140515184534.GB3138@developer>
-Date: Mon, 19 May 2014 14:29:18 +0530
-X-Google-Sender-Auth: 5CZn6AwpkN8UbIpAX8vHh2uTjW4
-Message-ID: <CADGdYn6tSFUjp+Kf+axyOoj9cn+LKwTZBtrDBzX9QUf2bJ2TLQ@mail.gmail.com>
-Subject: Re: [linux-pm] [RFC PATCH 2/5] thermal: cpu_cooling: Add
- notifications support for the clients
+	<20140516173226.GE2856@e102654-lin.cambridge.arm.com>
+Date: Mon, 19 May 2014 14:31:14 +0530
+X-Google-Sender-Auth: 3McNgZ9WwTt2CxSdOh5iUMh_AUM
+Message-ID: <CADGdYn7CvQqSEcHGgqLcBaW3XXQPO1ay5A03Ld1=eRqzLsBMkQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/5] thermal: cpu_cooling: Add notifications support
+ for the clients
 From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org
+To: Javi Merino <javi.merino@arm.com>
+Cc: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>, edubezval@gmail.com,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:15 AM, Eduardo Valentin <edubezval@gmail.com> wrote:
-> Hello Amit,
+On Fri, May 16, 2014 at 11:02 PM, Javi Merino <javi.merino@arm.com> wrote:
+> Hi Amit,
 >
->
-> On Thu, May 08, 2014 at 08:07:57PM +0530, Amit Daniel Kachhap wrote:
+> On Thu, May 08, 2014 at 03:37:57PM +0100, Amit Daniel Kachhap wrote:
 >> This patch adds notification support for those clients of cpu_cooling
 >> APIs which may want to do something interesting after receiving these
 >> cpu_cooling events. The notifier structure passed is of both Set/Get type.
@@ -40,18 +45,6 @@ On Fri, May 16, 2014 at 12:15 AM, Eduardo Valentin <edubezval@gmail.com> wrote:
 >> 2. CPU_COOLING_SET_STATE_POST
 >> 3. CPU_COOLING_GET_CUR_STATE
 >> 4. CPU_COOLING_GET_MAX_STATE
->
-> What do you think about expanding this feature to all cooling devices?
->
-> I mean, why should we restrict to cpu(freq) cooling?
-nice suggestion. Sure will check its feasibility.
->
-> The clock cooling device I posted (and that I plan to merge soon) should
-> also benefit of this infrastructure. The clock cooling is for the
-> context of other processing units, that do not benefit of cpufreq.
-ok let me check them.
->
->
 >>
 >> The advantages of these notfications is to differentiate between different
 >> P states in the cpufreq table and the cooling states. The clients of these
@@ -119,18 +112,8 @@ ok let me check them.
 >> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
 >> +                                     CPU_COOLING_SET_STATE_PRE);
 >> +
->
-> Can a listener block/abort/postpone a state transition?
->
 >> +     cooling_state = cpufreq_device->request_status.new_state;
 >>
->
-> So you are proposing listeners can have control on target cpufreq state,
-> right? Or did I get it wrong?
->
-> I think we should have this better documented. Besides, if that is the
-> case, what happens if we have several listeners?
->
 >>       /* Check if the old cooling action is same as new cooling action */
 >> -     if (cpufreq_device->cpufreq_state == cooling_state)
 >> +     if (cpufreq_device->cpufreq_state ==
@@ -158,184 +141,14 @@ ok let me check them.
 >> +     *state = cpufreq_device->request_status.max_state;
 >> +
 >
-> same question here, who determines the priorities when several listeners
-> are present in the system?
+> I think this should all be inside the "if (count > 0)".  If not, then
+> remove it, as it is dead code now.
+yes this looks buggy. Will remove them. thanks
 >
->>       return ret;
->>  }
->>
->> @@ -410,8 +443,12 @@ static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
->>               /* Cooling device pointer not found */
->>               return -EINVAL;
->>       }
->> +     cpufreq_device->request_status.cur_state =
->> +                                             cpufreq_device->cpufreq_state;
->> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
->> +                                     CPU_COOLING_GET_CUR_STATE);
->>
+> Cheers,
+> Javi
 >
-> ditto.
->
->> -     *state = cpufreq_device->cpufreq_state;
->> +     *state = cpufreq_device->request_status.cur_state;
->>
->>       return 0;
->>  }
->> @@ -520,6 +557,7 @@ __cpufreq_cooling_register(struct device_node *np,
->>       }
->>       cpufreq_dev->cool_dev = cool_dev;
->>       cpufreq_dev->cpufreq_state = 0;
->> +     cpufreq_dev->request_status.devdata = devdata;
->>       mutex_lock(&cooling_cpufreq_lock);
->>
->>       /* Register the notifier for first cpufreq cooling device */
->> @@ -614,3 +652,58 @@ void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
->>       kfree(cpufreq_dev);
->>  }
->>  EXPORT_SYMBOL_GPL(cpufreq_cooling_unregister);
->> +
->> +/**
->> + * cpufreq_cooling_register_notifier - register a driver with cpufreq cooling.
->> + * @nb:      notifier function to register.
->> + * @list: CPU_COOLING_STATE_NOTIFIER type.
->> + *
->> + * Add a driver to receive cpufreq cooling notifications like current state,
->> + * max state and set state. The drivers after reading the events can perform
->> + * some mapping between the P states and cooling states like grouping some P
->> + * states into 1 cooling state.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int cpufreq_cooling_register_notifier(struct notifier_block *nb,
->> +                                     unsigned int list)
->> +{
->> +     int ret = 0;
->> +     switch (list) {
->> +     case CPU_COOLING_STATE_NOTIFIER:
->> +             ret = blocking_notifier_chain_register(
->> +                             &cpufreq_cooling_state_notifier_list, nb);
->> +             break;
->> +     default:
->> +             ret = -EINVAL;
->> +     }
->> +     return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(cpufreq_cooling_register_notifier);
->> +
->> +/**
->> + * cpufreq_cooling_unregister_notifier - unregisters a driver with cpufreq
->> + * cooling.
->> + * @nb:      notifier function to unregister.
->> + * @list: CPU_COOLING_STATE_NOTIFIER type.
->> + *
->> + * Removes a driver to receive further cpufreq cooling notifications.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
->> +                                     unsigned int list)
->> +{
->> +     int ret = 0;
->> +     switch (list) {
->> +     case CPU_COOLING_STATE_NOTIFIER:
->> +             ret = blocking_notifier_chain_unregister(
->> +                             &cpufreq_cooling_state_notifier_list, nb);
->> +             break;
->> +     default:
->> +             ret = -EINVAL;
->> +     }
->> +
->> +     return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(cpufreq_cooling_unregister_notifier);
->
-> The exported symbols must be documented under Documentation/ too.
->
->> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
->> index aaef7d8..f786935 100644
->> --- a/include/linux/cpu_cooling.h
->> +++ b/include/linux/cpu_cooling.h
->> @@ -28,6 +28,22 @@
->>  #include <linux/thermal.h>
->>  #include <linux/cpumask.h>
->>
->> +#define CPU_COOLING_STATE_NOTIFIER   (0)
->> +
->> +enum cpu_cooling_state_ops {
->> +     CPU_COOLING_SET_STATE_PRE,
->> +     CPU_COOLING_SET_STATE_POST,
->> +     CPU_COOLING_GET_CUR_STATE,
->> +     CPU_COOLING_GET_MAX_STATE,
->> +};
->> +
->> +struct cpufreq_cooling_status {
->> +     unsigned long cur_state;
->> +     unsigned long new_state;
->> +     unsigned long max_state;
->> +     void *devdata;
->> +};
->> +
->>  #ifdef CONFIG_CPU_THERMAL
->>  /**
->>   * cpufreq_cooling_register - function to create cpufreq cooling device.
->> @@ -62,6 +78,34 @@ of_cpufreq_cooling_register(struct device_node *np,
->>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
->>
->>  unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq);
->> +
->> +/**
->> + * cpufreq_cooling_register_notifier - register a driver with cpufreq cooling.
->> + * @nb:      notifier function to register.
->> + * @list: CPU_COOLING_STATE_NOTIFIER type.
->> + *
->> + * Add a driver to receive cpufreq cooling notifications like current state,
->> + * max state and set state. The drivers after reading the events can perform
->> + * some mapping between the P states and cooling states like grouping some P
->> + * states into 1 cooling state.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int cpufreq_cooling_register_notifier(struct notifier_block *nb,
->> +                                     unsigned int list);
->> +
->> +/**
->> + * cpufreq_cooling_unregister_notifier - unregisters a driver with cpufreq
->> + * cooling.
->> + * @nb:      notifier function to unregister.
->> + * @list: CPU_COOLING_STATE_NOTIFIER type.
->> + *
->> + * Removes a driver to receive further cpufreq cooling notifications.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
->> +                                     unsigned int list);
->>  #else /* !CONFIG_CPU_THERMAL */
->>  static inline struct thermal_cooling_device *
->>  cpufreq_cooling_register(const struct cpumask *clip_cpus, void *devdata)
->> @@ -84,6 +128,17 @@ unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq)
->>  {
->>       return THERMAL_CSTATE_INVALID;
->>  }
->> +static inline int
->> +cpufreq_cooling_register_notifier(struct notifier_block *nb, unsigned int list)
->> +{
->> +     return 0;
->> +}
->> +static inline int
->> +cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
->> +                                     unsigned int list)
->> +{
->> +     return 0;
->> +}
->>  #endif       /* CONFIG_CPU_THERMAL */
->>
->>  #endif /* __CPU_COOLING_H__ */
->> --
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
