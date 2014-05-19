@@ -1,215 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaESVKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:10:39 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55353 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751106AbaESVK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:10:28 -0400
-Date: Mon, 19 May 2014 23:07:36 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Jisheng Zhang <jszhang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 08/10] ARM: dts: berlin: convert BG2CD to DT clock
- nodes
-Message-ID: <20140519210736.GR29318@piout.net>
-References: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1400517811-24668-9-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1751621AbaESVLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:11:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40736 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764AbaESVLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 17:11:50 -0400
+Message-ID: <537A735A.9070607@ti.com>
+Date: Mon, 19 May 2014 17:10:50 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400517811-24668-9-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware
+ core driver
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <22200719.Jb5jnJylJH@wuerfel> <5376748B.7080302@ti.com> <5671513.YgJm44AVLV@wuerfel>
+In-Reply-To: <5671513.YgJm44AVLV@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/05/2014 at 18:43:29 +0200, Sebastian Hesselbarth wrote :
-> This converts Berlin BG2CD SoC dtsi to make use of the new DT clock
-> nodes for Berlin SoCs. Also add a binding include to ease core clock
-> references.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+On 5/19/2014 8:06 AM, Arnd Bergmann wrote:
+> On Friday 16 May 2014 16:26:51 Murali Karicheri wrote:
+>> On 5/15/2014 2:20 PM, Arnd Bergmann wrote:
+>>> On Thursday 15 May 2014 13:45:08 Murali Karicheri wrote:
+>>>>>> +#ifdef CONFIG_PCI_KEYSTONE
+>>>>>> +/*
+>>>>>> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+>>>>>> + */
+>>>>>> +static void quirk_limit_readrequest(struct pci_dev *dev)
+>>>>>> +{
+>>>>>> +    int readrq = pcie_get_readrq(dev);
+>>>>>> +
+>>>>>> +    if (readrq > 256)
+>>>>>> +            pcie_set_readrq(dev, 256);
+>>>>>> +}
+>>>>>> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+>>>>>> +#endif /* CONFIG_PCI_KEYSTONE */
+>>>>> This doesn't work: you can't just limit do this for all devices just based
+>>>>> on PCI_KEYSTONE being enabled, you have to check if you are actually using
+>>>>> this controller.
+>>>>>
+>>>>>         Arnd
+>>>>     I assume, I need to check if PCI controller's vendor ID/ device ID
+>>>> match with the keystone
+>>>>     PCI controller's ID and call pcie_set_readrq() for all of the slave
+>>>> PCI devices and do this fixup.
+>>>> Is this correct understanding?  If you can point me to an example code
+>>>> for this that will be
+>>>> really helpful so that I can avoid re-inventing the wheel.
+>>> I think it would be best to move the quirk into the keystone pci driver
+>>> and compare compare the dev->driver pointer of the PCI controller device.
+>>>
+>>>        Arnd
+>> Arnd,
+>>
+>> I will move this quirk to keystone pci driver. So in that case, I guess
+>> your original comment
+>> is not applicable as  this quirk gets enabled only with PCI keystone
+>> driver enabled. Right?
+> Of course you still have to fix the bug, not just move the code into
+> the driver. Otherwise it's still broken for every machine after the keystone
+> driver is enabled.
 
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Agree. I have tried following to get this work so that the quirk gets 
+applied only for
+keystone pci controller.
 
-> ---
-> Changelog:
-> v1->v2:
-> - adapt to new single chip control node and compatible
-> 
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: Jisheng Zhang <jszhang@marvell.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/berlin2cd.dtsi | 53 ++++++++++++++++++----------------------
->  1 file changed, 24 insertions(+), 29 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-> index 6eb1bdae23ac..1385caa6d029 100644
-> --- a/arch/arm/boot/dts/berlin2cd.dtsi
-> +++ b/arch/arm/boot/dts/berlin2cd.dtsi
-> @@ -12,6 +12,7 @@
->   */
->  
->  #include "skeleton.dtsi"
-> +#include <dt-bindings/clock/berlin2.h>
->  #include <dt-bindings/interrupt-controller/arm-gic.h>
->  
->  / {
-> @@ -30,24 +31,10 @@
->  		};
->  	};
->  
-> -	clocks {
-> -		smclk: sysmgr-clock {
-> -			compatible = "fixed-clock";
-> -			#clock-cells = <0>;
-> -			clock-frequency = <25000000>;
-> -		};
-> -
-> -		cfgclk: cfg-clock {
-> -			compatible = "fixed-clock";
-> -			#clock-cells = <0>;
-> -			clock-frequency = <75000000>;
-> -		};
-> -
-> -		sysclk: system-clock {
-> -			compatible = "fixed-clock";
-> -			#clock-cells = <0>;
-> -			clock-frequency = <300000000>;
-> -		};
-> +	refclk: oscillator {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <25000000>;
->  	};
->  
->  	soc {
-> @@ -76,7 +63,7 @@
->  			compatible = "arm,cortex-a9-twd-timer";
->  			reg = <0xad0600 0x20>;
->  			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-> -			clocks = <&sysclk>;
-> +			clocks = <&chip CLKID_TWD>;
->  		};
->  
->  		apb@e80000 {
-> @@ -163,7 +150,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c00 0x14>;
->  				interrupts = <8>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "okay";
->  			};
-> @@ -172,7 +159,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c14 0x14>;
->  				interrupts = <9>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "okay";
->  			};
-> @@ -181,7 +168,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c28 0x14>;
->  				interrupts = <10>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -190,7 +177,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c3c 0x14>;
->  				interrupts = <11>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -199,7 +186,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c50 0x14>;
->  				interrupts = <12>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -208,7 +195,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c64 0x14>;
->  				interrupts = <13>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -217,7 +204,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c78 0x14>;
->  				interrupts = <14>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -226,7 +213,7 @@
->  				compatible = "snps,dw-apb-timer";
->  				reg = <0x2c8c 0x14>;
->  				interrupts = <15>;
-> -				clocks = <&cfgclk>;
-> +				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
->  				status = "disabled";
->  			};
-> @@ -241,6 +228,14 @@
->  			};
->  		};
->  
-> +		chip: chip-control@ea0000 {
-> +			compatible = "marvell,berlin2cd-chip-ctrl";
-> +			#clock-cells = <1>;
-> +			reg = <0xea0000 0x400>;
-> +			clocks = <&refclk>;
-> +			clock-names = "refclk";
-> +		};
-> +
->  		apb@fc0000 {
->  			compatible = "simple-bus";
->  			#address-cells = <1>;
-> @@ -285,7 +280,7 @@
->  				reg-shift = <2>;
->  				reg-io-width = <1>;
->  				interrupts = <8>;
-> -				clocks = <&smclk>;
-> +				clocks = <&refclk>;
->  				status = "disabled";
->  			};
->  
-> @@ -295,7 +290,7 @@
->  				reg-shift = <2>;
->  				reg-io-width = <1>;
->  				interrupts = <9>;
-> -				clocks = <&smclk>;
-> +				clocks = <&refclk>;
->  				status = "disabled";
->  			};
->  
-> -- 
-> 1.9.1
-> 
+#define KS_K2HK_PCI_DEVICE_ID    0xb008
+#define KS_K2E_PCI_DEVICE_ID    0xb009
+#define KS_K2L_PCI_DEVICE_ID    0xb00a
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+static u16 root_pci_ids[] =
+     {KS_K2HK_PCI_DEVICE_ID, KS_K2E_PCI_DEVICE_ID, KS_K2L_PCI_DEVICE_ID, 
+0 };
+/*
+  * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+  */
+static void quirk_limit_readrequest(struct pci_dev *dev)
+{
+     struct pci_dev *root_dev;
+     int i = 0;
+
+     /* Apply quirk only if this bridge device is keystone */
+     while (root_pci_ids[i]) {
+         root_dev = pci_get_device(PCI_VENDOR_ID_TI, root_pci_ids[i], NULL);
+         if ((root_dev->class >> 8) == PCI_CLASS_BRIDGE_PCI) {
+             int readrq;
+
+             readrq = pcie_get_readrq(dev);
+             if (pcie_get_readrq(dev) > 256) {
+                 pcie_set_readrq(dev, 256);
+                 printk("Applied quirk\n");
+             }
+             break;
+         };
+     }
+}
+DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+
+>
+> I also agree with Jason that changing the PCI core to call
+> pcie_bus_configure_settings() would be a better way of dealing with this
+> if it solves the problem.
+
+I tried following piece of code added to bios32.c
+
+void pci_common_init_dev(struct device *parent, struct hw_pci *hw)
+{
+         struct pci_sys_data *sys;
+         LIST_HEAD(head);
+
+         pci_add_flags(PCI_REASSIGN_ALL_RSRC);
+         if (hw->preinit)
+                 hw->preinit();
+
+          ........
+          ....
+
+          list_for_each_entry(sys, &head, node) {
+                 struct pci_bus *bus = sys->bus;
+
+                 if (!pci_has_flag(PCI_PROBE_ONLY)) {
+                         /*
+                          * Size the bridge windows.
+                          */
+                         pci_bus_size_bridges(bus);
+
+                         /*
+                          * Assign resources.
+                          */
+                         pci_bus_assign_resources(bus);
+                 }
+                 /*
+                  * Tell drivers about devices found.
+                  */
+                 pci_bus_add_devices(bus);
+         }
+
+// New code starts here
+         list_for_each_entry(sys, &head, node) {
+                 struct pci_bus *bus = sys->bus;
+
+                 /* Configure PCI Express settings */
+                 if (bus && !pci_has_flag(PCI_PROBE_ONLY)) {
+                         struct pci_bus *child;
+
+                         list_for_each_entry(child, &bus->children, node)
+                         pcie_bus_configure_settings(child);
+                 }
+         }
+// New code ends.
+
+This seems to do different things based on the pci bootargs. The key 
+requirement for Keystone PCI controller
+is that the MRRS can't be more than 256 bytes.  The only option that 
+works for keystone PCI controller
+is with pci=pcie_bus_perf.   I see following logs:-
+
+[    3.382747] pcie_bus_configure_settings, config 2
+[    3.382753] pcie_bus_configure_set
+[    3.382781] pcieport 0000:00:00.0: Max Payload Size set to  256/ 256 
+(was  128), Max Read Rq  256
+[    3.382788] pcie_bus_configure_set
+[    3.382846] pci 0000:01:00.0: Max Payload Size set to  256/ 256 (was  
+128), Max Read Rq  256
+[    3.382852] pcie_bus_configure_set
+[    3.382909] pci 0000:01:00.1: Max Payload Size set to  256/ 256 (was  
+128), Max Read Rq  256
+
+On ARM, by default pci_bus_config seems to be set to 0 
+(PCIE_BUS_TUNE_OFF). So the code doesn't get
+executed for this default. But for PCIE_BUS_SAFE, it doesn't change the 
+mrrs at the EP and is not
+good for our platform w.r.t mrrs settings. For PCIE_BUS_PERFORMANCE, it 
+seems to increase the payload
+size as well and Keystone Payload size is limited to 128 bytes. So it is 
+not safe to increase the payload
+size to 256 based on the log.
+
+On other platforms, Why the PCI core try to set the payload size equal 
+to mrrs? Is this explained in any
+PCI spec?  Looks like this is done for performance? Let me know if you 
+want me to send a patch for
+review to add the pcie_bus_configure_settings() code to 
+arch/arm/kernel/bios32.c
+
+For the Keystone PCI driver, I believe. it is safe to have the quirk so 
+that controller can handle the
+read requests properly. Let me know if the quirk code above looks good 
+to go.
+
+Murali
+
+> 	Arnd
+
