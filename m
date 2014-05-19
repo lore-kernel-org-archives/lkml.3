@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaESUnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:43:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55011 "EHLO
+	id S1752792AbaESUp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:45:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54994 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751557AbaESUnd (ORCPT
+	with ESMTP id S1751543AbaESUnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 16:43:33 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -20,9 +20,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
         linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 resend 06/11] pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
-Date: Mon, 19 May 2014 22:42:37 +0200
-Message-Id: <1400532162-29483-7-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 resend 04/11] ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
+Date: Mon, 19 May 2014 22:42:35 +0200
+Message-Id: <1400532162-29483-5-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -30,49 +30,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that PWM_LOOKUP is not used anymore, modify it to initialize all the
-members of struct pwm_lookup.
+This will allow to get rid of the .pwm_period_ns member of struct led_pwm as the
+period will be set by the PWM core.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- Documentation/pwm.txt | 3 ++-
- include/linux/pwm.h   | 4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/board-omap3beagle.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 93cb97974986..f38f99cda64f 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -19,7 +19,8 @@ should instead register a static mapping that can be used to match PWM
- consumers to providers, as given in the following example:
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index d6ed819ff15c..f27e1ec90b5e 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -61,7 +61,14 @@
  
- 	static struct pwm_lookup board_pwm_lookup[] = {
--		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL),
-+		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL,
-+			   50000, PWM_POLARITY_NORMAL),
- 	};
- 
- 	static void __init board_init(void)
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 2f45e2fe5b93..e90628cac8fa 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -278,12 +278,14 @@ struct pwm_lookup {
- 	enum pwm_polarity polarity;
+ static struct pwm_lookup pwm_lookup[] = {
+ 	/* LEDB -> PMU_STAT */
+-	PWM_LOOKUP("twl-pwmled", 1, "leds_pwm", "beagleboard::pmu_stat"),
++	{
++		.provider = "twl-pwmled",
++		.index = 1,
++		.dev_id = "leds_pwm",
++		.con_id = "beagleboard::pmu_stat",
++		.period = 7812500,
++		.polarity = PWM_POLARITY_NORMAL,
++	},
  };
  
--#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id)	\
-+#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id, _period, _polarity) \
- 	{						\
- 		.provider = _provider,			\
- 		.index = _index,			\
- 		.dev_id = _dev_id,			\
- 		.con_id = _con_id,			\
-+		.period = _period,			\
-+		.polarity = _polarity			\
- 	}
- 
- #if IS_ENABLED(CONFIG_PWM)
+ static struct led_pwm pwm_leds[] = {
 -- 
 1.9.1
 
