@@ -1,171 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083AbaESM5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:57:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1330 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593AbaESM5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754550AbaESM5l (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 19 May 2014 08:57:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,867,1392192000"; 
-   d="scan'208";a="534169038"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
-In-Reply-To: <20140519085854.GW30445@twins.programming.kicks-ass.net>
-References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com> <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com> <20140519085854.GW30445@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 19 May 2014 15:57:37 +0300
-Message-ID: <87bnuuylha.fsf@ashishki-desk.ger.corp.intel.com>
+Received: from mx1.redhat.com ([209.132.183.28]:54691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631AbaESM5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:57:40 -0400
+Date: Mon, 19 May 2014 13:59:57 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: peterz@infradead.org, acme@infradead.org, jolsa@kernel.org,
+        rostedt@goodmis.org, mingo@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf_tools/sched: Remove nr_state_machine_bugs in perf
+ latency.
+Message-ID: <20140519115957.GF5027@krava.brq.redhat.com>
+References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
+ <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+any ACKs?
 
-> On Thu, May 15, 2014 at 06:08:30PM +0300, Alexander Shishkin wrote:
->> --- a/include/linux/perf_event.h
->> +++ b/include/linux/perf_event.h
->> @@ -252,6 +252,19 @@ struct pmu {
->>  	 * flush branch stack on context-switches (needed in cpu-wide mode)
->>  	 */
->>  	void (*flush_branch_stack)	(void);
->> +
->> +	/*
->> +	 * Allocate AUX space buffer: return an array of @nr_pages pages to be
->> +	 * mapped to userspace that will also be passed to ->free_aux.
->> +	 */
->> +	void *(*alloc_aux)		(int cpu, int nr_pages, bool overwrite,
->> +					 struct perf_event_mmap_page *user_page);
->> +					/* optional */
->> +
->> +	/*
->> +	 * Free AUX buffer
->> +	 */
->> +	void (*free_aux)		(void *aux); /* optional */
->>  };
->
-> I'm not entirely thrilled to expose it to the PMU like this.. I realize
-> you want this in order to get physically contiguous pages.
+thanks,
+jirka
 
-Hmm, I guess we can have code in perf core to carry out the allocation
-according to, say, contstraint flags and pass the page array down to the
-PMU if that sounds like a cleaner thing to do?
-
-> Are you aware of allocation constraints for other architectures?
-
-Somewhat. ARM's trace memory controller supports both scatter-gather and
-a plain contiguous buffer, I haven't found evidence of one being
-available while the other one isn't, so I'm inclined to assume that if
-it can write to system memory, it supports SG.
-
->>  #define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
->> @@ -710,6 +726,18 @@ enum perf_event_type {
->>  	 */
->>  	PERF_RECORD_MMAP2			= 10,
->>  
->> +	/*
->> +	 * Records that new data landed in the AUX buffer part.
->> +	 *
->> +	 * struct {
->> +	 * 	struct perf_event_header	header;
->> +	 *
->> +	 * 	u64				aux_offset;
->> +	 * 	u64				aux_size;
->> +	 * };
->> +	 */
->> +	PERF_RECORD_AUX				= 11,
->> +
->>  	PERF_RECORD_MAX,			/* non-ABI */
->>  };
->
-> Ideally the patch introducing this would also introduce code to generate
-> these records.
-
-Fair enough.
-
->> @@ -4076,7 +4090,63 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
->>  		return -EINVAL;
->>  
->>  	vma_size = vma->vm_end - vma->vm_start;
->> -	nr_pages = (vma_size / PAGE_SIZE) - 1;
->> +
->> +	if (vma->vm_pgoff == 0) {
->> +		nr_pages = (vma_size / PAGE_SIZE) - 1;
->> +	} else {
->> +		/*
->> +		 * AUX area mapping: if rb->aux_nr_pages != 0, it's already
->> +		 * mapped, all subsequent mappings should have the same size
->> +		 * and offset. Must be above the normal perf buffer.
->> +		 */
->> +		u64 aux_offset, aux_size;
->> +
->> +		if (!event->rb)
->> +			return -EINVAL;
->> +
->> +		nr_pages = vma_size / PAGE_SIZE;
->> +
->> +		mutex_lock(&event->mmap_mutex);
->> +		ret = -EINVAL;
->> +
->> +		rb = event->rb;
->> +		if (!rb)
->> +			goto aux_unlock;
->> +
->> +		aux_offset = ACCESS_ONCE(rb->user_page->aux_offset);
->> +		aux_size = ACCESS_ONCE(rb->user_page->aux_size);
->> +
->> +		if (aux_offset < perf_data_size(rb) + PAGE_SIZE)
->> +			goto aux_unlock;
->> +
->> +		if (aux_offset != vma->vm_pgoff << PAGE_SHIFT)
->> +			goto aux_unlock;
->> +
->> +		/* already mapped with a different offset */
->> +		if (rb_has_aux(rb) && rb->aux_pgoff != vma->vm_pgoff)
->> +			goto aux_unlock;
->> +
->> +		if (aux_size != vma_size || aux_size != nr_pages * PAGE_SIZE)
->> +			goto aux_unlock;
->> +
->> +		/* already mapped with a different size */
->> +		if (rb_has_aux(rb) && rb->aux_nr_pages != nr_pages)
->> +			goto aux_unlock;
->> +
->> +		if (!atomic_inc_not_zero(&rb->mmap_count))
->> +			goto aux_unlock;
->> +
->> +		if (rb_has_aux(rb)) {
->> +			atomic_inc(&rb->aux_mmap_count);
->> +			ret = 0;
->> +			goto unlock;
->> +		}
->> +
->> +		atomic_set(&rb->aux_mmap_count, 1);
->> +		user_extra = nr_pages;
->> +
->> +		goto accounting;
->> +	}
->
-> That appears to be missing a is_power_of_2(aux_size) check.
->
-> The problem with not having that is that since
-> perf_event_mmap_page::aux_{head,tail} are of Z mod 2^64 but your actual
-> {head,tail} are of Z mod aux_size, you need aux_size to be a full
-> divider of 2^64 or otherwise you get wrapping issues at the overflow.
->
-> Having it them all 2^n makes the divider trivial.
-
-I left it out so that the PMU callback could decide if it wants to do
-the math or not. Maybe it can also be a constraint flag or is it not
-worth it at all?
-
-Regards,
---
-Alex
+On Tue, May 13, 2014 at 10:38:21AM +0900, Dongsheng Yang wrote:
+> As we do not use .success in sched_wakeup event any more, then
+> we can not guarantee that the task when wakeup event happen is
+> out of run queue. So the message of nr_state_machine_bugs is
+> not correct.
+> 
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>  tools/perf/builtin-sched.c | 19 ++++++++-----------
+>  1 file changed, 8 insertions(+), 11 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+> index d3fb0ed..5b2fc62 100644
+> --- a/tools/perf/builtin-sched.c
+> +++ b/tools/perf/builtin-sched.c
+> @@ -149,7 +149,6 @@ struct perf_sched {
+>  	unsigned long	 nr_runs;
+>  	unsigned long	 nr_timestamps;
+>  	unsigned long	 nr_unordered_timestamps;
+> -	unsigned long	 nr_state_machine_bugs;
+>  	unsigned long	 nr_context_switch_bugs;
+>  	unsigned long	 nr_events;
+>  	unsigned long	 nr_lost_chunks;
+> @@ -1037,12 +1036,18 @@ static int latency_wakeup_event(struct perf_sched *sched,
+>  	atom = list_entry(atoms->work_list.prev, struct work_atom, list);
+>  
+>  	/*
+> +	 * As we do not guarantee the wakeup event happens when
+> +	 * task is out of run queue, also may happen when task is
+> +	 * on run queue and wakeup only change ->state to TASK_RUNNING,
+> +	 * then we should not set the ->wake_up_time when wake up a
+> +	 * task which is on run queue. 
+> +	 *
+>  	 * You WILL be missing events if you've recorded only
+>  	 * one CPU, or are only looking at only one, so don't
+> -	 * make useless noise.
+> +	 * skip in this case.
+>  	 */
+>  	if (sched->profile_cpu == -1 && atom->state != THREAD_SLEEPING)
+> -		sched->nr_state_machine_bugs++;
+> +		return 0;
+>  
+>  	sched->nr_timestamps++;
+>  	if (atom->sched_out_time > timestamp) {
+> @@ -1496,14 +1501,6 @@ static void print_bad_events(struct perf_sched *sched)
+>  			(double)sched->nr_lost_events/(double)sched->nr_events * 100.0,
+>  			sched->nr_lost_events, sched->nr_events, sched->nr_lost_chunks);
+>  	}
+> -	if (sched->nr_state_machine_bugs && sched->nr_timestamps) {
+> -		printf("  INFO: %.3f%% state machine bugs (%ld out of %ld)",
+> -			(double)sched->nr_state_machine_bugs/(double)sched->nr_timestamps*100.0,
+> -			sched->nr_state_machine_bugs, sched->nr_timestamps);
+> -		if (sched->nr_lost_events)
+> -			printf(" (due to lost events?)");
+> -		printf("\n");
+> -	}
+>  	if (sched->nr_context_switch_bugs && sched->nr_timestamps) {
+>  		printf("  INFO: %.3f%% context switch bugs (%ld out of %ld)",
+>  			(double)sched->nr_context_switch_bugs/(double)sched->nr_timestamps*100.0,
+> -- 
+> 1.8.2.1
+> 
