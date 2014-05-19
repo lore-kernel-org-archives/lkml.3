@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaESJaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:30:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50068 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750803AbaESJaF (ORCPT
+	id S1753973AbaESJar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:30:47 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:48102 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732AbaESJap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:30:05 -0400
-Date: Mon, 19 May 2014 11:27:25 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 3/7] mfd: add support for sun6i PRCM
- (Power/Reset/Clock Management) unit
-Message-ID: <20140519092725.GE29466@lukather>
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399633911-7094-4-git-send-email-boris.brezillon@free-electrons.com>
- <20140509135251.GY5767@lee--X1>
- <20140515151756.GX29258@lukather>
- <20140519092159.GE4978@lee--X1>
+	Mon, 19 May 2014 05:30:45 -0400
+Date: Mon, 19 May 2014 10:30:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pankaj Dev <pankaj.dev@st.com>
+Subject: Re: [PATCH 1/9] ARM: STi: DT: STiH416: 416 DT Entry for clockgen
+ A0/1/10/11/12
+Message-ID: <20140519093038.GF4978@lee--X1>
+References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1399305223-18703-2-git-send-email-gabriel.fernandez@linaro.org>
+ <20140506071843.GD5206@lee--X1>
+ <CAG374jD+msPPbPtFS+ji=8jS9+D-YHu31k7zzzC7Ty7jw9n7jQ@mail.gmail.com>
+ <20140508080344.GE5307@lee--X1>
+ <5373586A.5000302@st.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140519092159.GE4978@lee--X1>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5373586A.5000302@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 14 May 2014, Maxime Coquelin wrote:
 
---cHMo6Wbp1wrKhbfi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi Lee,
+> 
+> On 05/08/2014 10:03 AM, Lee Jones wrote:
+> >>>>Patch adds DT entries for clockgen A0/1/10/11/12
+> >>>>
+> >>>>Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
+> >>>>Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> >>>>---
+> >>>>  arch/arm/boot/dts/stih416-clks.h     |  15 ++
+> >>>
+> >>>This should live in include/dt-bindings/clk
+> >>>
+> >>include/dt-bindings/clk or  include/dt-bindings/clock ?
+> >
+> >I have no idea what the difference between the two are.  I guess you
+> >are in a better position to answer that.  My point was just that the
+> >includes should be in the include directory, rather than being held
+> >locally in the 'dts' directory.
+> 
+> Even if these .h files are only used by the DTS files??
+> 
+> There are some .h files for pincfg related stuff, shouldn't we do
+> the same in this case?
 
-On Mon, May 19, 2014 at 10:21:59AM +0100, Lee Jones wrote:
-> > > > The PRCM (Power/Reset/Clock Management) block exposes several subde=
-vices
-> > > > in different subsystems (clk, reset ...)
-> > > >=20
-> > > > Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0=
- clks)
-> > > > and reset controller subdevices.
-> > > >=20
-> > > > Other subdevices might be added later (if needed).
-> > > >=20
-> > > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > > > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > ---
-> > > >  drivers/mfd/Kconfig      |   8 +++
-> > > >  drivers/mfd/Makefile     |   1 +
-> > > >  drivers/mfd/sun6i-prcm.c | 134 +++++++++++++++++++++++++++++++++++=
-++++++++++++
-> > > >  3 files changed, 143 insertions(+)
-> > > >  create mode 100644 drivers/mfd/sun6i-prcm.c
-> > >=20
-> > > [...]
-> > >=20
-> > > > +/*
-> > > > + * Copyright (C) 2014 Free Electrons
-> > > > + *
-> > > > + * License Terms: GNU General Public License v2
-> > > > + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > > > + *
-> > > > + * Allwinner PRCM (Power/Reset/Clock Management) driver
-> > > > + *
-> > > > + */
-> > > > +
-> > > > +#include <linux/mfd/core.h>
-> > > > +#include <linux/module.h>
-> > > > +#include <linux/of.h>
-> > >=20
-> > > Ah, now isn't that better?
-> > >=20
-> > > Acked-by: Lee Jones <lee.jones@linaro.org>
-> >=20
-> > How do you want to merge this? Do you want me to take it through
-> > mach-sunxi tree, or do you want to take it in your tree?
->=20
-> If Boris can tell me what needs to go in with this patch (or if it
-> can go in on its own), I will create a(n immutable) branch from which
-> you can pull into your tree.
+I believe so.  There are a few include files which are only referenced
+from DTS(I) files.  I would be cautious about needlessly overloading
+arch/arm/boot/dts with files which do not need to be there.  This is
+my personal opinion though, perhaps the DT guys have other ideas.
 
-We don't have any runtime or compile time dependency on this, so you
-can merge it through your tree. Unless something change, I don't have
-to pull anything in my tree.
+> >>>>  arch/arm/boot/dts/stih416-clock.dtsi | 477 ++++++++++++++++++++++++++++++++++
+> >>>>  arch/arm/boot/dts/stih416.dtsi       |  10 +-
+> >>>>  3 files changed, 497 insertions(+), 5 deletions(-)
+> >>>>  create mode 100644 arch/arm/boot/dts/stih416-clks.h
+> >
 
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---cHMo6Wbp1wrKhbfi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTec59AAoJEBx+YmzsjxAgNjgP/Rnih10ejkX6sSlRlsCL2Jd8
-NwXHVY+uLzsAqQFsDVyw7yQTm4zKyEqjejgzLsskg8nab9jNrAUHnfySuIUmAO0B
-97nIvKG8jt8zOxqFhryCLouJOfaadhONwtri8W8bd++zvEjPGKFz/UUi453wEhlO
-cVUltXdxdh/Ob8R3yOVOmifHxI948YAms2LqHUJV4lbDQIxds3OydR3PMSmVg4Kc
-ZlevJnpsiujWT4g1LVhFdhB840d0CL2HL/F3E3e7Xu6thDatR2guMDC0asfwxCK1
-VQQ1SkP/3A95KhuyYJseSlIY2kZPS4bU4a2XP46Sn5vNsOUtztcPAQTZY2i9lbvM
-GF15p3KzjJZiuPxRT7sCCi7aHWzk7SX5LnzLB82o5rmc/ayJBClIPx4v6Ad4iaLg
-CmEDmLfdbb558Vqnee6nP1JASU2KnigubfDK1qYkHeOknrO99pjlP1i1LijF3GAu
-ADdmTWkIdpMYpi/baXiNNh72lOZ3y+gd11BH1duhJU94TrddjLXxvH+GSfPdIVg4
-vHYzG+Q2WVOnzPWFMqAG7jLNTztdMK9oMMy3fKNjFZHKZ7eG/Se3PRJxb9AyB5Yu
-+OValPg5rTJqikz9mi86VhpNwne1P+OjGRIkel0hj2M4KoQIGbvseVNpnNrSyyCC
-nPAEEnLxaKFaP/SHdkqw
-=BWEd
------END PGP SIGNATURE-----
-
---cHMo6Wbp1wrKhbfi--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
