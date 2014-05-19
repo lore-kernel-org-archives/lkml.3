@@ -1,134 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaESNWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:22:45 -0400
-Received: from mx01-fr.bfs.de ([193.174.231.67]:20106 "EHLO mx01-fr.bfs.de"
+	id S1754644AbaESNXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:23:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37296 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265AbaESNWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:22:43 -0400
-Message-ID: <537A059B.9050509@bfs.de>
-Date: Mon, 19 May 2014 15:22:35 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1753099AbaESNXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:23:32 -0400
+Date: Mon, 19 May 2014 09:20:02 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
+Message-ID: <20140519132002.GH50500@redhat.com>
+References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
+ <1399999697-65875-7-git-send-email-dzickus@redhat.com>
+ <CABPqkBQE-HLV3JLo4-sXBJos38SY0RUhC-gLeauawrf3Cgojtw@mail.gmail.com>
+ <20140516155958.GX11096@twins.programming.kicks-ass.net>
+ <CABPqkBS+jx6sR3BNjwGkaG9hZFtfwmLKKiD86Li4hAY_YsTDdA@mail.gmail.com>
+ <20140516162441.GA50500@redhat.com>
+ <20140519112545.GD5027@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        kernel-janitors@vger.kernel.org, linux-wimax@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/13] wimax/i2400m: make return of 0 explicit
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-5-git-send-email-Julia.Lawall@lip6.fr> <5379B704.80303@bfs.de> <alpine.DEB.2.10.1405191929060.2564@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1405191929060.2564@hadrien>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519112545.GD5027@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 19.05.2014 13:30, schrieb Julia Lawall:
+On Mon, May 19, 2014 at 01:25:45PM +0200, Jiri Olsa wrote:
+> On Fri, May 16, 2014 at 12:24:41PM -0400, Don Zickus wrote:
+> > On Fri, May 16, 2014 at 06:02:43PM +0200, Stephane Eranian wrote:
+> > > On Fri, May 16, 2014 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > > On Fri, May 16, 2014 at 04:09:59PM +0200, Stephane Eranian wrote:
+> > > >> > +#define CACHE_LINESIZE       64
+> > > >> I had something similar to your patch here in my original series for
+> > > >> perf mem, but I never pushed it.
+> > > >> I think this is a useful feature to have.
+> > > >> However, I don't think you can hardcode the cache line size to 64.
+> > > >> This is generic
+> > > >> code. There may be architectures where the line size is different from 64.
+> > > >> So I think you should add an option to change the default line size or provide
+> > > >> an arch-specific definition.
+> > > >
+> > > > # cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
+> > > > 64
+> > > Excellent, then we should use that!
+> > 
+> > Would it make sense to create an accessory function that sets the size in
+> > util/cpumap.c and provides it as an inline from util/cpumap.h?
 > 
+> sounds good,
 > 
-> On Mon, 19 May 2014, walter harms wrote:
-> 
->>
->>
->> Am 19.05.2014 06:31, schrieb Julia Lawall:
->>> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> Delete unnecessary local variable whose value is always 0 and that hides
->>> the fact that the result is always 0.
->>>
->>> A simplified version of the semantic patch that fixes this problem is as
->>> follows: (http://coccinelle.lip6.fr/)
->>>
->>> // <smpl>
->>> @r exists@
->>> local idexpression ret;
->>> expression e;
->>> position p;
->>> @@
->>>
->>> -ret = 0;
->>> ... when != ret = e
->>> return
->>> - ret
->>> + 0
->>>   ;
->>> // </smpl>
->>>
->>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> ---
->>> Alternatively, is an error code wanted under the if?
->>>
->>>  drivers/net/wimax/i2400m/driver.c |    7 ++-----
->>>  1 file changed, 2 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
->>> index 9c34d2f..901a534 100644
->>> --- a/drivers/net/wimax/i2400m/driver.c
->>> +++ b/drivers/net/wimax/i2400m/driver.c
->>> @@ -500,26 +500,23 @@ int i2400m_pm_notifier(struct notifier_block *notifier,
->>>   */
->>>  int i2400m_pre_reset(struct i2400m *i2400m)
->>>  {
->>> -	int result;
->>>  	struct device *dev = i2400m_dev(i2400m);
->>>
->>>  	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
->>>  	d_printf(1, dev, "pre-reset shut down\n");
->>>
->>> -	result = 0;
->>>  	mutex_lock(&i2400m->init_mutex);
->>>  	if (i2400m->updown) {
->>>  		netif_tx_disable(i2400m->wimax_dev.net_dev);
->>>  		__i2400m_dev_stop(i2400m);
->>> -		result = 0;
->>>  		/* down't set updown to zero -- this way
->>>  		 * post_reset can restore properly */
->>>  	}
->>>  	mutex_unlock(&i2400m->init_mutex);
->>>  	if (i2400m->bus_release)
->>>  		i2400m->bus_release(i2400m);
->>> -	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, result);
->>> -	return result;
->>> +	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, 0);
->>
->>
->> 	d_fnend(3, dev, "i2400m=%p\n", i2400m);
-> 
-> All the other logging messages in this file seem to have the form
-> (i2400m %p) = %d
-> or (i2400m %p) = void in the case of a function that has no return value.
-> I don't know if a return value is wanted here, but since the function is
-> exported, perhaps it is best not to change its type.
+> btw so far I'll take patches 1-4 (after getting changelog update)
+> and expecting v2 for 5,6 ;-)
 
+Ok. Thanks!  What needs to be done for patch 5?  I have a patch 5.5?? that
+does the cachline calculation that Stephane requested.  I just have to
+find a way to dynamically handle the symbol lengths on output (and fix
+that hang you see).
 
-I got my "inspiration" from d_fnstart().
-As i see it the whole function is void so printing a debug msg with a bogus
-return value may confuse some people.
-
-re,
- wh
-
-
-> julia
-> 
->> or something like that
->> re,
->>  wh
->>
->>> +	return 0;
->>>  }
->>>  EXPORT_SYMBOL_GPL(i2400m_pre_reset);
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
-> 
+Cheers,
+Don
