@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaESLaz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:30:55 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:9360 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752085AbaESLax (ORCPT
+	id S1753387AbaESLf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:35:28 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:40421 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaESLf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:30:53 -0400
-X-IronPort-AV: E=Sophos;i="4.98,866,1392159600"; 
-   d="scan'208";a="74565804"
-Date: Mon, 19 May 2014 19:30:46 +0800 (SGT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: walter harms <wharms@bfs.de>
-cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        kernel-janitors@vger.kernel.org, linux-wimax@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/13] wimax/i2400m: make return of 0 explicit
-In-Reply-To: <5379B704.80303@bfs.de>
-Message-ID: <alpine.DEB.2.10.1405191929060.2564@hadrien>
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-5-git-send-email-Julia.Lawall@lip6.fr> <5379B704.80303@bfs.de>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 19 May 2014 07:35:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140519102838.30455.86863.stgit@yunodevel>
+References: <20140519102835.30455.10437.stgit@yunodevel> <20140519102838.30455.86863.stgit@yunodevel>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 19 May 2014 20:35:06 +0900
+Message-ID: <CAPXgP11CpZH3b=joq=ic2ux5D4pcuncnWeiRSZ=p3V28LLbpTA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] printk: Add context information to the header of /dev/kmsg
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Petr Mladek <pmladek@suse.cz>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 19 May 2014, walter harms wrote:
-
+On Mon, May 19, 2014 at 7:28 PM, Yoshihiro YUNOMAE
+<yoshihiro.yunomae.ez@hitachi.com> wrote:
+> Add context information to the header of /dev/kmsg.
 >
+> Two printk messages connected with KERN_CONT can be divided in multiple lines
+> by a different process context message. If the different context message seems
+> like the 1st divided message, it is difficult to understand which the 2nd
+> divided message belongs to. This problem can also occur for the situation where
+> multiple message lines without KERN_CONT are broken into by similar messages.
+> For example, SCSI disk error messages can be show as follows:
 >
-> Am 19.05.2014 06:31, schrieb Julia Lawall:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Delete unnecessary local variable whose value is always 0 and that hides
-> > the fact that the result is always 0.
-> >
-> > A simplified version of the semantic patch that fixes this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @r exists@
-> > local idexpression ret;
-> > expression e;
-> > position p;
-> > @@
-> >
-> > -ret = 0;
-> > ... when != ret = e
-> > return
-> > - ret
-> > + 0
-> >   ;
-> > // </smpl>
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> > Alternatively, is an error code wanted under the if?
-> >
-> >  drivers/net/wimax/i2400m/driver.c |    7 ++-----
-> >  1 file changed, 2 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
-> > index 9c34d2f..901a534 100644
-> > --- a/drivers/net/wimax/i2400m/driver.c
-> > +++ b/drivers/net/wimax/i2400m/driver.c
-> > @@ -500,26 +500,23 @@ int i2400m_pm_notifier(struct notifier_block *notifier,
-> >   */
-> >  int i2400m_pre_reset(struct i2400m *i2400m)
-> >  {
-> > -	int result;
-> >  	struct device *dev = i2400m_dev(i2400m);
-> >
-> >  	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
-> >  	d_printf(1, dev, "pre-reset shut down\n");
-> >
-> > -	result = 0;
-> >  	mutex_lock(&i2400m->init_mutex);
-> >  	if (i2400m->updown) {
-> >  		netif_tx_disable(i2400m->wimax_dev.net_dev);
-> >  		__i2400m_dev_stop(i2400m);
-> > -		result = 0;
-> >  		/* down't set updown to zero -- this way
-> >  		 * post_reset can restore properly */
-> >  	}
-> >  	mutex_unlock(&i2400m->init_mutex);
-> >  	if (i2400m->bus_release)
-> >  		i2400m->bus_release(i2400m);
-> > -	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, result);
-> > -	return result;
-> > +	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, 0);
->
->
-> 	d_fnend(3, dev, "i2400m=%p\n", i2400m);
+>         [110781.736171] sd 2:0:0:0: [sdb]
+>         [110781.736170] sd 3:0:0:0: [sdc] Unhandled sense code
+>         [110781.736172] sd 3:0:0:0: [sdc]
+>         [110781.736175] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+>         [110781.736177] sd 3:0:0:0: [sdc]
+>         [110781.736178] Sense Key : Medium Error [current]
+>         [110781.736187] Sense Key : Recovered Error
+>         [110781.736189] [current]
 
-All the other logging messages in this file seem to have the form
-(i2400m %p) = %d
-or (i2400m %p) = void in the case of a function that has no return value.
-I don't know if a return value is wanted here, but since the function is
-exported, perhaps it is best not to change its type.
+[...]
 
-julia
+> This patch adds PID and interrupt context flag to the header of /dev/kmsg as
+> the context information in order to understand relation of output messages. If
+> PID values of two messages and the interrupt context flags are same, it means
+> that those messages are same context, so those message have some relation. If
+> not so, it means that those messages are different context, so users do not
+> need to take care about the relation of the messages.
 
-> or something like that
-> re,
->  wh
+[...]
+
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -197,6 +197,8 @@ enum log_flags {
 >
-> > +	return 0;
-> >  }
-> >  EXPORT_SYMBOL_GPL(i2400m_pre_reset);
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
->
+>  struct printk_log {
+>         u64 ts_nsec;            /* timestamp in nanoseconds */
+> +       pid_t pid;              /* identify PID */
+> +       u32 irq_count;          /* identify irq_count */
+
+I don't think it is worth to blow-up this heavily used struct up even
+more, just because SCSI cannot log in simple single calls. How about
+fixing SCSI to log to a local buffer if it cannot safely print one
+line at once.
+
+I'm not convinced, that turning the /dev/kmsg format into an
+"annotation language', and requiring a rather complex state machine to
+re-construct the "broken" logging makes too much sense here. If tools
+rely on properly formatted logging messages, the logging should be
+fixed at the source while it is logged, not be reconstructed later.
+
+It is not not my call, but I don't this makes much sense. Continuation
+lines are "best effort" not a facility that is or ever was reliable in
+the past. I think the proper fix is how the log is created, not how it
+is exported.
+
+Thanks,
+Kay
