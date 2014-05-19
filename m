@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaESNfG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5846 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420AbaESNfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:35:02 -0400
-Date: Mon, 19 May 2014 15:34:14 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140519133414.GD20810@krava.brq.redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <20140516114757.GD19475@krava.brq.redhat.com>
- <20140516133058.GN50500@redhat.com>
- <20140516140551.GF19475@krava.brq.redhat.com>
- <20140516143002.GU50500@redhat.com>
+	id S1754599AbaESNgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:36:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34910 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214AbaESNf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:35:59 -0400
+Message-ID: <537A08BC.7060501@canonical.com>
+Date: Mon, 19 May 2014 15:35:56 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516143002.GU50500@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
+        airlied@linux.ie
+CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v1 08/16] drm/radeon: use common fence implementation
+ for fences
+References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com> <5374E1B5.2020408@vodafone.de> <5374E410.1080203@canonical.com> <5374E792.4070607@vodafone.de> <5379BA04.8000901@canonical.com> <5379C06D.3050507@vodafone.de> <5379D8AD.1000904@canonical.com> <5379F96C.1060806@vodafone.de>
+In-Reply-To: <5379F96C.1060806@vodafone.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 10:30:02AM -0400, Don Zickus wrote:
-> On Fri, May 16, 2014 at 04:05:51PM +0200, Jiri Olsa wrote:
-> > On Fri, May 16, 2014 at 09:30:58AM -0400, Don Zickus wrote:
-> > > On Fri, May 16, 2014 at 01:47:57PM +0200, Jiri Olsa wrote:
-> > > > On Tue, May 13, 2014 at 12:48:17PM -0400, Don Zickus wrote:
-> > > > > In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
-> > > > > particular sample instruction.  A bunch of those details relate to the data
-> > > > > address.
-> > > > > 
-> > > > > One interesting thing you can do with data addresses is to convert them into a unique
-> > > > > cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
-> > > > > them can reveal cache contention.
-> > > > > 
-> > > > > This patch creates an alogorithm based on various sample details that can help group
-> > > > > entries together into data cachelines and allows 'perf report' to sort on it.
-> > > > > 
-> > > > > The algorithm relies on having proper mmap2 support in the kernel to help determine
-> > > > > if the memory map the data address belongs to is private to a pid or globally shared.
-> > > > > 
-> > > > > The alogortithm is as follows:
-> > > > > 
-> > > > > o group cpumodes together
-> > > > > o group entries with discovered maps together
-> > > > > o sort on major, minor, inode and inode generation numbers
-> > > > > o if userspace anon, then sort on pid
-> > > > > o sort on cachelines based on data addresses
-> > > > 
-> > > > needs some collumn width refresh or something..? ;-)
-> > > 
-> > > Not sure what you mean here.
-> > > 
-> > > > 
-> > > > # Overhead  Data Cacheline         
-> > > > # ........  .......................
-> > 
-> > header not being wide enough to cover the longest data
-> 
-> Ah. Ok.  So I am not sure the right way to fix that.  As the current
-> header seems to be hardcoded with a bunch of spaces.  Is there a trick to
-> dynamically space it correctly based on the data provided?
+op 19-05-14 14:30, Christian König schreef:
+> Am 19.05.2014 12:10, schrieb Maarten Lankhorst:
+>> op 19-05-14 10:27, Christian König schreef:
+>>> Am 19.05.2014 10:00, schrieb Maarten Lankhorst:
+>>> [SNIP]
+>>> The problem here is that the whole approach collides with the way we do reset handling from a conceptual point of view. Every IOCTL or other call chain into the driver is protected by the read side of the exclusive_lock semaphore. So in the case of a GPU lockup we can take the write side of the semaphore and so make sure that we have nobody else accessing the hardware or internal driver structures only changed at init time.
+>>>
+>>> Leaking a drivers IRQ context into another driver as well as calling into a driver in atomic context is just a quite uncommon approach and should be considered very carefully.
+>>>
+>>> I would rather vote for a completely synchronous interface only allowing blocking waits and checks if a fence is signaled from not atomic context.
+>>>
+>>> If a driver needs to avoid blocking it should just use a workqueue and checking a fence outside your own driver is probably be better done in a bottom halve handler anyway.
+>>
+>> Except that you might want to do something like
+>> fence_is_signaled() in another driver to check whether you need to
+>> defer, or can submit the batch buffer immediately, saving a bunch of
+>> context switches. Running the is_signaled atomic is really useful here
+>> because it means you can't do too many scary things in your is_signaled
+>> handler.
+>
+> This is indeed a nice optimization, but nothing more. If you want to provide a is_signalled interface for atomic context then this should be optional, not mandatory.
+See below.
+>> In case of enable_signaling it was the only sane solution, because
+>> fence_signal can be called from irq context, and any calls after that to
+>> fence_add_callback and fence_wait aren't allowed to do anything, so
+>> fence_enable_sw_signaling and the default wait implementation must be
+>> atomic. fence_wait itself doesn't have to be, so it's easy to grab
+>> exclusive_lock there.
+>
+> I don't think you understood my point here: Completely drop enable_signaling, it's unnecessary and only complicates the interface.
+>
+> We purposely avoided exactly this paradigm in the past and I haven't seen any good argument to start with it now.
 
-it should be enough to update function:
-  void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+In the common case a lot more fences will be emitted than will be waited on.
+This means it makes sense to delay signaling a fence with fence_signal for
+as long as possible. But when a fence user wants to work with a fence
+some way is needed to ensure that the fence will complete. This is the idea
+behind .enable_signaling, it tells the fence driver to call fence_signal on
+the fence 'soon' because there are now waiters for it.
 
-with HISTC_MEM_DCACHELINE column update code, same as the rest
+The atomic .signaled is optional, and can be set to NULL, but there is
+no guarantee that fence_is_signaled will ever return true in that case,
+unless fence_enable_sw_signaling is called (which calls .enable_signaling).
 
-jirka
+Providing a custom wait function is optional in the interface, if the default wait
+function is used all waiters are signaled when fence_signal is called.
+
+Removing enable_signaling would only make sense if fence_signal was removed too,
+but that would mean that fence_is_signaled could no longer exist in the core fence
+code, and would mean completely rewriting the interface.
+
+~Maarten
+
