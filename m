@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaESNK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:10:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59418 "EHLO
+	id S1754768AbaESNKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:10:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59422 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaESNKY (ORCPT
+	with ESMTP id S1751331AbaESNK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:10:24 -0400
-Date: Mon, 19 May 2014 06:09:16 -0700
-From: tip-bot for Dietmar Eggemann <tipbot@zytor.com>
-Message-ID: <tip-4d65f453eb2c8f3dd9fc437c9a736c42ddbd50bd@git.kernel.org>
+	Mon, 19 May 2014 09:10:29 -0400
+Date: Mon, 19 May 2014 06:09:27 -0700
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-418cc9ad0cd4f67c360cdf8f4f00c3b588fb0c78@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, dietmar.eggemann@arm.com,
-        Dietmar.Eggemann@arm.com, tglx@linutronix.de
+        keescook@chromium.org, peterz@infradead.org, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        Dietmar.Eggemann@arm.com, dietmar.eggemann@arm.com,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-References: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
+        keescook@chromium.org, peterz@infradead.org, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
+In-Reply-To: <1399541715-19568-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <1399541715-19568-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Do not zero sg->cpumask and sg->sgp->
- power in build_sched_groups
-Git-Commit-ID: 4d65f453eb2c8f3dd9fc437c9a736c42ddbd50bd
+Subject: [tip:sched/core] sched: Use clamp() and clamp_val()
+  to make it more readable.
+Git-Commit-ID: 418cc9ad0cd4f67c360cdf8f4f00c3b588fb0c78
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,42 +34,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4d65f453eb2c8f3dd9fc437c9a736c42ddbd50bd
-Gitweb:     http://git.kernel.org/tip/4d65f453eb2c8f3dd9fc437c9a736c42ddbd50bd
-Author:     Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-AuthorDate: Wed, 30 Apr 2014 14:39:38 +0100
+Commit-ID:  418cc9ad0cd4f67c360cdf8f4f00c3b588fb0c78
+Gitweb:     http://git.kernel.org/tip/418cc9ad0cd4f67c360cdf8f4f00c3b588fb0c78
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Thu, 8 May 2014 18:35:15 +0900
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 19 May 2014 22:02:41 +0900
 
-sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups
+sched: Use clamp() and clamp_val() to make it more readable.
 
-There is no need to zero struct sched_group member cpumask and struct
-sched_group_power member power since both structures are already allocated
-as zeroed memory in __sdt_alloc().
+As Kees suggested, I use clamp() function to replace the if and
+else branch, making it more readable and modular.
 
-This patch has been tested with
-BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
-in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
-CPU hotplug scenarios.
-
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: mingo@redhat.com
+Suggested-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com
+Link: http://lkml.kernel.org/r/1399541715-19568-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/core.c | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/sched/core.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ca76cc6..354cd5a 100644
+index 354cd5a..10d9b50 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5794,8 +5794,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
- 			continue;
+@@ -3057,17 +3057,10 @@ SYSCALL_DEFINE1(nice, int, increment)
+ 	 * We don't have to worry. Conceptually one call occurs first
+ 	 * and we have a single winner.
+ 	 */
+-	if (increment < -40)
+-		increment = -40;
+-	if (increment > 40)
+-		increment = 40;
+-
++	increment = clamp(increment, -NICE_WIDTH, NICE_WIDTH);
+ 	nice = task_nice(current) + increment;
+-	if (nice < MIN_NICE)
+-		nice = MIN_NICE;
+-	if (nice > MAX_NICE)
+-		nice = MAX_NICE;
  
- 		group = get_group(i, sdd, &sg);
--		cpumask_clear(sched_group_cpus(sg));
--		sg->sgp->power = 0;
- 		cpumask_setall(sched_group_mask(sg));
++	nice = clamp_val(nice, MIN_NICE, MAX_NICE);
+ 	if (increment < 0 && !can_nice(current, nice))
+ 		return -EPERM;
  
- 		for_each_cpu(j, span) {
