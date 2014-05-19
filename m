@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaESHIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:08:23 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40053 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaESHIV (ORCPT
+	id S1752997AbaESHLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:11:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47861 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945AbaESHLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:08:21 -0400
-Message-ID: <5379AE46.3000407@gmail.com>
-Date: Mon, 19 May 2014 09:09:58 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 03:11:07 -0400
+Date: Mon, 19 May 2014 09:11:05 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        thierry.reding@gmail.com, shawn.guo@freescale.com,
+        LW@KARO-electronics.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] pwm: i.MX: Avoid sample FIFO overflow for i.MX PWM
+ version2
+Message-ID: <20140519071105.GZ5858@pengutronix.de>
+References: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Matt Fleming <matt@console-pimps.org>,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: kernel 3.14.2 oops: seems related to EFI
-References: <53777F7B.8060407@gmail.com> <20140518134206.GA8040@pd.tnic>
-In-Reply-To: <20140518134206.GA8040@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:48:35 up 26 days, 20 min, 36 users,  load average: 0.03, 0.09,
+ 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2014 03:42 PM, Borislav Petkov wrote:
-> On Sat, May 17, 2014 at 05:25:47PM +0200, Francis Moreau wrote:
->> [  +0.018677] general protection fault: 0000 [#1] PREEMPT SMP
->> [  +0.000068] Modules linked in: usb_storage tun raid1 md_mod loop fuse
->> joydev coretemp hwmon arc4 intel_rapl x86_pkg_temp_thermal
->> intel_powerclamp kvm_intel nls_iso8859_1 nls_cp437 iTCO_wdt kvm vfat fat
->> iTCO_vendor_support iwldvm uvcvideo led_class crct10dif_pclmul
->> crc32_pclmul crc32c_intel ghash_clmulni_intel mac80211 videobuf2_vmalloc
->> videobuf2_memops videobuf2_core aesni_intel videodev aes_x86_64
->> snd_hda_codec_hdmi lrw gf128mul mousedev glue_helper btusb
->> snd_hda_codec_via ablk_helper media cryptd iwlwifi snd_hda_codec_generic
->> bluetooth psmouse microcode i2c_i801 serio_raw cfg80211 6lowpan_iphc
->> rtsx_pci_ms r8169 memstick rfkill lpc_ich mii snd_hda_intel
->> snd_hda_codec thermal snd_hwdep wmi snd_pcm tpm_infineon snd_timer
->> tpm_tis mei_me snd tpm mei shpchp evdev soundcore processor battery
->> mac_hid ac
->> [  +0.000803]  ext4 crc16 mbcache jbd2 hid_generic usbhid hid bcache
->> sd_mod sr_mod crc_t10dif cdrom crct10dif_common rtsx_pci_sdmmc mmc_core
->> atkbd libps2 ahci libahci ehci_pci libata xhci_hcd ehci_hcd scsi_mod
->> rtsx_pci usbcore usb_common i8042 serio i915 video button intel_gtt
->> i2c_algo_bit drm_kms_helper drm i2c_core
->> [  +0.000328] CPU: 0 PID: 30835 Comm: systemd-udevd Not tainted
->> 3.14.2-1-ARCH #1
->> [  +0.000064] Hardware name: CLEVO CO.                        W55xEU
->>                       /W55xEU                          , BIOS 4.6.5
->> 03/05/2013
->> [  +0.000102] task: ffff880405ee6bf0 ti: ffff880400f4a000 task.ti:
->> ffff880400f4a000
->> [  +0.000060] RIP: 0010:[<ffffffff810655af>]  [<ffffffff810655af>]
->> efi_call5+0x6f/0xf0
->> [  +0.000071] RSP: 0018:ffff880400f4bdb0  EFLAGS: 00010002
->> [  +0.000045] RAX: 0000000080050033 RBX: ffff8804040e3000 RCX:
->> ffff8804040e3000
->> [  +0.000055] RDX: ffff8804040e3400 RSI: ffff8804040e3000 RDI:
->> bff7fffff7afffff
+On Fri, May 16, 2014 at 01:11:08PM +0800, Liu Ying wrote:
+> The i.MX PWM version2 is embedded in several i.MX SoCs,
+> such as i.MX27, i.MX51 and i.MX6SL.  There are four 16bit
+> sample FIFOs in this IP, each of which determines the duty
+> period of a PWM waveform in one full cycle.  The IP spec
+> mentions that we should not write a fourth sample because
+> the FIFOs will become full and trigger a FIFO write error
+> (FWE) which will prevent the PWM from starting once it is
+> enabled.  In order to avoid any sample FIFO overflow issue,
+> this patch clears all sample FIFOs or waits for a rollover
+> event to consume a FIFO slot when necessary.  In this way,
+> only the first FIFO slot will be loaded at most.
 > 
-> So you get a #GP while executing call *rdi and %rdi is supposed to
-> contain ->get_variable. But instead it contains some very funky shit:
+> Note that the PWM controller will not generate any rollover
+> event if the duty period is zero.  This makes the logic a
+> bit complicated to determine if we clear the sample FIFOs
+> or wait for a rollover event.
 > 
-> 0xbff7fffff7afffff
-> 
-> Who made it contain that nuisance of a pointer which thinks it is
-> ->get_variable, huh? If only I could get my hands on that guy! :-P
-> 
-> Ok, seriously, how reproducible is this?
+> The FIFO overflow issue can be reproduced by the following
+> commands on the i.MX6SL EVK platform, assuming we use PWM2
+> for the debug LED which is driven by the pin HSIC_STROBE
+> and the maximal brightness is 255.
+> echo 0   > /sys/class/leds/user/brightness
+> echo 0   > /sys/class/leds/user/brightness
+> echo 0   > /sys/class/leds/user/brightness
+> echo 0   > /sys/class/leds/user/brightness
+> echo 255 > /sys/class/leds/user/brightness
+> Here, FWE happens(PWMSR register reads 0x58) and the LED
+> can not be lighten.
 
-I don't really know how to reproduce this, I only can say that it
-usually happens while partitioning the loop device or perhaps when the
-kernel reads the partition table afterwards.
+I find this overly complicated. It adds 89 lines to a 300 lines driver
+for a single workaround. Wouldn't it be sufficient to add a delay
+of period_ns in imx_pwm_config_v2 when the FIFO is full?
 
-> Can you reproduce with the
-> latest upstream kernel too, i.e. 3.15-rc5+?
+Sascha
 
-I don't know, I can't really afford to configure/compile/test this new
-kernel, sorry.
-
-Thanks
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
