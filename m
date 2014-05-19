@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaESPBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:01:06 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:36269 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaESPBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:01:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397137314-13523-1-git-send-email-robherring2@gmail.com>
-References: <1397137314-13523-1-git-send-email-robherring2@gmail.com>
-Date: Mon, 19 May 2014 17:01:03 +0200
-X-Google-Sender-Auth: 0jQy7Vo7PFUtAVpe1TFWV7C-Fqg
-Message-ID: <CAMuHMdURE+rJ4jPhPRwsKqn1egzoWpidzYc0aPP=aSGbjMj11g@mail.gmail.com>
-Subject: Re: [PATCH v2] checkpatch: fix wildcard DT compatible string checking
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh@kernel.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753790AbaESPEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:04:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12298 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790AbaESPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:04:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,867,1392192000"; 
+   d="scan'208";a="541499374"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Kenny Simpson <theonetruekenny@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Armin Rigo <arigo@tunes.org>
+In-Reply-To: <20140519143837.GA5228@infradead.org>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
+ <20140519130114.GA3140@dhcp22.suse.cz>
+ <20140519143540.BE9F6E009B@blue.fi.intel.com>
+ <20140519143837.GA5228@infradead.org>
+Subject: Re: remap_file_pages() use
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140519150238.67898E009B@blue.fi.intel.com>
+Date: Mon, 19 May 2014 18:02:38 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 3:41 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
->
-> We attempt to search for compatible strings which use a variable
-> token in the documented name such as <chip> or <soc>. While this
-> was attempted to be handled, it's utterly broken.
->
-> The desired forms of matching are:
->
-> vendor,<chip>-*
-> vendor,name<part#>-*
->
-> For <chip>, lower case characters and numbers are permitted. For
-> <part#>, only numeric values are allowed.
->
-> With this change, the number of missing compatible strings reported in
-> arch/arm/boot/dts is reduced from 1071 to 960.
->
-> Reported-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Florian Vaussard <florian.vaussard@epfl.ch>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
+Christoph Hellwig wrote:
+> On Mon, May 19, 2014 at 05:35:40PM +0300, Kirill A. Shutemov wrote:
+> > >From functional POV, emulation *should* be identical to original
+> > remap_file_pages(), but slower. It would be nice, if you test it early.
+> > 
+> > It's not clear yet how long emulation will be there.
+> 
+> Stop right there.  We found out about two real life users of
+> remap_file_pages() already, without even committing the patches to warn
+> about using it to any tree.
 
-As I came up with about the same patch while investigating why it didn't
-work for me:
+Who is the second here?	Oracle?
 
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> I think at this point the whole idea of removing the API should be dead
+> on the floor, as we do not needlessly break userspace programs.
 
-Gr{oetje,eeting}s,
+I'm fine if emulation will stay there for long time, but it's good idea
+covert users to more standard API eariler where possible.
 
-                        Geert
+> If we can get rid of the ugly guts and provide a good enough emulation
+> that the user won't cry I'd love to get rid of this cruft, but even
+> that doesn't look certain yet.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+And that's why I ask to test it.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+ Kirill A. Shutemov
