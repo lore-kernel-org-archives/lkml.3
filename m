@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaESQ7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:59:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:65345 "EHLO
+	id S1755076AbaESRDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:03:13 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:57261 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164AbaESQ7k (ORCPT
+	with ESMTP id S1751790AbaESRDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:59:40 -0400
+	Mon, 19 May 2014 13:03:12 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "michals@xilinx.com" <michals@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: bhelgaas@google.com, will.deacon@arm.com, michals@xilinx.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
 Subject: Re: [PATCH] PCI: Generic Configuration Access Mechanism support
-Date: Mon, 19 May 2014 18:59:36 +0200
-Message-ID: <10203370.xOnWqK3Vx4@wuerfel>
+Date: Mon, 19 May 2014 19:03:04 +0200
+Message-ID: <4223392.yrWc3QAXY9@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140519163223.GP15130@arm.com>
-References: <1400422125-2209-1-git-send-email-sthokal@xilinx.com> <20140519163223.GP15130@arm.com>
+In-Reply-To: <1400422125-2209-1-git-send-email-sthokal@xilinx.com>
+References: <1400422125-2209-1-git-send-email-sthokal@xilinx.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8EPn7VegKdrw0YUKv/ZWf7pw4wuj/SUnjsXs5Hwmr4L
- XZNNdZka3pA8TjTwsBX7HBAlajT8q41N3hc13TwGXwRzuLy5QD
- yDvhGTUplSgr3RpyuJCfTV/l4G+gK4AVsaB4sVEDGi8enpDBCD
- 1MOwgH+dUuVuCur7zrHhKW6vD+FeDs4x35T+7Y7PLQioGqnFTQ
- wKna4JgJs5UI3IglDfasLcGtqHQx2LeQnA3ihwoO7VVobjVY3/
- gcX1vjbaIJ/LIN1+uqDOUUZAJ2BqW/55MBBptcNfQHHMdnvpKn
- GnKGMmj3hb9G4hsMg4qFPlBh0Jb9wa8DurEZ76yPzDcIie7hTq
- 02eNi9Ys9+kI5bhFO164=
+X-Provags-ID: V02:K0:YZn+2Orw9rWbhqSzjBCA/ro/wRO5XtacbneQx9ae/sm
+ VSBWekC29UfvrOa7K5oj0Y3ms8ipHtMENOjYdfmCwBYREdP8++
+ HSyi9N3i7yqzujwgkXx1EAsY9vTwTcmkXm15HpLLfYZ29W8X4/
+ ZqiVfO4fu+zTwS6I9ZfB6b5DOafH74QlQ7/490ZsSipCkDS6MX
+ kev7XGcTqtGMqiGaR6WaAY94zZ2rtUCI9uig611yXNi5+kvVYZ
+ on99UrYaAxOva4FBR+/7LaKIyzXBhyqjP2fxAH1amrtH23bSLN
+ id20xICeKWUqcKVTYo8F+ozWTU7D3n4dzKN72oFBG1azgQZfEd
+ /xKi1INZ/HiiHvKhTZVM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 May 2014 17:32:23 Will Deacon wrote:
-> On Sun, May 18, 2014 at 03:08:45PM +0100, Srikanth Thokala wrote:
-> > This patch adds support for a generic CAM and ECAM configuration
-> > space accesses.
-> 
-> Looks good to me, thanks Srikanth!
-> 
-> Arnd: is this the sort of thing you were expecting? The
-> ->is_valid_cfg_access callback is a bit horrible, but I can't think of
-> anything better.
-> 
-> I can include this in the next posting of my PCI patches.
+On Sunday 18 May 2014 19:38:45 Srikanth Thokala wrote:
+> +
+> +	if (cfg->ops->is_valid_cfg_access) {
+> +		if (!cfg->ops->is_valid_cfg_access(bus, devfn)) {
+> +			*val = PCI_CFG_INVALID_DEVFN;
+> +			return PCIBIOS_DEVICE_NOT_FOUND;
+> +		}
+> +	}
 
-Yes, this is roughly what I had in mind, thanks a lot!
+Can you explain why this callback is needed? If the space for the
+bus is mapped, any access should just work.
 
-I'll comment a bit more on the patch itself
+> +
+> +/* Generic PCI CAM/ECAM Configuration Bus Operations */
+> +
+> +struct pci_cfg_bus_ops pci_cfg_cam_bus_ops = {
+> +	.bus_shift	= PCI_CFG_CAM_BUS_NUM,
+> +	.map_bus	= pci_cfg_map_bus_cam,
+> +};
+> +EXPORT_SYMBOL_GPL(pci_cfg_cam_bus_ops);
+> +
+> +struct pci_cfg_bus_ops pci_cfg_ecam_bus_ops = {
+> +	.bus_shift	= PCI_CFG_ECAM_BUS_NUM,
+> +	.map_bus	= pci_cfg_map_bus_ecam,
+> +};
+> +EXPORT_SYMBOL_GPL(pci_cfg_ecam_bus_ops);
+> +
+> +struct pci_ops pci_cfg_ops = {
+> +	.read	= pci_cfg_read,
+> +	.write	= pci_cfg_write,
+> +};
+> +EXPORT_SYMBOL_GPL(pci_cfg_ops);
+
+
+If we can find a way to remove the is_valid_cfg_access() check, we're
+probably better off removing the cfg_bus_ops as well, and exporting
+two sets of pci_ops. There will be a little more duplication here, but
+also less complexity in this module, and more importantly in the drivers
+using it.
 
 	Arnd
