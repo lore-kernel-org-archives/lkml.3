@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbaESMbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:31:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62521 "EHLO mx1.redhat.com"
+	id S1754563AbaESMeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:34:21 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:56136 "EHLO smtp.nebula.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077AbaESMbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:31:11 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 5/8] perf tools: Consolidate types.h for ARM and ARM64
-Date: Mon, 19 May 2014 14:30:53 +0200
-Message-Id: <1400502656-20751-6-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1400502656-20751-1-git-send-email-jolsa@kernel.org>
-References: <1400502656-20751-1-git-send-email-jolsa@kernel.org>
+	id S1752984AbaESMeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:34:19 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 May 2014 08:34:19 EDT
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org, linux@openrisc.net, jonas@southpole.se
+Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH] openrisc: irq: use irqchip framework
+Date: Mon, 19 May 2014 15:25:28 +0300
+Message-Id: <1400502328-23974-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Pihet <jean.pihet@linaro.org>
+In addition to consolidating the or1k-pic initialization with
+how other interrupt controllers are initialized, this makes
+OpenRISC less tied to its on-cpu interrupt controller.
 
-Prevents a build breakage since commit d944c4eebcf4c0d5e5d9728fec110cbf0047ad7f
-'tools: Consolidate types.h'
-
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Link: http://lkml.kernel.org/r/1400229672-16104-1-git-send-email-jean.pihet@linaro.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
 ---
- tools/perf/arch/arm/include/perf_regs.h   | 2 +-
- tools/perf/arch/arm64/include/perf_regs.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/openrisc/kernel/irq.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/arch/arm/include/perf_regs.h b/tools/perf/arch/arm/include/perf_regs.h
-index 2a1cfde..bcca511 100644
---- a/tools/perf/arch/arm/include/perf_regs.h
-+++ b/tools/perf/arch/arm/include/perf_regs.h
-@@ -2,7 +2,7 @@
- #define ARCH_PERF_REGS_H
+diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
+index 8ec77bc..f6f4683 100644
+--- a/arch/openrisc/kernel/irq.c
++++ b/arch/openrisc/kernel/irq.c
+@@ -19,10 +19,13 @@
+ #include <linux/of.h>
+ #include <linux/ftrace.h>
+ #include <linux/irq.h>
++#include <linux/irqchip.h>
+ #include <linux/export.h>
+ #include <linux/irqdomain.h>
+ #include <linux/irqflags.h>
  
- #include <stdlib.h>
--#include "../../util/types.h"
-+#include <linux/types.h>
- #include <asm/perf_regs.h>
++#include "../../drivers/irqchip/irqchip.h"
++
+ /* read interrupt enabled status */
+ unsigned long arch_local_save_flags(void)
+ {
+@@ -151,24 +154,22 @@ static const struct irq_domain_ops or1k_irq_domain_ops = {
+  * 1000 CPU.  This is the "root" domain as these are the interrupts
+  * that directly trigger an exception in the CPU.
+  */
+-static void __init or1k_irq_init(void)
++static int __init
++or1k_irq_init(struct device_node *intc,  struct device_node *parent)
+ {
+-	struct device_node *intc = NULL;
+-
+-	/* The interrupt controller device node is mandatory */
+-	intc = of_find_compatible_node(NULL, NULL, "opencores,or1k-pic");
+-	BUG_ON(!intc);
+-
+ 	/* Disable all interrupts until explicitly requested */
+ 	mtspr(SPR_PICMR, (0UL));
  
- #define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
-diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-index 2359546..e9441b9 100644
---- a/tools/perf/arch/arm64/include/perf_regs.h
-+++ b/tools/perf/arch/arm64/include/perf_regs.h
-@@ -2,7 +2,7 @@
- #define ARCH_PERF_REGS_H
+ 	root_domain = irq_domain_add_linear(intc, 32,
+ 					    &or1k_irq_domain_ops, NULL);
++
++	return 0;
+ }
++IRQCHIP_DECLARE(or1k_pic, "opencores,or1k-pic", or1k_irq_init);
  
- #include <stdlib.h>
--#include "../../util/types.h"
-+#include <linux/types.h>
- #include <asm/perf_regs.h>
+ void __init init_IRQ(void)
+ {
+-	or1k_irq_init();
++	irqchip_init();
+ }
  
- #define PERF_REGS_MASK	((1ULL << PERF_REG_ARM64_MAX) - 1)
+ void __irq_entry do_IRQ(struct pt_regs *regs)
 -- 
-1.8.3.1
+1.8.3.2
 
