@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaESGDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:03:25 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:51883 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaESGDX (ORCPT
+	id S1752751AbaESGEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:04:39 -0400
+Received: from smtp-out-039.synserver.de ([212.40.185.39]:1050 "EHLO
+	smtp-out-145.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752624AbaESGEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:03:23 -0400
-Date: Mon, 19 May 2014 08:03:18 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Robert Richter <rric@kernel.org>, kernel-janitors@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        oprofile-list@lists.sf.net, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] s390/irq: make return of 0 explicit
-Message-ID: <20140519060318.GA4459@osiris>
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
- <1400473875-22228-14-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 19 May 2014 02:04:38 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 26714
+Message-ID: <53799D5B.2060001@metafoo.de>
+Date: Mon, 19 May 2014 07:57:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400473875-22228-14-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051906-0342-0000-0000-000008CF700F
+To: Tushar Behera <tushar.behera@linaro.org>
+CC: Jassi Brar <jassisinghbrar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-ALSA <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] dma: pl330: Add support for DMA_PAUSE command
+References: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org> <CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com> <CAHbNUh0fVND_oGLXWzsyKzbmJc_=FqhZTAnVHE4GGZ5aaJQbEg@mail.gmail.com> <5373607D.2000200@metafoo.de> <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com> <537513A8.701@metafoo.de> <CAHbNUh03oOHtLVzw7LiZ8SSR77D7ttLV9XDWS0px-8GTjSpJ4A@mail.gmail.com>
+In-Reply-To: <CAHbNUh03oOHtLVzw7LiZ8SSR77D7ttLV9XDWS0px-8GTjSpJ4A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 06:31:15AM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Delete unnecessary local variable whose value is always 0 and that hides
-> the fact that the result is always 0.
-> 
-> A simplified version of the semantic patch that fixes this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  arch/s390/oprofile/hwsampler.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
-> index 276f2e2..28b2760 100644
-> --- a/arch/s390/oprofile/hwsampler.c
-> +++ b/arch/s390/oprofile/hwsampler.c
-> @@ -212,10 +212,8 @@ static void init_all_cpu_buffers(void)
->  static int prepare_cpu_buffers(void)
->  {
->  	int cpu;
-> -	int rc;
->  	struct hws_cpu_buffer *cb;
-> 
-> -	rc = 0;
->  	for_each_online_cpu(cpu) {
->  		cb = &per_cpu(sampler_cpu_buffer, cpu);
->  		atomic_set(&cb->ext_params, 0);
-> @@ -231,7 +229,7 @@ static int prepare_cpu_buffers(void)
->  		cb->stop_mode = 0;
->  	}
-> 
-> -	return rc;
-> +	return 0;
->  }
+On 05/19/2014 05:10 AM, Tushar Behera wrote:
+> On 16 May 2014 00:51, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 05/15/2014 02:01 PM, Tushar Behera wrote:
+>>>
+>>> On 14 May 2014 17:54, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>>>
+>>>> On 05/14/2014 02:07 PM, Tushar Behera wrote:
+>>>>>
+>>>>>
+>>>>> On 14 May 2014 17:29, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>>>>>
+>>>>>>
+>>>>>> On Wed, May 14, 2014 at 8:53 AM, Tushar Behera
+>>>>>> <tushar.behera@linaro.org>
+>>>>>> wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> While playing back audio, pmc_dmaengine requests the DMA channel to
+>>>>>>> stop DMA transmission through DMA_PAUSE command.
+>>>>>>>
+>>>>>>> Currently PL330 driver doesn't support DMA pause command, leaving
+>>>>>>> the DMA state inconsistent when the system resumes. Instead, it would
+>>>>>>> be better to terminate the DMA transfer during suspend and restart
+>>>>>>> again during resume.
+>>>>>>>
+>>>>>>> Tested with audio playback across a suspend-resume cycle.
+>>>>>>>
+>>>>>> What is pmc_dmaengine? How does DMA_PAUSE help, when there is no
+>>>>>> DMA_RESUME?
+>>>>>>
+>>>>>
+>>>>> Sorry, it is a typo.
+>>>>>
+>>>>> sound/core/pcm_dmaengine.c:snd_dmaengine_pcm_trigger() -->
+>>>>> dmaengine_pause() is called during system suspend.
+>>>>
+>>>>
+>>>>
+>>>> It is only called if the DMA driver has support for pausing and resuming
+>>>> DMA
+>>>> transfers. Or at least that is the intention.
+>>>>
+>>>> - Lars
+>>>
+>>>
+>>> During suspend, snd_dmaengine_pcm_trigger():SNDRV_PCM_TRIGGER_SUSPEND
+>>> is called which unconditionally calls dmaengine_pause(). Should we
+>>> update snd_dmaengine_pcm_trigger() to check for DMA pause/resume
+>>> support and call dmaengine_pause() or dmaengine_terminate_all()
+>>> accordingly?
+>>
+>>
+>> As far as I understand it we do not have to do anything for TRIGGER_SUSPEND
+>> if we do not set the SNDRV_PCM_INFO_RESUME flag. It looks like
+>> TRIGGER_SUSPEND is called unconditionally during suspend. But since the
+>> error code is ignored it should be fine if we just call dmaengine_pause()
+>> and that return -ENOSYS or similar.
+>>
+>> Are you seeing an actual issue that you are trying to fix with your patch?
+>>
+>> - Lars
+>>
+>
+> Without this patch applied, if audio is playing back while suspend is
+> triggered, it doesn't playback after resume. Stopping the stream and
+> replaying works.
+>
 
-Thanks Julia,
+Ok, I think your second suggestion was correct. Call 
+dmaengine_terminate_all() instead of damengine_pause() in 
+snd_dmaengine_pcm_trigger() if the dmaengine driver does not support pausing 
+the transfer.
 
-I applied a slightly different version which also turns prepare_cpu_buffers
-into a void returning function.
-
+- Lars
