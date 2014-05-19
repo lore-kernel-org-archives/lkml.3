@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751AbaESGEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:04:39 -0400
-Received: from smtp-out-039.synserver.de ([212.40.185.39]:1050 "EHLO
-	smtp-out-145.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752624AbaESGEi (ORCPT
+	id S1752776AbaESGFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:05:35 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:50786 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaESGFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:04:38 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26714
-Message-ID: <53799D5B.2060001@metafoo.de>
-Date: Mon, 19 May 2014 07:57:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Mon, 19 May 2014 02:05:34 -0400
 MIME-Version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: Jassi Brar <jassisinghbrar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-ALSA <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH] dma: pl330: Add support for DMA_PAUSE command
-References: <1400037830-21211-1-git-send-email-tushar.behera@linaro.org> <CABb+yY3YocX=8Dv7DysM4tcx=NTCCGGipz_gpMfpKDnAw7R8iw@mail.gmail.com> <CAHbNUh0fVND_oGLXWzsyKzbmJc_=FqhZTAnVHE4GGZ5aaJQbEg@mail.gmail.com> <5373607D.2000200@metafoo.de> <CAHbNUh1bmBniGVtvK4PpmpaKOnwG=MgtupkTEnjD6SS3r_-yjw@mail.gmail.com> <537513A8.701@metafoo.de> <CAHbNUh03oOHtLVzw7LiZ8SSR77D7ttLV9XDWS0px-8GTjSpJ4A@mail.gmail.com>
-In-Reply-To: <CAHbNUh03oOHtLVzw7LiZ8SSR77D7ttLV9XDWS0px-8GTjSpJ4A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1399288539-1793-10-git-send-email-b.zolnierkie@samsung.com>
+References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+	<1399288539-1793-10-git-send-email-b.zolnierkie@samsung.com>
+Date: Mon, 19 May 2014 11:35:33 +0530
+Message-ID: <CADGdYn6e6Rwqezj1prLZz9Ue6GwCRcGA1Y3RNRbfbCeJn3qSnQ@mail.gmail.com>
+Subject: Re: [PATCH 09/10] thermal: exynos: remove redundant pdata checks from exynos_tmu_control()
+From: Amit Kachhap <amit.kachhap@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 05:10 AM, Tushar Behera wrote:
-> On 16 May 2014 00:51, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 05/15/2014 02:01 PM, Tushar Behera wrote:
->>>
->>> On 14 May 2014 17:54, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>>
->>>> On 05/14/2014 02:07 PM, Tushar Behera wrote:
->>>>>
->>>>>
->>>>> On 14 May 2014 17:29, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>>>>>
->>>>>>
->>>>>> On Wed, May 14, 2014 at 8:53 AM, Tushar Behera
->>>>>> <tushar.behera@linaro.org>
->>>>>> wrote:
->>>>>>>
->>>>>>>
->>>>>>> While playing back audio, pmc_dmaengine requests the DMA channel to
->>>>>>> stop DMA transmission through DMA_PAUSE command.
->>>>>>>
->>>>>>> Currently PL330 driver doesn't support DMA pause command, leaving
->>>>>>> the DMA state inconsistent when the system resumes. Instead, it would
->>>>>>> be better to terminate the DMA transfer during suspend and restart
->>>>>>> again during resume.
->>>>>>>
->>>>>>> Tested with audio playback across a suspend-resume cycle.
->>>>>>>
->>>>>> What is pmc_dmaengine? How does DMA_PAUSE help, when there is no
->>>>>> DMA_RESUME?
->>>>>>
->>>>>
->>>>> Sorry, it is a typo.
->>>>>
->>>>> sound/core/pcm_dmaengine.c:snd_dmaengine_pcm_trigger() -->
->>>>> dmaengine_pause() is called during system suspend.
->>>>
->>>>
->>>>
->>>> It is only called if the DMA driver has support for pausing and resuming
->>>> DMA
->>>> transfers. Or at least that is the intention.
->>>>
->>>> - Lars
->>>
->>>
->>> During suspend, snd_dmaengine_pcm_trigger():SNDRV_PCM_TRIGGER_SUSPEND
->>> is called which unconditionally calls dmaengine_pause(). Should we
->>> update snd_dmaengine_pcm_trigger() to check for DMA pause/resume
->>> support and call dmaengine_pause() or dmaengine_terminate_all()
->>> accordingly?
->>
->>
->> As far as I understand it we do not have to do anything for TRIGGER_SUSPEND
->> if we do not set the SNDRV_PCM_INFO_RESUME flag. It looks like
->> TRIGGER_SUSPEND is called unconditionally during suspend. But since the
->> error code is ignored it should be fine if we just call dmaengine_pause()
->> and that return -ENOSYS or similar.
->>
->> Are you seeing an actual issue that you are trying to fix with your patch?
->>
->> - Lars
->>
+Hi Bartlomiej,
+On 5/5/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> pdata->reference_voltage and pdata->gain are always defined
+> to non-zero values so remove the redundant checks from
+> exynos_tmu_control().
+I prefer to have these checks for the same reason that new soc support
+should not add these same code again.
 >
-> Without this patch applied, if audio is playing back while suspend is
-> triggered, it doesn't playback after resume. Stopping the stream and
-> replaying works.
+> There should be no functional changes caused by this patch.
 >
-
-Ok, I think your second suggestion was correct. Call 
-dmaengine_terminate_all() instead of damengine_pause() in 
-snd_dmaengine_pcm_trigger() if the dmaengine driver does not support pausing 
-the transfer.
-
-- Lars
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> b/drivers/thermal/samsung/exynos_tmu.c
+> index a8d9524..45d7c6f 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -215,15 +215,11 @@ static void exynos_tmu_control(struct platform_device
+> *pdev, bool on)
+>  	if (pdata->test_mux)
+>  		con |= (pdata->test_mux << reg->test_mux_addr_shift);
+>
+> -	if (pdata->reference_voltage) {
+> -		con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
+> -		con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+> -	}
+> +	con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
+> +	con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+>
+> -	if (pdata->gain) {
+> -		con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
+> -		con |= (pdata->gain << reg->buf_slope_sel_shift);
+> -	}
+> +	con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
+> +	con |= (pdata->gain << reg->buf_slope_sel_shift);
+>
+>  	if (pdata->noise_cancel_mode) {
+>  		con &= ~(reg->therm_trip_mode_mask <<
+> --
+> 1.8.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
