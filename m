@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaESM5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:57:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631AbaESM5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:57:40 -0400
-Date: Mon, 19 May 2014 13:59:57 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: peterz@infradead.org, acme@infradead.org, jolsa@kernel.org,
-        rostedt@goodmis.org, mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf_tools/sched: Remove nr_state_machine_bugs in perf
- latency.
-Message-ID: <20140519115957.GF5027@krava.brq.redhat.com>
-References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
- <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+	id S1754513AbaESM7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:59:55 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:46073 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaESM7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:59:53 -0400
+Date: Mon, 19 May 2014 14:57:39 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, santosh.shilimkar@ti.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFC PATCH] of/irq: do irq resolution in
+ platform_get_irq_byname()
+Message-ID: <20140519125738.GB9466@ulmo>
+References: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
 Content-Disposition: inline
-In-Reply-To: <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-any ACKs?
 
-thanks,
-jirka
+--NMuMz9nt05w80d4+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Tue, May 13, 2014 at 10:38:21AM +0900, Dongsheng Yang wrote:
-> As we do not use .success in sched_wakeup event any more, then
-> we can not guarantee that the task when wakeup event happen is
-> out of run queue. So the message of nr_state_machine_bugs is
-> not correct.
-> 
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->  tools/perf/builtin-sched.c | 19 ++++++++-----------
->  1 file changed, 8 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-> index d3fb0ed..5b2fc62 100644
-> --- a/tools/perf/builtin-sched.c
-> +++ b/tools/perf/builtin-sched.c
-> @@ -149,7 +149,6 @@ struct perf_sched {
->  	unsigned long	 nr_runs;
->  	unsigned long	 nr_timestamps;
->  	unsigned long	 nr_unordered_timestamps;
-> -	unsigned long	 nr_state_machine_bugs;
->  	unsigned long	 nr_context_switch_bugs;
->  	unsigned long	 nr_events;
->  	unsigned long	 nr_lost_chunks;
-> @@ -1037,12 +1036,18 @@ static int latency_wakeup_event(struct perf_sched *sched,
->  	atom = list_entry(atoms->work_list.prev, struct work_atom, list);
->  
->  	/*
-> +	 * As we do not guarantee the wakeup event happens when
-> +	 * task is out of run queue, also may happen when task is
-> +	 * on run queue and wakeup only change ->state to TASK_RUNNING,
-> +	 * then we should not set the ->wake_up_time when wake up a
-> +	 * task which is on run queue. 
-> +	 *
->  	 * You WILL be missing events if you've recorded only
->  	 * one CPU, or are only looking at only one, so don't
-> -	 * make useless noise.
-> +	 * skip in this case.
->  	 */
->  	if (sched->profile_cpu == -1 && atom->state != THREAD_SLEEPING)
-> -		sched->nr_state_machine_bugs++;
-> +		return 0;
->  
->  	sched->nr_timestamps++;
->  	if (atom->sched_out_time > timestamp) {
-> @@ -1496,14 +1501,6 @@ static void print_bad_events(struct perf_sched *sched)
->  			(double)sched->nr_lost_events/(double)sched->nr_events * 100.0,
->  			sched->nr_lost_events, sched->nr_events, sched->nr_lost_chunks);
->  	}
-> -	if (sched->nr_state_machine_bugs && sched->nr_timestamps) {
-> -		printf("  INFO: %.3f%% state machine bugs (%ld out of %ld)",
-> -			(double)sched->nr_state_machine_bugs/(double)sched->nr_timestamps*100.0,
-> -			sched->nr_state_machine_bugs, sched->nr_timestamps);
-> -		if (sched->nr_lost_events)
-> -			printf(" (due to lost events?)");
-> -		printf("\n");
-> -	}
->  	if (sched->nr_context_switch_bugs && sched->nr_timestamps) {
->  		printf("  INFO: %.3f%% context switch bugs (%ld out of %ld)",
->  			(double)sched->nr_context_switch_bugs/(double)sched->nr_timestamps*100.0,
-> -- 
-> 1.8.2.1
-> 
+On Mon, May 19, 2014 at 04:30:59PM +0300, Grygorii Strashko wrote:
+[...]
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+[...]
+>  /**
+> + * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
+> + * @dev: pointer to device tree node
+> + * @name: zero-based index of the irq
+
+This is a name, not an index.
+
+> + *
+> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
+> + * is not yet created, or errorno in case of failure.
+
+s/errorno/error code/? Also EPROBE_DEFER is also an error code, so I'm
+not sure if it's worth a special case in the description here.
+
+> + *
+> + */
+> +int of_irq_get_byname(struct device_node *dev, const char *name)
+> +{
+> +	const char *name_irq = NULL;
+> +	int index = 0;
+> +
+> +	if (unlikely(!name))
+> +		return -EINVAL;
+> +
+> +	while (!of_property_read_string_index(dev, "interrupt-names",
+> +					      index, &name_irq))
+> +		if (!strcmp(name, name_irq))
+> +			return of_irq_get(dev, index);
+
+Isn't this missing an index++ somewhere? Otherwise it seems like this
+would loop infinitely if there was no match on the first entry.
+
+Thierry
+
+--NMuMz9nt05w80d4+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTef/CAAoJEN0jrNd/PrOhfOsP/AskVvB9TFUOcvTLUvXMuMXA
+/RSs9f8H23ICbPjPLYThqbvqo4m1pY5Isjk41/Ljnael8q8lkXIm4BiK3X84OQeS
+ZOFJtk41y1OBO+iYgY04HBqMdN5tPlm8mGkMFigKdhAGY2JlRXfAYrIlzz70eRE2
+uybZy55nm7gamRn1XitiJKvBtpMdDOidJX8Pyp/sTyDRKQlqj4Z1vdNmYP0gtRSm
+pTqFy8JBeXdXCTufu1LzfBtkHfAnKNR3QMhXcfOtlFVDfsp0Md9fjNb6ST6bT39J
+i2/t9YVBEaxCESr3Zd8D/o+v3tGjUuVM4oyrKQiE0CE7gEcH1icyQzo6HlhLtzvQ
+dyCWyNtesn7/QO+52YYCD93vAawa1+h9vjUVzqwRFWzdc3BCv8sGfjSyCNsnsAvx
+Yi3XzK6sW1daSdoA5LDeaeedTvxGgiv+q4p7vnVuaIojF5KJNC4Uxmi6S464Uhis
+3aXNxltVdO2eLxJfoLzq/dSVsW+CevYoCDqBCNMQ3nWRN7pVL0CR7PK8AOploJm1
+PyRz+PmoD2Xng1p6TATjUAl1dxKQSbzDJXyBkTIbGfWATk+5dfyy7IzgGxmPKgWR
+Sr//I8HbAXmF6Yr2C48gb/fg4moeloJoV8QECwxkgqLLB6bIXpHlSEK4ou8hVxFL
+//+xziHRfUDXq1JCbBRR
+=ZWdE
+-----END PGP SIGNATURE-----
+
+--NMuMz9nt05w80d4+--
