@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaESKJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:09:03 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:57705 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaESKJA (ORCPT
+	id S1753774AbaESKKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:10:20 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55688 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677AbaESKKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:09:00 -0400
-Date: Mon, 19 May 2014 12:06:46 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, gnurou@gmail.com,
-        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 0/5] drm/nouveau: platform devices and GK20A probing
-Message-ID: <20140519100645.GF7138@ulmo>
-References: <1400491450-19223-1-git-send-email-acourbot@nvidia.com>
- <1400493868.8467.26.camel@weser.hi.pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vA66WO2vHvL/CRSR"
-Content-Disposition: inline
-In-Reply-To: <1400493868.8467.26.camel@weser.hi.pengutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 19 May 2014 06:10:16 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, joe@perches.com,
+        auttamchandani@logicube.com, stern@rowland.harvard.edu
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 5/5] usb: gadget: net2280: Use module_pci_driver macro
+Date: Mon, 19 May 2014 12:10:05 +0200
+Message-Id: <1400494205-26566-5-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc0
+In-Reply-To: <1400494205-26566-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1400494205-26566-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/usb/gadget/net2280.c | 19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
---vA66WO2vHvL/CRSR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+index b43725a..bd851de 100644
+--- a/drivers/usb/gadget/net2280.c
++++ b/drivers/usb/gadget/net2280.c
+@@ -3588,6 +3588,9 @@ static int net2280_probe (struct pci_dev *pdev, const struct pci_device_id *id)
+ 	void			__iomem *base = NULL;
+ 	int			retval, i;
+ 
++	if (!use_dma)
++		use_dma_chaining = 0;
++
+ 	/* alloc, and start init */
+ 	dev = kzalloc (sizeof *dev, GFP_KERNEL);
+ 	if (dev == NULL){
+@@ -3833,20 +3836,8 @@ static struct pci_driver net2280_pci_driver = {
+ 	/* FIXME add power management support */
+ };
+ 
++module_pci_driver(net2280_pci_driver);
++
+ MODULE_DESCRIPTION (DRIVER_DESC);
+ MODULE_AUTHOR ("David Brownell");
+ MODULE_LICENSE ("GPL");
+-
+-static int __init init (void)
+-{
+-	if (!use_dma)
+-		use_dma_chaining = 0;
+-	return pci_register_driver (&net2280_pci_driver);
+-}
+-module_init (init);
+-
+-static void __exit cleanup (void)
+-{
+-	pci_unregister_driver (&net2280_pci_driver);
+-}
+-module_exit (cleanup);
+-- 
+2.0.0.rc0
 
-On Mon, May 19, 2014 at 12:04:28PM +0200, Lucas Stach wrote:
-> Am Montag, den 19.05.2014, 18:24 +0900 schrieb Alexandre Courbot:
-> > This patch series is the final (?) step towards the initial support of =
-GK20A,
-> > allowing it to be probed and used (currently at a very slow speed, and =
-for
-> > offscreen rendering only) on the Jetson TK1 and Venice 2 boards.
-> >=20
-> This seem to still need external firmware. Any chance to get this into
-> linux-firmware?
-
-I think that should be possible. There didn't seem to be any objections
-last time I asked but let me clarify again and get back to you.
-
-Thierry
-
---vA66WO2vHvL/CRSR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTede1AAoJEN0jrNd/PrOhZHMP/2SupWw3fsvr7q51PvDX9WX2
-RwekmBXhTAVq/2v6nttx7t4EMslxrOpJh5fISF1krky/YA6Oh2NjHlt9uddd/dsc
-pvV53DkTGJb0ZxLj/DI2/Gq5yDoa0JZ2IkEilkPukfwLL+LmDiDqpkdseZ624TGk
-tej5dywxUQ5q6fC0Dau9KRQMUVo4rNlr3hix8Z0W58CEMt17WQxx6UCU1cklejdT
-tCnxbNOQPArKnB707E2J6Y9kB7zZ0xza2lUNNikg2o1akO81h5aYaDxcySGEGTl8
-Jsn4V2pzlfL52G8D94gzS10u5ju32Z1tz0iGlQPXhVAMufOSdPPr4orqgl6o5Dxt
-bKlValK77GC/e5lTAyQZYjCpSdI/5DMdTahfgBzN021M2ZVtTUrPVNyhOwcQO+Yb
-01lfahvO/PPDZtAxHyYjj9a42T5PncjbFeyqIwCKjrlLH9yHb3GE/ORa3vbYzuGw
-xle9Ru4Labs9Cgn+w5SYkRTpFDiM0LxEoHllo3qvugZ+CD4lOFE+AldNc/h7GjgI
-06fd5pSzS+v7P8h1tuiLrOIX5rKX9nx0wG2kqNA1WtDhqIZN1tssJYXPQEJfGfHI
-ereDo+hSkArtuesKIOzMpZ4HzP6nG8zbvhroRyVyStHePCxwueX4AjrypM9HF54L
-+sqylWoLi+ysu9lxUsfC
-=Lkvd
------END PGP SIGNATURE-----
-
---vA66WO2vHvL/CRSR--
