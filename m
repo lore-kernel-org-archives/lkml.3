@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaESDoi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 23:44:38 -0400
-Received: from 199-30-91-224.servers.zerigo.net ([199.30.91.224]:40058 "EHLO
-	ns1.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750834AbaESDof (ORCPT
+	id S1752654AbaESDok (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 23:44:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48144 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752271AbaESDoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 23:44:35 -0400
-X-Greylist: delayed 19504 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 May 2014 23:44:35 EDT
+	Sun, 18 May 2014 23:44:37 -0400
+Date: Mon, 19 May 2014 00:43:55 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>, David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
+Message-ID: <20140519034355.GB1062@arch.cereza>
+References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
+ <20140401111359.GA3324@arch.cereza>
+ <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
+ <20140513005053.GZ28907@ld-irv-0074>
+ <20140513022614.GA1447@arch.cereza>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Date: Sun, 18 May 2014 22:17:46 +0000
-From: Mr chinsang <chinsang60@yahoo.com.hk>
-To: undisclosed-recipients:;
-Subject: Ich brauche Ihre dringende Antwort
-Reply-To: chinsang24@yahoo.com.hk
-Mail-Reply-To: chinsang24@yahoo.com.hk
-Message-ID: <79b834ff4641d84560c809fdc2c28440@suhaylr.com>
-User-Agent: Roundcube Webmail/0.9.5
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ns1.google.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - yahoo.com.hk
-X-Get-Message-Sender-Via: ns1.google.com: authenticated_id: admin@suhaylr.com
+In-Reply-To: <20140513022614.GA1447@arch.cereza>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 May 11:26 PM, Ezequiel Garcia wrote:
+> On 12 May 05:50 PM, Brian Norris wrote:
+> > > There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
+> > > Though it's acceptable to put array of values of the "same type" in single sysfs file,
+> > > But I'm still not confident on having all members of 'struct ecc_stats' being
+> > > represented by single sysfs file
+> > [...]
+> > 
+> > I agree, it looks like the sysfs policy would recommend against putting
+> > distinct properties in the same file.
+> > 
+[..]
+> > So I personally might lean toward "one file per attribute" here.
+> > 
 
+Brian,
 
+Having agreed on doing one file per attribute, I'm now not sure how to
+name them. Maybe you can give me a hand?
+
+Let me add some context: these are the per-MTD partition fields of the
+mtd_ecc_stats struct, although two of them aren't related to ECC, but to
+the bad blocks management. This is the struct:
+
+struct mtd_ecc_stats {
+        __u32 corrected;
+        __u32 failed;
+        __u32 badblocks;
+        __u32 bbtblocks;
+};
+
+How about the following?
+
+* corrected_bits
+* uncorrectable_errors
+* badblocks
+* bbtblocks
 -- 
-Ich brauche Ihre dringende Antwort
-
-        Ich bin mit diesem Medium, um Sie Transaktion in meiner Bank in 
-China, Sie als Empfänger zu informieren, die die Übertragung von 
-21.500.000 $ (Zwanzig Millionen fünfhunderttausend US-Dollar). Das wird 
-100% sicher, verstorben der Zahl Kunden.
-
-        Bitte auf meiner privaten E-Mail unter Kontakt für Fragen und 
-weiteren Informationen.
-
-        Mit freundlichen Grüßen,
-        sang Chin
-        E-mail: chinsang24@yahoo.com.hk
+Ezequiel Garc�a, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
