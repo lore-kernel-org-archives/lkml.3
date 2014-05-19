@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaESMb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:31:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52292 "EHLO mx1.redhat.com"
+	id S1754375AbaESMb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:31:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55254 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321AbaESMb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:31:26 -0400
+	id S1754302AbaESMbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:31:23 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 1/8] perf tools: Remove usage of trace_sched_wakeup(.success)
-Date: Mon, 19 May 2014 14:30:49 +0200
-Message-Id: <1400502656-20751-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/8] perf sched: Remove nr_state_machine_bugs in perf latency
+Date: Mon, 19 May 2014 14:30:50 +0200
+Message-Id: <1400502656-20751-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400502656-20751-1-git-send-email-jolsa@kernel.org>
 References: <1400502656-20751-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-trace_sched_wakeup(.success) is a dead argument and has been for ages,
-the only reason its still there is because of brain dead software, which
-apparently includes perf tools
+As we do not use .success in sched_wakeup event any more, then
+we can not guarantee that the task when wakeup event happen is
+out of run queue. So the message of nr_state_machine_bugs is
+not correct.
 
-There's a few more instances in pearly snake shit, but that's not
-supported as far as I care anyhow, so let that bitrot.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140512181946.GG13467@laptop.programming.kicks-ass.net
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-sched.c        | 7 +------
- tools/perf/tests/evsel-tp-sched.c | 3 ---
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ tools/perf/builtin-sched.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 2579215..a3320f1 100644
+index a3320f1..0b4fe53 100644
 --- a/tools/perf/builtin-sched.c
 +++ b/tools/perf/builtin-sched.c
-@@ -1007,17 +1007,12 @@ static int latency_wakeup_event(struct perf_sched *sched,
- 				struct perf_sample *sample,
- 				struct machine *machine)
- {
--	const u32 pid	  = perf_evsel__intval(evsel, sample, "pid"),
--		  success = perf_evsel__intval(evsel, sample, "success");
-+	const u32 pid	  = perf_evsel__intval(evsel, sample, "pid");
- 	struct work_atoms *atoms;
- 	struct work_atom *atom;
- 	struct thread *wakee;
- 	u64 timestamp = sample->time;
+@@ -149,7 +149,6 @@ struct perf_sched {
+ 	unsigned long	 nr_runs;
+ 	unsigned long	 nr_timestamps;
+ 	unsigned long	 nr_unordered_timestamps;
+-	unsigned long	 nr_state_machine_bugs;
+ 	unsigned long	 nr_context_switch_bugs;
+ 	unsigned long	 nr_events;
+ 	unsigned long	 nr_lost_chunks;
+@@ -1032,12 +1031,18 @@ static int latency_wakeup_event(struct perf_sched *sched,
+ 	atom = list_entry(atoms->work_list.prev, struct work_atom, list);
  
--	/* Note for later, it may be interesting to observe the failing cases */
--	if (!success)
--		return 0;
--
- 	wakee = machine__findnew_thread(machine, 0, pid);
- 	atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
- 	if (!atoms) {
-diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
-index 4774f7f..35d7fdb 100644
---- a/tools/perf/tests/evsel-tp-sched.c
-+++ b/tools/perf/tests/evsel-tp-sched.c
-@@ -74,9 +74,6 @@ int test__perf_evsel__tp_sched_test(void)
- 	if (perf_evsel__test_field(evsel, "prio", 4, true))
- 		ret = -1;
+ 	/*
++	 * As we do not guarantee the wakeup event happens when
++	 * task is out of run queue, also may happen when task is
++	 * on run queue and wakeup only change ->state to TASK_RUNNING,
++	 * then we should not set the ->wake_up_time when wake up a
++	 * task which is on run queue.
++	 *
+ 	 * You WILL be missing events if you've recorded only
+ 	 * one CPU, or are only looking at only one, so don't
+-	 * make useless noise.
++	 * skip in this case.
+ 	 */
+ 	if (sched->profile_cpu == -1 && atom->state != THREAD_SLEEPING)
+-		sched->nr_state_machine_bugs++;
++		return 0;
  
--	if (perf_evsel__test_field(evsel, "success", 4, true))
--		ret = -1;
--
- 	if (perf_evsel__test_field(evsel, "target_cpu", 4, true))
- 		ret = -1;
- 
+ 	sched->nr_timestamps++;
+ 	if (atom->sched_out_time > timestamp) {
+@@ -1496,14 +1501,6 @@ static void print_bad_events(struct perf_sched *sched)
+ 			(double)sched->nr_lost_events/(double)sched->nr_events * 100.0,
+ 			sched->nr_lost_events, sched->nr_events, sched->nr_lost_chunks);
+ 	}
+-	if (sched->nr_state_machine_bugs && sched->nr_timestamps) {
+-		printf("  INFO: %.3f%% state machine bugs (%ld out of %ld)",
+-			(double)sched->nr_state_machine_bugs/(double)sched->nr_timestamps*100.0,
+-			sched->nr_state_machine_bugs, sched->nr_timestamps);
+-		if (sched->nr_lost_events)
+-			printf(" (due to lost events?)");
+-		printf("\n");
+-	}
+ 	if (sched->nr_context_switch_bugs && sched->nr_timestamps) {
+ 		printf("  INFO: %.3f%% context switch bugs (%ld out of %ld)",
+ 			(double)sched->nr_context_switch_bugs/(double)sched->nr_timestamps*100.0,
 -- 
 1.8.3.1
 
