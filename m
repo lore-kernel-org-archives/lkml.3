@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaESKyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:54:35 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:26086 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253AbaESKyd (ORCPT
+	id S1754270AbaESKyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:54:32 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:31640 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235AbaESKy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:54:33 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-50-5379e2e63e28
+	Mon, 19 May 2014 06:54:28 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-62-5379e2e10dff
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,81 +18,49 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 2/8] drm/exynos/ipp: correct ipp_id field initialization
-Date: Mon, 19 May 2014 12:54:04 +0200
-Message-id: <1400496850-23860-3-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 0/8] drm/exynos/ipp: image post processing improvements
+Date: Mon, 19 May 2014 12:54:02 +0200
+Message-id: <1400496850-23860-1-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1400496850-23860-1-git-send-email-a.hajda@samsung.com>
-References: <1400496850-23860-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xy7rPHlUGG0z+pG1xa905VosrX9+z
-	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJWxbcFkloJ/fBU9H2+yNTBu4eli5OSQEDCR2LP0JyOELSZx4d56
-	ti5GLg4hgaWMEi/PPGKCcPqYJLbd2MQOUsUmoCnxd/NNNhBbREBH4npPNzNIEbPAMyaJO3fX
-	gRUJC3hIHNg6gRXEZhFQlbixeANYnFfAWeJQ9zlmiHVyEiePTQar4RRwkThxbDmYLQRU83jX
-	UfYJjLwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE1pcdjIuPWR1iFOBgVOLh/ZBQ
-	GSzEmlhWXJl7iFGCg1lJhHfbDaAQb0piZVVqUX58UWlOavEhRiYOTqkGxkzT53eqjN8fC2Lh
-	iZm50vpZ36HlLrJ5jW9/zO/03FvN67Jzmyn3/ZaHZfqXHRlkFp/YsTMmspjjyI6ortxF3+Y0
-	irs8536emb/6wY7+5Tb6U/5bOqq+Fvz/PNn5fnF9AWfWnqe/hP9Znbc/9D1rrm+M8prg60sD
-	sxbujhbK3HnXXC0gvE4wTImlOCPRUIu5qDgRAOY+wUYKAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xy7oPH1UGGzRdkLG4te4cq8WVr+/Z
+	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
+	C2CO4rJJSc3JLEst0rdL4Mr4elCy4Dd7xe2701gaGE+zdTFyckgImEhMuT6DGcIWk7hwbz1Y
+	XEhgKaPElhlaXYxcQHYfk8Sxy6/BEmwCmhJ/N98Es0UEdCSu93QzgxQxCzxjkrhzdx17FyMH
+	h7CAu8TypUYgNSwCqhLXGxawgoR5BZwl5m/yhNglJ3Hy2GTWCYzcCxgZVjGKppYmFxQnpeca
+	6RUn5haX5qXrJefnbmKEBMjXHYxLj1kdYhTgYFTi4f2RXhksxJpYVlyZe4hRgoNZSYR32w2g
+	EG9KYmVValF+fFFpTmrxIUYmDk6pBkaFff8O9Mp1nfMsU0lJeKxz9cKf+26van/m/AtnzRCK
+	bGqO0M2Tu7PUndc+c/O3aSYrHyiFX9y1TyPScdOe3+V+i3k3szyadONMMneBTOK0DWxFJzfs
+	OPlDd5G9pHLUbKcvlrwOlbzXeTiWRAcf2T7z0ZLlb5IXP5kVvOXo34fKSvLn9sVMu39FiaU4
+	I9FQi7moOBEA0Y6oi+4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-prop_list.ipp_id field is not initialized properly.
-The patch fixes it, additionally it removes redundant field from ippdrv.
+This set of independent patches contains various improvement and fixes
+for exynos_drm ipp framework and drivers.
+The patchset is based on drm-exynos/exynos-drm-next branch.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 14 ++++++--------
- drivers/gpu/drm/exynos/exynos_drm_ipp.h |  1 -
- 2 files changed, 6 insertions(+), 9 deletions(-)
+Regards
+Andrzej
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 5aaf21f..e6ef415 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -1699,23 +1699,21 @@ static int ipp_subdrv_probe(struct drm_device *drm_dev, struct device *dev)
- 
- 	/* get ipp driver entry */
- 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
-+		u32 ipp_id;
-+
- 		ippdrv->drm_dev = drm_dev;
- 
- 		ret = ipp_create_id(&ctx->ipp_idr, &ctx->ipp_lock, ippdrv,
--			&ippdrv->ipp_id);
--		if (ret) {
-+				    &ipp_id);
-+		if (ret || ipp_id == 0) {
- 			DRM_ERROR("failed to create id.\n");
- 			goto err_idr;
- 		}
- 
- 		DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]ipp_id[%d]\n",
--			count++, (int)ippdrv, ippdrv->ipp_id);
-+			count++, (int)ippdrv, ipp_id);
- 
--		if (ippdrv->ipp_id == 0) {
--			DRM_ERROR("failed to get ipp_id[%d]\n",
--				ippdrv->ipp_id);
--			goto err_idr;
--		}
-+		ippdrv->prop_list->ipp_id = ipp_id;
- 
- 		/* store parent device for node */
- 		ippdrv->parent_dev = dev;
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-index ab1634b..4aa71b2 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-@@ -160,7 +160,6 @@ struct exynos_drm_ippdrv {
- 	struct device	*parent_dev;
- 	struct device	*dev;
- 	struct drm_device	*drm_dev;
--	u32	ipp_id;
- 	bool	dedicated;
- 	struct exynos_drm_ipp_ops	*ops[EXYNOS_DRM_OPS_MAX];
- 	struct workqueue_struct	*event_workq;
+
+Andrzej Hajda (8):
+  drm/exynos/ipp: fix get_property IOCTL
+  drm/exynos/ipp: correct ipp_id field initialization
+  drm/exynos/ipp: simplify property list allocation
+  drm/exynos/fimc: simplify pre-scaler ratio calculation
+  drm/exynos/fimc: simplify irq masking function
+  drm/exynos/fimc: replace hw access macros with functions
+  drm/exynos/fimc: replace mutex by spinlock
+  drm/exynos/fimc: simplify and rename fimc_dst_get_buf_seq
+
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c    | 427 ++++++++++++----------------
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c     |  10 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c     |  16 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h     |   3 +-
+ drivers/gpu/drm/exynos/exynos_drm_rotator.c |   8 +-
+ 5 files changed, 196 insertions(+), 268 deletions(-)
+
 -- 
 1.9.1
 
