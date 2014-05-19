@@ -1,80 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795AbaESI27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:28:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37878 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753757AbaESI2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:28:51 -0400
-Date: Mon, 19 May 2014 09:28:49 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
-	add register_supply_aliases()
-Message-ID: <20140519082849.GQ25203@opensource.wolfsonmicro.com>
-References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com> <1400420953-20705-2-git-send-email-hdegoede@redhat.com> <20140519074705.GE2339@lee--X1> <20140519074855.GP25203@opensource.wolfsonmicro.com> <5379BE43.7090809@redhat.com>
+	id S1753816AbaESI3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:29:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55874 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753685AbaESI2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:28:04 -0400
+Message-ID: <5379C08D.1010209@ti.com>
+Date: Mon, 19 May 2014 11:27:57 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5379BE43.7090809@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
+        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v6 7/7] Input: pixcir_i2c_ts: Add device tree support
+References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-8-git-send-email-rogerq@ti.com>
+In-Reply-To: <1399374372-29123-8-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 10:18:11AM +0200, Hans de Goede wrote:
-> Hi,
-> 
-> On 05/19/2014 09:48 AM, Charles Keepax wrote:
-> > On Mon, May 19, 2014 at 08:47:05AM +0100, Lee Jones wrote:
-> >>> We cannot register supply alias in mfd_add_device before calling
-> >>> platform_add_device, for 2 reasons:
-> >>> 1) devm resources may not be registered before the (platform) drivers probe
-> >>>    method runs
-> >>> 2) The platform-dev's name must be set before registering the aliases which
-> >>>    happens from platform_add_device.
-> >>>
-> >>> So stop registering supply aliases from mfd_add_device, and add a
-> >>> mfd_register_supply_aliases helper functions for the cell's plaform driver
-> >>> probe method to use.
-> >>>
-> >>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-> >>> ---
-> >>>  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
-> >>>  include/linux/mfd/core.h |  6 +++++-
-> >>>  2 files changed, 26 insertions(+), 17 deletions(-)
-> >>
-> >> Change looks reasonable to me, but I'd like to have Mark look over the
-> >> changes.  If he's okay with them I think it's best for this set to go
-> >> through the MFD tree as a whole.
-> > 
-> > This should already be fixed by this patch:
-> > 
-> > mfd: core: Don't use devres functions before device is added
-> 
-> Ah, I did not check next, yes that would fix *half* of the problem,
-> the other half is that adding aliases uses dev->name (at least for
-> logging, did not check if it is used for anything else) and that is
-> not set yet before the device is added.
-> 
-> Basically the moral of the story is that it is a BAD idea to do
-> anything with a device before it is added. So my proposed series
-> would replace the "mfd: core: Don't use devres functions before device is added"
-> patch.
-> 
-> Regards,
-> 
-> Hans
+From: Roger Quadros <rogerq@ti.com>
 
-Cool cool, since my patch doesn't seem to have made it in anyway
-I guess lets proceed with your series then.
+Provide device tree support and binding information.
+Also provide support for a new chip "pixcir_tangoc".
 
-Thanks,
-Charles
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ drivers/input/touchscreen/pixcir_i2c_ts.c          | 78 ++++++++++++++++++++++
+ 3 files changed, 105 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+new file mode 100644
+index 0000000..6e55109
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+@@ -0,0 +1,26 @@
++* Pixcir I2C touchscreen controllers
++
++Required properties:
++- compatible: must be "pixcir,pixcir_ts" or "pixcir,pixcir_tangoc"
++- reg: I2C address of the chip
++- interrupts: interrupt to which the chip is connected
++- attb-gpio: GPIO connected to the ATTB line of the chip
++- touchscreen-size-x: horizontal resolution of touchscreen (in pixels)
++- touchscreen-size-y: vertical resolution of touchscreen (in pixels)
++
++Example:
++
++	i2c@00000000 {
++		/* ... */
++
++		pixcir_ts@5c {
++			compatible = "pixcir,pixcir_ts";
++			reg = <0x5c>;
++			interrupts = <2 0>;
++			attb-gpio = <&gpf 2 0 2>;
++			touchscreen-size-x = <800>;
++			touchscreen-size-y = <600>;
++		};
++
++		/* ... */
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index abc3080..2270ebe 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -94,6 +94,7 @@ panasonic	Panasonic Corporation
+ phytec	PHYTEC Messtechnik GmbH
+ picochip	Picochip Ltd
+ plathome	Plat'Home Co., Ltd.
++pixcir  PIXCIR MICROELECTRONICS Co., Ltd
+ powervr	PowerVR (deprecated, use img)
+ qca	Qualcomm Atheros, Inc.
+ qcom	Qualcomm Technologies, Inc
+diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+index 43794fb..e1eb6c8 100644
+--- a/drivers/input/touchscreen/pixcir_i2c_ts.c
++++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+@@ -26,6 +26,9 @@
+ #include <linux/input/mt.h>
+ #include <linux/input/pixcir_ts.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_device.h>
+ 
+ #define PIXCIR_MAX_SLOTS       5 /* Max fingers supported by driver */
+ 
+@@ -407,16 +410,70 @@ unlock:
+ static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
+ 			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id pixcir_of_match[];
++
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	struct pixcir_ts_platform_data *pdata;
++	struct device_node *np = dev->of_node;
++
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
++	if (!match)
++		return ERR_PTR(-EINVAL);
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->chip = *(const struct pixcir_i2c_chip_data *)match->data;
++
++	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
++	/* gpio_attb validity is checked in probe */
++
++	if (of_property_read_u32(np, "touchscreen-size-x", &pdata->x_max)) {
++		dev_err(dev, "Failed to get touchscreen-size-x property\n");
++		return ERR_PTR(-EINVAL);
++	}
++	pdata->x_max -= 1;
++
++	if (of_property_read_u32(np, "touchscreen-size-y", &pdata->y_max)) {
++		dev_err(dev, "Failed to get touchscreen-size-y property\n");
++		return ERR_PTR(-EINVAL);
++	}
++	pdata->y_max -= 1;
++
++	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
++		pdata->x_max + 1, pdata->y_max + 1, pdata->gpio_attb);
++
++	return pdata;
++}
++#else
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	return ERR_PTR(-EINVAL);
++}
++#endif
++
+ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+ 					 const struct i2c_device_id *id)
+ {
+ 	const struct pixcir_ts_platform_data *pdata =
+ 			dev_get_platdata(&client->dev);
+ 	struct device *dev = &client->dev;
++	struct device_node *np = dev->of_node;
+ 	struct pixcir_i2c_ts_data *tsdata;
+ 	struct input_dev *input;
+ 	int error;
+ 
++	if (np && !pdata) {
++		pdata = pixcir_parse_dt(dev);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++	}
++
+ 	if (!pdata) {
+ 		dev_err(&client->dev, "platform data not defined\n");
+ 		return -EINVAL;
+@@ -522,15 +579,36 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
+ 
+ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
+ 	{ "pixcir_ts", 0 },
++	{ "pixcir_tangoc", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
+ 
++#ifdef CONFIG_OF
++static const struct pixcir_i2c_chip_data pixcir_ts_data = {
++	.max_fingers = 2,
++	/* no hw id support */
++};
++
++static const struct pixcir_i2c_chip_data pixcir_tangoc_data = {
++	.max_fingers = 5,
++	.has_hw_ids = true,
++};
++
++static const struct of_device_id pixcir_of_match[] = {
++	{ .compatible = "pixcir,pixcir_ts", .data = &pixcir_ts_data },
++	{ .compatible = "pixcir,pixcir_tangoc", .data = &pixcir_tangoc_data },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pixcir_of_match);
++#endif
++
+ static struct i2c_driver pixcir_i2c_ts_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "pixcir_ts",
+ 		.pm	= &pixcir_dev_pm_ops,
++		.of_match_table = of_match_ptr(pixcir_of_match),
+ 	},
+ 	.probe		= pixcir_i2c_ts_probe,
+ 	.remove		= pixcir_i2c_ts_remove,
+-- 
+1.8.3.2
+
+
