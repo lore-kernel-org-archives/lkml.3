@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaESWiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:38:22 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:26523 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaESWiU (ORCPT
+	id S1752209AbaESWi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:38:59 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52476 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751719AbaESWi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:38:20 -0400
-Message-ID: <1400539098.6399.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: linux-next: build warning after merge of the akpm tree
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
-Date: Mon, 19 May 2014 15:38:18 -0700
-In-Reply-To: <20140520073634.40179424@canb.auug.org.au>
-References: <20140519181314.1b92c548@canb.auug.org.au>
-	 <1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
-	 <20140520073634.40179424@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 18:38:57 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/hotplug: Fix STARTING/DYING action in acpi_cpu_soft_notify()
+Date: Tue, 20 May 2014 00:55:51 +0200
+Message-ID: <2011129.WMiXDPUasW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399557539-7282-1-git-send-email-toshi.kani@hp.com>
+References: <1399557539-7282-1-git-send-email-toshi.kani@hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 07:36 +1000, Stephen Rothwell wrote:
-> Hi,
+On Thursday, May 08, 2014 07:58:59 AM Toshi Kani wrote:
+> During CPU online/offline testing on a large system, one of the
+> processors got stuck after the message "bad: scheduling from the
+> idle thread!".  The problem is that acpi_cpu_soft_notify() calls
+> acpi_bus_get_device() for all action types.  CPU_STARTING and
+> CPU_DYING do not allow the notify handlers to sleep.  However,
+> acpi_bus_get_device() can sleep in acpi_ut_acquire_mutex().
 > 
-> On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > On Mon, 2014-05-19 at 18:13 +1000, Stephen Rothwell wrote:
-> > > Hi Andrew,
-> > > 
-> > > After merging the akpm tree, today's linux-next build (arm
-> > > multi_v7_defconfig) produced these warnings:
-> > > 
-> > > 
-> > > ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
-> > > ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
-> > > ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
-> > > ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
-> > > 
-> > > and many more in other files ...
-> > 
-> > Hmm are all the warning the same? Is this just on arm? have you seen it
-> > in other archs? (Could you please send me the .config)
+> Change acpi_cpu_soft_notify() to return immediately for CPU_STARTING
+> and CPU_DYING as they have no action in this handler.
 > 
-> The warnings were all the same, I saw it only on arm (since that was
-> what I built) and I mentioned the config above.
-> 
-> > > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
-> > > spinning").
-> > 
-> > If CONFIG_SMP, we add two new fields to the rwsem structure
-> > (include/linux/rwsem.h) and likewise we update the
-> > __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
-> > something like that is to be using the spinlock variant
-> > (rwsem-spinlock.h).
-> 
-> Actually quite a few architectures do set
-> CONFIG_RWSEM_GENERIC_SPINLOCK, and so wouldn't it make more sense to
-> actually directly test that?
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-Both are equivalent, I have no preference. I've sent a formal fix to the
--tip folks, I guess I'll let them choose.
+Queued up for 3.16, thanks!
 
-Thanks,
-Davidlohr
+> ---
+>  drivers/acpi/processor_driver.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index 7f70f31..4fcbd67 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -121,6 +121,13 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>  	struct acpi_processor *pr = per_cpu(processors, cpu);
+>  	struct acpi_device *device;
+>  
+> +	/*
+> +	 * CPU_STARTING and CPU_DYING must not sleep. Return here since
+> +	 * acpi_bus_get_device() may sleep.
+> +	 */
+> +	if (action == CPU_STARTING || action == CPU_DYING)
+> +		return NOTIFY_DONE;
+> +
+>  	if (!pr || acpi_bus_get_device(pr->handle, &device))
+>  		return NOTIFY_DONE;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
