@@ -1,127 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaESMli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:41:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58431 "EHLO mx2.suse.de"
+	id S1754240AbaESMmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:42:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43880 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866AbaESMlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:41:37 -0400
-Date: Mon, 19 May 2014 14:41:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Add mem_cgroup_charge_anon() into
- uprobe_write_opcode()
-Message-ID: <20140519124134.GB3017@dhcp22.suse.cz>
-References: <20140505151320.GA25611@redhat.com>
+	id S1753265AbaESMmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:42:52 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <santosh.shilimkar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: [RFC PATCH] of/irq: do irq resolution in platform_get_irq_byname()
+Date: Mon, 19 May 2014 16:30:59 +0300
+Message-ID: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505151320.GA25611@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-05-14 17:13:20, Oleg Nesterov wrote:
+The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+"of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+moves resolving of the interrupt resources in platform_get_irq().
+But this solution isn't complete because platform_get_irq_byname()
+need to be modified the same way.
 
-Ups, this really slipped through...
-Sorry about that.
+Hence, fix it by adding interrupt resolution code at the
+platform_get_irq_byname() function too.
 
-> Hugh says:
-> 
->     The one I noticed was that it forgets all about memcg (because
->     it was copied from KSM, and there the replacement page has already
->     been charged to a memcg). See how mm/memory.c do_anonymous_page()
->     does a mem_cgroup_charge_anon().
-> 
-> Hopefully not a big problem, uprobes is a system-wide thing and only
-> root can insert the probes. But I agree, should be fixed anyway.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh@kernel.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>
 
-I am not familiar with uprobes but AFAIU this can be a non-trivial of
-(now) uncharged memory. The fact that only root is allowed to install
-probes doesn't change the fact that this is still unaccounted memory and
-so setups which are tuned to not trigger OOM killer would be broken.
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/base/platform.c |    7 +++++--
+ drivers/of/irq.c        |   25 +++++++++++++++++++++++++
+ include/linux/of_irq.h  |    5 +++++
+ 3 files changed, 35 insertions(+), 2 deletions(-)
 
-> Add mem_cgroup_{un,}charge_anon() into uprobe_write_opcode(). To simplify
-> the error handling (and avoid the new "uncharge" label) the patch also
-> moves anon_vma_prepare() up before we alloc/charge the new page.
-> 
-> While at it fix the comment about ->mmap_sem, it is held for write.
-
-> Suggested-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  kernel/events/uprobes.c |   23 +++++++++++------------
->  1 files changed, 11 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 7716c40..a13251e 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -279,18 +279,13 @@ static int verify_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t
->   * supported by that architecture then we need to modify is_trap_at_addr and
->   * uprobe_write_opcode accordingly. This would never be a problem for archs
->   * that have fixed length instructions.
-> - */
-> -
-> -/*
-> + *
->   * uprobe_write_opcode - write the opcode at a given virtual address.
->   * @mm: the probed process address space.
->   * @vaddr: the virtual address to store the opcode.
->   * @opcode: opcode to be written at @vaddr.
->   *
-> - * Called with mm->mmap_sem held (for read and with a reference to
-> - * mm).
-> - *
-> - * For mm @mm, write the opcode at @vaddr.
-> + * Called with mm->mmap_sem held for write.
->   * Return 0 (success) or a negative errno.
->   */
->  int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr,
-> @@ -310,21 +305,25 @@ retry:
->  	if (ret <= 0)
->  		goto put_old;
->  
-> +	ret = anon_vma_prepare(vma);
-> +	if (ret)
-> +		goto put_old;
-> +
->  	ret = -ENOMEM;
->  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
->  	if (!new_page)
->  		goto put_old;
->  
-> -	__SetPageUptodate(new_page);
-> +	if (mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL))
-> +		goto put_new;
->  
-> +	__SetPageUptodate(new_page);
->  	copy_highpage(new_page, old_page);
->  	copy_to_page(new_page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
->  
-> -	ret = anon_vma_prepare(vma);
-> -	if (ret)
-> -		goto put_new;
-> -
->  	ret = __replace_page(vma, vaddr, old_page, new_page);
-> +	if (ret)
-> +		mem_cgroup_uncharge_page(new_page);
->  
->  put_new:
->  	page_cache_release(new_page);
-> -- 
-> 1.5.5.1
-> 
-> 
-
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 5b47210..9e9227e 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -131,9 +131,12 @@ EXPORT_SYMBOL_GPL(platform_get_resource_byname);
+  */
+ int platform_get_irq_byname(struct platform_device *dev, const char *name)
+ {
+-	struct resource *r = platform_get_resource_byname(dev, IORESOURCE_IRQ,
+-							  name);
++	struct resource *r;
++
++	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
++		return of_irq_get_byname(dev->dev.of_node, name);
+ 
++	r = platform_get_resource_byname(dev, IORESOURCE_IRQ, name);
+ 	return r ? r->start : -ENXIO;
+ }
+ EXPORT_SYMBOL_GPL(platform_get_irq_byname);
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 5aeb894..6419de9 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -406,6 +406,31 @@ int of_irq_get(struct device_node *dev, int index)
+ }
+ 
+ /**
++ * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
++ * @dev: pointer to device tree node
++ * @name: zero-based index of the irq
++ *
++ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
++ * is not yet created, or errorno in case of failure.
++ *
++ */
++int of_irq_get_byname(struct device_node *dev, const char *name)
++{
++	const char *name_irq = NULL;
++	int index = 0;
++
++	if (unlikely(!name))
++		return -EINVAL;
++
++	while (!of_property_read_string_index(dev, "interrupt-names",
++					      index, &name_irq))
++		if (!strcmp(name, name_irq))
++			return of_irq_get(dev, index);
++
++	return -ENXIO;
++}
++
++/**
+  * of_irq_count - Count the number of IRQs a node uses
+  * @dev: pointer to device tree node
+  */
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index 6404253..bfec136 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -45,6 +45,7 @@ extern void of_irq_init(const struct of_device_id *matches);
+ #ifdef CONFIG_OF_IRQ
+ extern int of_irq_count(struct device_node *dev);
+ extern int of_irq_get(struct device_node *dev, int index);
++extern int of_irq_get_byname(struct device_node *dev, const char *name);
+ #else
+ static inline int of_irq_count(struct device_node *dev)
+ {
+@@ -54,6 +55,10 @@ static inline int of_irq_get(struct device_node *dev, int index)
+ {
+ 	return 0;
+ }
++static inline int of_irq_get_byname(struct device_node *dev, const char *name)
++{
++	return 0;
++}
+ #endif
+ 
+ #if defined(CONFIG_OF)
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
