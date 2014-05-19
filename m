@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaESM7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:59:55 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:46073 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaESM7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:59:53 -0400
-Date: Mon, 19 May 2014 14:57:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, santosh.shilimkar@ti.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH] of/irq: do irq resolution in
- platform_get_irq_byname()
-Message-ID: <20140519125738.GB9466@ulmo>
-References: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>
+	id S1754594AbaESNA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:00:29 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48982 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754301AbaESNA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:00:28 -0400
+Date: Mon, 19 May 2014 09:00:26 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] /dev/random updates for 3.15-rc6
+Message-ID: <20140519130026.GA13093@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
 
---NMuMz9nt05w80d4+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
 
-On Mon, May 19, 2014 at 04:30:59PM +0300, Grygorii Strashko wrote:
-[...]
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-[...]
->  /**
-> + * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
-> + * @dev: pointer to device tree node
-> + * @name: zero-based index of the irq
+are available in the git repository at:
 
-This is a name, not an index.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
 
-> + *
-> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-> + * is not yet created, or errorno in case of failure.
+for you to fetch changes up to f9c6d4987b23e0a514464bae6771933a48e4cd01:
 
-s/errorno/error code/? Also EPROBE_DEFER is also an error code, so I'm
-not sure if it's worth a special case in the description here.
+  random: fix BUG_ON caused by accounting simplification (2014-05-16 22:18:22 -0400)
 
-> + *
-> + */
-> +int of_irq_get_byname(struct device_node *dev, const char *name)
-> +{
-> +	const char *name_irq = NULL;
-> +	int index = 0;
-> +
-> +	if (unlikely(!name))
-> +		return -EINVAL;
-> +
-> +	while (!of_property_read_string_index(dev, "interrupt-names",
-> +					      index, &name_irq))
-> +		if (!strcmp(name, name_irq))
-> +			return of_irq_get(dev, index);
+----------------------------------------------------------------
+This fixes a BUG_ON-causing regression that was introduced during the
+last merge window.
 
-Isn't this missing an index++ somewhere? Otherwise it seems like this
-would loop infinitely if there was no match on the first entry.
+----------------------------------------------------------------
+Theodore Ts'o (1):
+      random: fix BUG_ON caused by accounting simplification
 
-Thierry
-
---NMuMz9nt05w80d4+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTef/CAAoJEN0jrNd/PrOhfOsP/AskVvB9TFUOcvTLUvXMuMXA
-/RSs9f8H23ICbPjPLYThqbvqo4m1pY5Isjk41/Ljnael8q8lkXIm4BiK3X84OQeS
-ZOFJtk41y1OBO+iYgY04HBqMdN5tPlm8mGkMFigKdhAGY2JlRXfAYrIlzz70eRE2
-uybZy55nm7gamRn1XitiJKvBtpMdDOidJX8Pyp/sTyDRKQlqj4Z1vdNmYP0gtRSm
-pTqFy8JBeXdXCTufu1LzfBtkHfAnKNR3QMhXcfOtlFVDfsp0Md9fjNb6ST6bT39J
-i2/t9YVBEaxCESr3Zd8D/o+v3tGjUuVM4oyrKQiE0CE7gEcH1icyQzo6HlhLtzvQ
-dyCWyNtesn7/QO+52YYCD93vAawa1+h9vjUVzqwRFWzdc3BCv8sGfjSyCNsnsAvx
-Yi3XzK6sW1daSdoA5LDeaeedTvxGgiv+q4p7vnVuaIojF5KJNC4Uxmi6S464Uhis
-3aXNxltVdO2eLxJfoLzq/dSVsW+CevYoCDqBCNMQ3nWRN7pVL0CR7PK8AOploJm1
-PyRz+PmoD2Xng1p6TATjUAl1dxKQSbzDJXyBkTIbGfWATk+5dfyy7IzgGxmPKgWR
-Sr//I8HbAXmF6Yr2C48gb/fg4moeloJoV8QECwxkgqLLB6bIXpHlSEK4ou8hVxFL
-//+xziHRfUDXq1JCbBRR
-=ZWdE
------END PGP SIGNATURE-----
-
---NMuMz9nt05w80d4+--
+ drivers/char/random.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
