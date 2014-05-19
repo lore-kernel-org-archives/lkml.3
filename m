@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbaESKOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22550 "EHLO mx1.redhat.com"
+	id S1754044AbaESKPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:15:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54391 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204AbaESKOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:14:44 -0400
-Date: Mon, 19 May 2014 12:14:39 +0200
-From: Miroslav Lichvar <mlichvar@redhat.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering (v2)
-Message-ID: <20140519101439.GE4060@localhost>
-References: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
+	id S1753393AbaESKPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 06:15:01 -0400
+Message-ID: <5379D99E.1020302@suse.cz>
+Date: Mon, 19 May 2014 12:14:54 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400288204-414-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+CC: Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 2/2] mm/compaction: avoid rescanning pageblocks in
+ isolate_freepages
+References: <alpine.DEB.2.02.1405061922220.18635@chino.kir.corp.google.com> <1399464550-26447-1-git-send-email-vbabka@suse.cz> <1399464550-26447-2-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1399464550-26447-2-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 05:56:41PM -0700, John Stultz wrote:
-> This version of the patch set corrects a few issues Miroslav pointed
-> out, as well as adapts his approach almost completely for the last
-> patch. This pulls the results in to be very close to his original
-> patch.
+I wonder why nobody complained about the build warning... sorry.
 
-Ok, so it seems to be almost identical to my patch now. The only two
-differences seem to be the removal of the ntp_error correction to
-change the effective clock frequency at the current time instead of
-aligning it to the start of the tick and the flag to handle the xtime
-underflow.
+----8<----
+From: Vlastimil Babka <vbabka@suse.cz>
+Date: Mon, 19 May 2014 12:02:38 +0200
+Subject: mm-compaction-avoid-rescanning-pageblocks-in-isolate_freepages-fix
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Can we get them in too?
+Fix a (spurious) build warning:
 
-I think both are necessary to avoid having large steps in ntp_error
-which take long time to correct. You can see this in the nohz off
-freq100 result from the simulator, for example.
+mm/compaction.c:860:15: warning: ‘next_free_pfn’ may be used uninitialized in this function [-Wmaybe-uninitialized]
 
-> I'm not 100% sure we need the last patch in this series, as
-> it has additional computational cost and testing on real
-> hardware has shown NOHZ=y performance matching NOHZ=n with a
-> earlier version of just the first patch:
-> 	https://lkml.org/lkml/2014/1/13/501
-> (though admittedly, the patch has changed since Richard's testing,
-> so the results are a bit stale).
+Seems like the compiler cannot prove that exiting the for loop without updating
+next_free_pfn there will mean that the check for crossing the scanners will
+trigger. So let's not confuse people who try to see why this warning occurs.
 
-If I could get a sufficiently low update rate on real HW or a more
-accurate reference clock, I think I would be able to show you a
-difference. But even if we can't at this time, the removal of the
-complex feedback loop, which as you saw is difficult to keep working
-well in all cases (and we have tested only a very small number of
-them), is probably worth the extra computational cost.
+Instead of initializing next_free_pfn to zero with an explaining comment, just
+drop the damned variable altogether and work with cc->free_pfn directly as
+Nayoa originally suggested.
 
-Thanks,
+Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+---
+ mm/compaction.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-> Below are some of the simulator results comparing this patchset
-> to vanilla and Miroslav's original patch.
-
-> Miroslav's original patch:
-> --------------------------
-> 
-> $ ./test1.sh 
-> 		freq10          freq100         dev             max
-> nohz on		0.00601         0.00028         74.0            279.4
-> nohz off	0.05867         0.00204         0.2             0.6
-
-> This patchset:
-> --------------
-> 
-> $ ./test1.sh 
-> 		freq10          freq100         dev             max
-> nohz on		0.00582         0.00033         74.1            279.9
-> nohz off	0.06275         0.06440         0.4             1.4
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 8db9820..b0f939b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -760,7 +760,6 @@ static void isolate_freepages(struct zone *zone,
+ 	unsigned long block_start_pfn;	/* start of current pageblock */
+ 	unsigned long block_end_pfn;	/* end of current pageblock */
+ 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+-	unsigned long next_free_pfn; /* start pfn for scaning at next round */
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+ 
+@@ -822,7 +821,7 @@ static void isolate_freepages(struct zone *zone,
+ 			continue;
+ 
+ 		/* Found a block suitable for isolating free pages from */
+-		next_free_pfn = block_start_pfn;
++		cc->free_pfn = block_start_pfn;
+ 		isolated = isolate_freepages_block(cc, block_start_pfn,
+ 					block_end_pfn, freelist, false);
+ 		nr_freepages += isolated;
+@@ -852,9 +851,8 @@ static void isolate_freepages(struct zone *zone,
+ 	 * so that compact_finished() may detect this
+ 	 */
+ 	if (block_start_pfn < low_pfn)
+-		next_free_pfn = cc->migrate_pfn;
++		cc->free_pfn = cc->migrate_pfn;
+ 
+-	cc->free_pfn = next_free_pfn;
+ 	cc->nr_freepages = nr_freepages;
+ }
+ 
 -- 
-Miroslav Lichvar
+1.8.4.5
+
+
