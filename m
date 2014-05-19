@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaESXUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:20:20 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43351 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaESXUT (ORCPT
+	id S1751542AbaESXWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:22:33 -0400
+Received: from smtprelay0017.hostedemail.com ([216.40.44.17]:49373 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750868AbaESXWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:20:19 -0400
-Date: Mon, 19 May 2014 19:18:48 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: mix all saved registers into entropy pool
-Message-ID: <20140519231848.GD14563@logfs.org>
-References: <20140519211719.GA14563@logfs.org>
- <20140519212320.GB14563@logfs.org>
- <537A8319.5010100@zytor.com>
- <20140519223943.GC14563@logfs.org>
- <537A8E22.4030400@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537A8E22.4030400@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 19 May 2014 19:22:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3868:3871:4321:5007:6119:7652:7901:7903:7904:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pipe24_6d2bf08e29357
+X-Filterd-Recvd-Size: 1350
+Message-ID: <1400541748.14238.58.camel@joe-AO725>
+Subject: Re: [PATCH V2 mmots] fs/hfsplus/wrapper.c: replace shift loop by fls
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 19 May 2014 16:22:28 -0700
+In-Reply-To: <20140519160946.84e79c832dfc4db0fbae573b@linux-foundation.org>
+References: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
+	 <20140519160946.84e79c832dfc4db0fbae573b@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 16:05:06 -0700, H. Peter Anvin wrote:
-> On 05/19/2014 03:39 PM, Jörn Engel wrote:
-> > 
-> > I would feel fairly confident giving this .25 bits of entropy per
-> > event.  With 40% unique hashes and assuming at most 1 bit of entropy
-> > for a unique hash, that is a fairly conservative underestimate.
-> 
-> Sure, but that is for a specific workload.
+On Mon, 2014-05-19 at 16:09 -0700, Andrew Morton wrote:
+> On Fri, 16 May 2014 22:38:15 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+> > Replace while blocksize;shift by fls -1
+[]
+> fls() always makes my brain hurt.  ilog() is nicer?
 
-The workload is called boot.  That is one of the two critical ones -
-the other being a cloned VM.  If we can gather enough entropy during
-boot and somehow avoid the cloned VM problem, we have won.  No more
-need to feed in entropy from the previous run, which on many embedded
-systems won't happen anyway.
+Maybe take an aspirin?
 
-If you complained about the limited selection of hardware I tested on,
-you would be right.  So far it has been x86 kvm and an x86 notebook.
-It would be great to get numbers for some embedded system with arm or
-mips as well.
+ilog2(n) is effectively fls(n) - 1 but n can be
+either u64 or u64 and ilog2 is compile-time
+optimized when n is constant.
 
-Jörn
+blocksize is a non-const u32 here.
 
---
-When in doubt, punt.  When somebody actually complains, go back and fix it...
-The 90% solution is a good thing.
--- Rob Landley
+
