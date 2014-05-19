@@ -1,206 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaESMYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:24:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58726 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793AbaESMYW (ORCPT
+	id S1753869AbaESM2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:28:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34341 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631AbaESM2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:24:22 -0400
-Date: Mon, 19 May 2014 05:22:18 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-866293ee54227584ffcb4a42f69c1f365974ba7f@git.kernel.org>
-Cc: mingo@kernel.org, williams@redhat.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, jakub@redhat.com, rostedt@goodmis.org,
-        bigeasy@linutronix.de, tglx@linutronix.de, laijs@cn.fujitsu.com,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        darren@dvhart.com, davej@redhat.com, paulmck@linux.vnet.ibm.com,
-        carlos@redhat.com, roland@hack.frob.com, mtk.manpages@gmail.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org, williams@redhat.com,
-        peterz@infradead.org, jakub@redhat.com, rostedt@goodmis.org,
-        bigeasy@linutronix.de, tglx@linutronix.de, davidlohr@hp.com,
-        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        darren@dvhart.com, davej@redhat.com, paulmck@linux.vnet.ibm.com,
-        carlos@redhat.com, roland@hack.frob.com, mtk.manpages@gmail.com
-In-Reply-To: <20140512201701.097349971@linutronix.de>
-References: <20140512201701.097349971@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] futex:
-  Add another early deadlock detection check
-Git-Commit-ID: 866293ee54227584ffcb4a42f69c1f365974ba7f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 19 May 2014 08:28:30 -0400
+Message-ID: <5379F8E5.2070802@canonical.com>
+Date: Mon, 19 May 2014 05:28:21 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, miklos@szeredi.hu,
+        jmorris@namei.org, selinux@tycho.nsa.gov
+CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
+References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp> <201405122224.BJB51546.VJOtMSQOLOFFHF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405122224.BJB51546.VJOtMSQOLOFFHF@I-love.SAKURA.ne.jp>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  866293ee54227584ffcb4a42f69c1f365974ba7f
-Gitweb:     http://git.kernel.org/tip/866293ee54227584ffcb4a42f69c1f365974ba7f
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Mon, 12 May 2014 20:45:34 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 19 May 2014 21:18:49 +0900
+On 05/12/2014 06:24 AM, Tetsuo Handa wrote:
+>>From 819e94ae3a6d9235196d137a39afa4e0bbd79770 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 12 May 2014 21:54:05 +0900
+> Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
+> 
+> For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
+> reversed arguments" and "distinguish condition of source and target".
+> Future patches will stop re-calculating pathnames.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-futex: Add another early deadlock detection check
+This isn't quite right. For apparmor at this point these paths need to
+be still treated like they are separate. The second aa_path_perm, is
+checking the permission to move old_inode to new_path.
 
-Dave Jones trinity syscall fuzzer exposed an issue in the deadlock
-detection code of rtmutex:
-  http://lkml.kernel.org/r/20140429151655.GA14277@redhat.com
+see below
 
-That underlying issue has been fixed with a patch to the rtmutex code,
-but the futex code must not call into rtmutex in that case because
-    - it can detect that issue early
-    - it avoids a different and more complex fixup for backing out
+I've added an updated patch below
 
-If the user space variable got manipulated to 0x80000000 which means
-no lock holder, but the waiters bit set and an active pi_state in the
-kernel is found we can figure out the recursive locking issue by
-looking at the pi_state owner. If that is the current task, then we
-can safely return -EDEADLK.
+> ---
+>  security/apparmor/lsm.c |   22 ++++++++++++++++++++--
+>  1 files changed, 20 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+> index c0b4366..9f21296 100644
+> --- a/security/apparmor/lsm.c
+> +++ b/security/apparmor/lsm.c
+> @@ -331,7 +331,14 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
+>  		struct path_cond cond = { old_dentry->d_inode->i_uid,
+>  					  old_dentry->d_inode->i_mode
+>  		};
+> +		struct path_cond new_cond = cond;
+>  
+> +		if (flags & RENAME_EXCHANGE) {
+> +			/* Cross rename requires both inodes to exist. */
+> +			new_cond.uid = new_dentry->d_inode->i_uid;
+> +			new_cond.mode = new_dentry->d_inode->i_mode;
+> +		}
+> +retry:
+>  		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
+>  				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
+>  				     AA_MAY_META_WRITE | AA_MAY_DELETE,
+> @@ -339,7 +346,18 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
+>  		if (!error)
+>  			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
+>  					     0, MAY_WRITE | AA_MAY_META_WRITE |
+> -					     AA_MAY_CREATE, &cond);
+> +					     AA_MAY_CREATE, &new_cond);
+This isn't new_cond because its the permission to move old_inode to new_path
 
-The check should have been added in commit 59fa62451 (futex: Handle
-futex_pi OWNER_DIED take over correctly) already, but I did not see
-the above issue caused by user space manipulation back then.
+> +		if (!error && (flags & RENAME_EXCHANGE)) {
+> +			struct path tmp_path = new_path;
+> +			struct path_cond tmp_cond = new_cond;
+> +
+> +			new_path = old_path;
+> +			old_path = tmp_path;
+> +			new_cond = cond;
+> +			cond = tmp_cond;
+> +			flags = 0;
+> +			goto retry;
+> +		}
+>  
+>  	}
+>  	return error;
+> 
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.097349971@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
+>From c07677ce007bbb5689b82bce0fab15a159f59874 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 12 May 2014 21:54:05 +0900
+Subject: [PATCH] AppArmor: Handle the rename flags.
+
+For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
+reversed arguments" and "distinguish condition of source and target".
+Future patches will stop re-calculating pathnames.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- kernel/futex.c | 47 ++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 34 insertions(+), 13 deletions(-)
+ security/apparmor/lsm.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 5f58927..7c68225 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -745,7 +745,8 @@ void exit_pi_state_list(struct task_struct *curr)
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index c0b4366..d7d92ad 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -332,6 +332,7 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
+ 					  old_dentry->d_inode->i_mode
+ 		};
  
- static int
- lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
--		union futex_key *key, struct futex_pi_state **ps)
-+		union futex_key *key, struct futex_pi_state **ps,
-+		struct task_struct *task)
- {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
-@@ -786,6 +787,16 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 					return -EINVAL;
- 			}
++retry:
+ 		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
+ 				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
+ 				     AA_MAY_META_WRITE | AA_MAY_DELETE,
+@@ -340,6 +341,16 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
+ 			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
+ 					     0, MAY_WRITE | AA_MAY_META_WRITE |
+ 					     AA_MAY_CREATE, &cond);
++		if (!error && (flags & RENAME_EXCHANGE)) {
++			struct path tmp_path = new_path;
++			new_path = old_path;
++			old_path = tmp_path;
++			/* Cross rename requires both inodes to exist. */
++			cond.uid = new_dentry->d_inode->i_uid;
++			cond.mode = new_dentry->d_inode->i_mode;
++			flags = 0;
++			goto retry;
++		}
  
-+			/*
-+			 * Protect against a corrupted uval. If uval
-+			 * is 0x80000000 then pid is 0 and the waiter
-+			 * bit is set. So the deadlock check in the
-+			 * calling code has failed and we did not fall
-+			 * into the check above due to !pid.
-+			 */
-+			if (task && pi_state->owner == task)
-+				return -EDEADLK;
-+
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
- 
-@@ -935,7 +946,7 @@ retry:
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
--	ret = lookup_pi_state(uval, hb, key, ps);
-+	ret = lookup_pi_state(uval, hb, key, ps, task);
- 
- 	if (unlikely(ret)) {
- 		switch (ret) {
-@@ -1347,7 +1358,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
-  *
-  * Return:
-  *  0 - failed to acquire the lock atomically;
-- *  1 - acquired the lock;
-+ * >0 - acquired the lock, return value is vpid of the top_waiter
-  * <0 - error
-  */
- static int futex_proxy_trylock_atomic(u32 __user *pifutex,
-@@ -1358,7 +1369,7 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
- {
- 	struct futex_q *top_waiter = NULL;
- 	u32 curval;
--	int ret;
-+	int ret, vpid;
- 
- 	if (get_futex_value_locked(&curval, pifutex))
- 		return -EFAULT;
-@@ -1386,11 +1397,13 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
- 	 * the contended case or if set_waiters is 1.  The pi_state is returned
- 	 * in ps in contended cases.
- 	 */
-+	vpid = task_pid_vnr(top_waiter->task);
- 	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
- 				   set_waiters);
--	if (ret == 1)
-+	if (ret == 1) {
- 		requeue_pi_wake_futex(top_waiter, key2, hb2);
--
-+		return vpid;
-+	}
- 	return ret;
- }
- 
-@@ -1421,7 +1434,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_hash_bucket *hb1, *hb2;
- 	struct futex_q *this, *next;
--	u32 curval2;
- 
- 	if (requeue_pi) {
- 		/*
-@@ -1509,16 +1521,25 @@ retry_private:
- 		 * At this point the top_waiter has either taken uaddr2 or is
- 		 * waiting on it.  If the former, then the pi_state will not
- 		 * exist yet, look it up one more time to ensure we have a
--		 * reference to it.
-+		 * reference to it. If the lock was taken, ret contains the
-+		 * vpid of the top waiter task.
- 		 */
--		if (ret == 1) {
-+		if (ret > 0) {
- 			WARN_ON(pi_state);
- 			drop_count++;
- 			task_count++;
--			ret = get_futex_value_locked(&curval2, uaddr2);
--			if (!ret)
--				ret = lookup_pi_state(curval2, hb2, &key2,
--						      &pi_state);
-+			/*
-+			 * If we acquired the lock, then the user
-+			 * space value of uaddr2 should be vpid. It
-+			 * cannot be changed by the top waiter as it
-+			 * is blocked on hb2 lock if it tries to do
-+			 * so. If something fiddled with it behind our
-+			 * back the pi state lookup might unearth
-+			 * it. So we rather use the known value than
-+			 * rereading and handing potential crap to
-+			 * lookup_pi_state.
-+			 */
-+			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
- 		}
- 
- 		switch (ret) {
+ 	}
+ 	return error;
+-- 
+2.0.0.rc0
+
