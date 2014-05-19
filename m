@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661AbaESQxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:53:47 -0400
-Received: from mout.gmx.net ([212.227.17.20]:53370 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634AbaESQxp convert rfc822-to-8bit (ORCPT
+	id S964796AbaESQxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:53:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49867 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034AbaESQxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:53:45 -0400
-Message-ID: <1400518422.4698.8.camel@schoellingm.dzne.de>
-Subject: Re: [PATCH 1/3] net: vxge: Use time_is_before_jiffies() for time
- comparison
-From: Manuel Schoelling <manuel.schoelling@gmx.de>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Mon, 19 May 2014 18:53:42 +0200
-In-Reply-To: <1400518056-12089-1-git-send-email-manuel.schoelling@gmx.de>
-References: <1400518056-12089-1-git-send-email-manuel.schoelling@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:ZKQBpNAgztKb6BIWYCFM5+161Dnarp24/+zR11wck/tqsweYueN
- UIStLHllyn4oDH+w92lx9oi4g1S8fEFpDS7ehE02rDi8EkYMYIPBnhX5FIrj+ZHCjdiC1rd
- FpqT5vVt2tJZ8QjtrofxbdRM5jiRoTXg1YdzWf479OL3W3m2OMq9s6blFmfNuQNTOi7kEfU
- v4o+MrW4SsHabSUHKxgDg==
+	Mon, 19 May 2014 12:53:52 -0400
+Message-ID: <537A36F9.40004@ti.com>
+Date: Mon, 19 May 2014 19:53:13 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>, <joelf@ti.com>, <arnd@arndb.de>
+CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v3 00/13]  ARM/DT: edma: IP configuration from hardware
+ and cleanups
+References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <537A01F2.2090107@ti.com>
+In-Reply-To: <537A01F2.2090107@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, contrary to the subject of this mail, this is a single file
-patch.
-Patches 2-3 do not exist.
-
-On Mo, 2014-05-19 at 18:47 +0200, Manuel Schölling wrote:
-> To be future-proof and for better readability the time comparisons are modified
-> to use time_is_before_jiffies() instead of plain, error-prone math.
+On 05/19/2014 04:06 PM, Sekhar Nori wrote:
+> On Friday 16 May 2014 05:47 PM, Peter Ujfalusi wrote:
+>> Hi,
+>>
+>> Changes since v2:
+>> - Comments from Sekhar and Arnd has been addressed best as I could.
+>> - Use the CCCFG information in all cases instead of pdata provided information
+>> - To achieve this I needed to do a bit more cleanup in this series
+>> - In the documentation patch, retrain the old properties for reference
+>> - Cleanups in the old davinci board files and removing edma_soc_info members
+>>
+>> Changes sicne v1:
+>> - added missing patch to remove the memset from edma_of_parse_dt()
+>>
+>> We are requesting redundant information via DT for the driver since the very same
+>> data is available in the HW: by reading and decoding the content of CCCFG
+>> register we can get:
+>> Number of channels: NUM_DMACH
+>> Number of regions: NUM_REGN
+>> Number of slots (PaRAM sets): NUM_PAENTRY
+>> Number of TC/EQ: NUM_EVQUE
+>>
+>> So these does not need to be provided by the DT binding.
+>>
+>> The driver will no longer look for these properties from DT and they can be
+>> removed from the binding documentation and from the dtsi files as well.
+>> The change will not introduce regression when new kernel is booted using older
+>> DTB (since we just ignore the mentioned properties).
 > 
-> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
-> ---
->  drivers/net/ethernet/neterion/vxge/vxge-main.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> Applied all patches and pushed to branch v3.16/edma of:
 > 
-> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> index d107bcb..79f42db 100644
-> --- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> +++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-> @@ -2122,7 +2122,7 @@ static int vxge_open_vpaths(struct vxgedev *vdev)
->  static void adaptive_coalesce_tx_interrupts(struct vxge_fifo *fifo)
->  {
->  	fifo->interrupt_count++;
-> -	if (jiffies > fifo->jiffies + HZ / 100) {
-> +	if (time_is_before_jiffies(fifo->jiffies + HZ / 100)) {
->  		struct __vxge_hw_fifo *hw_fifo = fifo->handle;
->  
->  		fifo->jiffies = jiffies;
-> @@ -2150,7 +2150,7 @@ static void adaptive_coalesce_tx_interrupts(struct vxge_fifo *fifo)
->  static void adaptive_coalesce_rx_interrupts(struct vxge_ring *ring)
->  {
->  	ring->interrupt_count++;
-> -	if (jiffies > ring->jiffies + HZ / 100) {
-> +	if (time_is_before_jiffies(ring->jiffies + HZ / 100)) {
->  		struct __vxge_hw_ring *hw_ring = ring->handle;
->  
->  		ring->jiffies = jiffies;
+> git://git.kernel.org/pub/scm/linux/kernel/git/nsekhar/linux-davinci.git
+> 
+> Since the patches did not apply cleanly, please verify. I tested on
+> DA850 EVM using MMC/SD as EDMA user.
+
+The patches in this series looks OK in your branch.
+However I can not find the following commits in there, which I have in linux-next:
+c689a7b79c28 Merge remote-tracking branch 'slave-dma/next'
+cdae05a0f0f7 dmaengine: edma: Make reading the position of active channels work
+cf7eb979116c ARM: common: edma: Fix xbar mapping
+232b223d8281 dmaengine: edma: Set DMA_CYCLIC capability flag
+7cf2af90cd51 arm: common: edma: Save the number of event queues/TCs
+
+They might come via different route...
+
+> 
+> I will wait to get acks from DT maintainers before sending to ARM-SoC.
+> 
+> Thanks,
+> Sekhar
+> 
 
 
+Thanks,
+P�ter
