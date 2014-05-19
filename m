@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaESNdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:33:05 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:37941 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaESNdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:33:00 -0400
-Date: Mon, 19 May 2014 14:32:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 3/7] mfd: add support for sun6i PRCM
- (Power/Reset/Clock Management) unit
-Message-ID: <20140519133253.GJ4978@lee--X1>
-References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
- <1399633911-7094-4-git-send-email-boris.brezillon@free-electrons.com>
- <20140509135251.GY5767@lee--X1>
- <20140515151756.GX29258@lukather>
- <20140519092159.GE4978@lee--X1>
- <20140519092725.GE29466@lukather>
+	id S1754558AbaESNfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:35:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420AbaESNfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:35:02 -0400
+Date: Mon, 19 May 2014 15:34:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
+Message-ID: <20140519133414.GD20810@krava.brq.redhat.com>
+References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
+ <1399999697-65875-7-git-send-email-dzickus@redhat.com>
+ <20140516114757.GD19475@krava.brq.redhat.com>
+ <20140516133058.GN50500@redhat.com>
+ <20140516140551.GF19475@krava.brq.redhat.com>
+ <20140516143002.GU50500@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140519092725.GE29466@lukather>
+In-Reply-To: <20140516143002.GU50500@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > > > > The PRCM (Power/Reset/Clock Management) block exposes several subdevices
-> > > > > in different subsystems (clk, reset ...)
+On Fri, May 16, 2014 at 10:30:02AM -0400, Don Zickus wrote:
+> On Fri, May 16, 2014 at 04:05:51PM +0200, Jiri Olsa wrote:
+> > On Fri, May 16, 2014 at 09:30:58AM -0400, Don Zickus wrote:
+> > > On Fri, May 16, 2014 at 01:47:57PM +0200, Jiri Olsa wrote:
+> > > > On Tue, May 13, 2014 at 12:48:17PM -0400, Don Zickus wrote:
+> > > > > In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
+> > > > > particular sample instruction.  A bunch of those details relate to the data
+> > > > > address.
 > > > > > 
-> > > > > Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
-> > > > > and reset controller subdevices.
+> > > > > One interesting thing you can do with data addresses is to convert them into a unique
+> > > > > cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
+> > > > > them can reveal cache contention.
 > > > > > 
-> > > > > Other subdevices might be added later (if needed).
+> > > > > This patch creates an alogorithm based on various sample details that can help group
+> > > > > entries together into data cachelines and allows 'perf report' to sort on it.
 > > > > > 
-> > > > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > > > > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > > ---
-> > > > >  drivers/mfd/Kconfig      |   8 +++
-> > > > >  drivers/mfd/Makefile     |   1 +
-> > > > >  drivers/mfd/sun6i-prcm.c | 134 +++++++++++++++++++++++++++++++++++++++++++++++
-> > > > >  3 files changed, 143 insertions(+)
-> > > > >  create mode 100644 drivers/mfd/sun6i-prcm.c
+> > > > > The algorithm relies on having proper mmap2 support in the kernel to help determine
+> > > > > if the memory map the data address belongs to is private to a pid or globally shared.
+> > > > > 
+> > > > > The alogortithm is as follows:
+> > > > > 
+> > > > > o group cpumodes together
+> > > > > o group entries with discovered maps together
+> > > > > o sort on major, minor, inode and inode generation numbers
+> > > > > o if userspace anon, then sort on pid
+> > > > > o sort on cachelines based on data addresses
 > > > > 
-> > > > [...]
-> > > > 
-> > > > > +/*
-> > > > > + * Copyright (C) 2014 Free Electrons
-> > > > > + *
-> > > > > + * License Terms: GNU General Public License v2
-> > > > > + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > > > > + *
-> > > > > + * Allwinner PRCM (Power/Reset/Clock Management) driver
-> > > > > + *
-> > > > > + */
-> > > > > +
-> > > > > +#include <linux/mfd/core.h>
-> > > > > +#include <linux/module.h>
-> > > > > +#include <linux/of.h>
-> > > > 
-> > > > Ah, now isn't that better?
-> > > > 
-> > > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > > needs some collumn width refresh or something..? ;-)
 > > > 
-> > > How do you want to merge this? Do you want me to take it through
-> > > mach-sunxi tree, or do you want to take it in your tree?
+> > > Not sure what you mean here.
+> > > 
+> > > > 
+> > > > # Overhead  Data Cacheline         
+> > > > # ........  .......................
 > > 
-> > If Boris can tell me what needs to go in with this patch (or if it
-> > can go in on its own), I will create a(n immutable) branch from which
-> > you can pull into your tree.
+> > header not being wide enough to cover the longest data
 > 
-> We don't have any runtime or compile time dependency on this, so you
-> can merge it through your tree. Unless something change, I don't have
-> to pull anything in my tree.
+> Ah. Ok.  So I am not sure the right way to fix that.  As the current
+> header seems to be hardcoded with a bunch of spaces.  Is there a trick to
+> dynamically space it correctly based on the data provided?
 
-When you say 'this', do you mean this patch, or this set?  If I can
-just apply this patch, that will be ideal?
+it should be enough to update function:
+  void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+with HISTC_MEM_DCACHELINE column update code, same as the rest
+
+jirka
