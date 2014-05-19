@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaESGaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:30:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59679 "EHLO
+	id S1753104AbaESGbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:31:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59467 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaESG0K (ORCPT
+	with ESMTP id S1751325AbaESG0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:26:10 -0400
+	Mon, 19 May 2014 02:26:06 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
-Subject: [PATCH 16/20] perf hists: Reset width of output fields with header length
-Date: Mon, 19 May 2014 15:25:58 +0900
-Message-Id: <1400480762-22852-17-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/20] perf tools: Support event grouping in hpp ->sort()
+Date: Mon, 19 May 2014 15:25:46 +0900
+Message-Id: <1400480762-22852-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
 References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
@@ -26,119 +26,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some fields missed to set default column length so it broke align in
---stdio output.  Add perf_hpp__reset_width() to set it to a sane
-default value.
+Move logic of hist_entry__sort_on_period to __hpp__sort() in order to
+support event group report.
 
-Note that this change will ignore -w/--column-widths option for now.
-
-Before:
-  $ perf report -F cpu,comm,overhead --stdio
-  ...
-  # CPU          Command  Overhead
-  #   ...............  ........
-  #
-    0          firefox     2.65%
-    0      kworker/0:0     1.45%
-    0          swapper     5.52%
-    0         synergys     0.92%
-    1          firefox     4.54%
-
-After:
-  # CPU          Command  Overhead
-  # ...  ...............  ........
-  #
-      0          firefox     2.65%
-      0      kworker/0:0     1.45%
-      0          swapper     5.52%
-      0         synergys     0.92%
-      1          firefox     4.54%
-
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/stdio/hist.c | 21 +++------------------
- tools/perf/util/hist.h     |  1 +
- tools/perf/util/sort.c     | 12 ++++++++++++
- 3 files changed, 16 insertions(+), 18 deletions(-)
+ tools/perf/ui/hist.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 58 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index e3fdf4e869fc..cfcd3f6fd1c5 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -369,12 +369,10 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		      int max_cols, float min_pcnt, FILE *fp)
- {
- 	struct perf_hpp_fmt *fmt;
--	struct sort_entry *se;
- 	struct rb_node *nd;
- 	size_t ret = 0;
- 	unsigned int width;
- 	const char *sep = symbol_conf.field_sep;
--	const char *col_width = symbol_conf.col_width_list_str;
- 	int nr_rows = 0;
- 	char bf[96];
- 	struct perf_hpp dummy_hpp = {
-@@ -387,22 +385,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 
- 	init_rem_hits();
- 
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		if (se->elide)
--			continue;
--		width = strlen(se->se_header);
--		if (symbol_conf.col_width_list_str) {
--			if (col_width) {
--				hists__set_col_len(hists, se->se_width_idx,
--						   atoi(col_width));
--				col_width = strchr(col_width, ',');
--				if (col_width)
--					++col_width;
--			}
--		}
--		if (!hists__new_col_len(hists, se->se_width_idx, width))
--			width = hists__col_len(hists, se->se_width_idx);
--	}
-+
-+	perf_hpp__for_each_format(fmt)
-+		perf_hpp__reset_width(fmt, hists);
- 
- 	if (!show_header)
- 		goto print_entries;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index f67feb432a44..034db761630e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -202,6 +202,7 @@ void perf_hpp__append_sort_keys(void);
- bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format);
- bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b);
- bool perf_hpp__should_skip(struct perf_hpp_fmt *format);
-+void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 0fe7cbe47ea3..9bee7288465f 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1089,6 +1089,18 @@ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b)
- 	return hse_a->se == hse_b->se;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index a6eea666b443..0299385284fd 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -116,6 +116,62 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 	return ret;
  }
  
-+void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
++static int field_cmp(u64 field_a, u64 field_b)
 +{
-+	struct hpp_sort_entry *hse;
-+
-+	if (!perf_hpp__is_sort_entry(fmt))
-+		return;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+	hists__new_col_len(hists, hse->se->se_width_idx,
-+			   strlen(hse->se->se_header));
++	if (field_a > field_b)
++		return 1;
++	if (field_a < field_b)
++		return -1;
++	return 0;
 +}
 +
- static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 			      struct perf_evsel *evsel)
- {
++static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
++		       hpp_field_fn get_field)
++{
++	s64 ret;
++	int i, nr_members;
++	struct perf_evsel *evsel;
++	struct hist_entry *pair;
++	u64 *fields_a, *fields_b;
++
++	ret = field_cmp(get_field(a), get_field(b));
++	if (ret || !symbol_conf.event_group)
++		return ret;
++
++	evsel = hists_to_evsel(a->hists);
++	if (!perf_evsel__is_group_event(evsel))
++		return ret;
++
++	nr_members = evsel->nr_members;
++	fields_a = calloc(sizeof(*fields_a), nr_members);
++	fields_b = calloc(sizeof(*fields_b), nr_members);
++
++	if (!fields_a || !fields_b)
++		goto out;
++
++	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		fields_a[perf_evsel__group_idx(evsel)] = get_field(pair);
++	}
++
++	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		fields_b[perf_evsel__group_idx(evsel)] = get_field(pair);
++	}
++
++	for (i = 1; i < nr_members; i++) {
++		ret = field_cmp(fields_a[i], fields_b[i]);
++		if (ret)
++			break;
++	}
++
++out:
++	free(fields_a);
++	free(fields_b);
++
++	return ret;
++}
++
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+ 			       struct perf_hpp *hpp,			\
+@@ -195,9 +251,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ #define __HPP_SORT_FN(_type, _field)						\
+ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ {										\
+-	s64 __a = he_get_##_field(a);						\
+-	s64 __b = he_get_##_field(b);						\
+-	return __a - __b;							\
++	return __hpp__sort(a, b, he_get_##_field);				\
+ }
+ 
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+@@ -217,9 +271,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ #define __HPP_SORT_RAW_FN(_type, _field)					\
+ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ {										\
+-	s64 __a = he_get_raw_##_field(a);					\
+-	s64 __b = he_get_raw_##_field(b);					\
+-	return __a - __b;							\
++	return __hpp__sort(a, b, he_get_raw_##_field);				\
+ }
+ 
+ 
 -- 
 1.9.2
 
