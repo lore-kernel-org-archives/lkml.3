@@ -1,61 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaESSUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:20:49 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60803 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaESSUq (ORCPT
+	id S932310AbaESS2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:28:04 -0400
+Received: from relay.parallels.com ([195.214.232.42]:50425 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaESS14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:20:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Cc: Chung-Lin Tang <cltang@codesourcery.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>
-Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
-Date: Mon, 19 May 2014 20:20:30 +0200
-Message-ID: <9148888.HqBb0YIpx4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.64.1405191806230.25418@digraph.polyomino.org.uk>
-References: <1399971456-3941-1-git-send-email-lftan@altera.com> <5228220.XfC7baN05k@wuerfel> <Pine.LNX.4.64.1405191806230.25418@digraph.polyomino.org.uk>
+	Mon, 19 May 2014 14:27:56 -0400
+Message-ID: <537A4D27.1050909@parallels.com>
+Date: Mon, 19 May 2014 22:27:51 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+IlRRMJ38iXTE/RuNlwF43eqANpu/RtMgvTvynp1mZz
- BeuRld9SSbPIE60WRg07geCtVrNbD7RPbuHJgqRYCXJmsucaS0
- I2opDjguNYLqS9GEMs5v+vHfWRxfEhlzTrR2kj2th7ejVnKgfx
- Dobr7bcrxmjX1RdIQQCXV8+q9kP8bKvQi9IGLRSbrKg3X2dXvg
- /1JxaZsx2eZK/2qY8yh3j27hAZbO6NIX9khm3pljcYzTuHnRuU
- prcZt77sxlgV45d4wLuznbINFvoYXKbCDiIewiSqiz0vUOiv6C
- /us/Ql55f87SOjAhd1IzrL8QpMGwrxN3tl0yP4RG9gd2uHuJvy
- MS4HAuXWGshcnO2iAFc4=
+To: Christoph Lameter <cl@linux.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg offline
+References: <cover.1399982635.git.vdavydov@parallels.com> <6eafe1e95d9a934228e9af785f5b5de38955aa6a.1399982635.git.vdavydov@parallels.com> <alpine.DEB.2.10.1405141119320.16512@gentwo.org> <20140515071650.GB32113@esperanza> <alpine.DEB.2.10.1405151015330.24665@gentwo.org> <20140516132234.GF32113@esperanza> <alpine.DEB.2.10.1405160957100.32249@gentwo.org> <20140519152437.GB25889@esperanza> <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
+In-Reply-To: <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.24.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 May 2014 18:12:18 Joseph S. Myers wrote:
-> On Mon, 19 May 2014, Arnd Bergmann wrote:
-> 
-> > A related question would be how you plan to support future CPU architectures
-> > that never had the 32-bit time_t in the kernel ABI. Would you also want
-> > to provide both 32 and 64 bit time_t to user space on those?
-> 
-> I'd expect those just to have 64-bit time_t in userspace (like x32) - 
-> choosing a different type for time_t from the start is a lot simpler than 
-> setting up a second set of interfaces with associated symbol versioning 
-> for an existing architecture.  This whole discussion started with the 
-> question of whether Nios II should be such an architecture....
+19.05.2014 20:03, Christoph Lameter:
+> On Mon, 19 May 2014, Vladimir Davydov wrote:
+>
+>>> I doubt that. The accounting occurs when a new cpu slab page is allocated.
+>>> But the individual allocations in the fastpath are not accounted to a
+>>> specific group. Thus allocation in a slab page can belong to various
+>>> cgroups.
+>>
+>> On each kmalloc, we pick the cache that belongs to the current memcg,
+>> and allocate objects from that cache (see memcg_kmem_get_cache()). And
+>> all slab pages allocated for a per memcg cache are accounted to the
+>> memcg the cache belongs to (see memcg_charge_slab). So currently, each
+>> kmem cache, i.e. each slab of it, can only have objects of one cgroup,
+>> namely its owner.
+>
+> Ok that works for kmalloc. What about dentry/inodes and so on?
 
-Ok
- 
-> (Other variants may arise as well, e.g. architectures with existing kernel 
-> support that only get glibc support later.)
+The same. Actually, by kmalloc I meant kmem_cache_alloc, or
+slab_alloc_node, to be more exact.
 
-Good point.
+>> OK, it seems we have no choice but keeping dead caches left after memcg
+>> offline until they have active slabs. How can we get rid of them then?
+>
+> Then they are moved to a list and therefore you can move them to yours I
+> think.
+>
+>> Simply counting slabs on cache and destroying cache when the count goes
+>> to 0 isn't enough, because slub may keep some free slabs by default (if
+>> they are frozen e.g.) Reaping them periodically doesn't look nice.
+>
+> But those are only limited to one slab per cpu ( plus eventual cpu partial
+> ones but you can switch that feature off).
 
-	Arnd
+AFAIU slub can keep free slabs in:
+
+1) One per cpu slab. This is the easiest thing to handle - we only need
+to shrink the cache, because this slab can only be added on allocation,
+not on free.
+
+2) Per node partial slab lists. Free slabs can be added there on frees,
+but only if min_partial > 0, so setting min_partial = 0 would solve
+that, just as you pointed below.
+
+3) Per cpu partial slabs. We can disable this feature for dead caches by
+adding appropriate check to kmem_cache_has_cpu_partial.
+
+So far, everything looks very simple - it seems we don't have to modify
+__slab_free at all if we follow the instruction above.
+
+However, there is one thing regarding preemptable kernels. The problem
+is after forbidding the cache store free slabs in per-cpu/node partial
+lists by setting min_partial=0 and kmem_cache_has_cpu_partial=false
+(i.e. marking the cache as dead), we have to make sure that all frees
+that saw the cache as alive are over, otherwise they can occasionally
+add a free slab to a per-cpu/node partial list *after* the cache was
+marked dead. For instance,
+
+CPU0                            CPU1
+----                            ----
+memcg offline:                  __slab_free:
+                                   // let the slab we're freeing the obj
+                                   // to is full, so we are considering
+                                   // freezing it;
+                                   // since kmem_cache_has_cpu_partial
+                                   // returns true, we'll try to freeze
+                                   // it;
+                                   new.frozen=1
+
+                                   // but before proceeding to cmpxchg
+                                   // we get preempted
+   mark cache s dead:
+     s->min_partial=0
+     make kmem_cache_has_cpu_partial return false
+
+   kmem_cache_shrink(s) // this removes all empty slabs from
+                        // per cpu/node partial lists
+
+                                   // when this thread continues to
+                                   // __slab_free, the cache is dead
+                                   // and no slabs must be added to
+                                   // per-cpu partial list, but the
+                                   // following cmpxchg may succeed
+                                   // in freezing the slab
+                                   cmpxchg_double_slab(s, page,
+                                       prior, counters,
+                                       object, new.counters)
+
+As a result, we'll eventually end up with a free slab on a per-cpu
+partial list, so that the cache refcounter will never drop to zero and
+the cache leaks.
+
+This is very unlikely, but still possible. To avoid that, we should
+assure all __slab_free's like that running on CPU1 are over before
+proceeding to kmem_cache_shrink on memcg offline. Currently, it is
+impossible to achieve that on fully preemptable kernels w/o modifying
+__slab_free, AFAIU. That's what all that trickery in __slab_free about.
+
+Makes sense or am I missing something?
+
+Thanks.
