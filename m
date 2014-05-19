@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaESWGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:06:16 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:38375 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaESWGP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:06:15 -0400
+	id S1751553AbaESWGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:06:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15405 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347AbaESWGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 18:06:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,869,1392192000"; 
+   d="scan'208";a="541719663"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Chen Yucong <slaoub@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: RE: [PATCH] x86/mce: Clear a useless global variable in mce.c
+Thread-Topic: [PATCH] x86/mce: Clear a useless global variable in mce.c
+Thread-Index: AQHPcciTwzLgOJZKAUyQ4CRuQRCpq5tIMhJggAB8UAD//8p3cA==
+Date: Mon, 19 May 2014 22:06:38 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3280EA8A@ORSMSX114.amr.corp.intel.com>
+References: <1400328343-6483-1-git-send-email-slaoub@gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3280E51C@ORSMSX114.amr.corp.intel.com>
+ <20140519181524.GC6311@pd.tnic>
+In-Reply-To: <20140519181524.GC6311@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <537A445E.5030604@intel.com>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
- <20140519130114.GA3140@dhcp22.suse.cz> <20140519143540.BE9F6E009B@blue.fi.intel.com>
- <20140519143837.GA5228@infradead.org> <20140519150238.67898E009B@blue.fi.intel.com>
- <20140519151104.GA16736@infradead.org> <20140519151758.A2162E009B@blue.fi.intel.com>
- <CAMSv6X1-17HMTO=b6QOZA0Xm1combFxV4wuX1gPMUqC02EKrJA@mail.gmail.com>
- <20140519155336.86E93E009B@blue.fi.intel.com> <CAMSv6X2EmhgVou03oLTAhpGbNv712mbNWCpL2PXWCXpW9M2nCQ@mail.gmail.com>
- <537A445E.5030604@intel.com>
-From: Armin Rigo <arigo@tunes.org>
-Date: Tue, 20 May 2014 00:05:34 +0200
-X-Google-Sender-Auth: lHWKupfxHMfW19FtqCqXighlE1s
-Message-ID: <CAMSv6X37NL0JHQgtbhqdNXM_-bCcxK42YQDHqA9m=uMj3SAZxQ@mail.gmail.com>
-Subject: Re: remap_file_pages() use
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4JM6khw007365
 
-Hi Dave,
+> I mean, does the machine even recover after some of the cores have gone
+> into the weeds in #MC? Provided, of course, we don't have a no-way-out
+> MCE and we can resume execution.
 
-On 19 May 2014 19:50, Dave Hansen <dave.hansen@intel.com> wrote:
-> We keep the current count as mm->map_count in the kernel, and the limit
-> is available because it's a sysctl.  It wouldn't be hard to dump
-> mm->map_count out in a /proc file somewhere if it would be useful to
-> you.  Would that work, or is there some other interface that would be
-> more convenient?
+I doubt there is any hope for recovery if not all processors show up ... things
+have to be already very broken for the machine check to be blocked.
 
-We can keep an in-process estimate of this value anyway.  The sysctl
-to get vm.max_map_count is all we need.  That is, unless the limit is
-moved to be per-user instead of per-process, as I think was discussed
-here --- which would complicate further our job :-/
+> Or is the box so hammered that there's no turning back?
 
+I think so.
 
-A bientÃ´t,
+> Concerning mce_entry, I don't care all that much - if it is really
+> useful, you might slap a comment saying so and keep it, for all I care.
 
-Armin.
+I'm OK with it going - but as I said before I'd like to see mce_callin printed
+(so I can tell if just one cpu showed up, just the cpus from one socket, or
+some other significant number).
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
