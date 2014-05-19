@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaESMtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:49:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58960 "EHLO
+	id S1754482AbaESMuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:50:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58984 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790AbaESMto (ORCPT
+	with ESMTP id S1754457AbaESMuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:49:44 -0400
-Date: Mon, 19 May 2014 05:48:42 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-39af6b1678afa5880dda7e375cf3f9d395087f6d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        fengguang.wu@intel.com
-In-Reply-To: <1396861448-10097-1-git-send-email-jolsa@redhat.com>
-References: <1396861448-10097-1-git-send-email-jolsa@redhat.com>
+	Mon, 19 May 2014 08:50:11 -0400
+Date: Mon, 19 May 2014 05:48:54 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-b69cf53640da2b86439596118cfa95233154ee76@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, efault@gmx.de,
+        peterz@infradead.org, alexander.shishkin@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, ak@linux.intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, efault@gmx.de,
+        alexander.shishkin@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        fweisbec@gmail.com, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <20140507123526.GD13658@twins.programming.kicks-ass.net>
+References: <20140507123526.GD13658@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Prevent false warning in perf_swevent_add
-Git-Commit-ID: 39af6b1678afa5880dda7e375cf3f9d395087f6d
+Subject: [tip:perf/urgent] perf: Fix a race between ring_buffer_detach()
+  and ring_buffer_attach()
+Git-Commit-ID: b69cf53640da2b86439596118cfa95233154ee76
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,125 +38,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  39af6b1678afa5880dda7e375cf3f9d395087f6d
-Gitweb:     http://git.kernel.org/tip/39af6b1678afa5880dda7e375cf3f9d395087f6d
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 7 Apr 2014 11:04:08 +0200
+Commit-ID:  b69cf53640da2b86439596118cfa95233154ee76
+Gitweb:     http://git.kernel.org/tip/b69cf53640da2b86439596118cfa95233154ee76
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 14 Mar 2014 10:50:33 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 19 May 2014 21:44:55 +0900
+CommitDate: Mon, 19 May 2014 21:44:56 +0900
 
-perf: Prevent false warning in perf_swevent_add
+perf: Fix a race between ring_buffer_detach() and ring_buffer_attach()
 
-The perf cpu offline callback takes down all cpu context
-events and releases swhash->swevent_hlist.
+Alexander noticed that we use RCU iteration on rb->event_list but do
+not use list_{add,del}_rcu() to add,remove entries to that list, nor
+do we observe proper grace periods when re-using the entries.
 
-This could race with task context software event being just
-scheduled on this cpu via perf_swevent_add while cpu hotplug
-code already cleaned up event's data.
+Merge ring_buffer_detach() into ring_buffer_attach() such that
+attaching to the NULL buffer is detaching.
 
-The race happens in the gap between the cpu notifier code
-and the cpu being actually taken down. Note that only cpu
-ctx events are terminated in the perf cpu hotplug code.
+Furthermore, ensure that between any 'detach' and 'attach' of the same
+event we observe the required grace period, but only when strictly
+required. In effect this means that only ioctl(.request =
+PERF_EVENT_IOC_SET_OUTPUT) will wait for a grace period, while the
+normal initial attach and final detach will not be delayed.
 
-It's easily reproduced with:
-  $ perf record -e faults perf bench sched pipe
+This patch should, I think, do the right thing under all
+circumstances, the 'normal' cases all should never see the extra grace
+period, but the two cases:
 
-while putting one of the cpus offline:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
+ 1) PERF_EVENT_IOC_SET_OUTPUT on an event which already has a
+    ring_buffer set, will now observe the required grace period between
+    removing itself from the old and attaching itself to the new buffer.
 
-Console emits following warning:
-  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
-  Modules linked in:
-  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
-  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
-   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
-   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
-   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
-  Call Trace:
-   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
-   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
-   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
-   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
-   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
-   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
-   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
-   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
-   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
-   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
-   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
-   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
-   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
-   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
-   [<ffffffff816707f0>] retint_kernel+0x20/0x30
-   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
-   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
-   [<ffffffff81679321>] ? sysret_check+0x5/0x56
+    This case is 'simple' in that both buffers are present in
+    perf_event_set_output() one could think an unconditional
+    synchronize_rcu() would be sufficient; however...
 
-Fixing this by tracking the cpu hotplug state and displaying
-the WARN only if current cpu is initialized properly.
+ 2) an event that has a buffer attached, the buffer is destroyed
+    (munmap) and then the event is attached to a new/different buffer
+    using PERF_EVENT_IOC_SET_OUTPUT.
 
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+    This case is more complex because the buffer destruction does:
+      ring_buffer_attach(.rb = NULL)
+    followed by the ioctl() doing:
+      ring_buffer_attach(.rb = foo);
+
+    and we still need to observe the grace period between these two
+    calls due to us reusing the event->rb_entry list_head.
+
+In order to make 2 happen we use Paul's latest cond_synchronize_rcu()
+call.
+
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: stable@vger.kernel.org
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Reported-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/20140507123526.GD13658@twins.programming.kicks-ass.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/events/core.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ include/linux/perf_event.h |   2 +
+ kernel/events/core.c       | 109 ++++++++++++++++++++-------------------------
+ 2 files changed, 51 insertions(+), 60 deletions(-)
 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3356abc..3ef6ea1 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -402,6 +402,8 @@ struct perf_event {
+ 
+ 	struct ring_buffer		*rb;
+ 	struct list_head		rb_entry;
++	unsigned long			rcu_batches;
++	int				rcu_pending;
+ 
+ 	/* poll related */
+ 	wait_queue_head_t		waitq;
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1d1ec64..feb1329 100644
+index feb1329..440eefc 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -5419,6 +5419,9 @@ struct swevent_htable {
+@@ -3192,7 +3192,8 @@ static void free_event_rcu(struct rcu_head *head)
+ }
  
- 	/* Recursion avoidance in each contexts */
- 	int				recursion[PERF_NR_CONTEXTS];
-+
-+	/* Keeps track of cpu being initialized/exited */
-+	bool				online;
- };
+ static void ring_buffer_put(struct ring_buffer *rb);
+-static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
++static void ring_buffer_attach(struct perf_event *event,
++			       struct ring_buffer *rb);
  
- static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-@@ -5665,8 +5668,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
- 	hwc->state = !(flags & PERF_EF_START);
+ static void unaccount_event_cpu(struct perf_event *event, int cpu)
+ {
+@@ -3252,8 +3253,6 @@ static void free_event(struct perf_event *event)
+ 	unaccount_event(event);
  
- 	head = find_swevent_head(swhash, event);
--	if (WARN_ON_ONCE(!head))
-+	if (!head) {
+ 	if (event->rb) {
+-		struct ring_buffer *rb;
+-
+ 		/*
+ 		 * Can happen when we close an event with re-directed output.
+ 		 *
+@@ -3261,12 +3260,7 @@ static void free_event(struct perf_event *event)
+ 		 * over us; possibly making our ring_buffer_put() the last.
+ 		 */
+ 		mutex_lock(&event->mmap_mutex);
+-		rb = event->rb;
+-		if (rb) {
+-			rcu_assign_pointer(event->rb, NULL);
+-			ring_buffer_detach(event, rb);
+-			ring_buffer_put(rb); /* could be last */
+-		}
++		ring_buffer_attach(event, NULL);
+ 		mutex_unlock(&event->mmap_mutex);
+ 	}
+ 
+@@ -3850,28 +3844,47 @@ unlock:
+ static void ring_buffer_attach(struct perf_event *event,
+ 			       struct ring_buffer *rb)
+ {
++	struct ring_buffer *old_rb = NULL;
+ 	unsigned long flags;
+ 
+-	if (!list_empty(&event->rb_entry))
+-		return;
++	if (event->rb) {
 +		/*
-+		 * We can race with cpu hotplug code. Do not
-+		 * WARN if the cpu just got unplugged.
++		 * Should be impossible, we set this when removing
++		 * event->rb_entry and wait/clear when adding event->rb_entry.
 +		 */
-+		WARN_ON_ONCE(swhash->online);
- 		return -EINVAL;
++		WARN_ON_ONCE(event->rcu_pending);
+ 
+-	spin_lock_irqsave(&rb->event_lock, flags);
+-	if (list_empty(&event->rb_entry))
+-		list_add(&event->rb_entry, &rb->event_list);
+-	spin_unlock_irqrestore(&rb->event_lock, flags);
+-}
++		old_rb = event->rb;
++		event->rcu_batches = get_state_synchronize_rcu();
++		event->rcu_pending = 1;
+ 
+-static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+-{
+-	unsigned long flags;
++		spin_lock_irqsave(&old_rb->event_lock, flags);
++		list_del_rcu(&event->rb_entry);
++		spin_unlock_irqrestore(&old_rb->event_lock, flags);
 +	}
  
- 	hlist_add_head_rcu(&event->hlist_entry, head);
+-	if (list_empty(&event->rb_entry))
+-		return;
++	if (event->rcu_pending && rb) {
++		cond_synchronize_rcu(event->rcu_batches);
++		event->rcu_pending = 0;
++	}
  
-@@ -7845,6 +7854,7 @@ static void perf_event_init_cpu(int cpu)
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = true;
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
-@@ -7902,6 +7912,7 @@ static void perf_event_exit_cpu(int cpu)
- 	perf_event_exit_cpu_context(cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = false;
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
+-	spin_lock_irqsave(&rb->event_lock, flags);
+-	list_del_init(&event->rb_entry);
+-	wake_up_all(&event->waitq);
+-	spin_unlock_irqrestore(&rb->event_lock, flags);
++	if (rb) {
++		spin_lock_irqsave(&rb->event_lock, flags);
++		list_add_rcu(&event->rb_entry, &rb->event_list);
++		spin_unlock_irqrestore(&rb->event_lock, flags);
++	}
++
++	rcu_assign_pointer(event->rb, rb);
++
++	if (old_rb) {
++		ring_buffer_put(old_rb);
++		/*
++		 * Since we detached before setting the new rb, so that we
++		 * could attach the new rb, we could have missed a wakeup.
++		 * Provide it now.
++		 */
++		wake_up_all(&event->waitq);
++	}
  }
+ 
+ static void ring_buffer_wakeup(struct perf_event *event)
+@@ -3940,7 +3953,7 @@ static void perf_mmap_close(struct vm_area_struct *vma)
+ {
+ 	struct perf_event *event = vma->vm_file->private_data;
+ 
+-	struct ring_buffer *rb = event->rb;
++	struct ring_buffer *rb = ring_buffer_get(event);
+ 	struct user_struct *mmap_user = rb->mmap_user;
+ 	int mmap_locked = rb->mmap_locked;
+ 	unsigned long size = perf_data_size(rb);
+@@ -3948,18 +3961,14 @@ static void perf_mmap_close(struct vm_area_struct *vma)
+ 	atomic_dec(&rb->mmap_count);
+ 
+ 	if (!atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex))
+-		return;
++		goto out_put;
+ 
+-	/* Detach current event from the buffer. */
+-	rcu_assign_pointer(event->rb, NULL);
+-	ring_buffer_detach(event, rb);
++	ring_buffer_attach(event, NULL);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+ 	/* If there's still other mmap()s of this buffer, we're done. */
+-	if (atomic_read(&rb->mmap_count)) {
+-		ring_buffer_put(rb); /* can't be last */
+-		return;
+-	}
++	if (atomic_read(&rb->mmap_count))
++		goto out_put;
+ 
+ 	/*
+ 	 * No other mmap()s, detach from all other events that might redirect
+@@ -3989,11 +3998,9 @@ again:
+ 		 * still restart the iteration to make sure we're not now
+ 		 * iterating the wrong list.
+ 		 */
+-		if (event->rb == rb) {
+-			rcu_assign_pointer(event->rb, NULL);
+-			ring_buffer_detach(event, rb);
+-			ring_buffer_put(rb); /* can't be last, we still have one */
+-		}
++		if (event->rb == rb)
++			ring_buffer_attach(event, NULL);
++
+ 		mutex_unlock(&event->mmap_mutex);
+ 		put_event(event);
+ 
+@@ -4018,6 +4025,7 @@ again:
+ 	vma->vm_mm->pinned_vm -= mmap_locked;
+ 	free_uid(mmap_user);
+ 
++out_put:
+ 	ring_buffer_put(rb); /* could be last */
+ }
+ 
+@@ -4135,7 +4143,6 @@ again:
+ 	vma->vm_mm->pinned_vm += extra;
+ 
+ 	ring_buffer_attach(event, rb);
+-	rcu_assign_pointer(event->rb, rb);
+ 
+ 	perf_event_init_userpage(event);
+ 	perf_event_update_userpage(event);
+@@ -6934,7 +6941,7 @@ err_size:
+ static int
+ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
+ {
+-	struct ring_buffer *rb = NULL, *old_rb = NULL;
++	struct ring_buffer *rb = NULL;
+ 	int ret = -EINVAL;
+ 
+ 	if (!output_event)
+@@ -6962,8 +6969,6 @@ set:
+ 	if (atomic_read(&event->mmap_count))
+ 		goto unlock;
+ 
+-	old_rb = event->rb;
+-
+ 	if (output_event) {
+ 		/* get the rb we want to redirect to */
+ 		rb = ring_buffer_get(output_event);
+@@ -6971,23 +6976,7 @@ set:
+ 			goto unlock;
+ 	}
+ 
+-	if (old_rb)
+-		ring_buffer_detach(event, old_rb);
+-
+-	if (rb)
+-		ring_buffer_attach(event, rb);
+-
+-	rcu_assign_pointer(event->rb, rb);
+-
+-	if (old_rb) {
+-		ring_buffer_put(old_rb);
+-		/*
+-		 * Since we detached before setting the new rb, so that we
+-		 * could attach the new rb, we could have missed a wakeup.
+-		 * Provide it now.
+-		 */
+-		wake_up_all(&event->waitq);
+-	}
++	ring_buffer_attach(event, rb);
+ 
+ 	ret = 0;
+ unlock:
