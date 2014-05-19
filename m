@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaESWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:22:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49924 "EHLO
+	id S1752062AbaESWZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:25:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49930 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaESWW6 (ORCPT
+	with ESMTP id S1750894AbaESWZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:22:58 -0400
-Date: Mon, 19 May 2014 15:22:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jake Edge <jake@lwn.net>
-Cc: Anton Saraev <antonysaraev@gmail.com>, devel@driverdev.osuosl.org,
-        jason@lakedaemon.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/06] staging: crypto: skein: rename files
-Message-ID: <20140519222248.GA9931@kroah.com>
-References: <cover.1399675444.git.antonysaraev@gmail.com>
- <abebc2187151826190d6f664acc654241b352ffa.1399675444.git.antonysaraev@gmail.com>
- <dad2a43d54d03ba2b4fae9136331df060c48154c.1399675444.git.antonysaraev@gmail.com>
- <cba3f6453b416ea04b03ad2d165f600e3e39f152.1399675444.git.antonysaraev@gmail.com>
- <b4028782c333773298763d58e14753067c6ae745.1399675444.git.antonysaraev@gmail.com>
- <2eac124c6a3815c72e91679c8cde729af712bb74.1399675445.git.antonysaraev@gmail.com>
- <a5204985750d7adf9b20752f889fbf2a2147de94.1399675445.git.antonysaraev@gmail.com>
- <20140519074510.74e622fd@chukar.edge2.net>
+	Mon, 19 May 2014 18:25:11 -0400
+Date: Mon, 19 May 2014 15:25:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Ron <ron@debian.org>, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH driver-core-linus] sysfs: make sure read buffer is zeroed
+Message-ID: <20140519222500.GA14616@kroah.com>
+References: <20140519172334.GK20439@audi.shelbyville.oz>
+ <20140519195210.GA27506@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140519074510.74e622fd@chukar.edge2.net>
+In-Reply-To: <20140519195210.GA27506@mtj.dyndns.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 07:45:10AM -0600, Jake Edge wrote:
-> On Mon, 19 May 2014 12:09:59 +0400 Anton Saraev wrote:
+On Mon, May 19, 2014 at 03:52:10PM -0400, Tejun Heo wrote:
+> 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+> switched sysfs from custom read implementation to seq_file to enable
+> later transition to kernfs.  After the change, the buffer passed to
+> ->show() is acquired through seq_get_buf(); unfortunately, this
+> introduces a subtle behavior change.  Before the commit, the buffer
+> passed to ->show() was always zero as it was allocated using
+> get_zeroed_page().  Because seq_file doesn't clear buffers on
+> allocation and neither does seq_get_buf(), after the commit, depending
+> on the behavior of ->show(), we may end up exposing uninitialized data
+> to userland thus possibly altering userland visible behavior and
+> leaking information.
 > 
-> > --- a/drivers/staging/skein/Makefile
-> > +++ b/drivers/staging/skein/Makefile
-> > @@ -4,10 +4,10 @@
-> >  subdir-ccflags-y := -I$(src)/include/
+> Fix it by explicitly clearing the buffer.
 > 
-> as part of the rearranging of files, I think you want to get rid of
-> this include directory, move the files up to the main directory and
-> include them as "skein.h" (rather than <skein.h>).
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Ron <ron@debian.org> 
+> Fixes: 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+> ---
+>  fs/sysfs/file.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> Then this line can be removed from the Makefile.
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index 28cc1acd..e9ef59b 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -47,12 +47,13 @@ static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+>  	ssize_t count;
+>  	char *buf;
+>  
+> -	/* acquire buffer and ensure that it's >= PAGE_SIZE */
+> +	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
+>  	count = seq_get_buf(sf, &buf);
+>  	if (count < PAGE_SIZE) {
+>  		seq_commit(sf, -1);
+>  		return 0;
+>  	}
+> +	memset(buf, 0, PAGE_SIZE);
+>  
+>  	/*
+>  	 * Invoke show().  Control may reach here via seq file lseek even
 
-I agree, I'll not take this last one in the series.
-
-thanks,
+Thanks, I'll go queue this up.
 
 greg k-h
