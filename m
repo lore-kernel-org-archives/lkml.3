@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080AbaESQjp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:39:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57411 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaESQjo (ORCPT
+	id S1755041AbaESQlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:41:11 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:46343 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002AbaESQlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:39:44 -0400
-Date: Mon, 19 May 2014 17:39:42 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: time to move fs/bio.c to block/ ?
-Message-ID: <20140519163942.GJ18016@ZenIV.linux.org.uk>
-References: <20140519141309.GB21570@infradead.org>
- <537A11CC.5060708@kernel.dk>
- <20140519142519.GI18016@ZenIV.linux.org.uk>
- <537A15B9.6000102@kernel.dk>
- <20140519143416.GC568@infradead.org>
+	Mon, 19 May 2014 12:41:09 -0400
+Date: Mon, 19 May 2014 17:41:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.torgue@st.com" <alexandre.torgue@st.com>
+Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+Message-ID: <20140519164104.GS4978@lee--X1>
+References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
+ <1392377036-12816-4-git-send-email-lee.jones@linaro.org>
+ <20140305075548.GG20016@e106331-lin.cambridge.arm.com>
+ <537A1354.6010408@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140519143416.GC568@infradead.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537A1354.6010408@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 07:34:16AM -0700, Christoph Hellwig wrote:
-> On Mon, May 19, 2014 at 08:31:21AM -0600, Jens Axboe wrote:
-> > > While you are at it, could you take bio-integrity.c with it?  _That_
-> > > has zero excuse being anywhere in fs/* - not even "filesystem code
-> > > uses quite a few functions from that sucker" as with bio.c.
-> > > FWIW, consider the move ACKed.
-> > 
-> > Yeah, I did include that in the move.
-> 
-> Other candidates to move to block/ might be ioprio.c and no-block.c
+> I don't seem to have the update patch series? Can you resend please?
 
-ACK on ioprio.c (BTW, looking at block...  WTF is the story with that
-pile of blk-* in there?  IOW, why blk-exec.c is better than exec.c,
-etc.?)
+Sure.
 
-As for fs/no-block.c...  IMO that's a bad idea - it makes sense only
-if we take fs/block.c there as well, and that one wants fs/internal.h.
-
-Why do we need that ->llseek = noop_llseek there, while we are at it?
-Its ->open() always fails, so how is ->llseek() going to get looked at,
-let alone called?
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
