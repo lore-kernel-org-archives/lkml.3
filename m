@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaESPeo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:34:44 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:40210 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019AbaESPen (ORCPT
+	id S1754589AbaESPju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:39:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39448 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751074AbaESPjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:34:43 -0400
+	Mon, 19 May 2014 11:39:49 -0400
+Date: Mon, 19 May 2014 16:39:15 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] [RFC] ARM: perf: allow tracing with kernel tracepoints
+ events
+Message-ID: <20140519153915.GI15130@arm.com>
+References: <1400252476-20128-1-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140519151824.GA21762@lst.de>
-References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com>
-	<20140519151824.GA21762@lst.de>
-Date: Mon, 19 May 2014 23:34:42 +0800
-Message-ID: <CACVXFVPgMBoEa-Q1WaCVeq5_3kJCPfCt=LZ=pGQxmJv4EnTMoQ@mail.gmail.com>
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
- flush worker
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400252476-20128-1-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 11:18 PM, Christoph Hellwig <hch@lst.de> wrote:
-> On Mon, May 19, 2014 at 11:05:50PM +0800, Ming Lei wrote:
->> Another simple fix is to disable ipi for flush request, but looks
->> this one should be better.
->
-> I think the first thing is to bite the bullet and sort out and document
-> the various unions in struct request for real.
+Hi Jean,
 
-I agree, unions should be documented in detail.
+On Fri, May 16, 2014 at 04:01:16PM +0100, Jean Pihet wrote:
+> When tracing with tracepoints events the IP and CPSR are set to 0,
+> preventing the perf code to resolve the symbols:
+> 
+> ./perf record -e kmem:kmalloc cal
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.007 MB perf.data (~321 samples) ]
+> 
+> ./perf report
+> Overhead Command Shared Object Symbol
+> ........ ....... ............. ...........
+> 40.78%   cal     [unknown]     [.]00000000
+> 31.6%    cal     [unknown]     [.]00000000
+> 
+> The examination of the gathered samples (perf report -D) shows the IP
+> is set to 0 and that the samples are considered as user space samples,
+> while the IP should be set from the registers and the samples should be
+> considered as kernel samples.
+> 
+> The fix is to implement perf_arch_fetch_caller_regs for ARM, which
+> fills the necessary registers: ip, lr, sp and cpsr (used to check
+> the user mode property of the samples).
+> 
+> Heavily inspired from arch/arm/include/asm/kexec.h.
+> 
+> Reported by Sneha Priya on linaro-dev, cf.
+> http://lists.linaro.org/pipermail/linaro-dev/2014-May/017151.html
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Reported-by: Sneha Priya <sneha.cse@hotmail.com>
+> ---
+>  arch/arm/include/asm/perf_event.h | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/arch/arm/include/asm/perf_event.h b/arch/arm/include/asm/perf_event.h
+> index 7558775..d466e39 100644
+> --- a/arch/arm/include/asm/perf_event.h
+> +++ b/arch/arm/include/asm/perf_event.h
+> @@ -26,6 +26,19 @@ struct pt_regs;
+>  extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
+>  extern unsigned long perf_misc_flags(struct pt_regs *regs);
+>  #define perf_misc_flags(regs)	perf_misc_flags(regs)
+> +
+> +#define perf_arch_fetch_caller_regs(regs, __ip) {	\
+> +	instruction_pointer(regs)= (__ip);		\
+> +	__asm__ __volatile__ (				\
+> +		"mov	%[_ARM_sp], sp\n\t"		\
+> +		"str	lr, %[_ARM_lr]\n\t"		\
+> +		"mrs	%[_ARM_cpsr], cpsr\n\t"		\
+> +		: [_ARM_cpsr] "=r" (regs->ARM_cpsr),	\
+> +		  [_ARM_sp] "=r" (regs->ARM_sp),	\
+> +		  [_ARM_lr] "=o" (regs->ARM_lr)		\
+> +		: : "memory"				\
+> +	);						\
+> +}
 
->
-> For example the first union has the call_single_data for the blk-mq
+Why do we need to save lr? If it's for unwinding, what about fp? Also, why
+do you have a "memory" clobber and why is this block marked volatile?
 
-blk-softirq need rq->csd too in raise_blk_irq().
-
-> completions, while the second one has the ipi_list that is used by
-> the old blk-softirq code.
-
-Also we can put some mq specific fields and legacy fields into
-one union too.
-
->
-> If we get this right with a single union that contains a struct for
-> each phase of the request we might find enough space to keep using
-> the current way.
-
-If we can figure it out, that should be better solution, but changing/
-merging fields may affect performance too, and need careful
-verification.
-
-Thanks,
--- 
-Ming Lei
+Will
