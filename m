@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaESPSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:18:30 -0400
-Received: from verein.lst.de ([213.95.11.211]:40446 "EHLO newverein.lst.de"
+	id S932318AbaESPSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:18:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36442 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260AbaESPS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:18:27 -0400
-Date: Mon, 19 May 2014 17:18:24 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
-	flush worker
-Message-ID: <20140519151824.GA21762@lst.de>
-References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S932199AbaESPSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:18:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
+   d="scan'208";a="514107442"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Kenny Simpson <theonetruekenny@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Armin Rigo <arigo@tunes.org>
+In-Reply-To: <20140519151104.GA16736@infradead.org>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
+ <20140519130114.GA3140@dhcp22.suse.cz>
+ <20140519143540.BE9F6E009B@blue.fi.intel.com>
+ <20140519143837.GA5228@infradead.org>
+ <20140519150238.67898E009B@blue.fi.intel.com>
+ <20140519151104.GA16736@infradead.org>
+Subject: Re: remap_file_pages() use
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140519151758.A2162E009B@blue.fi.intel.com>
+Date: Mon, 19 May 2014 18:17:58 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 11:05:50PM +0800, Ming Lei wrote:
-> Another simple fix is to disable ipi for flush request, but looks
-> this one should be better.
+Christoph Hellwig wrote:
+> On Mon, May 19, 2014 at 06:02:38PM +0300, Kirill A. Shutemov wrote:
+> > > Stop right there.  We found out about two real life users of
+> > > remap_file_pages() already, without even committing the patches to warn
+> > > about using it to any tree.
+> > 
+> > Who is the second here?	Oracle?
+> 
+> PyPy.
+> 
+> Oracle would be the third, although use of the feature is optional and
+> fairly hard to opt in to, so I didn't count it.
 
-I think the first thing is to bite the bullet and sort out and document
-the various unions in struct request for real.
+IIUC PyPy uses the syscall in some early prototype and looks like guys are
+okay to rework it to mmap() if default sysctl_max_map_count will be high
+enough.
 
-For example the first union has the call_single_data for the blk-mq
-completions, while the second one has the ipi_list that is used by
-the old blk-softirq code.
-
-If we get this right with a single union that contains a struct for
-each phase of the request we might find enough space to keep using
-the current way.
-
-
+-- 
+ Kirill A. Shutemov
