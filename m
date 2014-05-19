@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638AbaESUD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:03:58 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59953 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932143AbaESUD4 (ORCPT
+	id S932898AbaESUEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:04:13 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:46019 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaESUEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:03:56 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-Date: Mon, 19 May 2014 22:20:51 +0200
-Message-ID: <3015549.0dZ2xYlt4R@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140519021831.29767863@jacob-desktop>
-References: <20140515000320.3c1c9256@jacob-desktop> <1491497.iq6zE5EtMa@vostro.rjw.lan> <20140519021831.29767863@jacob-desktop>
+	Mon, 19 May 2014 16:04:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <Pine.LNX.4.44L0.1405191543070.1538-100000@iolanthe.rowland.org>
+References: <1400526693-29776-6-git-send-email-ricardo.ribalda@gmail.com> <Pine.LNX.4.44L0.1405191543070.1538-100000@iolanthe.rowland.org>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 19 May 2014 22:03:48 +0200
+Message-ID: <CAPybu_1LLg4LEPdS2iN0qY=AYJmCiJOr6EhpR9Kn0Rn2H2dpOg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] usb: gadget: net2280: Use pr_* function
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Amit Uttamchandani <auttamchandani@logicube.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 19, 2014 02:18:31 AM Jacob Pan wrote:
-> On Fri, 16 May 2014 23:08:01 +0200
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> 
-> > On Friday, May 16, 2014 08:20:55 AM Jacob Pan wrote:
-> > > On Thu, 15 May 2014 11:58:55 -0400 (EDT)
-> > > Alan Stern <stern@rowland.harvard.edu> wrote:
-> > > 
-> > > > On Thu, 15 May 2014, Jacob Pan wrote:
-> > > > 
-> > > > > On Thu, 15 May 2014 10:29:42 -0400 (EDT)
-> > > > > Alan Stern <stern@rowland.harvard.edu> wrote:
-> > > > > 
-> > > > > > On Thu, 15 May 2014, Jacob Pan wrote:
-> > > > > > 
-> > > > > > > > > should we respect ignore_children flag here? not all
-> > > > > > > > > parent devices create children with proper .prepare()
-> > > > > > > > > function. this allows parents override children.
-> > > > > > > > > I am looking at USB, a USB device could have logical
-> > > > > > > > > children such as ep_xx, they don't go through the same
-> > > > > > > > > subsystem .prepare().
-> > > > > > > > 
-> > > > > > > > Well, I'm not sure about that.  Let me consider that for a
-> > > > > > > > while.
-> > > > > > > OK. let me be more clear about the situation i see in USB.
-> > > > > > > Correct me if I am wrong, a USB device will always has at
-> > > > > > > least one endpoint/ep_00 as a kid for control pipe, it is a
-> > > > > > > logical device. So when device_prepare() is called, its
-> > > > > > > call back is NULL which makes .direct_complete = 0. Since
-> > > > > > > children device suspend is called before parents, the
-> > > > > > > parents .direct_complete flag will always get cleared.
-> > > > > > > 
-> > > > > > > What i am trying to achieve here is to see if we avoid
-> > > > > > > resuming built-in (hardwired connect_type) non-hub USB
-> > > > > > > devices based on this new patchset. E.g. we don't want to
-> > > > > > > resume/suspend USB camera every time in system
-> > > > > > > suspend/resume cycle if they are already rpm suspended. We
-> > > > > > > can save ~100ms resume time for the devices we have tested.
-> > > > > > 
-> > > > > > This is a good point, but I don't think it is at all related
-> > > > > > to ignore_children.
-> > > > > > 
-> > > > > > Instead, it seems that the best way to solve it would be to
-> > > > > > add a ->prepare() handler for usb_ep_device_type that would
-> > > > > > always turn on direct_complete.
-> > > > > > 
-> > > > > yeah, that would solve the problem with EP device type. But what
-> > > > > about other subdevices. e.g. for USB camera, uvcvideo device? We
-> > > > > can add .prepare(return 1;) for each level but would it be
-> > > > > better to have a flag similar to ignore_children if not
-> > > > > ignore_children itself.
-> > > > 
-> > > > Something like that could always be added.
-> > > or, how about if a device's .prepare() is NULL, we could
-> > > assume .direct_resume() should be set. i.e.
-> > 
-> > You mean direct_complete (which is a flag, not a function), I suppose?
-> > 
-> yes.
-> > Wouldn't that go a bit too far?  It seems to be based on the
-> > assumption that all devices having no ->prepare() callback can be
-> > safely left in runtime suspend over a system suspend/resume cycle,
-> > but is that assumption actually satisfied for all such devices?
-> > 
-> yes, I agree it is risky though i don't see problems with my limited
-> testing. But on the other side, it is too strict.
-> I also tried adding .prepare( return 1;) to usb_ep_device_type pm ops,
-> that didn't work either. The reason is that ep devices don't support
-> runtime pm (disable_depth > 0). I think in this case ignore_children
-> flag should be the right indicator to ignore pm_runtime_suspended()?
+Hello Alan
 
-I guess an "ignore this device completely for PM" flag as suggested by
-Alan would be better.
+I really think that setting/unsetting DEBUG and VERBOSE is not a good
+idea, and the generic functions are there to be used.
 
-Rafael
+What do you think that makes it more difficult to read? The GETDEV macro?
 
+Cheers
+
+On Mon, May 19, 2014 at 9:44 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
+>
+>> Driver was using custom functions WARNING, ERROR, DEBUG, instead of
+>>  pr_err, pr_dgb...
+>
+> What's wrong with that, and why bother to change it?
+>
+>> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+>> index e67ae96..11800bb 100644
+>> --- a/drivers/usb/gadget/net2280.c
+>> +++ b/drivers/usb/gadget/net2280.c
+>> @@ -210,7 +210,7 @@ static int net2280_enable(struct usb_ep *_ep,
+>>        * use it instead of troublesome (non-bulk) multi-packet DMA.
+>>        */
+>>       if (ep->dma && (max % 4) != 0 && use_dma_chaining) {
+>> -             DEBUG(ep->dev, "%s, no dma for maxpacket %d\n",
+>> +             dev_dbg(GETDEV(ep->dev), "%s, no dma for maxpacket %d\n",
+>
+> Don't you think that the new code is harder to read than the original?
+> Why go to a lot of trouble just to make things worse?
+>
+> Alan Stern
+>
+
+
+
+-- 
+Ricardo Ribalda
