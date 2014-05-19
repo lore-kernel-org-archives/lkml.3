@@ -1,146 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaESSgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:36:33 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:64670 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073AbaESSgb (ORCPT
+	id S932516AbaESSgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:36:51 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65253 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470AbaESSgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:36:31 -0400
+	Mon, 19 May 2014 14:36:49 -0400
+Message-ID: <537A4F3D.7000401@gmail.com>
+Date: Mon, 19 May 2014 20:36:45 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140516075344.GF949@pengutronix.de>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
-	<1400169891-29546-2-git-send-email-tthayer@altera.com>
-	<20140516075344.GF949@pengutronix.de>
-Date: Mon, 19 May 2014 13:36:30 -0500
-Message-ID: <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
-From: Thor Thayer <tthayer.linux@gmail.com>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
-        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
-        Grant Likely <grant.likely@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-edac@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Layton <jlayton@poochiereds.net>
+CC: mtk.manpages@gmail.com,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: OFD locks and deadlock detection
+References: <537A0495.60107@gmail.com> <20140519102802.16dee141@tlielax.poochiereds.net>
+In-Reply-To: <20140519102802.16dee141@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 2:53 AM, Steffen Trumtrar
-<s.trumtrar@pengutronix.de> wrote:
-> Hi!
->
-> On Thu, May 15, 2014 at 11:04:49AM -0500, tthayer@altera.com wrote:
->> From: Thor Thayer <tthayer@altera.com>
+On 05/19/2014 04:28 PM, Jeff Layton wrote:
+> On Mon, 19 May 2014 15:18:13 +0200
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+> 
+>> Hi Jeff,
 >>
->> Addition of the Altera SDRAM controller bindings and device
->> tree changes to the Altera SoC project.
+>> I just happened to notice :
 >>
->> v2: Changes to SoC SDRAM EDAC code.
+>>     commit 57b65325fe34ec4c917bc4e555144b4a94d9e1f7
+>>     Author: Jeff Layton <jlayton@redhat.com>
+>>     Date:   Mon Feb 3 12:13:09 2014 -0500
 >>
->> v3: Implement code suggestions for SDRAM EDAC code.
+>>         locks: skip deadlock detection on FL_FILE_PVT locks
 >>
->> v4: Remove syscon from SDRAM controller bindings.
+>> And then this thread:
 >>
->> v5: No Change, bump version for consistency.
+>>     http://thread.gmane.org/gmane.linux.file-systems/81318/focus=81327
+>>     From: Jeff Layton <jlayton <at> redhat.com>
+>>     Subject: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
+>>     Date: 2014-01-09 14:19:46 GMT
 >>
->> Signed-off-by: Thor Thayer <tthayer@altera.com>
->> ---
->>  .../bindings/arm/altera/socfpga-sdram.txt          |   11 +++++++++++
->>  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
->>  2 files changed, 16 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>> I think it's pretty important to document that. All implementations
+>> of traditional process-associated (.k.a. "POSIX") locks that I've ever 
+>> come across do detect deadlocks, so it's important to note that OFD locks 
+>> do not.
 >>
->> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> new file mode 100644
->> index 0000000..8f8746b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> @@ -0,0 +1,11 @@
->> +Altera SOCFPGA SDRAM Controller
->> +
->> +Required properties:
->> +- compatible : "altr,sdr-ctl";
->> +- reg : Should contain 1 register ranges(address and length)
->> +
->> +Example:
->> +     sdrctl@ffc25000 {
->> +             compatible = "altr,sdr-ctl";
->> +             reg = <0xffc25000 0x1000>;
->> +     };
->> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->> index df43702..6ce912e 100644
->> --- a/arch/arm/boot/dts/socfpga.dtsi
->> +++ b/arch/arm/boot/dts/socfpga.dtsi
->> @@ -676,6 +676,11 @@
->>                       clocks = <&l4_sp_clk>;
->>               };
+>> I plan to add the following text to the fcntl(2) page:
 >>
->> +             sdrctl@ffc25000 {
->> +                     compatible = "altr,sdr-ctl", "syscon";
->                                                    ^^^^^^^^^^
->
-> Get rid of that, too, please.
+>> [[
+>> In the current implementation,
+>> no deadlock detection is performed for open file description locks.
+>> (This contrasts with process-associated record locks,
+>> for which the kernel does perform deadlock detection.)
+>> ]]
+>>
+>> Okay?
+>>
+>> cheers,
+>>
+>> Michael
+>>
+>>
+> 
+> (note: I'm no longer with Red Hat, so jlayton@redhat.com no longer works)
 
-Hi Steffan,
+Ahh -- okay. Caches cleared.
 
-I believe I need to keep the "syscon". The same register (ctrlcfg)
-that has the ECC enable bitfield also includes the DRAM configuration
-bitfields that other drivers will want to access (specifically the
-FPGA bridge needs this information). Since this register will be
-shared between drivers,  syscon seems like the best solution.
+> Sounds fine to me.
 
-I may be misunderstanding something so feel free to elaborate. Thanks
-for reviewing.
+Okay.
 
-Thor
+> FWIW, the deadlock detection for process-associated record locks is
+> pretty worthless except in certain narrow circumstances.
 
+Can you say some more about that, please? Maybe there's something 
+worth putting into the man page. (Are there cases where deadlocks
+are not detected?)
 
->> +                     reg = <0xffc25000 0x1000>;
->> +             };
->> +
->
-> How about
->
->                 sdrctl@ffc25000 {
->                         compatible = "altr,sdr-ctl";
->                         reg = <0xffc25000 0x1000>;
->                         ranges;
->
->                         edac@ffc2502c {
->                                 compatible = "altr,sdram-edac";
->                                 reg = <0xffc2502c 0x50>;
->                                 interrupts = <0 39 4>;
->                         };
->                 };
->
-> Then we can later add:
->
->                         sdr-ports: ports@ffc2507c {
->                                 #reset-cells = <1>;
->                                 compatible = "altr,sdr-ports";
->                                 reg = <0xffc2507c 0x10>;
->                                 clocks = <&ddr_dqs_clk>;
->                                 ...
->                         };
->
-> to use the reset-controller framework for the port resets.
->
->>               rstmgr@ffd05000 {
->>                       compatible = "altr,rst-mgr";
->>                       reg = <0xffd05000 0x1000>;
->> --
->
-> Regards,
-> Steffen
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> At some point, we probably should have a discussion as to whether
+> deadlock detection is really something we want to keep. The current
+> implementation requires a global spinlock which has obvious
+> consequences for scalability.
+
+Could be tricky. I wonder if there's code out there that depends
+on deadlock detection.
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
