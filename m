@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaESWqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:46:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50203 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaESWqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:46:40 -0400
-Date: Mon, 19 May 2014 15:46:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de
-Subject: Re: [PATCH 6/6] ipc/sem.c: make semctl(,,{GETNCNT,GETZCNT})
- standard compliant
-Message-Id: <20140519154639.5570a30f8b47872a323dcdfd@linux-foundation.org>
-In-Reply-To: <1400399917-17583-7-git-send-email-manfred@colorfullife.com>
-References: <1400399917-17583-1-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-2-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-3-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-4-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-5-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-6-git-send-email-manfred@colorfullife.com>
-	<1400399917-17583-7-git-send-email-manfred@colorfullife.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751929AbaESWsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:48:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38729 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894AbaESWsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 18:48:07 -0400
+Message-ID: <537A8A03.8060604@zytor.com>
+Date: Mon, 19 May 2014 15:47:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Matt Fleming <matt@console-pimps.org>, Ingo Molnar <mingo@kernel.org>
+CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [GIT PULL] EFI changes for v3.16
+References: <20140503130447.GW26088@console-pimps.org> <20140519105129.GF4798@console-pimps.org>
+In-Reply-To: <20140519105129.GF4798@console-pimps.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 May 2014 09:58:37 +0200 Manfred Spraul <manfred@colorfullife.com> wrote:
-
-> SUSv4 clearly defines how semncnt and semzcnt must be calculated:
-> A task waits on exactly one semaphore:
-> The semaphore from the first operation in the sop array that cannot proceed.
+On 05/19/2014 03:51 AM, Matt Fleming wrote:
+> On Sat, 03 May, at 02:04:47PM, Matt Fleming wrote:
+>> Folks, please queue the following change for v3.16 from Borislav that
+>> uses the more strict kernel_fpu_{begin,end}() instead of the __*
+>> verisons that won't catch buggy use in interrupt context.
+>>
+>> The following changes since commit e33655a386ed3b26ad36fb97a47ebb1c2ca1e928:
+>>
+>>   efivars: Add compatibility code for compat tasks (2014-04-17 13:53:53 +0100)
+>>
+>> are available in the git repository at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+>>
+>> for you to fetch changes up to baa916f39b50ad91661534652110df40396acda0:
+>>
+>>   x86/efi: Check for unsafe dealing with FPU state in irq ctxt (2014-05-03 06:39:25 +0100)
+>>
+>> ----------------------------------------------------------------
+>>  * Use the more strict FPU handling functions before invoking EFI
+>>    services to catch misuse in irq context - Borislav Petkov
 > 
-> The Linux implementation never followed the standard, it tried to count all
-> semaphores that might be the reason why a task sleeps.
+> Ping?
 > 
-> This patch fixes that.
 
-What are the back-compatibility implications of this change?
+>     efi_call can happen in an irq context (pstore) and there we really need
+>     to make sure we're not scribbling over FPU state while we've interrupted
+>     a thread or kernel mode with a live FPU state. Therefore, use the
+>     kernel_fpu_begin/end() variants which do that check.
+
+How on earth does this solve anything?  The only thing we add here is a
+WARN_ON_ONCE()... but the above text already tells us we have a problem.
+
+It seems, rather, that we need to figure out how to deal with a pstore
+in this case.  There are a few possibilities:
+
+1. We could keep an XSAVE buffer area around for this particular use.
+   I am *assuming* we don't let more than one CPU into EFI, because I
+   cannot for my life imagine that this is safe in typical CPUs.
+
+2. Drop the pstore on the floor if !irq_fpu_usable().
+
+3. Allow the pstore, then die (on the assumption that we're dead
+   anyway.)
+
+Comments?
+
+	-hpa
+
