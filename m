@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaESIbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:31:42 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39959 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaESIbl (ORCPT
+	id S1753531AbaESIcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:32:01 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:47907 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaESIcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:31:41 -0400
-Date: Mon, 19 May 2014 09:31:36 +0100
+	Mon, 19 May 2014 04:32:00 -0400
+Date: Mon, 19 May 2014 09:31:55 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 11/16] mfd: max8998: Make of_device_id array const
-Message-ID: <20140519083136.GT2339@lee--X1>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/16] mfd: max8997: Make of_device_id array const
+Message-ID: <20140519083155.GU2339@lee--X1>
 References: <1399978733-13662-1-git-send-email-k.kozlowski@samsung.com>
- <1399978733-13662-11-git-send-email-k.kozlowski@samsung.com>
+ <1399978733-13662-12-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399978733-13662-11-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1399978733-13662-12-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,9 +31,8 @@ On Tue, 13 May 2014, Krzysztof Kozlowski wrote:
 > of_match_table field and of_match_node() call.
 > 
 > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/mfd/max8998.c | 2 +-
+>  drivers/mfd/max8997.c | 2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 
 Applied, thanks.
