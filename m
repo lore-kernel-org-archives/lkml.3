@@ -1,57 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851AbaESStM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:49:12 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:52587 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaESStJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:49:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140224162951.20485.57579.stgit@patser>
-References: <20140224162607.20485.70967.stgit@patser>
-	<20140224162951.20485.57579.stgit@patser>
-Date: Mon, 19 May 2014 11:49:08 -0700
-Message-ID: <CALAqxLWZvt3yF8kAQz1AnQMOv66qqN8jP_zQiPDpiDcVngAa0g@mail.gmail.com>
-Subject: Re: [PATCH 4/6] android: convert sync to fence api, v5
-From: John Stultz <john.stultz@linaro.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Colin Cross <ccross@google.com>, linux-media@vger.kernel.org,
-        Rom Lemarchand <romlem@google.com>,
-        Greg Hackmann <ghackmann@google.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932277AbaESS7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:59:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38915 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299AbaESS7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 14:59:40 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH 2/2] x86, microcode: Add a disable chicken bit
+Date: Mon, 19 May 2014 20:59:17 +0200
+Message-Id: <1400525957-11525-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1400525957-11525-1-git-send-email-bp@alien8.de>
+References: <1400525957-11525-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 8:29 AM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
-> Just to show it's easy.
->
-> Android syncpoints can be mapped to a timeline. This removes the need
-> to maintain a separate api for synchronization. I've left the android
-> trace events in place, but the core fence events should already be
-> sufficient for debugging.
->
-> v2:
-> - Call fence_remove_callback in sync_fence_free if not all fences have fired.
-> v3:
-> - Merge Colin Cross' bugfixes, and the android fence merge optimization.
-> v4:
-> - Merge with the upstream fixes.
-> v5:
-> - Fix small style issues pointed out by Thomas Hellstrom.
->
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Borislav Petkov <bp@suse.de>
 
-I ran this through a fairly simple unit test for the Android sw_sync
-interface and it ran fine.  Also since Colin, Rom and Greg didn't seem
-to have major objections last I spoke with them:
+Add a cmdline param which disables the microcode loader. This is useful
+mostly in debugging situations where we want to turn off microcode
+loading, both early from the initrd and late, as a means to be able to
+rule out its influence on the machine.
 
-Acked-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/microcode.h           |  1 +
+ arch/x86/kernel/cpu/microcode/core.c       |  6 +++++
+ arch/x86/kernel/cpu/microcode/core_early.c | 37 ++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
 
-thanks
--john
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index b59827e76529..64dc362506b7 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -25,6 +25,7 @@ struct cpu_signature {
+ struct device;
+ 
+ enum ucode_state { UCODE_ERROR, UCODE_OK, UCODE_NFOUND };
++extern bool dis_ucode_ldr;
+ 
+ struct microcode_ops {
+ 	enum ucode_state (*request_microcode_user) (int cpu,
+diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+index 15c987698b0f..dd9d6190b08d 100644
+--- a/arch/x86/kernel/cpu/microcode/core.c
++++ b/arch/x86/kernel/cpu/microcode/core.c
+@@ -97,6 +97,9 @@ MODULE_LICENSE("GPL");
+ 
+ static struct microcode_ops	*microcode_ops;
+ 
++bool dis_ucode_ldr;
++module_param(dis_ucode_ldr, bool, 0);
++
+ /*
+  * Synchronization.
+  *
+@@ -546,6 +549,9 @@ static int __init microcode_init(void)
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int error;
+ 
++	if (dis_ucode_ldr)
++		return 0;
++
+ 	if (c->x86_vendor == X86_VENDOR_INTEL)
+ 		microcode_ops = init_intel_microcode();
+ 	else if (c->x86_vendor == X86_VENDOR_AMD)
+diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
+index be7f8514f577..5f28a64e71ea 100644
+--- a/arch/x86/kernel/cpu/microcode/core_early.c
++++ b/arch/x86/kernel/cpu/microcode/core_early.c
+@@ -17,9 +17,11 @@
+  *	2 of the License, or (at your option) any later version.
+  */
+ #include <linux/module.h>
++#include <asm/microcode.h>
+ #include <asm/microcode_intel.h>
+ #include <asm/microcode_amd.h>
+ #include <asm/processor.h>
++#include <asm/cmdline.h>
+ 
+ #define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
+ #define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
+@@ -72,10 +74,33 @@ static int x86_family(void)
+ 	return x86;
+ }
+ 
++static bool __init check_loader_disabled_bsp(void)
++{
++#ifdef CONFIG_X86_32
++	const char *cmdline = (const char *)__pa_nodebug(boot_command_line);
++	const char *opt	    = "dis_ucode_ldr";
++	const char *option  = (const char *)__pa_nodebug(opt);
++	bool *res = (bool *)__pa_nodebug(&dis_ucode_ldr);
++
++#else /* CONFIG_X86_64 */
++	const char *cmdline = boot_command_line;
++	const char *option  = "dis_ucode_ldr";
++	bool *res = &dis_ucode_ldr;
++#endif
++
++	if (cmdline_find_option_bool(cmdline, option))
++		*res = true;
++
++	return *res;
++}
++
+ void __init load_ucode_bsp(void)
+ {
+ 	int vendor, x86;
+ 
++	if (check_loader_disabled_bsp())
++		return;
++
+ 	if (!have_cpuid_p())
+ 		return;
+ 
+@@ -96,10 +121,22 @@ void __init load_ucode_bsp(void)
+ 	}
+ }
+ 
++static bool check_loader_disabled_ap(void)
++{
++#ifdef CONFIG_X86_32
++	return __pa_nodebug(dis_ucode_ldr);
++#else
++	return dis_ucode_ldr;
++#endif
++}
++
+ void load_ucode_ap(void)
+ {
+ 	int vendor, x86;
+ 
++	if (check_loader_disabled_ap())
++		return;
++
+ 	if (!have_cpuid_p())
+ 		return;
+ 
+-- 
+1.9.0
+
