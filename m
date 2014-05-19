@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063AbaESTbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:31:51 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:16004 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754973AbaESTbu (ORCPT
+	id S932527AbaESTdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:33:33 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:40853 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaESTdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:31:50 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYVAPZbelNbtAXp/2dsb2JhbABZgwaCRKgzBAEBAQEBAQUBmicCAoEZF3SCZhwjGIECJBOIRQHSX4VViBdkhEcBA48viioBkxqDOTuBMQ
-Date: Mon, 19 May 2014 21:31:45 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH 1/1] fs/jffs2/compr.c: remove 0 assignment on static
-Message-Id: <20140519213145.e75dbd1aa74fc2ccd9193686@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 15:33:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400526979.14238.16.camel@joe-AO725>
+References: <1400526693-29776-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1400526693-29776-6-git-send-email-ricardo.ribalda@gmail.com> <1400526979.14238.16.camel@joe-AO725>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 19 May 2014 21:33:10 +0200
+Message-ID: <CAPybu_0T3GmyTQfPuG3YofkWO_px0fYAyofz2OAab6=9PqsKLQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] usb: gadget: net2280: Use pr_* function
+To: Joe Perches <joe@perches.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Amit Uttamchandani <auttamchandani@logicube.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-static values are automatically initialized to NULL
+Hello Joe
 
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jffs2/compr.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I think dev_vdg cannot be controlled with DYNAMIC_DEBUG, therefore I
+replaced it with dev_dbg.
 
-diff --git a/fs/jffs2/compr.c b/fs/jffs2/compr.c
-index 4849a4c..a673221 100644
---- a/fs/jffs2/compr.c
-+++ b/fs/jffs2/compr.c
-@@ -25,7 +25,8 @@ static LIST_HEAD(jffs2_compressor_list);
- static int jffs2_compression_mode = JFFS2_COMPR_MODE_PRIORITY;
- 
- /* Statistics for blocks stored without compression */
--static uint32_t none_stat_compr_blocks=0,none_stat_decompr_blocks=0,none_stat_compr_size=0;
-+static uint32_t none_stat_compr_blocks, none_stat_decompr_blocks,
-+		none_stat_compr_size;
- 
- 
- /*
+But if you prefer to use dev_dbg, I will modify it to use dev_dbg
+
+
+Thanks!
+
+On Mon, May 19, 2014 at 9:16 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2014-05-19 at 21:11 +0200, Ricardo Ribalda Delgado wrote:
+>> VDEBUG has also been replaced by DEBUG because the same       functionality
+>> (or even better) can be achieved with dynamic printk.
+>
+> dev_vdbg exists for that purpose.
+>
+>
+
+
+
 -- 
-1.8.4.5
-
+Ricardo Ribalda
