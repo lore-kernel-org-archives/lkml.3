@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaESFxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 01:53:35 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:57142 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaESFxe convert rfc822-to-8bit (ORCPT
+	id S1752739AbaESFy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 01:54:28 -0400
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:63275 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675AbaESFyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 01:53:34 -0400
-Date: Mon, 19 May 2014 07:53:28 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <thierry.reding@gmail.com>, <s.hauer@pengutronix.de>,
-        <shawn.guo@freescale.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] pwm: i.MX: Avoid sample FIFO overflow for i.MX PWM
- version2
-Message-ID: <20140519075328.7f2ef0c5@ipc1.ka-ro>
-In-Reply-To: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
-References: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Mon, 19 May 2014 01:54:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1399288539-1793-8-git-send-email-b.zolnierkie@samsung.com>
+References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+	<1399288539-1793-8-git-send-email-b.zolnierkie@samsung.com>
+Date: Mon, 19 May 2014 11:24:24 +0530
+Message-ID: <CADGdYn77KQ2xMm+NjTQWC5s35pbw=PukSJhKVmM+EFmgTK6=yg@mail.gmail.com>
+Subject: Re: [PATCH 07/10] thermal: exynos: simplify temp_to_code() and code_to_temp()
+From: Amit Kachhap <amit.kachhap@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 5/5/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> * Remove dead temp check from temp_to_code() (this function users
+>   in exynos_tmu_initialize() always pass correct temperatures and
+>   exynos_tmu_set_emulation() returns early for EXYNOS4210 because
+>   TMU_SUPPORT_EMULATION flag is not set on this SoC).
+>
+> * Move temp_code check from code_to_temp() to exynos_tmu_read()
+>   (code_to_temp() only user).
+>
+> There should be no functional changes caused by this patch.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-Liu Ying wrote:
-[...]
-> @@ -30,6 +32,7 @@
->  /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
->  
->  #define MX3_PWMCR                 0x00    /* PWM Control Register */
-> +#define MX3_PWMIR                 0x08    /* PWM Interrupt Register */
->  #define MX3_PWMSAR                0x0C    /* PWM Sample Register */
->  #define MX3_PWMPR                 0x10    /* PWM Period Register */
->  #define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
-> @@ -38,7 +41,12 @@
->  #define MX3_PWMCR_DBGEN			(1 << 22)
->  #define MX3_PWMCR_CLKSRC_IPG_HIGH (2 << 16)
->  #define MX3_PWMCR_CLKSRC_IPG      (1 << 16)
-> +#define MX3_PWMCR_SWR		  (1 << 3)
->  #define MX3_PWMCR_EN              (1 << 0)
-> +#define MX3_PWMSR_ROV             (1 << 4)
-> +#define MX3_PWMIR_RIE             (1 << 1)
+Changes looks fine.
+Reviewed-by: Amit Daniel Kachhap<amit.daniel@samsung.com>
+
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c | 38
+> +++++++++++-------------------------
+>  1 file changed, 11 insertions(+), 27 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> b/drivers/thermal/samsung/exynos_tmu.c
+> index a415829..20379eb 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -71,19 +71,7 @@ struct exynos_tmu_data {
+>   */
+>  static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
+>  {
+> -	struct exynos_tmu_platform_data *pdata = data->pdata;
+> -	int temp_code;
+> -
+> -	if (data->soc == SOC_ARCH_EXYNOS4210)
+> -		/* temp should range between 25 and 125 */
+> -		if (temp < 25 || temp > 125) {
+> -			temp_code = -EINVAL;
+> -			goto out;
+> -		}
+> -
+> -	temp_code = temp + data->temp_error - pdata->first_point_trim;
+> -out:
+> -	return temp_code;
+> +	return temp + data->temp_error - data->pdata->first_point_trim;
+>  }
+>
+>  /*
+> @@ -92,19 +80,7 @@ out:
+>   */
+>  static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
+>  {
+> -	struct exynos_tmu_platform_data *pdata = data->pdata;
+> -	int temp;
+> -
+> -	if (data->soc == SOC_ARCH_EXYNOS4210)
+> -		/* temp_code should range between 75 and 175 */
+> -		if (temp_code < 75 || temp_code > 175) {
+> -			temp = -ENODATA;
+> -			goto out;
+> -		}
+> -
+> -	temp = temp_code - data->temp_error + pdata->first_point_trim;
+> -out:
+> -	return temp;
+> +	return temp_code - data->temp_error + data->pdata->first_point_trim;
+>  }
+>
+>  static int exynos_tmu_initialize(struct platform_device *pdev)
+> @@ -297,8 +273,16 @@ static int exynos_tmu_read(struct exynos_tmu_data
+> *data)
+>  	clk_enable(data->clk);
+>
+>  	temp_code = readb(data->base + reg->tmu_cur_temp);
+> -	temp = code_to_temp(data, temp_code);
+>
+> +	if (data->soc == SOC_ARCH_EXYNOS4210)
+> +		/* temp_code should range between 75 and 175 */
+> +		if (temp_code < 75 || temp_code > 175) {
+> +			temp = -ENODATA;
+> +			goto out;
+> +		}
 > +
-You should decide whether to use tabs or spaces for indentation.
-And probably cleanup the indentation of the existing definitions to use
-all the same indentation style.
-
-> @@ -128,6 +160,13 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
->  	else
->  		period_cycles = 0;
->  
-> +	if (!enable || duty_cycles == 0)
-> +		imx_pwm_software_reset_v2(chip);
-> +	else if (readl(imx->mmio_base + MX3_PWMSAR))
-> +		/* No rollover irq generated if duty peroid is zero. */
-typo: 'period'.
-
-> @@ -135,27 +174,55 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
->  		MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
->  		MX3_PWMCR_DBGEN | MX3_PWMCR_CLKSRC_IPG_HIGH;
->  
-> -	if (test_bit(PWMF_ENABLED, &pwm->flags))
-> +	if (enable)
->  		cr |= MX3_PWMCR_EN;
->  
->  	writel(cr, imx->mmio_base + MX3_PWMCR);
->  
-> +	if (enable && duty_cycles)
-> +		/* No rollover irq generated if duty peroid is zero. */
-dto.
-
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+> +	temp = code_to_temp(data, temp_code);
+> +out:
+>  	clk_disable(data->clk);
+>  	mutex_unlock(&data->lock);
+>
+> --
+> 1.8.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
