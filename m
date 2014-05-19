@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaESKZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:25:19 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:61861 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaESKZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:25:16 -0400
+	id S1754128AbaESKZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:25:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874AbaESKZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 06:25:23 -0400
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Karim Raslan <karim.allah.ahmed@gmail.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] staging: rtl8723au: rtw_sta_mgt: change rtw_alloc_stainfo23a to use gfp_t instead if int
+References: <1400395256-8892-1-git-send-email-karim.allah.ahmed@gmail.com>
+	<20140519101855.GU15585@mwanda>
+Date: Mon, 19 May 2014 12:25:13 +0200
+In-Reply-To: <20140519101855.GU15585@mwanda> (Dan Carpenter's message of "Mon,
+	19 May 2014 13:18:56 +0300")
+Message-ID: <wrfjtx8mrrp2.fsf@ultrasam.lan.trained-monkey.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1724900B@AcuExch.aculab.com>
-References: <1400494205-26566-1-git-send-email-ricardo.ribalda@gmail.com>
- <1400494205-26566-3-git-send-email-ricardo.ribalda@gmail.com> <063D6719AE5E284EB5DD2968C1650D6D1724900B@AcuExch.aculab.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 19 May 2014 12:24:56 +0200
-Message-ID: <CAPybu_2uTM6TB9756SHeWs424L6ERtgbk+Ea_U+VXCcaooS7dg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] usb: gadget: net2280: Use BIT() macro
-To: David Laight <David.Laight@aculab.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "auttamchandani@logicube.com" <auttamchandani@logicube.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David
-
-I dont want to start a flame war here :) but  In the particular case
-of hardware registers I believe it does.
-
-This patch has been posted because on a previous patch to support the
-usb3380, one of the requested changes was to use this macro. In order
-to have consistent code in the file I have posted this patch.
-
-BTW, I havent defined the bit macro, just used it :P
-
-Cheers!
-
-
-On Mon, May 19, 2014 at 12:18 PM, David Laight <David.Laight@aculab.com> wrote:
-> From: Ricardo Ribalda Delgado
->> Improves readability of the code
+Dan Carpenter <dan.carpenter@oracle.com> writes:
+> On Sun, May 18, 2014 at 07:39:23AM +0100, Karim Raslan wrote:
+>> This should fix a few sparse warnings like the following:
+>> 
+>>   CHECK   drivers/staging/rtl8723au/core/rtw_ap.c
+>> drivers/staging/rtl8723au/core/rtw_ap.c:1054:45: warning: incorrect
+>> type in argument 3 (different base types)
+>> drivers/staging/rtl8723au/core/rtw_ap.c:1054:45:    expected int [signed] gfp
+>> drivers/staging/rtl8723au/core/rtw_ap.c:1054:45:    got restricted gfp_t
+>> 
 >
-> Personally I don't find macros like BIT() improve the readability at all.
-> What next? Maybe:
+> Thanks, Karim, looks good.
 >
-> #define ADD(a, b) ((a) + (b))
+> Jes's patch which added this never went to the list so I didn't review
+> it.  This annoys me.
 >
->         David
->
->
->
+> I try to be fair when I review code.  I try to allow lots of patches in
+> and let people send fix up patches for minor stuff.  But, obviously, you
+> should be running Sparse as part of the review process so if I made you
+> redo this patch it's because your process is broken.  When I review
+> patches I am trying to help you.
 
+Dan,
 
+Calm down, I haven't been bombarding the list, due to the sheer volume
+of commits.  If you want me to spam the list, tell me where and I'll add
+that to the CC list next time.
 
--- 
-Ricardo Ribalda
+This particular case isn't exactly a real problem either.
+
+Jes
