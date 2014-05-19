@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918AbaESURR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:17:17 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:63760 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511AbaESURQ (ORCPT
+	id S932944AbaESURe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:17:34 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:19045 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932511AbaESURb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:17:16 -0400
-Date: Mon, 19 May 2014 16:17:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Eli Billauer <eli.billauer@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] dma-mapping: Add devm_ interface for dma_map_single()
-Message-ID: <20140519201712.GD27506@mtj.dyndns.org>
-References: <1400228799-8832-1-git-send-email-eli.billauer@gmail.com>
- <1400228799-8832-3-git-send-email-eli.billauer@gmail.com>
- <20140516210805.GO5379@htj.dyndns.org>
- <537753C9.3060101@gmail.com>
+	Mon, 19 May 2014 16:17:31 -0400
+Message-ID: <537A66D3.8070607@hp.com>
+Date: Mon, 19 May 2014 16:17:23 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537753C9.3060101@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v10 03/19] qspinlock: Add pending bit
+References: <1399474907-22206-1-git-send-email-Waiman.Long@hp.com> <1399474907-22206-4-git-send-email-Waiman.Long@hp.com> <20140512152208.GA12309@potion.brq.redhat.com> <537276B4.10209@hp.com> <20140514165121.GA21370@potion.redhat.com> <20140514170016.GW30445@twins.programming.kicks-ass.net> <20140514191339.GA22813@potion.brq.redhat.com>
+In-Reply-To: <20140514191339.GA22813@potion.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eli.
+On 05/14/2014 03:13 PM, Radim Krčmář wrote:
+> 2014-05-14 19:00+0200, Peter Zijlstra:
+>> On Wed, May 14, 2014 at 06:51:24PM +0200, Radim Krčmář wrote:
+>>> Ok.
+>>> I've seen merit in pvqspinlock even with slightly slower first-waiter,
+>>> so I would have happily sacrificed those horrible branches.
+>>> (I prefer elegant to optimized code, but I can see why we want to be
+>>>   strictly better than ticketlock.)
+>>> Peter mentioned that we are focusing on bare-metal patches, so I'll
+>>> withold my other paravirt rants until they are polished.
+> (It was an ambiguous sentence, I have comments for later patches.)
+>
+>> Well, paravirt must happen too, but comes later in this series, patch 3
+>> which we're replying to is still very much in the bare metal part of the
+>> series.
+> (I think that bare metal spans the first 7 patches.)
+>
+>> I've not had time yet to decode all that Waiman has done to make
+>> paravirt work.
+>>
+>> But as a general rule I like patches that start with something simple
+>> and working and then optimize it, this series doesn't seem to quite
+>> grasp that.
+>>
+>>> And to forcefully bring this thread a little bit on-topic:
+>>>
+>>> Pending-bit is effectively a lock in a lock, so I was wondering why
+>>> don't we use more pending bits; advantages are the same, just diminished
+>>> by the probability of having an ideally contended lock:
+>>>   - waiter won't be blocked on RAM access if critical section (or more)
+>>>     ends sooner
+>>>   - some unlucky cacheline is not forgotten
+>>>   - faster unlock (no need for tail operations)
+>>> (- ?)
+>>> disadvantages are magnified:
+>>>   - increased complexity
+>>>   - intense cacheline sharing
+>>>     (I thought that this is the main disadvantage of ticketlock.)
+>>> (- ?)
+>>>
+>>> One bit still improved performance, is it the best we got?
+>> So, the advantage of one bit is that if we use a whole byte for 1 bit we
+>> can avoid some atomic ops.
+>>
+>> The entire reason for this in-word spinner is to amortize the cost of
+>> hitting the external node cacheline.
+> Every pending CPU removes one length of the critical section from the
+> delay caused by cacheline propagation and really cold cache is
+> hundreds(?) of cycles, so we could burn some to ensure correctness and
+> still be waiting when the first pending CPU unlocks.
 
-On Sat, May 17, 2014 at 03:19:21PM +0300, Eli Billauer wrote:
-> >>+	if (dma_mapping_error(dev, dma_handle)) {
-> >>+		devres_free(dr);
-> >>+		return 0;
-> >Can't we just keep returning dma_handle?  Even if that means invoking
-> >->mapping_error() twice?  It's yucky to have subtly different error
-> >return especially because in most cases it won't fail.
-> Yucky it is indeed. There are however two problems with keeping the existing
-> API:
-> 
-> * What to do if devres_alloc() fails. How do I signal back an error? The
-> only way I can think of is returning zero. But if the caller should know
-> that zero means failure, I've already broken the API. I might as well return
-> zero for any kind of failure.
+Assuming that taking a spinlock is fairly frequent in the kernel, the 
+node structure cacheline won't be so cold after all.
 
-What can't it just do the following?
+>> So traditional locks like test-and-test and the ticket lock only ever
+>> access the spinlock word itsef, this MCS style queueing lock has a
+>> second (and, see my other rants in this thread, when done wrong more
+>> than 2) cacheline to touch.
+>>
+>> That said, all our benchmarking is pretty much for the cache-hot case,
+>> so I'm not entirely convinced yet that the one pending bit makes up for
+>> it, it does in the cache-hot case.
+> Yeah, we probably use the faster pre-lock quite a lot.
+> Cover letter states that queue depth 1-3 is a bit slower than ticket
+> spinlock, so we might not be losing if we implemented a faster
+> in-word-lock of this capacity.  (Not that I'm a fan of the hybrid lock.)
 
-	if (dma_mapping_error(dev, dma_handle)) {
-		devres_free(dr);
-		return dma_handle;
-	}
+I had tried an experimental patch with 2 pending bits. However, the 
+benchmark test that I used show the performance is even worse than 
+without any pending bit. I probably need to revisit that later as to why 
+this is the case. As for now, I will focus on just having one pending 
+bit. If we could find a way to get better performance out of more than 1 
+pending bit later on, we could always submit another patch to do that.
 
-The caller would have to invoke dma_mapping_error() again but is that
-a problem?
+>> But... writing cache-cold benchmarks is _hard_ :/
+> Wouldn't clflush of the second cacheline before trying for the lock give
+> us a rough estimate?
 
-Thanks.
+clflush is a very expensive operation and I doubt that it will be 
+indicative of real life performance at all. BTW, there is no way to 
+write a cache-cold benchmark for that 2nd cacheline as any call to 
+spin_lock will likely to access it if there is enough contention.
 
--- 
-tejun
+-Longman
+
