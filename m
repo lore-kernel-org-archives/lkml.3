@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaESLID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:08:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33943 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177AbaESLIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:08:00 -0400
-Message-ID: <5379E5E6.9080500@ti.com>
-Date: Mon, 19 May 2014 16:37:18 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>, <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 02/13] ARM: edma: Take the number of tc from edma_soc_info
- (pdata)
-References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-3-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1400242640-9902-3-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754104AbaESLJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:09:33 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:53786 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752794AbaESLJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 07:09:31 -0400
+Message-ID: <1400497768.2007.10.camel@x220>
+Subject: Re: [PATCH v6 10/17] ARM: mvebu: add USB3 support for Armada 38x
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Date: Mon, 19 May 2014 13:09:28 +0200
+In-Reply-To: <20140516190729.GN27822@titan.lakedaemon.net>
+References: <1400149062-32661-1-git-send-email-gregory.clement@free-electrons.com>
+	 <1400149062-32661-11-git-send-email-gregory.clement@free-electrons.com>
+	 <20140516190729.GN27822@titan.lakedaemon.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 May 2014 11:09:29.0026 (UTC) FILETIME=[CD8F3220:01CF7352]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-On Friday 16 May 2014 05:47 PM, Peter Ujfalusi wrote:
-> Instead of saving the for loop length, take the num_tc value from the pdata.
-> In case of DT boot set the n_tc to 3 as it is hardwired in edma_of_parse_dt()
-> This is a temporary state since upcoming patch(es) will change how we are
-> dealing with these parameters.
+On Fri, 2014-05-16 at 15:07 -0400, Jason Cooper wrote:
+> On Thu, May 15, 2014 at 12:17:35PM +0200, Gregory CLEMENT wrote:
+> > This patch adds the selection of the config symbol needed to build the
+> > USB3 support for Armada 38x into mvebu_v7_defconfig.
+> > 
+> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> > ---
+> >  arch/arm/mach-mvebu/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  arch/arm/common/edma.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index 01707aae0a2b..d42c84a3432a 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
+> Patches 10 and 11 applied to mvebu/soc
 
-> @@ -1741,9 +1743,6 @@ static int edma_probe(struct platform_device *pdev)
->  			map_queue_tc(j, queue_tc_mapping[i][0],
->  					queue_tc_mapping[i][1]);
->  
-> -		/* Save the number of TCs */
-> -		edma_cc[j]->num_tc = i;
-> -
+These two just hit linux-next (in next-20140519). They're pointless, as
+config USB_ARCH_HAS_XHCI was dropped in commit b797b76fb464 ("usb: host:
+remove USB_ARCH_HAS_?HCI").
 
-To which baseline do the patches apply? These lines are not present at
-least in v3.15-rc5. I am applying the patch without this hunk.
 
-Thanks,
-Sekhar
+Paul Bolle
 
