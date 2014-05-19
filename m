@@ -1,416 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354AbaESSKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:10:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54099 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751502AbaESSKS (ORCPT
+	id S932372AbaESSM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:12:28 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:59231 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaESSM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:10:18 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-pwm@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv5 1/2] pwm: Add Allwinner SoC support
-Date: Mon, 19 May 2014 20:10:02 +0200
-Message-Id: <1400523003-27082-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400523003-27082-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1400523003-27082-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 19 May 2014 14:12:26 -0400
+Date: Mon, 19 May 2014 18:12:18 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Chung-Lin Tang <cltang@codesourcery.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LeyFoon Tan <lftan.linux@gmail.com>
+Subject: Re: [PATCH 00/25] Change time_t and clock_t to 64 bit
+In-Reply-To: <5228220.XfC7baN05k@wuerfel>
+Message-ID: <Pine.LNX.4.64.1405191806230.25418@digraph.polyomino.org.uk>
+References: <1399971456-3941-1-git-send-email-lftan@altera.com>
+ <4254860.84WuxPQ4j9@wuerfel> <Pine.LNX.4.64.1405191431210.25418@digraph.polyomino.org.uk>
+ <5228220.XfC7baN05k@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 19 May 2014 18:12:21.0986 (UTC) FILETIME=[E105A420:01CF738D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic PWM framework driver for the PWM controller
-found on Allwinner SoCs.
+On Mon, 19 May 2014, Arnd Bergmann wrote:
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/pwm/Kconfig     |   9 ++
- drivers/pwm/Makefile    |   1 +
- drivers/pwm/pwm-sunxi.c | 338 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 348 insertions(+)
- create mode 100644 drivers/pwm/pwm-sunxi.c
+> A related question would be how you plan to support future CPU architectures
+> that never had the 32-bit time_t in the kernel ABI. Would you also want
+> to provide both 32 and 64 bit time_t to user space on those?
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 5b34ff29ea38..178b017be827 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -217,6 +217,15 @@ config PWM_SPEAR
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-spear.
- 
-+config PWM_SUNXI
-+	tristate "Allwinner PWM support"
-+	depends on ARCH_SUNXI || COMPILE_TEST
-+	help
-+	  Generic PWM framework driver for Allwinner SoCs.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-sunxi.
-+
- config PWM_TEGRA
- 	tristate "NVIDIA Tegra PWM support"
- 	depends on ARCH_TEGRA
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index e57d2c38a794..39997ea2e276 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
- obj-$(CONFIG_PWM_RENESAS_TPU)	+= pwm-renesas-tpu.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_SPEAR)		+= pwm-spear.o
-+obj-$(CONFIG_PWM_SUNXI)		+= pwm-sunxi.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
-diff --git a/drivers/pwm/pwm-sunxi.c b/drivers/pwm/pwm-sunxi.c
-new file mode 100644
-index 000000000000..e7c3ca1d3c42
---- /dev/null
-+++ b/drivers/pwm/pwm-sunxi.c
-@@ -0,0 +1,338 @@
-+/*
-+ * Driver for Allwinner Pulse Width Modulation Controller
-+ *
-+ * Copyright (C) 2014 Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ *
-+ * Licensed under GPLv2.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+
-+#define PWM_CTRL_REG		0x0
-+
-+#define PWM_CH_PRD_BASE		0x4
-+#define PWM_CH_PRD_OFF		0x4
-+#define PWM_CH_PRD(x)		(PWM_CH_PRD_BASE + PWM_CH_PRD_OFF * (x))
-+
-+#define PWMCH_OFFSET		15
-+#define PWM_PRESCAL_MASK	GENMASK(3, 0)
-+#define PWM_PRESCAL_OFF		0
-+#define PWM_EN			BIT(4)
-+#define PWM_ACT_STATE		BIT(5)
-+#define PWM_CLK_GATING		BIT(6)
-+#define PWM_MODE		BIT(7)
-+#define PWM_PULSE		BIT(8)
-+#define PWM_BYPASS		BIT(9)
-+
-+#define PWM_RDY_BASE		28
-+#define PWM_RDY_OFF		1
-+#define PWM_RDY(x)		BIT(PWM_RDY_BASE + PWM_RDY_OFF * (x))
-+
-+#define PWM_PRD_ACT_MASK	GENMASK(7, 0)
-+#define PWM_PRD(x)		((x - 1) << 16)
-+#define PWM_PRD_MASK		GENMASK(7, 0)
-+
-+#define	BIT_CH(bit, chan)	(bit << (chan * PWMCH_OFFSET))
-+
-+u32 prescal_table[] = { 120, 180, 240, 360, 480, 0, 0, 0,
-+			12000, 24000, 36000, 48000, 72000,
-+			0, 0, 1 };
-+
-+struct sunxi_pwm_data {
-+	bool has_rdy;
-+};
-+
-+struct sunxi_pwm_chip {
-+	struct pwm_chip chip;
-+	struct clk *clk;
-+	void __iomem *base;
-+	struct mutex ctrl_lock;
-+	const struct sunxi_pwm_data *data;
-+};
-+
-+#define to_sunxi_pwm_chip(chip) container_of(chip, struct sunxi_pwm_chip, chip)
-+
-+static inline u32 sunxi_pwm_readl(struct sunxi_pwm_chip *chip,
-+				  unsigned long offset)
-+{
-+	return readl(chip->base + offset);
-+}
-+
-+static inline void sunxi_pwm_writel(struct sunxi_pwm_chip *chip,
-+				    unsigned long offset, unsigned long val)
-+{
-+	writel(val, chip->base + offset);
-+}
-+
-+static int sunxi_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			    int duty_ns, int period_ns)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 clk_rate, prd, dty;
-+	u64 div;
-+	u32 val, clk_gate;
-+	int i, ret;
-+
-+	clk_rate = clk_get_rate(sunxi_pwm->clk);
-+
-+	/* First, test without any divider */
-+	i = PWM_PRESCAL_MASK;
-+	div = clk_rate * period_ns;
-+	do_div(div, 1000000000);
-+	if (div > PWM_PRD_MASK) {
-+		/* Then go up from the first divider */
-+		for (i = 0; i < PWM_PRESCAL_MASK; i++) {
-+			if (!prescal_table[i])
-+				continue;
-+			div = clk_rate / prescal_table[i];
-+			div = div * period_ns;
-+			do_div(div, 1000000000);
-+			if (div <= PWM_PRD_MASK)
-+				break;
-+		}
-+	}
-+
-+	if (div > PWM_PRD_MASK) {
-+		dev_err(chip->dev, "prescaler exceeds the maximum value\n");
-+		return -EINVAL;
-+	}
-+
-+	prd = div;
-+	div *= duty_ns;
-+	do_div(div, period_ns);
-+	dty = div;
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return ret;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+
-+	if (sunxi_pwm->data->has_rdy && (val & PWM_RDY(pwm->hwpwm))) {
-+		mutex_unlock(&sunxi_pwm->ctrl_lock);
-+		clk_disable_unprepare(sunxi_pwm->clk);
-+		return -EBUSY;
-+	}
-+
-+	clk_gate = val & BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	if (clk_gate) {
-+		val &= ~BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+		sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+	}
-+
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val &= ~BIT_CH(PWM_PRESCAL_MASK, pwm->hwpwm);
-+	val |= i;
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CH_PRD(pwm->hwpwm), dty | PWM_PRD(prd));
-+
-+	if (clk_gate) {
-+		val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+		val |= clk_gate;
-+		sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+	}
-+
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static int sunxi_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				  enum pwm_polarity polarity)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+	int ret;
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return ret;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+
-+	if (polarity != PWM_POLARITY_NORMAL)
-+		val &= ~BIT_CH(PWM_ACT_STATE, pwm->hwpwm);
-+	else
-+		val |= BIT_CH(PWM_ACT_STATE, pwm->hwpwm);
-+
-+
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static int sunxi_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+	int ret;
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(chip->dev, "failed to enable PWM clock\n");
-+		return ret;
-+	}
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val |= BIT_CH(PWM_EN, pwm->hwpwm);
-+	val |= BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+
-+	return 0;
-+}
-+
-+static void sunxi_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
-+	u32 val;
-+
-+	mutex_lock(&sunxi_pwm->ctrl_lock);
-+	val = sunxi_pwm_readl(sunxi_pwm, PWM_CTRL_REG);
-+	val &= ~BIT_CH(PWM_EN, pwm->hwpwm);
-+	val &= ~BIT_CH(PWM_CLK_GATING, pwm->hwpwm);
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG, val);
-+	mutex_unlock(&sunxi_pwm->ctrl_lock);
-+
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+}
-+
-+static const struct pwm_ops sunxi_pwm_ops = {
-+	.config = sunxi_pwm_config,
-+	.set_polarity = sunxi_pwm_set_polarity,
-+	.enable = sunxi_pwm_enable,
-+	.disable = sunxi_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static const struct sunxi_pwm_data sunxi_pwm_data_a10 = {
-+	.has_rdy = false,
-+};
-+
-+static const struct sunxi_pwm_data sunxi_pwm_data_a20 = {
-+	.has_rdy = true,
-+};
-+
-+static const struct of_device_id sunxi_pwm_dt_ids[] = {
-+	{
-+		.compatible = "allwinner,sun4i-a10-pwm",
-+		.data = &sunxi_pwm_data_a10,
-+	}, {
-+		.compatible = "allwinner,sun7i-a20-pwm",
-+		.data = &sunxi_pwm_data_a20,
-+	}, {
-+		/* sentinel */
-+	},
-+};
-+MODULE_DEVICE_TABLE(of, sunxi_pwm_dt_ids);
-+
-+static int sunxi_pwm_probe(struct platform_device *pdev)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm;
-+	struct resource *res;
-+	int ret;
-+
-+	const struct of_device_id *match;
-+
-+	match = of_match_device(sunxi_pwm_dt_ids, &pdev->dev);
-+	if (!match || !match->data)
-+		return -ENODEV;
-+
-+	sunxi_pwm = devm_kzalloc(&pdev->dev, sizeof(*sunxi_pwm), GFP_KERNEL);
-+	if (!sunxi_pwm)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	sunxi_pwm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(sunxi_pwm->base))
-+		return PTR_ERR(sunxi_pwm->base);
-+
-+	sunxi_pwm->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(sunxi_pwm->clk))
-+		return PTR_ERR(sunxi_pwm->clk);
-+
-+	sunxi_pwm->chip.dev = &pdev->dev;
-+	sunxi_pwm->chip.ops = &sunxi_pwm_ops;
-+
-+	sunxi_pwm->chip.base = -1;
-+	sunxi_pwm->chip.npwm = 2;
-+	sunxi_pwm->chip.can_sleep = true;
-+	sunxi_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-+	sunxi_pwm->chip.of_pwm_n_cells = 3;
-+	sunxi_pwm->data = match->data;
-+
-+	mutex_init(&sunxi_pwm->ctrl_lock);
-+
-+	ret = clk_prepare_enable(sunxi_pwm->clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable PWM clock\n");
-+		goto error;
-+	}
-+
-+	/* By default, the polarity is inversed, set it to normal */
-+	sunxi_pwm_writel(sunxi_pwm, PWM_CTRL_REG,
-+			 BIT_CH(PWM_ACT_STATE, 0) |
-+			 BIT_CH(PWM_ACT_STATE, 1));
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+
-+	ret = pwmchip_add(&sunxi_pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add PWM chip %d\n", ret);
-+		goto error;
-+	}
-+
-+	platform_set_drvdata(pdev, sunxi_pwm);
-+
-+	return ret;
-+
-+error:
-+	mutex_destroy(&sunxi_pwm->ctrl_lock);
-+	clk_disable_unprepare(sunxi_pwm->clk);
-+	return ret;
-+}
-+
-+static int sunxi_pwm_remove(struct platform_device *pdev)
-+{
-+	struct sunxi_pwm_chip *sunxi_pwm = platform_get_drvdata(pdev);
-+
-+	mutex_destroy(&sunxi_pwm->ctrl_lock);
-+
-+	return pwmchip_remove(&sunxi_pwm->chip);
-+}
-+
-+static struct platform_driver sunxi_pwm_driver = {
-+	.driver = {
-+		.name = "sunxi-pwm",
-+		.of_match_table = sunxi_pwm_dt_ids,
-+	},
-+	.probe = sunxi_pwm_probe,
-+	.remove = sunxi_pwm_remove,
-+};
-+module_platform_driver(sunxi_pwm_driver);
-+
-+MODULE_ALIAS("platform:sunxi-pwm");
-+MODULE_AUTHOR("Alexandre Belloni <alexandre.belloni@free-electrons.com>");
-+MODULE_DESCRIPTION("Allwinner PWM driver");
-+MODULE_LICENSE("GPL v2");
+I'd expect those just to have 64-bit time_t in userspace (like x32) - 
+choosing a different type for time_t from the start is a lot simpler than 
+setting up a second set of interfaces with associated symbol versioning 
+for an existing architecture.  This whole discussion started with the 
+question of whether Nios II should be such an architecture....
+
+(Other variants may arise as well, e.g. architectures with existing kernel 
+support that only get glibc support later.)
+
 -- 
-1.9.1
-
+Joseph S. Myers
+joseph@codesourcery.com
