@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaESNCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:02:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37932 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611AbaESNCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:02:46 -0400
-Message-ID: <537A00CA.2060009@ti.com>
-Date: Mon, 19 May 2014 18:32:02 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754638AbaESNDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:03:18 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33685 "EHLO
+	alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753570AbaESNDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:03:17 -0400
+Subject: [PATCH] pci: Allow very large resource windows
+From: Alan <gnomes@lxorguk.ukuu.org.uk>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 May 2014 14:03:14 +0100
+Message-ID: <20140519130255.15364.49358.stgit@alan.etchedpixels.co.uk>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>, <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 05/13] ARM/platform_data: edma: Remove queue_tc_mapping
- data from edma_soc_info
-References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-6-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1400242640-9902-6-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 May 2014 05:47 PM, Peter Ujfalusi wrote:
-> It is no longer in use by the driver or board files.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Alan <alan@linux.intel.com>
 
-I dropped the /platform_data in subject like to keep it consistent with
-what has been done for this file so far. Even looking at logs for other
-files in this directory there is no such convention.
+This is needed for some of the Xeon Phi type systems.
 
-Same thing for 13/13.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/pci/setup-bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Sekhar
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index d219d44..4184112 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -921,7 +921,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ {
+ 	struct pci_dev *dev;
+ 	resource_size_t min_align, align, size, size0, size1;
+-	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
++	resource_size_t aligns[14];	/* Alignments from 1Mb to 8Gb */
+ 	int order, max_order;
+ 	struct resource *b_res = find_free_bus_resource(bus, type);
+ 	unsigned int mem64_mask = 0;
+@@ -960,7 +960,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 			/* For bridges size != alignment */
+ 			align = pci_resource_alignment(dev, r);
+ 			order = __ffs(align) - 20;
+-			if (order > 11) {
++			if (order > 13) {
+ 				dev_warn(&dev->dev, "disabling BAR %d: %pR "
+ 					 "(bad alignment %#llx)\n", i, r,
+ 					 (unsigned long long) align);
 
