@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaESEgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:36:03 -0400
+	id S1750846AbaESEcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:32:50 -0400
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17570 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750852AbaESEcv (ORCPT
+	by vger.kernel.org with ESMTP id S1750706AbaESEcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 00:32:51 -0400
+	Mon, 19 May 2014 00:32:48 -0400
 X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="74474216"
+   d="scan'208";a="74474213"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Cc: kernel-janitors@vger.kernel.org, linux-wimax@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/13] wimax/i2400m: make return of 0 explicit
-Date: Mon, 19 May 2014 06:31:06 +0200
-Message-Id: <1400473875-22228-5-git-send-email-Julia.Lawall@lip6.fr>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/13] libertas: make return of 0 explicit
+Date: Mon, 19 May 2014 06:31:03 +0200
+Message-Id: <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -49,42 +50,43 @@ return
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-Alternatively, is an error code wanted under the if?
+Alternatively, was an error code intended in the bad length case, as is
+done in process_brxed_802_11_packet?
 
- drivers/net/wimax/i2400m/driver.c |    7 ++-----
+ drivers/net/wireless/libertas/rx.c |    7 ++-----
  1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
-index 9c34d2f..901a534 100644
---- a/drivers/net/wimax/i2400m/driver.c
-+++ b/drivers/net/wimax/i2400m/driver.c
-@@ -500,26 +500,23 @@ int i2400m_pm_notifier(struct notifier_block *notifier,
+diff --git a/drivers/net/wireless/libertas/rx.c b/drivers/net/wireless/libertas/rx.c
+index c7366b0..807c5b8 100644
+--- a/drivers/net/wireless/libertas/rx.c
++++ b/drivers/net/wireless/libertas/rx.c
+@@ -55,7 +55,6 @@ static int process_rxed_802_11_packet(struct lbs_private *priv,
   */
- int i2400m_pre_reset(struct i2400m *i2400m)
+ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
  {
--	int result;
- 	struct device *dev = i2400m_dev(i2400m);
- 
- 	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
- 	d_printf(1, dev, "pre-reset shut down\n");
- 
--	result = 0;
- 	mutex_lock(&i2400m->init_mutex);
- 	if (i2400m->updown) {
- 		netif_tx_disable(i2400m->wimax_dev.net_dev);
- 		__i2400m_dev_stop(i2400m);
--		result = 0;
- 		/* down't set updown to zero -- this way
- 		 * post_reset can restore properly */
+-	int ret = 0;
+ 	struct net_device *dev = priv->dev;
+ 	struct rxpackethdr *p_rx_pkt;
+ 	struct rxpd *p_rx_pd;
+@@ -86,7 +85,6 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+ 	if (skb->len < (ETH_HLEN + 8 + sizeof(struct rxpd))) {
+ 		lbs_deb_rx("rx err: frame received with bad length\n");
+ 		dev->stats.rx_length_errors++;
+-		ret = 0;
+ 		dev_kfree_skb(skb);
+ 		goto done;
  	}
- 	mutex_unlock(&i2400m->init_mutex);
- 	if (i2400m->bus_release)
- 		i2400m->bus_release(i2400m);
--	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, result);
--	return result;
-+	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, 0);
+@@ -154,10 +152,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+ 	else
+ 		netif_rx_ni(skb);
+ 
+-	ret = 0;
+ done:
+-	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", ret);
+-	return ret;
++	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", 0);
 +	return 0;
  }
- EXPORT_SYMBOL_GPL(i2400m_pre_reset);
+ EXPORT_SYMBOL_GPL(lbs_process_rxed_packet);
  
 
