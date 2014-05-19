@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaESSmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 14:42:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaESSmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:42:36 -0400
-Date: Mon, 19 May 2014 20:41:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] uprobes: Teach copy_insn() to support tmpfs
-Message-ID: <20140519184136.GB6750@redhat.com>
-References: <20140519184054.GA6750@redhat.com>
+	id S1753851AbaESStM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 14:49:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:52587 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaESStJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 14:49:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519184054.GA6750@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140224162951.20485.57579.stgit@patser>
+References: <20140224162607.20485.70967.stgit@patser>
+	<20140224162951.20485.57579.stgit@patser>
+Date: Mon, 19 May 2014 11:49:08 -0700
+Message-ID: <CALAqxLWZvt3yF8kAQz1AnQMOv66qqN8jP_zQiPDpiDcVngAa0g@mail.gmail.com>
+Subject: Re: [PATCH 4/6] android: convert sync to fence api, v5
+From: John Stultz <john.stultz@linaro.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Colin Cross <ccross@google.com>, linux-media@vger.kernel.org,
+        Rom Lemarchand <romlem@google.com>,
+        Greg Hackmann <ghackmann@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmpfs is widely used but as Denys reports shmem_aops doesn't have
-->readpage() and thus you can't probe a binary on this filesystem.
+On Mon, Feb 24, 2014 at 8:29 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+> Just to show it's easy.
+>
+> Android syncpoints can be mapped to a timeline. This removes the need
+> to maintain a separate api for synchronization. I've left the android
+> trace events in place, but the core fence events should already be
+> sufficient for debugging.
+>
+> v2:
+> - Call fence_remove_callback in sync_fence_free if not all fences have fired.
+> v3:
+> - Merge Colin Cross' bugfixes, and the android fence merge optimization.
+> v4:
+> - Merge with the upstream fixes.
+> v5:
+> - Fix small style issues pointed out by Thomas Hellstrom.
+>
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-As Hugh suggested we can use shmem_read_mapping_page() in this case,
-just we need to check shmem_mapping() if ->readpage == NULL.
+I ran this through a fairly simple unit test for the Android sw_sync
+interface and it ran fine.  Also since Colin, Rom and Greg didn't seem
+to have major objections last I spoke with them:
 
-Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
-Suggested-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+Acked-by: John Stultz <john.stultz@linaro.org>
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c56b13e..6bfb671 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -36,6 +36,7 @@
- #include "../../mm/internal.h"	/* munlock_vma_page */
- #include <linux/percpu-rwsem.h>
- #include <linux/task_work.h>
-+#include <linux/shmem_fs.h>
- 
- #include <linux/uprobes.h>
- 
-@@ -537,10 +538,14 @@ static int __copy_insn(struct address_space *mapping, struct file *filp,
- {
- 	struct page *page;
- 	/*
--	 * Ensure that the page that has the original instruction is
--	 * populated and in page-cache.
-+	 * Ensure that the page that has the original instruction is populated
-+	 * and in page-cache. If ->readpage == NULL it must be shmem_mapping(),
-+	 * see uprobe_register().
- 	 */
--	page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
-+	if (mapping->a_ops->readpage)
-+		page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
-+	else
-+		page = shmem_read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT);
- 	if (IS_ERR(page))
- 		return PTR_ERR(page);
- 
-@@ -876,8 +881,8 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	if (!uc->handler && !uc->ret_handler)
- 		return -EINVAL;
- 
--	/* copy_insn()->read_mapping_page() needs ->readpage() */
--	if (!inode->i_mapping->a_ops->readpage)
-+	/* copy_insn() uses read_mapping_page() or shmem_read_mapping_page() */
-+	if (!inode->i_mapping->a_ops->readpage && !shmem_mapping(inode->i_mapping))
- 		return -EIO;
- 	/* Racy, just to catch the obvious mistakes */
- 	if (offset > i_size_read(inode))
--- 
-1.5.5.1
-
-
+thanks
+-john
