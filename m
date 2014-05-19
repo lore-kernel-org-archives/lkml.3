@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaESHLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:11:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19766 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaESHLe (ORCPT
+	id S1753192AbaESHME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:12:04 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:11793 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaESHL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:11:34 -0400
+	Mon, 19 May 2014 03:11:28 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 19 May 2014 00:06:42 -0700
+	by hqnvupgp08.nvidia.com on Mon, 19 May 2014 00:06:36 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
         Lucas Stach <dev@lynxeye.de>,
@@ -16,9 +16,9 @@ To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
 CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
         <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 4/4] drm/nouveau: introduce CPU cache flushing macro
-Date: Mon, 19 May 2014 16:10:58 +0900
-Message-ID: <1400483458-9648-5-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH 2/4] drm/ttm: introduce dma cache sync helpers
+Date: Mon, 19 May 2014 16:10:56 +0900
+Message-ID: <1400483458-9648-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
 References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
@@ -29,76 +29,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures (e.g. ARM) need the CPU buffers to be explicitely
-flushed for a memory write to take effect. Not doing so results in
-synchronization issues, especially after writing to BOs.
+From: Lucas Stach <dev@lynxeye.de>
 
-This patch introduces a macro that flushes the caches on ARM and
-translates to a no-op on other architectures, and uses it when
-writing to in-memory BOs. It will also be useful for implementations of
-instmem that access shared memory directly instead of going through
-PRAMIN.
+On arches with non-coherent PCI, we need to flush caches ourselfes at
+the appropriate places. Introduce two small helpers to make things easy
+for TTM based drivers.
 
+Signed-off-by: Lucas Stach <dev@lynxeye.de>
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/core/os.h    | 17 +++++++++++++++++
- drivers/gpu/drm/nouveau/nouveau_bo.c |  8 ++++++--
- 2 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/ttm/ttm_tt.c    | 25 +++++++++++++++++++++++++
+ include/drm/ttm/ttm_bo_driver.h | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/core/os.h b/drivers/gpu/drm/nouveau/core/os.h
-index d0ced94ca54c..274b4460bb03 100644
---- a/drivers/gpu/drm/nouveau/core/os.h
-+++ b/drivers/gpu/drm/nouveau/core/os.h
-@@ -38,4 +38,21 @@
- #endif /* def __BIG_ENDIAN else */
- #endif /* !ioread32_native */
- 
-+#if defined(__arm__)
-+
-+#define nv_cpu_cache_flush_area(va, size)	\
-+do {						\
-+	phys_addr_t pa = virt_to_phys(va);	\
-+	__cpuc_flush_dcache_area(va, size);	\
-+	outer_flush_range(pa, pa + size);	\
-+} while (0)
-+
-+#else
-+
-+#define nv_cpu_cache_flush_area(va, size)	\
-+do {						\
-+} while (0)
-+
-+#endif /* defined(__arm__) */
-+
- #endif
-diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-index 0886f47e5244..b9c9729c5733 100644
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -437,8 +437,10 @@ nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val)
- 	mem = &mem[index];
- 	if (is_iomem)
- 		iowrite16_native(val, (void __force __iomem *)mem);
--	else
-+	else {
- 		*mem = val;
-+		nv_cpu_cache_flush_area(mem, 2);
-+	}
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index 75f319090043..05a316b71ad1 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -38,6 +38,7 @@
+ #include <linux/swap.h>
+ #include <linux/slab.h>
+ #include <linux/export.h>
++#include <linux/dma-mapping.h>
+ #include <drm/drm_cache.h>
+ #include <drm/drm_mem_util.h>
+ #include <drm/ttm/ttm_module.h>
+@@ -248,6 +249,30 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
  }
+ EXPORT_SYMBOL(ttm_dma_tt_fini);
  
- u32
-@@ -461,8 +463,10 @@ nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val)
- 	mem = &mem[index];
- 	if (is_iomem)
- 		iowrite32_native(val, (void __force __iomem *)mem);
--	else
-+	else {
- 		*mem = val;
-+		nv_cpu_cache_flush_area(mem, 4);
++void ttm_dma_tt_cache_sync_for_device(struct ttm_dma_tt *ttm_dma,
++				      struct device *dev)
++{
++	int i;
++
++	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
++		dma_sync_single_for_device(dev, ttm_dma->dma_address[i],
++					   PAGE_SIZE, DMA_TO_DEVICE);
 +	}
- }
++}
++EXPORT_SYMBOL(ttm_dma_tt_cache_sync_for_device);
++
++void ttm_dma_tt_cache_sync_for_cpu(struct ttm_dma_tt *ttm_dma,
++				   struct device *dev)
++{
++	int i;
++
++	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
++		dma_sync_single_for_cpu(dev, ttm_dma->dma_address[i],
++					PAGE_SIZE, DMA_FROM_DEVICE);
++	}
++}
++EXPORT_SYMBOL(ttm_dma_tt_cache_sync_for_cpu);
++
+ void ttm_tt_unbind(struct ttm_tt *ttm)
+ {
+ 	int ret;
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index a5183da3ef92..52fb709568fc 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -41,6 +41,7 @@
+ #include <linux/fs.h>
+ #include <linux/spinlock.h>
+ #include <linux/reservation.h>
++#include <linux/device.h>
  
- static struct ttm_tt *
+ struct ttm_backend_func {
+ 	/**
+@@ -690,6 +691,33 @@ extern int ttm_tt_swapout(struct ttm_tt *ttm,
+  */
+ extern void ttm_tt_unpopulate(struct ttm_tt *ttm);
+ 
++/**
++ * ttm_dma_tt_cache_sync_for_device:
++ *
++ * @ttm A struct ttm_tt of the type returned by ttm_dma_tt_init.
++ * @dev A struct device representing the device to which to sync.
++ *
++ * This function will flush the CPU caches on arches where snooping in the
++ * TT is not available. On fully coherent arches this will turn into an (almost)
++ * noop. This makes sure that data written by the CPU is visible to the device.
++ */
++extern void ttm_dma_tt_cache_sync_for_device(struct ttm_dma_tt *ttm_dma,
++					     struct device *dev);
++
++/**
++ * ttm_dma_tt_cache_sync_for_cpu:
++ *
++ * @ttm A struct ttm_tt of the type returned by ttm_dma_tt_init.
++ * @dev A struct device representing the device from which to sync.
++ *
++ * This function will invalidate the CPU caches on arches where snooping in the
++ * TT is not available. On fully coherent arches this will turn into an (almost)
++ * noop. This makes sure that the CPU does not read any stale cached or
++ * prefetched data.
++ */
++extern void ttm_dma_tt_cache_sync_for_cpu(struct ttm_dma_tt *ttm_dma,
++					  struct device *dev);
++
+ /*
+  * ttm_bo.c
+  */
 -- 
 1.9.2
 
