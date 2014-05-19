@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaESXGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:06:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50956 "HELO
+	id S1752178AbaESXIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:08:13 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60237 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751275AbaESXGF (ORCPT
+	with SMTP id S1751103AbaESXIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:06:05 -0400
+	Mon, 19 May 2014 19:08:12 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH RESEND 1/2] cpufreq: imx6q: Drop devm_clk/regulator_get usage
-Date: Tue, 20 May 2014 01:23 +0200
-Message-ID: <9418505.z3DUuJxW0Y@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>
+Subject: Re: [PATCH] cpufreq: Tegra: drop wrapper around tegra_update_cpu_speed()
+Date: Tue, 20 May 2014 01:25:06 +0200
+Message-ID: <7390169.l9Y1Z45IAv@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400083344-20042-1-git-send-email-p.zabel@pengutronix.de>
-References: <1400083344-20042-1-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <CAKohponB_wiJZ9jq+JrJGxe7Y-447FpEjSZRZ+snXpxmOP=Erg@mail.gmail.com>
+References: <a38df05b91198f393b1c4b78f39110c6bece3627.1400133049.git.viresh.kumar@linaro.org> <53750B27.4020708@wwwdotorg.org> <CAKohponB_wiJZ9jq+JrJGxe7Y-447FpEjSZRZ+snXpxmOP=Erg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,135 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 14, 2014 06:02:23 PM Philipp Zabel wrote:
-> This driver is using devres managed calls incorrectly, giving the cpu0
-> device as first parameter instead of the cpufreq platform device.
-> This results in resources not being freed if the cpufreq platform device
-> is unbound, for example if probing has to be deferred for a missing
-> regulator.
-> Supporting probe deferral properly is a prerequisite to enabling the
-> internal LDO bypass on i.MX6 and regulating the CPU voltage with an
-> external regulator.
+On Friday, May 16, 2014 11:36:48 AM Viresh Kumar wrote:
+> On 16 May 2014 00:14, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > On 05/14/2014 11:51 PM, Viresh Kumar wrote:
+> >> Tegra has implemented an unnecessary wrapper over tegra_update_cpu_speed(), i.e.
+> >> tegra_target(), which wasn't doing anything apart of calling
+> >> tegra_update_cpu_speed(). Get rid of that and use tegra_target() directly.
+> >
+> > I think it used to do something until some refactoring happened? Anyway,
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Acked-by: Shawn Guo <shawn.guo@freescale.com>
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Yep..
+> 
+> > Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Both patches queued up for 3.16, thanks!
-
-> ---
-> Resent to linux-pm@vger.kernel.org instead of cpufreq@vger.kernel.org.
-> ---
->  drivers/cpufreq/imx6q-cpufreq.c | 53 ++++++++++++++++++++++++++++++-----------
->  1 file changed, 39 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
-> index e27fca8..92a82ec 100644
-> --- a/drivers/cpufreq/imx6q-cpufreq.c
-> +++ b/drivers/cpufreq/imx6q-cpufreq.c
-> @@ -170,25 +170,25 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
->  		return -ENOENT;
->  	}
->  
-> -	arm_clk = devm_clk_get(cpu_dev, "arm");
-> -	pll1_sys_clk = devm_clk_get(cpu_dev, "pll1_sys");
-> -	pll1_sw_clk = devm_clk_get(cpu_dev, "pll1_sw");
-> -	step_clk = devm_clk_get(cpu_dev, "step");
-> -	pll2_pfd2_396m_clk = devm_clk_get(cpu_dev, "pll2_pfd2_396m");
-> +	arm_clk = clk_get(cpu_dev, "arm");
-> +	pll1_sys_clk = clk_get(cpu_dev, "pll1_sys");
-> +	pll1_sw_clk = clk_get(cpu_dev, "pll1_sw");
-> +	step_clk = clk_get(cpu_dev, "step");
-> +	pll2_pfd2_396m_clk = clk_get(cpu_dev, "pll2_pfd2_396m");
->  	if (IS_ERR(arm_clk) || IS_ERR(pll1_sys_clk) || IS_ERR(pll1_sw_clk) ||
->  	    IS_ERR(step_clk) || IS_ERR(pll2_pfd2_396m_clk)) {
->  		dev_err(cpu_dev, "failed to get clocks\n");
->  		ret = -ENOENT;
-> -		goto put_node;
-> +		goto put_clk;
->  	}
->  
-> -	arm_reg = devm_regulator_get(cpu_dev, "arm");
-> -	pu_reg = devm_regulator_get(cpu_dev, "pu");
-> -	soc_reg = devm_regulator_get(cpu_dev, "soc");
-> +	arm_reg = regulator_get(cpu_dev, "arm");
-> +	pu_reg = regulator_get(cpu_dev, "pu");
-> +	soc_reg = regulator_get(cpu_dev, "soc");
->  	if (IS_ERR(arm_reg) || IS_ERR(pu_reg) || IS_ERR(soc_reg)) {
->  		dev_err(cpu_dev, "failed to get regulators\n");
->  		ret = -ENOENT;
-> -		goto put_node;
-> +		goto put_reg;
->  	}
->  
->  	/*
-> @@ -201,21 +201,21 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
->  		ret = of_init_opp_table(cpu_dev);
->  		if (ret < 0) {
->  			dev_err(cpu_dev, "failed to init OPP table: %d\n", ret);
-> -			goto put_node;
-> +			goto put_reg;
->  		}
->  
->  		num = dev_pm_opp_get_opp_count(cpu_dev);
->  		if (num < 0) {
->  			ret = num;
->  			dev_err(cpu_dev, "no OPP table is found: %d\n", ret);
-> -			goto put_node;
-> +			goto put_reg;
->  		}
->  	}
->  
->  	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
->  	if (ret) {
->  		dev_err(cpu_dev, "failed to init cpufreq table: %d\n", ret);
-> -		goto put_node;
-> +		goto put_reg;
->  	}
->  
->  	/* Make imx6_soc_volt array's size same as arm opp number */
-> @@ -301,7 +301,24 @@ soc_opp_out:
->  
->  free_freq_table:
->  	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-> -put_node:
-> +put_reg:
-> +	if (!IS_ERR(arm_reg))
-> +		regulator_put(arm_reg);
-> +	if (!IS_ERR(pu_reg))
-> +		regulator_put(pu_reg);
-> +	if (!IS_ERR(soc_reg))
-> +		regulator_put(soc_reg);
-> +put_clk:
-> +	if (!IS_ERR(arm_clk))
-> +		clk_put(arm_clk);
-> +	if (!IS_ERR(pll1_sys_clk))
-> +		clk_put(pll1_sys_clk);
-> +	if (!IS_ERR(pll1_sw_clk))
-> +		clk_put(pll1_sw_clk);
-> +	if (!IS_ERR(step_clk))
-> +		clk_put(step_clk);
-> +	if (!IS_ERR(pll2_pfd2_396m_clk))
-> +		clk_put(pll2_pfd2_396m_clk);
->  	of_node_put(np);
->  	return ret;
->  }
-> @@ -310,6 +327,14 @@ static int imx6q_cpufreq_remove(struct platform_device *pdev)
->  {
->  	cpufreq_unregister_driver(&imx6q_cpufreq_driver);
->  	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-> +	regulator_put(arm_reg);
-> +	regulator_put(pu_reg);
-> +	regulator_put(soc_reg);
-> +	clk_put(arm_clk);
-> +	clk_put(pll1_sys_clk);
-> +	clk_put(pll1_sw_clk);
-> +	clk_put(step_clk);
-> +	clk_put(pll2_pfd2_396m_clk);
->  
->  	return 0;
->  }
-> 
+Patch queued up for 3.16, thanks!
 
 -- 
 I speak only for myself.
