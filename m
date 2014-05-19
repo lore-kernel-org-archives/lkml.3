@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaESCmW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 22:42:22 -0400
-Received: from mailout.micron.com ([137.201.242.129]:36599 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaESCmV convert rfc822-to-8bit (ORCPT
+	id S1752606AbaESCoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 22:44:46 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:40285 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321AbaESCoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 22:42:21 -0400
-From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Topic: [PATCH 1/1] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Index: Ac9zC9WvVS1si7dTS9qWoVuHEN6sWA==
-Date: Mon, 19 May 2014 02:41:29 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315D03AC@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20702.004
-X-TM-AS-Result: No--7.654600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 18 May 2014 22:44:44 -0400
+Message-ID: <1400467481.5211.48.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 19 May 2014 04:44:41 +0200
+In-Reply-To: <20140518155815.GK4570@linux.vnet.ibm.com>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+	 <1400123931.5175.38.camel@marge.simpson.net>
+	 <1400386954.5140.36.camel@marge.simpson.net>
+	 <20140518052039.GF4570@linux.vnet.ibm.com>
+	 <1400402201.5166.13.camel@marge.simpson.net>
+	 <20140518155815.GK4570@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the buffer program has been increased from 256 to 512 ,
-2ms maximum timeout can not adapt to all the different vendor's norflash,
-There maximum timeout information in the CFI area,so the best way is to
-choose the result calculated according to timeout field of struct cfi_ident
-that probed from norflash's CFI aera.This is also a standard defined by CFI.
+On Sun, 2014-05-18 at 08:58 -0700, Paul E. McKenney wrote: 
+> On Sun, May 18, 2014 at 10:36:41AM +0200, Mike Galbraith wrote:
+> > On Sat, 2014-05-17 at 22:20 -0700, Paul E. McKenney wrote:
+> > 
+> > > If you are saying that turning on nohz_full doesn't help unless you
+> > > also ensure that there is only one runnable task per CPU, I completely
+> > > agree.  If you are saying something else, you lost me.  ;-)
+> > 
+> > Yup, that's it more or less.  It's not only single task loads that could
+> > benefit from better isolation, but if isolation improving measures are
+> > tied to nohz_full, other sensitive loads will suffer if they try to use
+> > isolation improvements.
+> 
+> So you are arguing for a separate Kconfig variable that does the isolation?
+> So that NO_HZ_FULL selects this new variable, and (for example) RCU
+> uses this new variable to decide when to pin the grace-period kthreads
+> onto the housekeeping CPU?
 
-Without this change, if the size of buffer program is 512 or bigger than 256,
-due to timeout is the shorter than that the chip required,do_write_buffer
-sometimes fails.
+I'm thinking more about runtime, but yes.
 
-Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
+The tick mode really wants to be selectable per set (in my boxen you can
+switch between nohz off/idle, but not yet nohz_full, that might get real
+interesting).  You saw in my numbers that ticked is far better for the
+threaded rt load, but what if the total load has both sensitive rt and
+compute components to worry about?  The rt component wants relief from
+the jitter that flipping the tick inflicts, but also wants as little
+disturbance as possible, so RCU offload and whatever other measures that
+are or become available are perhaps interesting to it as well.  The
+numbers showed that here and now the two modes can work together in the
+same box, I can have my rt set ticking away, and other cores doing
+tickless compute, but enabling that via common config (distros don't
+want to ship many kernel flavors) has a cost to rt performance.
 
-Signed-off-by: bean huo <beanhuo@micron.com>
----
- drivers/mtd/chips/cfi_cmdset_0002.c |   46 ++++++++++++++++++++++++++++++++---
- 1 file changed, 43 insertions(+), 3 deletions(-)
+Ideally, bean counting would be switchable too, giving all components
+the environment they like best.
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index e21fde9..2a08f9f 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -628,10 +628,42 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
- 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
- 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
- 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
-+		/*
-+		 * We first calculate the timeout max according to timeout
-+		 * field of struct cfi_ident that probed from chip's CFI
-+		 * aera,If haven't probed this information,we will specify
-+		 * a default value,and the time unit is us.
-+		 */
-+		if (cfi->cfiq->WordWriteTimeoutTyp &&
-+			cfi->cfiq->WordWriteTimeoutMax){
-+			cfi->chips[i].word_write_time_max =
-+				1<<(cfi->cfiq->WordWriteTimeoutTyp +
-+					cfi->cfiq->WordWriteTimeoutMax);
-+			} else {
-+		/* specify maximum timeout for byte/word program 2000us */
-+				cfi->chips[i].word_write_time_max = 2000;
-+				}
-+		if (cfi->cfiq->BufWriteTimeoutTyp &&
-+			cfi->cfiq->BufWriteTimeoutMax){
-+			cfi->chips[i].buffer_write_time_max =
-+				1<<(cfi->cfiq->BufWriteTimeoutTyp +
-+					cfi->cfiq->BufWriteTimeoutMax);
-+			} else {
-+		/* specify maximum timeout for buffer program 2000us */
-+				cfi->chips[i].buffer_write_time_max = 2000;
-+				}
-+		if (cfi->cfiq->BlockEraseTimeoutTyp &&
-+			cfi->cfiq->BlockEraseTimeoutMax){
-+			cfi->chips[i].erase_time_max =
-+				1<<(cfi->cfiq->BlockEraseTimeoutTyp +
-+					cfi->cfiq->BlockEraseTimeoutMax);
-+			} else {
-+	/* specify maximum timeout per individual block erase 3000000us */
-+				cfi->chips[i].erase_time_max = 3000000;
-+				}
- 		cfi->chips[i].ref_point_counter = 0;
- 		init_waitqueue_head(&(cfi->chips[i].wq));
- 	}
--
- 	map->fldrv = &cfi_amdstd_chipdrv;
- 
- 	return cfi_amdstd_setup(mtd);
-@@ -1462,8 +1494,16 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
- {
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	unsigned long timeo = jiffies + HZ;
--	/* see comments in do_write_oneword() regarding uWriteTimeo. */
--	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
-+	/* The size of the buffer program has been increased from 256 to 512,
-+	 * 2ms maximum timeout can not adapt to all the different vendor's
-+	 * norflash.There maximum timeout information in the CFI area,so the
-+	 * best way is to choose the result calculated according to timeout
-+	 * field of struct cfi_ident that probed from norflash's CFI aera,see
-+	 * comments in cfi_cmdset_0002().The time unit of uWriteTimeout is ms.
-+	 */
-+	unsigned long uWriteTimeout = (chip->buffer_write_time_max % 1000) ?
-+			(chip->buffer_write_time_max / 1000 + 1) :
-+			(chip->buffer_write_time_max / 1000);
- 	int ret = -EIO;
- 	unsigned long cmd_adr;
- 	int z, words;
--- 
-1.7.9.5
+-Mike
+
