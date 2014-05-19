@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580AbaESQ7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:59:32 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:58542 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaESQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:59:31 -0400
-Message-ID: <537A386E.10602@mev.co.uk>
-Date: Mon, 19 May 2014 17:59:26 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932741AbaESQ7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:59:42 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:65345 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164AbaESQ7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:59:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Generic Configuration Access Mechanism support
+Date: Mon, 19 May 2014 18:59:36 +0200
+Message-ID: <10203370.xOnWqK3Vx4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140519163223.GP15130@arm.com>
+References: <1400422125-2209-1-git-send-email-sthokal@xilinx.com> <20140519163223.GP15130@arm.com>
 MIME-Version: 1.0
-To: Raghavendra Ganiga <ravi23ganiga@gmail.com>,
-        <hsweeten@visionengravers.com>, <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Staging: comedi: fixed warnings reported by checkpatch
- tool on comedi_test.c file
-References: <1400516343-9880-1-git-send-email-ravi23ganiga@gmail.com>
-In-Reply-To: <1400516343-9880-1-git-send-email-ravi23ganiga@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8EPn7VegKdrw0YUKv/ZWf7pw4wuj/SUnjsXs5Hwmr4L
+ XZNNdZka3pA8TjTwsBX7HBAlajT8q41N3hc13TwGXwRzuLy5QD
+ yDvhGTUplSgr3RpyuJCfTV/l4G+gK4AVsaB4sVEDGi8enpDBCD
+ 1MOwgH+dUuVuCur7zrHhKW6vD+FeDs4x35T+7Y7PLQioGqnFTQ
+ wKna4JgJs5UI3IglDfasLcGtqHQx2LeQnA3ihwoO7VVobjVY3/
+ gcX1vjbaIJ/LIN1+uqDOUUZAJ2BqW/55MBBptcNfQHHMdnvpKn
+ GnKGMmj3hb9G4hsMg4qFPlBh0Jb9wa8DurEZ76yPzDcIie7hTq
+ 02eNi9Ys9+kI5bhFO164=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-19 17:19, Raghavendra Ganiga wrote:
-> This is a patch to remove warnings reported by checkpatch tool on
-> comedi_test.c file
->
-> Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/comedi_test.c | 2 ++
->   1 file changed, 2 insertions(+)
+On Monday 19 May 2014 17:32:23 Will Deacon wrote:
+> On Sun, May 18, 2014 at 03:08:45PM +0100, Srikanth Thokala wrote:
+> > This patch adds support for a generic CAM and ECAM configuration
+> > space accesses.
+> 
+> Looks good to me, thanks Srikanth!
+> 
+> Arnd: is this the sort of thing you were expecting? The
+> ->is_valid_cfg_access callback is a bit horrible, but I can't think of
+> anything better.
+> 
+> I can include this in the next posting of my PCI patches.
 
-Thanks!
+Yes, this is roughly what I had in mind, thanks a lot!
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+I'll comment a bit more on the patch itself
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+	Arnd
