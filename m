@@ -1,252 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaESKlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:41:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55042 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668AbaESKlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:41:49 -0400
-Message-ID: <5379DFE9.90207@suse.de>
-Date: Mon, 19 May 2014 12:41:45 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753221AbaESKoY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:44:24 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:34304 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaESKoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 06:44:22 -0400
+Message-ID: <5379E07B.9040507@gmail.com>
+Date: Mon, 19 May 2014 12:44:11 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Michael Mueller <mimu@linux.vnet.ibm.com>
-CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 3/6] KVM: s390: use facilities and
- cpu_id per KVM
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>	<1399993114-15333-4-git-send-email-mimu@linux.vnet.ibm.com>	<5375FCBD.7010700@suse.de>	<20140516164645.57f22213@bee>	<53762581.30708@suse.de>	<20140516180945.588563ec@bee>	<53767696.7050905@suse.de> <20140519121320.0db01521@bee>
-In-Reply-To: <20140519121320.0db01521@bee>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tushar Behera <tushar.behera@linaro.org>, Tomasz Figa <t.figa@samsung.com>
+CC: Rahul Sharma <rahul.sharma@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, sunil joshi <joshi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH 1/4] clk: samsung: out: Add infrastructure to register
+ CLKOUT
+References: <1399640410-30957-1-git-send-email-tushar.behera@linaro.org>	<1399640410-30957-2-git-send-email-tushar.behera@linaro.org>	<536DA243.6000600@samsung.com>	<53705243.1030704@linaro.org>	<CAPdUM4N=k-pPxdhPQgVHh0fb+nqkgs7StwM2Pb6C8gcjx6dw-w@mail.gmail.com>	<5374CA1C.8000207@samsung.com> <CAHbNUh03TVxbXZcT3e6618zPdu_53_y6nVjwJE7cWa6zxLMpqA@mail.gmail.com>
+In-Reply-To: <CAHbNUh03TVxbXZcT3e6618zPdu_53_y6nVjwJE7cWa6zxLMpqA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 19.05.14 12:13, Michael Mueller wrote:
-> On Fri, 16 May 2014 22:35:34 +0200
-> Alexander Graf <agraf@suse.de> wrote:
->
->> On 16.05.14 18:09, Michael Mueller wrote:
->>> On Fri, 16 May 2014 16:49:37 +0200
->>> Alexander Graf <agraf@suse.de> wrote:
->>>
->>>> On 16.05.14 16:46, Michael Mueller wrote:
->>>>> On Fri, 16 May 2014 13:55:41 +0200
->>>>> Alexander Graf <agraf@suse.de> wrote:
->>>>>
->>>>>> On 13.05.14 16:58, Michael Mueller wrote:
->>>>>>> The patch introduces facilities and cpu_ids per virtual machine.
->>>>>>> Different virtual machines may want to expose different facilities and
->>>>>>> cpu ids to the guest, so let's make them per-vm instead of global.
->>>>>>>
->>>>>>> In addition this patch renames all ocurrences of *facilities to *fac_list
->>>>>>> smilar to the already exiting symbol stfl_fac_list in lowcore.
->>>>>>>
->>>>>>> Signed-off-by: Michael Mueller <mimu@linux.vnet.ibm.com>
->>>>>>> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
->>>>>>> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
->>>>>>> ---
->>>>>>>      arch/s390/include/asm/kvm_host.h |   7 +++
->>>>>>>      arch/s390/kvm/gaccess.c          |   4 +-
->>>>>>>      arch/s390/kvm/kvm-s390.c         | 107 +++++++++++++++++++++++++++------------
->>>>>>>      arch/s390/kvm/kvm-s390.h         |  23 +++++++--
->>>>>>>      arch/s390/kvm/priv.c             |  13 +++--
->>>>>>>      5 files changed, 113 insertions(+), 41 deletions(-)
->>>>>>>
->>>>>>> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
->>>>>>> index 38d487a..b4751ba 100644
->>>>>>> --- a/arch/s390/include/asm/kvm_host.h
->>>>>>> +++ b/arch/s390/include/asm/kvm_host.h
->>>>>>> @@ -414,6 +414,12 @@ struct kvm_s390_config {
->>>>>>>      	struct kvm_s390_attr_name name;
->>>>>>>      };
->>>>>>>      
->>>>>>> +struct kvm_s390_cpu_model {
->>>>>>> +	unsigned long *sie_fac;
->>>>>>> +	struct cpuid cpu_id;
->>>>>>> +	unsigned long *fac_list;
->>>>>>> +};
->>>>>>> +
->>>>>>>      struct kvm_arch{
->>>>>>>      	struct sca_block *sca;
->>>>>>>      	debug_info_t *dbf;
->>>>>>> @@ -427,6 +433,7 @@ struct kvm_arch{
->>>>>>>      	wait_queue_head_t ipte_wq;
->>>>>>>      	struct kvm_s390_config *cfg;
->>>>>>>      	spinlock_t start_stop_lock;
->>>>>>> +	struct kvm_s390_cpu_model model;
->>>>>>>      };
->>>>>>>      
->>>>>>>      #define KVM_HVA_ERR_BAD		(-1UL)
->>>>>>> diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
->>>>>>> index db608c3..4c7ca40 100644
->>>>>>> --- a/arch/s390/kvm/gaccess.c
->>>>>>> +++ b/arch/s390/kvm/gaccess.c
->>>>>>> @@ -358,8 +358,8 @@ static unsigned long guest_translate(struct kvm_vcpu *vcpu, unsigned
->>>>>>> long gva, union asce asce;
->>>>>>>      
->>>>>>>      	ctlreg0.val = vcpu->arch.sie_block->gcr[0];
->>>>>>> -	edat1 = ctlreg0.edat && test_vfacility(8);
->>>>>>> -	edat2 = edat1 && test_vfacility(78);
->>>>>>> +	edat1 = ctlreg0.edat && test_kvm_facility(vcpu->kvm, 8);
->>>>>>> +	edat2 = edat1 && test_kvm_facility(vcpu->kvm, 78);
->>>>>>>      	asce.val = get_vcpu_asce(vcpu);
->>>>>>>      	if (asce.r)
->>>>>>>      		goto real_address;
->>>>>>> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
->>>>>>> index 01a5212..a53652f 100644
->>>>>>> --- a/arch/s390/kvm/kvm-s390.c
->>>>>>> +++ b/arch/s390/kvm/kvm-s390.c
->>>>>>> @@ -1,5 +1,5 @@
->>>>>>>      /*
->>>>>>> - * hosting zSeries kernel virtual machines
->>>>>>> + * Hosting zSeries kernel virtual machines
->>>>>>>       *
->>>>>>>       * Copyright IBM Corp. 2008, 2009
->>>>>>>       *
->>>>>>> @@ -30,7 +30,6 @@
->>>>>>>      #include <asm/pgtable.h>
->>>>>>>      #include <asm/nmi.h>
->>>>>>>      #include <asm/switch_to.h>
->>>>>>> -#include <asm/facility.h>
->>>>>>>      #include <asm/sclp.h>
->>>>>>>      #include<asm/timex.h>
->>>>>>>      #include "kvm-s390.h"
->>>>>>> @@ -92,15 +91,33 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
->>>>>>>      	{ NULL }
->>>>>>>      };
->>>>>>>      
->>>>>>> -unsigned long *vfacilities;
->>>>>>> -static struct gmap_notifier gmap_notifier;
->>>>>>> +/* upper facilities limit for kvm */
->>>>>>> +unsigned long kvm_s390_fac_list_mask[] = {
->>>>>>> +	0xff82fff3f47c2000UL,
->>>>>>> +	0x005c000000000000UL,
->>>>>>> +};
->>>>>>> +
->>>>>>> +unsigned long kvm_s390_fac_list_mask_size(void)
->>>>>>> +{
->>>>>>> +	BUILD_BUG_ON(ARRAY_SIZE(kvm_s390_fac_list_mask) >
->>>>>>> +		     S390_ARCH_FAC_MASK_SIZE_U64);
->>>>>>> +	return ARRAY_SIZE(kvm_s390_fac_list_mask);
->>>>>>> +}
->>>>>>>      
->>>>>>> -/* test availability of vfacility */
->>>>>>> -int test_vfacility(unsigned long nr)
->>>>>>> +void kvm_s390_apply_fac_list_mask(unsigned long fac_list[])
->>>>>>>      {
->>>>>>> -	return __test_facility(nr, (void *) vfacilities);
->>>>>>> +	unsigned int i;
->>>>>>> +
->>>>>>> +	for (i = 0; i < S390_ARCH_FAC_LIST_SIZE_U64; i++) {
->>>>>>> +		if (i < kvm_s390_fac_list_mask_size())
->>>>>>> +			fac_list[i] &= kvm_s390_fac_list_mask[i];
->>>>>>> +		else
->>>>>>> +			fac_list[i] &= 0UL;
->>>>>>> +	}
->>>>>>>      }
->>>>>>>      
->>>>>>> +static struct gmap_notifier gmap_notifier;
->>>>>>> +
->>>>>>>      /* Section: not file related */
->>>>>>>      int kvm_arch_hardware_enable(void *garbage)
->>>>>>>      {
->>>>>>> @@ -485,6 +502,30 @@ long kvm_arch_vm_ioctl(struct file *filp,
->>>>>>>      	return r;
->>>>>>>      }
->>>>>>>      
->>>>>>> +/* make sure the memory used for fac_list is zeroed */
->>>>>>> +void kvm_s390_get_hard_fac_list(unsigned long *fac_list, int size)
->>>>>> Hard? Wouldn't "host" make more sense here?
->>>>> Renaming "*hard_fac_list" with "*host_fac_list" here and wherever it appears is ok with me.
->>>>>
->>>>>> I also think it makes sense to expose the native host facility list to
->>>>>> user space via an ioctl somehow.
->>>>>>
->>>>> In which situation do you need the full facility list. Do you have an example?
->>>> If you want to just implement -cpu host to get the exact feature set
->>>> that the host gives you, how do you know which set that is?
->>> During qemu machine initalization I call:
->>>
->>> kvm_s390_get_machine_props(&mach);
->>>
->>> which returns the following information:
->>>
->>> typedef struct S390MachineProps {
->>>       uint64_t cpuid;
->>>       uint32_t ibc_range;
->>>       uint8_t  pad[4];
->>>       uint64_t fac_mask[S390_ARCH_FAC_MASK_SIZE_UINT64];
->>>       uint64_t hard_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
->>>       uint64_t soft_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
->>> } S390MachineProps;
->> Ah, ok, I missed that part. So "kvm_s390_get_machine_props()" basically
->> gets us the full facility list the host supports. That makes sense.
+On 19.05.2014 05:30, Tushar Behera wrote:
+> On 15 May 2014 19:37, Tomasz Figa <t.figa@samsung.com> wrote:
+>> Hi Rahul, Tushar,
 >>
->> I still don't know whether we should care about hard/soft, but I suppose
->> the rest makes sense.
-> The reason why I differentiate between hardware and software implemented
-> facilities has several reasons.
->
-> First, one should understand that both lists represent the same set of
-> features, there is no software feature not being implemented as hardware
-> feature on an existing S390 system. An optional implementation of a software
-> feature is usable on back-level hardware to implement functionality, not
-> quality or performance! That means, on OS and it's application is capable to
-> run most efficiently on the given hardware without that software feature.
-> If a system has the same facility in soft- and hardware implemented, KVM
-> always privileges the hardware implementation.
->
-> Second, separating both features allow user space to differentiate between
-> hardware and software implemented features and to give up on SW features
-> if not explicitly requested by the CPU model option "+sofl".
+>> On 15.05.2014 15:44, Rahul Sharma wrote:
+>>> Hi Tushar,
+>>>
+>>> Basically you are adding a new clock-type for Clkout. IMO clkout
+>>> is not a special hardware. Existing clock types can be reused to
+>>> support clkout. I see 3 major problem here:
+>>>
+>>> 1) Clkout -> (Mux + Gate). You clubbed mux and gate together, and
+>>> exposing as a single clock which is something like a composite clock.
+>>> IMO this is not a recommended way in CCF.
+>>>
+>>> 2) New Clock Type: Since clkout is just a combination of a simple
+>>> mux and gate which are already supported, it is a unnecessary
+>>> duplication.
+>>>
+>>> 3) Clkout registered along with CMU: which is not correct. Clkout is in PMU
+>>> (Separate physical IP) and should be registered as a independent Clock
+>>> provider which provides 1 mux and 1 gate clock (As if now). It should also be
+>>> well connected with main CMU.
+>>>
+>>> I understand the challenge in using regmap interface for a clock provider. But
+>>> we need to identify a clean solution. IMHO a independent clock provider with
+>>> iomap, is relatively cleaner approach till CCF is not ready with regmap based
+>>> reg access for clock registers.
+>>>
+>>> Experts!! please comment.
+>>
+>> It's quite unfortunate that Tushar has duplicated the effort to create a
+>> clkout driver, considering the fact that we did have such driver
+>> internally at SRPOL and it was quite nice and simple.
+>>
+> 
+> I had no idea that you had some solutions to this available to be posted :(
+> 
+> Now that the new series is posted, I will test that at my end and
+> update you later.
 
-Why? User space has a set of features it wants to expose to the guest. 
-If the kernel can handle all of them, fine. If it can't, it can either 
-decide that the VM can't run on that host or disable features and 
-*remember it did so* so that on migration it can warn the target host.
+Again, sorry for this duplicated effort.
 
-> Third, and very important, the main reason for CPU model implementation
-> is to guarantee an identical environment on source and target side comprised
-> of facilities, instruction set and CPU id. The capability for migration is
+The biggest problem is that we (SRPOL and Linaro) don't have a way to
+share our upstream TODO lists and say "hey, we have this working, if you
+need it, we can upstream it \o/" or "we need it too, but don't have
+resources right now to work on it :(".
 
-Yes, exactly :).
+Maybe we should set up some wiki or any other semi-public site for this
+purpose? I need to talk with other people from my team and my manager to
+see what we can do. Other guys (other Samsung teams, Chromium folks,
+hobbyists) could also benefit from it.
 
-> lost as soon software implemented facilities become activated!
+Anyway, thanks for your understanding and testing.
 
-Why? When something is done in software, I can surely migrate the state?
-
-> Once again the method Qemu uses to define the set of requested facilities.
->
-> The machine properties ioctl provides FMh, HFh, and SFh, ie. the mask and
-> hardware/software implemented facility sets of the hosts.
->
-> Qemu has knowledge on all real existing CPU models (TYPE-GA), particularly
-> on the facility set of these model (Fm)
->   
-> During startup, Qemu retrives FMh, HFh and SFh. Then for all CPU models Qemu
-> is aware off, it calculates (Fm & FMh). If that is a subset of HFh, the model
-> is a supportable model on this host. If the user has specified to allow
-> software implemented facilities (-cpu <model>,+sofl), The facilities to
-> request are calculated like (Fm & FMh | SFh).
-
-Why so complicated? What's the difference between -cpu 
-z9,cpu-id=z10,+featureA,+featureB,+featureC where A, B and C are the new 
-features between z9 and z10?
-
-There really shouldn't be any difference between those 2 different 
-invocation types IMHO.
-
-
-Alex
-
+Best regards,
+Tomasz
