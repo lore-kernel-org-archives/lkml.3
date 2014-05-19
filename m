@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaESJSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:18:46 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45028 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaESJSn (ORCPT
+	id S1753752AbaESJSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:18:53 -0400
+Received: from nm34-vm3.bullet.mail.ir2.yahoo.com ([212.82.97.117]:20026 "EHLO
+	nm34-vm3.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750993AbaESJSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:18:43 -0400
-Date: Mon, 19 May 2014 10:18:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Stephen Warren <swarren@nvidia.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
-Message-ID: <20140519091836.GD4978@lee--X1>
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
- <1397757570-19750-8-git-send-email-dianders@chromium.org>
- <53750A9A.8000808@wwwdotorg.org>
- <CAD=FV=Vj5M_yiYZOkjzB-QjYJa9WE2fcGcwwzAF1h8gcjc9jeA@mail.gmail.com>
- <CAOesGMhe-STC3GUwAyC6qeEPWWmxdsWbXqdevy8b4MHDgM2v=A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOesGMhe-STC3GUwAyC6qeEPWWmxdsWbXqdevy8b4MHDgM2v=A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 May 2014 05:18:49 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 May 2014 05:18:48 EDT
+X-Yahoo-Newman-Id: 208434.67456.bm@smtp111.mail.ir2.yahoo.com
+Message-ID: <208434.67456.bm@smtp111.mail.ir2.yahoo.com>
+Date: Mon, 19 May 2014 09:13:17 +0000 (UTC)
+X-Rocket-Received: from jsidum (paul-zimmerman@92.54.196.163 with plain [188.125.69.59])
+        by smtp111.mail.ir2.yahoo.com with SMTP; 19 May 2014 09:13:16 +0000 UTC
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: aAgDWgsVM1n2vBCBvQAH7QeZsvKtsUEs8XuPq5EPoi_jVDn
+ 6v15Pf2iZsPcouqonbDx9DhwYfMnHBIKJsodumrXEFefPZX2YQFkYJ4PldLj
+ .ET8rQ75DCu8gyHu2mJFYtUW.V5x8hgCf1nsY_PxAmUK2Vk.yz1JDhHaQ6b7
+ uSjASxy54i306_jtDKb4SdhGTVWgvh6hdUr9CpDa8ANPMzpuvLgySVz69zGT
+ UH0f5DKMScItUHlN3A6tx7Alfy2IMHVmQCRs0aKcvX6f5jNRVsbdVVvqAe_r
+ _F4IxlhLpJ8mj6jlw3Iv2RdSxaMhdV_Be66XCTM4JYr8MUmRXF2kVf2To7wd
+ RODRr3O3F_5OSaDsyiO9d0ZHsVDcBoopuRw.pcNUOPRpM5ebLExPx4tlgciP
+ O6O3.jSp0jTHCKplRr7F6x22qDwZGqwkaukU4QqWSVWk7D40NYoQpM3y7Or0
+ APKwDRc6TJUo57IRl5vDwX0hJSfhIR4tO4Iwi2t9AlaHNjAZcsf1.164Pg_s
+ YCvwPiX_joHzP2oYV9NdWW4RXACL6sHm9G3e.1U9k.5K.J7XEUNuSisMpI8a
+ 0_MFlM_7QOLgCXzhsWngfYu8vhLzguobjBd_.pDAAjoM_vJpk_0hJCVxhCY3
+ qAVN.3Dbk4ZMg3ur68t48HPmrIi987yFe3Kc_j.Rj8B7ZvnP9f_4-
+X-Yahoo-SMTP: 1_K.uzeswBAkqfNank3HOEHw8wHs2E0OKUiRo88TscEf37lP8kCQxgQ-
+From: paul-zimmerman@sbcglobal.net
+To: <linux-kernel@vger.kernel.org>
+Subject: FWD: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Olof Johansson wrote:
 
-> On Thu, May 15, 2014 at 11:55 AM, Doug Anderson <dianders@chromium.org> wrote:
-> > Stephen,
-> >
-> > On Thu, May 15, 2014 at 11:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >> On 04/17/2014 11:59 AM, Doug Anderson wrote:
-> >>> This adds the EC i2c tunnel (and devices under it) to the
-> >>> tegra124-venice2 device tree.
-> >>
-> >> Did the MFD patches at the start of this series get applied yet? I was
-> >> hoping to apply this one patch to the Tegra tree for 3.16, and that
-> >> needs to happen by tomorrow morning at the latest since -rc6 is looming
-> >> fast. However, I'm holding off until the rest of the series is applied
-> >> to the MFD tree so I can be sure the DT binding is accepted first...
-> >
-> > As far as I know, they didn't.  Lee was waiting on Wolfram's ack to
-> > the i2c tunnel before landing them.  ...and I'm still eagerly awaiting
-> > Wolfram's next i2c tunnel review.
-> 
-> The i2c portion can be revisited if needed, the MFD piece should be
-> possible to land sooner than that... Lee?
+Hi! This is for you  http://winterberg-fewo.de/-redirect?zjsuqim97471745
 
-The set 'will' make it in during this cycle.  The trouble is, once
-it's applied, the I2C portion will have to wait until the next cycle.
-By applying late, I'm giving this set every chance to go in as a
-whole.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
