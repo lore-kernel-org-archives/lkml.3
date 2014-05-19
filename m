@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaESMgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:36:11 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:35226 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099AbaESMgK (ORCPT
+	id S1753750AbaESMhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:37:39 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57587 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaESMhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:36:10 -0400
-Message-ID: <5379FAA5.10404@ahsoftware.de>
-Date: Mon, 19 May 2014 14:35:49 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Mon, 19 May 2014 08:37:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: josh@joshtriplett.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 1/9] dt: deps: dtc: Automatically add new property
- 'dependencies' which contains a list of referenced phandles
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <1399913280-6915-2-git-send-email-holler@ahsoftware.de> <53775334.3030704@gmail.com>
-In-Reply-To: <53775334.3030704@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit and 32-bit ports
+Date: Mon, 19 May 2014 14:36:24 +0200
+Message-ID: <63645237.lSKEVJUKkQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140515215646.GA16326@cloud>
+References: <20140509191914.GA7286@jtriplet-mobl1> <53729873.2030805@zytor.com> <20140515215646.GA16326@cloud>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9Q5W+UfDNW9tm0tbgpo4F5h/5VrvTrF8gY3c80/JTKw
+ lnYTJgd0Xq8gg6gThIuhBw4sG9Me5dRn3jSV5Q8y3F40Df8nog
+ 3ViwXKIkG6+irOW2nCgVSkwzlx/f7f/bAkKSuIFOKfFx0rsSuS
+ ++nBHciTSj4xRltPubzlAHQxj8HPI9ycOz+CLQxYaxVZTEool5
+ cviiYpHwDJY3HPT6E7jXBm3xynxFTAgBIM06qsP7BSkt23l03i
+ 4VzXXvObMKy3SG/7m0k9+/DMh5piSgoil3KIvSXb2659u+oBER
+ tM2fYH+VLpZM16Xr4YKGNY3Mf9YmjMnsMiwR/zQO6Za7SMBbSE
+ jb00NDqGn968Xs5MQ0nw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.05.2014 14:16, schrieb Tomasz Figa:
+On Thursday 15 May 2014 14:56:46 josh@joshtriplett.org wrote:
+> On Tue, May 13, 2014 at 03:10:59PM -0700, H. Peter Anvin wrote:
+> > On 05/09/2014 03:38 PM, Josh Triplett wrote:
+> > > On Fri, May 09, 2014 at 02:20:45PM -0700, H. Peter Anvin wrote:
+> > >> On 05/09/2014 02:12 PM, Arnd Bergmann wrote:
+> > >>>
+> > >>>> However, if we're going to have these devices I'm wondering if having
+> > >>>> /dev/portw and /dev/portl (or something like that) might not make sense,
+> > >>>> rather than requiring a system call per transaction.
+> > >>>
+> > >>> Actually the behavior of /dev/port for >1 byte writes seems questionable
+> > >>> already: There are very few devices on which writing to consecutive
+> > >>> port numbers makes sense. Normally you just want to write a series
+> > >>> of bytes (or 16/32 bit words) into the same port number instead,
+> > >>> as the outsb()/outsw()/outsl() functions do.
+> > >>>
+> > >>
+> > >> Indeed.  I missed the detail that it increments the port index; it is
+> > >> virtually guaranteed to be bogus.
+> > > 
+> > > Exactly.  It might make sense to have ioport8/ioport16/ioport32 devices
+> > > that accept arbitrary-length reads and writes (divisible by the size)
+> > > and do the equivalent of the string I/O instructions outs/ins, but for
+> > > the moment I'd like to add the single device that people always seem to
+> > > want and can't get from /dev/port.  If someone's doing enough writes
+> > > that doing a syscall per in/out instruction seems like too much
+> > > overhead, they can write a real device driver or use ioperm/iopl.
+> > 
+> > I really have a problem with the logic "our current interface is wrong,
+> > so let's introduce another wrong interface which solves a narrow use
+> > case".  In some ways it would actually be *better* to use an ioctl
+> > interface on /dev/port in that case...
+> 
+> ioport{8,16,32} seems preferable to an ioctl on /dev/port, but in any
+> case, I'd be happy to adapt this patch to whatever interface seems
+> preferable.  I just don't want to let the perfect be the enemy of the
+> good here; 16-bit and 32-bit port operations are currently completely
+> impossible via /dev/port, and I'm primarily interested in fixing that,
+> not necessarily in creating a completely generalized interface for doing
+> high-performance repeated I/O operations that ought to be in the kernel
+> anyway.
 
->> References to phandles of parent or child nodes will not be added to this
->> property, because this information is already contained in the blob (in the
->> form of the tree itself).
->
-> I wonder if we shouldn't be including them too for consistency related
-> reasons, so we have all the necessary information in one place.
-> References to child nodes are great recipes for cycles, though...
->
-> No strong opinion, though, just an idea.
+I'd prefer to do the absolute minimum to enable this: port I/O is not
+something that people really should be doing in this decade, at least
+not on non-x86.
 
-As said, they are already in the tree itself. And they are already 
-included in the graph (these are the black edges), so they just don't 
-appear in the property dependencies.
+A simple pair of ioctls would be fine in my mind, if we think there
+is actually a strong use case. Josh, where did you find that testing
+driver? Do you have reason to believe it's actually useful on non-x86?
+If the reason for the existence of that code is just that someone
+didn't find the iopl() man page, I'd rather not have it at all.
 
->
->>
->> No dependencies to disabled nodes will be added.
->>
->
-> Same here. IMHO it might be wise to let the parsing entity (e.g. kernel)
-> decide whether to ignore a dependency to disabled node or not.
->
-> Otherwise, I like the simplicity of compile-time dependency list
-> creation. Quite a nice work.
+My feeling is that all devices we can think of fall into at least one
+of these categories:
 
-Thanks.
+* legacy PC stuff that needs only byte access
+* PCI devices that can be accessed through sysfs
+* devices on x86 that can be accessed using iopl
 
-What's still questionable about the patches for dtc is if dependencies 
-to devices and not just drivers should be included in the new property 
-dependencies too. My current assumption is that all devices belonging to 
-one and the same driver don't have dependencies between each other. In 
-other words the order in which devices will be attached to one and the 
-same driver isn't important. If that assumption is correct it would be 
-possible to just attach all devices belonging to a driver after the 
-driver was loaded (also I haven't that done in my patches).
-
-And thinking about that again, I think I was wrong and doing so have 
-been some kind of evil premature optimization I did in order to spare a 
-few dependencies/edges. But changing this can done by removing a few 
-lines in the code for dtc (patch 1).
-
-Regards,
-
-Alexander Holler
-
+	Arnd
