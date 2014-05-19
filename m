@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaESISZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:18:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29367 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675AbaESISY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:18:24 -0400
-Message-ID: <5379BE43.7090809@redhat.com>
-Date: Mon, 19 May 2014 10:18:11 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753230AbaESISv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:18:51 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:32889 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaESISu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:18:50 -0400
+Message-ID: <5379BD2C.6080106@linux.vnet.ibm.com>
+Date: Mon, 19 May 2014 13:43:32 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
- add register_supply_aliases()
-References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com> <1400420953-20705-2-git-send-email-hdegoede@redhat.com> <20140519074705.GE2339@lee--X1> <20140519074855.GP25203@opensource.wolfsonmicro.com>
-In-Reply-To: <20140519074855.GP25203@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.6
+To: Peter Zijlstra <peterz@infradead.org>, Ben Segall <bsegall@google.com>
+CC: Preeti Murthy <preeti.lkml@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: fix exec_start/task_hot on migrated tasks
+References: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com> <20140516080424.GM11096@twins.programming.kicks-ass.net> <CAM4v1pPNfpB+DumFHhi2UZS97zgfBFHEwQYsmQ5E1c2gZFbBww@mail.gmail.com> <20140516141745.GU11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140516141745.GU11096@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051908-9332-0000-0000-000000D4367E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 05/19/2014 09:48 AM, Charles Keepax wrote:
-> On Mon, May 19, 2014 at 08:47:05AM +0100, Lee Jones wrote:
->>> We cannot register supply alias in mfd_add_device before calling
->>> platform_add_device, for 2 reasons:
->>> 1) devm resources may not be registered before the (platform) drivers probe
->>>    method runs
->>> 2) The platform-dev's name must be set before registering the aliases which
->>>    happens from platform_add_device.
->>>
->>> So stop registering supply aliases from mfd_add_device, and add a
->>> mfd_register_supply_aliases helper functions for the cell's plaform driver
->>> probe method to use.
->>>
->>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
->>> ---
->>>  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
->>>  include/linux/mfd/core.h |  6 +++++-
->>>  2 files changed, 26 insertions(+), 17 deletions(-)
+On 05/16/2014 07:47 PM, Peter Zijlstra wrote:
+> On Fri, May 16, 2014 at 07:27:32PM +0530, Preeti Murthy wrote:
+>>> 0 isn't strictly the right thing to do here, since the clock can wrap,
+>>> but being wrong every ~585 years isn't too big an issue for this.
 >>
->> Change looks reasonable to me, but I'd like to have Mark look over the
->> changes.  If he's okay with them I think it's best for this set to go
->> through the MFD tree as a whole.
+>> I don't understand this. Will setting it to 0 not indicate beginning
+>> of ticking? 
 > 
-> This should already be fixed by this patch:
+> In modular spaces there is no beginnings nor endings.
 > 
-> mfd: core: Don't use devres functions before device is added
+>> So when you find out for how long the task has run, the
+>> difference would be larger than what would have been had you
+>> let exec_start be at its previous value of the old cpu's clock_task right?
+> 
+> Nope, see the modular space thing, once every ~585 years we'll wrap the
+> clock and 0 is within range of recently ran.
+> 
+>> Will not setting exec_start to the clock_task of the destination rq
+>> during migration be better? This would be the closest we could
+>> come to estimating the amount of time the task has run on this new
+>> cpu while deciding task_hot or not no?
+> 
+> Setting it to the exact clock_task of the destination rq would make it
+> hot on that rq, even though it hasn't yet ran there, so you'd have to do
+> something like: rq_clock_task(dst_rq) - sysctl_sched_migration_cost.
+> 
+> But seeing as how that is far more work, and all this is heuristics
+> anyhow and an extra fail term of 1/585 years is far below the current
+> fail rate, all is well.
+> 
 
-Ah, I did not check next, yes that would fix *half* of the problem,
-the other half is that adding aliases uses dev->name (at least for
-logging, did not check if it is used for anything else) and that is
-not set yet before the device is added.
+Ok now I understand this.Thanks!
 
-Basically the moral of the story is that it is a BAD idea to do
-anything with a device before it is added. So my proposed series
-would replace the "mfd: core: Don't use devres functions before device is added"
-patch.
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-Regards,
-
-Hans
