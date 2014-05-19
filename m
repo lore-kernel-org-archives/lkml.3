@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131AbaESL0a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:26:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685AbaESL01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:26:27 -0400
-Date: Mon, 19 May 2014 13:25:45 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140519112545.GD5027@krava.brq.redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <CABPqkBQE-HLV3JLo4-sXBJos38SY0RUhC-gLeauawrf3Cgojtw@mail.gmail.com>
- <20140516155958.GX11096@twins.programming.kicks-ass.net>
- <CABPqkBS+jx6sR3BNjwGkaG9hZFtfwmLKKiD86Li4hAY_YsTDdA@mail.gmail.com>
- <20140516162441.GA50500@redhat.com>
+	id S1754170AbaESL0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:26:54 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:52126 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaESL0x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 07:26:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
+Date: Mon, 19 May 2014 13:26:48 +0200
+Message-ID: <5053472.zFAHKQVpbv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
+References: <1364507176.1345.45.camel@x61.thuisdomein> <20140517094636.GP3693@n2100.arm.linux.org.uk> <9DBC3527-1961-40DD-8CBA-9A1B5D3003C9@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516162441.GA50500@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:4dK6C5DCU5RkwacmfzU6+NirElEyNirMaZZB78ipsQU
+ Po7EqaZ1xPr+19I+mAQIrzeHjrFLmv2L2IwML24BU7iFs5WbSJ
+ MEtDIkz1VYPpve4t3Gw/TdWCtPKgADGyKXj9YmfqA3byqggP4T
+ REocn/QhbD2CwG/wBwqihJAzU9ELLImLAwelCnX1N9rFx/uC2V
+ UUWjyqC4XNuiC+uYfw/RbYRmhQ5smDPVhxlDFcKgD0TBwmehyn
+ DmgD93KkVET5uuZe7+l6kQMHW8aGOxp4L7WHShSeef17mJMb6X
+ QG3HmsnsT1+xsx6jRjiwOdiRw3RDyr9hr0y5avmxYzVSzKNHU3
+ Dp9FZCXlGDxbaPxWyg8o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 12:24:41PM -0400, Don Zickus wrote:
-> On Fri, May 16, 2014 at 06:02:43PM +0200, Stephane Eranian wrote:
-> > On Fri, May 16, 2014 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Fri, May 16, 2014 at 04:09:59PM +0200, Stephane Eranian wrote:
-> > >> > +#define CACHE_LINESIZE       64
-> > >> I had something similar to your patch here in my original series for
-> > >> perf mem, but I never pushed it.
-> > >> I think this is a useful feature to have.
-> > >> However, I don't think you can hardcode the cache line size to 64.
-> > >> This is generic
-> > >> code. There may be architectures where the line size is different from 64.
-> > >> So I think you should add an option to change the default line size or provide
-> > >> an arch-specific definition.
-> > >
-> > > # cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
-> > > 64
-> > Excellent, then we should use that!
+On Saturday 17 May 2014 10:56:02 Catalin Marinas wrote:
+> > The difference between what you're proposing and what happened to ARMv3
+> > is that ARMv3 was broken for quite some time (we read from some of the
+> > CP15 registers which are read-only in ARMv3) and no one ever raised a
+> > problem with that.  So, after a sufficient period of time, it got removed
+> > - and no one batted an eyelid.  That's the correct way to do it - allow
+> > code to age, and if no one notices it's been broken, then it can be
+> > removed.
 > 
-> Would it make sense to create an accessory function that sets the size in
-> util/cpumap.c and provides it as an inline from util/cpumap.h?
+> I’m more for pro-actively “breaking” it with a DEPRECATED
+> dependency. For example, if you suspect that some code like ARM710T is
+> no longer in use, we mark it and see if anyone complains about this over
+> a two years period. If not, it gets removed.
+> 
+> Waiting for code to get broken is another way but it’s less
+> predictable.
 
-sounds good,
+We used to have 'feature-removal-schedule.txt' file in the Documentation.
+It never worked, and I don't see a reason to introduce something like that
+again.
 
-btw so far I'll take patches 1-4 (after getting changelog update)
-and expecting v2 for 5,6 ;-)
+Yes, this means we will keep going through things that may or may not be
+considered obsolete occasionally asking whether it's already dead. There
+are a number of platforms we removed in the past years (e.g. shark,
+h720x, bcmring, pnx4008, ixp2xxx, tcc8k and others before) and we haven't
+had to revert any of those back. The rule has always been that even if
+someone later comes and wants them back, we will revert the removal.
+Others have been given temporary (e.g. gemini) or permanent (e.g. ixp4xx)
+extensions, based on the feedback from the maintainers or remaining
+users.
 
-thanks,
-jirka
+For the case of ARM710T, I think the last remaining user that can be
+configured is mach-integrator, but I don't know if anybody even has that
+CPU tile, or wants to keep using it. If Russell and Linus as the only
+people that have cared about Integrator in the past years want to
+cut down the number of supported CPUs, that would be a different matter:
+quite a number of CPUs are not supported in any other platform.
+Note that the integrator target in qemu does not support any ARM7, only
+StrongARM, ARM9 or later. I also double-checked about mach-clps711x,
+but I'm pretty sure those SoCs are all either ARM710a (no longer supported)
+or ARM720T (quite active).
+
+	Arnd
