@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaESTZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:25:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46278 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072AbaESTZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:25:22 -0400
-Date: Mon, 19 May 2014 21:25:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
-Message-ID: <20140519192501.GD6311@pd.tnic>
-References: <1400524052-25625-1-git-send-email-bp@alien8.de>
- <1400526771.14238.15.camel@joe-AO725>
+	id S932493AbaESTay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:30:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42814 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751473AbaESTav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 15:30:51 -0400
+Date: Mon, 19 May 2014 15:30:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <joe@perches.com>,
+        <auttamchandani@logicube.com>
+Subject: Re: [PATCH 2/5] usb: gadget: net2280: Use S_I macros
+In-Reply-To: <1400526693-29776-3-git-send-email-ricardo.ribalda@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1405191527520.1538-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1400526771.14238.15.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 12:12:51PM -0700, Joe Perches wrote:
-> On Mon, 2014-05-19 at 20:27 +0200, Borislav Petkov wrote:
-> > ... instead of naked numbers.
-> 
-> Seems sensible.
-> 
-> > diff --git a/include/linux/printk.h b/include/linux/printk.h
-> []
-> > @@ -30,6 +30,17 @@ static inline const char *printk_skip_level(const char *buffer)
-> >  	return buffer;
-> >  }
-> >  
-> > +/* printk's without a loglevel use this.. */
-> > +#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-> 
-> Does anyone actually set CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-> to something other than 4?
-> 
-> > +/* We show everything that is MORE important than this.. */
-> 
-> It might be nice to show somewhere that larger values are
-> less important.
-> 
-> > +#define CONSOLE_LOGLEVEL_SILENT  0 /* Mum's the word */
-> > +#define CONSOLE_LOGLEVEL_MIN	 1 /* Minimum loglevel we let people use */
-> > +#define CONSOLE_LOGLEVEL_QUIET	 4 /* Shhh ..., when booted with "quiet" */
-> > +#define CONSOLE_LOGLEVEL_DEFAULT 7 /* anything MORE serious than KERN_DEBUG */
-> > +#define CONSOLE_LOGLEVEL_DEBUG	10 /* issue debug messages */
-> > +#define CONSOLE_LOGLEVEL_MOTORMOUTH 15	/* You can't shut this one up */
-> 
-> It may be nicer to have #defines for the
-> KERN_<LEVEL> numbers from kern_levels.h
-> and use those here.
-> 
-> Maybe add:
-> 
-> #define LOGLEVEL_EMERG		0
-> #define LOGLEVEL_ALERT		1
-> #define LOGLEVEL_CRIT		2
-> #define LOGLEVEL_ERR		3
-> #define LOGLEVEL_WARNING	4
-> #define LOGLEVEL_NOTICE		5
-> #define LOGLEVEL_INFO		6
-> #define LOGLEVEL_DEBUG		7
-> 
-> That could clean up a few uses of
-> magic numbers like 7 in dev_printk_emit
+On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
 
-This patch is supposed to be as obvious as possible - all other things
-which need/must/will be done should come ontop, not here.
+> Instead of octal notation, to be consistent around the file.
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/usb/gadget/net2280.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+> index c3205ec..5b2ab68 100644
+> --- a/drivers/usb/gadget/net2280.c
+> +++ b/drivers/usb/gadget/net2280.c
+> @@ -111,7 +111,7 @@ module_param(use_msi, bool, S_IRUGO);
+>  static ushort fifo_mode = 0;
+>  
+>  /* "modprobe net2280 fifo_mode=1" etc */
+> -module_param (fifo_mode, ushort, 0644);
+> +module_param(fifo_mode, ushort, S_IRUGO | S_IWUSR);
 
--- 
-Regards/Gruss,
-    Boris.
+I don't think this is necessary, in and of itself.  In my opinion, the 
+macros are a lot harder to figure out than the octal values.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Don't bother making this change.  It's useless churn.
+
+Alan Stern
+
