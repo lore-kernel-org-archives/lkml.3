@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbaESOCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:02:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60436 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291AbaESOCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:02:51 -0400
-Date: Mon, 19 May 2014 16:02:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
-Message-ID: <20140519140248.GD3017@dhcp22.suse.cz>
-References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
- <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
+	id S932202AbaESOC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:02:58 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:54793 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291AbaESOCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:02:55 -0400
+Date: Mon, 19 May 2014 15:02:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "angus.clark@st.com" <angus.clark@st.com>
+Subject: Re: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree support
+Message-ID: <20140519140249.GM4978@lee--X1>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <1395735604-26706-14-git-send-email-lee.jones@linaro.org>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB5C83@DBDE04.ent.ti.com>
+ <20140430125406.GN29462@lee--X1>
+ <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
+ <20140509100304.GR5767@lee--X1>
+ <20980858CB6D3A4BAE95CA194937D5E73EACBC8F@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EACBC8F@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-05-14 15:00:16, Greg Thelen wrote:
-> On Tue, May 13 2014, Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > If somebody really cares because reparented pages, which would be
-> > dropped otherwise, push out more important ones then we should fix the
-> > reparenting code and put pages to the tail.
+> >> >> >+	of_property_read_u32(np, "st,bch-bitflip-threshold",
+> >> >> >+			     &pdata->bch_bitflip_threshold);
+> >> >> >+
+> >> >> mtd->bitflip_threshold is by default set to ecc.strength (unless a driver initializes it).
+> >> >> And then can be re-configured for each MTD partition separately
+> >> >> 	/sys/class/mtd/mtdX/bitflip_threshold
+> >> >> 	Refer: $kernel/Documentation/ABI/testing/sysfs-class-mtd
+> >> >> So, I don't think this is a HW parameter, and so should not be passed from DT.
+> >> >
+> >> >I think the bit-flip threshold is/can be chip specific, and as we know
+> >> >which chip we're likely to be booting on, we can specify this via the
+> >> >hardware description.  Thus, I think it's perfectly viable for an
+> >> >option to pass through DT to exist.
+> >> >
+> >> I don't think that’s the correct interpretation of bitflip_threshold.
+> >>
+> >> (1) bitflip_threshold is dependent on ecc.strength (ECC scheme) of your driver.
+> >> MTD layers uses bitflip_threshold to warn above layers that number of
+> >> correctable bit-flips have reached a dangerous level beyond which driver's
+> >> ECC scheme may not be able to correct them. So above layers should start
+> >> taking additional corrective action like scrubbing.
+> >> 	@@drivers/mtd/mtdcore.c: mtd_read()
+> >> 		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
+> >>
+> >> (2) Also, user-space may control it based on how your device ages on field.
+> >> A fresh silicon may not show too many bitflips. But as device ages the
+> >> probability of simultaneous bitflips will increase. So user-space may lower
+> >> the bitflip_threshold to avoid accumulation of bitflips in a single page.
+> >>
+> >> Thus, bitflip_threshold should not be passed via DT.
+> >> It's neither a hardware parameter, nor it’s a static constant.
+> >
+> >Ah, I see.  I will fixup, thanks for the explanation.
 > 
-> I should mention a case where I've needed to use memory.force_empty: to
-> synchronously flush stats from child to parent.  Without force_empty
-> memory.stat is temporarily inconsistent until async css_offline
-> reparents charges.  Here is an example on v3.14 showing that
-> parent/memory.stat contents are in-flux immediately after rmdir of
-> parent/child.
+> Please wait, I'll review your [v2] series also, then you can further
+> send all fixes together. I'm bit caught in other commitments for 3.16,
+> so hopefully I'll be able to review your patches by next week.
 
-OK, it is true that the delayed offlining makes this little bit
-complicated because there is no direct user visible relation between
-rmdir and css_offline.
-
-> $ cat /test
-> #!/bin/bash
-> 
-> # Create parent and child.  Add some non-reclaimable anon rss to child,
-> # then move running task to parent.
-> mkdir p p/c
-> (echo $BASHPID > p/c/cgroup.procs && exec sleep 1d) &
-> pid=$!
-> sleep 1
-> echo $pid > p/cgroup.procs 
-> 
-> grep 'rss ' {p,p/c}/memory.stat
-> if [[ $1 == force ]]; then
->   echo 1 > p/c/memory.force_empty
-> fi
-> rmdir p/c
-> 
-> echo 'For a small time the p/c memory has not been reparented to p.'
-> grep 'rss ' {p,p/c}/memory.stat
-> 
-> sleep 1
-> echo 'After waiting all memory has been reparented'
-> grep 'rss ' {p,p/c}/memory.stat
-> 
-> kill $pid
-> rmdir p
-> 
-> 
-> -- First, demonstrate that just rmdir, without memory.force_empty,
->    temporarily hides reparented child memory stats.
-> 
-> $ /test
-> p/memory.stat:rss 0
-> p/memory.stat:total_rss 69632
-> p/c/memory.stat:rss 69632
-> p/c/memory.stat:total_rss 69632
-> For a small time the p/c memory has not been reparented to p.
-> p/memory.stat:rss 0
-> p/memory.stat:total_rss 0
-
-OK, this is a bug. Our iterators skip the children because css_tryget
-fails on it but css_offline still not done. This is fixable, though,
-and force_empty is just a workaround so I wouldn't see this as a proper
-justification to keep it alive.
-
-One possible way to fix this is to iterate children even when css_tryget
-fails for them if they haven't finished css_offline yet.
-There are some changes in the cgroups core which should make this easier
-and Johannes claimed he has some work in that area.
-
-Anyway this is a useful testcase. Thanks Greg!
-
-> grep: p/c/memory.stat: No such file or directory
-> After waiting all memory has been reparented
-> p/memory.stat:rss 69632
-> p/memory.stat:total_rss 69632
-> grep: p/c/memory.stat: No such file or directory
-> /test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
-> 
-> -- Demonstrate that using memory.force_empty before rmdir, behaves more
->    sensibly.  Stats for reparented child memory are not hidden.
-> 
-> $ /test force
-> p/memory.stat:rss 0
-> p/memory.stat:total_rss 69632
-> p/c/memory.stat:rss 69632
-> p/c/memory.stat:total_rss 69632
-> For a small time the p/c memory has not been reparented to p.
-> p/memory.stat:rss 69632
-> p/memory.stat:total_rss 69632
-> grep: p/c/memory.stat: No such file or directory
-> After waiting all memory has been reparented
-> p/memory.stat:rss 69632
-> p/memory.stat:total_rss 69632
-> grep: p/c/memory.stat: No such file or directory
-> /test: Terminated              ( echo $BASHPID > p/c/cgroup.procs && exec sleep 1d )
+Did you manage to find some time to review the driver at all last week?
 
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
