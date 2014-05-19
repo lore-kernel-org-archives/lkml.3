@@ -1,94 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaESQDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:03:23 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:46489
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754515AbaESQDV (ORCPT
+	id S1753981AbaESQFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:05:14 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:53360 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaESQFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:03:21 -0400
-Date: Mon, 19 May 2014 11:03:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
- offline
-In-Reply-To: <20140519152437.GB25889@esperanza>
-Message-ID: <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
-References: <cover.1399982635.git.vdavydov@parallels.com> <6eafe1e95d9a934228e9af785f5b5de38955aa6a.1399982635.git.vdavydov@parallels.com> <alpine.DEB.2.10.1405141119320.16512@gentwo.org> <20140515071650.GB32113@esperanza> <alpine.DEB.2.10.1405151015330.24665@gentwo.org>
- <20140516132234.GF32113@esperanza> <alpine.DEB.2.10.1405160957100.32249@gentwo.org> <20140519152437.GB25889@esperanza>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 May 2014 12:05:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400506776-2816-5-git-send-email-george.cherian@ti.com>
+References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
+	<1400506776-2816-5-git-send-email-george.cherian@ti.com>
+Date: Mon, 19 May 2014 11:05:10 -0500
+Message-ID: <CADYTM3aV7HSi5gcV_-K5nR6Um=pA983oHpmC_cnyeH=G8_R1hA@mail.gmail.com>
+Subject: Re: [PATCH v4 4/6] usb: musb: core: Convert the musb_platform_reset
+ to have a return value.
+From: Bin Liu <binmlist@gmail.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
+        zonque@gmail.com, b-liu@ti.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Vladimir Davydov wrote:
+Hi,
 
-> > I doubt that. The accounting occurs when a new cpu slab page is allocated.
-> > But the individual allocations in the fastpath are not accounted to a
-> > specific group. Thus allocation in a slab page can belong to various
-> > cgroups.
+On Mon, May 19, 2014 at 8:39 AM, George Cherian <george.cherian@ti.com> wrote:
+> Currently musb_platform_reset() is only used by dsps.
+> In case of BABBLE interrupt for other platforms the  musb_platform_reset()
+> is a NOP. In such situations no need to re-initialize the endpoints.
+> Also in the latest silicon revision of AM335x, we do have a babble recovery
+> mechanism without resetting the IP block. In preperation to add that support
+> its better to have a rest_done return for  musb_platform_reset().
 >
-> On each kmalloc, we pick the cache that belongs to the current memcg,
-> and allocate objects from that cache (see memcg_kmem_get_cache()). And
-> all slab pages allocated for a per memcg cache are accounted to the
-> memcg the cache belongs to (see memcg_charge_slab). So currently, each
-> kmem cache, i.e. each slab of it, can only have objects of one cgroup,
-> namely its owner.
-
-Ok that works for kmalloc. What about dentry/inodes and so on?
-
-> OK, it seems we have no choice but keeping dead caches left after memcg
-> offline until they have active slabs. How can we get rid of them then?
-
-Then they are moved to a list and therefore you can move them to yours I
-think.
-
-> Simply counting slabs on cache and destroying cache when the count goes
-> to 0 isn't enough, because slub may keep some free slabs by default (if
-> they are frozen e.g.) Reaping them periodically doesn't look nice.
-
-But those are only limited to one slab per cpu ( plus eventual cpu partial
-ones but you can switch that feature off).
-
-> What if we modify __slab_free so that it won't keep empty slabs for dead
-> caches? That way we would only have to count slabs allocated to a cache,
-> and destroy caches as soon as the counter drops to 0. No
-
-Well that should already be in there. Se s->min_partial to zero?
-
-> periodic/vmpressure reaping would be necessary. I attached the patch
-> that does the trick below. The changes it introduces to __slab_free do
-> not look very intrusive to me. Could you please take a look at it (to
-> diff slub.c primarily) when you have time, and say if, in your opinion,
-> the changes to __slab_free are acceptable or not?
-
-Looking now.
-
-> @@ -2620,14 +2651,16 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->                  return;
->          }
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  drivers/usb/musb/musb_core.c | 38 +++++++++++++++++++++-----------------
+>  drivers/usb/musb/musb_core.h | 10 ++++++----
+>  drivers/usb/musb/musb_dsps.c |  3 ++-
+>  3 files changed, 29 insertions(+), 22 deletions(-)
 >
-> -	if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-> +	if (unlikely(!new.inuse &&
-> +		     (n->nr_partial > s->min_partial || cache_dead)))
->  		goto slab_empty;
-
-Could you set s->min_partial = 0 to avoid this?
-
+> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+> index 8920b80..1b0b85d 100644
+> --- a/drivers/usb/musb/musb_core.c
+> +++ b/drivers/usb/musb/musb_core.c
+> @@ -1755,28 +1755,32 @@ static void musb_irq_work(struct work_struct *data)
+>  static void musb_recover_work(struct work_struct *data)
+>  {
+>         struct musb *musb = container_of(data, struct musb, recover_work.work);
+> -       int status;
+> +       int status, ret;
 >
->  	/*
->  	 * Objects left in the slab. If it was not on the partial list before
->  	 * then add it.
->  	 */
-> -	if (!kmem_cache_has_cpu_partial(s) && unlikely(!prior)) {
-> +	if ((!kmem_cache_has_cpu_partial(s) || cache_dead) &&
-> +	    unlikely(!prior)) {
->  		if (kmem_cache_debug(s))
->  			remove_full(s, n, page);
->  		add_partial(n, page, DEACTIVATE_TO_TAIL);
+> -       musb_platform_reset(musb);
+> +       ret  = musb_platform_reset(musb);
+> +       if (ret  < 0)
 
-Not sure why we need this and the other stuff.
+If change it to ' if (ret)' here, you don't have to indent the reset
+of the code.
 
+Regards,
+-Bin.
+
+> +               return;
+>
+> -       usb_phy_vbus_off(musb->xceiv);
+> -       usleep_range(100, 200);
+> +       if (!ret) {
+> +               usb_phy_vbus_off(musb->xceiv);
+> +               usleep_range(100, 200);
+>
+> -       usb_phy_vbus_on(musb->xceiv);
+> -       usleep_range(100, 200);
+> +               usb_phy_vbus_on(musb->xceiv);
+> +               usleep_range(100, 200);
+>
+> -       /*
+> -        * When a babble condition occurs, the musb controller removes the
+> -        * session bit and the endpoint config is lost.
+> -        */
+> -       if (musb->dyn_fifo)
+> -               status = ep_config_from_table(musb);
+> -       else
+> -               status = ep_config_from_hw(musb);
+> +               /*
+> +                * When a babble condition occurs, the musb controller
+> +                * removes the session bit and the endpoint config is lost.
+> +                */
+> +               if (musb->dyn_fifo)
+> +                       status = ep_config_from_table(musb);
+> +               else
+> +                       status = ep_config_from_hw(musb);
+>
+> -       /* start the session again */
+> -       if (status == 0)
+> -               musb_start(musb);
+> +               /* start the session again */
+> +               if (status == 0)
+> +                       musb_start(musb);
+> +       }
+>  }
+>
+>  /* --------------------------------------------------------------------------
+> diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+> index 423cd00..3ccb428 100644
+> --- a/drivers/usb/musb/musb_core.h
+> +++ b/drivers/usb/musb/musb_core.h
+> @@ -192,7 +192,7 @@ struct musb_platform_ops {
+>
+>         int     (*set_mode)(struct musb *musb, u8 mode);
+>         void    (*try_idle)(struct musb *musb, unsigned long timeout);
+> -       void    (*reset)(struct musb *musb);
+> +       int     (*reset)(struct musb *musb);
+>
+>         int     (*vbus_status)(struct musb *musb);
+>         void    (*set_vbus)(struct musb *musb, int on);
+> @@ -554,10 +554,12 @@ static inline void musb_platform_try_idle(struct musb *musb,
+>                 musb->ops->try_idle(musb, timeout);
+>  }
+>
+> -static inline void musb_platform_reset(struct musb *musb)
+> +static inline int  musb_platform_reset(struct musb *musb)
+>  {
+> -       if (musb->ops->reset)
+> -               musb->ops->reset(musb);
+> +       if (!musb->ops->reset)
+> +               return -EINVAL;
+> +
+> +       return musb->ops->reset(musb);
+>  }
+>
+>  static inline int musb_platform_get_vbus_status(struct musb *musb)
+> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+> index 74c4193..f6f3087 100644
+> --- a/drivers/usb/musb/musb_dsps.c
+> +++ b/drivers/usb/musb/musb_dsps.c
+> @@ -536,7 +536,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+>         return 0;
+>  }
+>
+> -static void dsps_musb_reset(struct musb *musb)
+> +static int dsps_musb_reset(struct musb *musb)
+>  {
+>         struct device *dev = musb->controller;
+>         struct dsps_glue *glue = dev_get_drvdata(dev->parent);
+> @@ -548,6 +548,7 @@ static void dsps_musb_reset(struct musb *musb)
+>         usleep_range(100, 200);
+>         usb_phy_init(musb->xceiv);
+>
+> +       return 0;
+>  }
+>
+>  static struct musb_platform_ops dsps_ops = {
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
