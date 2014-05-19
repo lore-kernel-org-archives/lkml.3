@@ -1,323 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaESFk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 01:40:58 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:58029 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbaESFk4 (ORCPT
+	id S1751268AbaESFpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 01:45:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55154 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaESFpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 01:40:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399288539-1793-5-git-send-email-b.zolnierkie@samsung.com>
-References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-	<1399288539-1793-5-git-send-email-b.zolnierkie@samsung.com>
-Date: Mon, 19 May 2014 11:10:55 +0530
-Message-ID: <CADGdYn7FJ_X_EqUEZs73zX_itix2dY2inqe0S7p5TQTS-KaPcA@mail.gmail.com>
-Subject: Re: [PATCH 04/10] thermal: exynos: remove dead code for
- TYPE_TWO_POINT_TRIMMING calibration
-From: Amit Kachhap <amit.kachhap@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 May 2014 01:45:23 -0400
+Date: Sun, 18 May 2014 22:44:31 -0700
+Message-Id: <201405190544.s4J5iVVB021832@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes for 3.15-rc6
+Cc: <stable@vger.kernel.org>,
+        Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shay Goikhman <shay.goikhman@huawei.com>,
+        Stephan Mueller <smueller@chronox.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/5/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> Only TYPE_ONE_POINT_TRIMMING calibration is used so remove
-> the dead code for TYPE_TWO_POINT_TRIMMING calibration.
-I prefer to retain this feature as it is provided by the TMU
-controller. This will avoid unnecessary churning of code when some new
-soc wants to use it. 2 point trimming should ideally give best
-compensated thermal values.
->
-> There should be no functional changes caused by this patch.
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c      | 55
-> ++++++-------------------------
->  drivers/thermal/samsung/exynos_tmu.h      | 20 +----------
->  drivers/thermal/samsung/exynos_tmu_data.c | 17 +---------
->  drivers/thermal/samsung/exynos_tmu_data.h |  2 --
->  4 files changed, 12 insertions(+), 82 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c
-> b/drivers/thermal/samsung/exynos_tmu.c
-> index 9f2a5ee..903566f 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -47,8 +47,7 @@
->   * @irq_work: pointer to the irq work structure.
->   * @lock: lock to implement synchronization.
->   * @clk: pointer to the clock structure.
-> - * @temp_error1: fused value of the first point trim.
-> - * @temp_error2: fused value of the second point trim.
-> + * @temp_error: fused value of the first point trim.
->   * @regulator: pointer to the TMU regulator structure.
->   * @reg_conf: pointer to structure to register with core thermal.
->   */
-> @@ -62,14 +61,13 @@ struct exynos_tmu_data {
->  	struct work_struct irq_work;
->  	struct mutex lock;
->  	struct clk *clk;
-> -	u8 temp_error1, temp_error2;
-> +	u8 temp_error;
->  	struct regulator *regulator;
->  	struct thermal_sensor_conf *reg_conf;
->  };
->
->  /*
->   * TMU treats temperature as a mapped temperature code.
-> - * The temperature is converted differently depending on the calibration
-> type.
->   */
->  static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
->  {
-> @@ -83,20 +81,7 @@ static int temp_to_code(struct exynos_tmu_data *data, u8
-> temp)
->  			goto out;
->  		}
->
-> -	switch (pdata->cal_type) {
-> -	case TYPE_TWO_POINT_TRIMMING:
-> -		temp_code = (temp - pdata->first_point_trim) *
-> -			(data->temp_error2 - data->temp_error1) /
-> -			(pdata->second_point_trim - pdata->first_point_trim) +
-> -			data->temp_error1;
-> -		break;
-> -	case TYPE_ONE_POINT_TRIMMING:
-> -		temp_code = temp + data->temp_error1 - pdata->first_point_trim;
-> -		break;
-> -	default:
-> -		temp_code = temp + pdata->default_temp_offset;
-> -		break;
-> -	}
-> +	temp_code = temp + data->temp_error - pdata->first_point_trim;
->  out:
->  	return temp_code;
->  }
-> @@ -117,20 +102,7 @@ static int code_to_temp(struct exynos_tmu_data *data,
-> u8 temp_code)
->  			goto out;
->  		}
->
-> -	switch (pdata->cal_type) {
-> -	case TYPE_TWO_POINT_TRIMMING:
-> -		temp = (temp_code - data->temp_error1) *
-> -			(pdata->second_point_trim - pdata->first_point_trim) /
-> -			(data->temp_error2 - data->temp_error1) +
-> -			pdata->first_point_trim;
-> -		break;
-> -	case TYPE_ONE_POINT_TRIMMING:
-> -		temp = temp_code - data->temp_error1 + pdata->first_point_trim;
-> -		break;
-> -	default:
-> -		temp = temp_code - pdata->default_temp_offset;
-> -		break;
-> -	}
-> +	temp = temp_code - data->temp_error + pdata->first_point_trim;
->  out:
->  	return temp;
->  }
-> @@ -179,19 +151,12 @@ static int exynos_tmu_initialize(struct
-> platform_device *pdev)
->  	} else {
->  		trim_info = readl(data->base + reg->triminfo_data);
->  	}
-> -	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
-> -	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
-> -				EXYNOS_TMU_TEMP_MASK);
-> -
-> -	if (!data->temp_error1 ||
-> -		(pdata->min_efuse_value > data->temp_error1) ||
-> -		(data->temp_error1 > pdata->max_efuse_value))
-> -		data->temp_error1 = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
-> -
-> -	if (!data->temp_error2)
-> -		data->temp_error2 =
-> -			(pdata->efuse_value >> reg->triminfo_85_shift) &
-> -			EXYNOS_TMU_TEMP_MASK;
-> +	data->temp_error = trim_info & EXYNOS_TMU_TEMP_MASK;
-> +
-> +	if (!data->temp_error ||
-> +	    pdata->min_efuse_value > data->temp_error ||
-> +	    data->temp_error > pdata->max_efuse_value)
-> +		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
->
->  	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
->  		dev_err(&pdev->dev, "Invalid max trigger level\n");
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h
-> b/drivers/thermal/samsung/exynos_tmu.h
-> index e417af8..186e39e 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -26,14 +26,6 @@
->
->  #include "exynos_thermal_common.h"
->
-> -enum calibration_type {
-> -	TYPE_ONE_POINT_TRIMMING,
-> -	TYPE_ONE_POINT_TRIMMING_25,
-> -	TYPE_ONE_POINT_TRIMMING_85,
-> -	TYPE_TWO_POINT_TRIMMING,
-> -	TYPE_NONE,
-> -};
-> -
->  enum soc_type {
->  	SOC_ARCH_EXYNOS4210 = 1,
->  	SOC_ARCH_EXYNOS4412,
-> @@ -74,8 +66,6 @@ enum soc_type {
->   * bitfields. The register validity, offsets and bitfield values may vary
->   * slightly across different exynos SOC's.
->   * @triminfo_data: register containing 2 pont trimming data
-> - * @triminfo_25_shift: shift bit of the 25 C trim value in triminfo_data
-> reg.
-> - * @triminfo_85_shift: shift bit of the 85 C trim value in triminfo_data
-> reg.
->   * @triminfo_ctrl: trim info controller register.
->   * @tmu_ctrl: TMU main controller register.
->   * @test_mux_addr_shift: shift bits of test mux address.
-> @@ -116,8 +106,6 @@ enum soc_type {
->   */
->  struct exynos_tmu_registers {
->  	u32	triminfo_data;
-> -	u32	triminfo_25_shift;
-> -	u32	triminfo_85_shift;
->
->  	u32	triminfo_ctrl;
->
-> @@ -207,10 +195,7 @@ struct exynos_tmu_registers {
->   * @min_efuse_value: minimum valid trimming data
->   * @max_efuse_value: maximum valid trimming data
->   * @first_point_trim: temp value of the first point trimming
-> - * @second_point_trim: temp value of the second point trimming
-> - * @default_temp_offset: default temperature offset in case of no trimming
->   * @test_mux; information if SoC supports test MUX
-> - * @cal_type: calibration type for temperature
->   * @freq_clip_table: Table representing frequency reduction percentage.
->   * @freq_tab_count: Count of the above table as frequency reduction may
->   *	applicable to only some of the trigger levels.
-> @@ -232,15 +217,12 @@ struct exynos_tmu_platform_data {
->  	u8 reference_voltage;
->  	u8 noise_cancel_mode;
->
-> -	u32 efuse_value;
-> +	u8 efuse_value;
->  	u32 min_efuse_value;
->  	u32 max_efuse_value;
->  	u8 first_point_trim;
-> -	u8 second_point_trim;
-> -	u8 default_temp_offset;
->  	u8 test_mux;
->
-> -	enum calibration_type cal_type;
->  	enum soc_type type;
->  	struct freq_clip_table freq_tab[4];
->  	unsigned int freq_tab_count;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c
-> b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 4b992d9..c32d186 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -27,8 +27,6 @@
->  #if defined(CONFIG_CPU_EXYNOS4210)
->  static const struct exynos_tmu_registers exynos4210_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
->  	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-> @@ -66,12 +64,9 @@ struct exynos_tmu_init_data const
-> exynos4210_default_tmu_data = {
->  		.max_trigger_level = 4,
->  		.gain = 15,
->  		.reference_voltage = 7,
-> -		.cal_type = TYPE_ONE_POINT_TRIMMING,
->  		.min_efuse_value = 40,
->  		.max_efuse_value = 100,
->  		.first_point_trim = 25,
-> -		.second_point_trim = 85,
-> -		.default_temp_offset = 50,
->  		.freq_tab[0] = {
->  			.freq_clip_max = 800 * 1000,
->  			.temp_level = 85,
-> @@ -93,8 +88,6 @@ struct exynos_tmu_init_data const
-> exynos4210_default_tmu_data = {
->  #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
->  static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-> @@ -145,13 +138,10 @@ static const struct exynos_tmu_registers
-> exynos4412_tmu_registers = {
->  	.gain = 8, \
->  	.reference_voltage = 16, \
->  	.noise_cancel_mode = 4, \
-> -	.cal_type = TYPE_ONE_POINT_TRIMMING, \
->  	.efuse_value = 55, \
->  	.min_efuse_value = 40, \
->  	.max_efuse_value = 100, \
->  	.first_point_trim = 25, \
-> -	.second_point_trim = 85, \
-> -	.default_temp_offset = 50, \
->  	.freq_tab[0] = { \
->  		.freq_clip_max = 1400 * 1000, \
->  		.temp_level = 70, \
-> @@ -195,8 +185,6 @@ struct exynos_tmu_init_data const
-> exynos5250_default_tmu_data = {
->  #if defined(CONFIG_SOC_EXYNOS5440)
->  static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->  	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
-> -	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
-> -	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
->  	.tmu_ctrl = EXYNOS5440_TMU_S0_7_CTRL,
->  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
->  	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
-> @@ -240,13 +228,10 @@ static const struct exynos_tmu_registers
-> exynos5440_tmu_registers = {
->  	.gain = 5, \
->  	.reference_voltage = 16, \
->  	.noise_cancel_mode = 4, \
-> -	.cal_type = TYPE_ONE_POINT_TRIMMING, \
-> -	.efuse_value = 0x5b2d, \
-> +	.efuse_value = 45, \
->  	.min_efuse_value = 16, \
->  	.max_efuse_value = 76, \
->  	.first_point_trim = 25, \
-> -	.second_point_trim = 70, \
-> -	.default_temp_offset = 25, \
->  	.type = SOC_ARCH_EXYNOS5440, \
->  	.registers = &exynos5440_tmu_registers, \
->  	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h
-> b/drivers/thermal/samsung/exynos_tmu_data.h
-> index 1fed00d..734d1f9 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -51,8 +51,6 @@
->  #define EXYNOS_THD_TEMP_FALL		0x54
->  #define EXYNOS_EMUL_CON		0x80
->
-> -#define EXYNOS_TRIMINFO_25_SHIFT	0
-> -#define EXYNOS_TRIMINFO_85_SHIFT	8
->  #define EXYNOS_TMU_RISE_INT_MASK	0x111
->  #define EXYNOS_TMU_RISE_INT_SHIFT	0
->  #define EXYNOS_TMU_FALL_INT_MASK	0x111
-> --
-> 1.8.2.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Hi Linus,
+
+The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
+
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+
+for you to fetch changes up to fa81511bb0bbb2b1aace3695ce869da9762624ff:
+
+  x86-64, modify_ldt: Make support for 16-bit segments a runtime option (2014-05-14 16:33:54 -0700)
+
+----------------------------------------------------------------
+Anthony Iliopoulos (1):
+      x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+
+H. Peter Anvin (1):
+      x86, rdrand: When nordrand is specified, disable RDSEED as well
+
+Linus Torvalds (1):
+      x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+
+ Documentation/kernel-parameters.txt | 8 ++++----
+ arch/x86/include/asm/hugetlb.h      | 1 +
+ arch/x86/kernel/cpu/rdrand.c        | 1 +
+ arch/x86/kernel/ldt.c               | 4 +++-
+ arch/x86/vdso/vdso32-setup.c        | 8 ++++++++
+ 5 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 43842177b771..30a8ad0dae53 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2218,10 +2218,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noreplace-smp	[X86-32,SMP] Don't replace SMP instructions
+ 			with UP alternatives
+ 
+-	nordrand	[X86] Disable the direct use of the RDRAND
+-			instruction even if it is supported by the
+-			processor.  RDRAND is still available to user
+-			space applications.
++	nordrand	[X86] Disable kernel use of the RDRAND and
++			RDSEED instructions even if they are supported
++			by the processor.  RDRAND and RDSEED are still
++			available to user space applications.
+ 
+ 	noresume	[SWSUSP] Disables resume and restores original swap
+ 			space.
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index a8091216963b..68c05398bba9 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -52,6 +52,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
+ 
+ static inline int huge_pte_none(pte_t pte)
+diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
+index 384df5105fbc..136ac74dee82 100644
+--- a/arch/x86/kernel/cpu/rdrand.c
++++ b/arch/x86/kernel/cpu/rdrand.c
+@@ -27,6 +27,7 @@
+ static int __init x86_rdrand_setup(char *s)
+ {
+ 	setup_clear_cpu_cap(X86_FEATURE_RDRAND);
++	setup_clear_cpu_cap(X86_FEATURE_RDSEED);
+ 	return 1;
+ }
+ __setup("nordrand", x86_rdrand_setup);
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a9ebda..dcbbaa165bde 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,6 +20,8 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ 
++int sysctl_ldt16 = 0;
++
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
++	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 00348980a3a6..e1f220e3ca68 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -39,6 +39,7 @@
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
++extern int sysctl_ldt16;
+ #endif
+ 
+ /*
+@@ -249,6 +250,13 @@ static struct ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++	{
++		.procname	= "ldt16",
++		.data		= &sysctl_ldt16,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+ 	{}
+ };
+ 
