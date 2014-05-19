@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaESDok (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 23:44:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48144 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752271AbaESDoh (ORCPT
+	id S1750766AbaESEJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:09:20 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53508 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaESEJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 23:44:37 -0400
-Date: Mon, 19 May 2014 00:43:55 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: "Gupta, Pekon" <pekon@ti.com>, David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] mtd: Add sysfs attr to expose ECC stats
-Message-ID: <20140519034355.GB1062@arch.cereza>
-References: <1395403064-28113-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1395403064-28113-2-git-send-email-ezequiel.garcia@free-electrons.com>
- <20980858CB6D3A4BAE95CA194937D5E73EAB91D7@DBDE04.ent.ti.com>
- <20140401111359.GA3324@arch.cereza>
- <20980858CB6D3A4BAE95CA194937D5E73EAC31AE@DBDE04.ent.ti.com>
- <20140513005053.GZ28907@ld-irv-0074>
- <20140513022614.GA1447@arch.cereza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140513022614.GA1447@arch.cereza>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 19 May 2014 00:09:19 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: akpm@linux-foundation.org, hannes@cmpxchg.org, shli@kernel.org,
+        minchan@kernel.org, riel@redhat.com, nasa4836@gmail.com,
+        mgorman@suse.de, cmetcalf@tilera.com, aquini@redhat.com,
+        mhocko@suse.cz, vdavydov@parallels.com, glommer@openvz.org,
+        dchinner@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] mm/vmscan.c: use DIV_ROUND_UP for calculation of zone's balance_gap and correct comments.
+Date: Mon, 19 May 2014 12:08:30 +0800
+Message-Id: <1400472510-24375-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 May 11:26 PM, Ezequiel Garcia wrote:
-> On 12 May 05:50 PM, Brian Norris wrote:
-> > > There are some guidelines about attributes in 'Documentation/filesystems/sysfs.txt'
-> > > Though it's acceptable to put array of values of the "same type" in single sysfs file,
-> > > But I'm still not confident on having all members of 'struct ecc_stats' being
-> > > represented by single sysfs file
-> > [...]
-> > 
-> > I agree, it looks like the sysfs policy would recommend against putting
-> > distinct properties in the same file.
-> > 
-[..]
-> > So I personally might lean toward "one file per attribute" here.
-> > 
+Currently, we use (zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+KSWAPD_ZONE_BALANCE_GAP_RATIO to avoid a zero gap value. It's better to
+use DIV_ROUND_UP macro for neater code and clear meaning.
 
-Brian,
+Besides, the gap value is calculated against the per-zone "managed pages",
+not "present pages". This patch also corrects the comment and do some
+rephrasing.
 
-Having agreed on doing one file per attribute, I'm now not sure how to
-name them. Maybe you can give me a hand?
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ include/linux/swap.h |  8 ++++----
+ mm/vmscan.c          | 10 ++++------
+ 2 files changed, 8 insertions(+), 10 deletions(-)
 
-Let me add some context: these are the per-MTD partition fields of the
-mtd_ecc_stats struct, although two of them aren't related to ECC, but to
-the bad blocks management. This is the struct:
-
-struct mtd_ecc_stats {
-        __u32 corrected;
-        __u32 failed;
-        __u32 badblocks;
-        __u32 bbtblocks;
-};
-
-How about the following?
-
-* corrected_bits
-* uncorrectable_errors
-* badblocks
-* bbtblocks
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 5a14b92..58e1696 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -166,10 +166,10 @@ enum {
+ #define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
+ 
+ /*
+- * Ratio between the present memory in the zone and the "gap" that
+- * we're allowing kswapd to shrink in addition to the per-zone high
+- * wmark, even for zones that already have the high wmark satisfied,
+- * in order to provide better per-zone lru behavior. We are ok to
++ * Ratio between zone->managed_pages and the "gap" that above the per-zone
++ * "high_wmark". While balancing nodes, We allow kswapd to shrink zones that
++ * do not meet the (high_wmark + gap) watermark, even which already met the
++ * high_wmark, in order to provide better per-zone lru behavior. We are ok to
+  * spend not more than 1% of the memory for this zone balancing "gap".
+  */
+ #define KSWAPD_ZONE_BALANCE_GAP_RATIO 100
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 32c661d..9ef9f6c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2268,9 +2268,8 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
+ 	 * there is a buffer of free pages available to give compaction
+ 	 * a reasonable chance of completing and allocating the page
+ 	 */
+-	balance_gap = min(low_wmark_pages(zone),
+-		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+-			KSWAPD_ZONE_BALANCE_GAP_RATIO);
++	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
++			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
+ 	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
+ 	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
+ 
+@@ -2891,9 +2890,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	 * high wmark plus a "gap" where the gap is either the low
+ 	 * watermark or 1% of the zone, whichever is smaller.
+ 	 */
+-	balance_gap = min(low_wmark_pages(zone),
+-		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+-		KSWAPD_ZONE_BALANCE_GAP_RATIO);
++	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
++			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
+ 
+ 	/*
+ 	 * If there is no low memory pressure or the zone is balanced then no
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+2.0.0-rc3
+
