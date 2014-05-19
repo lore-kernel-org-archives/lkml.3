@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaESM4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:56:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59092 "EHLO
+	id S1754532AbaESM4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:56:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59098 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496AbaESM4M (ORCPT
+	with ESMTP id S1753593AbaESM4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:56:12 -0400
-Date: Mon, 19 May 2014 05:55:12 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-643fd0b9f5dc40fedbfbb908ebe6f1169284f7d8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140423102254.GL11096@twins.programming.kicks-ass.net>
-References: <20140423102254.GL11096@twins.programming.kicks-ass.net>
+	Mon, 19 May 2014 08:56:21 -0400
+Date: Mon, 19 May 2014 05:55:23 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-722e76e60f2775c21b087ff12c5e678cf0ebcaaf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        dzickus@redhat.com
+In-Reply-To: <20140515155644.GA3884@quad>
+References: <20140515155644.GA3884@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix perf_event_open(.flags) test
-Git-Commit-ID: 643fd0b9f5dc40fedbfbb908ebe6f1169284f7d8
+Subject: [tip:perf/core] fix Haswell precise store data source encoding
+Git-Commit-ID: 722e76e60f2775c21b087ff12c5e678cf0ebcaaf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,50 +33,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  643fd0b9f5dc40fedbfbb908ebe6f1169284f7d8
-Gitweb:     http://git.kernel.org/tip/643fd0b9f5dc40fedbfbb908ebe6f1169284f7d8
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 23 Apr 2014 12:22:54 +0200
+Commit-ID:  722e76e60f2775c21b087ff12c5e678cf0ebcaaf
+Gitweb:     http://git.kernel.org/tip/722e76e60f2775c21b087ff12c5e678cf0ebcaaf
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 15 May 2014 17:56:44 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 19 May 2014 21:52:59 +0900
 
-perf: Fix perf_event_open(.flags) test
+fix Haswell precise store data source encoding
 
-Vince noticed that we test the (unsigned long) flags field against an
-(unsigned int) constant. This would allow setting the high bits on 64bit
-platforms and not get an error.
+This patch fixes a bug in  precise_store_data_hsw() whereby
+it would set the data source memory level to the wrong value.
 
-There is nothing that uses the high bits, so it should be entirely
-harmless, but we don't want userspace to accidentally set them anyway,
-so fix the constants.
+As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
+Address Information in PEBS Record), when status bit 0 is set
+this is a L1 hit, otherwise this is a L1 miss.
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+This patch encodes the memory level according to the specification.
+
+In V2, we added the filtering on the store events.
+Only the following events produce L1 information:
+ * MEM_UOPS_RETIRED.STLB_MISS_STORES
+ * MEM_UOPS_RETIRED.LOCK_STORES
+ * MEM_UOPS_RETIRED.SPLIT_STORES
+ * MEM_UOPS_RETIRED.ALL_STORES
+
+Cc: mingo@elte.hu
+Cc: acme@ghostprotocols.net
+Cc: jolsa@redhat.com
+Cc: jmario@redhat.com
+Cc: ak@linux.intel.com
+Tested-and-Reviewed-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140423102254.GL11096@twins.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/20140515155644.GA3884@quad
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/uapi/linux/perf_event.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 853bc1c..e3fc8f0 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -722,10 +722,10 @@ enum perf_callchain_context {
- 	PERF_CONTEXT_MAX		= (__u64)-4095,
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index ae96cfa..980970c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -108,15 +108,31 @@ static u64 precise_store_data(u64 status)
+ 	return val;
+ }
  
--#define PERF_FLAG_FD_NO_GROUP		(1U << 0)
--#define PERF_FLAG_FD_OUTPUT		(1U << 1)
--#define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
--#define PERF_FLAG_FD_CLOEXEC		(1U << 3) /* O_CLOEXEC */
-+#define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
-+#define PERF_FLAG_FD_OUTPUT		(1UL << 1)
-+#define PERF_FLAG_PID_CGROUP		(1UL << 2) /* pid=cgroup id, per-cpu mode only */
-+#define PERF_FLAG_FD_CLOEXEC		(1UL << 3) /* O_CLOEXEC */
+-static u64 precise_store_data_hsw(u64 status)
++static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
+ {
+ 	union perf_mem_data_src dse;
++	u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
  
- union perf_mem_data_src {
- 	__u64 val;
+ 	dse.val = 0;
+ 	dse.mem_op = PERF_MEM_OP_STORE;
+ 	dse.mem_lvl = PERF_MEM_LVL_NA;
++
++	/*
++	 * L1 info only valid for following events:
++	 *
++	 * MEM_UOPS_RETIRED.STLB_MISS_STORES
++	 * MEM_UOPS_RETIRED.LOCK_STORES
++	 * MEM_UOPS_RETIRED.SPLIT_STORES
++	 * MEM_UOPS_RETIRED.ALL_STORES
++	 */
++	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0)
++		return dse.mem_lvl;
++
+ 	if (status & 1)
+-		dse.mem_lvl = PERF_MEM_LVL_L1;
++		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_HIT;
++	else
++		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_MISS;
++
+ 	/* Nothing else supported. Sorry. */
+ 	return dse.val;
+ }
+@@ -887,7 +903,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 				data.data_src.val = load_latency_data(pebs->dse);
+ 			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
+ 				data.data_src.val =
+-					precise_store_data_hsw(pebs->dse);
++					precise_store_data_hsw(event, pebs->dse);
+ 			else
+ 				data.data_src.val = precise_store_data(pebs->dse);
+ 		}
