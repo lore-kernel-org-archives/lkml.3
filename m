@@ -1,68 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaESNXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:23:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099AbaESNXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:23:32 -0400
-Date: Mon, 19 May 2014 09:20:02 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/6] perf: Add dcacheline sort
-Message-ID: <20140519132002.GH50500@redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-7-git-send-email-dzickus@redhat.com>
- <CABPqkBQE-HLV3JLo4-sXBJos38SY0RUhC-gLeauawrf3Cgojtw@mail.gmail.com>
- <20140516155958.GX11096@twins.programming.kicks-ass.net>
- <CABPqkBS+jx6sR3BNjwGkaG9hZFtfwmLKKiD86Li4hAY_YsTDdA@mail.gmail.com>
- <20140516162441.GA50500@redhat.com>
- <20140519112545.GD5027@krava.brq.redhat.com>
+	id S932213AbaESNXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:23:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63720 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666AbaESNXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:23:44 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <537A05D4.6080308@roeck-us.net>
+Date: Mon, 19 May 2014 06:23:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519112545.GD5027@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Werner <andreas.werner@men.de>
+CC: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lee.jones@linaro.org,
+        wim@iguana.be, linux-watchdog@vger.kernel.org, cooloney@gmail.com,
+        rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        johannes.thumshirn@men.de, thomas.schnuerer@men.de, wernerandy@gmx.de
+Subject: Re: [PATCH 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
+ MFD Core driver
+References: <cover.1400258021.git.andreas.werner@men.de> <58de41a38511a107941d9c3b2cea314c0becfff7.1400258021.git.andreas.werner@men.de> <5377849E.7020001@roeck-us.net> <20140519124324.GB398@awelinux>
+In-Reply-To: <20140519124324.GB398@awelinux>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 01:25:45PM +0200, Jiri Olsa wrote:
-> On Fri, May 16, 2014 at 12:24:41PM -0400, Don Zickus wrote:
-> > On Fri, May 16, 2014 at 06:02:43PM +0200, Stephane Eranian wrote:
-> > > On Fri, May 16, 2014 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > > On Fri, May 16, 2014 at 04:09:59PM +0200, Stephane Eranian wrote:
-> > > >> > +#define CACHE_LINESIZE       64
-> > > >> I had something similar to your patch here in my original series for
-> > > >> perf mem, but I never pushed it.
-> > > >> I think this is a useful feature to have.
-> > > >> However, I don't think you can hardcode the cache line size to 64.
-> > > >> This is generic
-> > > >> code. There may be architectures where the line size is different from 64.
-> > > >> So I think you should add an option to change the default line size or provide
-> > > >> an arch-specific definition.
-> > > >
-> > > > # cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
-> > > > 64
-> > > Excellent, then we should use that!
-> > 
-> > Would it make sense to create an accessory function that sets the size in
-> > util/cpumap.c and provides it as an inline from util/cpumap.h?
-> 
-> sounds good,
-> 
-> btw so far I'll take patches 1-4 (after getting changelog update)
-> and expecting v2 for 5,6 ;-)
+On 05/19/2014 05:43 AM, Andreas Werner wrote:
+> aOn Sat, May 17, 2014 at 08:47:42AM -0700, Guenter Roeck wrote:
+>> On 05/16/2014 09:37 AM, Andreas Werner wrote:
+>>> The MEN 14F021P00 Board Management Controller provides an
+>>> I2C interface to the host to access the feature implemented in the BMC.
+>>> The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+>>> and on a few Box/Display Computer.
+>>>
+>>> Added MFD Core driver, supporting the I2C communication to the device.
+>>>
+>>> The MFD driver currently supports the following features:
+>>> 	- Watchdog
+>>> 	- LEDs
+>>>
+>>> Signed-off-by: Andreas Werner <andreas.werner@men.de>
+>>> ---
+>>>   drivers/mfd/Kconfig           |  12 +++
+>>>   drivers/mfd/Makefile          |   1 +
+>>>   drivers/mfd/menf21bmc.c       | 193 ++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/mfd/menf21bmc.h |  32 +++++++
+>>>   4 files changed, 238 insertions(+)
+>>>   create mode 100644 drivers/mfd/menf21bmc.c
+>>>   create mode 100644 include/linux/mfd/menf21bmc.h
+>>>
+>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>>> index ab5a43c..7c2e8d2 100644
+>>> --- a/drivers/mfd/Kconfig
+>>> +++ b/drivers/mfd/Kconfig
+>>> @@ -427,6 +427,18 @@ config MFD_MAX8998
+>>>   	  additional drivers must be enabled in order to use the functionality
+>>>   	  of the device.
+>>>
+>>> +config MFD_MENF21BMC
+>>> +	tristate "MEN 14F021P00 Board Management Controller Support"
+>>> +	depends on I2C=y
+>>> +	select MFD_CORE
+>>> +	help
+>>> +	  Say yes here to add support for the MEN 14F021P00 BMC
+>>> +	  which is a Board Management Controller connected to the I2C bus.
+>>> +	  This driver provides common support for accessing the devices;
+>>> +	  additional drivers must be enabled in order to use the
+>>> +	  functionality of the BMC device.
+>>> +
+>>> +
+>>>   config EZX_PCAP
+>>>   	bool "Motorola EZXPCAP Support"
+>>>   	depends on SPI_MASTER
+>>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>>> index 5913208..8f2be38 100644
+>>> --- a/drivers/mfd/Makefile
+>>> +++ b/drivers/mfd/Makefile
+>>> @@ -167,3 +167,4 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+>>>   obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+>>>   obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+>>>   obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+>>> +obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+>>> diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
+>>> new file mode 100644
+>>> index 0000000..77de1a8
+>>> --- /dev/null
+>>> +++ b/drivers/mfd/menf21bmc.c
+>>> @@ -0,0 +1,193 @@
+>>> +/*
+>>> + *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
+>>> + *
+>>> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+>>> + *  Author: Andreas Werner <andreas.werner@men.de>
+>>> + *  All rights reserved.
+>>> + *
+>>> + *  This program is free software; you can redistribute  it and/or modify it
+>>> + *  under  the terms of  the GNU General  Public License as published by the
+>>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+>>> + *  option) any later version.
+>>> + *
+>>> + */
+>>> +
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/device.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/i2c.h>
+>>> +#include <linux/mfd/core.h>
+>>> +#include <linux/mfd/menf21bmc.h>
+>>> +
+>>> +#define BMC_CMD_REV_MAJOR	0x80
+>>> +#define BMC_CMD_REV_MINOR	0x81
+>>> +#define BMC_CMD_REV_MAIN	0x82
+>>> +#define BMC_CMD_REV_BUILD	0x83
+>>> +#define BMC_CMD_REV_VERI	0x84
+>>> +
+>>> +static struct mfd_cell menf21bmc_cell[] = {
+>>> +	{
+>>> +		.name = "menf21bmc_wd",
+>>> +	},
+>>> +	{
+>>> +		.name = "menf21bmc_led",
+>>> +	},
+>>> +};
+>>> +
+>>> +static int
+>>> +menf21bmc_read_byte_data(struct i2c_client *client, u8 reg, uint8_t *val)
+>>> +{
+>>> +	int ret;
+>>> +	struct menf21bmc *data = i2c_get_clientdata(client);
+>>> +
+>>> +	mutex_lock(&data->lock);
+>>> +	ret = i2c_smbus_read_byte_data(client, reg);
+>>> +	mutex_unlock(&data->lock);
+>>> +
+>>> +	if (ret < 0) {
+>>> +		dev_err(&client->dev, "failed to read byte at 0x%02x\n", reg);
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	*val = (uint8_t)ret;
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>> I personally would prefer if you would retain the original API, which returns both value
+>> and error code as return value. I don't see the benefit of changing the API as you did -
+>> it just complicates the code.
+>>
+>> Thanks,
+>> Guenter
+>>
+> I think it is ok for a wrapper like this because it does not really change an API because
+> it is menf21bmc related.
+>
+> I did the same in rtc-rx8581, and it was already done in rtc_ds1307.c.
+>
+> I personally prefer this way because the return of the function and the return
+> value of the i2c_smbus_read - which is the value read from the device - are seperated.
+>
+> If it is a no go for the mfd/wdt core i can change it back to the original i2c_smbus API.
+> If it is ok on your side for a wrapper like this, we can let it as it is.
+>
 
-Ok. Thanks!  What needs to be done for patch 5?  I have a patch 5.5?? that
-does the cachline calculation that Stephane requested.  I just have to
-find a way to dynamically handle the symbol lengths on output (and fix
-that hang you see).
+Not my call to make; depends on the mfd maintainer. I would not accept it, as I see it
+as unnecessary, adding complexity, and pointless. Sure, you can always find examples
+for everything somewhere in the kernel, but that doesn't make it better.
 
-Cheers,
-Don
+Guenter
+
