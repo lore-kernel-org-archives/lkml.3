@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932891AbaEST4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:56:18 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54750 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755131AbaEST4I (ORCPT
+	id S932900AbaEST52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:57:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51269 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809AbaEST50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:56:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [RFC][PATCH 2/3] PM / sleep: Mechanism to avoid resuming runtime-suspended devices unnecessarily
-Date: Mon, 19 May 2014 22:13:02 +0200
-Message-ID: <19742334.gxM0TSp0VL@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1405191552220.1538-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1405191552220.1538-100000@iolanthe.rowland.org>
+	Mon, 19 May 2014 15:57:26 -0400
+Date: Mon, 19 May 2014 22:57:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] staging: unisys: move uislib/platform proc entry to
+ debugfs
+Message-ID: <20140519195708.GY15585@mwanda>
+References: <1399912715-16142-1-git-send-email-benjamin.romer@unisys.com>
+ <1399912715-16142-3-git-send-email-benjamin.romer@unisys.com>
+ <20140518164918.GA10285@kroah.com>
+ <C97001BC43954D438ACB059713BA5CDFA47DDAD93D@USEA-EXCH7.na.uis.unisys.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C97001BC43954D438ACB059713BA5CDFA47DDAD93D@USEA-EXCH7.na.uis.unisys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 19, 2014 03:53:58 PM Alan Stern wrote:
-> On Mon, 19 May 2014, Jacob Pan wrote:
+On Mon, May 19, 2014 at 09:42:22AM -0500, Romer, Benjamin M wrote:
+> On Sun, 2014-05-18 at 09:49 -0700, Greg KH wrote:
+> > Also, why are these entries moving to debugfs at all?  Why are they
+> > needed?  Who will use them?  Are tools relying on them to be there?
 > 
-> > > Wouldn't that go a bit too far?  It seems to be based on the
-> > > assumption that all devices having no ->prepare() callback can be
-> > > safely left in runtime suspend over a system suspend/resume cycle,
-> > > but is that assumption actually satisfied for all such devices?
-> > > 
-> > yes, I agree it is risky though i don't see problems with my limited
-> > testing. But on the other side, it is too strict.
-> > I also tried adding .prepare( return 1;) to usb_ep_device_type pm ops,
-> > that didn't work either. The reason is that ep devices don't support
-> > runtime pm (disable_depth > 0). I think in this case ignore_children
-> > flag should be the right indicator to ignore pm_runtime_suspended()?
-> 
-> Maybe it would be better to add a new flag that means "This is a 
-> virtual device and the PM core can ignore it completely".
+> The tuning entries are sometimes used to help adjust the behavior of our
+> IO service partitions for better performance.
 
-I like that idea. :-)
+That sounds like it really belongs in sysfs instead of debugfs.
 
-Rafael
+regards,
+dan carpenter
 
