@@ -1,147 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaESWhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:37:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58374 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751060AbaESWha (ORCPT
+	id S1752157AbaESWiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:38:22 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:26523 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaESWiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:37:30 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Accelerate battery resume callback
-Date: Tue, 20 May 2014 00:54:24 +0200
-Message-ID: <4288835.6SVZxzAble@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1399183626-13152-1-git-send-email-tianyu.lan@intel.com>
-References: <1399183626-13152-1-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 May 2014 18:38:20 -0400
+Message-ID: <1400539098.6399.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: linux-next: build warning after merge of the akpm tree
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
+Date: Mon, 19 May 2014 15:38:18 -0700
+In-Reply-To: <20140520073634.40179424@canb.auug.org.au>
+References: <20140519181314.1b92c548@canb.auug.org.au>
+	 <1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
+	 <20140520073634.40179424@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 04, 2014 02:07:06 PM Lan Tianyu wrote:
-> Most time of battery resume callback is spent on executing AML code
-> _BTP, _BIF and _BIF to get battery info, status and set alarm. These
-> AML methods may access EC operation regions several times and consumes
-> time.
+On Tue, 2014-05-20 at 07:36 +1000, Stephen Rothwell wrote:
+> Hi,
 > 
-> These operations are not necessary during devices resume and can run
-> during POST_SUSPEND/HIBERNATION event when all processes are thawed.
+> On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >
+> > On Mon, 2014-05-19 at 18:13 +1000, Stephen Rothwell wrote:
+> > > Hi Andrew,
+> > > 
+> > > After merging the akpm tree, today's linux-next build (arm
+> > > multi_v7_defconfig) produced these warnings:
+> > > 
+> > > 
+> > > ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+> > > ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+> > > ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+> > > ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+> > > 
+> > > and many more in other files ...
+> > 
+> > Hmm are all the warning the same? Is this just on arm? have you seen it
+> > in other archs? (Could you please send me the .config)
 > 
-> This also can avoid removing and adding battery sysfs nodes every system
-> resume even if the battery unit is not actually changed. The original code
-> updates sysfs nodes without check and this seems not reasonable.
+> The warnings were all the same, I saw it only on arm (since that was
+> what I built) and I mentioned the config above.
 > 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> > > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
+> > > spinning").
+> > 
+> > If CONFIG_SMP, we add two new fields to the rwsem structure
+> > (include/linux/rwsem.h) and likewise we update the
+> > __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
+> > something like that is to be using the spinlock variant
+> > (rwsem-spinlock.h).
+> 
+> Actually quite a few architectures do set
+> CONFIG_RWSEM_GENERIC_SPINLOCK, and so wouldn't it make more sense to
+> actually directly test that?
 
-Queued up for 3.16, thanks!
+Both are equivalent, I have no preference. I've sent a formal fix to the
+-tip folks, I guess I'll let them choose.
 
-> ---
-> This patch is to base on the linux pm tree linux-next branch with
-> patches "ACPI: Revert "ACPI / Battery: Remove battery's proc directory""
-> and "ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"".
-> 
->  drivers/acpi/battery.c | 36 +++++++++++++++++++++++++++---------
->  1 file changed, 27 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> index 6e7b2a1..3b4921e 100644
-> --- a/drivers/acpi/battery.c
-> +++ b/drivers/acpi/battery.c
-> @@ -696,7 +696,7 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
->  	}
->  }
->  
-> -static int acpi_battery_update(struct acpi_battery *battery)
-> +static int acpi_battery_update(struct acpi_battery *battery, bool resume)
->  {
->  	int result, old_present = acpi_battery_present(battery);
->  	result = acpi_battery_get_status(battery);
-> @@ -707,6 +707,10 @@ static int acpi_battery_update(struct acpi_battery *battery)
->  		battery->update_time = 0;
->  		return 0;
->  	}
-> +
-> +	if (resume)
-> +		return 0;
-> +
->  	if (!battery->update_time ||
->  	    old_present != acpi_battery_present(battery)) {
->  		result = acpi_battery_get_info(battery);
-> @@ -915,7 +919,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
->  static int acpi_battery_read(int fid, struct seq_file *seq)
->  {
->  	struct acpi_battery *battery = seq->private;
-> -	int result = acpi_battery_update(battery);
-> +	int result = acpi_battery_update(battery, false);
->  	return acpi_print_funcs[fid](seq, result);
->  }
->  
-> @@ -1030,7 +1034,7 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
->  	old = battery->bat.dev;
->  	if (event == ACPI_BATTERY_NOTIFY_INFO)
->  		acpi_battery_refresh(battery);
-> -	acpi_battery_update(battery);
-> +	acpi_battery_update(battery, false);
->  	acpi_bus_generate_netlink_event(device->pnp.device_class,
->  					dev_name(&device->dev), event,
->  					acpi_battery_present(battery));
-> @@ -1045,13 +1049,27 @@ static int battery_notify(struct notifier_block *nb,
->  {
->  	struct acpi_battery *battery = container_of(nb, struct acpi_battery,
->  						    pm_nb);
-> +	int result;
-> +
->  	switch (mode) {
->  	case PM_POST_HIBERNATION:
->  	case PM_POST_SUSPEND:
-> -		if (battery->bat.dev) {
-> -			sysfs_remove_battery(battery);
-> -			sysfs_add_battery(battery);
-> -		}
-> +		if (!acpi_battery_present(battery))
-> +			return 0;
-> +
-> +		if (!battery->bat.dev) {
-> +			result = acpi_battery_get_info(battery);
-> +			if (result)
-> +				return result;
-> +
-> +			result = sysfs_add_battery(battery);
-> +			if (result)
-> +				return result;
-> +		} else
-> +			acpi_battery_refresh(battery);
-> +
-> +		acpi_battery_init_alarm(battery);
-> +		acpi_battery_get_state(battery);
->  		break;
->  	}
->  
-> @@ -1087,7 +1105,7 @@ static int acpi_battery_add(struct acpi_device *device)
->  	mutex_init(&battery->sysfs_lock);
->  	if (acpi_has_method(battery->device->handle, "_BIX"))
->  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
-> -	result = acpi_battery_update(battery);
-> +	result = acpi_battery_update(battery, false);
->  	if (result)
->  		goto fail;
->  #ifdef CONFIG_ACPI_PROCFS_POWER
-> @@ -1149,7 +1167,7 @@ static int acpi_battery_resume(struct device *dev)
->  		return -EINVAL;
->  
->  	battery->update_time = 0;
-> -	acpi_battery_update(battery);
-> +	acpi_battery_update(battery, true);
->  	return 0;
->  }
->  #else
-> 
+Thanks,
+Davidlohr
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
