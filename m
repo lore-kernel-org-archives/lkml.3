@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaESPSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:18:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36442 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199AbaESPSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:18:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="514107442"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Armin Rigo <arigo@tunes.org>
-In-Reply-To: <20140519151104.GA16736@infradead.org>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
- <20140519130114.GA3140@dhcp22.suse.cz>
- <20140519143540.BE9F6E009B@blue.fi.intel.com>
- <20140519143837.GA5228@infradead.org>
- <20140519150238.67898E009B@blue.fi.intel.com>
- <20140519151104.GA16736@infradead.org>
-Subject: Re: remap_file_pages() use
+	id S1754568AbaESPWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:22:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41493 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaESPWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:22:16 -0400
+Message-ID: <537A2178.7070701@oracle.com>
+Date: Mon, 19 May 2014 11:21:28 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kthreads: kill CLONE_KERNEL, change kernel_thread(kernel_init)
+ to avoid CLONE_SIGHAND
+References: <20140413195617.GA31819@redhat.com> <53761FDB.10806@oracle.com> <20140516153530.GA30751@redhat.com>
+In-Reply-To: <20140516153530.GA30751@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20140519151758.A2162E009B@blue.fi.intel.com>
-Date: Mon, 19 May 2014 18:17:58 +0300 (EEST)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig wrote:
-> On Mon, May 19, 2014 at 06:02:38PM +0300, Kirill A. Shutemov wrote:
-> > > Stop right there.  We found out about two real life users of
-> > > remap_file_pages() already, without even committing the patches to warn
-> > > about using it to any tree.
-> > 
-> > Who is the second here?	Oracle?
+On 05/16/2014 11:35 AM, Oleg Nesterov wrote:
+> On 05/16, Sasha Levin wrote:
+>>
+>> On 04/13/2014 03:56 PM, Oleg Nesterov wrote:
+>>> 1. Remove CLONE_KERNEL, it has no users and it is dangerous.
+>>>
+>>>    The (old) comment says "List of flags we want to share for kernel
+>>>    threads" but this is not true, we do not want to share ->sighand by
+>>>    default. This flag can only be used if the caller is sure that both
+>>>    parent/child will never play with signals (say, allow_signal/etc).
+>>>
+>>> 2. Change rest_init() to clone kernel_init() without CLONE_SIGHAND.
+>>>
+>>>    In this case CLONE_SIGHAND does not really hurt, and it looks like
+>>>    optimization because copy_sighand() can avoid kmem_cache_alloc().
+>>>
+>>>    But in fact this only adds the minor pessimization. kernel_init()
+>>>    is going to exec the init process, and de_thread() will need to
+>>>    unshare ->sighand and do kmem_cache_alloc(sighand_cachep) anyway,
+>>>    but it needs to do more work and take tasklist_lock and siglock.
+>>>
+>>> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>>
+>> Hi Oleg,
+>>
+>> This patch triggers a hang during boot in my KVM guest.
 > 
-> PyPy.
-> 
-> Oracle would be the third, although use of the feature is optional and
-> fairly hard to opt in to, so I didn't count it.
+> Hmm... How??? ;)
 
-IIUC PyPy uses the syscall in some early prototype and looks like guys are
-okay to rework it to mmap() if default sysctl_max_map_count will be high
-enough.
+I'm afraid this is just bisection gone bad. The real issue was the
+new goldfish code added, and not this patch.
 
--- 
- Kirill A. Shutemov
+Since apparently the boot issue was probabilistic I ended up blaming
+this commit by mistake. Sorry about that.
+
+
+Thanks,
+Sasha
