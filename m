@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468AbaESQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:38:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47833 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932111AbaESQiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:38:14 -0400
-Message-ID: <537A3349.3030404@ti.com>
-Date: Mon, 19 May 2014 19:37:29 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755080AbaESQjp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:39:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57411 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaESQjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:39:44 -0400
+Date: Mon, 19 May 2014 17:39:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: time to move fs/bio.c to block/ ?
+Message-ID: <20140519163942.GJ18016@ZenIV.linux.org.uk>
+References: <20140519141309.GB21570@infradead.org>
+ <537A11CC.5060708@kernel.dk>
+ <20140519142519.GI18016@ZenIV.linux.org.uk>
+ <537A15B9.6000102@kernel.dk>
+ <20140519143416.GC568@infradead.org>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, <joelf@ti.com>, <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 02/13] ARM: edma: Take the number of tc from edma_soc_info
- (pdata)
-References: <1400242640-9902-1-git-send-email-peter.ujfalusi@ti.com> <1400242640-9902-3-git-send-email-peter.ujfalusi@ti.com> <5379E5E6.9080500@ti.com>
-In-Reply-To: <5379E5E6.9080500@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519143416.GC568@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 02:07 PM, Sekhar Nori wrote:
-> To which baseline do the patches apply? These lines are not present at
-> least in v3.15-rc5. I am applying the patch without this hunk.
+On Mon, May 19, 2014 at 07:34:16AM -0700, Christoph Hellwig wrote:
+> On Mon, May 19, 2014 at 08:31:21AM -0600, Jens Axboe wrote:
+> > > While you are at it, could you take bio-integrity.c with it?  _That_
+> > > has zero excuse being anywhere in fs/* - not even "filesystem code
+> > > uses quite a few functions from that sucker" as with bio.c.
+> > > FWIW, consider the move ACKed.
+> > 
+> > Yeah, I did include that in the move.
+> 
+> Other candidates to move to block/ might be ioprio.c and no-block.c
 
-It is generate on top of linux-next-20140515.
-next picked up several patches since 3.15-rc and I also have my other patch in
-my working branch under this series:
-ARM: edma: Clean up and simplify the code around irq request
+ACK on ioprio.c (BTW, looking at block...  WTF is the story with that
+pile of blk-* in there?  IOW, why blk-exec.c is better than exec.c,
+etc.?)
 
---
-Péter
+As for fs/no-block.c...  IMO that's a bad idea - it makes sense only
+if we take fs/block.c there as well, and that one wants fs/internal.h.
+
+Why do we need that ->llseek = noop_llseek there, while we are at it?
+Its ->open() always fails, so how is ->llseek() going to get looked at,
+let alone called?
