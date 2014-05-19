@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaESO7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:59:08 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:53982 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589AbaESO7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:59:06 -0400
+	id S932095AbaESO7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265AbaESO7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:59:19 -0400
+Message-ID: <537A1C2F.7070005@redhat.com>
+Date: Mon, 19 May 2014 16:58:55 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1398263514-7281-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1398263514-7281-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Mon, 19 May 2014 10:59:04 -0400
-Message-ID: <CAN+gG=HtdpTkZ6eo_WCBuwy_XkEjycb12jtj4eBo=P1goJUeeg@mail.gmail.com>
-Subject: Re: [PATCH] HID: rmi: do not handle touchscreens through hid-rmi
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Duggan <aduggan@synaptics.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: linux-kernel@vger.kernel.org, "Frank Ch. Eigler" <fche@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] x86: insn decoder: create artificial 3rd byte for
+ 2-byte VEX
+References: <1400265279-22503-1-git-send-email-dvlasenk@redhat.com> <5377877A.2070205@hitachi.com>
+In-Reply-To: <5377877A.2070205@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:31 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> Currently, hid-rmi drives every Synaptics product, but the touchscreens
-> on the Windows tablets should be handled through hid-multitouch.
->
-> Instead of providing a long list of PIDs, rely on the scan_report
-> capability to detect which should go to hid-multitouch, and which
-> should not go to hid-rmi.
->
-> We introduce a generic HID_GROUP_HAVE_SPECIAL_DRIVER which can be reused
-> amoung other drivers if they want to have a catch rule but still
-> have multitouch devices handled through hid-multitouch.
->
-> related bug:
-> https://bugzilla.kernel.org/show_bug.cgi?id=74241
-> https://bugzilla.redhat.com/show_bug.cgi?id=1089583
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->
-> Hi Jiri,
->
-> well, this is the patch we are going to carry in Fedora as we are already
-> carrying hid-rmi.
-> Still, I am not 100% happy with it, especially the HID_GROUP_HAVE_SPECIAL_DRIVER
-> thing.
->
-> I would also say we should re-think the way the scanning is called in
-> hid_add_device because I am starting using more and more the scanning capability
-> to decide if the device should be handled by generic, a special driver or simply
-> ignored.
->
-> Anyway, this could be decided later. If you prefer me to use a hid-rmi specific
-> group like HID_GROUP_RMI instead of HID_GROUP_HAVE_SPECIAL_DRIVER, I can also
-> update the patch.
->
+On 05/17/2014 05:59 PM, Masami Hiramatsu wrote:
+> (2014/05/17 3:34), Denys Vlasenko wrote:
+>> Before this patch, users need to do this to fetch vex.vvvv:
+>>
+>>         if (insn->vex_prefix.nbytes == 2) {
+>>                 vex_vvvv = ((insn->vex_prefix.bytes[1] >> 3) & 0xf) ^ 0xf;
+>>         }
+>>         if (insn->vex_prefix.nbytes == 3) {
+>>                 vex_vvvv = ((insn->vex_prefix.bytes[2] >> 3) & 0xf) ^ 0xf;
+>>         }
+>>
+>> Make it so that insn->vex_prefix.bytes[2] always contains vex.wvvvvLpp bits.
+> 
+> I like this hack :)
+> If you don't mind, please add inline functions to get such vex bits from
+> struct insn too?
 
-Hi Jiri,
+I prefer to add such functionality when the first user surfaces:
+the needs of the user often dictate more suitable API.
 
-looks like this one did not attracted your eye yet. Can you ack / nack it?
-Without it, hid-rmi will break all the multitouch screens from
-Synaptics, which will be a little bit worrying :)
+In this case (VEX insns), the API isn't that straightforward.
+For example, uprobe code narrowly escaped the need to detect maskmovq__
+(0f f7) and maskmovdqu (66 0f f7 or equivalent VEX) instructions.
 
-Cheers,
-Benjamin
+Let's assume we do need to detect them.
+Merely fetching and looking at vex.mmmmm, vex.pp and opcode doesn't
+really help that much in detecting these instructions:
+with such simplistic help, user needs to check both VEX and legacy forms.
+
+Perhaps a better API would be to form a word-sized "expanded opcode"
+for vector and VEX insns. Something along the lines of:
+
+[x.mmmmm.pp.opcode__]
+
+where x bit indicates XOP insn (as opposed to VEX), pp indicate
+none/66/F2/F3 prefixes, opcode__ is 8-bit opcode.
+then checking for maskmovFOO insns would be easier.
