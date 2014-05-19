@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaESMeV (ORCPT <rfc822;w@1wt.eu>);
+	id S932113AbaESMeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:34:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34377 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559AbaESMeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 08:34:21 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:56136 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984AbaESMeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:34:19 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 May 2014 08:34:19 EDT
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org, linux@openrisc.net, jonas@southpole.se
-Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH] openrisc: irq: use irqchip framework
-Date: Mon, 19 May 2014 15:25:28 +0300
-Message-Id: <1400502328-23974-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.8.3.2
+Message-ID: <5379FA44.90107@canonical.com>
+Date: Mon, 19 May 2014 05:34:12 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, miklos@szeredi.hu,
+        jmorris@namei.org, selinux@tycho.nsa.gov
+CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH (for 3.15) 5/5] LSM: Remove duplicated rename handling.
+References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp> <201405122225.CIE09825.MFHOtOOSQVFFLJ@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405122225.CIE09825.MFHOtOOSQVFFLJ@I-love.SAKURA.ne.jp>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to consolidating the or1k-pic initialization with
-how other interrupt controllers are initialized, this makes
-OpenRISC less tied to its on-cpu interrupt controller.
+On 05/12/2014 06:25 AM, Tetsuo Handa wrote:
+>>From 479d305929c4ef600de99948f42ed633b24458b0 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 12 May 2014 22:02:30 +0900
+> Subject: [PATCH (for 3.15) 5/5] LSM: Remove duplicated rename handling.
+> 
+> Since all LSM modules are now ready to handle the rename flags,
+> security_inode_rename() and security_path_rename() no longer need to
+> call each LSM module with reversed arguments.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: John Johansen <john.johansen@canonical.com>
 
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
----
- arch/openrisc/kernel/irq.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
-index 8ec77bc..f6f4683 100644
---- a/arch/openrisc/kernel/irq.c
-+++ b/arch/openrisc/kernel/irq.c
-@@ -19,10 +19,13 @@
- #include <linux/of.h>
- #include <linux/ftrace.h>
- #include <linux/irq.h>
-+#include <linux/irqchip.h>
- #include <linux/export.h>
- #include <linux/irqdomain.h>
- #include <linux/irqflags.h>
- 
-+#include "../../drivers/irqchip/irqchip.h"
-+
- /* read interrupt enabled status */
- unsigned long arch_local_save_flags(void)
- {
-@@ -151,24 +154,22 @@ static const struct irq_domain_ops or1k_irq_domain_ops = {
-  * 1000 CPU.  This is the "root" domain as these are the interrupts
-  * that directly trigger an exception in the CPU.
-  */
--static void __init or1k_irq_init(void)
-+static int __init
-+or1k_irq_init(struct device_node *intc,  struct device_node *parent)
- {
--	struct device_node *intc = NULL;
--
--	/* The interrupt controller device node is mandatory */
--	intc = of_find_compatible_node(NULL, NULL, "opencores,or1k-pic");
--	BUG_ON(!intc);
--
- 	/* Disable all interrupts until explicitly requested */
- 	mtspr(SPR_PICMR, (0UL));
- 
- 	root_domain = irq_domain_add_linear(intc, 32,
- 					    &or1k_irq_domain_ops, NULL);
-+
-+	return 0;
- }
-+IRQCHIP_DECLARE(or1k_pic, "opencores,or1k-pic", or1k_irq_init);
- 
- void __init init_IRQ(void)
- {
--	or1k_irq_init();
-+	irqchip_init();
- }
- 
- void __irq_entry do_IRQ(struct pt_regs *regs)
--- 
-1.8.3.2
+> ---
+>  security/security.c |   18 ------------------
+>  1 files changed, 0 insertions(+), 18 deletions(-)
+> 
+> diff --git a/security/security.c b/security/security.c
+> index 81d7ffe..fbc4968 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -439,15 +439,6 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
+>  	if (unlikely(IS_PRIVATE(old_dentry->d_inode) ||
+>  		     (new_dentry->d_inode && IS_PRIVATE(new_dentry->d_inode))))
+>  		return 0;
+> -
+> -	if (flags & RENAME_EXCHANGE) {
+> -		int err = security_ops->path_rename(new_dir, new_dentry,
+> -						    old_dir, old_dentry,
+> -						    flags);
+> -		if (err)
+> -			return err;
+> -	}
+> -
+>  	return security_ops->path_rename(old_dir, old_dentry, new_dir,
+>  					 new_dentry, flags);
+>  }
+> @@ -540,15 +531,6 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
+>          if (unlikely(IS_PRIVATE(old_dentry->d_inode) ||
+>              (new_dentry->d_inode && IS_PRIVATE(new_dentry->d_inode))))
+>  		return 0;
+> -
+> -	if (flags & RENAME_EXCHANGE) {
+> -		int err = security_ops->inode_rename(new_dir, new_dentry,
+> -						     old_dir, old_dentry,
+> -						     flags);
+> -		if (err)
+> -			return err;
+> -	}
+> -
+>  	return security_ops->inode_rename(old_dir, old_dentry,
+>  					  new_dir, new_dentry, flags);
+>  }
+> 
 
