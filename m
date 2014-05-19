@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaESG0N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:26:13 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59451 "EHLO
+	id S1753249AbaESG25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:28:57 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59726 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaESG0G (ORCPT
+	with ESMTP id S1752835AbaESG0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:26:06 -0400
+	Mon, 19 May 2014 02:26:11 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
-Subject: [PATCH 02/20] perf tools: Convert sort entries to hpp formats
-Date: Mon, 19 May 2014 15:25:44 +0900
-Message-Id: <1400480762-22852-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 19/20] perf tests: Factor out print_hists_*()
+Date: Mon, 19 May 2014 15:26:01 +0900
+Message-Id: <1400480762-22852-20-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
 References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
@@ -26,186 +26,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparation of consolidating management of output field and
-sort keys.
+Those print helper functions can be reused by later hist test cases so
+factor them out to a common location.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   |  6 ++++
- tools/perf/util/hist.h |  6 ++++
- tools/perf/util/sort.c | 80 +++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 88 insertions(+), 4 deletions(-)
+ tools/perf/tests/hists_common.c | 57 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/hists_common.h |  3 +++
+ tools/perf/tests/hists_filter.c | 37 ++++----------------------
+ tools/perf/tests/hists_link.c   | 29 +--------------------
+ 4 files changed, 66 insertions(+), 60 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index d4a4f2e7eb43..a6eea666b443 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -284,6 +284,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- };
- 
- LIST_HEAD(perf_hpp__list);
-+LIST_HEAD(perf_hpp__sort_list);
- 
- 
- #undef HPP__COLOR_PRINT_FNS
-@@ -325,6 +326,11 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format)
- 	list_add_tail(&format->list, &perf_hpp__list);
+diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
+index 44655b395bb9..040a85b17aee 100644
+--- a/tools/perf/tests/hists_common.c
++++ b/tools/perf/tests/hists_common.c
+@@ -146,3 +146,60 @@ out:
+ 	machine__delete(machine);
+ 	return NULL;
  }
- 
-+void perf_hpp__register_sort_field(struct perf_hpp_fmt *format)
++
++void print_hists_in(struct hists *hists)
 +{
-+	list_add_tail(&format->sort_list, &perf_hpp__sort_list);
-+}
++	int i = 0;
++	struct rb_root *root;
++	struct rb_node *node;
 +
- void perf_hpp__column_enable(unsigned col)
- {
- 	BUG_ON(col >= PERF_HPP__MAX_INDEX);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 36dbe00e3cc8..eee154a41723 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -165,13 +165,18 @@ struct perf_hpp_fmt {
- 	int64_t (*sort)(struct hist_entry *a, struct hist_entry *b);
- 
- 	struct list_head list;
-+	struct list_head sort_list;
- };
- 
- extern struct list_head perf_hpp__list;
-+extern struct list_head perf_hpp__sort_list;
- 
- #define perf_hpp__for_each_format(format) \
- 	list_for_each_entry(format, &perf_hpp__list, list)
- 
-+#define perf_hpp__for_each_sort_list(format) \
-+	list_for_each_entry(format, &perf_hpp__sort_list, sort_list)
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
 +
- extern struct perf_hpp_fmt perf_hpp__format[];
- 
- enum {
-@@ -190,6 +195,7 @@ enum {
- void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
-+void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 635cd8f8b22e..b2829f947053 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -2,6 +2,7 @@
- #include "hist.h"
- #include "comm.h"
- #include "symbol.h"
-+#include "evsel.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -1027,10 +1028,80 @@ static struct sort_dimension memory_sort_dimensions[] = {
- 
- #undef DIM
- 
--static void __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
-+struct hpp_sort_entry {
-+	struct perf_hpp_fmt hpp;
-+	struct sort_entry *se;
-+};
++	pr_info("----- %s --------\n", __func__);
++	node = rb_first(root);
++	while (node) {
++		struct hist_entry *he;
 +
-+static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+			      struct perf_evsel *evsel)
-+{
-+	struct hpp_sort_entry *hse;
-+	size_t len;
++		he = rb_entry(node, struct hist_entry, rb_node_in);
 +
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
++		if (!he->filtered) {
++			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
++				i, thread__comm_str(he->thread),
++				he->ms.map->dso->short_name,
++				he->ms.sym->name, he->stat.period);
++		}
 +
-+	return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
-+}
-+
-+static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
-+			     struct perf_hpp *hpp __maybe_unused,
-+			     struct perf_evsel *evsel)
-+{
-+	struct hpp_sort_entry *hse;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+
-+	return hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+}
-+
-+static int __sort__hpp_entry(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+			     struct hist_entry *he)
-+{
-+	struct hpp_sort_entry *hse;
-+	size_t len;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+	len = hists__col_len(he->hists, hse->se->se_width_idx);
-+
-+	return hse->se->se_snprintf(he, hpp->buf, hpp->size, len);
-+}
-+
-+static int __sort_dimension__add_hpp(struct sort_dimension *sd)
-+{
-+	struct hpp_sort_entry *hse;
-+
-+	hse = malloc(sizeof(*hse));
-+	if (hse == NULL) {
-+		pr_err("Memory allocation failed\n");
-+		return -1;
++		i++;
++		node = rb_next(node);
 +	}
-+
-+	hse->se = sd->entry;
-+	hse->hpp.header = __sort__hpp_header;
-+	hse->hpp.width = __sort__hpp_width;
-+	hse->hpp.entry = __sort__hpp_entry;
-+	hse->hpp.color = NULL;
-+
-+	hse->hpp.cmp = sd->entry->se_cmp;
-+	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
-+	hse->hpp.sort = hse->hpp.collapse;
-+
-+	INIT_LIST_HEAD(&hse->hpp.list);
-+	INIT_LIST_HEAD(&hse->hpp.sort_list);
-+
-+	perf_hpp__register_sort_field(&hse->hpp);
-+	return 0;
 +}
 +
-+static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- {
- 	if (sd->taken)
--		return;
-+		return 0;
++void print_hists_out(struct hists *hists)
++{
++	int i = 0;
++	struct rb_root *root;
++	struct rb_node *node;
 +
-+	if (__sort_dimension__add_hpp(sd) < 0)
-+		return -1;
- 
- 	if (sd->entry->se_collapse)
- 		sort__need_collapse = 1;
-@@ -1040,6 +1111,8 @@ static void __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- 
- 	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
- 	sd->taken = 1;
++	root = &hists->entries;
 +
-+	return 0;
++	pr_info("----- %s --------\n", __func__);
++	node = rb_first(root);
++	while (node) {
++		struct hist_entry *he;
++
++		he = rb_entry(node, struct hist_entry, rb_node);
++
++		if (!he->filtered) {
++			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
++				i, thread__comm_str(he->thread),
++				he->ms.map->dso->short_name,
++				he->ms.sym->name, he->stat.period);
++		}
++
++		i++;
++		node = rb_next(node);
++	}
++}
+diff --git a/tools/perf/tests/hists_common.h b/tools/perf/tests/hists_common.h
+index 2528b8fc105a..1415ae69d7b6 100644
+--- a/tools/perf/tests/hists_common.h
++++ b/tools/perf/tests/hists_common.h
+@@ -41,4 +41,7 @@ struct machines;
+  */
+ struct machine *setup_fake_machine(struct machines *machines);
+ 
++void print_hists_in(struct hists *hists);
++void print_hists_out(struct hists *hists);
++
+ #endif /* __PERF_TESTS__HISTS_COMMON_H__ */
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 4617a8bee29b..13c8cf49225e 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -98,33 +98,6 @@ out:
+ 	return TEST_FAIL;
  }
  
- int sort_dimension__add(const char *tok)
-@@ -1068,8 +1141,7 @@ int sort_dimension__add(const char *tok)
- 			sort__has_dso = 1;
+-static void print_hists(struct hists *hists)
+-{
+-	int i = 0;
+-	struct rb_root *root;
+-	struct rb_node *node;
+-
+-	root = &hists->entries;
+-
+-	pr_info("----- %s --------\n", __func__);
+-	node = rb_first(root);
+-	while (node) {
+-		struct hist_entry *he;
+-
+-		he = rb_entry(node, struct hist_entry, rb_node);
+-
+-		if (!he->filtered) {
+-			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
+-				i, thread__comm_str(he->thread),
+-				he->ms.map->dso->short_name,
+-				he->ms.sym->name, he->stat.period);
+-		}
+-
+-		i++;
+-		node = rb_next(node);
+-	}
+-}
+-
+ int test__hists_filter(void)
+ {
+ 	int err = TEST_FAIL;
+@@ -169,7 +142,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Normal histogram\n");
+-			print_hists(hists);
++			print_hists_out(hists);
  		}
  
--		__sort_dimension__add(sd, i);
--		return 0;
-+		return __sort_dimension__add(sd, i);
+ 		TEST_ASSERT_VAL("Invalid nr samples",
+@@ -193,7 +166,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for thread filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -222,7 +195,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for dso filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -257,7 +230,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for symbol filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -284,7 +257,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for all filters\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index b009bbf440d9..4e783db60bba 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -268,33 +268,6 @@ static int validate_link(struct hists *leader, struct hists *other)
+ 	return __validate_link(leader, 0) || __validate_link(other, 1);
+ }
+ 
+-static void print_hists(struct hists *hists)
+-{
+-	int i = 0;
+-	struct rb_root *root;
+-	struct rb_node *node;
+-
+-	if (sort__need_collapse)
+-		root = &hists->entries_collapsed;
+-	else
+-		root = hists->entries_in;
+-
+-	pr_info("----- %s --------\n", __func__);
+-	node = rb_first(root);
+-	while (node) {
+-		struct hist_entry *he;
+-
+-		he = rb_entry(node, struct hist_entry, rb_node_in);
+-
+-		pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
+-			i, thread__comm_str(he->thread), he->ms.map->dso->short_name,
+-			he->ms.sym->name, he->stat.period);
+-
+-		i++;
+-		node = rb_next(node);
+-	}
+-}
+-
+ int test__hists_link(void)
+ {
+ 	int err = -1;
+@@ -336,7 +309,7 @@ int test__hists_link(void)
+ 		hists__collapse_resort(&evsel->hists, NULL);
+ 
+ 		if (verbose > 2)
+-			print_hists(&evsel->hists);
++			print_hists_in(&evsel->hists);
  	}
  
- 	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
+ 	first = perf_evlist__first(evlist);
 -- 
 1.9.2
 
