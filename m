@@ -1,519 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaESQqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:46:21 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:57292 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932518AbaESQnn (ORCPT
+	id S932737AbaESQqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:46:19 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60125 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503AbaESQnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 12:43:43 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
         Mike Turquette <mturquette@linaro.org>,
-        Jisheng Zhang <jszhang@marvell.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/10] clk: berlin: add driver for BG2x audio/video PLL
-Date: Mon, 19 May 2014 18:43:24 +0200
-Message-Id: <1400517811-24668-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jisheng Zhang <jszhang@marvell.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 00/10] Marvell Berlin full clock support
+Date: Mon, 19 May 2014 18:43:21 +0200
+Message-Id: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a driver for the AVPLLs built upon a VCO with 8 channels each
-found on Marvell Berlin2 SoCs. While both VCOs found on BG2/BG2CD share
-the same register set, sometimes registers shifts for one of the VCOs
-are a bit off. Nothing serious that should require a separate driver,
-so deal with both VCOs in a single driver instead.
+Mike,
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-v1->v2:
-- separate include for AVPLL driver
-- split single clock driver for both VCO and 8 channels into separate
-  drivers for VCO and each channel. BG2Q will be different to BG2/BG2CD
-  and it allows us to shove in CCF flags for each of the channels.
-  (Suggested by Alexandre Belloni, Mike Turquette)
+this is v2 of the Berlin SoC clock driver [1] but with a reworked DT
+binding as requested [2]. We decided to not even try to split up the chip
+control registers that deal with pinmux, padmux, clock, reset, and evil
+stuff we haven't even looked at. Instead we keep a single node that clock
+driver will remap early, while proper platform_drivers use a regmap
+instead. Although clock and other drivers share the same register range,
+they use individual registers exclusively.
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jisheng Zhang <jszhang@marvell.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clk/Makefile               |   1 +
- drivers/clk/berlin/Makefile        |   1 +
- drivers/clk/berlin/berlin2-avpll.c | 393 +++++++++++++++++++++++++++++++++++++
- drivers/clk/berlin/berlin2-avpll.h |  36 ++++
- 4 files changed, 431 insertions(+)
+There are some functional fixes in the single clock drivers, I noticed
+while retesting each individial driver. There will be more to fixup but
+without any drivers actually using the clocks, it is hard to tell what
+isn't working now.
+
+Anyway, the current binding should match what you requested and having
+a clock driver for v3.16 will really be a huge benefit for us to work
+on more driver support.
+
+If you are fine with it, please take patches 2-7 and I'll pick up
+1,8-10 in berlin branch.
+
+Sebastian
+
+[1] https://lkml.kernel.org/r/1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com
+[2] https://lkml.kernel.org/r/20140515044106.19795.57249@quantum
+
+Alexandre Belloni (4):
+  clk: berlin: add driver for BG2x simple PLLs
+  clk: berlin: add driver for BG2x complex divider cells
+  clk: berlin: add core clock driver for BG2Q
+  ARM: dts: berlin: convert BG2Q to DT clock nodes
+
+Sebastian Hesselbarth (6):
+  dt-binding: ARM: add clock binding docs for Marvell Berlin2 SoCs
+  clk: berlin: add binding include for Berlin SoC clock ids
+  clk: berlin: add driver for BG2x audio/video PLL
+  clk: berlin: add core clock driver for BG2/BG2CD
+  ARM: dts: berlin: convert BG2CD to DT clock nodes
+  ARM: dts: berlin: convert BG2 to DT clock nodes
+
+ .../devicetree/bindings/arm/marvell,berlin.txt     |  47 ++
+ arch/arm/boot/dts/berlin2.dtsi                     |  56 +-
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  53 +-
+ arch/arm/boot/dts/berlin2q.dtsi                    |  54 +-
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/berlin/Makefile                        |   4 +
+ drivers/clk/berlin/berlin2-avpll.c                 | 393 ++++++++++++
+ drivers/clk/berlin/berlin2-avpll.h                 |  36 ++
+ drivers/clk/berlin/berlin2-div.c                   | 265 ++++++++
+ drivers/clk/berlin/berlin2-div.h                   |  89 +++
+ drivers/clk/berlin/berlin2-pll.c                   | 117 ++++
+ drivers/clk/berlin/berlin2-pll.h                   |  37 ++
+ drivers/clk/berlin/bg2.c                           | 691 +++++++++++++++++++++
+ drivers/clk/berlin/bg2q.c                          | 389 ++++++++++++
+ drivers/clk/berlin/common.h                        |  29 +
+ include/dt-bindings/clock/berlin2.h                |  45 ++
+ include/dt-bindings/clock/berlin2q.h               |  31 +
+ 17 files changed, 2240 insertions(+), 97 deletions(-)
  create mode 100644 drivers/clk/berlin/Makefile
  create mode 100644 drivers/clk/berlin/berlin2-avpll.c
  create mode 100644 drivers/clk/berlin/berlin2-avpll.h
+ create mode 100644 drivers/clk/berlin/berlin2-div.c
+ create mode 100644 drivers/clk/berlin/berlin2-div.h
+ create mode 100644 drivers/clk/berlin/berlin2-pll.c
+ create mode 100644 drivers/clk/berlin/berlin2-pll.h
+ create mode 100644 drivers/clk/berlin/bg2.c
+ create mode 100644 drivers/clk/berlin/bg2q.c
+ create mode 100644 drivers/clk/berlin/common.h
+ create mode 100644 include/dt-bindings/clock/berlin2.h
+ create mode 100644 include/dt-bindings/clock/berlin2q.h
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 5f8a28735c96..f651b2ace915 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
- obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
- obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
- obj-$(CONFIG_ARCH_BCM_MOBILE)		+= bcm/
-+obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
- obj-$(CONFIG_ARCH_HI3xxx)		+= hisilicon/
- obj-$(CONFIG_ARCH_HIP04)		+= hisilicon/
- obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
-diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
-new file mode 100644
-index 000000000000..5905733fc7c7
---- /dev/null
-+++ b/drivers/clk/berlin/Makefile
-@@ -0,0 +1 @@
-+obj-y += berlin2-avpll.o
-diff --git a/drivers/clk/berlin/berlin2-avpll.c b/drivers/clk/berlin/berlin2-avpll.c
-new file mode 100644
-index 000000000000..fd0f26c38465
---- /dev/null
-+++ b/drivers/clk/berlin/berlin2-avpll.c
-@@ -0,0 +1,393 @@
-+/*
-+ * Copyright (c) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+
-+#include "berlin2-avpll.h"
-+
-+/*
-+ * Berlin2 SoCs comprise up to two PLLs called AVPLL built upon a
-+ * VCO with 8 channels each, channel 8 is the odd-one-out and does
-+ * not provide mul/div.
-+ *
-+ * Unfortunately, its registers are not named but just numbered. To
-+ * get in at least some kind of structure, we split each AVPLL into
-+ * the VCOs and each channel into separate clock drivers.
-+ *
-+ * Also, here and there the VCO registers are a bit different with
-+ * respect to bit shifts. Make sure to add a comment for those.
-+ */
-+#define NUM_CHANNELS	8
-+
-+#define AVPLL_CTRL(x)		((x) * 0x4)
-+
-+#define VCO_CTRL0		AVPLL_CTRL(0)
-+/* BG2/BG2CDs VCO_B has an additional shift of 4 for its VCO_CTRL0 reg */
-+#define  VCO_RESET		BIT(0)
-+#define  VCO_POWERUP		BIT(1)
-+#define  VCO_INTERPOL_SHIFT	2
-+#define  VCO_INTERPOL_MASK	(0xf << VCO_INTERPOL_SHIFT)
-+#define  VCO_REG1V45_SEL_SHIFT	6
-+#define  VCO_REG1V45_SEL(x)	((x) << VCO_REG1V45_SEL_SHIFT)
-+#define  VCO_REG1V45_SEL_1V40	VCO_REG1V45_SEL(0)
-+#define  VCO_REG1V45_SEL_1V45	VCO_REG1V45_SEL(1)
-+#define  VCO_REG1V45_SEL_1V50	VCO_REG1V45_SEL(2)
-+#define  VCO_REG1V45_SEL_1V55	VCO_REG1V45_SEL(3)
-+#define  VCO_REG1V45_SEL_MASK	VCO_REG1V45_SEL(3)
-+#define  VCO_REG0V9_SEL_SHIFT	8
-+#define  VCO_REG0V9_SEL_MASK	(0xf << VCO_REG0V9_SEL_SHIFT)
-+#define  VCO_VTHCAL_SHIFT	12
-+#define  VCO_VTHCAL(x)		((x) << VCO_VTHCAL_SHIFT)
-+#define  VCO_VTHCAL_0V90	VCO_VTHCAL(0)
-+#define  VCO_VTHCAL_0V95	VCO_VTHCAL(1)
-+#define  VCO_VTHCAL_1V00	VCO_VTHCAL(2)
-+#define  VCO_VTHCAL_1V05	VCO_VTHCAL(3)
-+#define  VCO_VTHCAL_MASK	VCO_VTHCAL(3)
-+#define  VCO_KVCOEXT_SHIFT	14
-+#define  VCO_KVCOEXT_MASK	(0x3 << VCO_KVCOEXT_SHIFT)
-+#define  VCO_KVCOEXT_ENABLE	BIT(17)
-+#define  VCO_V2IEXT_SHIFT	18
-+#define  VCO_V2IEXT_MASK	(0xf << VCO_V2IEXT_SHIFT)
-+#define  VCO_V2IEXT_ENABLE	BIT(22)
-+#define  VCO_SPEED_SHIFT	23
-+#define  VCO_SPEED(x)		((x) << VCO_SPEED_SHIFT)
-+#define  VCO_SPEED_1G08_1G21	VCO_SPEED(0)
-+#define  VCO_SPEED_1G21_1G40	VCO_SPEED(1)
-+#define  VCO_SPEED_1G40_1G61	VCO_SPEED(2)
-+#define  VCO_SPEED_1G61_1G86	VCO_SPEED(3)
-+#define  VCO_SPEED_1G86_2G00	VCO_SPEED(4)
-+#define  VCO_SPEED_2G00_2G22	VCO_SPEED(5)
-+#define  VCO_SPEED_2G22		VCO_SPEED(6)
-+#define  VCO_SPEED_MASK		VCO_SPEED(0x7)
-+#define  VCO_CLKDET_ENABLE	BIT(26)
-+#define VCO_CTRL1		AVPLL_CTRL(1)
-+#define  VCO_REFDIV_SHIFT	0
-+#define  VCO_REFDIV(x)		((x) << VCO_REFDIV_SHIFT)
-+#define  VCO_REFDIV_1		VCO_REFDIV(0)
-+#define  VCO_REFDIV_2		VCO_REFDIV(1)
-+#define  VCO_REFDIV_4		VCO_REFDIV(2)
-+#define  VCO_REFDIV_3		VCO_REFDIV(3)
-+#define  VCO_REFDIV_MASK	VCO_REFDIV(0x3f)
-+#define  VCO_FBDIV_SHIFT	6
-+#define  VCO_FBDIV(x)		((x) << VCO_FBDIV_SHIFT)
-+#define  VCO_FBDIV_MASK		VCO_FBDIV(0xff)
-+#define  VCO_ICP_SHIFT		14
-+/* PLL Charge Pump Current = 10uA * (x + 1) */
-+#define  VCO_ICP(x)		((x) << VCO_ICP_SHIFT)
-+#define  VCO_ICP_MASK		VCO_ICP(0xf)
-+#define  VCO_LOAD_CAP		BIT(18)
-+#define  VCO_CALIBRATION_START	BIT(19)
-+#define VCO_FREQOFFSETn(x)	AVPLL_CTRL(3 + (x))
-+#define  VCO_FREQOFFSET_MASK	0x7ffff
-+#define VCO_CTRL10		AVPLL_CTRL(10)
-+#define  VCO_POWERUP_CH1	BIT(20)
-+#define VCO_CTRL11		AVPLL_CTRL(11)
-+#define VCO_CTRL12		AVPLL_CTRL(12)
-+#define VCO_CTRL13		AVPLL_CTRL(13)
-+#define VCO_CTRL14		AVPLL_CTRL(14)
-+#define VCO_CTRL15		AVPLL_CTRL(15)
-+#define VCO_SYNC1n(x)		AVPLL_CTRL(15 + (x))
-+#define  VCO_SYNC1_MASK		0x1ffff
-+#define VCO_SYNC2n(x)		AVPLL_CTRL(23 + (x))
-+#define  VCO_SYNC2_MASK		0x1ffff
-+#define VCO_CTRL30		AVPLL_CTRL(30)
-+#define  VCO_DPLL_CH1_ENABLE	BIT(17)
-+
-+struct berlin2_avpll_vco {
-+	struct clk_hw hw;
-+	void __iomem *base;
-+	u8 flags;
-+};
-+
-+#define to_avpll_vco(hw) container_of(hw, struct berlin2_avpll_vco, hw)
-+
-+static int berlin2_avpll_vco_is_enabled(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_vco *vco = to_avpll_vco(hw);
-+	u32 reg;
-+
-+	reg = readl_relaxed(vco->base + VCO_CTRL0);
-+	if (vco->flags & BERLIN2_AVPLL_BIT_QUIRK)
-+		reg >>= 4;
-+
-+	return !!(reg & VCO_POWERUP);
-+}
-+
-+static int berlin2_avpll_vco_enable(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_vco *vco = to_avpll_vco(hw);
-+	u32 reg;
-+
-+	reg = readl_relaxed(vco->base + VCO_CTRL0);
-+	if (vco->flags & BERLIN2_AVPLL_BIT_QUIRK)
-+		reg |= VCO_POWERUP << 4;
-+	else
-+		reg |= VCO_POWERUP;
-+	writel_relaxed(reg, vco->base + VCO_CTRL0);
-+
-+	return 0;
-+}
-+
-+static void berlin2_avpll_vco_disable(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_vco *vco = to_avpll_vco(hw);
-+	u32 reg;
-+
-+	reg = readl_relaxed(vco->base + VCO_CTRL0);
-+	if (vco->flags & BERLIN2_AVPLL_BIT_QUIRK)
-+		reg &= ~(VCO_POWERUP << 4);
-+	else
-+		reg &= ~VCO_POWERUP;
-+	writel_relaxed(reg, vco->base + VCO_CTRL0);
-+}
-+
-+static u8 vco_refdiv[] = { 1, 2, 4, 3 };
-+
-+static unsigned long
-+berlin2_avpll_vco_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
-+{
-+	struct berlin2_avpll_vco *vco = to_avpll_vco(hw);
-+	u32 reg, refdiv, fbdiv;
-+	u64 freq = parent_rate;
-+
-+	/* AVPLL VCO frequency: Fvco = (Fref / refdiv) * fbdiv */
-+	reg = readl_relaxed(vco->base + VCO_CTRL1);
-+	refdiv = (reg & VCO_REFDIV_MASK) >> VCO_REFDIV_SHIFT;
-+	refdiv = vco_refdiv[refdiv];
-+	fbdiv = (reg & VCO_FBDIV_MASK) >> VCO_FBDIV_SHIFT;
-+	freq *= fbdiv;
-+	do_div(freq, refdiv);
-+
-+	return (unsigned long)freq;
-+}
-+
-+static const struct clk_ops berlin2_avpll_vco_ops = {
-+	.is_enabled	= berlin2_avpll_vco_is_enabled,
-+	.enable		= berlin2_avpll_vco_enable,
-+	.disable	= berlin2_avpll_vco_disable,
-+	.recalc_rate	= berlin2_avpll_vco_recalc_rate,
-+};
-+
-+struct clk * __init berlin2_avpll_vco_register(void __iomem *base,
-+			       const char *name, const char *parent_name,
-+			       u8 vco_flags, unsigned long flags)
-+{
-+	struct berlin2_avpll_vco *vco;
-+	struct clk_init_data init;
-+
-+	vco = kzalloc(sizeof(*vco), GFP_KERNEL);
-+	if (!vco)
-+		return ERR_PTR(-ENOMEM);
-+
-+	vco->base = base;
-+	vco->flags = vco_flags;
-+	vco->hw.init = &init;
-+	init.name = name;
-+	init.ops = &berlin2_avpll_vco_ops;
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+	init.flags = flags;
-+
-+	return clk_register(NULL, &vco->hw);
-+}
-+
-+struct berlin2_avpll_channel {
-+	struct clk_hw hw;
-+	void __iomem *base;
-+	u8 flags;
-+	u8 index;
-+};
-+
-+#define to_avpll_channel(hw) container_of(hw, struct berlin2_avpll_channel, hw)
-+
-+static int berlin2_avpll_channel_is_enabled(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_channel *ch = to_avpll_channel(hw);
-+	u32 reg;
-+
-+	if (ch->index == 7)
-+		return 1;
-+
-+	reg = readl_relaxed(ch->base + VCO_CTRL10);
-+	reg &= VCO_POWERUP_CH1 << ch->index;
-+
-+	return !!reg;
-+}
-+
-+static int berlin2_avpll_channel_enable(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_channel *ch = to_avpll_channel(hw);
-+	u32 reg;
-+
-+	reg = readl_relaxed(ch->base + VCO_CTRL10);
-+	reg |= VCO_POWERUP_CH1 << ch->index;
-+	writel_relaxed(reg, ch->base + VCO_CTRL10);
-+
-+	return 0;
-+}
-+
-+static void berlin2_avpll_channel_disable(struct clk_hw *hw)
-+{
-+	struct berlin2_avpll_channel *ch = to_avpll_channel(hw);
-+	u32 reg;
-+
-+	reg = readl_relaxed(ch->base + VCO_CTRL10);
-+	reg &= ~(VCO_POWERUP_CH1 << ch->index);
-+	writel_relaxed(reg, ch->base + VCO_CTRL10);
-+}
-+
-+static const u8 div_hdmi[] = { 1, 2, 4, 6 };
-+static const u8 div_av1[] = { 1, 2, 5, 5 };
-+
-+static unsigned long
-+berlin2_avpll_channel_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
-+{
-+	struct berlin2_avpll_channel *ch = to_avpll_channel(hw);
-+	u32 reg, div_av2, div_av3, divider = 1;
-+	u64 freq = parent_rate;
-+
-+	reg = readl_relaxed(ch->base + VCO_CTRL30);
-+	if ((reg & (VCO_DPLL_CH1_ENABLE << ch->index)) == 0)
-+		goto skip_div;
-+
-+	/*
-+	 * Fch = (Fref * sync2) /
-+	 *    (sync1 * div_hdmi * div_av1 * div_av2 * div_av3)
-+	 */
-+
-+	reg = readl_relaxed(ch->base + VCO_SYNC1n(ch->index));
-+	/* BG2/BG2CDs SYNC1 reg on AVPLL_B channel 1 is shifted by 4 */
-+	if (ch->flags & BERLIN2_AVPLL_BIT_QUIRK && ch->index == 0)
-+		reg >>= 4;
-+	divider = reg & VCO_SYNC1_MASK;
-+
-+	reg = readl_relaxed(ch->base + VCO_SYNC2n(ch->index));
-+	freq *= reg & VCO_SYNC2_MASK;
-+
-+	/* Channel 8 has no dividers */
-+	if (ch->index == 7)
-+		goto skip_div;
-+
-+	/*
-+	 * HDMI divider start at VCO_CTRL11, bit 7; MSB is enable, lower 2 bit
-+	 * determine divider.
-+	 */
-+	reg = readl_relaxed(ch->base + VCO_CTRL11) >> 7;
-+	reg = (reg >> (ch->index * 3));
-+	if (reg & BIT(2))
-+		divider *= div_hdmi[reg & 0x3];
-+
-+	/*
-+	 * AV1 divider start at VCO_CTRL11, bit 28; MSB is enable, lower 2 bit
-+	 * determine divider.
-+	 */
-+	if (ch->index == 0) {
-+		reg = readl_relaxed(ch->base + VCO_CTRL11);
-+		reg >>= 28;
-+	} else {
-+		reg = readl_relaxed(ch->base + VCO_CTRL12);
-+		reg >>= (ch->index-1) * 3;
-+	}
-+	if (reg & BIT(2))
-+		divider *= div_av1[reg & 0x3];
-+
-+	/*
-+	 * AV2 divider start at VCO_CTRL12, bit 18; each 7 bits wide,
-+	 * zero is not a valid value.
-+	 */
-+	if (ch->index < 2) {
-+		reg = readl_relaxed(ch->base + VCO_CTRL12);
-+		reg >>= 18 + (ch->index * 7);
-+	} else if (ch->index < 7) {
-+		reg = readl_relaxed(ch->base + VCO_CTRL13);
-+		reg >>= (ch->index - 2) * 7;
-+	} else {
-+		reg = readl_relaxed(ch->base + VCO_CTRL14);
-+	}
-+	div_av2 = reg & 0x7f;
-+	if (div_av2)
-+		divider *= div_av2;
-+
-+	/*
-+	 * AV3 divider start at VCO_CTRL14, bit 7; each 4 bits wide.
-+	 * AV2/AV3 form a fractional divider, where only specfic values for AV3
-+	 * are allowed. AV3 != 0 divides by AV2/2, AV3=0 is bypass.
-+	 */
-+	if (ch->index < 6) {
-+		reg = readl_relaxed(ch->base + VCO_CTRL14);
-+		reg >>= 7 + (ch->index * 4);
-+	} else {
-+		reg = readl_relaxed(ch->base + VCO_CTRL15);
-+	}
-+	div_av3 = reg & 0xf;
-+	if (div_av2 && div_av3)
-+		freq *= 2;
-+
-+skip_div:
-+	do_div(freq, divider);
-+	return (unsigned long)freq;
-+}
-+
-+static const struct clk_ops berlin2_avpll_channel_ops = {
-+	.is_enabled	= berlin2_avpll_channel_is_enabled,
-+	.enable		= berlin2_avpll_channel_enable,
-+	.disable	= berlin2_avpll_channel_disable,
-+	.recalc_rate	= berlin2_avpll_channel_recalc_rate,
-+};
-+
-+/*
-+ * Another nice quirk:
-+ * On some production SoCs, AVPLL channels are scrambled with respect
-+ * to the channel numbering in the registers but still referenced by
-+ * their original channel numbers. We deal with it by having a flag
-+ * and a translation table for the index.
-+ */
-+static const u8 quirk_index[] __initconst = { 0, 6, 5, 4, 3, 2, 1, 7 };
-+
-+struct clk * __init berlin2_avpll_channel_register(void __iomem *base,
-+			   const char *name, u8 index, const char *parent_name,
-+			   u8 ch_flags, unsigned long flags)
-+{
-+	struct berlin2_avpll_channel *ch;
-+	struct clk_init_data init;
-+
-+	ch = kzalloc(sizeof(*ch), GFP_KERNEL);
-+	if (!ch)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ch->base = base;
-+	if (ch_flags & BERLIN2_AVPLL_SCRAMBLE_QUIRK)
-+		ch->index = quirk_index[index];
-+	else
-+		ch->index = index;
-+
-+	ch->flags = ch_flags;
-+	ch->hw.init = &init;
-+	init.name = name;
-+	init.ops = &berlin2_avpll_channel_ops;
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+	init.flags = flags;
-+
-+	return clk_register(NULL, &ch->hw);
-+}
-diff --git a/drivers/clk/berlin/berlin2-avpll.h b/drivers/clk/berlin/berlin2-avpll.h
-new file mode 100644
-index 000000000000..a37f5068d299
---- /dev/null
-+++ b/drivers/clk/berlin/berlin2-avpll.h
-@@ -0,0 +1,36 @@
-+/*
-+ * Copyright (c) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __BERLIN2_AVPLL_H
-+#define __BERLIN2_AVPLL_H
-+
-+struct clk;
-+
-+#define BERLIN2_AVPLL_BIT_QUIRK		BIT(0)
-+#define BERLIN2_AVPLL_SCRAMBLE_QUIRK	BIT(1)
-+
-+struct clk * __init
-+berlin2_avpll_vco_register(void __iomem *base, const char *name,
-+	   const char *parent_name, u8 vco_flags, unsigned long flags);
-+
-+struct clk * __init
-+berlin2_avpll_channel_register(void __iomem *base, const char *name,
-+		       u8 index, const char *parent_name, u8 ch_flags,
-+		       unsigned long flags);
-+
-+#endif /* __BERLIN2_AVPLL_H */
+---
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Jisheng Zhang <jszhang@marvell.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 -- 
 1.9.1
 
