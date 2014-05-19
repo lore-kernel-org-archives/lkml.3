@@ -1,213 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaESIVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:21:19 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:51081 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaESIVR (ORCPT
+	id S1753389AbaESIVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:21:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49310 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752985AbaESIV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:21:17 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/9] perf, tools: Support handling complete branch stacks as histograms v6
-References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
-	<1400259938-3436-2-git-send-email-andi@firstfloor.org>
-Date: Mon, 19 May 2014 17:21:15 +0900
-In-Reply-To: <1400259938-3436-2-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Fri, 16 May 2014 10:05:30 -0700")
-Message-ID: <87fvk6ji10.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 19 May 2014 04:21:29 -0400
+Date: Mon, 19 May 2014 10:17:42 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v7 2/3] [media] rc: add sunxi-ir driver
+Message-ID: <20140519081742.GC29466@lukather>
+References: <1400104602-16431-1-git-send-email-bay@hackerdom.ru>
+ <1400104602-16431-3-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
+Content-Disposition: inline
+In-Reply-To: <1400104602-16431-3-git-send-email-bay@hackerdom.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
 
-On Fri, 16 May 2014 10:05:30 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Currently branch stacks can be only shown as edge histograms for
-> individual branches. I never found this display particularly useful.
->
-> This implements an alternative mode that creates histograms over complete
-> branch traces, instead of individual branches, similar to how normal
-> callgraphs are handled. This is done by putting it in
-> front of the normal callgraph and then using the normal callgraph
-> histogram infrastructure to unify them.
->
-> This way in complex functions we can understand the control flow
-> that lead to a particular sample, and may even see some control
-> flow in the caller for short functions.
+--FkmkrVfFsRoUs1wW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[SNIP]
-> +static int add_callchain_ip(struct machine *machine,
-> +			    struct thread *thread,
-> +			    struct symbol **parent,
-> +			    struct addr_location *root_al,
-> +			    int cpumode,
-> +			    u64 ip)
+Hi,
+
+I missed a few things in my first review.
+
+On Thu, May 15, 2014 at 03:56:41AM +0600, Alexander Bersenev wrote:
+> This patch adds driver for sunxi IR controller.
+> It is based on Alexsey Shestacov's work based on the original driver
+> supplied by Allwinner.
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+> ---
+>  drivers/media/rc/Kconfig     |  10 ++
+>  drivers/media/rc/Makefile    |   1 +
+>  drivers/media/rc/sunxi-cir.c | 334 +++++++++++++++++++++++++++++++++++++=
+++++++
+>  3 files changed, 345 insertions(+)
+>  create mode 100644 drivers/media/rc/sunxi-cir.c
+>=20
+> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> index 8fbd377..9427fad 100644
+> --- a/drivers/media/rc/Kconfig
+> +++ b/drivers/media/rc/Kconfig
+> @@ -343,4 +343,14 @@ config RC_ST
+> =20
+>  	 If you're not sure, select N here.
+> =20
+> +config IR_SUNXI
+> +    tristate "SUNXI IR remote control"
+> +    depends on RC_CORE
+> +    depends on ARCH_SUNXI
+> +    ---help---
+> +      Say Y if you want to use sunXi internal IR Controller
+> +
+> +      To compile this driver as a module, choose M here: the module will
+> +      be called sunxi-ir.
+> +
+>  endif #RC_DEVICES
+> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+> index f8b54ff..9ee9ee7 100644
+> --- a/drivers/media/rc/Makefile
+> +++ b/drivers/media/rc/Makefile
+> @@ -32,4 +32,5 @@ obj-$(CONFIG_IR_GPIO_CIR) +=3D gpio-ir-recv.o
+>  obj-$(CONFIG_IR_IGUANA) +=3D iguanair.o
+>  obj-$(CONFIG_IR_TTUSBIR) +=3D ttusbir.o
+>  obj-$(CONFIG_RC_ST) +=3D st_rc.o
+> +obj-$(CONFIG_IR_SUNXI) +=3D sunxi-cir.o
+>  obj-$(CONFIG_IR_IMG) +=3D img-ir/
+> diff --git a/drivers/media/rc/sunxi-cir.c b/drivers/media/rc/sunxi-cir.c
+> new file mode 100644
+> index 0000000..25eb175
+> --- /dev/null
+> +++ b/drivers/media/rc/sunxi-cir.c
+> @@ -0,0 +1,334 @@
+> +/*
+> + * Driver for Allwinner sunXi IR controller
+> + *
+> + * Copyright (C) 2014 Alexsey Shestacov <wingrime@linux-sunxi.org>
+> + * Copyright (C) 2014 Alexander Bersenev <bay@hackerdom.ru>
+> + *
+> + * Based on sun5i-ir.c:
+> + * Copyright (C) 2007-2012 Daniel Wang
+> + * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/module.h>
+> +#include <linux/of_platform.h>
+> +#include <media/rc-core.h>
+> +
+> +#define SUNXI_IR_DEV "sunxi-ir"
+> +
+> +/* Registers */
+> +/* IR Control */
+> +#define SUNXI_IR_CTL_REG      0x00
+> +/* Rx Config */
+> +#define SUNXI_IR_RXCTL_REG    0x10
+> +/* Rx Data */
+> +#define SUNXI_IR_RXFIFO_REG   0x20
+> +/* Rx Interrupt Enable */
+> +#define SUNXI_IR_RXINT_REG    0x2C
+> +/* Rx Interrupt Status */
+> +#define SUNXI_IR_RXSTA_REG    0x30
+> +/* IR Sample Config */
+> +#define SUNXI_IR_CIR_REG      0x34
+> +
+> +/* Global Enable for IR_CTL Register */
+> +#define REG_CTL_GEN           BIT(0)
+> +/* RX block enable for IR_CTL Register */
+> +#define REG_CTL_RXEN          BIT(1)
+> +/* CIR mode for IR_CTL Register */
+> +#define REG_CTL_MD            (BIT(4)|BIT(5))
+
+I usually prefer to have the bits definition declared just below the
+defininition of the register itself, something like:
+
+#define SUNXI_CTRL_REG		0x00
+#define SUNXI_CTRL_EN			BIT(0)
+#define SUNXI_CTRL_RXEN			BIT(1)
+
+etc...
+
+It's easier to read and avoids the comments to say in which register
+each bit belongs.
+
+> +/* IR_RXCTL_REG Register Receiver Pulse Polarity Invert flag */
+> +#define REG_RXCTL_RPPI        BIT(2)
+> +
+> +/* IR_RXINT_REG Register fields */
+> +#define REG_RXINT_ROI_EN      BIT(0) /* Rx FIFO Overflow */
+> +#define REG_RXINT_RPEI_EN     BIT(1) /* Rx Packet End */
+> +#define REG_RXINT_RAI_EN      BIT(4) /* Rx FIFO Data Available */
+> +/* Rx FIFO available byte level */
+> +#define REG_RXINT_RAL__MASK   (BIT(8)|BIT(9)|BIT(10)|BIT(11))
+> +#define REG_RXINT_RAL__SHIFT  8
+> +static inline uint32_t REG_RXINT_RAL(uint16_t val)
 > +{
-> +	struct addr_location al;
-> +
-> +	al.filtered = 0;
-> +	al.sym = NULL;
-> +	thread__find_addr_location(thread, machine, cpumode, MAP__FUNCTION,
-> +				   ip, &al);
-> +	if (al.sym != NULL) {
-> +		if (sort__has_parent && !*parent &&
-> +		    symbol__match_regex(al.sym, &parent_regex))
-> +			*parent = al.sym;
-> +		else if (have_ignore_callees && root_al &&
-> +		  symbol__match_regex(al.sym, &ignore_callees_regex)) {
-> +			/* Treat this symbol as the root,
-> +			   forgetting its callees. */
-> +			*root_al = al;
-> +			callchain_cursor_reset(&callchain_cursor);
-> +		}
-> +		if (!symbol_conf.use_callchain)
-> +			return -EINVAL;
-
-This is gone with 540476de74c9 ("perf tools: Remove
-symbol_conf.use_callchain check").
-
-
-> +	}
-> +
-> +	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
+> +	return (val << REG_RXINT_RAL__SHIFT) & REG_RXINT_RAL__MASK;
 > +}
-> +
-> +#define CHASHSZ 127
-> +#define CHASHBITS 7
-> +#define NO_ENTRY 0xff
-> +
-> +#define PERF_MAX_BRANCH_DEPTH 127
-> +
-> +/* Remove loops. */
-> +static int remove_loops(struct branch_entry *l, int nr)
-> +{
-> +	int i, j, off;
-> +	unsigned char chash[CHASHSZ];
-> +	memset(chash, -1, sizeof(chash));
 
-s/-1/NO_ENTRY/ ?
+This should be turned either in a macro if you want to keep the upper
+case name, or have a lower case name if you want to keep it as a
+function.
 
-> +
-> +	BUG_ON(nr >= 256);
-> +	for (i = 0; i < nr; i++) {
-> +		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
-> +
-> +		/* no collision handling for now */
-> +		if (chash[h] == NO_ENTRY) {
-> +			chash[h] = i;
-> +		} else if (l[chash[h]].from == l[i].from) {
-> +			bool is_loop = true;
-> +			/* check if it is a real loop */
-> +			off = 0;
-> +			for (j = chash[h]; j < i && i + off < nr; j++, off++)
-> +				if (l[j].from != l[i + off].from) {
-> +					is_loop = false;
-> +					break;
-> +				}
-> +			if (is_loop) {
-> +				memmove(l + i, l + i + off,
-> +					(nr - (i + off))
-> +					* sizeof(struct branch_entry));
-> +				nr -= off;
-> +			}
-> +		}
-> +	}
-> +	return nr;
-> +}
-> +
->  static int machine__resolve_callchain_sample(struct machine *machine,
->  					     struct thread *thread,
->  					     struct ip_callchain *chain,
-> +					     struct branch_stack *branch,
->  					     struct symbol **parent,
->  					     struct addr_location *root_al,
->  					     int max_stack)
-> @@ -1290,17 +1363,73 @@ static int machine__resolve_callchain_sample(struct machine *machine,
->  	int chain_nr = min(max_stack, (int)chain->nr);
->  	int i;
->  	int err;
-> +	int first_call = 0;
->  
->  	callchain_cursor_reset(&callchain_cursor);
->  
-> +	/*
-> +	 * Add branches to call stack for easier browsing. This gives
-> +	 * more context for a sample than just the callers.
-> +	 *
-> +	 * This uses individual histograms of paths compared to the
-> +	 * aggregated histograms the normal LBR mode uses.
-> +	 *
-> +	 * Limitations for now:
-> +	 * - No extra filters
-> +	 * - No annotations (should annotate somehow)
-> +	 */
-> +
-> +	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
-> +		pr_warning("corrupted branch chain. skipping...\n");
-> +		return 0;
-> +	}
-> +
-> +	if (callchain_param.branch_callstack) {
-> +		int nr = min(max_stack, (int)branch->nr);
-> +		struct branch_entry be[nr];
-> +
-> +		for (i = 0; i < nr; i++) {
-> +			if (callchain_param.order == ORDER_CALLEE) {
-> +				be[i] = branch->entries[i];
-> +				/*
-> +				 * Check for overlap into the callchain.
-> +				 * The return address is one off compared to
-> +				 * the branch entry. To adjust for this
-> +				 * assume the calling instruction is not longer
-> +				 * than 8 bytes.
-> +				 */
-> +				if (be[i].from < chain->ips[first_call] &&
-> +				    be[i].from >= chain->ips[first_call] - 8)
-> +					first_call++;
-
-It seems that you need to check chain->ips[first_call] is greater than
-PERF_CONTEXT_MAX and use such value as the cpumode...
-
-
-> +			} else
-> +				be[i] = branch->entries[branch->nr - i - 1];
-> +		}
-> +
-> +		nr = remove_loops(be, nr);
-> +
-> +		for (i = 0; i < nr; i++) {
-> +			err = add_callchain_ip(machine, thread, parent,
-> +					       root_al,
-> +					       -1, be[i].to);
-> +			if (!err)
-> +				err = add_callchain_ip(machine, thread,
-> +						       parent, root_al,
-> +						       -1, be[i].from);
-
-... for here.
-
-
-> +			if (err == -EINVAL)
-> +				break;
-> +			if (err)
-> +				return err;
-> +		}
-> +		chain_nr -= nr;
-
-It seems it could make some callchain nodes being ignored.  What if a
-case like small callchains with matches to only 2 nodes in the LBR?
-
-  nr = 16, chain_nr = 10 and first_call = 2
+In both cases, you don't want your function to be declared in the
+middle of your defines.
 
 Thanks,
-Namhyung
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--FkmkrVfFsRoUs1wW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTeb4mAAoJEBx+YmzsjxAgVq8P/3T4CdZJsE0akcQeUP/5Wh1P
+M9nL2mNyBAZHC8VDFVJHFyGBATwspRzR0MRvp1t1hZz61D+0ErcUoQfgfrysjcVK
+XqQKFMG99tl24jA1WjioiHC7QesudKuJ6l1WGxHQcfJTfSSiAJSw4lHWImorDbo6
+UpnTUF4LA1DiWctrUSaOH2O6jG2VHEJT59KpG84ToBaB3XE52IBShPEEsqUdLGyz
+Z+B0mFYe8m+pB/1UH23+4LEHMoVsysGABfy3/J6EPyvhRYITJqcxbPnfeS5qg854
+jubQAEB2lmHEirywkRxwsvhfeXZXloIlCeFB/jY/3D5Za2y5rhQ/Ovt+ImYssG+z
+eY6uOfDrfYHqNNdX0gpb3O68eckkvm4GwRl5KkKgy5+23sBR0c4HqLZVzUJL0chB
+XV13QgGK1IMASURDvgOSPXZCsc2NWIKOpUosAVz7sYx/4NcXmAY2gHKIlKanh0QQ
+qTKpsvLb1LUMewAknKxu/7euGNxcqF+q6GFB95iL8dPCa0l0Z5z6Ah9LJov4CbsW
+pQ+2qZs2gttupwN88Udej7FvLMdgjdL1ThtUKXldZMIEmqDIz0Ps2W/JAfgwSjtK
+IXuM6SukCees+BtWqiyqqYArdXxJxPS2j0Ev1xHmBlDcem8tBu9FGiC4J1rhlWb5
+zUVedwFRQZHj1cDMmKRb
+=tPhT
+-----END PGP SIGNATURE-----
+
+--FkmkrVfFsRoUs1wW--
