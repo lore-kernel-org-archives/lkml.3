@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964888AbaESTOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57543 "EHLO mx1.redhat.com"
+	id S932521AbaESTOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:14:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25037 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702AbaESTOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932708AbaESTOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 15:14:40 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: jolsa@redhat.com
@@ -12,106 +12,156 @@ Cc: acme@ghostprotocols.net, peterz@infradead.org,
         LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
         eranian@google.com, Andi Kleen <andi@firstfloor.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 6/7] perf: Add support to dynamically get cacheline size
-Date: Mon, 19 May 2014 15:13:52 -0400
-Message-Id: <1400526833-141779-7-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 3/7] perf: Update mmap2 interface with protection and flag bits
+Date: Mon, 19 May 2014 15:13:49 -0400
+Message-Id: <1400526833-141779-4-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
 References: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different arches may have different cacheline sizes.  Look it up and set
-a global variable for reference.
+The kernel piece passes more info now.  Update the perf tool to reflect
+that and adjust the synthesized maps to play along.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/util/cpumap.c | 31 +++++++++++++++++++++++++++++++
- tools/perf/util/cpumap.h | 12 ++++++++++++
- tools/perf/util/sort.c   |  3 +++
- 3 files changed, 46 insertions(+)
+ tools/perf/util/event.c   | 23 +++++++++++++++++++++--
+ tools/perf/util/event.h   |  2 ++
+ tools/perf/util/machine.c |  4 +++-
+ tools/perf/util/map.c     |  4 +++-
+ tools/perf/util/map.h     |  4 +++-
+ 5 files changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index c4e55b7..d833238 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -477,3 +477,34 @@ int cpu__setup_cpunode_map(void)
- 	closedir(dir1);
- 	return 0;
- }
-+
-+int cpu__setup_cacheline_size(void)
-+{
-+	const char *mnt;
-+	char path[PATH_MAX];
-+	int n, ret, size;
-+	FILE *fp;
-+	
-+
-+	mnt = sysfs__mountpoint();
-+	if (!mnt)
-+		return -1;
-+
-+	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
-+	if (n == PATH_MAX) {
-+		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
-+		return -1;
-+	}
-+
-+	fp = fopen(path, "r");
-+	if (!fp)
-+		return -1;
-+	ret = fscanf(fp, "%d", &size);
-+	fclose(fp);
-+	if (ret != 1)
-+		return -1;
-+
-+	cacheline_size = size;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 61a6548..b3e7b22 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -81,4 +81,16 @@ static inline int cpu__get_node(int cpu)
- 	return cpunode_map[cpu];
- }
- 
-+int cacheline_size;
-+
-+int cpu__setup_cacheline_size(void);
-+
-+static inline int cpu__cacheline_size(void)
-+{
-+	if (unlikely(!cacheline_size))
-+		pr_debug("cacheline size not initialized\n");
-+
-+	return cacheline_size;
-+}
-+
- #endif /* __PERF_CPUMAP_H */
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 635cd8f..50adbfb 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -2,6 +2,7 @@
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 5e7c722..e91d28e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -1,4 +1,5 @@
+ #include <linux/types.h>
++#include <sys/mman.h>
+ #include "event.h"
+ #include "debug.h"
  #include "hist.h"
- #include "comm.h"
- #include "symbol.h"
-+#include "cpumap.h"
+@@ -214,6 +215,21 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		else
+ 			event->header.misc = PERF_RECORD_MISC_GUEST_USER;
  
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -1117,6 +1118,8 @@ int setup_sorting(void)
- 		return -ENOMEM;
- 	}
- 
-+	cpu__setup_cacheline_size();
++		/* map protection and flags bits */
++		event->mmap2.prot = 0;
++		event->mmap2.flags = 0;
++		if (prot[0] == 'r')
++			event->mmap2.prot |= PROT_READ;
++		if (prot[1] == 'w')
++			event->mmap2.prot |= PROT_WRITE;
++		if (prot[2] == 'x')
++			event->mmap2.prot |= PROT_EXEC;
 +
- 	for (tok = strtok_r(str, ", ", &tmp);
- 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
- 		ret = sort_dimension__add(tok);
++		if (prot[3] == 's')
++			event->mmap2.flags |= MAP_SHARED;
++		else
++			event->mmap2.flags |= MAP_PRIVATE;
++
+ 		if (prot[2] != 'x') {
+ 			if (!mmap_data || prot[0] != 'r')
+ 				continue;
+@@ -614,12 +630,15 @@ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp)
+ {
+ 	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64
+-			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c %s\n",
++			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c%c%c%c %s\n",
+ 		       event->mmap2.pid, event->mmap2.tid, event->mmap2.start,
+ 		       event->mmap2.len, event->mmap2.pgoff, event->mmap2.maj,
+ 		       event->mmap2.min, event->mmap2.ino,
+ 		       event->mmap2.ino_generation,
+-		       (event->header.misc & PERF_RECORD_MISC_MMAP_DATA) ? 'r' : 'x',
++		       (event->mmap2.prot & PROT_READ) ? 'r' : '-',
++		       (event->mmap2.prot & PROT_WRITE) ? 'w' : '-',
++		       (event->mmap2.prot & PROT_EXEC) ? 'x' : '-',
++		       (event->mmap2.flags & MAP_SHARED) ? 's' : 'p',
+ 		       event->mmap2.filename);
+ }
+ 
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d970232..9ba2eb3 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -27,6 +27,8 @@ struct mmap2_event {
+ 	u32 min;
+ 	u64 ino;
+ 	u64 ino_generation;
++	u32 prot;
++	u32 flags;
+ 	char filename[PATH_MAX];
+ };
+ 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 7409ac8..0e5fea9 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1060,6 +1060,8 @@ int machine__process_mmap2_event(struct machine *machine,
+ 			event->mmap2.pid, event->mmap2.maj,
+ 			event->mmap2.min, event->mmap2.ino,
+ 			event->mmap2.ino_generation,
++			event->mmap2.prot,
++			event->mmap2.flags,
+ 			event->mmap2.filename, type);
+ 
+ 	if (map == NULL)
+@@ -1105,7 +1107,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 
+ 	map = map__new(&machine->user_dsos, event->mmap.start,
+ 			event->mmap.len, event->mmap.pgoff,
+-			event->mmap.pid, 0, 0, 0, 0,
++			event->mmap.pid, 0, 0, 0, 0, 0, 0,
+ 			event->mmap.filename,
+ 			type);
+ 
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index ba5f5c0c..7ca1d7e 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -51,7 +51,7 @@ void map__init(struct map *map, enum map_type type,
+ 
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+-		     u64 ino_gen, char *filename,
++		     u64 ino_gen, u32 prot, u32 flags, char *filename,
+ 		     enum map_type type)
+ {
+ 	struct map *map = malloc(sizeof(*map));
+@@ -69,6 +69,8 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		map->min = d_min;
+ 		map->ino = ino;
+ 		map->ino_generation = ino_gen;
++		map->prot = prot;
++		map->flags = flags;
+ 
+ 		if ((anon || no_dso) && type == MAP__FUNCTION) {
+ 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index ae2d451..7758c72 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -35,6 +35,8 @@ struct map {
+ 	bool			referenced;
+ 	bool			erange_warned;
+ 	u32			priv;
++	u32			prot;
++	u32			flags;
+ 	u64			pgoff;
+ 	u64			reloc;
+ 	u32			maj, min; /* only valid for MMAP2 record */
+@@ -118,7 +120,7 @@ void map__init(struct map *map, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
+-		     u64 ino_gen,
++		     u64 ino_gen, u32 prot, u32 flags,
+ 		     char *filename, enum map_type type);
+ struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
+ void map__delete(struct map *map);
 -- 
 1.7.11.7
 
