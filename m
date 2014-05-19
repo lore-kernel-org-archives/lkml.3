@@ -1,75 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaESWsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:48:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38729 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbaESWsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:48:07 -0400
-Message-ID: <537A8A03.8060604@zytor.com>
-Date: Mon, 19 May 2014 15:47:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751974AbaESWtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:49:49 -0400
+Received: from mail-vc0-f201.google.com ([209.85.220.201]:43028 "EHLO
+	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaESWtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 18:49:47 -0400
+Subject: [PATCH] sched: fix unlocked reads of some cfs_b->quota/period
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+From: Ben Segall <bsegall@google.com>
+Cc: Roman Gushchin <klamm@yandex-team.ru>, pjt@google.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 May 2014 15:49:45 -0700
+Message-ID: <20140519224945.20303.93530.stgit@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>, Ingo Molnar <mingo@kernel.org>
-CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [GIT PULL] EFI changes for v3.16
-References: <20140503130447.GW26088@console-pimps.org> <20140519105129.GF4798@console-pimps.org>
-In-Reply-To: <20140519105129.GF4798@console-pimps.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 03:51 AM, Matt Fleming wrote:
-> On Sat, 03 May, at 02:04:47PM, Matt Fleming wrote:
->> Folks, please queue the following change for v3.16 from Borislav that
->> uses the more strict kernel_fpu_{begin,end}() instead of the __*
->> verisons that won't catch buggy use in interrupt context.
->>
->> The following changes since commit e33655a386ed3b26ad36fb97a47ebb1c2ca1e928:
->>
->>   efivars: Add compatibility code for compat tasks (2014-04-17 13:53:53 +0100)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
->>
->> for you to fetch changes up to baa916f39b50ad91661534652110df40396acda0:
->>
->>   x86/efi: Check for unsafe dealing with FPU state in irq ctxt (2014-05-03 06:39:25 +0100)
->>
->> ----------------------------------------------------------------
->>  * Use the more strict FPU handling functions before invoking EFI
->>    services to catch misuse in irq context - Borislav Petkov
-> 
-> Ping?
-> 
+sched_cfs_period_timer read cfs_b->period without locks before calling
+do_sched_cfs_period_timer, and similarly unthrottle_offline_cfs_rqs
+would read cfs_b->period without the right lock. Thus a simultaneous
+change of bandwidth could cause corruption on any platform where ktime_t
+or u64 writes/reads are not atomic.
 
->     efi_call can happen in an irq context (pstore) and there we really need
->     to make sure we're not scribbling over FPU state while we've interrupted
->     a thread or kernel mode with a live FPU state. Therefore, use the
->     kernel_fpu_begin/end() variants which do that check.
+Extend cfs_b->lock from do_sched_cfs_period_timer to include the read of
+cfs_b->period to solve that issue; unthrottle_offline_cfs_rqs can just
+use 1 rather than the exact quota, much like distribute_cfs_runtime
+does.
 
-How on earth does this solve anything?  The only thing we add here is a
-WARN_ON_ONCE()... but the above text already tells us we have a problem.
+There is also an unlocked read of cfs_b->runtime_expires, but a race
+there would only delay runtime expiry by a tick. Still, the comparison
+should just be != anyway, which clarifies even that problem.
 
-It seems, rather, that we need to figure out how to deal with a pstore
-in this case.  There are a few possibilities:
+Signed-off-by: Ben Segall <bsegall@google.com>
+---
+ kernel/sched/fair.c |   38 +++++++++++++++++++++-----------------
+ 1 file changed, 21 insertions(+), 17 deletions(-)
 
-1. We could keep an XSAVE buffer area around for this particular use.
-   I am *assuming* we don't let more than one CPU into EFI, because I
-   cannot for my life imagine that this is safe in typical CPUs.
-
-2. Drop the pstore on the floor if !irq_fpu_usable().
-
-3. Allow the pstore, then die (on the assumption that we're dead
-   anyway.)
-
-Comments?
-
-	-hpa
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c9617b7..60eddde 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3224,10 +3224,12 @@ static void expire_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ 	 * has not truly expired.
+ 	 *
+ 	 * Fortunately we can check determine whether this the case by checking
+-	 * whether the global deadline has advanced.
++	 * whether the global deadline has advanced. It is valid to compare
++	 * cfs_b->runtime_expires without any locks since we only care about
++	 * exact equality, so a partial write will still work.
+ 	 */
+ 
+-	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
++	if (cfs_rq->runtime_expires != cfs_b->runtime_expires) {
+ 		/* extend local deadline, drift is bounded above by 2 ticks */
+ 		cfs_rq->runtime_expires += TICK_NSEC;
+ 	} else {
+@@ -3456,21 +3458,21 @@ next:
+ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ {
+ 	u64 runtime, runtime_expires;
+-	int idle = 1, throttled;
++	int throttled;
+ 
+-	raw_spin_lock(&cfs_b->lock);
+ 	/* no need to continue the timer with no bandwidth constraint */
+ 	if (cfs_b->quota == RUNTIME_INF)
+-		goto out_unlock;
++		goto out_deactivate;
+ 
+ 	throttled = !list_empty(&cfs_b->throttled_cfs_rq);
+-	/* idle depends on !throttled (for the case of a large deficit) */
+-	idle = cfs_b->idle && !throttled;
+ 	cfs_b->nr_periods += overrun;
+ 
+-	/* if we're going inactive then everything else can be deferred */
+-	if (idle)
+-		goto out_unlock;
++	/*
++	 * idle depends on !throttled (for the case of a large deficit), and if
++	 * we're going inactive then everything else can be deferred
++	 */
++	if (cfs_b->idle && !throttled)
++		goto out_deactivate;
+ 
+ 	/*
+ 	 * if we have relooped after returning idle once, we need to update our
+@@ -3484,7 +3486,7 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 	if (!throttled) {
+ 		/* mark as potentially idle for the upcoming period */
+ 		cfs_b->idle = 1;
+-		goto out_unlock;
++		return 0;
+ 	}
+ 
+ 	/* account preceding periods in which throttling occurred */
+@@ -3524,12 +3526,12 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 	 * timer to remain active while there are any throttled entities.)
+ 	 */
+ 	cfs_b->idle = 0;
+-out_unlock:
+-	if (idle)
+-		cfs_b->timer_active = 0;
+-	raw_spin_unlock(&cfs_b->lock);
+ 
+-	return idle;
++	return 0;
++
++out_deactivate:
++	cfs_b->timer_active = 0;
++	return 1;
+ }
+ 
+ /* a cfs_rq won't donate quota below this amount */
+@@ -3706,6 +3708,7 @@ static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
+ 	int overrun;
+ 	int idle = 0;
+ 
++	raw_spin_lock(&cfs_b->lock);
+ 	for (;;) {
+ 		now = hrtimer_cb_get_time(timer);
+ 		overrun = hrtimer_forward(timer, now, cfs_b->period);
+@@ -3715,6 +3718,7 @@ static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
+ 
+ 		idle = do_sched_cfs_period_timer(cfs_b, overrun);
+ 	}
++	raw_spin_unlock(&cfs_b->lock);
+ 
+ 	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
+ }
+@@ -3783,7 +3787,7 @@ static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
+ 		 * clock_task is not advancing so we just need to make sure
+ 		 * there's some valid quota amount
+ 		 */
+-		cfs_rq->runtime_remaining = cfs_b->quota;
++		cfs_rq->runtime_remaining = 1;
+ 		if (cfs_rq_throttled(cfs_rq))
+ 			unthrottle_cfs_rq(cfs_rq);
+ 	}
 
