@@ -1,88 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaESNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:52:57 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:40684 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaESNwz (ORCPT
+	id S932119AbaESNxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:53:15 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59807 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481AbaESNxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:52:55 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 19 May 2014 09:56:54 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: perfevents: irq loop stuck!
-In-Reply-To: <alpine.DEB.2.10.1405190906190.14771@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.10.1405190954460.14771@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405132256470.27229@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405142246170.30015@vincent-weaver-1.umelst.maine.edu> <20140515182136.GI11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405160017120.1351@vincent-weaver-1.umelst.maine.edu>
- <20140516074445.GJ11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405190906190.14771@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 19 May 2014 09:53:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5379C36D.90903@ti.com>
+References: <1399969905-3509-1-git-send-email-george.cherian@ti.com>
+	<5371EA01.3080307@gmail.com>
+	<537208A9.4020507@ti.com>
+	<53720E0F.3070008@gmail.com>
+	<537216AC.4090401@ti.com>
+	<53721ABF.8060705@gmail.com>
+	<53721D24.4090704@ti.com>
+	<CADYTM3bvQPHLJSR=ytTR3bupo=Nk6nQtw=4UgbXurbjkEFSQoA@mail.gmail.com>
+	<53730130.3000300@ti.com>
+	<CADYTM3YH2TJpS0z-Pb=rQPVV5ETHwfYMOOv=BohNB7UmahC9Rw@mail.gmail.com>
+	<CADYTM3bfnhCVi8VKiypMsQOndmzG-=yPksYNV+qZ8X73LPTZog@mail.gmail.com>
+	<53745E84.2000002@ti.com>
+	<CADYTM3bJWUQm_Zrxvb+UY5CzTDYODDfQ=MWdqL7tJaetbL1Qzg@mail.gmail.com>
+	<5379C36D.90903@ti.com>
+Date: Mon, 19 May 2014 08:53:10 -0500
+Message-ID: <CADYTM3YU_oXq64xWuR+3Tah_52cJsU0AMRK4oZDJWp6NZqmkpg@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] Add support for SW babble Control
+From: Bin Liu <binmlist@gmail.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com,
+        gregkh@linuxfoundation.org, "Liu, Bin" <b-liu@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Vince Weaver wrote:
+Hi George,
 
-> The fuzzing also turned up a few other issues, and in the end after 2 days 
-> it locked up the machine so hard that it also took out the ethernet switch 
-> due to some sort of packet trasmit storm, which is a failure mode I 
-> have to admit I haven't encountered before.
+On Mon, May 19, 2014 at 3:40 AM, George Cherian <george.cherian@ti.com> wrote:
+> Hi Bin,
+>
+>
+> On 5/15/2014 8:49 PM, Bin Liu wrote:
+>>
+>> George,
+>>
+>> On Thu, May 15, 2014 at 1:28 AM, George Cherian <george.cherian@ti.com>
+>> wrote:
+>>>
+>>> Hi Bin,
+>>>
+>>>
+>>> On 5/14/2014 10:13 PM, Bin Liu wrote:
+>>>>
+>>>> George,
+>>>>
+>>>> On Wed, May 14, 2014 at 9:34 AM, Bin Liu <binmlist@gmail.com> wrote:
+>>>>>
+>>>>> George,
+>>>>>
+>>>>> On Wed, May 14, 2014 at 12:37 AM, George Cherian
+>>>>> <george.cherian@ti.com>
+>>>>> wrote:
+>>>>>>
+>>>>>> On 5/14/2014 12:07 AM, Bin Liu wrote:
+>>>>>>>
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> On Tue, May 13, 2014 at 8:24 AM, George Cherian
+>>>>>>> <george.cherian@ti.com>
+>>>>>>> wrote:
+>>>>>>>>
+>>>>>>>> Hi Daniel,
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On 5/13/2014 6:44 PM, Daniel Mack wrote:
+>>>>>>>>>
+>>>>>>>>> Hi George,
+>>>>>>>>>
+>>>>>>>>> On 05/13/2014 02:57 PM, George Cherian wrote:
+>>>>>>>>>>
+>>>>>>>>>> I never enabled the MUSB_BABBLE_SW_SESSION_CTRL in the
+>>>>>>>>>> MUSB_BABBLE_CTL
+>>>>>>>>>> reg.
+>>>>>>>>>> can you try with the following patch.
+>>>>>>>>>>
+>>>>>>>>>> diff --git a/drivers/usb/musb/musb_dsps.c
+>>>>>>>>>> b/drivers/usb/musb/musb_dsps.c
+>>>>>>>>>> index 1ae6681..1160cd1 100644
+>>>>>>>>>> --- a/drivers/usb/musb/musb_dsps.c
+>>>>>>>>>> +++ b/drivers/usb/musb/musb_dsps.c
+>>>>>>>>>> @@ -477,8 +477,11 @@ static int dsps_musb_init(struct musb *musb)
+>>>>>>>>>>             * logic enabled.
+>>>>>>>>>>             */
+>>>>>>>>>>            val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
+>>>>>>>>>> -       if (val == MUSB_BABBLE_RCV_DISABLE)
+>>>>>>>>>> +       if (val == MUSB_BABBLE_RCV_DISABLE) {
+>>>>>>>>>>                    glue->sw_babble_enabled = true;
+>>>>>>>>>> +               val |= MUSB_BABBLE_SW_SESSION_CTRL;
+>>>>>>>>>> +               dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
+>>>>>>>>>> +       }
+>>>>>>>>>>            ret = dsps_musb_dbg_init(musb, glue);
+>>>>>>>>>>            if (ret)
+>>>>>>>>>
+>>>>>>>>> MUSB_BABBLE_STUCK_J still remains unset, so I get the same result
+>>>>>>>>> as
+>>>>>>>>> without the patch: a full glue reset is conducted. Do I get you
+>>>>>>>>> right
+>>>>>>>>> that you expect MUSB_BABBLE_STUCK_J to be set in babble conditions
+>>>>>>>>> when
+>>>>>>>>> MUSB_BABBLE_SW_SESSION_CTRL is set?
+>>>>>>>>>
+>>>>>>>> Basically, there are 2 types of babble conditions.
+>>>>>>>> 1) Transient babble condition - which could be recovered from
+>>>>>>>> without
+>>>>>>>> an
+>>>>>>>> IP
+>>>>>>>> reset .
+>>>>>>>> 2) Babble condition - which could be recovered from only by doing an
+>>>>>>>> IP
+>>>>>>>> reset.
+>>>>>>>>
+>>>>>>>> Looks like you are always hitting case 2 (Most times am also hitting
+>>>>>>>> the
+>>>>>>>> same).
+>>>>>>>> Case 1 is really hard to reproduce. I don't have a reliable method
+>>>>>>>> as
+>>>>>>>> of
+>>>>>>>> now
+>>>>>>>> to
+>>>>>>>> reproduce this case consistently.
+>>>>>>>>
+>>>>>>>>> [   19.672373] CAUTION: musb: Babble Interrupt Occurred
+>>>>>>>>> [   19.677776] musb_stage0_irq 789: unhandled DISCONNECT transition
+>>>>>>>>> (a_wait_bcon)
+>>>>>>>>> [   19.685815] usb 1-1: USB disconnect, device number 3
+>>>>>>>>> [   19.769720] musb-hdrc musb-hdrc.0.auto: babble: MUSB_BABBLE_CTL
+>>>>>>>>> value
+>>>>>>>>> 44
+>>>>>>>>> [   19.776765] musb-hdrc musb-hdrc.0.auto: STUCK_J is reset
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> I don't quite follow, especially as I lack documentation of the IP
+>>>>>>>>> core.
+>>>>>>>>> How do you test babble errors, is there any way to force them to
+>>>>>>>>> happen
+>>>>>>>>> reliably?
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> There is no 100% reliable method to force it to happen. Following is
+>>>>>>>
+>>>>>>> I have a way to force babble happen reliably - shorting DP or DM to
+>>>>>>> VBUS. I opened the far-end plug of the USB cable, so I can easily
+>>>>>>> short DP or DM to VBUS.
+>>>>>>
+>>>>>> Good to know that you have a reliable way to test babble condition.
+>>>>>> Can you please do a quick test on 3.15.0-rc4 with the series applied?
+>>>>>> In case of any assistance please do let me know.
+>>>>>
+>>>>> Sure, but could you please re-send those patches to my corporate email
+>>>>> so that I can apply them from Thunderbird?
+>>>>
+>>>> You don't have to resend the patches. Nishanth Menon showed me a way
+>>>> to extract the patch from Gmail - Thanks Nishanth.
+>>>>
+>>>> But which repo do you want to me test with? The first patch ([PATCH v2
+>>>> 1/5] usb: musb: core: Convert babble recover work to delayed work)
+>>>> does not apply to v3.15-rc4 tag. the current musb_core.c does not have
+>>>> the recovery work for musb. Please let me know what I missed.
+>>>
+>>> Oops I missed to mention the same.
+>>> Please try on
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git master
+>>
+>> The test is done. The babble always causes STUCK_J is reset,
+>> MUSB_BABBLE_CTL is 0x44 or 0x4. MUSB reset happens.
+>
+> Thankyou Bin for the help.
+>
+> Can I get a Tested-by from you?
 
-Not only did it take out the ethernet switch, but it corrupted the 
-filesystem too :(
+Yes, sure.
 
-Though I guess I should be surprised this doesn't happen more considering 
-how often I have to hard-reboot the machines. 
+>
+>> Do you think when re-start happens the driver should print a message
+>> on console saying re-start due to babble? It would help debug the
+>> babble problems while the dynamic debug is off.
+>
+>
+> It prints  out a message saying babble condition occured.
 
-[ 3835.636255] EXT4-fs error (device sda4): ext4_mb_generate_buddy:756: group 1681, 14687 clusters in bitmap, 14680 in gd; block bitmap corrupt.
-[ 3835.649921] Aborting journal on device sda4-8.
-[ 3835.654895] EXT4-fs (sda4): Remounting filesystem read-only
-[ 3835.661053] ------------[ cut here ]------------
-[ 3835.666163] WARNING: CPU: 0 PID: 2265 at fs/ext4/ext4_jbd2.c:259 __ext4_handle_dirty_metadata+0x1b2/0x200()
-[ 3835.676785] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp snd_hda_codec_hdmi kvm iTCO_wdt snd_hda_codec_realtek snd_hda_codec_generic iTCO_vendor_support i915 crc32_pclmul snd_hda_intel ghash_clmulni_intel snd_hda_controller wmi evdev drm_kms_helper ppdev aesni_intel mei_me mei drm snd_hda_codec aes_x86_64 lrw gf128mul glue_helper snd_hwdep ablk_helper psmouse snd_pcm snd_timer tpm_tis i2c_algo_bit snd tpm pcspkr serio_raw processor battery i2c_i801 i2c_core lpc_ich parport_pc parport cryptd soundcore button video mfd_core sd_mod sr_mod crc_t10dif crct10dif_generic cdrom ehci_pci ahci libahci xhci_hcd e1000e ehci_hcd crct10dif_pclmul libata crct10dif_common ptp crc32c_intel usbcore scsi_mod pps_core usb_common thermal fan thermal_sys
-[ 3835.751220] CPU: 0 PID: 2265 Comm: git Not tainted 3.15.0-rc5+ #108
-[ 3835.757911] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[ 3835.765842]  0000000000000009 ffff8801179fb908 ffffffff8164a8f0 0000000000000000
-[ 3835.773882]  ffff8801179fb940 ffffffff810646ad ffff880036aa7888 0000000000000000
-[ 3835.781927]  ffff880036bf1cc8 ffffffff81830e20 00000000000012f3 ffff8801179fb950
-[ 3835.789913] Call Trace:
-[ 3835.792537]  [<ffffffff8164a8f0>] dump_stack+0x45/0x56
-[ 3835.798028]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
-[ 3835.804381]  [<ffffffff8106478a>] warn_slowpath_null+0x1a/0x20
-[ 3835.810577]  [<ffffffff81269662>] __ext4_handle_dirty_metadata+0x1b2/0x200
-[ 3835.817882]  [<ffffffff81652017>] ? _raw_spin_unlock+0x27/0x30
-[ 3835.824080]  [<ffffffff81271ef6>] ext4_free_blocks+0x646/0xbf0
-[ 3835.830334]  [<ffffffff81264be9>] ext4_ext_remove_space+0x7d9/0x1050
-[ 3835.837054]  [<ffffffff81267580>] ext4_ext_truncate+0xb0/0xe0
-[ 3835.843223]  [<ffffffff81240589>] ext4_truncate+0x379/0x3c0
-[ 3835.849076]  [<ffffffff81152be9>] ? truncate_pagecache+0x59/0x60
-[ 3835.855547]  [<ffffffff81241d1f>] ext4_setattr+0x2ef/0x730
-[ 3835.861437]  [<ffffffff811d2961>] notify_change+0x241/0x390
-[ 3835.867342]  [<ffffffff811b315f>] do_truncate+0x6f/0xa0
-[ 3835.873046]  [<ffffffff811b2bab>] ? do_dentry_open+0x22b/0x2c0
-[ 3835.879284]  [<ffffffff811c4edf>] do_last+0xa7f/0x12f0
-[ 3835.884863]  [<ffffffff811c1241>] ? link_path_walk+0x71/0x880
-[ 3835.891080]  [<ffffffff811c57c8>] ? path_openat+0x78/0x670
-[ 3835.897030]  [<ffffffff811c580b>] path_openat+0xbb/0x670
-[ 3835.902656]  [<ffffffff810b0d4d>] ? __lock_acquire.isra.29+0x3bd/0xb90
-[ 3835.909714]  [<ffffffff811c65da>] do_filp_open+0x3a/0x90
-[ 3835.915433]  [<ffffffff81652017>] ? _raw_spin_unlock+0x27/0x30
-[ 3835.921711]  [<ffffffff811d3c97>] ? __alloc_fd+0xa7/0x130
-[ 3835.927522]  [<ffffffff811b4698>] do_sys_open+0x128/0x220
-[ 3835.933351]  [<ffffffff811b47ae>] SyS_open+0x1e/0x20
-[ 3835.938695]  [<ffffffff8165b5ed>] system_call_fastpath+0x1a/0x1f
-[ 3835.945196] ---[ end trace abc274a1f233508e ]---
-[ 3835.950155] EXT4: jbd2_journal_dirty_metadata failed: handle type 5 started at line 3740, credits 16/16, errcode -30
-[ 3835.961325] EXT4: jbd2_journal_dirty_metadata failed: handle type 5 started at line 3740, credits 16/16, errcode -30<2>[ 3835.972625] EXT4-fs error (device sda4) in ext4_free_blocks:4867: Journal has aborted
-[ 3835.981224] EXT4-fs error (device sda4) in ext4_reserve_inode_write:4877: Journal has aborted
-[ 3836.011139] EXT4-fs error (device sda4) in ext4_reserve_inode_write:4877: Journal has aborted
-[ 3836.020512] EXT4-fs error (device sda4) in ext4_ext_remove_space:3018: Journal has aborted
-[ 3836.036079] EXT4-fs error (device sda4) in ext4_ext_truncate:4666: Journal has aborted
-[ 3836.044701] EXT4-fs error (device sda4) in ext4_reserve_inode_write:4877: Journal has aborted
-[ 3836.053985] EXT4-fs error (device sda4) in ext4_orphan_del:2684: Journal has aborted
-[ 3836.069403] EXT4-fs error (device sda4) in ext4_reserve_inode_write:4877: Journal has aborted
+That is good, but I think we also want to know the babble type - the
+controller is reset or not.
 
+> More over, it re-enumerates all the devices connected  as part of Musb
+> re-start.
+
+Sometimes the custom board has hw or sw issue, for example USB
+basically does not functional, maybe after babble there is no
+re-enumeration, then we cannot tell if controller reset happened or
+not from the log. I think a specific message telling that will
+helpful.
+
+Regards,
+-Bin.
+
+> Don't you think that is sufficient enough ?
+>
+>> Thanks,
+>> -Bin.
+>>
+>>>> Thanks,
+>>>> -Bin.
+>>>>
+>>>>> I read these linux-usb emails in Gmail, and  am not aware of any easy
+>>>>> way to extract patches from Gmail.
+>>>>>
+>>>>> BTY, I tested with TI 3.12.10 kernel, in which I guess the babble
+>>>>> handling is similar to this patch set. With TI3.12.10, MISC is always
+>>>>> 0x64, so MUSB never restarts.
+>>>>>
+>>>>> Thanks,
+>>>>> -Bin.
+>>>>>
+>>>>>>> But the interesting thing is that with TI 3.2 kernel, shorting DP or
+>>>>>>> DM to VBUS causes MISC register to be 0x4, but the result is
+>>>>>>> completely opposite in TI 3.12.10 kernel, which cause MISC to be
+>>>>>>> 0x64.
+>>>>>>>
+>>>>>>> So in the 3.2 kernel, the babble handing resets the controller, but
+>>>>>>> the 3.12.10 does not.
+>>>>>>>
+>>>>>>> Regards,
+>>>>>>> -Bin.
+>>>>>>>
+>>>>>>>> my setup ,
+>>>>>>>> I have a HUB with 4 devices connected , which gives me a Babble
+>>>>>>>> interrupt
+>>>>>>>> on both connects and disconnects ( Not always though).
+>>>>>>>>
+>>>>>>>>> Anyway, the full glue layer solves this rare condition quite well
+>>>>>>>>> for
+>>>>>>>>> me. Is there any downside of this?
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Daniel
+>>>>>>>>>
+>>>>>>>> --
+>>>>>>>> -George
+>>>>>>>>
+>>>>>>>> --
+>>>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>>>> linux-omap"
+>>>>>>>> in
+>>>>>>>>
+>>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> --
+>>>>>> -George
+>>>>>>
+>>>
+>>> --
+>>> -George
+>>>
+>
+>
+> --
+> -George
+>
