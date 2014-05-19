@@ -1,183 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaESVHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:07:22 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36130 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaESVHT (ORCPT
+	id S1751338AbaESVI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:08:56 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:33510 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaESVIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:07:19 -0400
-Message-ID: <1400533578.8244.9.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: [PATCH v1] ima: audit log files opened with O_DIRECT flag
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 19 May 2014 17:06:18 -0400
-In-Reply-To: <30700.1399965547@jrobl>
-References: <1399926266.6471.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <1399937259.25932.1.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <30700.1399965547@jrobl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051921-9332-0000-0000-000000D6136A
+	Mon, 19 May 2014 17:08:53 -0400
+Date: Mon, 19 May 2014 23:08:49 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCHv2 resend 00/11] improve PWM lookup support without device
+ tree
+Message-ID: <20140519210848.GF30737@mithrandir>
+References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rWhLK7VZz0iBluhq"
+Content-Disposition: inline
+In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Files are measured or appraised based on the IMA policy.  When a
-file, in policy, is opened with the O_DIRECT flag, a deadlock
-occurs.
 
-The first attempt at resolving this lockdep temporarily removed the
-O_DIRECT flag and restored it, after calculating the hash.  The
-second attempt introduced the O_DIRECT_HAVELOCK flag. Based on this
-flag, do_blockdev_direct_IO() would skip taking the i_mutex a second
-time.  The third attempt, by Dmitry Kasatkin, resolves the i_mutex
-locking issue, by re-introducing the IMA mutex, but uncovered
-another problem.  Reading a file with O_DIRECT flag set, writes
-directly to userspace pages.  A second patch allocates a user-space
-like memory.  This works for all IMA hooks, except ima_file_free(),
-which is called on __fput() to recalculate the file hash.
+--rWhLK7VZz0iBluhq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Until this last issue is addressed, do not 'collect' the
-measurement for measuring, appraising, or auditing files opened
-with the O_DIRECT flag set.  Based on policy, permit or deny file
-access.  This patch defines a new IMA policy rule option named
-'permit_directio'.  Policy rules could be defined, based on LSM
-or other criteria, to permit specific applications to open files
-with the O_DIRECT flag set.
+On Mon, May 19, 2014 at 10:42:31PM +0200, Alexandre Belloni wrote:
+> Hi,
+>=20
+> Originally sent on Apr 14th, note that this series is blocking another 16
+> patches series, I would like it to be taken in 3.16 if we can agree on th=
+is
+> implementation.
 
-Changelog v1:
-- permit or deny file access based IMA policy rules
+It's kind of late for 3.16 now, but it doesn't look very risky from a
+quick look. I'll sleep on it and if I don't feel too uncomfortable about
+it in the morning I'll apply it for linux-next and see how that goes.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- Documentation/ABI/testing/ima_policy |  2 +-
- security/integrity/ima/ima_api.c     | 10 +++++++++-
- security/integrity/ima/ima_main.c    |  5 ++++-
- security/integrity/ima/ima_policy.c  |  6 +++++-
- security/integrity/integrity.h       |  1 +
- 5 files changed, 20 insertions(+), 4 deletions(-)
+Thierry
 
-diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-index f1c5cc9..4c3efe4 100644
---- a/Documentation/ABI/testing/ima_policy
-+++ b/Documentation/ABI/testing/ima_policy
-@@ -23,7 +23,7 @@ Description:
- 				 [fowner]]
- 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
- 				 [obj_user=] [obj_role=] [obj_type=]]
--			option:	[[appraise_type=]]
-+			option:	[[appraise_type=]] [permit_directio]
- 
- 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
- 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index ba9e4d7..d719978 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -199,6 +199,7 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct evm_ima_xattr_data **xattr_value,
- 			    int *xattr_len)
- {
-+	const char *audit_cause = "failed";
- 	struct inode *inode = file_inode(file);
- 	const char *filename = file->f_dentry->d_name.name;
- 	int result = 0;
-@@ -213,6 +214,12 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 	if (!(iint->flags & IMA_COLLECTED)) {
- 		u64 i_version = file_inode(file)->i_version;
- 
-+		if (file->f_flags & O_DIRECT) {
-+			audit_cause = "failed(directio)";
-+			result = -EACCES;
-+			goto out;
-+		}
-+	
- 		/* use default hash algorithm */
- 		hash.hdr.algo = ima_hash_algo;
- 
-@@ -233,9 +240,10 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 				result = -ENOMEM;
- 		}
- 	}
-+out:
- 	if (result)
- 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
--				    filename, "collect_data", "failed",
-+				    filename, "collect_data", audit_cause,
- 				    result, 0);
- 	return result;
- }
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 52ac6cf..27ab5df 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -214,8 +214,11 @@ static int process_measurement(struct file *file, const char *filename,
- 		xattr_ptr = &xattr_value;
- 
- 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
--	if (rc != 0)
-+	if (rc != 0) {
-+		if (file->f_flags & O_DIRECT)
-+		     rc = (iint->flags & IMA_PERMIT_DIRECTIO) ? 0 : -EACCES;
- 		goto out_digsig;
-+	}
- 
- 	pathname = filename ?: ima_d_path(&file->f_path, &pathbuf);
- 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 93873a4..40a7488 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -353,7 +353,7 @@ enum {
- 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
- 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
- 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
--	Opt_appraise_type, Opt_fsuuid
-+	Opt_appraise_type, Opt_fsuuid, Opt_permit_directio
- };
- 
- static match_table_t policy_tokens = {
-@@ -375,6 +375,7 @@ static match_table_t policy_tokens = {
- 	{Opt_uid, "uid=%s"},
- 	{Opt_fowner, "fowner=%s"},
- 	{Opt_appraise_type, "appraise_type=%s"},
-+	{Opt_permit_directio, "permit_directio"},
- 	{Opt_err, NULL}
- };
- 
-@@ -622,6 +623,9 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 			else
- 				result = -EINVAL;
- 			break;
-+		case Opt_permit_directio:
-+			entry->flags |= IMA_PERMIT_DIRECTIO;
-+			break;
- 		case Opt_err:
- 			ima_log_string(ab, "UNKNOWN", p);
- 			result = -EINVAL;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 2fb5e53..33c0a70 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -30,6 +30,7 @@
- #define IMA_ACTION_FLAGS	0xff000000
- #define IMA_DIGSIG		0x01000000
- #define IMA_DIGSIG_REQUIRED	0x02000000
-+#define IMA_PERMIT_DIRECTIO	0x04000000
- 
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_APPRAISE_SUBMASK)
--- 
-1.8.1.4
+--rWhLK7VZz0iBluhq
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTenLgAAoJEN0jrNd/PrOhJQsP/1C09qs8Y85T+8vvFJH8yWyU
+IKOd3JKjimnPqBXZsa23U9aFr8lBJCFyQGJGayeXTJNw1ql3Chu0B4+HQSbUNOCD
+/3a70J5GnDlB5GU2KOq2i9tfT4/m+Bv3s+3maXB+As6m09ksmt+shO9+kM+NrmGC
+eqX9IOmCKxnbd90vxPCSlgDXQ1jFTcMShwDwaG7iU8rS3aUSHLIaeL2K2Dh10l6R
+1e0ivk4dDWTKxmje9Jq62hlw5BeC7EDVJxtv1bf4HftbHRfbcEVw827Ff8ofnqzF
+If/tFKqm61AtJ8qlfzjdV35dGSd4B3Qm+dh1ZZPQPz45aIzbAi6/jFss6Xcf9PH6
+hMsWJPPrfptfrKWm83kx9ynLHjZgv7zpNztsDh1sZ5pjM73bzfBkCEvu1Mau/rRx
+ZCzgQfUafoH2xlgrShl0c70MZ3qJuc0OLMTSXnxwKwn4TwlWv7Dg/DCHjIgoQBAS
+7trJhhQzhzMSPeVE/kIWQLv0c9mt/EuGekFL7rUMECIYIzZaK7HESERFatk3ZhPI
+/QlzAsLaHA8+J4G674aTI20jiAfkhkFiUCDG6LVmv2NTWF2ean9fDpsJrNSv4voX
+lcQnw2vbnSRvMCHX4PG5F29Mg/Usl76qQAmndN22831gWa5ULfP6Zo7rac0TSJJu
+ABlXVGZkZ8ncXuQzKF85
+=WwQk
+-----END PGP SIGNATURE-----
 
+--rWhLK7VZz0iBluhq--
