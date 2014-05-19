@@ -1,82 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaESB2j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 21:28:39 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:62508 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaESB2i (ORCPT
+	id S1752497AbaESBnM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 21:43:12 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:40488 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443AbaESBnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 21:28:38 -0400
-Message-ID: <53795E3B.9000004@huawei.com>
-Date: Mon, 19 May 2014 09:28:27 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Sun, 18 May 2014 21:43:11 -0400
+Date: Mon, 19 May 2014 10:42:32 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: [PATCH V2] staging: dgap: implement error handling in
+ dgap_tty_register()
+Message-ID: <20140519014232.GA847@devel.8.8.4.4>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH] time: Provide full featured jiffies_to_nsecs() function
-References: <0286550@agluck-desk.sc.intel.com>
-In-Reply-To: <0286550@agluck-desk.sc.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.17.191]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/9 1:32, Tony Luck wrote:
-> The "uptime" tracer added in:
->     commit 8aacf017b065a805d27467843490c976835eb4a5
->     tracing: Add "uptime" trace clock that uses jiffies
-> has wraparound problems when the system has been up more
-> than 1 hour 11 minutes and 34 seconds. It converts jiffies
-> to nanoseconds using:
-> 	(u64)jiffies_to_usecs(jiffy) * 1000ULL
-> but since jiffies_to_usecs() only returns a 32-bit value, it
-> truncates at 2^32 microseconds.  An additional problem on 32-bit
-> systems is that the argument is "unsigned long", so fixing the
-> return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
-> system).
-> 
-> So we provide a full featured jiffies_to_nsec() function that
-> takes a "u64" argument and provides a "u64" result.  To avoid
-> cries of rage from the other user of this: scheduler_tick_max_deferment()
-> we check whether the argument is small enough that we can do
-> the calculations in 32-bit operations.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  include/linux/jiffies.h    |  6 +-----
->  kernel/time.c              | 24 ++++++++++++++++++++++++
->  kernel/timeconst.bc        | 12 ++++++++++++
->  kernel/trace/trace_clock.c |  2 +-
->  4 files changed, 38 insertions(+), 6 deletions(-)
-> 
+>From 3acdda98e73a153a5fb32c2cd401d2dde1653b0a Mon Sep 17 00:00:00 2001
+From: Daeseok Youn <daeseok.youn@gmail.com>
+Date: Fri, 25 Apr 2014 16:04:59 +0900
+Subject: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
 
-[...]
+- alloc_tty_driver() is deprecated so it is changed to
+tty_alloc_driver()
+- Pointers which are allocated by alloc_tty_driver() and kzalloc()
+can be NULL so it need to check NULL for them.
+- If one of those is failed, it need to add proper handler for
+avoiding memory leak.
+- If both of drivers are registered normally, and
+then set TRUE to dgap_major_serial{print}_registered. If one
+of drivers is failed to register, leave a default value as
+FALSE.
 
-> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-> index 26dc348332b7..52470fba1d26 100644
-> --- a/kernel/trace/trace_clock.c
-> +++ b/kernel/trace/trace_clock.c
-> @@ -65,7 +65,7 @@ u64 notrace trace_clock_jiffies(void)
->  	u64 jiffy = jiffies - INITIAL_JIFFIES;
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: rebased on staging-next branch
 
-Hi Tony and Steven,
-Another problem, maybe we should use get_jiffies_64() instead of jiffies
-directly here OR we'll meet wraparound problems on 32bit system. But a
-same problem is that the jiffies_lock is not safe in NMI context...
+ drivers/staging/dgap/dgap.c |   49 +++++++++++++++++++++++++++++++++---------
+ 1 files changed, 38 insertions(+), 11 deletions(-)
 
->  
->  	/* Return nsecs */
-> -	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
-> +	return jiffies_to_nsecs(jiffy);
->  }
->  
->  /*
-> 
-
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index d7cfc45..e4cb7aa 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -1212,7 +1212,9 @@ static int dgap_tty_register(struct board_t *brd)
+ {
+ 	int rc = 0;
+ 
+-	brd->serial_driver = alloc_tty_driver(MAXPORTS);
++	brd->serial_driver = tty_alloc_driver(MAXPORTS, 0);
++	if (IS_ERR(brd->serial_driver))
++		return PTR_ERR(brd->serial_driver);
+ 
+ 	snprintf(brd->serial_name, MAXTTYNAMELEN, "tty_dgap_%d_",
+ 		 brd->boardnum);
+@@ -1231,8 +1233,10 @@ static int dgap_tty_register(struct board_t *brd)
+ 	/* The kernel wants space to store pointers to tty_structs */
+ 	brd->serial_driver->ttys =
+ 		kzalloc(MAXPORTS * sizeof(struct tty_struct *), GFP_KERNEL);
+-	if (!brd->serial_driver->ttys)
+-		return -ENOMEM;
++	if (!brd->serial_driver->ttys) {
++		rc = -ENOMEM;
++		goto free_serial_drv;
++	}
+ 
+ 	/*
+ 	 * Entry points for driver.  Called by the kernel from
+@@ -1245,7 +1249,11 @@ static int dgap_tty_register(struct board_t *brd)
+ 	 * again, separately so we don't get the LD confused about what major
+ 	 * we are when we get into the dgap_tty_open() routine.
+ 	 */
+-	brd->print_driver = alloc_tty_driver(MAXPORTS);
++	brd->print_driver = tty_alloc_driver(MAXPORTS, 0);
++	if (IS_ERR(brd->print_driver)) {
++		rc = PTR_ERR(brd->print_driver);
++		goto free_serial_ttys;
++	}
+ 
+ 	snprintf(brd->print_name, MAXTTYNAMELEN, "pr_dgap_%d_",
+ 		 brd->boardnum);
+@@ -1264,8 +1272,10 @@ static int dgap_tty_register(struct board_t *brd)
+ 	/* The kernel wants space to store pointers to tty_structs */
+ 	brd->print_driver->ttys =
+ 		kzalloc(MAXPORTS * sizeof(struct tty_struct *), GFP_KERNEL);
+-	if (!brd->print_driver->ttys)
+-		return -ENOMEM;
++	if (!brd->print_driver->ttys) {
++		rc = -ENOMEM;
++		goto free_print_drv;
++	}
+ 
+ 	/*
+ 	 * Entry points for driver.  Called by the kernel from
+@@ -1276,20 +1286,37 @@ static int dgap_tty_register(struct board_t *brd)
+ 	/* Register tty devices */
+ 	rc = tty_register_driver(brd->serial_driver);
+ 	if (rc < 0)
+-		return rc;
+-	brd->dgap_major_serial_registered = TRUE;
+-	dgap_boards_by_major[brd->serial_driver->major] = brd;
+-	brd->dgap_serial_major = brd->serial_driver->major;
++		goto free_print_ttys;
+ 
+ 	/* Register Transparent Print devices */
+ 	rc = tty_register_driver(brd->print_driver);
+ 	if (rc < 0)
+-		return rc;
++		goto unregister_serial_drv;
++
++	brd->dgap_major_serial_registered = TRUE;
++	dgap_boards_by_major[brd->serial_driver->major] = brd;
++	brd->dgap_serial_major = brd->serial_driver->major;
++
+ 	brd->dgap_major_transparent_print_registered = TRUE;
+ 	dgap_boards_by_major[brd->print_driver->major] = brd;
+ 	brd->dgap_transparent_print_major = brd->print_driver->major;
+ 
+ 	return rc;
++
++unregister_serial_drv:
++	tty_unregister_driver(brd->serial_driver);
++free_print_ttys:
++	kfree(brd->print_driver->ttys);
++	brd->print_driver->ttys = NULL;
++free_print_drv:
++	put_tty_driver(brd->print_driver);
++free_serial_ttys:
++	kfree(brd->serial_driver->ttys);
++	brd->serial_driver->ttys = NULL;
++free_serial_drv:
++	put_tty_driver(brd->serial_driver);
++
++	return rc;
+ }
+ 
+ /*
+-- 
+1.7.1
 
