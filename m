@@ -1,181 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbaESI7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:59:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39078 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaESI7H (ORCPT
+	id S1753694AbaESI7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:59:21 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:50224 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659AbaESI7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:59:07 -0400
-Date: Mon, 19 May 2014 10:58:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
-Message-ID: <20140519085854.GW30445@twins.programming.kicks-ass.net>
-References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
+	Mon, 19 May 2014 04:59:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z5Jh1Kjtcc8el5NM"
-Content-Disposition: inline
-In-Reply-To: <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140515184534.GB3138@developer>
+References: <1399559880-20562-1-git-send-email-amit.daniel@samsung.com>
+	<1399559880-20562-3-git-send-email-amit.daniel@samsung.com>
+	<20140515184534.GB3138@developer>
+Date: Mon, 19 May 2014 14:29:18 +0530
+X-Google-Sender-Auth: 5CZn6AwpkN8UbIpAX8vHh2uTjW4
+Message-ID: <CADGdYn6tSFUjp+Kf+axyOoj9cn+LKwTZBtrDBzX9QUf2bJ2TLQ@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC PATCH 2/5] thermal: cpu_cooling: Add
+ notifications support for the clients
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---z5Jh1Kjtcc8el5NM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, May 15, 2014 at 06:08:30PM +0300, Alexander Shishkin wrote:
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -252,6 +252,19 @@ struct pmu {
->  	 * flush branch stack on context-switches (needed in cpu-wide mode)
->  	 */
->  	void (*flush_branch_stack)	(void);
-> +
-> +	/*
-> +	 * Allocate AUX space buffer: return an array of @nr_pages pages to be
-> +	 * mapped to userspace that will also be passed to ->free_aux.
-> +	 */
-> +	void *(*alloc_aux)		(int cpu, int nr_pages, bool overwrite,
-> +					 struct perf_event_mmap_page *user_page);
-> +					/* optional */
-> +
-> +	/*
-> +	 * Free AUX buffer
-> +	 */
-> +	void (*free_aux)		(void *aux); /* optional */
->  };
-
-I'm not entirely thrilled to expose it to the PMU like this.. I realize
-you want this in order to get physically contiguous pages.
-
-Are you aware of allocation constraints for other architectures?
-
->  #define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
-> @@ -710,6 +726,18 @@ enum perf_event_type {
->  	 */
->  	PERF_RECORD_MMAP2			=3D 10,
-> =20
-> +	/*
-> +	 * Records that new data landed in the AUX buffer part.
-> +	 *
-> +	 * struct {
-> +	 * 	struct perf_event_header	header;
-> +	 *
-> +	 * 	u64				aux_offset;
-> +	 * 	u64				aux_size;
-> +	 * };
-> +	 */
-> +	PERF_RECORD_AUX				=3D 11,
-> +
->  	PERF_RECORD_MAX,			/* non-ABI */
->  };
-
-Ideally the patch introducing this would also introduce code to generate
-these records.
-
-> @@ -4076,7 +4090,63 @@ static int perf_mmap(struct file *file, struct vm_=
-area_struct *vma)
->  		return -EINVAL;
-> =20
->  	vma_size =3D vma->vm_end - vma->vm_start;
-> -	nr_pages =3D (vma_size / PAGE_SIZE) - 1;
-> +
-> +	if (vma->vm_pgoff =3D=3D 0) {
-> +		nr_pages =3D (vma_size / PAGE_SIZE) - 1;
-> +	} else {
-> +		/*
-> +		 * AUX area mapping: if rb->aux_nr_pages !=3D 0, it's already
-> +		 * mapped, all subsequent mappings should have the same size
-> +		 * and offset. Must be above the normal perf buffer.
-> +		 */
-> +		u64 aux_offset, aux_size;
-> +
-> +		if (!event->rb)
-> +			return -EINVAL;
-> +
-> +		nr_pages =3D vma_size / PAGE_SIZE;
-> +
-> +		mutex_lock(&event->mmap_mutex);
-> +		ret =3D -EINVAL;
-> +
-> +		rb =3D event->rb;
-> +		if (!rb)
-> +			goto aux_unlock;
-> +
-> +		aux_offset =3D ACCESS_ONCE(rb->user_page->aux_offset);
-> +		aux_size =3D ACCESS_ONCE(rb->user_page->aux_size);
-> +
-> +		if (aux_offset < perf_data_size(rb) + PAGE_SIZE)
-> +			goto aux_unlock;
-> +
-> +		if (aux_offset !=3D vma->vm_pgoff << PAGE_SHIFT)
-> +			goto aux_unlock;
-> +
-> +		/* already mapped with a different offset */
-> +		if (rb_has_aux(rb) && rb->aux_pgoff !=3D vma->vm_pgoff)
-> +			goto aux_unlock;
-> +
-> +		if (aux_size !=3D vma_size || aux_size !=3D nr_pages * PAGE_SIZE)
-> +			goto aux_unlock;
-> +
-> +		/* already mapped with a different size */
-> +		if (rb_has_aux(rb) && rb->aux_nr_pages !=3D nr_pages)
-> +			goto aux_unlock;
-> +
-> +		if (!atomic_inc_not_zero(&rb->mmap_count))
-> +			goto aux_unlock;
-> +
-> +		if (rb_has_aux(rb)) {
-> +			atomic_inc(&rb->aux_mmap_count);
-> +			ret =3D 0;
-> +			goto unlock;
-> +		}
-> +
-> +		atomic_set(&rb->aux_mmap_count, 1);
-> +		user_extra =3D nr_pages;
-> +
-> +		goto accounting;
-> +	}
-
-That appears to be missing a is_power_of_2(aux_size) check.
-
-The problem with not having that is that since
-perf_event_mmap_page::aux_{head,tail} are of Z mod 2^64 but your actual
-{head,tail} are of Z mod aux_size, you need aux_size to be a full
-divider of 2^64 or otherwise you get wrapping issues at the overflow.
-
-Having it them all 2^n makes the divider trivial.
-
---z5Jh1Kjtcc8el5NM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTecfOAAoJEHZH4aRLwOS6nDoP/2Pa4KYN1oQj6GzHHUtw4M47
-5Ifa+H+JbMW6j1ajVTKP70bYiJM4BAp05t4l97w55pCYpurzYMwriKRx9/KyFEM6
-J+8mrAHdjxVi2KRw1iDGJdVnd4+4xMDUa025ZPOlqQYyGDWIHwESUk7LHLIVPZ1z
-NiFXFBfLu0AoORT7YSGCwj1xKs55HcMrL9E6mo5nV7rKxzgkGZD2yJ7LVUjI0XyV
-HmJ6wmFwnfF5GCB55n/eu98+ctWK4yqMQ5eMo+PG63nCVCogpb7lDhO+tBeqIRiy
-PJ654OHi0puhAot9/EQ/rBRDNpC1Si6mvX9O8NXgbiPI72S8z8aHm+r1pJIf8+ZY
-kwZ9Fv7na8ThHpYwQK0dYccqzFSLEw/PtJlVDCR2VflcVTON2zUEWV3ZeSkW1+kR
-8szzN7IECzqTlt3UBiFChxIQSF+osm3JbkKrhOs4tdxGEVYxAeQBQoZaPWpQYJYQ
-GlC0qhbj6cbYdANIW0xvZAPYzbIqvfM88vzztKuA35q/g3XiaEEnPsR2IpW5qnXB
-xRkKokV+6pLyD0aVd2J5JiagChMDUDyAEpsdzwHbtqpgvOpVQ3DdqMJnJdUzRFQN
-nu3Q6YzC+kiupcFpF05lHsbEeqVBhv/Sn0u/Yrd0M/Nb7y5TMTcR1Cy5neP2p7LX
-FF3cMtYQHVaPb20fA5JO
-=es1j
------END PGP SIGNATURE-----
-
---z5Jh1Kjtcc8el5NM--
+On Fri, May 16, 2014 at 12:15 AM, Eduardo Valentin <edubezval@gmail.com> wrote:
+> Hello Amit,
+>
+>
+> On Thu, May 08, 2014 at 08:07:57PM +0530, Amit Daniel Kachhap wrote:
+>> This patch adds notification support for those clients of cpu_cooling
+>> APIs which may want to do something interesting after receiving these
+>> cpu_cooling events. The notifier structure passed is of both Set/Get type.
+>> The notfications events can be of type,
+>> 1. CPU_COOLING_SET_STATE_PRE
+>> 2. CPU_COOLING_SET_STATE_POST
+>> 3. CPU_COOLING_GET_CUR_STATE
+>> 4. CPU_COOLING_GET_MAX_STATE
+>
+> What do you think about expanding this feature to all cooling devices?
+>
+> I mean, why should we restrict to cpu(freq) cooling?
+nice suggestion. Sure will check its feasibility.
+>
+> The clock cooling device I posted (and that I plan to merge soon) should
+> also benefit of this infrastructure. The clock cooling is for the
+> context of other processing units, that do not benefit of cpufreq.
+ok let me check them.
+>
+>
+>>
+>> The advantages of these notfications is to differentiate between different
+>> P states in the cpufreq table and the cooling states. The clients of these
+>> events may group few P states into 1 cooling states. Also some more cooling
+>> states can be enabled when the maximum of P state is reached. Post notifications
+>> can be used for those cases.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/thermal/cpu_cooling.c |   99 +++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/cpu_cooling.h   |   55 +++++++++++++++++++++++
+>>  2 files changed, 151 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+>> index 21f44d4..e2aeb36 100644
+>> --- a/drivers/thermal/cpu_cooling.c
+>> +++ b/drivers/thermal/cpu_cooling.c
+>> @@ -50,6 +50,7 @@ struct cpufreq_cooling_device {
+>>       unsigned int cpufreq_state;
+>>       unsigned int cpufreq_val;
+>>       struct cpumask allowed_cpus;
+>> +     struct cpufreq_cooling_status request_status;
+>>       struct list_head node;
+>>  };
+>>  static DEFINE_IDR(cpufreq_idr);
+>> @@ -59,6 +60,8 @@ static DEFINE_MUTEX(cooling_cpufreq_lock);
+>>  #define NOTIFY_INVALID NULL
+>>  static struct cpufreq_cooling_device *notify_device;
+>>
+>> +/* Notfier list to validates/updates the cpufreq cooling states */
+>> +static BLOCKING_NOTIFIER_HEAD(cpufreq_cooling_state_notifier_list);
+>>  /* A list to hold all the cpufreq cooling devices registered */
+>>  static LIST_HEAD(cpufreq_cooling_list);
+>>
+>> @@ -266,6 +269,21 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>>       return freq;
+>>  }
+>>
+>> +static int
+>> +cpufreq_cooling_notify_states(struct cpufreq_cooling_status *request,
+>> +                     enum cpu_cooling_state_ops op)
+>> +{
+>> +     /* Invoke the notifiers which have registered for this state change */
+>> +     if (op == CPU_COOLING_SET_STATE_PRE ||
+>> +             op == CPU_COOLING_SET_STATE_POST ||
+>> +             op == CPU_COOLING_GET_MAX_STATE ||
+>> +             op == CPU_COOLING_GET_CUR_STATE) {
+>> +             blocking_notifier_call_chain(
+>> +                     &cpufreq_cooling_state_notifier_list, op, request);
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>>  /**
+>>   * cpufreq_apply_cooling - function to apply frequency clipping.
+>>   * @cpufreq_device: cpufreq_cooling_device pointer containing frequency
+>> @@ -285,9 +303,18 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
+>>       struct cpumask *mask = &cpufreq_device->allowed_cpus;
+>>       unsigned int cpu = cpumask_any(mask);
+>>
+>> +     cpufreq_device->request_status.cur_state =
+>> +                                             cpufreq_device->cpufreq_state;
+>> +     cpufreq_device->request_status.new_state = cooling_state;
+>> +
+>> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
+>> +                                     CPU_COOLING_SET_STATE_PRE);
+>> +
+>
+> Can a listener block/abort/postpone a state transition?
+>
+>> +     cooling_state = cpufreq_device->request_status.new_state;
+>>
+>
+> So you are proposing listeners can have control on target cpufreq state,
+> right? Or did I get it wrong?
+>
+> I think we should have this better documented. Besides, if that is the
+> case, what happens if we have several listeners?
+>
+>>       /* Check if the old cooling action is same as new cooling action */
+>> -     if (cpufreq_device->cpufreq_state == cooling_state)
+>> +     if (cpufreq_device->cpufreq_state ==
+>> +                             cpufreq_device->request_status.new_state)
+>>               return 0;
+>>
+>>       clip_freq = get_cpu_frequency(cpu, cooling_state);
+>> @@ -304,7 +331,8 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
+>>       }
+>>
+>>       notify_device = NOTIFY_INVALID;
+>> -
+>> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
+>> +                                     CPU_COOLING_SET_STATE_POST);
+>>       return 0;
+>>  }
+>>
+>> @@ -383,6 +411,11 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+>>       if (count > 0)
+>>               *state = count;
+>>
+>> +     cpufreq_device->request_status.max_state = count;
+>> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
+>> +                                     CPU_COOLING_GET_MAX_STATE);
+>> +     *state = cpufreq_device->request_status.max_state;
+>> +
+>
+> same question here, who determines the priorities when several listeners
+> are present in the system?
+>
+>>       return ret;
+>>  }
+>>
+>> @@ -410,8 +443,12 @@ static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+>>               /* Cooling device pointer not found */
+>>               return -EINVAL;
+>>       }
+>> +     cpufreq_device->request_status.cur_state =
+>> +                                             cpufreq_device->cpufreq_state;
+>> +     cpufreq_cooling_notify_states(&cpufreq_device->request_status,
+>> +                                     CPU_COOLING_GET_CUR_STATE);
+>>
+>
+> ditto.
+>
+>> -     *state = cpufreq_device->cpufreq_state;
+>> +     *state = cpufreq_device->request_status.cur_state;
+>>
+>>       return 0;
+>>  }
+>> @@ -520,6 +557,7 @@ __cpufreq_cooling_register(struct device_node *np,
+>>       }
+>>       cpufreq_dev->cool_dev = cool_dev;
+>>       cpufreq_dev->cpufreq_state = 0;
+>> +     cpufreq_dev->request_status.devdata = devdata;
+>>       mutex_lock(&cooling_cpufreq_lock);
+>>
+>>       /* Register the notifier for first cpufreq cooling device */
+>> @@ -614,3 +652,58 @@ void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+>>       kfree(cpufreq_dev);
+>>  }
+>>  EXPORT_SYMBOL_GPL(cpufreq_cooling_unregister);
+>> +
+>> +/**
+>> + * cpufreq_cooling_register_notifier - register a driver with cpufreq cooling.
+>> + * @nb:      notifier function to register.
+>> + * @list: CPU_COOLING_STATE_NOTIFIER type.
+>> + *
+>> + * Add a driver to receive cpufreq cooling notifications like current state,
+>> + * max state and set state. The drivers after reading the events can perform
+>> + * some mapping between the P states and cooling states like grouping some P
+>> + * states into 1 cooling state.
+>> + *
+>> + * Return: 0 (success)
+>> + */
+>> +int cpufreq_cooling_register_notifier(struct notifier_block *nb,
+>> +                                     unsigned int list)
+>> +{
+>> +     int ret = 0;
+>> +     switch (list) {
+>> +     case CPU_COOLING_STATE_NOTIFIER:
+>> +             ret = blocking_notifier_chain_register(
+>> +                             &cpufreq_cooling_state_notifier_list, nb);
+>> +             break;
+>> +     default:
+>> +             ret = -EINVAL;
+>> +     }
+>> +     return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(cpufreq_cooling_register_notifier);
+>> +
+>> +/**
+>> + * cpufreq_cooling_unregister_notifier - unregisters a driver with cpufreq
+>> + * cooling.
+>> + * @nb:      notifier function to unregister.
+>> + * @list: CPU_COOLING_STATE_NOTIFIER type.
+>> + *
+>> + * Removes a driver to receive further cpufreq cooling notifications.
+>> + *
+>> + * Return: 0 (success)
+>> + */
+>> +int cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
+>> +                                     unsigned int list)
+>> +{
+>> +     int ret = 0;
+>> +     switch (list) {
+>> +     case CPU_COOLING_STATE_NOTIFIER:
+>> +             ret = blocking_notifier_chain_unregister(
+>> +                             &cpufreq_cooling_state_notifier_list, nb);
+>> +             break;
+>> +     default:
+>> +             ret = -EINVAL;
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(cpufreq_cooling_unregister_notifier);
+>
+> The exported symbols must be documented under Documentation/ too.
+>
+>> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+>> index aaef7d8..f786935 100644
+>> --- a/include/linux/cpu_cooling.h
+>> +++ b/include/linux/cpu_cooling.h
+>> @@ -28,6 +28,22 @@
+>>  #include <linux/thermal.h>
+>>  #include <linux/cpumask.h>
+>>
+>> +#define CPU_COOLING_STATE_NOTIFIER   (0)
+>> +
+>> +enum cpu_cooling_state_ops {
+>> +     CPU_COOLING_SET_STATE_PRE,
+>> +     CPU_COOLING_SET_STATE_POST,
+>> +     CPU_COOLING_GET_CUR_STATE,
+>> +     CPU_COOLING_GET_MAX_STATE,
+>> +};
+>> +
+>> +struct cpufreq_cooling_status {
+>> +     unsigned long cur_state;
+>> +     unsigned long new_state;
+>> +     unsigned long max_state;
+>> +     void *devdata;
+>> +};
+>> +
+>>  #ifdef CONFIG_CPU_THERMAL
+>>  /**
+>>   * cpufreq_cooling_register - function to create cpufreq cooling device.
+>> @@ -62,6 +78,34 @@ of_cpufreq_cooling_register(struct device_node *np,
+>>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
+>>
+>>  unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq);
+>> +
+>> +/**
+>> + * cpufreq_cooling_register_notifier - register a driver with cpufreq cooling.
+>> + * @nb:      notifier function to register.
+>> + * @list: CPU_COOLING_STATE_NOTIFIER type.
+>> + *
+>> + * Add a driver to receive cpufreq cooling notifications like current state,
+>> + * max state and set state. The drivers after reading the events can perform
+>> + * some mapping between the P states and cooling states like grouping some P
+>> + * states into 1 cooling state.
+>> + *
+>> + * Return: 0 (success)
+>> + */
+>> +int cpufreq_cooling_register_notifier(struct notifier_block *nb,
+>> +                                     unsigned int list);
+>> +
+>> +/**
+>> + * cpufreq_cooling_unregister_notifier - unregisters a driver with cpufreq
+>> + * cooling.
+>> + * @nb:      notifier function to unregister.
+>> + * @list: CPU_COOLING_STATE_NOTIFIER type.
+>> + *
+>> + * Removes a driver to receive further cpufreq cooling notifications.
+>> + *
+>> + * Return: 0 (success)
+>> + */
+>> +int cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
+>> +                                     unsigned int list);
+>>  #else /* !CONFIG_CPU_THERMAL */
+>>  static inline struct thermal_cooling_device *
+>>  cpufreq_cooling_register(const struct cpumask *clip_cpus, void *devdata)
+>> @@ -84,6 +128,17 @@ unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq)
+>>  {
+>>       return THERMAL_CSTATE_INVALID;
+>>  }
+>> +static inline int
+>> +cpufreq_cooling_register_notifier(struct notifier_block *nb, unsigned int list)
+>> +{
+>> +     return 0;
+>> +}
+>> +static inline int
+>> +cpufreq_cooling_unregister_notifier(struct notifier_block *nb,
+>> +                                     unsigned int list)
+>> +{
+>> +     return 0;
+>> +}
+>>  #endif       /* CONFIG_CPU_THERMAL */
+>>
+>>  #endif /* __CPU_COOLING_H__ */
+>> --
+>> 1.7.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
