@@ -1,151 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaESJOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:14:15 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36060 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914AbaESJOM (ORCPT
+	id S1753947AbaESJOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:14:25 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58277 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846AbaESJOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:14:12 -0400
-Message-ID: <5379CAF3.50804@linux.vnet.ibm.com>
-Date: Mon, 19 May 2014 14:42:19 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 19 May 2014 05:14:21 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <5379CB66.7090607@lge.com>
+Date: Mon, 19 May 2014 18:14:14 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Pedro Alves <palves@redhat.com>
-CC: mikey@neuling.org, avagin@openvz.org, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, michael@ellerman.id.au, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com> <53730326.6000400@linux.vnet.ibm.com> <53735044.5030008@redhat.com> <537479FD.2010200@linux.vnet.ibm.com> <5374AE24.1030302@redhat.com>
-In-Reply-To: <5374AE24.1030302@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051909-8878-0000-0000-00000C8002AF
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Michal Nazarewicz <mina86@mina86.com>, Minchan Kim <minchan.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Laura Abbott <lauraa@codeaurora.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Heesub Shin <heesub.shin@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com
+Subject: Re: [RFC][PATCH] CMA: drivers/base/Kconfig: restrict CMA size to
+ non-zero value
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <20140513030057.GC32092@bbox> <20140515015301.GA10116@js1304-P5Q-DELUXE> <5375C619.8010501@lge.com> <xa1tppjdfwif.fsf@mina86.com> <537962A0.4090600@lge.com> <20140519055527.GA24099@js1304-P5Q-DELUXE>
+In-Reply-To: <20140519055527.GA24099@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2014 05:38 PM, Pedro Alves wrote:
-> On 05/15/2014 09:25 AM, Anshuman Khandual wrote:
->> On 05/14/2014 04:45 PM, Pedro Alves wrote:
->>> On 05/14/14 06:46, Anshuman Khandual wrote:
->>>> On 05/13/2014 10:43 PM, Pedro Alves wrote:
->>>>> On 05/05/14 08:54, Anshuman Khandual wrote:
->>>>>> This patch enables get and set of transactional memory related register
->>>>>> sets through PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing
->>>>>> four new powerpc specific register sets i.e REGSET_TM_SPR, REGSET_TM_CGPR,
->>>>>> REGSET_TM_CFPR, REGSET_CVMX support corresponding to these following new
->>>>>> ELF core note types added previously in this regard.
->>>>>>
->>>>>> 	(1) NT_PPC_TM_SPR
->>>>>> 	(2) NT_PPC_TM_CGPR
->>>>>> 	(3) NT_PPC_TM_CFPR
->>>>>> 	(4) NT_PPC_TM_CVMX
->>>>>
->>>>> Sorry that I couldn't tell this from the code, but, what does the
->>>>> kernel return when the ptracer requests these registers and the
->>>>> program is not in a transaction?  Specifically I'm wondering whether
->>>>> this follows the same semantics as the s390 port.
->>>>>
->>>>
->>>> Right now, it still returns the saved state of the registers from thread
->>>> struct. I had assumed that the user must know the state of the transaction
->>>> before initiating the ptrace request. I guess its better to check for
->>>> the transaction status before processing the request. In case if TM is not
->>>> active on that thread, we should return -EINVAL.
->>>
->>> I think s390 returns ENODATA in that case.
->>>
->>>  https://sourceware.org/ml/gdb-patches/2013-06/msg00273.html
->>>
->>> We'll want some way to tell whether the system actually
->>> supports this.  That could be ENODATA vs something-else (EINVAL
->>> or perhaps better EIO for "request is invalid").
+In __dma_alloc function, your patch can make __alloc_from_pool work.
+But __alloc_from_contiguous doesn't work.
+Therefore __dma_alloc sometimes works and sometimes not according to the gfp(__GFP_WAIT) flag.
+Do I understand correctly?
+
+I think __dma_alloc should work consistently.
+Both of __alloc_from_contiguous and __alloc_from_pool should work together,
+or both of them do not work.
+
+
+2014-05-19 오후 2:55, Joonsoo Kim 쓴 글:
+> On Mon, May 19, 2014 at 10:47:12AM +0900, Gioh Kim wrote:
+>> Thank you for your advice. I didn't notice it.
 >>
->> As Mickey has pointed out, the transaction memory support in the system can be
->> checked from the HWCAP2 flags. So when the transaction is not active, we will
->> return ENODATA instead for TM related ptrace regset requests.
-> 
-> Returning ENODATA when the transaction is not active, like
-> s390 is great.  Thank you.
-> 
-> But I think it's worth it to consider what should the kernel
-> return when the machine doesn't have these registers at all.
-> 
-> Sure, for this case we happen to have the hwcap flag.  But in
-> general, I don't know whether we will always have a hwcap bit
-> for each register set that is added.  Maybe we will, so that
-> the info ends up in core dumps.
-> 
-> Still, I think it's worth to consider this case in the
-> general sense, irrespective of hwcap.
-> 
-> That is, what should PTRACE_GETREGSET/PTRACE_SETREGSET return
-> when the machine doesn't have the registers at all.  We shouldn't
-> need to consult something elsewhere (like hwcap) to determine
-> what ENODATA means.  The kernel knows it right there.  I think
-> s390 goofed here.
-> 
-> Taking a look at x86, for example, we see:
-> 
-> 	[REGSET_XSTATE] = {
-> 		.core_note_type = NT_X86_XSTATE,
-> 		.size = sizeof(u64), .align = sizeof(u64),
-> 		.active = xstateregs_active, .get = xstateregs_get,
-> 		.set = xstateregs_set
-> 	},
-> 
-> Note that it installs the ".active" hook.
-> 
->  24 /**
->  25  * user_regset_active_fn - type of @active function in &struct user_regset
->  26  * @target:     thread being examined
->  27  * @regset:     regset being examined
->  28  *
->  29  * Return -%ENODEV if not available on the hardware found.
->  30  * Return %0 if no interesting state in this thread.
->  31  * Return >%0 number of @size units of interesting state.
->  32  * Any get call fetching state beyond that number will
->  33  * see the default initialization state for this data,
->  34  * so a caller that knows what the default state is need
->  35  * not copy it all out.
->  36  * This call is optional; the pointer is %NULL if there
->  37  * is no inexpensive check to yield a value < @n.
->  38  */
->  39 typedef int user_regset_active_fn(struct task_struct *target,
->  40                                   const struct user_regset *regset);
->  41
-> 
-> Note the mention of ENODEV.
-> 
-> I couldn't actually find any arch that currently returns -ENODEV in
-> the "active" hook.  I see that binfmt_elf.c doesn't handle
-> regset->active() returning < 0.  Guess that may be why.  Looks like
-> something that could be cleaned up, to me.
-> 
-> Anyway, notice x86's REGSET_XSTATE regset->get hook:
-> 
-> int xstateregs_get(struct task_struct *target, const struct user_regset *regset,
-> 		unsigned int pos, unsigned int count,
-> 		void *kbuf, void __user *ubuf)
-> {
-> 	int ret;
-> 
-> 	if (!cpu_has_xsave)
-> 		return -ENODEV;
->         ^^^^^^^^^^^^^^^^^^^^^^
-> 
-> And then we see that xfpregs_get has a similar ENODEV case.
-> 
-> So in sum, it very much looks like the intention is for
-> PTRACE_GETREGSET/PTRACE_SETREGSET to return ENODEV in the
-> case the regset doesn't exist on the running machine, and then
-> it looks like at least x86 works that way.
-> 
-
-Will work on these suggestions and post it again. Thanks for the
-detailed insights and review.
-
+>> I'm adding followings according to your advice:
+>>
+>> - range restrict for CMA_SIZE_MBYTES and *CMA_SIZE_PERCENTAGE*
+>> I think this can prevent the wrong kernel option.
+>>
+>> - change size_cmdline into default value SZ_16M
+>> I am not sure this can prevent if cma=0 cmdline option is also with base and limit options.
+>
+> Hello,
+>
+> I think that this problem is originated from atomic_pool_init().
+> If configured coherent_pool size is larger than default cma size,
+> it can be failed even if this patch is applied.
+>
+> How about below patch?
+> It uses fallback allocation if CMA is failed.
+>
+> Thanks.
+>
+> -----------------8<---------------------
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 6b00be1..2909ab9 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
+>          unsigned long *bitmap;
+>          struct page *page;
+>          struct page **pages;
+> -       void *ptr;
+> +       void *ptr = NULL;
+>          int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
+>
+>          bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> @@ -393,7 +393,7 @@ static int __init atomic_pool_init(void)
+>          if (IS_ENABLED(CONFIG_DMA_CMA))
+>                  ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
+>                                                atomic_pool_init);
+> -       else
+> +       if (!ptr)
+>                  ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
+>                                             atomic_pool_init);
+>          if (ptr) {
+>
+>
