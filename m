@@ -1,173 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaESMNF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:13:05 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51217 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaESMNB (ORCPT
+	id S1753696AbaESMTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:19:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34294 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbaESMT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:13:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        xobs@kosagi.com
-Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on designware core driver
-Date: Mon, 19 May 2014 14:12:22 +0200
-Message-ID: <4701649.DeaM8ocX7D@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <537694DC.3060507@ti.com>
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <4195791.GS9XG8RaXW@wuerfel> <537694DC.3060507@ti.com>
+	Mon, 19 May 2014 08:19:27 -0400
+Message-ID: <5379F6C1.70202@canonical.com>
+Date: Mon, 19 May 2014 05:19:13 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Mw53XeFBIlkpZjwxThxHOO+AMwoYN7pDsF0jIYKCndI
- lO7gXeStxk1DbLNiA36qGRbrn1WQ8V6F+BxiscjgBKk7i1uj9U
- ShfoxL3YoaMIfExGJLc0t/gmBkwVWkKmmCf1FSaxhL4zg7ZBxM
- MhAZcL7R9qsYx8pAoenuEIaQXF20IGfyvs4u+msjAoGen2LKQn
- rhNplO/HNdeY08d/L8Ky0KSHVzFV0c3vDTqV9MrD7n+wwcDqqX
- dzTTffYXQlnIhYsDNvOoHxSb4W24ojsWCindA9ctyHSYsIBNoU
- S00dLksptsWMVIh+6MhpjYj9g/2dAARHdo3Gz4jN2Fyrt8WoLq
- qGRX5rj9mew2GFhdlBWU=
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, miklos@szeredi.hu,
+        jmorris@namei.org, selinux@tycho.nsa.gov
+CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM
+ module.
+References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp> <201405122222.CFI35406.tMFFLJOVOSOHFQ@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405122222.CFI35406.tMFFLJOVOSOHFQ@I-love.SAKURA.ne.jp>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 May 2014 18:44:44 Murali Karicheri wrote:
-> On 5/15/2014 12:28 PM, Arnd Bergmann wrote:
-> > On Thursday 15 May 2014 12:01:32 Murali Karicheri wrote:
-> >> +Sample bindings shown below:-
-> >> +
-> >> + - Remove ti,enable-linktrain if boot loader already does Link training and do EP
-> >> +   configuration.
-> >> + - Remove ti,init-phy if boot loader already initialize the phy and sets up pcie
-> >> +   link
-> > You actually have to document all the properties. Have a look at the
-> > other bindings for what this means.
+On 05/12/2014 06:22 AM, Tetsuo Handa wrote:
+>>From 579cfccf7ba49a53ff0f5fefe73f0b8dc618d878 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 12 May 2014 21:05:52 +0900
+> Subject: [PATCH (for 3.15) 1/5] LSM: Pass the rename flags to each LSM module.
 > 
-> Actually this is dw pcie variant. So I will document if there are any 
-> deviations from the dw-designware
-> bindings. Based on comments from Jingo, I think I need to add a new DT 
-> property for old hw that we
-> use in keystone. May be a compatibility string for older dw h/w like 
-> "snps ,dw-pcie-v3.65" is that we
-> could use and do things differently in the common code.
-
-A compatible string with the exact version sounds like a good idea, yes.
-
-> So I will update the Documentation of dw bindings  once we agree on this.
-> >> +
-> >> +               pcie@21800000 {
-> >> +                       compatible = "ti,keystone-pcie";
-> >> +                       device_type = "pci";
-> >> +                       clocks = <&clkpcie>;
-> >> +                       clock-names = "pcie";
-> > The dw-pcie binding lists two clocks.
->
-> Ok. As per dw documentation, pcie and pcie_bus are the clocks. But 
-> pci-imx6 is currently not using pcie_bus. So the pcie_bus
-> clock is actually optional. In the case of keystone pcie, bus clock is 
-> provided by the phy hardware and if I need to provide
-> a clock for bus, it has to be a dummy or change documentation to make 
-> pcie_bus an optional clock. I prefer later, but want
-> to know if this is true for pci-imx6. There is also a plan to move the 
-> pcie clock API call to designware core. So making pcie_bus
-> clock optional looks correct to me.
-
-A documentation change sounds fine to me. How about documenting that
-there should be either a "pcie_bus" clock or a phy reference?
-
-> >> +                       #address-cells = >;
-> >> +                       #size-cells = <2>;
-> >> +                       reg =  <0x21800000 0x1000>, <0x0262014c 4>;
-> >> +                       reg-names = "reg_rc_app", "reg_devcfg";
-> > There should be standard names that are documented in the binding.
+> TOMOYO and AppArmor distinguish a directory's pathname and a non-directory's
+> pathname by whether the pathname ends with / character or not. Upon rename(),
+> they appended / character to the target dentry's pathname if the source
+> dentry's inode refers a directory, for the target dentry's inode will refer
+> a directory after successful rename(). This assumption was correct until
+> commit da1ce067 "vfs: add cross-rename" is introduced.
 > 
-> Currently  Documentation says
+> Commit da1ce067 changed security_{inode,path}_rename() to call LSM module
+> with reversed arguments if the rename flags contains RENAME_EXCHANGE. But
+> this is not sufficient for TOMOYO and AppArmor because RENAME_EXCHANGE
+> allows exchange of a directory's inode and a non-directory's inode. Also,
+> this is redundant for SMACK because there is no need to call
+> security_inode_rename() with reversed arguments.
 > 
-> - reg: base addresses and lengths of the pcie controller,
->      the phy controller, additional register for the phy controller.
+> To fix this regression, the rename flags needs to be passed to LSM module.
+> This patch is for allowing TOMOYO and AppArmor to handle RENAME_EXCHANGE
+> case differently, and for allowing SMACK to avoid needlessly checking
+> the same permission twice.
 > 
-> And following dw drivers defines as
-> 
-> samsung,exynos5440-pcie
-> 
->          reg = <0x290000 0x1000
->              0x270000 0x1000
->              0x271000 0x40>;
-> 
-> fsl,imx6q-pcie"
->          reg = <0x01ffc000 0x4000>; /* DBI */
-> 
-> There are no names used for registers. So this needs to be documented in 
-> the dw-designware
-> bindings. reg_dbi is what is common to pci controller assuming at index 
-> 0 of the both above drivers use
-> reg_dbi address for config space. Shall I modify the documentation to 
-> include optional reg name
-> reg_dbi  for config space base address registers? Additional registers 
-> are optional and varies from
-> platform to platform. Phy registers are actually part of Phy driver and 
-> should be removed from
-> the dw-documentation bindings. Agree?
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Acked-by: Casey Schaufler <casey@schaufler-ca.com> [smack]
 
-It makes sense to remove the phy registers if there is always a separate
-phy driver. Regarding the names, it's probably easier to remove them
-completely than to document them.
+This looks good
+Reviewed-by: John Johansen <john.johansen@canonical.com>
 
-If the register names are optional, you can't rely on them anyway
-and have to uses the indexes/
-
-> >
-> >> +                       interrupts = <GIC_SPI 30 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 31 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 32 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 33 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 34 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 35 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 36 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 37 IRQ_TYPE_EDGE_RISING>,
-> >> +                                       <GIC_SPI 38 IRQ_TYPE_EDGE_RISING>; /* Error IRQ */
-> > What are all these interrupts?
-> These are MSI interrupts tied to the GIC over which MSI interrupts are 
-> multiplexed.  I will document
-> it in the keystone PCI DT bindings.
-
-Maybe they should be moved into the subnode that has the LSI interrupts,
-or perhaps a separate node? I don't know how the other dw-pcie variants
-do it, but it always seems like a good idea to keep MSI separate because
-you might not want to use it if there is also an MSI capable GIC in the
-system.
-
-> >> +                       ranges = <0x00000800 0 0x21801000 0x21801000 0 0x0002000    /* Configuration space */
-> >> +                                 0x81000000 0 0          0x24000000 0 0x4000       /* downstream I/O */
-> >> +                                 0x82000000 0 0x50000000 0x50000000 0 0x10000000>; /* non-prefetchable memory */
-> > Please move the config space into 'reg' now instead of 'ranges'.
-> > This was a mistake earlier, and there are already other front-ends
-> > doing the same thing.
->   This has to be coordinated with other drivers when DW core makes the 
-> change.
+> ---
+>  include/linux/security.h   |    8 ++++++--
+>  security/apparmor/lsm.c    |    3 ++-
+>  security/capability.c      |    6 ++++--
+>  security/security.c        |   10 ++++++----
+>  security/selinux/hooks.c   |    3 ++-
+>  security/smack/smack_lsm.c |    4 +++-
+>  security/tomoyo/tomoyo.c   |    4 +++-
+>  7 files changed, 26 insertions(+), 12 deletions(-)
 > 
-> Jingoo, Sean,
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 6478ce3..5158611 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -446,6 +446,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+>   *	@old_dentry contains the dentry structure of the old link.
+>   *	@new_dir contains the inode structure for parent of the new link.
+>   *	@new_dentry contains the dentry structure of the new link.
+> + *	@flags contains rename flags.
+>   *	Return 0 if permission is granted.
+>   * @path_rename:
+>   *	Check for permission to rename a file or directory.
+> @@ -453,6 +454,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+>   *	@old_dentry contains the dentry structure of the old link.
+>   *	@new_dir contains the path structure for parent of the new link.
+>   *	@new_dentry contains the dentry structure of the new link.
+> + *	@flags contains rename flags.
+>   *	Return 0 if permission is granted.
+>   * @path_chmod:
+>   *	Check for permission to change DAC's permission of a file or directory.
+> @@ -1492,7 +1494,8 @@ struct security_operations {
+>  	int (*path_link) (struct dentry *old_dentry, struct path *new_dir,
+>  			  struct dentry *new_dentry);
+>  	int (*path_rename) (struct path *old_dir, struct dentry *old_dentry,
+> -			    struct path *new_dir, struct dentry *new_dentry);
+> +			    struct path *new_dir, struct dentry *new_dentry,
+> +			    unsigned int flags);
+>  	int (*path_chmod) (struct path *path, umode_t mode);
+>  	int (*path_chown) (struct path *path, kuid_t uid, kgid_t gid);
+>  	int (*path_chroot) (struct path *path);
+> @@ -1515,7 +1518,8 @@ struct security_operations {
+>  	int (*inode_mknod) (struct inode *dir, struct dentry *dentry,
+>  			    umode_t mode, dev_t dev);
+>  	int (*inode_rename) (struct inode *old_dir, struct dentry *old_dentry,
+> -			     struct inode *new_dir, struct dentry *new_dentry);
+> +			     struct inode *new_dir, struct dentry *new_dentry,
+> +			     unsigned int flags);
+>  	int (*inode_readlink) (struct dentry *dentry);
+>  	int (*inode_follow_link) (struct dentry *dentry, struct nameidata *nd);
+>  	int (*inode_permission) (struct inode *inode, int mask);
+> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+> index 9981000..c0b4366 100644
+> --- a/security/apparmor/lsm.c
+> +++ b/security/apparmor/lsm.c
+> @@ -315,7 +315,8 @@ static int apparmor_path_link(struct dentry *old_dentry, struct path *new_dir,
+>  }
+>  
+>  static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
+> -				struct path *new_dir, struct dentry *new_dentry)
+> +				struct path *new_dir, struct dentry *new_dentry,
+> +				unsigned int flags)
+>  {
+>  	struct aa_profile *profile;
+>  	int error = 0;
+> diff --git a/security/capability.c b/security/capability.c
+> index ad0d4de..620ba79 100644
+> --- a/security/capability.c
+> +++ b/security/capability.c
+> @@ -176,7 +176,8 @@ static int cap_inode_mknod(struct inode *inode, struct dentry *dentry,
+>  }
+>  
+>  static int cap_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
+> -			    struct inode *new_inode, struct dentry *new_dentry)
+> +			    struct inode *new_inode, struct dentry *new_dentry,
+> +			    unsigned int flags)
+>  {
+>  	return 0;
+>  }
+> @@ -280,7 +281,8 @@ static int cap_path_link(struct dentry *old_dentry, struct path *new_dir,
+>  }
+>  
+>  static int cap_path_rename(struct path *old_path, struct dentry *old_dentry,
+> -			   struct path *new_path, struct dentry *new_dentry)
+> +			   struct path *new_path, struct dentry *new_dentry,
+> +			   unsigned int flags)
+>  {
+>  	return 0;
+>  }
+> diff --git a/security/security.c b/security/security.c
+> index 8b774f3..81d7ffe 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -442,13 +442,14 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
+>  
+>  	if (flags & RENAME_EXCHANGE) {
+>  		int err = security_ops->path_rename(new_dir, new_dentry,
+> -						    old_dir, old_dentry);
+> +						    old_dir, old_dentry,
+> +						    flags);
+>  		if (err)
+>  			return err;
+>  	}
+>  
+>  	return security_ops->path_rename(old_dir, old_dentry, new_dir,
+> -					 new_dentry);
+> +					 new_dentry, flags);
+>  }
+>  EXPORT_SYMBOL(security_path_rename);
+>  
+> @@ -542,13 +543,14 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  
+>  	if (flags & RENAME_EXCHANGE) {
+>  		int err = security_ops->inode_rename(new_dir, new_dentry,
+> -						     old_dir, old_dentry);
+> +						     old_dir, old_dentry,
+> +						     flags);
+>  		if (err)
+>  			return err;
+>  	}
+>  
+>  	return security_ops->inode_rename(old_dir, old_dentry,
+> -					   new_dir, new_dentry);
+> +					  new_dir, new_dentry, flags);
+>  }
+>  
+>  int security_inode_readlink(struct dentry *dentry)
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 2c7341d..33f6f56 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -2749,7 +2749,8 @@ static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry, umode_t
+>  }
+>  
+>  static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
+> -				struct inode *new_inode, struct dentry *new_dentry)
+> +				struct inode *new_inode, struct dentry *new_dentry,
+> +				unsigned int flags)
+>  {
+>  	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
+>  }
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 14f52be..4c1933f 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -697,6 +697,7 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
+>   * @old_dentry: unused
+>   * @new_inode: the new directory
+>   * @new_dentry: unused
+> + * @flags: unused
+>   *
+>   * Read and write access is required on both the old and
+>   * new directories.
+> @@ -706,7 +707,8 @@ static int smack_inode_rmdir(struct inode *dir, struct dentry *dentry)
+>  static int smack_inode_rename(struct inode *old_inode,
+>  			      struct dentry *old_dentry,
+>  			      struct inode *new_inode,
+> -			      struct dentry *new_dentry)
+> +			      struct dentry *new_dentry,
+> +			      unsigned int flags)
+>  {
+>  	int rc;
+>  	char *isp;
+> diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
+> index f0b756e..ac7dd97 100644
+> --- a/security/tomoyo/tomoyo.c
+> +++ b/security/tomoyo/tomoyo.c
+> @@ -287,13 +287,15 @@ static int tomoyo_path_link(struct dentry *old_dentry, struct path *new_dir,
+>   * @old_dentry: Pointer to "struct dentry".
+>   * @new_parent: Pointer to "struct path".
+>   * @new_dentry: Pointer to "struct dentry".
+> + * @flags:      Rename flags.
+>   *
+>   * Returns 0 on success, negative value otherwise.
+>   */
+>  static int tomoyo_path_rename(struct path *old_parent,
+>  			      struct dentry *old_dentry,
+>  			      struct path *new_parent,
+> -			      struct dentry *new_dentry)
+> +			      struct dentry *new_dentry,
+> +			      unsigned int flags)
+>  {
+>  	struct path path1 = { old_parent->mnt, old_dentry };
+>  	struct path path2 = { new_parent->mnt, new_dentry };
 > 
-> What is the plan for this change? I  have to defer this currently.
 
-> >> +                       #interrupt-cells = <1>;
-> >> +                       interrupt-map-mask = <0 0 0 0>;
-> >> +                       interrupt-map = <0 0 0 1 &pcie_intc 1>, // INT A
-> >> +                                       <0 0 0 2 &pcie_intc 2>, // INT B
-> >> +                                       <0 0 0 3 &pcie_intc 3>, // INT C
-> >> +                                       <0 0 0 4 &pcie_intc 4>; // INT D
-> > I think this is the wrong map-mask.
-> I think this should be changed to
-> 
-> interrupt-map-mask = <0 0 0 0x7> ?
-
-That sounds reasonable. Is that what your hardware implements?
-
-	Arnd
