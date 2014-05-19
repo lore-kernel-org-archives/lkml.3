@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbaESOkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:40:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33237 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaESOkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:40:06 -0400
-Date: Mon, 19 May 2014 15:39:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140519143949.GW12304@sirena.org.uk>
-References: <1400497954-1012-1-git-send-email-alban.bedel@avionic-design.de>
+	id S932281AbaESOkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:40:31 -0400
+Received: from tex.lwn.net ([70.33.254.29]:55808 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932110AbaESOka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:40:30 -0400
+Date: Mon, 19 May 2014 08:40:28 -0600
+From: Jake Edge <jake@lwn.net>
+To: Anton Saraev <antonysaraev@gmail.com>
+Cc: gregkh@linuxfoundation.org, jason@lakedaemon.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/06] staging: crypto: skein: rename camelcase vars
+Message-ID: <20140519084028.1527b066@chukar.edge2.net>
+In-Reply-To: <dad2a43d54d03ba2b4fae9136331df060c48154c.1399675444.git.antonysaraev@gmail.com>
+References: <cover.1399675444.git.antonysaraev@gmail.com>
+	<abebc2187151826190d6f664acc654241b352ffa.1399675444.git.antonysaraev@gmail.com>
+	<dad2a43d54d03ba2b4fae9136331df060c48154c.1399675444.git.antonysaraev@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gI747uL8Y9q6BT2f"
-Content-Disposition: inline
-In-Reply-To: <1400497954-1012-1-git-send-email-alban.bedel@avionic-design.de>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Fix the init of DT defined fixed
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 19 May 2014 12:09:55 +0400 Anton Saraev wrote:
 
---gI747uL8Y9q6BT2f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>  struct skein_ctx_hdr {
+> -	size_t  hashBitLen;		/* size of hash result, in bits */
+> -	size_t  bCnt;			/* current byte count in buffer b[] */
+> -	u64  T[SKEIN_MODIFIER_WORDS];	/* tweak: T[0]=byte cnt, T[1]=flags */
+> +	size_t hash_bit_len;		/* size of hash result, in bits */
+> +	size_t b_cnt;			/* current byte count in buffer b[] */
+> +	u64 T[SKEIN_MODIFIER_WORDS];	/* tweak: T[0]=byte cnt, T[1]=flags */
 
-On Mon, May 19, 2014 at 01:12:34PM +0200, Alban Bedel wrote:
+seems like 'T' should be lower case ... maybe renamed too (tweak?)?
 
-> When a regulator is defined using DT and it has a single voltage the
-> regulator init always tries to apply this voltage. However this fails
-> if the regulator isn't settable. So skip this step if the regulator
-> doesn't provides any set method.
+>  struct skein_256_ctx { /* 256-bit Skein hash context structure */
+>  	struct skein_ctx_hdr h;		/* common header context variables */
+> -	u64  X[SKEIN_256_STATE_WORDS];	/* chaining variables */
+> -	u8  b[SKEIN_256_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
+> +	u64 X[SKEIN_256_STATE_WORDS];	/* chaining variables */
+> +	u8 b[SKEIN_256_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
+>  };
+>  
+>  struct skein_512_ctx { /* 512-bit Skein hash context structure */
+>  	struct skein_ctx_hdr h;		/* common header context variables */
+> -	u64  X[SKEIN_512_STATE_WORDS];	/* chaining variables */
+> -	u8  b[SKEIN_512_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
+> +	u64 X[SKEIN_512_STATE_WORDS];	/* chaining variables */
+> +	u8 b[SKEIN_512_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
+>  };
+>  
+>  struct skein1024_ctx { /* 1024-bit Skein hash context structure */
+>  	struct skein_ctx_hdr h;		/* common header context variables */
+> -	u64  X[SKEIN1024_STATE_WORDS];	/* chaining variables */
+> -	u8  b[SKEIN1024_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
+> +	u64 X[SKEIN1024_STATE_WORDS];	/* chaining variables */
+> +	u8 b[SKEIN1024_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
 
-No, this means we'll just ignore the voltage someone tried to set.  A
-bigger question is why someone is trying to configure the voltage of a
-fixed voltage regulator in DT...
+the X arrays here should be renamed too, I suspect ...
 
---gI747uL8Y9q6BT2f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> @@ -99,8 +99,8 @@ enum skein_size {
+>   * structures as well.
+>   */
+>  struct skein_ctx {
+> -	u64 skeinSize;
+> -	u64  XSave[SKEIN_MAX_STATE_WORDS];   /* save area for state variables */
+> +	u64 skein_size;
+> +	u64 X_save[SKEIN_MAX_STATE_WORDS];   /* save area for state variables */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+why not x_save?
 
-iQIcBAEBAgAGBQJTeheyAAoJELSic+t+oim9k18P/i6bqmzrwjFuGf2U0U7tLzwX
-XE/XH5+1IUfbd5TIxbGxeUTiFbGAfb29at3xLFWmskHI5touy0R9yNZRE1A3LpEr
-FkIxdJhgpOq4MIX3U61rCVEQXhzyU+XpfK5m5jy3unKDUOzviq2e1P/jb0Ou5woG
-x2swsLIPvkm+vlHR3PDV3GJ3WXcw9JL7RxgaPRYcW8KHNePsY5Mi/aPNUe8SHvHo
-gHErQ5j/GmoLG5Q9VW5gG/uRK/VEfoWecdt9vcN9AyDLAh9FhN2dmpYWdG3UKzuj
-iq7bwKN8DM1piAvEaYyD9ZWS1EE46TmG+Khhn+6YBHVtGH5zf1pbA2vjpjzloqZQ
-E4iZ3U+7NmkoDpHGeT8ULcTjr8EZu14B1JVSCbvTuCPCmvs9gOqeFqq9vq98h1G5
-G0NNCJGBHJeW1lVlEsTrg9Gw4dP/Y8kQ3vo7eEAcrGzZGCjPH3gVR8heK0f/YdB+
-pUthp3HMoN6Je2100AoBEhe/Af3neKA0+YRan/4dR+e5PAUdxds4ekgwfFGkDMQ3
-Eg5n/LDiVLqT0pjfW3NzegVLX6G2Su4h5lJNT82gxAUruimJ4ojpDtx6/trdF5yQ
-H5k0zYHTWd9d5C76DNdiiM3AmQvhaaMp9M2mGn8ngNKhLk2c3J5WLzkJ86Y+8/rO
-IhdZkS/gDSttq6iLymQe
-=EMd6
------END PGP SIGNATURE-----
+> -int skein_init(struct skein_ctx *ctx, size_t hashBitLen)
+> +int skein_init(struct skein_ctx *ctx, size_t hash_bit_len)
+>  {
+>  	int ret = SKEIN_FAIL;
+> -	size_t Xlen = 0;
+> +	size_t X_len = 0;
+>  	u64 *X = NULL;
 
---gI747uL8Y9q6BT2f--
+maybe I am missing something, but why not 'x' and 'x_len' ?
+
+> -int skein_mac_init(struct skein_ctx *ctx, const u8 *key, size_t keyLen,
+> -		   size_t hashBitLen)
+> +int skein_mac_init(struct skein_ctx *ctx, const u8 *key, size_t key_len,
+> +		   size_t hash_bit_len)
+>  {
+>  	int ret = SKEIN_FAIL;
+>  	u64 *X = NULL;
+> -	size_t Xlen = 0;
+> -	u64 treeInfo = SKEIN_CFG_TREE_INFO_SEQUENTIAL;
+> +	size_t X_len = 0;
+> +	u64 tree_info = SKEIN_CFG_TREE_INFO_SEQUENTIAL;
+
+and the same here?
+
+>  void skein_reset(struct skein_ctx *ctx)
+>  {
+> -	size_t Xlen = 0;
+> +	size_t X_len = 0;
+>  	u64 *X = NULL;
+
+here too ...
+
+> -void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blkPtr,
+> -			     size_t blkCnt, size_t byteCntAdd)
+> +void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
+> +			     size_t blk_cnt, size_t byte_cnt_add)
+>  	{ /* do it in C */
+>  	enum {
+>  		WCNT = SKEIN_256_STATE_WORDS
+> @@ -66,10 +66,11 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blkPtr,
+>  	u64  X0, X1, X2, X3; /* local copy of context vars, for speed */
+>  	u64  w[WCNT]; /* local copy of input block */
+>  #ifdef SKEIN_DEBUG
+> -	const u64 *Xptr[4]; /* use for debugging (help cc put Xn in regs) */
+> -	Xptr[0] = &X0;  Xptr[1] = &X1;  Xptr[2] = &X2;  Xptr[3] = &X3;
+> +	const u64 *X_ptr[4]; /* use for debugging (help cc put Xn in regs) */
+> +
+> +	X_ptr[0] = &X0;  X_ptr[1] = &X1;  X_ptr[2] = &X2;  X_ptr[3] = &X3;
+
+bunch of Xs in through here too ... is X special somehow?  maybe so
+because it is used in all that loop-unrolling gunk?
+
+jake
+
+-- 
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
