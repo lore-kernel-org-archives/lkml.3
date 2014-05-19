@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbaESNpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:45:14 -0400
-Received: from tex.lwn.net ([70.33.254.29]:55522 "EHLO vena.lwn.net"
+	id S1754461AbaESNrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:47:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46714 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331AbaESNpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:45:11 -0400
-Date: Mon, 19 May 2014 07:45:10 -0600
-From: Jake Edge <jake@lwn.net>
-To: Anton Saraev <antonysaraev@gmail.com>
-Cc: gregkh@linuxfoundation.org, jason@lakedaemon.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/06] staging: crypto: skein: rename files
-Message-ID: <20140519074510.74e622fd@chukar.edge2.net>
-In-Reply-To: <a5204985750d7adf9b20752f889fbf2a2147de94.1399675445.git.antonysaraev@gmail.com>
-References: <cover.1399675444.git.antonysaraev@gmail.com>
-	<abebc2187151826190d6f664acc654241b352ffa.1399675444.git.antonysaraev@gmail.com>
-	<dad2a43d54d03ba2b4fae9136331df060c48154c.1399675444.git.antonysaraev@gmail.com>
-	<cba3f6453b416ea04b03ad2d165f600e3e39f152.1399675444.git.antonysaraev@gmail.com>
-	<b4028782c333773298763d58e14753067c6ae745.1399675444.git.antonysaraev@gmail.com>
-	<2eac124c6a3815c72e91679c8cde729af712bb74.1399675445.git.antonysaraev@gmail.com>
-	<a5204985750d7adf9b20752f889fbf2a2147de94.1399675445.git.antonysaraev@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1751331AbaESNrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:47:37 -0400
+Message-ID: <537A0B7B.9030704@ti.com>
+Date: Mon, 19 May 2014 16:47:39 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <mturquette@linaro.org>,
+        <grant.likely@linaro.org>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <robh+dt@kernel.org>, <bcousson@baylibre.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 0/4] clk: Add clock driver for DRA7 ATL (Audio Tracking
+ Logic)
+References: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 12:09:59 +0400 Anton Saraev wrote:
+On 05/07/2014 01:20 PM, Peter Ujfalusi wrote:
+> Hi,
+>
+> Changes since v1:
+> - ATL binding documentation and driver has been separated.
+>
+> Audio Tracking Logic is designed to be used by HD Radio applications to
+> synchronize the audio output clocks to the baseband clock. ATL can be also
+> used to track errors between two reference clocks (BWS, AWS) and generate a modulated
+> clock output which averages to some desired frequency.
+> In essence ATL is generating a clock to be used by an audio codec and also
+> to be used by the SoC as MCLK.
+>
+> The series will correct atl related clock names, adds binding documentation and
+> corresponding driver for the ATL and integrates the ATL clock into the clock
+> tree.
+>
+> V1 of the ATL series:
+> https://lkml.org/lkml/2014/4/2/238
+>
+> Regards,
+> Peter
 
-> --- a/drivers/staging/skein/Makefile
-> +++ b/drivers/staging/skein/Makefile
-> @@ -4,10 +4,10 @@
->  subdir-ccflags-y := -I$(src)/include/
+Thanks, series queued for 3.16/ti-clk-drv.
 
-as part of the rearranging of files, I think you want to get rid of
-this include directory, move the files up to the main directory and
-include them as "skein.h" (rather than <skein.h>).
+-Tero
 
-Then this line can be removed from the Makefile.
+> ---
+> Peter Ujfalusi (4):
+>    ARM: dts: dra7xx-clocks: Correct name for atl clkin3 clock
+>    dt:/bindings: DRA7 ATL (Audio Tracking Logic) clock bindings
+>    clk: ti: Driver for DRA7 ATL (Audio Tracking Logic)
+>    ARM: DTS: dra7/dra7xx-clocks: ATL related changes
+>
+>   .../devicetree/bindings/clock/ti/dra7-atl.txt      |  97 +++++++
+>   arch/arm/boot/dts/dra7.dtsi                        |  11 +
+>   arch/arm/boot/dts/dra7xx-clocks.dtsi               |  38 +--
+>   drivers/clk/ti/Makefile                            |   3 +-
+>   drivers/clk/ti/clk-7xx.c                           |   2 +-
+>   drivers/clk/ti/clk-dra7-atl.c                      | 313 +++++++++++++++++++++
+>   include/dt-bindings/clk/ti-dra7-atl.h              |  40 +++
+>   7 files changed, 483 insertions(+), 21 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
+>   create mode 100644 drivers/clk/ti/clk-dra7-atl.c
+>   create mode 100644 include/dt-bindings/clk/ti-dra7-atl.h
+>
 
-> --- a/drivers/staging/skein/threefish1024Block.c
-> +++ b/drivers/staging/skein/threefish_1024_block.c
-> @@ -1,5 +1,5 @@
->  #include <linux/string.h>
-> -#include <threefishApi.h>
-> +#include <threefish_api.h>
-
-incidentally, none of the threefish_*_block.c files actually needs
-linux/string.h ... there may be other files where that's true too, it
-seems to have just gotten added everywhere ...
-
-jake
-
--- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
