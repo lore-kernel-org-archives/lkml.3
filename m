@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaESJL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:11:29 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:52996 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaESJL1 (ORCPT
+	id S1753574AbaESJL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:11:28 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58308 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaESJL1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 05:11:27 -0400
-Date: Mon, 19 May 2014 10:11:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Hans de Goede <hdegoede@redhat.com>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
- add register_supply_aliases()
-Message-ID: <20140519091121.GA4978@lee--X1>
-References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
- <1400420953-20705-2-git-send-email-hdegoede@redhat.com>
- <20140519074705.GE2339@lee--X1>
- <20140519074855.GP25203@opensource.wolfsonmicro.com>
- <5379BE43.7090809@redhat.com>
- <20140519082849.GQ25203@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140519082849.GQ25203@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53795080.1010007@lge.com>
+References: <5374532D.7030602@lge.com> <CAGsJ_4zN39jeHz574_r9y_hjdn1Acbkr9gQhE=1L-Fs82-vDkw@mail.gmail.com>
+ <53795080.1010007@lge.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 19 May 2014 17:11:06 +0800
+Message-ID: <CAGsJ_4wF7_BmTrWoxAu+NMVpsuN4oxJngBW0b2-4naXtwx5g5g@mail.gmail.com>
+Subject: Re: [RFC PATCH] ARM: cache-l2x0: add setup entry for l2 in non-secure mode
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        Gi-Oh Kim <gurugio@gmail.com>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >>> We cannot register supply alias in mfd_add_device before calling
-> > >>> platform_add_device, for 2 reasons:
-> > >>> 1) devm resources may not be registered before the (platform) drivers probe
-> > >>>    method runs
-> > >>> 2) The platform-dev's name must be set before registering the aliases which
-> > >>>    happens from platform_add_device.
-> > >>>
-> > >>> So stop registering supply aliases from mfd_add_device, and add a
-> > >>> mfd_register_supply_aliases helper functions for the cell's plaform driver
-> > >>> probe method to use.
-> > >>>
-> > >>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-> > >>> ---
-> > >>>  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
-> > >>>  include/linux/mfd/core.h |  6 +++++-
-> > >>>  2 files changed, 26 insertions(+), 17 deletions(-)
-> > >>
-> > >> Change looks reasonable to me, but I'd like to have Mark look over the
-> > >> changes.  If he's okay with them I think it's best for this set to go
-> > >> through the MFD tree as a whole.
-> > > 
-> > > This should already be fixed by this patch:
-> > > 
-> > > mfd: core: Don't use devres functions before device is added
-> > 
-> > Ah, I did not check next, yes that would fix *half* of the problem,
-> > the other half is that adding aliases uses dev->name (at least for
-> > logging, did not check if it is used for anything else) and that is
-> > not set yet before the device is added.
-> > 
-> > Basically the moral of the story is that it is a BAD idea to do
-> > anything with a device before it is added. So my proposed series
-> > would replace the "mfd: core: Don't use devres functions before device is added"
-> > patch.
-> 
-> Cool cool, since my patch doesn't seem to have made it in anyway
-> I guess lets proceed with your series then.
+2014-05-19 8:29 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
+>
+>
+> 2014-05-18 오후 10:13, Barry Song 쓴 글:
+>
+>> 2014-05-15 13:39 GMT+08:00 Gioh Kim <gioh.kim@lge.com>:
+>>>
+>>>
+>>> Hi,
+>>>
+>>> My board is using Trustzone and running kernel is non-secure mode.
+>>> But setup function of PL310 driver is only for secure mode kernel.
+>>>
+>>> What about adding an entry for non-secure mode setup function?
+>>>
+>>> I'm sorry for my poor code but I just wanna say what I need .
+>>
+>>
+>> Gioh,
+>>
+>> i don't really understand what is the user scenarios for this, if you
+>> are running linux in non-secure mode, your security-mode codes have
+>> enabled L2, so this makes non-secure linux have no chance to execute
+>> setup at all:
+>
+>
+> My platform runs linux kernel before L2 cache activation.
+> And the L2 cache is activated when the kernel sends command to Trustzone
+> firmware.
+> At this moment L2 is not activated. Linux should send command for L2
+> activation to Trustzone at the moment.
 
-The patch is applied locally, but the branch isn't pushed.  I'll
-replace that patch with this set - once Mark provides his feedback.
+i think you can send command to trustzone firmware to enable L2 at
+first, then make your Linux l2 driver run.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+-barry
