@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaESNKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:10:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59436 "EHLO
+	id S932331AbaESNKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:10:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59444 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaESNKh (ORCPT
+	with ESMTP id S1754473AbaESNKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:10:37 -0400
-Date: Mon, 19 May 2014 06:09:39 -0700
-From: tip-bot for Jason Low <tipbot@zytor.com>
-Message-ID: <tip-df6b728416e32fe7fe04e5c81ca9ca2d6416735a@git.kernel.org>
+	Mon, 19 May 2014 09:10:46 -0400
+Date: Mon, 19 May 2014 06:09:50 -0700
+From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
+Message-ID: <tip-6d0909086bb3ceb22a5a482f27874d7e4b1bdbd2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        preeti@linux.vnet.ibm.com, peterz@infradead.org, jason.low2@hp.com,
+        fweisbec@gmail.com, peterz@infradead.org, tkhai@yandex.ru,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de,
-        jason.low2@hp.com
-In-Reply-To: <1399596562.2200.7.camel@j-VirtualBox>
-References: <1399596562.2200.7.camel@j-VirtualBox>
+        fweisbec@gmail.com, peterz@infradead.org, tkhai@yandex.ru,
+        tglx@linutronix.de
+In-Reply-To: <20140508225830.2469.97461.stgit@localhost>
+References: <20140508225830.2469.97461.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Fix next_balance logic in rebalance_domains() and idle_balance()
-Git-Commit-ID: df6b728416e32fe7fe04e5c81ca9ca2d6416735a
+Subject: [tip:sched/core] sched,nohz: Change rq->
+ nr_running always using wrappers
+Git-Commit-ID: 6d0909086bb3ceb22a5a482f27874d7e4b1bdbd2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,196 +34,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  df6b728416e32fe7fe04e5c81ca9ca2d6416735a
-Gitweb:     http://git.kernel.org/tip/df6b728416e32fe7fe04e5c81ca9ca2d6416735a
-Author:     Jason Low <jason.low2@hp.com>
-AuthorDate: Thu, 8 May 2014 17:49:22 -0700
+Commit-ID:  6d0909086bb3ceb22a5a482f27874d7e4b1bdbd2
+Gitweb:     http://git.kernel.org/tip/6d0909086bb3ceb22a5a482f27874d7e4b1bdbd2
+Author:     Kirill Tkhai <tkhai@yandex.ru>
+AuthorDate: Fri, 9 May 2014 03:00:14 +0400
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 19 May 2014 22:02:41 +0900
 
-sched: Fix next_balance logic in rebalance_domains() and idle_balance()
+sched,nohz: Change rq->nr_running always using wrappers
 
-Currently, in idle_balance(), we update rq->next_balance when we pull_tasks.
-However, it is also important to update this in the !pulled_tasks case too.
+Sometimes nr_running may cross 2 but interrupt is not being
+sent to rq's cpu. In this case we don't reenable timer.
+Looks like, this may be a reason of rare unexpected effects,
+if nohz is enabled.
 
-When the CPU is "busy" (the CPU isn't idle), rq->next_balance gets computed
-using sd->busy_factor (so we increase the balance interval when the CPU is
-busy). However, when the CPU goes idle, rq->next_balance could still be set
-to a large value that was computed with the sd->busy_factor.
+Patch replaces all places of direct changing of nr_running
+and makes add_nr_running() caring about crossing border.
 
-Thus, we need to also update rq->next_balance in idle_balance() in the cases
-where !pulled_tasks too, so that rq->next_balance gets updated without taking
-the busy_factor into account when the CPU is about to go idle.
-
-This patch makes rq->next_balance get updated independently of whether or
-not we pulled_task. Also, we add logic to ensure that we always traverse
-at least 1 of the sched domains to get a proper next_balance value for
-updating rq->next_balance.
-
-Additionally, since load_balance() modifies the sd->balance_interval, we
-need to re-obtain the sched domain's interval after the call to
-load_balance() in rebalance_domains() before we update rq->next_balance.
-
-This patch adds and uses 2 new helper functions, update_next_balance() and
-get_sd_balance_interval() to update next_balance and obtain the sched
-domain's balance_interval.
-
-Cc: daniel.lezcano@linaro.org
-Cc: alex.shi@linaro.org
-Cc: efault@gmx.de
-Cc: vincent.guittot@linaro.org
-Cc: morten.rasmussen@arm.com
-Cc: aswin@hp.com
 Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1399596562.2200.7.camel@j-VirtualBox
+Link: http://lkml.kernel.org/r/20140508225830.2469.97461.stgit@localhost
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c | 69 +++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 46 insertions(+), 23 deletions(-)
+ kernel/sched/deadline.c  |  4 ++--
+ kernel/sched/fair.c      |  8 ++++----
+ kernel/sched/rt.c        |  4 ++--
+ kernel/sched/sched.h     | 12 +++++++-----
+ kernel/sched/stop_task.c |  4 ++--
+ 5 files changed, 17 insertions(+), 15 deletions(-)
 
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 800e99b..e0a04ae 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -741,7 +741,7 @@ void inc_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ 
+ 	WARN_ON(!dl_prio(prio));
+ 	dl_rq->dl_nr_running++;
+-	inc_nr_running(rq_of_dl_rq(dl_rq));
++	add_nr_running(rq_of_dl_rq(dl_rq), 1);
+ 
+ 	inc_dl_deadline(dl_rq, deadline);
+ 	inc_dl_migration(dl_se, dl_rq);
+@@ -755,7 +755,7 @@ void dec_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ 	WARN_ON(!dl_prio(prio));
+ 	WARN_ON(!dl_rq->dl_nr_running);
+ 	dl_rq->dl_nr_running--;
+-	dec_nr_running(rq_of_dl_rq(dl_rq));
++	sub_nr_running(rq_of_dl_rq(dl_rq), 1);
+ 
+ 	dec_dl_deadline(dl_rq, dl_se->deadline);
+ 	dec_dl_migration(dl_se, dl_rq);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 429164d..26ec668 100644
+index 26ec668..f7cac2b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -6672,17 +6672,44 @@ out:
- 	return ld_moved;
+@@ -3325,7 +3325,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	}
+ 
+ 	if (!se)
+-		rq->nr_running -= task_delta;
++		sub_nr_running(rq, task_delta);
+ 
+ 	cfs_rq->throttled = 1;
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+@@ -3376,7 +3376,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	}
+ 
+ 	if (!se)
+-		rq->nr_running += task_delta;
++		add_nr_running(rq, task_delta);
+ 
+ 	/* determine whether we need to wake up potentially idle cpu */
+ 	if (rq->curr == rq->idle && rq->cfs.nr_running)
+@@ -3908,7 +3908,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 
+ 	if (!se) {
+ 		update_rq_runnable_avg(rq, rq->nr_running);
+-		inc_nr_running(rq);
++		add_nr_running(rq, 1);
+ 	}
+ 	hrtick_update(rq);
+ }
+@@ -3968,7 +3968,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	if (!se) {
+-		dec_nr_running(rq);
++		sub_nr_running(rq, 1);
+ 		update_rq_runnable_avg(rq, 1);
+ 	}
+ 	hrtick_update(rq);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 7795e29..0ebfd7a 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -973,7 +973,7 @@ dequeue_top_rt_rq(struct rt_rq *rt_rq)
+ 
+ 	BUG_ON(!rq->nr_running);
+ 
+-	rq->nr_running -= rt_rq->rt_nr_running;
++	sub_nr_running(rq, rt_rq->rt_nr_running);
+ 	rt_rq->rt_queued = 0;
  }
  
-+static inline unsigned long
-+get_sd_balance_interval(struct sched_domain *sd, int cpu_busy)
-+{
-+	unsigned long interval = sd->balance_interval;
-+
-+	if (cpu_busy)
-+		interval *= sd->busy_factor;
-+
-+	/* scale ms to jiffies */
-+	interval = msecs_to_jiffies(interval);
-+	interval = clamp(interval, 1UL, max_load_balance_interval);
-+
-+	return interval;
-+}
-+
-+static inline void
-+update_next_balance(struct sched_domain *sd, int cpu_busy, unsigned long *next_balance)
-+{
-+	unsigned long interval, next;
-+
-+	interval = get_sd_balance_interval(sd, cpu_busy);
-+	next = sd->last_balance + interval;
-+
-+	if (time_after(*next_balance, next))
-+		*next_balance = next;
-+}
-+
- /*
-  * idle_balance is called by schedule() if this_cpu is about to become
-  * idle. Attempts to pull tasks from other CPUs.
-  */
- static int idle_balance(struct rq *this_rq)
+@@ -989,7 +989,7 @@ enqueue_top_rt_rq(struct rt_rq *rt_rq)
+ 	if (rt_rq_throttled(rt_rq) || !rt_rq->rt_nr_running)
+ 		return;
+ 
+-	rq->nr_running += rt_rq->rt_nr_running;
++	add_nr_running(rq, rt_rq->rt_nr_running);
+ 	rt_rq->rt_queued = 1;
+ }
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b2cbe81..600e229 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1206,12 +1206,14 @@ extern void update_idle_cpu_load(struct rq *this_rq);
+ 
+ extern void init_task_runnable_average(struct task_struct *p);
+ 
+-static inline void inc_nr_running(struct rq *rq)
++static inline void add_nr_running(struct rq *rq, unsigned count)
  {
-+	unsigned long next_balance = jiffies + HZ;
-+	int this_cpu = this_rq->cpu;
- 	struct sched_domain *sd;
- 	int pulled_task = 0;
--	unsigned long next_balance = jiffies + HZ;
- 	u64 curr_cost = 0;
--	int this_cpu = this_rq->cpu;
- 
- 	idle_enter_fair(this_rq);
- 
-@@ -6692,8 +6719,15 @@ static int idle_balance(struct rq *this_rq)
- 	 */
- 	this_rq->idle_stamp = rq_clock(this_rq);
- 
--	if (this_rq->avg_idle < sysctl_sched_migration_cost)
-+	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
-+		rcu_read_lock();
-+		sd = rcu_dereference_check_sched_domain(this_rq->sd);
-+		if (sd)
-+			update_next_balance(sd, 0, &next_balance);
-+		rcu_read_unlock();
+-	rq->nr_running++;
++	unsigned prev_nr = rq->nr_running;
 +
- 		goto out;
-+	}
++	rq->nr_running = prev_nr + count;
  
- 	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-@@ -6703,15 +6737,16 @@ static int idle_balance(struct rq *this_rq)
- 	update_blocked_averages(this_cpu);
- 	rcu_read_lock();
- 	for_each_domain(this_cpu, sd) {
--		unsigned long interval;
- 		int continue_balancing = 1;
- 		u64 t0, domain_cost;
+ #ifdef CONFIG_NO_HZ_FULL
+-	if (rq->nr_running == 2) {
++	if (prev_nr < 2 && rq->nr_running >= 2) {
+ 		if (tick_nohz_full_cpu(rq->cpu)) {
+ 			/* Order rq->nr_running write against the IPI */
+ 			smp_wmb();
+@@ -1221,9 +1223,9 @@ static inline void inc_nr_running(struct rq *rq)
+ #endif
+ }
  
- 		if (!(sd->flags & SD_LOAD_BALANCE))
- 			continue;
+-static inline void dec_nr_running(struct rq *rq)
++static inline void sub_nr_running(struct rq *rq, unsigned count)
+ {
+-	rq->nr_running--;
++	rq->nr_running -= count;
+ }
  
--		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost)
-+		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost) {
-+			update_next_balance(sd, 0, &next_balance);
- 			break;
-+		}
+ static inline void rq_last_tick_reset(struct rq *rq)
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index d6ce65d..bfe0eda 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -41,13 +41,13 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
+ static void
+ enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
+-	inc_nr_running(rq);
++	add_nr_running(rq, 1);
+ }
  
- 		if (sd->flags & SD_BALANCE_NEWIDLE) {
- 			t0 = sched_clock_cpu(this_cpu);
-@@ -6727,9 +6762,7 @@ static int idle_balance(struct rq *this_rq)
- 			curr_cost += domain_cost;
- 		}
+ static void
+ dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
+-	dec_nr_running(rq);
++	sub_nr_running(rq, 1);
+ }
  
--		interval = msecs_to_jiffies(sd->balance_interval);
--		if (time_after(next_balance, sd->last_balance + interval))
--			next_balance = sd->last_balance + interval;
-+		update_next_balance(sd, 0, &next_balance);
- 
- 		/*
- 		 * Stop searching for tasks to pull if there are
-@@ -6753,15 +6786,11 @@ static int idle_balance(struct rq *this_rq)
- 	if (this_rq->cfs.h_nr_running && !pulled_task)
- 		pulled_task = 1;
- 
--	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
--		/*
--		 * We are going idle. next_balance may be set based on
--		 * a busy processor. So reset next_balance.
--		 */
-+out:
-+	/* Move the next balance forward */
-+	if (time_after(this_rq->next_balance, next_balance))
- 		this_rq->next_balance = next_balance;
--	}
- 
--out:
- 	/* Is there a task of a high priority class? */
- 	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
- 		pulled_task = -1;
-@@ -7044,16 +7073,9 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
- 			break;
- 		}
- 
--		interval = sd->balance_interval;
--		if (idle != CPU_IDLE)
--			interval *= sd->busy_factor;
--
--		/* scale ms to jiffies */
--		interval = msecs_to_jiffies(interval);
--		interval = clamp(interval, 1UL, max_load_balance_interval);
-+		interval = get_sd_balance_interval(sd, idle != CPU_IDLE);
- 
- 		need_serialize = sd->flags & SD_SERIALIZE;
--
- 		if (need_serialize) {
- 			if (!spin_trylock(&balancing))
- 				goto out;
-@@ -7069,6 +7091,7 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
- 				idle = idle_cpu(cpu) ? CPU_IDLE : CPU_NOT_IDLE;
- 			}
- 			sd->last_balance = jiffies;
-+			interval = get_sd_balance_interval(sd, idle != CPU_IDLE);
- 		}
- 		if (need_serialize)
- 			spin_unlock(&balancing);
+ static void yield_task_stop(struct rq *rq)
