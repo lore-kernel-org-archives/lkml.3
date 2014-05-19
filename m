@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaESIG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:06:59 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54700 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaESIG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:06:56 -0400
+	id S1753216AbaESIIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:08:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54137 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474AbaESIII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:08:08 -0400
+Message-ID: <5379BC0C.3070401@ti.com>
+Date: Mon, 19 May 2014 11:08:44 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <87eh07bu60.fsf@rustcorp.com.au>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<87wqf1oi22.fsf@rustcorp.com.au>
-	<20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
-	<871tw9c6kt.fsf@rustcorp.com.au>
-	<53678ED6.4070502@infradead.org>
-	<87eh07bu60.fsf@rustcorp.com.au>
-Date: Mon, 19 May 2014 05:06:54 -0300
-Message-ID: <CA+ToGPFQ0Ku0odkAaU4FKDtGq0TK8hJ+HWvJr8J3wJVwYaO2mg@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Diego Viola <diego.viola@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Mike Turquette <mturquette@linaro.org>, <kernel-janitors@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH 3/13] CLK: TI: DRA7: make return of 0 explicit
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-4-git-send-email-Julia.Lawall@lip6.fr> <20140519074155.GO15585@mwanda>
+In-Reply-To: <20140519074155.GO15585@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-e.g. should be written as e.g. or e.g.,
+On 05/19/2014 10:41 AM, Dan Carpenter wrote:
+> This one does feel like a bug in the original code as you mention.  I
+> have added the TI devs to the CC list so they can help us.
 
-There's no need to add another colon ":" after the one that it's already there.
+Yes this is a bug, the dra7_apll_enable() should return some sort of 
+error code if the lock fails. EBUSY maybe?
 
-See, http://en.wikipedia.org/wiki/E.g.#e.g.
+-Tero
 
-Please fix that.
+>
+> regards,
+> dan carpenter
+>
+> On Mon, May 19, 2014 at 06:31:05AM +0200, Julia Lawall wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> Delete unnecessary local variable whose value is always 0 and that hides
+>> the fact that the result is always 0.
+>>
+>> Additionally dropped some unneeded braces in an affected if.
+>>
+>> A simplified version of the semantic patch that fixes this problem is as
+>> follows: (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @r exists@
+>> local idexpression ret;
+>> expression e;
+>> position p;
+>> @@
+>>
+>> -ret = 0;
+>> ... when != ret = e
+>> return
+>> - ret
+>> + 0
+>>    ;
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> ---
+>> Alternatively, is an error code wanted in either of the MAX_APLL_WAIT_TRIES
+>> cases?
+>>
+>>   drivers/clk/ti/apll.c |   13 +++++--------
+>>   1 file changed, 5 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
+>> index b986f61..659032a 100644
+>> --- a/drivers/clk/ti/apll.c
+>> +++ b/drivers/clk/ti/apll.c
+>> @@ -37,7 +37,7 @@
+>>   static int dra7_apll_enable(struct clk_hw *hw)
+>>   {
+>>   	struct clk_hw_omap *clk = to_clk_hw_omap(hw);
+>> -	int r = 0, i = 0;
+>> +	int i = 0;
+>>   	struct dpll_data *ad;
+>>   	const char *clk_name;
+>>   	u8 state = 1;
+>> @@ -55,7 +55,7 @@ static int dra7_apll_enable(struct clk_hw *hw)
+>>   	v = ti_clk_ll_ops->clk_readl(ad->idlest_reg);
+>>
+>>   	if ((v & ad->idlest_mask) == state)
+>> -		return r;
+>> +		return 0;
+>>
+>>   	v = ti_clk_ll_ops->clk_readl(ad->control_reg);
+>>   	v &= ~ad->enable_mask;
+>> @@ -74,17 +74,14 @@ static int dra7_apll_enable(struct clk_hw *hw)
+>>   		udelay(1);
+>>   	}
+>>
+>> -	if (i == MAX_APLL_WAIT_TRIES) {
+>> +	if (i == MAX_APLL_WAIT_TRIES)
+>>   		pr_warn("clock: %s failed transition to '%s'\n",
+>>   			clk_name, (state) ? "locked" : "bypassed");
+>> -	} else {
+>> +	else
+>>   		pr_debug("clock: %s transition to '%s' in %d loops\n",
+>>   			 clk_name, (state) ? "locked" : "bypassed", i);
+>>
+>> -		r = 0;
+>> -	}
+>> -
+>> -	return r;
+>> +	return 0;
+>>   }
+>>
+>>   static void dra7_apll_disable(struct clk_hw *hw)
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-
-Diego
-
-On Mon, May 5, 2014 at 9:57 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Randy Dunlap <rdunlap@infradead.org> writes:
->> All looks good to me except for 2 instances of "eg" which should be
->> "e.g." (just above and about 4 paragraphs below here).
->
-> Thanks, fixed:
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 56a4c2d0c741..a42b9dd6b46b 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -14,7 +14,7 @@ environment, others are passed as command line arguments to init.
->  Everything after "--" is passed as an argument to init.
->
->  Module parameters can be specified in two ways: via the kernel command
-> -line with a module name prefix, or via modprobe, eg:
-> +line with a module name prefix, or via modprobe, e.g.:
->
->         (kernel command line) usbcore.blinkenlights=1
->         (modprobe command line) modprobe usbcore blinkenlights=1
-> @@ -30,7 +30,7 @@ Hyphens (dashes) and underscores are equivalent in parameter names, so
->  can also be entered as
->         log-buf-len=1M print_fatal_signals=1
->
-> -Double-quotes can be used to protect spaces in values, eg:
-> +Double-quotes can be used to protect spaces in values, e.g.:
->         param="spaces in here"
->
->  This document may not be entirely up to date and comprehensive. The command
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
