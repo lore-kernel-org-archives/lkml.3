@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846AbaESUGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:06:20 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57296 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752292AbaESUGS (ORCPT
+	id S932928AbaESUGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:06:37 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:55907 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932787AbaESUGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:06:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, awilliam@redhat.com, lenb@kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
-Date: Mon, 19 May 2014 22:23:12 +0200
-Message-ID: <5242415.8zZ5y8lb01@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5379D28F.1020200@intel.com>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <20140519084944.GH2067@lahna.fi.intel.com> <5379D28F.1020200@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 May 2014 16:06:34 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: arm@kernel.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Huang Shijie <b32955@freescale.com>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH RESEND v2 0/3] bus: add Broadcom GISB bus arbiter timeout/error handler
+Date: Mon, 19 May 2014 13:05:58 -0700
+Message-Id: <1400529962-9612-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 19, 2014 05:44:47 PM Lan Tianyu wrote:
-> On 05/19/2014 04:49 PM, Mika Westerberg wrote:
-> > On Sat, May 17, 2014 at 07:48:34PM +0200, Wolfram Sang wrote:
-> >> On Tue, Apr 29, 2014 at 11:16:09AM +0300, Mika Westerberg wrote:
-> >>> On Mon, Apr 28, 2014 at 10:27:48PM +0800, Lan Tianyu wrote:
-> >>>> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
-> >>>> removing I2C ACPI operation region and ACPI AML code accessing.
-> >>>> So make i2c core built-in if CONFIG_I2C_ACPI is set.
-> >>>>
-> >>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> >>>> ---
-> >>>>   drivers/i2c/Kconfig  | 17 ++++++++++++++++-
-> >>>>   drivers/i2c/Makefile |  2 +-
-> >>>>   include/linux/i2c.h  |  2 +-
-> >>>>   3 files changed, 18 insertions(+), 3 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-> >>>> index 7b7ea32..c670d49 100644
-> >>>> --- a/drivers/i2c/Kconfig
-> >>>> +++ b/drivers/i2c/Kconfig
-> >>>> @@ -2,7 +2,9 @@
-> >>>>   # I2C subsystem configuration
-> >>>>   #
-> >>>>
-> >>>> -menuconfig I2C
-> >>>> +menu "I2C support"
-> >>>> +
-> >>>> +config I2C
-> >>>>   	tristate "I2C support"
-> >>>>   	select RT_MUTEXES
-> >>>>   	---help---
-> >>>> @@ -21,6 +23,17 @@ menuconfig I2C
-> >>>>   	  This I2C support can also be built as a module.  If so, the module
-> >>>>   	  will be called i2c-core.
-> >>>>
-> >>>> +config I2C_ACPI
-> >>>> +	bool "I2C ACPI support"
-> >>>> +	select I2C
-> >>>> +	depends on ACPI
-> >>>> +	default y
-> >>>> +	help
-> >>>> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
-> >>>> +	  provides I2C slave devices' information to enumerate these devices.
-> >>>> +	  This option also allows ACPI AML code to access I2C slave devices
-> >>>> +	  via I2C ACPI operation region to fulfill ACPI method.
-> >>>
-> >>> I would prefer something like:
-> >>>
-> >>> Say Y here if you want to enable ACPI I2C support. This includes support
-> >>> for automatic enumeration of I2C slave devices and support for ACPI I2C
-> >>> Operation Regions. Operation Regions allow firmware (BIOS) code to
-> >>> access I2C slave devices, such as smart batteries through an I2C host
-> >>> controller driver.
-> >>>
-> >>> But it is really up to you so,
-> >>>
-> >>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >>
-> >> How does this fit into the context of
-> >> 55e71edb81b2b45273e7b284cce13ff24bde846f ("i2c: move ACPI helpers into
-> >> the core")?
-> >
-> > With that commit we moved ACPI code to live inside I2C module (given
-> > that it was compiled as a module). However, you still can remove that
-> > module from userspace.
-> >
-> > With this patch we make sure that the I2C core can't be removed if you
-> > have ACPI enabled. This prevents the potential race.
-> >
-> 
-> Yes, these are the two patches' purposes. Thanks Mika's explanation. If you 
-> like, I can merge them into one patch.
+Hi all,
 
-I think that would be easier to follow.
+This patch adds support for the Broadcom GISB bus arbiter timeout/error handler.
+GISB is a custom and proprietary bus used in the Broadcom Set Top Box devices
+exclusively. The bus arbiter offers the possibly to decode faulting masters as
+well as masters that are timing out on the bus.
 
-Thanks!
+V2 addresses some comments made by Arnd, and widens the audience by posting
+on linux-arm-kernel as well.
+
+These patches should be merged via the 'arm-soc' tree. I am resending those
+such that every mailing-list has them in copy.
+
+Thank you!
+
+Florian Fainelli (3):
+  bus: add Broadcom GISB arbiter bus timeout/error handler
+  Documentation: devicetree: add Broadcom GISB arbiter bindings
+  Documentation: sysfs: add Broadcom GISB arbiter sysfs properties
+
+ .../ABI/testing/sysfs-platform-brcmstb-gisb-arb    |   8 +
+ .../devicetree/bindings/bus/brcm,gisb-arb.txt      |  30 +++
+ drivers/bus/Kconfig                                |  11 +-
+ drivers/bus/Makefile                               |   1 +
+ drivers/bus/brcmstb_gisb.c                         | 289 +++++++++++++++++++++
+ 5 files changed, 338 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-brcmstb-gisb-arb
+ create mode 100644 Documentation/devicetree/bindings/bus/brcm,gisb-arb.txt
+ create mode 100644 drivers/bus/brcmstb_gisb.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
