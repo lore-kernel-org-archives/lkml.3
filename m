@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaESXIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:08:13 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60237 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751103AbaESXIM (ORCPT
+	id S1751673AbaESXJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:09:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50498 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaESXJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:08:12 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>
-Subject: Re: [PATCH] cpufreq: Tegra: drop wrapper around tegra_update_cpu_speed()
-Date: Tue, 20 May 2014 01:25:06 +0200
-Message-ID: <7390169.l9Y1Z45IAv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponB_wiJZ9jq+JrJGxe7Y-447FpEjSZRZ+snXpxmOP=Erg@mail.gmail.com>
-References: <a38df05b91198f393b1c4b78f39110c6bece3627.1400133049.git.viresh.kumar@linaro.org> <53750B27.4020708@wwwdotorg.org> <CAKohponB_wiJZ9jq+JrJGxe7Y-447FpEjSZRZ+snXpxmOP=Erg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 May 2014 19:09:47 -0400
+Date: Mon, 19 May 2014 16:09:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH V2 mmots] fs/hfsplus/wrapper.c: replace shift loop by
+ fls
+Message-Id: <20140519160946.84e79c832dfc4db0fbae573b@linux-foundation.org>
+In-Reply-To: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
+References: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 16, 2014 11:36:48 AM Viresh Kumar wrote:
-> On 16 May 2014 00:14, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > On 05/14/2014 11:51 PM, Viresh Kumar wrote:
-> >> Tegra has implemented an unnecessary wrapper over tegra_update_cpu_speed(), i.e.
-> >> tegra_target(), which wasn't doing anything apart of calling
-> >> tegra_update_cpu_speed(). Get rid of that and use tegra_target() directly.
-> >
-> > I think it used to do something until some refactoring happened? Anyway,
-> 
-> Yep..
-> 
-> > Acked-by: Stephen Warren <swarren@nvidia.com>
+On Fri, 16 May 2014 22:38:15 +0200 Fabian Frederick <fabf@skynet.be> wrote:
 
-Patch queued up for 3.16, thanks!
+> Replace while blocksize;shift by fls -1
+> 
+> Suggested-By: Joe Perches <joe@perches.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> v2: rebased on top of mmots
+>     compiles without including bitops
+> 
+>  fs/hfsplus/wrapper.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
+> index 284c90f..8e8cf50d 100644
+> --- a/fs/hfsplus/wrapper.c
+> +++ b/fs/hfsplus/wrapper.c
+> @@ -231,9 +231,7 @@ reread:
+>  	if (blocksize < HFSPLUS_SECTOR_SIZE || ((blocksize - 1) & blocksize))
+>  		goto out_free_backup_vhdr;
+>  	sbi->alloc_blksz = blocksize;
+> -	sbi->alloc_blksz_shift = 0;
+> -	while ((blocksize >>= 1) != 0)
+> -		sbi->alloc_blksz_shift++;
+> +	sbi->alloc_blksz_shift = fls(blocksize) - 1;
+>  	blocksize = min_t(u32, sbi->alloc_blksz, PAGE_SIZE);
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+fls() always makes my brain hurt.  ilog() is nicer?
