@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965026AbaESQ0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:26:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28332 "EHLO mga01.intel.com"
+	id S965016AbaESQZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:25:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62335 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375AbaESQ0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:26:08 -0400
+	id S932440AbaESQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:25:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="534297455"
+   d="scan'208";a="534297300"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,17 +17,22 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch Part1 V2 29/29] x86, irq: clean up unused IOAPIC interface
-Date: Tue, 20 May 2014 00:23:13 +0800
-Message-Id: <1400516594-11544-30-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        sfi-devel@simplefirmware.org
+Subject: [Patch Part1 V2 27/29] x86, irq, SFI: use common irqdomain map interface to program IOAPIC pins
+Date: Tue, 20 May 2014 00:23:11 +0800
+Message-Id: <1400516594-11544-28-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,152 +40,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have converted all x86 platforms to use the common irqdomain map
-interface. There's no caller of io_apic_set_pci_routing(),
-setup_IO_APIC_irq_extra() and io_apic_setup_irq_pin_once() any more,
-so kill them.
+Refine SFI to use common irqdomain map interface to program IOAPIC pins,
+so we can unify the callsite to progam IOAPIC pins.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/io_apic.h |    9 ------
- arch/x86/kernel/apic/io_apic.c |   70 ----------------------------------------
- 2 files changed, 79 deletions(-)
+ arch/x86/pci/intel_mid_pci.c      |   17 +++++++----------
+ arch/x86/platform/intel-mid/sfi.c |   18 +++++++++---------
+ arch/x86/platform/sfi/sfi.c       |    4 +++-
+ 3 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index d71da9cc30ae..ff6f253e049f 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -144,9 +144,6 @@ extern int ioapic_dynirq_base;
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 84b9d672843d..f6f3de857baa 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -208,23 +208,20 @@ static int pci_write(struct pci_bus *bus, unsigned int devfn, int where,
  
- struct io_apic_irq_attr;
- struct irq_cfg;
--extern int io_apic_set_pci_routing(struct device *dev, int irq,
--		 struct io_apic_irq_attr *irq_attr);
--extern void setup_IO_APIC_irq_extra(u32 gsi);
- extern void ioapic_insert_resources(void);
- 
- extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
-@@ -158,8 +155,6 @@ extern void native_compose_msi_msg(struct pci_dev *pdev,
- 				   unsigned int irq, unsigned int dest,
- 				   struct msi_msg *msg, u8 hpet_id);
- extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
--extern int io_apic_setup_irq_pin_once(unsigned int irq, int node,
--				      struct io_apic_irq_attr *attr);
- 
- extern int save_ioapic_entries(void);
- extern void mask_ioapic_entries(void);
-@@ -234,10 +229,6 @@ static inline int mp_map_pin_to_irq(int ioapic, int pin, int idx,
- 	return -1;
- }
- 
--struct io_apic_irq_attr;
--static inline int io_apic_set_pci_routing(struct device *dev, int irq,
--		 struct io_apic_irq_attr *irq_attr) { return 0; }
--
- static inline int save_ioapic_entries(void)
+ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
  {
- 	return -ENOMEM;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6c838a2ecac0..898f1c766e9b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -111,7 +111,6 @@ static struct ioapic {
- 	struct irq_domain *irqdomain;
- 	ioapic_create_domain_fn irqdomain_cb;
- 	void *irqdomain_arg;
--	DECLARE_BITMAP(pin_programmed, MP_MAX_IOAPIC_PIN + 1);
- } ioapics[MAX_IO_APICS];
+-	u8 pin;
+-	struct io_apic_irq_attr irq_attr;
+-
+-	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++	int ioapic, polarity;
  
- #define mpc_ioapic_ver(ioapic_idx)	ioapics[ioapic_idx].mp_config.apicver
-@@ -1497,38 +1496,6 @@ static void __init setup_IO_APIC_irqs(void)
+ 	/*
+ 	 * MRST only have IOAPIC, the PCI irq lines are 1:1 mapped to
+ 	 * IOAPIC RTE entries, so we just enable RTE for the device.
+ 	 */
+-	irq_attr.ioapic = mp_find_ioapic(dev->irq);
+-	irq_attr.ioapic_pin = dev->irq;
+-	irq_attr.trigger = 1; /* level */
++	ioapic = mp_find_ioapic(dev->irq);
+ 	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER)
+-		irq_attr.polarity = 0; /* active high */
++		polarity = 0; /* active high */
+ 	else
+-		irq_attr.polarity = 1; /* active low */
+-	io_apic_set_pci_routing(&dev->dev, dev->irq, &irq_attr);
++		polarity = 1; /* active low */
++	if (mp_set_pin_attr(ioapic, dev->irq, 1, polarity, dev_to_node(dev)))
++		return -EBUSY;
++	mp_map_gsi_to_irq(dev->irq, 1);
+ 
+ 	return 0;
  }
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 994c40bd7cb7..3fe5c23ba1c5 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -434,6 +434,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 	struct devs_id *dev = NULL;
+ 	int num, i;
+ 	int ioapic;
++	int polarity;
+ 	struct io_apic_irq_attr irq_attr;
  
- /*
-- * for the gsi that is not in first ioapic
-- * but could not use acpi_register_gsi()
-- * like some special sci in IBM x3330
-- */
--void setup_IO_APIC_irq_extra(u32 gsi)
--{
--	int ioapic_idx = 0, pin, idx, irq, node = cpu_to_node(0);
--	struct io_apic_irq_attr attr;
--
--	/*
--	 * Convert 'gsi' to 'ioapic.pin'.
--	 */
--	ioapic_idx = mp_find_ioapic(gsi);
--	if (ioapic_idx < 0)
--		return;
--
--	pin = mp_find_ioapic_pin(ioapic_idx, gsi);
--	idx = find_irq_entry(ioapic_idx, pin, mp_INT);
--	if (idx == -1)
--		return;
--
--	irq = pin_2_irq(idx, ioapic_idx, pin, IOAPIC_MAP_ALLOC);
--	if (irq < 0 || mp_init_irq_at_boot(ioapic_idx, irq))
--		return;
--
--	set_io_apic_irq_attr(&attr, ioapic_idx, pin, irq_trigger(idx),
--			     irq_polarity(idx));
--
--	io_apic_setup_irq_pin_once(irq, node, &attr);
--}
--
--/*
-  * Set up the timer pin, possibly with the 8259A-master behind.
-  */
- static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
-@@ -3415,27 +3382,6 @@ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
- 	return ret;
- }
+ 	sb = (struct sfi_table_simple *)table;
+@@ -450,30 +451,29 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 			 */
+ 			ioapic = mp_find_ioapic(irq);
+ 			if (ioapic >= 0) {
+-				irq_attr.ioapic = ioapic;
+-				irq_attr.ioapic_pin = irq;
+-				irq_attr.trigger = 1;
+ 				if (intel_mid_identify_cpu() ==
+ 						INTEL_MID_CPU_CHIP_TANGIER) {
+ 					if (!strncmp(pentry->name,
+ 							"r69001-ts-i2c", 13))
+ 						/* active low */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else if (!strncmp(pentry->name,
+ 							"synaptics_3202", 14))
+ 						/* active low */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else if (irq == 41)
+ 						/* fast_int_1 */
+-						irq_attr.polarity = 1;
++						polarity = 1;
+ 					else
+ 						/* active high */
+-						irq_attr.polarity = 0;
++						polarity = 0;
+ 				} else {
+ 					/* PNW and CLV go with active low */
+-					irq_attr.polarity = 1;
++					polarity = 1;
+ 				}
+-				io_apic_set_pci_routing(NULL, irq, &irq_attr);
++				if (mp_set_pin_attr(ioapic, irq, 1, polarity, NUMA_NO_NODE))
++					return -EBUSY;
++				mp_map_gsi_to_irq(dev->irq, 1);
+ 			}
+ 		} else {
+ 			irq = 0; /* No irq */
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index 2c3522dfa05d..91e5046efae9 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -71,7 +71,9 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
+ #endif /* CONFIG_X86_LOCAL_APIC */
  
--int io_apic_setup_irq_pin_once(unsigned int irq, int node,
--			       struct io_apic_irq_attr *attr)
--{
--	unsigned int ioapic_idx = attr->ioapic, pin = attr->ioapic_pin;
--	int ret;
--	struct IO_APIC_route_entry orig_entry;
--
--	/* Avoid redundant programming */
--	if (test_bit(pin, ioapics[ioapic_idx].pin_programmed)) {
--		pr_debug("Pin %d-%d already programmed\n", mpc_ioapic_id(ioapic_idx), pin);
--		orig_entry = ioapic_read_entry(attr->ioapic, pin);
--		if (attr->trigger == orig_entry.trigger && attr->polarity == orig_entry.polarity)
--			return 0;
--		return -EBUSY;
--	}
--	ret = io_apic_setup_irq_pin(irq, node, attr);
--	if (!ret)
--		set_bit(pin, ioapics[ioapic_idx].pin_programmed);
--	return ret;
--}
--
- static int __init io_apic_get_redir_entries(int ioapic)
- {
- 	union IO_APIC_reg_01	reg_01;
-@@ -3482,22 +3428,6 @@ int __init arch_probe_nr_irqs(void)
- 	return NR_IRQS_LEGACY;
- }
+ #ifdef CONFIG_X86_IO_APIC
+-static struct irq_domain_ops sfi_ioapic_irqdomain_ops;
++static struct irq_domain_ops sfi_ioapic_irqdomain_ops = {
++	.map = mp_irqdomain_map,
++};
  
--int io_apic_set_pci_routing(struct device *dev, int irq,
--			    struct io_apic_irq_attr *irq_attr)
--{
--	int node;
--
--	if (!IO_APIC_IRQ(irq)) {
--		apic_printk(APIC_QUIET,KERN_ERR "IOAPIC[%d]: Invalid reference to IRQ 0\n",
--			    irq_attr->ioapic);
--		return -EINVAL;
--	}
--
--	node = dev ? dev_to_node(dev) : cpu_to_node(0);
--
--	return io_apic_setup_irq_pin_once(irq, node, irq_attr);
--}
--
- #ifdef CONFIG_X86_32
- static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ static struct irq_domain *sfi_ioapic_create_irqdomain(int ioapic, void *arg)
  {
 -- 
 1.7.10.4
