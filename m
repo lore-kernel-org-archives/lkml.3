@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaESMej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:34:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33161 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118AbaESMef (ORCPT
+	id S1754093AbaESMgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:36:11 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35226 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099AbaESMgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:34:35 -0400
-Date: Mon, 19 May 2014 13:34:16 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>, alsa-devel@alsa-project.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        sbkim73@samsung.com, Randy Dunlap <rdunlap@infradead.org>,
-        Mike Turquette <mturquette@linaro.org>
-Message-ID: <20140519123416.GV12304@sirena.org.uk>
-References: <20140429222915.GU15125@sirena.org.uk>
- <5360E5E7.8090807@linaro.org>
- <20140430180314.GA3245@sirena.org.uk>
- <53623004.5010805@linaro.org>
- <20140501141510.GW3245@sirena.org.uk>
- <CAD=FV=Wa4CovkxBng0SkUUAryiFqa=m63tro1Yv1jRgp4e95aw@mail.gmail.com>
- <20140501164003.GC3245@sirena.org.uk>
- <53632568.5020200@linaro.org>
- <20140502165643.GQ3245@sirena.org.uk>
- <5379F3CE.8030404@linaro.org>
+	Mon, 19 May 2014 08:36:10 -0400
+Message-ID: <5379FAA5.10404@ahsoftware.de>
+Date: Mon, 19 May 2014 14:35:49 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tPs2xF8bwC43uhQg"
-Content-Disposition: inline
-In-Reply-To: <5379F3CE.8030404@linaro.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 1/9] dt: deps: dtc: Automatically add new property
+ 'dependencies' which contains a list of referenced phandles
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <1399913280-6915-2-git-send-email-holler@ahsoftware.de> <53775334.3030704@gmail.com>
+In-Reply-To: <53775334.3030704@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 17.05.2014 14:16, schrieb Tomasz Figa:
 
---tPs2xF8bwC43uhQg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> References to phandles of parent or child nodes will not be added to this
+>> property, because this information is already contained in the blob (in the
+>> form of the tree itself).
+>
+> I wonder if we shouldn't be including them too for consistency related
+> reasons, so we have all the necessary information in one place.
+> References to child nodes are great recipes for cycles, though...
+>
+> No strong opinion, though, just an idea.
 
-On Mon, May 19, 2014 at 05:36:38PM +0530, Tushar Behera wrote:
+As said, they are already in the tree itself. And they are already 
+included in the graph (these are the black edges), so they just don't 
+appear in the property dependencies.
 
-> Instead of setting the parent clock, setting the desired rate on
-> XCLKOUT works for audio playback.
+>
+>>
+>> No dependencies to disabled nodes will be added.
+>>
+>
+> Same here. IMHO it might be wise to let the parsing entity (e.g. kernel)
+> decide whether to ignore a dependency to disabled node or not.
+>
+> Otherwise, I like the simplicity of compile-time dependency list
+> creation. Quite a nice work.
 
-> Will it be okay to do a 'clk_set_rate(mclk, 24000000)' in sound card
-> driver or should we wait for Sylwester's patch to get merged?
+Thanks.
 
-Yes, that's fine - going further back into the clock tree isn't.
+What's still questionable about the patches for dtc is if dependencies 
+to devices and not just drivers should be included in the new property 
+dependencies too. My current assumption is that all devices belonging to 
+one and the same driver don't have dependencies between each other. In 
+other words the order in which devices will be attached to one and the 
+same driver isn't important. If that assumption is correct it would be 
+possible to just attach all devices belonging to a driver after the 
+driver was loaded (also I haven't that done in my patches).
 
---tPs2xF8bwC43uhQg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And thinking about that again, I think I was wrong and doing so have 
+been some kind of evil premature optimization I did in order to spare a 
+few dependencies/edges. But changing this can done by removing a few 
+lines in the code for dtc (patch 1).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Regards,
 
-iQIcBAEBAgAGBQJTefpFAAoJELSic+t+oim9/+YQAJhXKgmK6oOpUbyw6+TnbLCI
-mnWRcMbtfMTR5aItorrVqgQ8n39/4XBrJ3z9nTYIfG59VYdoqHYYFqTxMnlNkcYT
-pg4vapEM/o09Z198vixZRJkbcHFDakIUE16Tf6P1MFqM6UYyAReNOznIU3m32zkX
-XI6k8RHsZV4ILIjBhFw4zYaSCOREZp1GpWYj/ulHNe08ID3nVhLuaSmXDnMdZV0f
-wsrjRtSl+G3XJC9Mxk6ID5HuMsc1lvAXQhyzf/AJzdz97ayZeptqt9IzgjbyFA2H
-f/pCf8B0jEiVjggRQ3HqLH44nFYnzbVN1vGyK6G8tfLJOEhlAwImkQeGQ4FB4C9o
-MOgfQYSS4RRohTW5XtSRO8YLM1mqTwJN87uEbEkb5IVP9IY14c/6jSlaMJaB1tya
-Wm8eetSaU4pAXUVPASNvf0rambyNgTdwxAa97VOavSdYbHMB9ru09LQR44WqEohk
-yBsoCH7REYpz7snvNRLCwvGgaHZ7nou6b+oj5rKFW4Iqnk2VyMMcq1JoLGBce0bB
-NhQ+xhX+wcpQcQipYf8js69tSZRVoznt9prhw+1BEEHGSYHm727Ebwx0aj/s15FC
-TiFI0kgbDrXB6F7DFjz06MXyXhK2MrZ96sEUwAGYA0MF7MZjWfVy347YhJJTYgXv
-YVknhzt+uVSGZDRCroQJ
-=UuJR
------END PGP SIGNATURE-----
+Alexander Holler
 
---tPs2xF8bwC43uhQg--
