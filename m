@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaESXuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:50:11 -0400
-Received: from smtprelay0083.hostedemail.com ([216.40.44.83]:45765 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750894AbaESXuJ (ORCPT
+	id S1752188AbaESXvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:51:48 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:56453
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751074AbaESXvr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:50:09 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3866:3867:3871:3872:4321:5007:6119:7652:7901:7903:10004:10400:10848:10967:11232:11658:11914:12049:12517:12519:12740:13069:13311:13357:13548,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cork47_3b531f738fd2f
-X-Filterd-Recvd-Size: 1872
-Message-ID: <1400543405.19786.4.camel@joe-AO725>
-Subject: Re: [PATCH V2 mmots] fs/hfsplus/wrapper.c: replace shift loop by fls
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 19 May 2014 16:50:05 -0700
-In-Reply-To: <20140519164037.ec6438686bd29efeebffa610@linux-foundation.org>
-References: <20140516223815.88ffae2289f969381f176fdc@skynet.be>
-	 <20140519160946.84e79c832dfc4db0fbae573b@linux-foundation.org>
-	 <1400541748.14238.58.camel@joe-AO725>
-	 <20140519164037.ec6438686bd29efeebffa610@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 19:51:47 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
+ dereferencing error.
+Thread-Topic: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
+ dereferencing error.
+Thread-Index: AQHPczh2O7W9mxz9mEKdCDMbGttfZ5tIFL8AgAB+ptA=
+Date: Mon, 19 May 2014 23:51:26 +0000
+Message-ID: <a9148f4a1b3e4bab928365e455edf1cc@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1400483625-29312-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140519161548.GZ12304@sirena.org.uk>
+In-Reply-To: <20140519161548.GZ12304@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 021670B4D2
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(24454002)(51704005)(199002)(189002)(164054003)(79102001)(81542001)(83072002)(85852003)(81342001)(46102001)(66066001)(74502001)(80022001)(31966008)(74662001)(64706001)(20776003)(77982001)(4396001)(83322001)(33646001)(99396002)(86362001)(99286001)(92566001)(21056001)(76576001)(76482001)(74316001)(77096999)(54356999)(101416001)(76176999)(50986999)(2656002)(87936001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 16:40 -0700, Andrew Morton wrote:
-> On Mon, 19 May 2014 16:22:28 -0700 Joe Perches <joe@perches.com> wrote:
+> Subject: Re: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
+> dereferencing error.
 > 
-> > On Mon, 2014-05-19 at 16:09 -0700, Andrew Morton wrote:
-> > > On Fri, 16 May 2014 22:38:15 +0200 Fabian Frederick <fabf@skynet.be> wrote:
-> > > > Replace while blocksize;shift by fls -1
-> > []
-> > > fls() always makes my brain hurt.  ilog() is nicer?
-> > Maybe take an aspirin?
-> > ilog2(n) is effectively fls(n) - 1
-> Precisely.  ilog2() means "integer log 2".  Whereas fls() is some weird
-> low-level bit-scanning thing.
+> On Mon, May 19, 2014 at 03:13:45PM +0800, Xiubo Li wrote:
+> > Since we cannot make sure the 'chip->num_regs' will always be none zero
+> > from the users, and then if 'chip->num_regs' equals to zero by mistake
+> > or other reasons, the kzalloc() will return ZERO_SIZE_PTR, which equals
+> > to ((void *)16).
+> >
+> > So this patch fix this with just checking the 'chip->num_regs' before
+> > calling kzalloc().
+> 
+> Where is the actual dereference that's being protected against here?
+> 
 
-<shrug>  find-last[bit]-set is pretty obvious to me.
-ilog2(n) makes me think just a little more.
+Such as:
+        d->mask_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
+                              GFP_KERNEL);
+        if (!d->mask_buf)
+                goto err_alloc;
 
-> What we want at this callsite is "integer log 2".  So use it.
+And then:
+        d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
 
-Same thing.  Same ratio of use too.
 
-$ git grep -w fls | wc -l
-457
-$ git grep -w ilog2 | wc -l
-391
 
+> > This also sorts the header files in alphabetical order at the same time.
+> 
+> No, don't do things like this.  It just makes things harder to review.
+
+Okay, I'll follow your advice.
+
+Thanks,
+
+BRs
+Xiubo
 
