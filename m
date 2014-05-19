@@ -1,128 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964773AbaESNNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:13:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45118 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932229AbaESNNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:13:43 -0400
-Message-ID: <537A037E.8000800@ti.com>
-Date: Mon, 19 May 2014 08:13:34 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932427AbaESNNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:13:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59555 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaESNNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:13:31 -0400
+Date: Mon, 19 May 2014 06:12:46 -0700
+From: tip-bot for Waiman Long <tipbot@zytor.com>
+Message-ID: <tip-gac1nnl3wvs2ij87zv2xkdzq@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] locking: Introduce qrwlock
+Git-Commit-ID: d72a06b92025a46a2ad519428f8b6f40ec4dadff
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Inderpal Singh <inderpal.s@samsung.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <rjw@rjwysocki.net>, <pavel@ucw.cz>, <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] PM / OPP: Implement free_opp_table function
-References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
-In-Reply-To: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 04:09 AM, Inderpal Singh wrote:
-> At the driver unloading time the associated opp table may need
-> to be deleted. Otherwise it amounts to memory leak. The existing
-> OPP library does not have provison to do so.
-> 
-> Hence this patch implements the function to free the opp table.
-> 
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> ---
->  drivers/base/power/opp.c | 41 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/pm_opp.h   |  6 ++++++
->  2 files changed, 47 insertions(+)
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index d9e376a..d45ffd5 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -654,4 +654,45 @@ int of_init_opp_table(struct device *dev)
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(of_init_opp_table);
-> +
-> +/**
-> + * dev_pm_opp_free_opp_table() - free the opp table
-> + * @dev:	device for which we do this operation
-> + *
-> + * Free up the allocated opp table
-> + *
-> + * Locking: The internal device_opp and opp structures are RCU protected.
-> + * Hence this function internally uses RCU updater strategy with mutex locks to
-> + * keep the integrity of the internal data structures. Callers should ensure
-> + * that this function is *NOT* called under RCU protection or in contexts where
-> + * mutex locking or synchronize_rcu() blocking calls cannot be used.
-> + */
-> +void dev_pm_opp_free_opp_table(struct device *dev)
-> +{
-> +	struct device_opp *dev_opp = NULL;
-> +	struct dev_pm_opp *opp;
-> +
-if (!dev)
-	return;
+Commit-ID:  d72a06b92025a46a2ad519428f8b6f40ec4dadff
+Gitweb:     http://git.kernel.org/tip/d72a06b92025a46a2ad519428f8b6f40ec4dadff
+Author:     Waiman Long <Waiman.Long@hp.com>
+AuthorDate: Mon, 3 Feb 2014 13:18:49 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 19 May 2014 22:06:01 +0900
 
-> +	/* Hold our list modification lock here */
-> +	mutex_lock(&dev_opp_list_lock);
-> +
-> +	/* Check for existing list for 'dev' */
-> +	dev_opp = find_device_opp(dev);
-> +	if (IS_ERR(dev_opp)) {
-> +		mutex_unlock(&dev_opp_list_lock);
-> +		return;
-> +	}
-> +
-> +	while (!list_empty(&dev_opp->opp_list)) {
-> +		opp = list_entry_rcu(dev_opp->opp_list.next,
-> +					struct dev_pm_opp, node);
-> +		list_del_rcu(&opp->node);
-> +		kfree_rcu(opp, head);
-> +	}
+locking: Introduce qrwlock
 
-How about the OPP notifiers? should'nt we add a new event
-OPP_EVENT_REMOVE?
+This rwlock uses the arch_spin_lock_t as a waitqueue, and assuming the
+arch_spin_lock_t is a fair lock (ticket,mcs etc..) the resulting
+rwlock is a fair lock.
 
-To maintain non-dt behavior coherency, should'nt we rather add a
-opp_remove or an opp_del function?
+It fits in the same 8 bytes as the regular rwlock_t by folding the
+reader and writer count into a single integer, using the remaining 4
+bytes for the arch_spinlock_t.
 
-> +
-> +	list_del_rcu(&dev_opp->node);
-> +	mutex_unlock(&dev_opp_list_lock);
-> +	synchronize_rcu();
-> +	kfree(dev_opp);
-> +}
-> +EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
->  #endif
-> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
-> index 0330217..3c29620 100644
-> --- a/include/linux/pm_opp.h
-> +++ b/include/linux/pm_opp.h
-> @@ -50,6 +50,8 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
->  int dev_pm_opp_disable(struct device *dev, unsigned long freq);
->  
->  struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
-> +
-> +void dev_pm_opp_free_opp_table(struct device *dev);
->  #else
->  static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
->  {
-> @@ -105,6 +107,10 @@ static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
->  {
->  	return ERR_PTR(-EINVAL);
->  }
-> +
-> +void dev_pm_opp_free_opp_table(struct device *dev)
-> +{
-> +}
->  #endif		/* CONFIG_PM_OPP */
->  
->  #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
-> 
+Architectures that can single-copy adress bytes can optimize
+queue_write_unlock() with a 0 write to the LSB (the write count).
 
+Performance as measured by Davidlohr Bueso (rwlock_t -> qrwlock_t):
 
--- 
-Regards,
-Nishanth Menon
++--------------+-------------+---------------+
+|   Workload   |   #users    |     delta     |
++--------------+-------------+---------------+
+| alltests     | > 1400      | -4.83%        |
+| custom       | 0-100,> 100 | +1.43%,-1.57% |
+| high_systime | > 1000      | -2.61         |
+| shared       | all         | +0.32         |
++--------------+-------------+---------------+
+
+http://www.stgolabs.net/qrwlock-stuff/aim7-results-vs-rwsem_optsin/ 
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+[peterz: near complete rewrite]
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-gac1nnl3wvs2ij87zv2xkdzq@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/asm-generic/qrwlock.h       | 166 ++++++++++++++++++++++++++++++++++++
+ include/asm-generic/qrwlock_types.h |  21 +++++
+ kernel/Kconfig.locks                |   7 ++
+ kernel/locking/Makefile             |   1 +
+ kernel/locking/qrwlock.c            | 133 +++++++++++++++++++++++++++++
+ 5 files changed, 328 insertions(+)
+
+diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
+new file mode 100644
+index 0000000..6383d54
+--- /dev/null
++++ b/include/asm-generic/qrwlock.h
+@@ -0,0 +1,166 @@
++/*
++ * Queue read/write lock
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#ifndef __ASM_GENERIC_QRWLOCK_H
++#define __ASM_GENERIC_QRWLOCK_H
++
++#include <linux/atomic.h>
++#include <asm/barrier.h>
++#include <asm/processor.h>
++
++#include <asm-generic/qrwlock_types.h>
++
++/*
++ * Writer states & reader shift and bias
++ */
++#define	_QW_WAITING	1		/* A writer is waiting	   */
++#define	_QW_LOCKED	0xff		/* A writer holds the lock */
++#define	_QW_WMASK	0xff		/* Writer mask		   */
++#define	_QR_SHIFT	8		/* Reader count shift	   */
++#define _QR_BIAS	(1U << _QR_SHIFT)
++
++/*
++ * External function declarations
++ */
++extern void queue_read_lock_slowpath(struct qrwlock *lock);
++extern void queue_write_lock_slowpath(struct qrwlock *lock);
++
++/**
++ * queue_read_can_lock- would read_trylock() succeed?
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline int queue_read_can_lock(struct qrwlock *lock)
++{
++	return !(atomic_read(&lock->cnts) & _QW_WMASK);
++}
++
++/**
++ * queue_write_can_lock- would write_trylock() succeed?
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline int queue_write_can_lock(struct qrwlock *lock)
++{
++	return !atomic_read(&lock->cnts);
++}
++
++/**
++ * queue_read_trylock - try to acquire read lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ * Return: 1 if lock acquired, 0 if failed
++ */
++static inline int queue_read_trylock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_read(&lock->cnts);
++	if (likely(!(cnts & _QW_WMASK))) {
++		cnts = (u32)atomic_add_return(_QR_BIAS, &lock->cnts);
++		if (likely(!(cnts & _QW_WMASK)))
++			return 1;
++		atomic_sub(_QR_BIAS, &lock->cnts);
++	}
++	return 0;
++}
++
++/**
++ * queue_write_trylock - try to acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ * Return: 1 if lock acquired, 0 if failed
++ */
++static inline int queue_write_trylock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_read(&lock->cnts);
++	if (unlikely(cnts))
++		return 0;
++
++	return likely(atomic_cmpxchg(&lock->cnts,
++				     cnts, cnts | _QW_LOCKED) == cnts);
++}
++/**
++ * queue_read_lock - acquire read lock of a queue rwlock
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline void queue_read_lock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_add_return(_QR_BIAS, &lock->cnts);
++	if (likely(!(cnts & _QW_WMASK)))
++		return;
++
++	/* The slowpath will decrement the reader count, if necessary. */
++	queue_read_lock_slowpath(lock);
++}
++
++/**
++ * queue_write_lock - acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_write_lock(struct qrwlock *lock)
++{
++	/* Optimize for the unfair lock case where the fair flag is 0. */
++	if (atomic_cmpxchg(&lock->cnts, 0, _QW_LOCKED) == 0)
++		return;
++
++	queue_write_lock_slowpath(lock);
++}
++
++/**
++ * queue_read_unlock - release read lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_read_unlock(struct qrwlock *lock)
++{
++	/*
++	 * Atomically decrement the reader count
++	 */
++	smp_mb__before_atomic();
++	atomic_sub(_QR_BIAS, &lock->cnts);
++}
++
++#ifndef queue_write_unlock
++/**
++ * queue_write_unlock - release write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_write_unlock(struct qrwlock *lock)
++{
++	/*
++	 * If the writer field is atomic, it can be cleared directly.
++	 * Otherwise, an atomic subtraction will be used to clear it.
++	 */
++	smp_mb__before_atomic();
++	atomic_sub(_QW_LOCKED, &lock->cnts);
++}
++#endif
++
++/*
++ * Remapping rwlock architecture specific functions to the corresponding
++ * queue rwlock functions.
++ */
++#define arch_read_can_lock(l)	queue_read_can_lock(l)
++#define arch_write_can_lock(l)	queue_write_can_lock(l)
++#define arch_read_lock(l)	queue_read_lock(l)
++#define arch_write_lock(l)	queue_write_lock(l)
++#define arch_read_trylock(l)	queue_read_trylock(l)
++#define arch_write_trylock(l)	queue_write_trylock(l)
++#define arch_read_unlock(l)	queue_read_unlock(l)
++#define arch_write_unlock(l)	queue_write_unlock(l)
++
++#endif /* __ASM_GENERIC_QRWLOCK_H */
+diff --git a/include/asm-generic/qrwlock_types.h b/include/asm-generic/qrwlock_types.h
+new file mode 100644
+index 0000000..0e7854a
+--- /dev/null
++++ b/include/asm-generic/qrwlock_types.h
+@@ -0,0 +1,21 @@
++#ifndef __ASM_GENERIC_QRWLOCK_TYPES_H
++#define __ASM_GENERIC_QRWLOCK_TYPES_H
++
++#include <linux/types.h>
++#include <linux/spinlock_types.h>
++
++/*
++ * The queue read/write lock data structure
++ */
++
++typedef struct qrwlock {
++	atomic_t		cnts;
++	arch_spinlock_t		lock;
++} arch_rwlock_t;
++
++#define	__ARCH_RW_LOCK_UNLOCKED {		\
++	.cnts = ATOMIC_INIT(0),			\
++	.lock = __ARCH_SPIN_LOCK_UNLOCKED,	\
++}
++
++#endif /* __ASM_GENERIC_QRWLOCK_TYPES_H */
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index d2b32ac..35536d9 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -223,3 +223,10 @@ endif
+ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+ 	depends on SMP && !DEBUG_MUTEXES
++
++config ARCH_USE_QUEUE_RWLOCK
++	bool
++
++config QUEUE_RWLOCK
++	def_bool y if ARCH_USE_QUEUE_RWLOCK
++	depends on SMP
+diff --git a/kernel/locking/Makefile b/kernel/locking/Makefile
+index b8bdcd4..8541bfd 100644
+--- a/kernel/locking/Makefile
++++ b/kernel/locking/Makefile
+@@ -24,4 +24,5 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
+ obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem-xadd.o
+ obj-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
++obj-$(CONFIG_QUEUE_RWLOCK) += qrwlock.o
+ obj-$(CONFIG_LOCK_TORTURE_TEST) += locktorture.o
+diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
+new file mode 100644
+index 0000000..fb5b8ac
+--- /dev/null
++++ b/kernel/locking/qrwlock.c
+@@ -0,0 +1,133 @@
++/*
++ * Queue read/write lock
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#include <linux/smp.h>
++#include <linux/bug.h>
++#include <linux/cpumask.h>
++#include <linux/percpu.h>
++#include <linux/hardirq.h>
++#include <linux/mutex.h>
++#include <asm/qrwlock.h>
++
++/**
++ * rspin_until_writer_unlock - inc reader count & spin until writer is gone
++ * @lock  : Pointer to queue rwlock structure
++ * @writer: Current queue rwlock writer status byte
++ *
++ * In interrupt context or at the head of the queue, the reader will just
++ * increment the reader count & wait until the writer releases the lock.
++ */
++static __always_inline void
++rspin_until_writer_unlock(struct qrwlock *lock, u32 cnts)
++{
++	while ((cnts & _QW_WMASK) == _QW_LOCKED) {
++		arch_mutex_cpu_relax();
++		cnts = smp_load_acquire((u32 *)&lock->cnts);
++	}
++}
++
++/**
++ * queue_read_lock_slowpath - acquire read lock of a queue rwlock
++ * @lock: Pointer to queue rwlock structure
++ */
++void queue_read_lock_slowpath(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	/*
++	 * Readers come here when they cannot get the lock without waiting
++	 */
++	if (unlikely(in_interrupt())) {
++		/*
++		 * Readers in interrupt context will spin until the lock is
++		 * available without waiting in the queue.
++		 */
++		cnts = smp_load_acquire((u32 *)&lock->cnts);
++		rspin_until_writer_unlock(lock, cnts);
++		return;
++	}
++	atomic_sub(_QR_BIAS, &lock->cnts);
++
++	/*
++	 * Put the reader into the wait queue
++	 */
++	arch_spin_lock(&lock->lock);
++
++	/*
++	 * At the head of the wait queue now, wait until the writer state
++	 * goes to 0 and then try to increment the reader count and get
++	 * the lock. It is possible that an incoming writer may steal the
++	 * lock in the interim, so it is necessary to check the writer byte
++	 * to make sure that the write lock isn't taken.
++	 */
++	while (atomic_read(&lock->cnts) & _QW_WMASK)
++		arch_mutex_cpu_relax();
++
++	cnts = atomic_add_return(_QR_BIAS, &lock->cnts) - _QR_BIAS;
++	rspin_until_writer_unlock(lock, cnts);
++
++	/*
++	 * Signal the next one in queue to become queue head
++	 */
++	arch_spin_unlock(&lock->lock);
++}
++EXPORT_SYMBOL(queue_read_lock_slowpath);
++
++/**
++ * queue_write_lock_slowpath - acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++void queue_write_lock_slowpath(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	/* Put the writer into the wait queue */
++	arch_spin_lock(&lock->lock);
++
++	/* Try to acquire the lock directly if no reader is present */
++	if (!atomic_read(&lock->cnts) &&
++	    (atomic_cmpxchg(&lock->cnts, 0, _QW_LOCKED) == 0))
++		goto unlock;
++
++	/*
++	 * Set the waiting flag to notify readers that a writer is pending,
++	 * or wait for a previous writer to go away.
++	 */
++	for (;;) {
++		cnts = atomic_read(&lock->cnts);
++		if (!(cnts & _QW_WMASK) &&
++		    (atomic_cmpxchg(&lock->cnts, cnts,
++				    cnts | _QW_WAITING) == cnts))
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++
++	/* When no more readers, set the locked flag */
++	for (;;) {
++		cnts = atomic_read(&lock->cnts);
++		if ((cnts == _QW_WAITING) &&
++		    (atomic_cmpxchg(&lock->cnts, _QW_WAITING,
++				    _QW_LOCKED) == _QW_WAITING))
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++unlock:
++	arch_spin_unlock(&lock->lock);
++}
++EXPORT_SYMBOL(queue_write_lock_slowpath);
