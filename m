@@ -1,99 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaESPvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:51:13 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:42434 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbaESPvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:51:11 -0400
-Date: Mon, 19 May 2014 16:51:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [STLinux Kernel] [PATCH 3/4] ARM: DT: STi: Add DT node for
- MiPHY365x
-Message-ID: <20140519155106.GR4978@lee--X1>
-References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org>
- <1398756095-32542-4-git-send-email-lee.jones@linaro.org>
- <537A265E.8080407@st.com>
+	id S1754776AbaESPxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:53:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34445 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544AbaESPxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:53:11 -0400
+Date: Mon, 19 May 2014 17:53:08 +0200
+From: Jan Kara <jack@suse.cz>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] fanotify: handling of errors when reading events
+Message-ID: <20140519155308.GB3427@quack.suse.cz>
+References: <1400402236-18556-1-git-send-email-xypron.glpk@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537A265E.8080407@st.com>
+In-Reply-To: <1400402236-18556-1-git-send-email-xypron.glpk@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> >devices. It has 2 ports which it can use for either; both SATA, both
-> >PCIe or one of each in any configuration.
-> >
-> >Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> >Acked-by: Mark Rutland <mark.rutland@arm.com>
-> >Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >---
-> >  arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
-> >  arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
-> >  arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
-> >  3 files changed, 42 insertions(+)
-> >  create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
-> >
-> >diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
-> >new file mode 100644
-> >index 0000000..23fdaf7
-> >--- /dev/null
-> >+++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
-> >@@ -0,0 +1,22 @@
-> >+/*
-> >+ * Copyright (C) 2014 STMicroelectronics Limited.
-> >+ * Author: Lee Jones <lee.jones@linaro.org>
-> >+ *
-> >+ * This program is free software; you can redistribute it and/or modify
-> >+ * it under the terms of the GNU General Public License version 2 as
-> >+ * publishhed by the Free Software Foundation.
-> >+ */
-> >+/dts-v1/;
-> >+#include "stih416.dtsi"
-> >+#include "stih41x-b2020.dtsi"
-> >+/ {
-> >+        model = "STiH416 B2020 REV-E";
-> >+	compatible = "st,stih416-b2020", "st,stih416";
-> >+
-> >+	soc {
-> >+		miphy365x_phy: miphy365x@fe382000 {
-> >+			st,pcie-tx-pol-inv;
-> >+			st,sata-gen = <3>;
-> >+		};
-> >+	};
-> >+};
-> Shouldn't this new board being added in a separate patch?
+On Sun 18-05-14 10:37:16, Heinrich Schuchardt wrote:
+> When reading from the fanotify file descriptor read() calls
+> fanotify_read().
+> fanotify_read will copies events available into the user buffer
+> until either the fanotify event queue is empty or the user buffer
+> is full.
+> 
+> If an error occurs for the first event copied, fanotify_read
+> returns an error code.
+> If an error code occurs for the second or any further event copied
+> fanotify_read returns the concatenated length of all events
+> successfully copied.
+> 
+> In the second case the userland has no chance to determine that an
+> error has occured. This error has been described in the fanotify.7
+> manpage.
+> 
+> Jan Kara suggested in
+> https://lkml.org/lkml/2014/4/24/182
+> to change the logic to a peek-check-pop sequence.
+> 
+> This logic is implementd with the appended patch:
+> 
+> If an event is successfully copied to user space, it is removed from the queue.
+> If an error occurs for the first event read, the event is removed form the
+> queue and and the error code is returned.
+> If an error occurs for the second or a later event read, the event is left on
+> the queue and the length of the prior events is returned to the user.
+> A later call to fanotify_read will see this event as first
+> event and will provide the error to the user.
+  Thanks for the patch! Have you tried testing this patch with lockdep
+enabled? I'm slightly nervous about running copy_event_to_user() with
+notification_mutex held - that does a lot of things including opening a
+file so holding notification_mutex while doing that might have interesting
+locking implications...
 
-I certainly can do that, but I don't think that it's necessary?
+								Honza
 
-> >diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
-> >index 276f28d..172f222 100644
-> >--- a/arch/arm/boot/dts/stih416-b2020.dts
-> >+++ b/arch/arm/boot/dts/stih416-b2020.dts
-> >@@ -13,4 +13,10 @@
-> >  	model = "STiH416 B2020";
-> >  	compatible = "st,stih416", "st,stih416-b2020";
-> >
-> >+	soc {
-> >+		miphy365x_phy: miphy365x@fe382000 {
-> >+			st,pcie-tx-pol-inv;
-> >+			st,sata-gen = <3>;
-> >+		};
-> >+	};
-> >  };
-> ...
-
+> 
+> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> ---
+>  fs/notify/fanotify/fanotify_user.c | 56 +++++++++++++++++++++++++++++++++++---
+>  1 file changed, 52 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index 9163a6e..da8e235 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -38,7 +38,7 @@ struct kmem_cache *fanotify_perm_event_cachep __read_mostly;
+>   *
+>   * Called with the group->notification_mutex held.
+>   */
+> -static struct fsnotify_event *get_one_event(struct fsnotify_group *group,
+> +static struct fsnotify_event *peek_one_event(struct fsnotify_group *group,
+>  					    size_t count)
+>  {
+>  	BUG_ON(!mutex_is_locked(&group->notification_mutex));
+> @@ -51,9 +51,28 @@ static struct fsnotify_event *get_one_event(struct fsnotify_group *group,
+>  	if (FAN_EVENT_METADATA_LEN > count)
+>  		return ERR_PTR(-EINVAL);
+>  
+> +	return fsnotify_peek_notify_event(group);
+> +}
+> +
+> +/*
+> + * Remove fsnotify notification event from queue.
+> + * Returns -EINVAL if queue is empty.
+> + *
+> + * Called with the group->notification_mutex held.
+> + */
+> +static int pop_one_event(struct fsnotify_group *group)
+> +{
+> +	BUG_ON(!mutex_is_locked(&group->notification_mutex));
+> +
+> +	pr_debug("%s: group=%p\n", __func__, group);
+> +
+> +	if (fsnotify_notify_queue_is_empty(group))
+> +		return -EINVAL;
+> +
+>  	/* held the notification_mutex the whole time, so this is the
+>  	 * same event we peeked above */
+> -	return fsnotify_remove_notify_event(group);
+> +	fsnotify_remove_notify_event(group);
+> +	return 0;
+>  }
+>  
+>  static int create_fd(struct fsnotify_group *group,
+> @@ -257,15 +276,24 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+>  		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+>  
+>  		mutex_lock(&group->notification_mutex);
+> -		kevent = get_one_event(group, count);
+> -		mutex_unlock(&group->notification_mutex);
+> +		kevent = peek_one_event(group, count);
+>  
+> +		/*
+> +		 * There is not enough space left in the user buffer.
+> +		 * The event will be left on the queue to be fetched by a later
+> +		 * call to fanotify_read.
+> +		 */
+>  		if (IS_ERR(kevent)) {
+> +			mutex_unlock(&group->notification_mutex);
+>  			ret = PTR_ERR(kevent);
+>  			break;
+>  		}
+>  
+> +		/*
+> +		 * The queue is empty.
+> +		 */
+>  		if (!kevent) {
+> +			mutex_unlock(&group->notification_mutex);
+>  			ret = -EAGAIN;
+>  			if (file->f_flags & O_NONBLOCK)
+>  				break;
+> @@ -280,7 +308,27 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+>  			continue;
+>  		}
+>  
+> +		/*
+> +		 * An event was successfully peeked from the queue.
+> +		 * Copy it to user space.
+> +		 */
+>  		ret = copy_event_to_user(group, kevent, buf);
+> +
+> +		/*
+> +		 * If an event was successfully copied to user space, it can be
+> +		 * removed from the queue.
+> +		 * If an error occured for the first event read, the error code
+> +		 * can be returned. The event has to be removed from the queue.
+> +		 * If an error occured for the second or a later event read,
+> +		 * the event will be left on the queue and the length of the
+> +		 * prior events will be returned to the user.
+> +		 * A later call to fanotify_read will see this event as first
+> +		 * event and will provide the error to the user.
+> +		 */
+> +		if (ret >= 0 || start == buf)
+> +			pop_one_event(group);
+> +		mutex_unlock(&group->notification_mutex);
+> +
+>  		/*
+>  		 * Permission events get queued to wait for response.  Other
+>  		 * events can be destroyed now.
+> -- 
+> 2.0.0.rc0
+> 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
