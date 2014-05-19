@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaESJJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:09:26 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:60432 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437AbaESJJQ (ORCPT
+	id S1753887AbaESJL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:11:29 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:52996 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaESJL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:09:16 -0400
-Message-ID: <5379CA47.4020900@linaro.org>
-Date: Mon, 19 May 2014 11:09:27 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 05:11:27 -0400
+Date: Mon, 19 May 2014 10:11:21 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
+ add register_supply_aliases()
+Message-ID: <20140519091121.GA4978@lee--X1>
+References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com>
+ <1400420953-20705-2-git-send-email-hdegoede@redhat.com>
+ <20140519074705.GE2339@lee--X1>
+ <20140519074855.GP25203@opensource.wolfsonmicro.com>
+ <5379BE43.7090809@redhat.com>
+ <20140519082849.GQ25203@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/2] clocksource: fix type confusion for clocksource_mmio_readX_Y
-References: <1398219120-23029-1-git-send-email-Li.Xiubo@freescale.com> <7dd1dc731dd24e15a170ef95aeee2a2e@BY2PR03MB505.namprd03.prod.outlook.com>
-In-Reply-To: <7dd1dc731dd24e15a170ef95aeee2a2e@BY2PR03MB505.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=GB2312
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140519082849.GQ25203@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 04:35 AM, Li.Xiubo@freescale.com wrote:
-> Hi,
+> > >>> We cannot register supply alias in mfd_add_device before calling
+> > >>> platform_add_device, for 2 reasons:
+> > >>> 1) devm resources may not be registered before the (platform) drivers probe
+> > >>>    method runs
+> > >>> 2) The platform-dev's name must be set before registering the aliases which
+> > >>>    happens from platform_add_device.
+> > >>>
+> > >>> So stop registering supply aliases from mfd_add_device, and add a
+> > >>> mfd_register_supply_aliases helper functions for the cell's plaform driver
+> > >>> probe method to use.
+> > >>>
+> > >>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> > >>> ---
+> > >>>  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
+> > >>>  include/linux/mfd/core.h |  6 +++++-
+> > >>>  2 files changed, 26 insertions(+), 17 deletions(-)
+> > >>
+> > >> Change looks reasonable to me, but I'd like to have Mark look over the
+> > >> changes.  If he's okay with them I think it's best for this set to go
+> > >> through the MFD tree as a whole.
+> > > 
+> > > This should already be fixed by this patch:
+> > > 
+> > > mfd: core: Don't use devres functions before device is added
+> > 
+> > Ah, I did not check next, yes that would fix *half* of the problem,
+> > the other half is that adding aliases uses dev->name (at least for
+> > logging, did not check if it is used for anything else) and that is
+> > not set yet before the device is added.
+> > 
+> > Basically the moral of the story is that it is a BAD idea to do
+> > anything with a device before it is added. So my proposed series
+> > would replace the "mfd: core: Don't use devres functions before device is added"
+> > patch.
 > 
-> I'd like to know the status about this patch series...
-> :£©
+> Cool cool, since my patch doesn't seem to have made it in anyway
+> I guess lets proceed with your series then.
 
-I think the patches are ok. I have them in my queue for 3.16.
-
->> -----Original Message-----
->> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
->> Sent: Wednesday, April 23, 2014 10:12 AM
->> To: daniel.lezcano@linaro.org; tglx@linutronix.de; linux-
->> kernel@vger.kernel.org
->> Cc: Xiubo Li-B47053
->> Subject: [PATCHv2 1/2] clocksource: fix type confusion for
->> clocksource_mmio_readX_Y
->>
->> The types' definations are:
->>     o  cycle_t       -> u64
->>     o  readl_relaxed -> u32
->>     o  readw_relaxed -> u16
->>
->> So let clocksource_mmio_readX_Ys return a cast to cycle_t, though
->> this maybe look reduntant sometimes, it make sense and they will be
->> more readable and less confusion...
->>
->> This patch clarifies the functions type and fix it.
->>
->> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
->> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>   drivers/clocksource/mmio.c | 8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
->> index c0e2512..19a6b3f 100644
->> --- a/drivers/clocksource/mmio.c
->> +++ b/drivers/clocksource/mmio.c
->> @@ -22,22 +22,22 @@ static inline struct clocksource_mmio
->> *to_mmio_clksrc(struct clocksource *c)
->>
->>   cycle_t clocksource_mmio_readl_up(struct clocksource *c)
->>   {
->> -	return readl_relaxed(to_mmio_clksrc(c)->reg);
->> +	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
->>   }
->>
->>   cycle_t clocksource_mmio_readl_down(struct clocksource *c)
->>   {
->> -	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
->> +	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
->>   }
->>
->>   cycle_t clocksource_mmio_readw_up(struct clocksource *c)
->>   {
->> -	return readw_relaxed(to_mmio_clksrc(c)->reg);
->> +	return (cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
->>   }
->>
->>   cycle_t clocksource_mmio_readw_down(struct clocksource *c)
->>   {
->> -	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
->> +	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
->>   }
->>
->>   /**
->> --
->> 1.8.4
-> 
-
+The patch is applied locally, but the branch isn't pushed.  I'll
+replace that patch with this set - once Mark provides his feedback.
 
 -- 
- <http://www.linaro.org/> Linaro.org ©¦ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
