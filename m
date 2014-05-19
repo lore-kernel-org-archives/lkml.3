@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaESOjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:39:35 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:24020 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaESOje (ORCPT
+	id S1754902AbaESOkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:40:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33237 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794AbaESOkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:39:34 -0400
-X-Nat-Received: from [202.181.97.72]:12094 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1400510344.18648
-To: dchinner@redhat.com, glommer@openvz.org, mgorman@suse.de, airlied@linux.ie
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201405192339.JIJ04144.FHQFVFOtOSLJOM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 19 May 2014 23:39:03 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 19052014 #7951212, status: clean
+	Mon, 19 May 2014 10:40:06 -0400
+Date: Mon, 19 May 2014 15:39:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140519143949.GW12304@sirena.org.uk>
+References: <1400497954-1012-1-git-send-email-alban.bedel@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gI747uL8Y9q6BT2f"
+Content-Disposition: inline
+In-Reply-To: <1400497954-1012-1-git-send-email-alban.bedel@avionic-design.de>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Fix the init of DT defined fixed
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e314a1a1583e585d062dfc30c8aad8bf5380510b Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 19 May 2014 18:43:21 +0900
-Subject: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
 
-I can observe that RHEL7 environment stalls with 100% CPU usage when a
-certain type of memory pressure is given. While the shrinker functions
-are called by shrink_slab() before the OOM killer is triggered, the stall
-lasts for many minutes.
+--gI747uL8Y9q6BT2f
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I added debug printk() and observed that many threads are blocked for more
-than 10 seconds at ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan()
-functions. Since the kswapd can call these functions later, the current
-thread can return from these functions as soon as chosen by the OOM killer.
+On Mon, May 19, 2014 at 01:12:34PM +0200, Alban Bedel wrote:
 
-This patch changes "mutex_lock();" to "if (mutex_lock_killable()) return ...;"
-so that any threads can promptly give up. (By the way, as far as I tested,
-changing to "if (!mutex_trylock()) return ...;" likely shortens the duration
-of stall. Maybe we don't need to wait for mutex if someone is already calling
-these functions.)
+> When a regulator is defined using DT and it has a single voltage the
+> regulator init always tries to apply this voltage. However this fails
+> if the regulator isn't settable. So skip this step if the regulator
+> doesn't provides any set method.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+No, this means we'll just ignore the voltage someone tried to set.  A
+bigger question is why someone is trying to configure the voltage of a
+fixed voltage regulator in DT...
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 1b79bf0..f75dab8 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1012,7 +1012,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	if (list_empty(&_manager->pools))
- 		return SHRINK_STOP;
- 
--	mutex_lock(&_manager->lock);
-+	if (mutex_lock_killable(&_manager->lock))
-+		return SHRINK_STOP;
- 	pool_offset = pool_offset % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
-@@ -1043,7 +1044,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
- 	struct device_pools *p;
- 	unsigned long count = 0;
- 
--	mutex_lock(&_manager->lock);
-+	if (mutex_lock_killable(&_manager->lock))
-+		return 0;
- 	list_for_each_entry(p, &_manager->pools, pools)
- 		count += p->pool->npages_free;
- 	mutex_unlock(&_manager->lock);
--- 
-1.8.3.1
+--gI747uL8Y9q6BT2f
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTeheyAAoJELSic+t+oim9k18P/i6bqmzrwjFuGf2U0U7tLzwX
+XE/XH5+1IUfbd5TIxbGxeUTiFbGAfb29at3xLFWmskHI5touy0R9yNZRE1A3LpEr
+FkIxdJhgpOq4MIX3U61rCVEQXhzyU+XpfK5m5jy3unKDUOzviq2e1P/jb0Ou5woG
+x2swsLIPvkm+vlHR3PDV3GJ3WXcw9JL7RxgaPRYcW8KHNePsY5Mi/aPNUe8SHvHo
+gHErQ5j/GmoLG5Q9VW5gG/uRK/VEfoWecdt9vcN9AyDLAh9FhN2dmpYWdG3UKzuj
+iq7bwKN8DM1piAvEaYyD9ZWS1EE46TmG+Khhn+6YBHVtGH5zf1pbA2vjpjzloqZQ
+E4iZ3U+7NmkoDpHGeT8ULcTjr8EZu14B1JVSCbvTuCPCmvs9gOqeFqq9vq98h1G5
+G0NNCJGBHJeW1lVlEsTrg9Gw4dP/Y8kQ3vo7eEAcrGzZGCjPH3gVR8heK0f/YdB+
+pUthp3HMoN6Je2100AoBEhe/Af3neKA0+YRan/4dR+e5PAUdxds4ekgwfFGkDMQ3
+Eg5n/LDiVLqT0pjfW3NzegVLX6G2Su4h5lJNT82gxAUruimJ4ojpDtx6/trdF5yQ
+H5k0zYHTWd9d5C76DNdiiM3AmQvhaaMp9M2mGn8ngNKhLk2c3J5WLzkJ86Y+8/rO
+IhdZkS/gDSttq6iLymQe
+=EMd6
+-----END PGP SIGNATURE-----
+
+--gI747uL8Y9q6BT2f--
