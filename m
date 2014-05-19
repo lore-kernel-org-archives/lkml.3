@@ -1,245 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaESI1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:27:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56134 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaESI1F (ORCPT
+	id S1753653AbaESI1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:27:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35072 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638AbaESI1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:27:05 -0400
-Message-ID: <5379C046.5070900@ti.com>
-Date: Mon, 19 May 2014 11:26:46 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 19 May 2014 04:27:38 -0400
+Message-ID: <5379C071.4090100@parallels.com>
+Date: Mon, 19 May 2014 12:27:29 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v6 5/7] Input: pixcir_i2c_ts: support upto 5 fingers and hardware
- provided tracking IDs
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-6-git-send-email-rogerq@ti.com>
-In-Reply-To: <1399374372-29123-6-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mm: NULL ptr deref handling mmaping of special mappings
+References: <53739201.6080604@oracle.com> <20140514132312.573e5d3cf99276c3f0b82980@linux-foundation.org> <5373D509.7090207@oracle.com> <20140514140305.7683c1c2f1e4fb0a63085a2a@linux-foundation.org> <5373DBE4.6030907@oracle.com> <20140514143124.52c598a2ba8e2539ee76558c@linux-foundation.org> <CALCETrXQOPBOBOgE_snjdmJM7zi34Ei8-MUA-U-YVrwubz4sOQ@mail.gmail.com> <20140514221140.GF28328@moon> <CALCETrUc2CpTEeo=NjLGxXQWHn-HG3uYUo-L3aOU-yVjVx3PGg@mail.gmail.com> <5374281F.6020807@parallels.com> <CALCETrWw7tS2Lpnb1OxgZpBwHvOSbDk2zBVtUTJEp5eooYUyhA@mail.gmail.com>
+In-Reply-To: <CALCETrWw7tS2Lpnb1OxgZpBwHvOSbDk2zBVtUTJEp5eooYUyhA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On 05/15/2014 11:42 PM, Andy Lutomirski wrote:
+> On May 14, 2014 8:36 PM, "Pavel Emelyanov" <xemul@parallels.com> wrote:
+>>
+>> On 05/15/2014 02:23 AM, Andy Lutomirski wrote:
+>>> On Wed, May 14, 2014 at 3:11 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>>>> On Wed, May 14, 2014 at 02:33:54PM -0700, Andy Lutomirski wrote:
+>>>>> On Wed, May 14, 2014 at 2:31 PM, Andrew Morton
+>>>>> <akpm@linux-foundation.org> wrote:
+>>>>>> On Wed, 14 May 2014 17:11:00 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>>>>
+>>>>>>>> In my linux-next all that code got deleted by Andy's "x86, vdso:
+>>>>>>>> Reimplement vdso.so preparation in build-time C" anyway.  What kernel
+>>>>>>>> were you looking at?
+>>>>>>>
+>>>>>>> Deleted? It appears in today's -next. arch/x86/vdso/vma.c:124 .
+>>>>>>>
+>>>>>>> I don't see Andy's patch removing that code either.
+>>>>>>
+>>>>>> ah, OK, it got moved from arch/x86/vdso/vdso32-setup.c into
+>>>>>> arch/x86/vdso/vma.c.
+>>>>>>
+>>>>>> Maybe you managed to take a fault against the symbol area between the
+>>>>>> _install_special_mapping() and the remap_pfn_range() call, but mmap_sem
+>>>>>> should prevent that.
+>>>>>>
+>>>>>> Or the remap_pfn_range() call never happened.  Should map_vdso() be
+>>>>>> running _install_special_mapping() at all if
+>>>>>> image->sym_vvar_page==NULL?
+>>>>>
+>>>>> I'm confused: are we talking about 3.15-rcsomething or linux-next?
+>>>>> That code changed.
+>>>>>
+>>>>> Would this all make more sense if there were just a single vma in
+>>>>> here?  cc: Pavel and Cyrill, who might have to deal with this stuff in
+>>>>> CRIU
+>>>>
+>>>> Well, for criu we've not modified any vdso kernel's code (except
+>>>> setting VM_SOFTDIRTY for this vdso VMA in _install_special_mapping).
+>>>> And never experienced problems Sasha points. Looks like indeed in
+>>>> -next code is pretty different from mainline one. To figure out
+>>>> why I need to fetch -next branch and get some research. I would
+>>>> try to do that tomorrow (still hoping someone more experienced
+>>>> in mm system would beat me on that).
+>>>
+>>> I can summarize:
+>>>
+>>> On 3.14 and before, the vdso is just a bunch of ELF headers and
+>>> executable data.  When executed by 64-bit binaries, it reads from the
+>>> fixmap to do its thing.  That is, it reads from kernel addresses that
+>>> don't have vmas.  When executed by 32-bit binaries, it doesn't read
+>>> anything, since there was no 32-bit timing code.
+>>>
+>>> On 3.15, the x86_64 vdso is unchanged.  The 32-bit vdso is preceded by
+>>> a separate vma containing two pages worth of time-varying read-only
+>>> data.  The vdso reads those pages using PIC references.
+>>>
+>>> On linux-next, all vdsos work the same way.  There are two vmas.  The
+>>> first vma is executable text, which can be poked at by ptrace, etc
+>>> normally.  The second vma contains time-varying state, should not
+>>> allow poking, and is accessed by PIC references.
+>>
+>> Is this 2nd vma seen in /proc/pid/maps? And if so, is it marked somehow?
+> 
+> It is in maps, and it's not marked.  I can write a patch to change
+> that.  I imagine it shouldn't be called [vdso], though.
 
-Some variants of the Pixcir touch controller support upto 5
-simultaneous fingers and hardware tracking IDs. Prepare the driver
-for that.
+That would be great.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/input/touchscreen/pixcir_i2c_ts.c | 74 ++++++++++++++++++++++++-------
- include/linux/input/pixcir_ts.h           | 12 +++++
- 2 files changed, 69 insertions(+), 17 deletions(-)
+>>
+>>> What does CRIU do to restore the vdso?  Will 3.15 and/or linux-next
+>>> need to make some concession for CRIU?
+>>
+>> We detect the vdso by "[vdso]" mark in proc at dump time and mark it in
+>> the images. At restore time we check that vdso symbols layout hasn't changed
+>> and just remap it in proper location.
+>>
+>> If this remains the same in -next, then we're fine :)
+> 
+> If you just remap the vdso, you'll crash.
+> 
+> This is the case in 3.15, too, for 32-bit apps, anyway.
+> 
+> What happens if you try to checkpoint a program that's in the vdso or,
+> worse, in a signal frame with the vdso on the stack?
 
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 627d2f5..8107965 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -27,18 +27,20 @@
- #include <linux/input/pixcir_ts.h>
- #include <linux/gpio.h>
- 
--#define PIXCIR_MAX_SLOTS       2
-+#define PIXCIR_MAX_SLOTS       5 /* Max fingers supported by driver */
- 
- struct pixcir_i2c_ts_data {
- 	struct i2c_client *client;
- 	struct input_dev *input;
--	const struct pixcir_ts_platform_data *chip;
-+	const struct pixcir_ts_platform_data *pdata;
- 	bool running;
-+	int max_fingers;	/* Max fingers supported in this instance */
- };
- 
- struct pixcir_touch {
- 	int x;
- 	int y;
-+	int id;
- };
- 
- struct pixcir_report_data {
-@@ -49,13 +51,21 @@ struct pixcir_report_data {
- static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 			    struct pixcir_report_data *report)
- {
--	u8 rdbuf[10], wrbuf[1] = { 0 };
-+	u8 rdbuf[2 + PIXCIR_MAX_SLOTS * 5];
-+	u8 wrbuf[1] = { 0 };
- 	u8 *bufptr;
- 	u8 touch;
- 	int ret, i;
-+	int readsize;
-+	const struct pixcir_i2c_chip_data *chip = &tsdata->pdata->chip;
- 
- 	memset(report, 0, sizeof(struct pixcir_report_data));
- 
-+	i = chip->has_hw_ids ? 1 : 0;
-+	readsize = 2 + tsdata->max_fingers * (4 + i);
-+	if (readsize > sizeof(rdbuf))
-+		readsize = sizeof(rdbuf);
-+
- 	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
- 	if (ret != sizeof(wrbuf)) {
- 		dev_err(&tsdata->client->dev,
-@@ -64,7 +74,7 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 		return;
- 	}
- 
--	ret = i2c_master_recv(tsdata->client, rdbuf, sizeof(rdbuf));
-+	ret = i2c_master_recv(tsdata->client, rdbuf, readsize);
- 	if (ret != sizeof(rdbuf)) {
- 		dev_err(&tsdata->client->dev,
- 			"%s: i2c_master_recv failed(), ret=%d\n",
-@@ -73,8 +83,8 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 	}
- 
- 	touch = rdbuf[0] & 0x7;
--	if (touch > PIXCIR_MAX_SLOTS)
--		touch = PIXCIR_MAX_SLOTS;
-+	if (touch > tsdata->max_fingers)
-+		touch = tsdata->max_fingers;
- 
- 	report->num_touches = touch;
- 	bufptr = &rdbuf[2];
-@@ -83,7 +93,12 @@ static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
- 		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
- 		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
- 
--		bufptr = bufptr + 4;
-+		if (chip->has_hw_ids) {
-+			report->touches[i].id = bufptr[4];
-+			bufptr = bufptr + 5;
-+		} else {
-+			bufptr = bufptr + 4;
-+		}
- 	}
- }
- 
-@@ -95,22 +110,35 @@ static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
- 	struct pixcir_touch *touch;
- 	int n, i, slot;
- 	struct device *dev = &ts->client->dev;
-+	const struct pixcir_i2c_chip_data *chip = &ts->pdata->chip;
- 
- 	n = report->num_touches;
- 	if (n > PIXCIR_MAX_SLOTS)
- 		n = PIXCIR_MAX_SLOTS;
- 
--	for (i = 0; i < n; i++) {
--		touch = &report->touches[i];
--		pos[i].x = touch->x;
--		pos[i].y = touch->y;
--	}
-+	if (!chip->has_hw_ids) {
-+		for (i = 0; i < n; i++) {
-+			touch = &report->touches[i];
-+			pos[i].x = touch->x;
-+			pos[i].y = touch->y;
-+		}
- 
--	input_mt_assign_slots(ts->input, slots, pos, n);
-+		input_mt_assign_slots(ts->input, slots, pos, n);
-+	}
- 
- 	for (i = 0; i < n; i++) {
- 		touch = &report->touches[i];
--		slot = slots[i];
-+
-+		if (chip->has_hw_ids) {
-+			slot = input_mt_get_slot_by_key(ts->input, touch->id);
-+			if (slot < 0) {
-+				dev_dbg(dev, "no free slot for id 0x%x\n",
-+					touch->id);
-+				continue;
-+			}
-+		} else {
-+			slot = slots[i];
-+		}
- 
- 		input_mt_slot(ts->input, slot);
- 		input_mt_report_slot_state(ts->input,
-@@ -130,7 +158,7 @@ static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
- static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
- {
- 	struct pixcir_i2c_ts_data *tsdata = dev_id;
--	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
-+	const struct pixcir_ts_platform_data *pdata = tsdata->pdata;
- 	struct pixcir_report_data report;
- 
- 	while (tsdata->running) {
-@@ -359,6 +387,11 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 			dev_err(dev, "Invalid gpio_attb in pdata\n");
- 			return -EINVAL;
- 		}
-+
-+		if (pdata->chip.max_fingers <= 0) {
-+			dev_err(dev, "Invalid max_fingers in pdata\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
-@@ -373,7 +406,7 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 
- 	tsdata->client = client;
- 	tsdata->input = input;
--	tsdata->chip = pdata;
-+	tsdata->pdata = pdata;
- 
- 	input->name = client->name;
- 	input->id.bustype = BUS_I2C;
-@@ -389,7 +422,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
- 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
- 
--	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
-+	tsdata->max_fingers = tsdata->pdata->chip.max_fingers;
-+	if (tsdata->max_fingers > PIXCIR_MAX_SLOTS) {
-+		tsdata->max_fingers = PIXCIR_MAX_SLOTS;
-+		dev_info(dev, "Limiting maximum fingers to %d\n",
-+			 tsdata->max_fingers);
-+	}
-+
-+	error = input_mt_init_slots(input, tsdata->max_fingers,
- 				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
- 	if (error) {
- 		dev_err(dev, "Error initializing Multi-Touch slots\n");
-diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-index 160cf35..7bae83b 100644
---- a/include/linux/input/pixcir_ts.h
-+++ b/include/linux/input/pixcir_ts.h
-@@ -43,10 +43,22 @@ enum pixcir_int_mode {
- #define PIXCIR_INT_ENABLE	(1UL << 3)
- #define PIXCIR_INT_POL_HIGH	(1UL << 2)
- 
-+/**
-+ * struct pixcir_irc_chip_data - chip related data
-+ * @max_fingers:	Max number of fingers reported simultaneously by h/w
-+ * @has_hw_ids:		Hardware supports finger tracking IDs
-+ *
-+ */
-+struct pixcir_i2c_chip_data {
-+	u8 max_fingers;
-+	bool has_hw_ids;
-+};
-+
- struct pixcir_ts_platform_data {
- 	int x_max;
- 	int y_max;
- 	int gpio_attb;		/* GPIO connected to ATTB line */
-+	struct pixcir_i2c_chip_data chip;
- };
- 
- #endif
--- 
-1.8.3.2
+Nothing good, unfortunately :( And this is one of the things we're investigating.
+Cyrill can shed more light on it, as he's the one in charge.
 
-
+> --Andy
