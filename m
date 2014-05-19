@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaESNrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:47:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46714 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331AbaESNrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:47:37 -0400
-Message-ID: <537A0B7B.9030704@ti.com>
-Date: Mon, 19 May 2014 16:47:39 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <mturquette@linaro.org>,
-        <grant.likely@linaro.org>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <robh+dt@kernel.org>, <bcousson@baylibre.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/4] clk: Add clock driver for DRA7 ATL (Audio Tracking
- Logic)
-References: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932080AbaESNry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:47:54 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:54186 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561AbaESNrw convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:2>);
+	Mon, 19 May 2014 09:47:52 -0400
+Message-Id: <537A27A30200007800013AD9@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Mon, 19 May 2014 14:47:47 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andrew Cooper" <andrew.cooper3@citrix.com>
+Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
+        <matt.fleming@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        "Daniel Kiper" <daniel.kiper@oracle.com>, <eshelton@pobox.com>,
+        <mingo@redhat.com>, <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH v4 3/5] xen: Put EFI machinery in place
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
+ <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+ <537A0974.40302@citrix.com>
+In-Reply-To: <537A0974.40302@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 01:20 PM, Peter Ujfalusi wrote:
-> Hi,
->
-> Changes since v1:
-> - ATL binding documentation and driver has been separated.
->
-> Audio Tracking Logic is designed to be used by HD Radio applications to
-> synchronize the audio output clocks to the baseband clock. ATL can be also
-> used to track errors between two reference clocks (BWS, AWS) and generate a modulated
-> clock output which averages to some desired frequency.
-> In essence ATL is generating a clock to be used by an audio codec and also
-> to be used by the SoC as MCLK.
->
-> The series will correct atl related clock names, adds binding documentation and
-> corresponding driver for the ATL and integrates the ATL clock into the clock
-> tree.
->
-> V1 of the ATL series:
-> https://lkml.org/lkml/2014/4/2/238
->
-> Regards,
-> Peter
+>>> On 19.05.14 at 15:39, <andrew.cooper3@citrix.com> wrote:
+> On 16/05/14 21:41, Daniel Kiper wrote:
+>> @@ -0,0 +1,374 @@
+>> +/*
+>> + * EFI support for Xen.
+>> + *
+>> + * Copyright (C) 1999 VA Linux Systems
+>> + * Copyright (C) 1999 Walt Drummond <drummond@valinux.com>
+>> + * Copyright (C) 1999-2002 Hewlett-Packard Co.
+>> + *	David Mosberger-Tang <davidm@hpl.hp.com>
+>> + *	Stephane Eranian <eranian@hpl.hp.com>
+>> + * Copyright (C) 2005-2008 Intel Co.
+>> + *	Fenghua Yu <fenghua.yu@intel.com>
+>> + *	Bibo Mao <bibo.mao@intel.com>
+>> + *	Chandramouli Narayanan <mouli@linux.intel.com>
+>> + *	Huang Ying <ying.huang@intel.com>
+>> + * Copyright (C) 2011 Novell Co.
+>> + *	Jan Beulich <JBeulich@suse.com>
+>> + * Copyright (C) 2011-2012 Oracle Co.
+>> + *	Liang Tang <liang.tang@oracle.com>
+>> + * Copyright (c) 2014 Daniel Kiper, Oracle Corporation
+>> + */
+>> +
+>> +#include <linux/bug.h>
+>> +#include <linux/efi.h>
+>> +#include <linux/init.h>
+>> +#include <linux/string.h>
+>> +
+>> +#include <xen/interface/xen.h>
+>> +#include <xen/interface/platform.h>
+>> +
+>> +#include <asm/xen/hypercall.h>
+>> +
+>> +#define call (op.u.efi_runtime_call)
+> 
+> I think not.
 
-Thanks, series queued for 3.16/ti-clk-drv.
+??? (Read: What's wrong with putting this shortcut in place?)
 
--Tero
+>> +#define DECLARE_CALL(what) \
+>> +	struct xen_platform_op op; \
+>> +	op.cmd = XENPF_efi_runtime_call; \
+>> +	call.function = XEN_EFI_##what; \
+>> +	call.misc = 0
+> 
+> Macros like this which explicitly create local variable with implicit
+> names are evil when reading code.
+> 
+> If you want to do initialisation like this, then at least do something like:
+> 
+> #define INIT_EFI_CALL(what) \
+> { .cmd = XENPF_efi_runtime_call, \
+>    .u.efi_runtime_call.function = XEN_EFI_##what, \
+>    .u.efi_runtime_call.misc = 0 }
+> 
+> And use it as:
+> 
+> struct xen_platform_op op = INIT_EFI_CALL(foo);
 
-> ---
-> Peter Ujfalusi (4):
->    ARM: dts: dra7xx-clocks: Correct name for atl clkin3 clock
->    dt:/bindings: DRA7 ATL (Audio Tracking Logic) clock bindings
->    clk: ti: Driver for DRA7 ATL (Audio Tracking Logic)
->    ARM: DTS: dra7/dra7xx-clocks: ATL related changes
->
->   .../devicetree/bindings/clock/ti/dra7-atl.txt      |  97 +++++++
->   arch/arm/boot/dts/dra7.dtsi                        |  11 +
->   arch/arm/boot/dts/dra7xx-clocks.dtsi               |  38 +--
->   drivers/clk/ti/Makefile                            |   3 +-
->   drivers/clk/ti/clk-7xx.c                           |   2 +-
->   drivers/clk/ti/clk-dra7-atl.c                      | 313 +++++++++++++++++++++
->   include/dt-bindings/clk/ti-dra7-atl.h              |  40 +++
->   7 files changed, 483 insertions(+), 21 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
->   create mode 100644 drivers/clk/ti/clk-dra7-atl.c
->   create mode 100644 include/dt-bindings/clk/ti-dra7-atl.h
->
+That's minimal redundancy as a goal versus (to you, but not to me)
+legibility.
+
+Jan
 
