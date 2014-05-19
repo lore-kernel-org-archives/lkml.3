@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaESQlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:41:11 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:46343 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaESQlJ (ORCPT
+	id S932500AbaESQnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:43:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52619 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752631AbaESQnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:41:09 -0400
-Date: Mon, 19 May 2014 17:41:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.torgue@st.com" <alexandre.torgue@st.com>
-Subject: Re: [PATCH 4/4] phy: miphy365x: Provide support for the MiPHY356x
- Generic PHY
-Message-ID: <20140519164104.GS4978@lee--X1>
-References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
- <1392377036-12816-4-git-send-email-lee.jones@linaro.org>
- <20140305075548.GG20016@e106331-lin.cambridge.arm.com>
- <537A1354.6010408@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537A1354.6010408@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 May 2014 12:43:11 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 1/3] mfd: arizona: Add MICVDD to mapped regulators
+Date: Mon, 19 May 2014 17:35:27 +0100
+Message-Id: <1400517329-1103-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't seem to have the update patch series? Can you resend please?
+Currently, MICVDD only binds because it is both the regulator name and
+the consumer name and we will always match against the regulator name
+regardless of the consumer device. If the regulator was renamed using
+the init_data ASoC will no longer be able to locate the supply, as it
+will be looking on the CODEC device where as the MICVDD consumer is on
+the Arizona device. Add a mapping as we do for the other regulators.
 
-Sure.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index a45aab9..a068748 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -575,6 +575,7 @@ static const char *wm5102_supplies[] = {
+ 	"CPVDD",
+ 	"SPKVDDL",
+ 	"SPKVDDR",
++	"MICVDD",
+ };
+ 
+ static const struct mfd_cell wm5102_devs[] = {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.2.5
+
