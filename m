@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163AbaESVlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:41:20 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:34664 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaESVlT (ORCPT
+	id S1751295AbaESVrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:47:41 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:1359 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaESVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:41:19 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Masanari Iida <standby24x7@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lustre: lustre: ptlrpc: sec_config.c:  Fix for possible null pointer dereference
-Date: Mon, 19 May 2014 23:42:08 +0200
-Message-Id: <1400535728-6106-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 19 May 2014 17:47:40 -0400
+Message-ID: <1400536056.6399.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:locking/core] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        peter@hurleysoftware.com, jason.low2@hp.com, alex.shi@linaro.org,
+        riel@redhat.com, akpm@linux-foundation.org, aarcange@redhat.com,
+        tglx@linutronix.de, scott.norton@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, andi@firstfloor.org, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, walken@google.com, aswin@hp.com
+Cc: linux-tip-commits@vger.kernel.org
+Date: Mon, 19 May 2014 14:47:36 -0700
+In-Reply-To: <tip-746c198007a8a5a155c4f74cb42f9a36f55272cf@git.kernel.org>
+References: <1399055055.6275.15.camel@buesod1.americas.hpqcorp.net>
+	 <tip-746c198007a8a5a155c4f74cb42f9a36f55272cf@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is otherwise a risk of a possible null pointer dereference.
+Andrew had put this patch in -next for a while, and Stephen Rothwell was
+able to trigger some warnings: https://lkml.org/lkml/2014/5/19/627
 
-Was largely found by using a static code analysis program called cppcheck.
+8<----------------------------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] rwsem: Fix warnings for CONFIG_RWSEM_GENERIC_SPINLOCK
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Optimistic spinning is only used by the xadd variant
+of rw-semaphores. Make sure that we use the old version
+of the __RWSEM_INITIALIZER macro for systems that rely
+on the spinlock one, otherwise warnings can be triggered,
+such as the following reported on an arm box:
+
+ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- drivers/staging/lustre/lustre/ptlrpc/sec_config.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ include/linux/rwsem.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec_config.c b/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-index bf56120..231656e 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-@@ -745,11 +745,13 @@ void sptlrpc_conf_log_update_begin(const char *logname)
- 	mutex_lock(&sptlrpc_conf_lock);
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 3e108f1..091d993 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ # define __RWSEM_DEP_MAP_INIT(lockname)
+ #endif
  
- 	conf = sptlrpc_conf_get(fsname, 0);
--	if (conf && conf->sc_local) {
--		LASSERT(conf->sc_updated == 0);
--		sptlrpc_conf_free_rsets(conf);
-+	if (conf) {
-+		if(conf->sc_local) {
-+			LASSERT(conf->sc_updated == 0);
-+			sptlrpc_conf_free_rsets(conf);
-+		}
-+		conf->sc_modified = 0;
- 	}
--	conf->sc_modified = 0;
- 
- 	mutex_unlock(&sptlrpc_conf_lock);
- }
+-#ifdef CONFIG_SMP
++#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
+ #define __RWSEM_INITIALIZER(name)			\
+ 	{ RWSEM_UNLOCKED_VALUE,				\
+ 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
 -- 
-1.7.10.4
+1.8.1.4
+
+
 
