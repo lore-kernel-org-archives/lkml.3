@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaESWjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:39:21 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:57747 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017AbaESWjS (ORCPT
+	id S1752448AbaESWjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:39:43 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:27133 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaESWjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:39:18 -0400
-Date: Tue, 20 May 2014 07:39:13 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCHv2 resend 00/11] improve PWM lookup support without device
- tree
-Message-ID: <20140519223913.GE20590@verge.net.au>
-References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 May 2014 18:39:42 -0400
+Message-ID: <1400539179.6399.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:locking/core] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org
+Cc: torvalds@linux-foundation.org, peterz@infradead.org,
+        peter@hurleysoftware.com, jason.low2@hp.com, alex.shi@linaro.org,
+        riel@redhat.com, akpm@linux-foundation.org, aarcange@redhat.com,
+        tglx@linutronix.de, scott.norton@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, andi@firstfloor.org, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, walken@google.com, aswin@hp.com,
+        linux-tip-commits@vger.kernel.org
+Date: Mon, 19 May 2014 15:39:39 -0700
+In-Reply-To: <1400536056.6399.3.camel@buesod1.americas.hpqcorp.net>
+References: <1399055055.6275.15.camel@buesod1.americas.hpqcorp.net>
+	 <tip-746c198007a8a5a155c4f74cb42f9a36f55272cf@git.kernel.org>
+	 <1400536056.6399.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ CCed Laurent Pinchart ]
+On Mon, 2014-05-19 at 14:47 -0700, Davidlohr Bueso wrote:
+> Andrew had put this patch in -next for a while, and Stephen Rothwell was
+> able to trigger some warnings: https://lkml.org/lkml/2014/5/19/627
+> 
+> 8<----------------------------------------------------------------
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> Subject: [PATCH] rwsem: Fix warnings for CONFIG_RWSEM_GENERIC_SPINLOCK
+> 
+> Optimistic spinning is only used by the xadd variant
+> of rw-semaphores. Make sure that we use the old version
+> of the __RWSEM_INITIALIZER macro for systems that rely
+> on the spinlock one, otherwise warnings can be triggered,
+> such as the following reported on an arm box:
+> 
+> ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+> ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+> ipc/ipcns_notifier.c:22:8: warning: excess elements in struct initializer [enabled by default]
+> ipc/ipcns_notifier.c:22:8: warning: (near initialization for 'ipcns_chain.rwsem') [enabled by default]
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/rwsem.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index 3e108f1..091d993 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+>  # define __RWSEM_DEP_MAP_INIT(lockname)
+>  #endif
+>  
+> -#ifdef CONFIG_SMP
+> +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
 
-The renesas and shmobile portions of this seem reasonable to me
-and I have checked that there do not seem to be any conflicts
-with changes I already have queued up for v3.16 (and v3.17).
+Of course, we can also use the following. I have no preference.
 
-I have CCed Laurent Pinchart as I believe he most recently
-did work on the renesas and shmobile code in question.
+#if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
 
-On Mon, May 19, 2014 at 10:42:31PM +0200, Alexandre Belloni wrote:
-> Hi,
-> 
-> Originally sent on Apr 14th, note that this series is blocking another 16
-> patches series, I would like it to be taken in 3.16 if we can agree on this
-> implementation.
-> 
-> A patch set as suggested by Thierry to make lookup with the lookup table
-> instead of device tree behave more like when using device tree.
-> 
-> The first patch adds a period and a polarity member to the lookup table and use
-> those to set period and polarity.
-> 
-> Patch 2, 4 and 5 are making use of those new members from the board files.
-> Patch 3 removes useless code since setting the polarity is now handled by the
-> PWM core.
-> 
-> I couldn't decide on a good name for the extended PWM_LOOKUP macro and I believe
-> we won't have to add members to that structure soon so:
-> Patch 6 modifies the PWM_LOOKUP macro to also initialize period and polarity
-> and
-> Patch 7-9 are making use of the new PWM_LOOKUP macro in the board files
-> 
-> Patch 10 and 11 are making the leds-pwm and pwm_bl drivers get the period from
-> the PWM before using pwm_period_ns if it is not already set.
-> 
-> Patch 10 will obviously conflict with the series of Russell reworking the
-> leds-pwm probing. I can rebase if necessary
-> 
-> The final goal would be to get rid of .pwm_period_ns in leds-pwm and pwm_bl
-> after moving all the remaining users (still around 25) to pwm_lookup.
-> 
-> Changes in v2:
->  - correctly unlock the pwm_lookup_lock mutex before returning.
->  - don't change PWM_LOOKUP atomically
->  - remove tpu_pwm_platform_data and the associated header file
->  - make the leds-pwm and pwm_bl drivers get the period from the PWM
-> 
-> Alexandre Belloni (11):
->   pwm: add period and polarity to struct pwm_lookup
->   ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup
->     members
->   pwm: renesas-tpu: remove useless struct tpu_pwm_platform_data
-
-The above two patches:
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
-
->   ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
->   ARM: pxa: hx4700: initialize all the struct pwm_lookup members
->   pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
->   ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize struct pwm_lookup
->   ARM: shmobile: Armadillo 800 EVA: use PWM_LOOKUP to initialize struct
->     pwm_lookup
-
-The above patch:
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
-
->   ARM: pxa: hx4700: use PWM_LOOKUP to initialize struct pwm_lookup
->   leds: leds-pwm: retrieve configured pwm period
->   backlight: pwm_bl: retrieve configured pwm period
-> 
->  Documentation/pwm.txt                          |  3 ++-
->  arch/arm/mach-omap2/board-omap3beagle.c        |  3 ++-
->  arch/arm/mach-pxa/hx4700.c                     |  3 ++-
->  arch/arm/mach-shmobile/board-armadillo800eva.c | 14 +++-----------
->  drivers/leds/leds-pwm.c                        |  5 ++++-
->  drivers/pwm/core.c                             |  8 +++++++-
->  drivers/pwm/pwm-renesas-tpu.c                  | 19 +++----------------
->  drivers/video/backlight/pwm_bl.c               |  8 +++++---
->  include/linux/platform_data/pwm-renesas-tpu.h  | 16 ----------------
->  include/linux/pwm.h                            |  6 +++++-
->  10 files changed, 33 insertions(+), 52 deletions(-)
->  delete mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
