@@ -1,69 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406AbaESNSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:18:30 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:57445 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaESNS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:18:28 -0400
-Message-ID: <537A0495.60107@gmail.com>
-Date: Mon, 19 May 2014 15:18:13 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754529AbaESNWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:22:45 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:20106 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265AbaESNWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:22:43 -0400
+Message-ID: <537A059B.9050509@bfs.de>
+Date: Mon, 19 May 2014 15:22:35 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: mtk.manpages@gmail.com
-Subject: OFD locks and deadlock detection
-Content-Type: text/plain; charset=UTF-8
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        kernel-janitors@vger.kernel.org, linux-wimax@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/13] wimax/i2400m: make return of 0 explicit
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-5-git-send-email-Julia.Lawall@lip6.fr> <5379B704.80303@bfs.de> <alpine.DEB.2.10.1405191929060.2564@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1405191929060.2564@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
-
-I just happened to notice :
-
-    commit 57b65325fe34ec4c917bc4e555144b4a94d9e1f7
-    Author: Jeff Layton <jlayton@redhat.com>
-    Date:   Mon Feb 3 12:13:09 2014 -0500
-
-        locks: skip deadlock detection on FL_FILE_PVT locks
-
-And then this thread:
-
-    http://thread.gmane.org/gmane.linux.file-systems/81318/focus=81327
-    From: Jeff Layton <jlayton <at> redhat.com>
-    Subject: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
-    Date: 2014-01-09 14:19:46 GMT
-
-I think it's pretty important to document that. All implementations
-of traditional process-associated (.k.a. "POSIX") locks that I've ever 
-come across do detect deadlocks, so it's important to note that OFD locks 
-do not.
-
-I plan to add the following text to the fcntl(2) page:
-
-[[
-In the current implementation,
-no deadlock detection is performed for open file description locks.
-(This contrasts with process-associated record locks,
-for which the kernel does perform deadlock detection.)
-]]
-
-Okay?
-
-cheers,
-
-Michael
 
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Am 19.05.2014 13:30, schrieb Julia Lawall:
+> 
+> 
+> On Mon, 19 May 2014, walter harms wrote:
+> 
+>>
+>>
+>> Am 19.05.2014 06:31, schrieb Julia Lawall:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> Delete unnecessary local variable whose value is always 0 and that hides
+>>> the fact that the result is always 0.
+>>>
+>>> A simplified version of the semantic patch that fixes this problem is as
+>>> follows: (http://coccinelle.lip6.fr/)
+>>>
+>>> // <smpl>
+>>> @r exists@
+>>> local idexpression ret;
+>>> expression e;
+>>> position p;
+>>> @@
+>>>
+>>> -ret = 0;
+>>> ... when != ret = e
+>>> return
+>>> - ret
+>>> + 0
+>>>   ;
+>>> // </smpl>
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> ---
+>>> Alternatively, is an error code wanted under the if?
+>>>
+>>>  drivers/net/wimax/i2400m/driver.c |    7 ++-----
+>>>  1 file changed, 2 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+>>> index 9c34d2f..901a534 100644
+>>> --- a/drivers/net/wimax/i2400m/driver.c
+>>> +++ b/drivers/net/wimax/i2400m/driver.c
+>>> @@ -500,26 +500,23 @@ int i2400m_pm_notifier(struct notifier_block *notifier,
+>>>   */
+>>>  int i2400m_pre_reset(struct i2400m *i2400m)
+>>>  {
+>>> -	int result;
+>>>  	struct device *dev = i2400m_dev(i2400m);
+>>>
+>>>  	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
+>>>  	d_printf(1, dev, "pre-reset shut down\n");
+>>>
+>>> -	result = 0;
+>>>  	mutex_lock(&i2400m->init_mutex);
+>>>  	if (i2400m->updown) {
+>>>  		netif_tx_disable(i2400m->wimax_dev.net_dev);
+>>>  		__i2400m_dev_stop(i2400m);
+>>> -		result = 0;
+>>>  		/* down't set updown to zero -- this way
+>>>  		 * post_reset can restore properly */
+>>>  	}
+>>>  	mutex_unlock(&i2400m->init_mutex);
+>>>  	if (i2400m->bus_release)
+>>>  		i2400m->bus_release(i2400m);
+>>> -	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, result);
+>>> -	return result;
+>>> +	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, 0);
+>>
+>>
+>> 	d_fnend(3, dev, "i2400m=%p\n", i2400m);
+> 
+> All the other logging messages in this file seem to have the form
+> (i2400m %p) = %d
+> or (i2400m %p) = void in the case of a function that has no return value.
+> I don't know if a return value is wanted here, but since the function is
+> exported, perhaps it is best not to change its type.
+
+
+I got my "inspiration" from d_fnstart().
+As i see it the whole function is void so printing a debug msg with a bogus
+return value may confuse some people.
+
+re,
+ wh
+
+
+> julia
+> 
+>> or something like that
+>> re,
+>>  wh
+>>
+>>> +	return 0;
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(i2400m_pre_reset);
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+> 
