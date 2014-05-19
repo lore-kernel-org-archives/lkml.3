@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbaESG3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:29:54 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59696 "EHLO
+	id S1753373AbaESGaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:30:19 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59532 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaESG0K (ORCPT
+	with ESMTP id S1752521AbaESG0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:26:10 -0400
+	Mon, 19 May 2014 02:26:07 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
-Subject: [PATCH 17/20] perf tools: Get rid of obsolete hist_entry__sort_list
-Date: Mon, 19 May 2014 15:25:59 +0900
-Message-Id: <1400480762-22852-18-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/20] perf tools: Allow hpp fields to be sort keys
+Date: Mon, 19 May 2014 15:25:50 +0900
+Message-Id: <1400480762-22852-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
 References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
@@ -26,218 +26,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we moved to the perf_hpp_[_sort]_list so no need to keep the old
-hist_entry__sort_list and sort__first_dimension.  Also the
-hist_entry__sort_snprintf() can be gone as hist_entry__snprintf()
-provides the functionality.
+Add overhead{,_sys,_us,_guest_sys,_guest_us}, sample and period sort
+keys so that they can be selected with --sort/-s option.
 
+  $ perf report -s period,comm --stdio
+  ...
+  # Overhead        Period          Command
+  # ........  ............  ...............
+  #
+      47.06%           152          swapper
+      13.93%            45  qemu-system-arm
+      12.38%            40         synergys
+       3.72%            12          firefox
+       2.48%             8            xchat
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c       | 36 +++++++++---------------------------
- tools/perf/ui/stdio/hist.c | 22 +++++++++++++++-------
- tools/perf/util/sort.c     | 35 +++++++++++++++++++----------------
- 3 files changed, 43 insertions(+), 50 deletions(-)
+ tools/perf/Documentation/perf-diff.txt   |  5 ++--
+ tools/perf/Documentation/perf-report.txt |  9 ++++++++
+ tools/perf/Documentation/perf-top.txt    |  5 ++--
+ tools/perf/builtin-diff.c                |  3 ++-
+ tools/perf/builtin-report.c              |  6 ++---
+ tools/perf/builtin-top.c                 |  4 ++--
+ tools/perf/ui/hist.c                     |  9 ++++++--
+ tools/perf/util/sort.c                   | 39 ++++++++++++++++++++++++++++++++
+ 8 files changed, 67 insertions(+), 13 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fbfa1192923c..b3b8abae62b8 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -50,7 +50,8 @@ OPTIONS
+ 
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol.
++	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
++	Please see description of --sort in the perf-report man page.
+ 
+ -t::
+ --field-separator=::
+@@ -202,4 +203,4 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
+ 
+ SEE ALSO
+ --------
+-linkperf:perf-record[1]
++linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 09af66298564..9babe915b6c4 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -79,6 +79,15 @@ OPTIONS
+ 	abort cost. This is the global weight.
+ 	- local_weight: Local weight version of the weight above.
+ 	- transaction: Transaction abort flags.
++	- overhead: Overhead percentage of sample
++	- overhead_sys: Overhead percentage of sample running in system mode
++	- overhead_us: Overhead percentage of sample running in user mode
++	- overhead_guest_sys: Overhead percentage of sample running in system mode
++	on guest machine
++	- overhead_guest_us: Overhead percentage of sample running in user mode on
++	guest machine
++	- sample: Number of sample
++	- period: Raw number of event count of sample
+ 
+ 	By default, comm, dso and symbol keys are used.
+ 	(i.e. --sort comm,dso,symbol)
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 64ed79c43639..df863288752a 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -113,7 +113,8 @@ Default is to monitor all CPUS.
+ -s::
+ --sort::
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
+-	local_weight, abort, in_tx, transaction
++	local_weight, abort, in_tx, transaction, overhead, sample, period.
++	Please see description of --sort in the perf-report man page.
+ 
+ -n::
+ --show-nr-samples::
+@@ -212,4 +213,4 @@ Pressing any unmapped key displays a menu, and prompts for input.
+ 
+ SEE ALSO
+ --------
+-linkperf:perf-stat[1], linkperf:perf-list[1]
++linkperf:perf-stat[1], linkperf:perf-list[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f3b10dcf6838..b60c711d4e72 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -741,7 +741,8 @@ static const struct option options[] = {
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+ 		   "columns '.' is reserved."),
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 89c95289fd51..d0180d5de781 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -699,10 +699,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "header-only", &report.header_only,
+ 		    "Show only data header."),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+-		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+-		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
+-		   "snoop, locked, abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 37d30460bada..4fef1e415129 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1083,8 +1083,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
+-		   " abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index b114c6668865..61cf31e094f3 100644
+index e7ac794382c1..24116a48298f 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -459,47 +459,29 @@ next:
- 	}
- }
+@@ -346,8 +346,13 @@ void perf_hpp__init(void)
+ 	int i;
  
--int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
--			      struct hists *hists)
--{
--	const char *sep = symbol_conf.field_sep;
--	struct sort_entry *se;
--	int ret = 0;
--
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		if (se->elide)
--			continue;
--
--		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
--		ret += se->se_snprintf(he, s + ret, size - ret,
--				       hists__col_len(hists, se->se_width_idx));
--	}
--
--	return ret;
--}
--
- /*
-  * See hists__fprintf to match the column widths
-  */
- unsigned int hists__sort_list_width(struct hists *hists)
- {
- 	struct perf_hpp_fmt *fmt;
--	struct sort_entry *se;
--	int i = 0, ret = 0;
-+	int ret = 0;
-+	bool first = true;
- 	struct perf_hpp dummy_hpp;
- 
- 	perf_hpp__for_each_format(fmt) {
--		if (i)
-+		if (perf_hpp__should_skip(fmt))
-+			continue;
+ 	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		INIT_LIST_HEAD(&perf_hpp__format[i].list);
+-		INIT_LIST_HEAD(&perf_hpp__format[i].sort_list);
++		struct perf_hpp_fmt *fmt = &perf_hpp__format[i];
 +
-+		if (first)
-+			first = false;
-+		else
- 			ret += 2;
- 
- 		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
++		INIT_LIST_HEAD(&fmt->list);
++
++		/* sort_list may be linked by setup_sorting() */
++		if (fmt->sort_list.next == NULL)
++			INIT_LIST_HEAD(&fmt->sort_list);
  	}
  
--	list_for_each_entry(se, &hist_entry__sort_list, list)
--		if (!se->elide)
--			ret += 2 + hists__col_len(hists, se->se_width_idx);
--
--	if (verbose) /* Addr + origin */
-+	if (verbose && sort__has_sym) /* Addr + origin */
- 		ret += 3 + BITS_PER_LONG / 4;
- 
- 	return ret;
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index cfcd3f6fd1c5..9f57991025a9 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -183,7 +183,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 			 * the symbol. No need to print it otherwise it appears as
- 			 * displayed twice.
- 			 */
--			if (!i++ && sort__first_dimension == SORT_SYM)
-+			if (!i++ && field_order == NULL &&
-+			    sort_order && !prefixcmp(sort_order, "sym"))
- 				continue;
- 			if (!printed) {
- 				ret += callchain__fprintf_left_margin(fp, left_margin);
-@@ -296,13 +297,20 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 	int left_margin = 0;
- 	u64 total_period = hists->stats.total_period;
- 
--	if (sort__first_dimension == SORT_COMM) {
--		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
--							 typeof(*se), list);
--		left_margin = hists__col_len(hists, se->se_width_idx);
--		left_margin -= thread__comm_len(he->thread);
--	}
-+	if (field_order == NULL && (sort_order == NULL ||
-+				    !prefixcmp(sort_order, "comm"))) {
-+		struct perf_hpp_fmt *fmt;
-+
-+		perf_hpp__for_each_format(fmt) {
-+			if (!perf_hpp__is_sort_entry(fmt))
-+				continue;
- 
-+			/* must be 'comm' sort entry */
-+			left_margin = fmt->width(fmt, NULL, hists_to_evsel(hists));
-+			left_margin -= thread__comm_len(he->thread);
-+			break;
-+		}
-+	}
- 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
- }
- 
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9bee7288465f..d9132069d3b1 100644
+index b2829f947053..916652af8304 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -22,9 +22,6 @@ int		sort__has_sym = 0;
- int		sort__has_dso = 0;
- enum sort_mode	sort__mode = SORT_MODE__NORMAL;
+@@ -1028,6 +1028,26 @@ static struct sort_dimension memory_sort_dimensions[] = {
  
--enum sort_type	sort__first_dimension;
--
--LIST_HEAD(hist_entry__sort_list);
+ #undef DIM
  
- static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
- {
-@@ -1190,7 +1187,7 @@ static int __sort_dimension__add_hpp_output(struct sort_dimension *sd)
++struct hpp_dimension {
++	const char		*name;
++	struct perf_hpp_fmt	*fmt;
++	int			taken;
++};
++
++#define DIM(d, n) { .name = n, .fmt = &perf_hpp__format[d], }
++
++static struct hpp_dimension hpp_sort_dimensions[] = {
++	DIM(PERF_HPP__OVERHEAD, "overhead"),
++	DIM(PERF_HPP__OVERHEAD_SYS, "overhead_sys"),
++	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
++	DIM(PERF_HPP__SAMPLES, "sample"),
++	DIM(PERF_HPP__PERIOD, "period"),
++};
++
++#undef DIM
++
+ struct hpp_sort_entry {
+ 	struct perf_hpp_fmt hpp;
+ 	struct sort_entry *se;
+@@ -1115,6 +1135,16 @@ static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
  	return 0;
  }
  
--static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
-+static int __sort_dimension__add(struct sort_dimension *sd)
- {
- 	if (sd->taken)
- 		return 0;
-@@ -1201,10 +1198,6 @@ static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- 	if (sd->entry->se_collapse)
- 		sort__need_collapse = 1;
- 
--	if (list_empty(&hist_entry__sort_list))
--		sort__first_dimension = idx;
--
--	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
- 	sd->taken = 1;
- 
- 	return 0;
-@@ -1268,7 +1261,7 @@ int sort_dimension__add(const char *tok)
- 			sort__has_dso = 1;
- 		}
- 
--		return __sort_dimension__add(sd, i);
-+		return __sort_dimension__add(sd);
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
-@@ -1292,7 +1285,7 @@ int sort_dimension__add(const char *tok)
- 		if (sd->entry == &sort_sym_from || sd->entry == &sort_sym_to)
- 			sort__has_sym = 1;
- 
--		__sort_dimension__add(sd, i + __SORT_BRANCH_STACK);
-+		__sort_dimension__add(sd);
- 		return 0;
- 	}
- 
-@@ -1308,7 +1301,7 @@ int sort_dimension__add(const char *tok)
- 		if (sd->entry == &sort_mem_daddr_sym)
- 			sort__has_sym = 1;
- 
--		__sort_dimension__add(sd, i + __SORT_MEMORY_MODE);
-+		__sort_dimension__add(sd);
- 		return 0;
- 	}
- 
-@@ -1395,7 +1388,8 @@ static void sort_entry__setup_elide(struct sort_entry *se,
- 
- void sort__setup_elide(FILE *output)
- {
--	struct sort_entry *se;
-+	struct perf_hpp_fmt *fmt;
-+	struct hpp_sort_entry *hse;
- 
- 	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
- 				"dso", output);
-@@ -1436,13 +1430,22 @@ void sort__setup_elide(FILE *output)
- 	 * It makes no sense to elide all of sort entries.
- 	 * Just revert them to show up again.
- 	 */
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		if (!se->elide)
-+	perf_hpp__for_each_format(fmt) {
-+		if (!perf_hpp__is_sort_entry(fmt))
-+			continue;
++static int __hpp_dimension__add(struct hpp_dimension *hd)
++{
++	if (!hd->taken) {
++		hd->taken = 1;
 +
-+		hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+		if (!hse->se->elide)
- 			return;
- 	}
- 
--	list_for_each_entry(se, &hist_entry__sort_list, list)
--		se->elide = false;
-+	perf_hpp__for_each_format(fmt) {
-+		if (!perf_hpp__is_sort_entry(fmt))
-+			continue;
-+
-+		hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+		hse->se->elide = false;
++		perf_hpp__register_sort_field(hd->fmt);
 +	}
- }
++	return 0;
++}
++
+ int sort_dimension__add(const char *tok)
+ {
+ 	unsigned int i;
+@@ -1144,6 +1174,15 @@ int sort_dimension__add(const char *tok)
+ 		return __sort_dimension__add(sd, i);
+ 	}
  
- static int output_field_add(char *tok)
++	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
++		struct hpp_dimension *hd = &hpp_sort_dimensions[i];
++
++		if (strncasecmp(tok, hd->name, strlen(tok)))
++			continue;
++
++		return __hpp_dimension__add(hd);
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
+ 		struct sort_dimension *sd = &bstack_sort_dimensions[i];
+ 
 -- 
 1.9.2
 
