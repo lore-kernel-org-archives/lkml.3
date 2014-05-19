@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910AbaESUGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:06:31 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:47478 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaESUG3 (ORCPT
+	id S932846AbaESUGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:06:20 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57296 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752292AbaESUGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:06:29 -0400
+	Mon, 19 May 2014 16:06:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
+Date: Mon, 19 May 2014 22:23:12 +0200
+Message-ID: <5242415.8zZ5y8lb01@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5379D28F.1020200@intel.com>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <20140519084944.GH2067@lahna.fi.intel.com> <5379D28F.1020200@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1400521493.5367.61.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1400520254-5142-1-git-send-email-spang@chromium.org> <1400521493.5367.61.camel@edumazet-glaptop2.roam.corp.google.com>
-From: Michael Spang <spang@chromium.org>
-Date: Mon, 19 May 2014 16:05:47 -0400
-Message-ID: <CAC5F_1mrXgEtx7sx1ihdm5EA6cxP7cA7mOjVmP8HvWxatgAcRA@mail.gmail.com>
-Subject: Re: [PATCH] macvlan: Fix checksum errors when ip_summed is CHECKSUM_PARTIAL
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@free.fr>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 1:44 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->
-> On Mon, 2014-05-19 at 13:24 -0400, Michael Spang wrote:
-> > Changing ip_summed from CHECKSUM_PARTIAL to CHECKSUM_UNNECESSARY
-> > will result in an incorrect checksum if the packet is sent off the box.
+On Monday, May 19, 2014 05:44:47 PM Lan Tianyu wrote:
+> On 05/19/2014 04:49 PM, Mika Westerberg wrote:
+> > On Sat, May 17, 2014 at 07:48:34PM +0200, Wolfram Sang wrote:
+> >> On Tue, Apr 29, 2014 at 11:16:09AM +0300, Mika Westerberg wrote:
+> >>> On Mon, Apr 28, 2014 at 10:27:48PM +0800, Lan Tianyu wrote:
+> >>>> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
+> >>>> removing I2C ACPI operation region and ACPI AML code accessing.
+> >>>> So make i2c core built-in if CONFIG_I2C_ACPI is set.
+> >>>>
+> >>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> >>>> ---
+> >>>>   drivers/i2c/Kconfig  | 17 ++++++++++++++++-
+> >>>>   drivers/i2c/Makefile |  2 +-
+> >>>>   include/linux/i2c.h  |  2 +-
+> >>>>   3 files changed, 18 insertions(+), 3 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+> >>>> index 7b7ea32..c670d49 100644
+> >>>> --- a/drivers/i2c/Kconfig
+> >>>> +++ b/drivers/i2c/Kconfig
+> >>>> @@ -2,7 +2,9 @@
+> >>>>   # I2C subsystem configuration
+> >>>>   #
+> >>>>
+> >>>> -menuconfig I2C
+> >>>> +menu "I2C support"
+> >>>> +
+> >>>> +config I2C
+> >>>>   	tristate "I2C support"
+> >>>>   	select RT_MUTEXES
+> >>>>   	---help---
+> >>>> @@ -21,6 +23,17 @@ menuconfig I2C
+> >>>>   	  This I2C support can also be built as a module.  If so, the module
+> >>>>   	  will be called i2c-core.
+> >>>>
+> >>>> +config I2C_ACPI
+> >>>> +	bool "I2C ACPI support"
+> >>>> +	select I2C
+> >>>> +	depends on ACPI
+> >>>> +	default y
+> >>>> +	help
+> >>>> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
+> >>>> +	  provides I2C slave devices' information to enumerate these devices.
+> >>>> +	  This option also allows ACPI AML code to access I2C slave devices
+> >>>> +	  via I2C ACPI operation region to fulfill ACPI method.
+> >>>
+> >>> I would prefer something like:
+> >>>
+> >>> Say Y here if you want to enable ACPI I2C support. This includes support
+> >>> for automatic enumeration of I2C slave devices and support for ACPI I2C
+> >>> Operation Regions. Operation Regions allow firmware (BIOS) code to
+> >>> access I2C slave devices, such as smart batteries through an I2C host
+> >>> controller driver.
+> >>>
+> >>> But it is really up to you so,
+> >>>
+> >>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >>
+> >> How does this fit into the context of
+> >> 55e71edb81b2b45273e7b284cce13ff24bde846f ("i2c: move ACPI helpers into
+> >> the core")?
 > >
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Michael Spang <spang@chromium.org>
-> > ---
-> >  drivers/net/macvlan.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > With that commit we moved ACPI code to live inside I2C module (given
+> > that it was compiled as a module). However, you still can remove that
+> > module from userspace.
 > >
-> > diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> > index 753a8c2..806b56a 100644
-> > --- a/drivers/net/macvlan.c
-> > +++ b/drivers/net/macvlan.c
-> > @@ -267,7 +267,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+> > With this patch we make sure that the I2C core can't be removed if you
+> > have ACPI enabled. This prevents the potential race.
 > >
-> >       if (vlan->mode == MACVLAN_MODE_BRIDGE) {
-> >               const struct ethhdr *eth = (void *)skb->data;
-> > -             skb->ip_summed = CHECKSUM_UNNECESSARY;
-> > +
-> > +             if (skb->ip_summed == CHECKSUM_NONE)
-> > +                     skb->ip_summed = CHECKSUM_UNNECESSARY;
-> >
-> >               /* send to other bridge ports directly */
-> >               if (is_multicast_ether_addr(eth->h_dest)) {
->
-> Hi Michael
->
-> Any idea why commit 12a2856b604476c27d85a5f9a57ae1661fc46019
-> added this stuff then ?
->
+> 
+> Yes, these are the two patches' purposes. Thanks Mika's explanation. If you 
+> like, I can merge them into one patch.
 
-I think that patch is wrong. It's not OK to change CHECKSUM_PARTIAL to
-CHECKSUM_UNNECESSARY. This code is changing the meaning of the
-ip_summed field from "the checksum is incomplete" to "the checksum is
-complete and correct". So if the packet bounces around the network
-stack and eventually gets sent out a physical NIC, the checksum was
-never completed anywhere and the packet is dropped by the receiving
-box.
+I think that would be easier to follow.
 
-Look at 0b7967503dc97864f283a3a06fbe23e041876138 for a patch that
-fixes exactly this problem on veth devices.
+Thanks!
 
-
->
-> You should give more infos of your use case.
->
-> CC Daniel Lezcano <daniel.lezcano@free.fr>
->
-> I removed stable@ , as stable submissions are not done like that.
->
-
-Perhaps I've misunderstood something, but this suggestion is right
-from https://www.kernel.org/doc/Documentation/stable_kernel_rules.txt
-
- - To have the patch automatically included in the stable tree, add the tag
-     Cc: stable@vger.kernel.org
-   in the sign-off area. Once the patch is merged it will be applied to
-   the stable tree without anything else needing to be done by the author
-   or subsystem maintainer.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
