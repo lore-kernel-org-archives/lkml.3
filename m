@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402AbaESV1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:27:18 -0400
-Received: from mta-out1.inet.fi ([62.71.2.198]:46495 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864AbaESV1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:27:16 -0400
-Date: Tue, 20 May 2014 00:24:16 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Kenny Simpson <theonetruekenny@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Armin Rigo <arigo@tunes.org>
-Subject: Re: remap_file_pages() use
-Message-ID: <20140519212416.GA14152@node.dhcp.inet.fi>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
- <20140519130114.GA3140@dhcp22.suse.cz>
- <20140519143540.BE9F6E009B@blue.fi.intel.com>
- <CALN0BAu0E9r0hdy_Vc6GoKiXXk_w0vetRdumW-3eFFzOPqsFSQ@mail.gmail.com>
+	id S1752278AbaESV2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:28:40 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:35147 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaESV2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 17:28:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALN0BAu0E9r0hdy_Vc6GoKiXXk_w0vetRdumW-3eFFzOPqsFSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1400534436-10913-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1400534436-10913-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 19 May 2014 23:28:17 +0200
+Message-ID: <CAPybu_2yQ0OzHth31L9oeWQ1nxFZAsbTq_i5=f_gV3E9=ygeLg@mail.gmail.com>
+Subject: Re: [PATCH 0/9] net2280: Support for PLX USB338x and cleanout code
+To: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Amit Uttamchandani <auttamchandani@logicube.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 01:34:05PM -0400, Kenny Simpson wrote:
-> For the other cases I had used the remapping to have more of a sliding
-> window over a disk-backed file where I also was using aliasing to
-> eliminate the corner cases of hitting the end of a window and needing
-> to split records due to crossing boundaries, etc..
+Hello
 
-Disk backed files are not supported by remap_file_pages() since 2007.
-See commit 3ee6dafc677a.
+I have just realized that I havent moved the changleg information
+under the tear line. I will resend the patchset with this fixed once I
+have received comments about this patchset.
+
+Sorry and thanks for your patience.
+
+
+
+On Mon, May 19, 2014 at 11:20 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
+> Controller. It shares a lot functionatily with the net228x family.
+>
+> This series of patches includes some resend of previous patches.
+>
+> Please check the changelog for every patch.
+>
+> Ricardo Ribalda Delgado (9):
+>   usb: gadget: net2280: Add support for PLX USB338X
+>   usb: gadget: net2280: Dont use magic numbers
+>   usb: gadget: net2280: Use BIT() macro
+>   usb: gadget: net2280: Use true/false instead of 1/0
+>   usb: gadget: net2280: Use module_pci_driver macro
+>   usb: gadget: net2280: Refactor queues_show
+>   usb: gadget: net2280: Pass checkpacth.pl test
+>   usb: gadget: net2280: Code Cleanup
+>   usb: gadget: net2280: Use pr_* function
+>
+>  drivers/usb/gadget/Kconfig   |   10 +-
+>  drivers/usb/gadget/net2280.c | 2746 ++++++++++++++++++++++++++++--------------
+>  drivers/usb/gadget/net2280.h |  281 +++--
+>  include/linux/usb/usb338x.h  |  199 +++
+>  4 files changed, 2225 insertions(+), 1011 deletions(-)
+>  create mode 100644 include/linux/usb/usb338x.h
+>
+> --
+> 2.0.0.rc2
+>
+
+
 
 -- 
- Kirill A. Shutemov
+Ricardo Ribalda
