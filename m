@@ -1,322 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaESNnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:43:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40484 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371AbaESNnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:43:53 -0400
-Message-ID: <537A0AA4.50904@ti.com>
-Date: Mon, 19 May 2014 16:44:04 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: DTS: omap54xx-clocks: remove the autoidle properties
- for clock nodes
-References: <1398858096-32144-1-git-send-email-peter.ujfalusi@ti.com> <5360ECF5.6080801@ti.com>
-In-Reply-To: <5360ECF5.6080801@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754512AbaESNoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:44:07 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:54098 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932274AbaESNoB convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:2>);
+	Mon, 19 May 2014 09:44:01 -0400
+X-Greylist: delayed 791 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 May 2014 09:44:01 EDT
+Message-Id: <537A26BB0200007800013AAE@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Mon, 19 May 2014 14:43:55 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
+        <matt.fleming@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
+        <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH v4 3/5] xen: Put EFI machinery in place
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
+ <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 03:30 PM, Tero Kristo wrote:
-> On 04/30/2014 02:41 PM, Peter Ujfalusi wrote:
->> In OMAP5 bit 8 in PRCM registers are not defined (Reserved) unlike their
->> counterpart in OMAP4.
->> It is better to not write to these bits.
->
-> Yeah, looks like this bug was copied over from the legacy clock data.
->
-> Acked-by: Tero Kristo <t-kristo@ti.com>
+>>> On 16.05.14 at 22:41, <daniel.kiper@oracle.com> wrote:
+> --- a/drivers/xen/Kconfig
+> +++ b/drivers/xen/Kconfig
+> @@ -240,4 +240,7 @@ config XEN_MCE_LOG
+>  config XEN_HAVE_PVMMU
+>         bool
+>  
+> +config XEN_EFI
+> +	def_bool X86_64 && EFI
 
-Also, queued for 3.15-rc/clk-dt.
+Constructs like this are bogus - they needlessly add a line to .config
+when the expression evaluates to false.
 
--Tero
+config XEN_EFI
+	def_bool y
+	depends on X86_64 && EFI
 
->
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>   arch/arm/boot/dts/omap54xx-clocks.dtsi | 48
->> ----------------------------------
->>   1 file changed, 48 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> b/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> index d487fdab3921..d784ff5d3904 100644
->> --- a/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> +++ b/arch/arm/boot/dts/omap54xx-clocks.dtsi
->> @@ -120,10 +120,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_abe_x2_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x01f0>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       abe_24m_fclk: abe_24m_fclk {
->> @@ -164,10 +162,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_abe_x2_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x01f4>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_ck: dpll_core_ck {
->> @@ -188,10 +184,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0150>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       c2c_fclk: c2c_fclk {
->> @@ -215,10 +209,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0138>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h12x2_ck: dpll_core_h12x2_ck {
->> @@ -226,10 +218,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x013c>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h13x2_ck: dpll_core_h13x2_ck {
->> @@ -237,10 +227,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0140>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h14x2_ck: dpll_core_h14x2_ck {
->> @@ -248,10 +236,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0144>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h22x2_ck: dpll_core_h22x2_ck {
->> @@ -259,10 +245,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0154>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h23x2_ck: dpll_core_h23x2_ck {
->> @@ -270,10 +254,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0158>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_h24x2_ck: dpll_core_h24x2_ck {
->> @@ -281,10 +263,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x015c>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_m2_ck: dpll_core_m2_ck {
->> @@ -292,10 +272,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0130>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_core_m3x2_ck: dpll_core_m3x2_ck {
->> @@ -303,10 +281,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_core_x2_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0134>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       iva_dpll_hs_clk_div: iva_dpll_hs_clk_div {
->> @@ -335,10 +311,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_iva_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x01b8>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_iva_h12x2_ck: dpll_iva_h12x2_ck {
->> @@ -346,10 +320,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_iva_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x01bc>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       mpu_dpll_hs_clk_div: mpu_dpll_hs_clk_div {
->> @@ -372,10 +344,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_mpu_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0170>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       per_dpll_hs_clk_div: per_dpll_hs_clk_div {
->> @@ -642,10 +612,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0158>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_per_h12x2_ck: dpll_per_h12x2_ck {
->> @@ -653,10 +621,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x015c>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_per_h14x2_ck: dpll_per_h14x2_ck {
->> @@ -664,10 +630,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_x2_ck>;
->>           ti,max-div = <63>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0164>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_per_m2_ck: dpll_per_m2_ck {
->> @@ -675,10 +639,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0150>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_per_m2x2_ck: dpll_per_m2x2_ck {
->> @@ -686,10 +648,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_x2_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0150>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_per_m3x2_ck: dpll_per_m3x2_ck {
->> @@ -697,10 +657,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_per_x2_ck>;
->>           ti,max-div = <31>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0154>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_unipro1_ck: dpll_unipro1_ck {
->> @@ -723,10 +681,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_unipro1_ck>;
->>           ti,max-div = <127>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0210>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_unipro2_ck: dpll_unipro2_ck {
->> @@ -749,10 +705,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_unipro2_ck>;
->>           ti,max-div = <127>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x01d0>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       dpll_usb_ck: dpll_usb_ck {
->> @@ -775,10 +729,8 @@
->>           compatible = "ti,divider-clock";
->>           clocks = <&dpll_usb_ck>;
->>           ti,max-div = <127>;
->> -        ti,autoidle-shift = <8>;
->>           reg = <0x0190>;
->>           ti,index-starts-at-one;
->> -        ti,invert-autoidle-bit;
->>       };
->>
->>       func_128m_clk: func_128m_clk {
->>
->
+is what avoids this.
+
+> +static efi_status_t xen_efi_get_variable(efi_char16_t *name,
+> +					 efi_guid_t *vendor,
+> +					 u32 *attr,
+> +					 unsigned long *data_size,
+> +					 void *data)
+> +{
+> +	int err;
+> +	DECLARE_CALL(get_variable);
+> +
+> +	set_xen_guest_handle(call.u.get_variable.name, name);
+> +	BUILD_BUG_ON(sizeof(*vendor) !=
+> +		     sizeof(call.u.get_variable.vendor_guid));
+> +	memcpy(&call.u.get_variable.vendor_guid, vendor, sizeof(*vendor));
+> +	call.u.get_variable.size = *data_size;
+> +	set_xen_guest_handle(call.u.get_variable.data, data);
+> +	err = HYPERVISOR_dom0_op(&op);
+> +	if (err)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*data_size = call.u.get_variable.size;
+> +	*attr = call.misc; /* misc in struction is U32 variable*/
+
+Iirc attr is an optional output, i.e. can be NULL, which hence needs
+to be checked for here. I remember that this was broken in the
+original EFI patch in our trees, so perhaps it would be good for you
+to re-check against recent sources of ours for eventual other bug
+fixes.
+
+> +static efi_status_t xen_efi_query_variable_info(u32 attr,
+> +						u64 *storage_space,
+> +						u64 *remaining_space,
+> +						u64 *max_variable_size)
+> +{
+> +	int err;
+> +	DECLARE_CALL(query_variable_info);
+> +
+> +	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+> +		return EFI_UNSUPPORTED;
+> +
+
+Here's a similar case - there is
+
+	call.u.query_variable_info.attr = attr;
+
+missing.
+
+> +static efi_char16_t vendor[100] __initdata;
+> +static const efi_char16_t unknown[] __initconst =
+> +			{'U', 'N', 'K', 'N', 'O', 'W', 'N', '\0'};
+
+If you enforced -fshort-wchar for the file's compilation, this could be
+written in a more legible manner (and probably you wouldn't need a
+named variable at all).
+
+Jan
 
