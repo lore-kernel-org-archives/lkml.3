@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750714AbaESEer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:34:47 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14034 "EHLO
+	id S1752758AbaESEfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:35:08 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17570 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750952AbaESEcx (ORCPT
+	by vger.kernel.org with ESMTP id S1750928AbaESEcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 00:32:53 -0400
 X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="74474220"
+   d="scan'208";a="74474219"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jaroslav Kysela <perex@perex.cz>
-Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/13] sound: mpu401.c: make return of 0 explicit
-Date: Mon, 19 May 2014 06:31:10 +0200
-Message-Id: <1400473875-22228-9-git-send-email-Julia.Lawall@lip6.fr>
+To: Henk de Groot <pe1dnn@amsat.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/13] staging: wlags49_h2: make return of 0 explicit
+Date: Mon, 19 May 2014 06:31:09 +0200
+Message-Id: <1400473875-22228-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -49,36 +50,61 @@ return
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/oss/mpu401.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+I'm not sure to understand this code.  There seem to be two cases where
+ret was undefined at the point of the return (on failure of the case 0
+test and in the default case).
 
-diff --git a/sound/oss/mpu401.c b/sound/oss/mpu401.c
-index 25e4609..3bbc3ec 100644
---- a/sound/oss/mpu401.c
-+++ b/sound/oss/mpu401.c
-@@ -567,7 +567,6 @@ static int mpu401_out(int dev, unsigned char midi_byte)
- static int mpu401_command(int dev, mpu_command_rec * cmd)
+ drivers/staging/wlags49_h2/wl_wext.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
+index 49eeeae..3aeff81 100644
+--- a/drivers/staging/wlags49_h2/wl_wext.c
++++ b/drivers/staging/wlags49_h2/wl_wext.c
+@@ -159,15 +159,12 @@ static int hermes_set_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr,
+ /* Set up the LTV to clear the appropriate key */
+ static int hermes_clear_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr)
  {
- 	int i, timeout, ok;
--	int ret = 0;
- 	unsigned long   flags;
- 	struct mpu_config *devc;
- 
-@@ -644,7 +643,6 @@ retry:
- 			}
+-	int ret;
+-
+ 	switch (key_idx) {
+ 	case 0:
+ 		if (!is_broadcast_ether_addr(addr)) {
+ 			ltv->len = 7;
+ 			ltv->typ = CFG_REMOVE_TKIP_MAPPED_KEY;
+ 			memcpy(&ltv->u.u8[0], addr, ETH_ALEN);
+-			ret = 0;
  		}
- 	}
--	ret = 0;
- 	cmd->data[0] = 0;
+ 		break;
+ 	case 1:
+@@ -178,13 +175,12 @@ static int hermes_clear_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr)
+ 		ltv->typ = CFG_REMOVE_TKIP_DEFAULT_KEY;
+ 		ltv->u.u16[0] = cpu_to_le16(key_idx);
  
- 	if (cmd->nr_returns)
-@@ -666,7 +664,7 @@ retry:
- 		}
+-		ret = 0;
+ 		break;
+ 	default:
+ 		break;
  	}
- 	spin_unlock_irqrestore(&devc->lock,flags);
+ 
 -	return ret;
 +	return 0;
  }
  
- static int mpu_cmd(int dev, int cmd, int data)
+ /* Set the WEP keys in the wl_private structure */
+@@ -3027,13 +3023,10 @@ static int wireless_set_genie(struct net_device *dev,
+ 			      struct iw_point *data, char *extra)
+ 
+ {
+-	int   ret = 0;
+-
+ 	/* We can't write this to the card, but apparently this
+ 	 * operation needs to succeed */
+-	ret = 0;
+ 
+-	return ret;
++	return 0;
+ }
+ /*============================================================================*/
+ 
 
