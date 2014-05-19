@@ -1,236 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921AbaESHTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:19:09 -0400
-Received: from smtprelay-b32.telenor.se ([213.150.131.21]:48070 "EHLO
-	smtprelay-b32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaESHTG (ORCPT
+	id S1751356AbaESH0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:26:39 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56056 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaESH0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:19:06 -0400
-X-Greylist: delayed 1176 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 May 2014 03:19:05 EDT
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhsZAEyreVNV5qhFPGdsb2JhbAANTItRvGEBgSMDAQEBATiCWgEBAQEDJ0IBDgEQCxgJFg8JAwIBAgExFAYBDAEFAgEBiEKsLaUOF4kxhR8HhEABA6Rri0I
-X-IPAS-Result: AhsZAEyreVNV5qhFPGdsb2JhbAANTItRvGEBgSMDAQEBATiCWgEBAQEDJ0IBDgEQCxgJFg8JAwIBAgExFAYBDAEFAgEBiEKsLaUOF4kxhR8HhEABA6Rri0I
-X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="582952431"
-Message-ID: <5379ACF1.6080305@euromail.se>
-Date: Mon, 19 May 2014 09:04:17 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 19 May 2014 03:26:38 -0400
+Date: Mon, 19 May 2014 09:26:33 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Robin Schroer <sulamiification@gmail.com>
+Cc: daniel.vetter@ffwll.ch, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
+Subject: Re: [PATCH] drivers/gpu/drm/i915/intel_display: coding style fixes
+Message-ID: <20140519072633.GD8790@phenom.ffwll.local>
+Mail-Followup-To: Robin Schroer <sulamiification@gmail.com>,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	intel-gfx@lists.freedesktop.org
+References: <20140518002450.GA26570@shodan.fritz.box>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, dmitry.torokhov@gmail.com
-CC: balbi@ti.com, dmurphy@ti.com, mugunthanvnm@ti.com, nsekhar@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-5-git-send-email-rogerq@ti.com>
-In-Reply-To: <1399374372-29123-5-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140518002450.GA26570@shodan.fritz.box>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
-
-Thanks for the patch series. I think the patch looks great in general. Please
-see some minor comments below.
-
-On 05/06/2014 01:06 PM, Roger Quadros wrote:
-> Switch to using the Type-B Multi-Touch protocol.
+On Sun, May 18, 2014 at 02:24:50AM +0200, Robin Schroer wrote:
+> Fixed several switch statements, curly braces, dereference operators
+> and keywords.
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+
+Queued for -next, thanks for the patch.
+-Daniel
 > ---
->  drivers/input/touchscreen/pixcir_i2c_ts.c | 125 ++++++++++++++++++++++--------
->  1 file changed, 94 insertions(+), 31 deletions(-)
+>  drivers/gpu/drm/i915/intel_display.c | 18 ++++++++----------
+>  1 file changed, 8 insertions(+), 10 deletions(-)
 > 
-> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> index 8a7da61..1b6e4e5 100644
-> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> @@ -23,9 +23,12 @@
->  #include <linux/slab.h>
->  #include <linux/i2c.h>
->  #include <linux/input.h>
-> +#include <linux/input/mt.h>
->  #include <linux/input/pixcir_ts.h>
->  #include <linux/gpio.h>
->  
-> +#define PIXCIR_MAX_SLOTS       2
-> +
->  struct pixcir_i2c_ts_data {
->  	struct i2c_client *client;
->  	struct input_dev *input;
-> @@ -33,12 +36,25 @@ struct pixcir_i2c_ts_data {
->  	bool running;
->  };
->  
-> -static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
-> +struct pixcir_touch {
-> +	int x;
-> +	int y;
-> +};
-> +
-> +struct pixcir_report_data {
-> +	int num_touches;
-> +	struct pixcir_touch touches[PIXCIR_MAX_SLOTS];
-> +};
-> +
-> +static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
-> +			    struct pixcir_report_data *report)
->  {
-> -	struct pixcir_i2c_ts_data *tsdata = data;
->  	u8 rdbuf[10], wrbuf[1] = { 0 };
-> +	u8 *bufptr;
->  	u8 touch;
-> -	int ret;
-> +	int ret, i;
-> +
-> +	memset(report, 0, sizeof(struct pixcir_report_data));
->  
->  	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
->  	if (ret != sizeof(wrbuf)) {
-> @@ -56,45 +72,85 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->  		return;
->  	}
->  
-> -	touch = rdbuf[0];
-> -	if (touch) {
-> -		u16 posx1 = (rdbuf[3] << 8) | rdbuf[2];
-> -		u16 posy1 = (rdbuf[5] << 8) | rdbuf[4];
-> -		u16 posx2 = (rdbuf[7] << 8) | rdbuf[6];
-> -		u16 posy2 = (rdbuf[9] << 8) | rdbuf[8];
-> -
-> -		input_report_key(tsdata->input, BTN_TOUCH, 1);
-> -		input_report_abs(tsdata->input, ABS_X, posx1);
-> -		input_report_abs(tsdata->input, ABS_Y, posy1);
-> -
-> -		input_report_abs(tsdata->input, ABS_MT_POSITION_X, posx1);
-> -		input_report_abs(tsdata->input, ABS_MT_POSITION_Y, posy1);
-> -		input_mt_sync(tsdata->input);
-> -
-> -		if (touch == 2) {
-> -			input_report_abs(tsdata->input,
-> -					 ABS_MT_POSITION_X, posx2);
-> -			input_report_abs(tsdata->input,
-> -					 ABS_MT_POSITION_Y, posy2);
-> -			input_mt_sync(tsdata->input);
-> -		}
-> -	} else {
-> -		input_report_key(tsdata->input, BTN_TOUCH, 0);
-> +	touch = rdbuf[0] & 0x7;
-> +	if (touch > PIXCIR_MAX_SLOTS)
-> +		touch = PIXCIR_MAX_SLOTS;
-> +
-> +	report->num_touches = touch;
-> +	bufptr = &rdbuf[2];
-> +
-> +	for (i = 0; i < touch; i++) {
-> +		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
-> +		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
-> +
-> +		bufptr = &bufptr[4];
->  	}
-> +}
-
-In many places, the '&ptr[index]' form makes a lot of sense, but here, it would
-have been clearer to use 'bufptr += 4'.
-
-> +
-> +static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
-> +			     struct pixcir_report_data *report)
-> +{
-> +	struct input_mt_pos pos[PIXCIR_MAX_SLOTS];
-> +	int slots[PIXCIR_MAX_SLOTS];
-> +	struct pixcir_touch *touch;
-> +	int n, i, slot;
-> +	struct device *dev = &ts->client->dev;
->  
-> -	input_sync(tsdata->input);
-> +	n = report->num_touches;
-> +	if (n > PIXCIR_MAX_SLOTS)
-> +		n = PIXCIR_MAX_SLOTS;
-> +
-> +	for (i = 0; i < n; i++) {
-> +		touch = &report->touches[i];
-> +		pos[i].x = touch->x;
-> +		pos[i].y = touch->y;
-> +	}
-> +
-> +	input_mt_assign_slots(ts->input, slots, pos, n);
-> +
-> +	for (i = 0; i < n; i++) {
-> +		touch = &report->touches[i];
-> +		slot = slots[i];
-> +
-> +		input_mt_slot(ts->input, slot);
-> +		input_mt_report_slot_state(ts->input,
-> +					   MT_TOOL_FINGER, true);
-> +
-> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_X, touch->x);
-> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_Y, touch->y);
-> +
-> +		dev_dbg(dev, "%d: slot %d, x %d, y %d\n",
-> +			i, slot, touch->x, touch->y);
-> +	}
-> +
-> +	input_mt_sync_frame(ts->input);
-> +	input_sync(ts->input);
->  }
->  
->  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->  {
->  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
-> +	struct pixcir_report_data report;
->  
->  	while (tsdata->running) {
-> -		pixcir_ts_poscheck(tsdata);
-> -
-> -		if (gpio_get_value(pdata->gpio_attb))
-> +		/* parse packet */
-> +		pixcir_ts_parse(tsdata, &report);
-> +
-> +		/* report it */
-> +		pixcir_ts_report(tsdata, &report);
-> +
-> +		if (gpio_get_value(pdata->gpio_attb)) {
-> +			if (report.num_touches) {
-> +				/*
-> +				 * Last report with no finger up?
-> +				 * Do it now then.
-> +				 */
-> +				input_mt_sync_frame(tsdata->input);
-> +				input_sync(tsdata->input);
-
-I think this construct is alright for this particular patch. If anything, it
-points at a need for a better model of interrupted contacts in the core.
-
-> +			}
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index b9256aa..ff21924 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -962,7 +962,7 @@ bool ibx_digital_port_connected(struct drm_i915_private *dev_priv,
+>  	u32 bit;
+> 
+>  	if (HAS_PCH_IBX(dev_priv->dev)) {
+> -		switch(port->port) {
+> +		switch (port->port) {
+>  		case PORT_B:
+>  			bit = SDE_PORTB_HOTPLUG;
 >  			break;
-> +		}
->  
->  		msleep(20);
+> @@ -976,7 +976,7 @@ bool ibx_digital_port_connected(struct drm_i915_private *dev_priv,
+>  			return true;
+>  		}
+>  	} else {
+> -		switch(port->port) {
+> +		switch (port->port) {
+>  		case PORT_B:
+>  			bit = SDE_PORTB_HOTPLUG_CPT;
+>  			break;
+> @@ -3221,9 +3221,8 @@ static void ironlake_fdi_disable(struct drm_crtc *crtc)
+>  	udelay(100);
+> 
+>  	/* Ironlake workaround, disable clock pointer after downing FDI */
+> -	if (HAS_PCH_IBX(dev)) {
+> +	if (HAS_PCH_IBX(dev))
+>  		I915_WRITE(FDI_RX_CHICKEN(pipe), FDI_RX_PHASE_SYNC_POINTER_OVR);
+> -	}
+> 
+>  	/* still set train pattern 1 */
+>  	reg = FDI_TX_CTL(pipe);
+> @@ -5844,7 +5843,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+>  	} else {
+>  		i9xx_update_pll(intel_crtc,
+>  				has_reduced_clock ? &reduced_clock : NULL,
+> -                                num_connectors);
+> +				num_connectors);
 >  	}
-> @@ -333,6 +389,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->  	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
->  	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
->  
-> +	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
-> +				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
-> +	if (error) {
-> +		dev_err(dev, "Error initializing Multi-Touch slots\n");
-> +		return error;
-> +	}
-> +
->  	input_set_drvdata(input, tsdata);
->  
->  	error = devm_gpio_request_one(dev, pdata->gpio_attb,
+> 
+>  skip_dpll:
+> @@ -6220,8 +6219,7 @@ static void ironlake_init_pch_refclk(struct drm_device *dev)
+>  			if (intel_panel_use_ssc(dev_priv) && can_ssc) {
+>  				DRM_DEBUG_KMS("Using SSC on eDP\n");
+>  				val |= DREF_CPU_SOURCE_OUTPUT_DOWNSPREAD;
+> -			}
+> -			else
+> +			} else
+>  				val |= DREF_CPU_SOURCE_OUTPUT_NONSPREAD;
+>  		} else
+>  			val |= DREF_CPU_SOURCE_OUTPUT_DISABLE;
+> @@ -8844,7 +8842,7 @@ void intel_prepare_page_flip(struct drm_device *dev, int plane)
+>  	spin_unlock_irqrestore(&dev->event_lock, flags);
+>  }
+> 
+> -inline static void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
+> +static inline void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
+>  {
+>  	/* Ensure that the work item is consistent when activating it ... */
+>  	smp_wmb();
+> @@ -9054,7 +9052,7 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+>  	if (ret)
+>  		goto err;
+> 
+> -	switch(intel_crtc->plane) {
+> +	switch (intel_crtc->plane) {
+>  	case PLANE_A:
+>  		plane_bit = MI_DISPLAY_FLIP_IVB_PLANE_A;
+>  		break;
+> @@ -9333,7 +9331,7 @@ static void intel_modeset_commit_output_state(struct drm_device *dev)
+>  }
+> 
+>  static void
+> -connected_sink_compute_bpp(struct intel_connector * connector,
+> +connected_sink_compute_bpp(struct intel_connector *connector,
+>  			   struct intel_crtc_config *pipe_config)
+>  {
+>  	int bpp = pipe_config->pipe_bpp;
+> --
+> 1.9.0
 > 
 
-    Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-
-Thanks,
-Henrik
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
