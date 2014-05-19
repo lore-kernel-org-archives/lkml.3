@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964925AbaESQW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:22:29 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34638 "EHLO mga11.intel.com"
+	id S1755028AbaESQWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:22:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19200 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964876AbaESQWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:22:23 -0400
+	id S1753303AbaESQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:22:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="534295296"
+   d="scan'208";a="534295401"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,19 +17,18 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        x86@kernel.org, Jiri Kosina <trivial@kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch Part1 V2 09/29] x86, ACPI, irq: fix possible eror in GSI to IRQ mapping for legacy IRQ
-Date: Tue, 20 May 2014 00:22:53 +0800
-Message-Id: <1400516594-11544-10-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: [Patch Part1 V2 10/29] x86, irq, trivial: minor improvements of IRQ related code
+Date: Tue, 20 May 2014 00:22:54 +0800
+Message-Id: <1400516594-11544-11-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,46 +36,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A default identity mapping between GSI and IRQ is built for legacy IRQs.
-So when overriding the default identity mapping for legacy IRQs,
-we should also invalidate isa_irq_to_gsi[gsi] when setting
-isa_irq_to_gsi[irq] = gsi.  Otherwise there may be two entries with the
-same GSI in the isa_irq_to_gsi array, and acpi_isa_irq_to_gsi() may give
-wrong result.
+1) Kill unused MAX_HARDIRQS_PER_CPU.
+2) Improve function prototype declararions.
+3) simple typo fix, change "gsit" to "gsi".
+4) use macro VECTOR_UNDEFINED instead of hard-coded -1.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/hardirq.h |    3 ---
+ arch/x86/include/asm/io_apic.h |   16 +++++++---------
+ arch/x86/kernel/apic/io_apic.c |   10 +++++-----
+ 3 files changed, 12 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 8b8ff786af12..dccf9e88db30 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -508,7 +508,8 @@ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+index 230853da4ec0..0f5fb6b6567e 100644
+--- a/arch/x86/include/asm/hardirq.h
++++ b/arch/x86/include/asm/hardirq.h
+@@ -40,9 +40,6 @@ typedef struct {
  
- int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
- {
--	if (isa_irq < NR_IRQS_LEGACY) {
-+	if (isa_irq < NR_IRQS_LEGACY &&
-+	    isa_irq_to_gsi[isa_irq] != ACPI_INVALID_GSI) {
- 		*gsi = isa_irq_to_gsi[isa_irq];
- 		return 0;
- 	}
-@@ -913,6 +914,13 @@ static void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
  
- 	mp_save_irq(&mp_irq);
+-/* We can have at most NR_VECTORS irqs routed to a cpu at a time */
+-#define MAX_HARDIRQS_PER_CPU NR_VECTORS
+-
+ #define __ARCH_IRQ_STAT
  
-+	/*
-+	 * Reset default identity mapping if gsi is also an legacy IRQ,
-+	 * otherwise there will be more than one entry with the same GSI
-+	 * and acpi_isa_irq_to_gsi() may give wrong result.
-+	 */
-+	if (gsi < NR_IRQS_LEGACY && isa_irq_to_gsi[gsi] == gsi)
-+		isa_irq_to_gsi[gsi] = ACPI_INVALID_GSI;
- 	isa_irq_to_gsi[bus_irq] = gsi;
+ #define inc_irq_stat(member)	this_cpu_inc(irq_stat.member)
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 9121abbc8c8f..8dd1e13f2989 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -144,22 +144,20 @@ struct io_apic_irq_attr;
+ struct irq_cfg;
+ extern int io_apic_set_pci_routing(struct device *dev, int irq,
+ 		 struct io_apic_irq_attr *irq_attr);
+-void setup_IO_APIC_irq_extra(u32 gsi);
++extern void setup_IO_APIC_irq_extra(u32 gsi);
+ extern void ioapic_insert_resources(void);
+ 
+ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+ 				     unsigned int, int,
+ 				     struct io_apic_irq_attr *);
+-extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+-				     unsigned int, int,
+-				     struct io_apic_irq_attr *);
+ extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+ 
+ extern void native_compose_msi_msg(struct pci_dev *pdev,
+ 				   unsigned int irq, unsigned int dest,
+ 				   struct msi_msg *msg, u8 hpet_id);
+ extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
+-int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
++extern int io_apic_setup_irq_pin_once(unsigned int irq, int node,
++				      struct io_apic_irq_attr *attr);
+ 
+ extern int save_ioapic_entries(void);
+ extern void mask_ioapic_entries(void);
+@@ -172,11 +170,11 @@ struct mp_ioapic_gsi{
+ 	u32 gsi_base;
+ 	u32 gsi_end;
+ };
+-extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
+-int mp_find_ioapic(u32 gsi);
+-int mp_find_ioapic_pin(int ioapic, u32 gsi);
+-void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
++
++extern int mp_find_ioapic(u32 gsi);
++extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
++extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
+ 
+ extern void mp_save_irq(struct mpc_intsrc *m);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 2de992501a1b..4d7d46650faa 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1010,7 +1010,7 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 				break;
+ 
+ 		if (!test_bit(lbus, mp_bus_not_pci) &&
+-		    !mp_irqs[i].irqtype &&
++		    mp_irqs[i].irqtype == mp_INT &&
+ 		    (bus == lbus) &&
+ 		    (slot == ((mp_irqs[i].srcbusirq >> 2) & 0x1f))) {
+ 			int irq = pin_2_irq(i, ioapic_idx, mp_irqs[i].dstirq);
+@@ -1359,7 +1359,7 @@ static void __init __io_apic_setup_irqs(unsigned int ioapic_idx)
+ 
+ 		irq = pin_2_irq(idx, ioapic_idx, pin);
+ 
+-		if ((ioapic_idx > 0) && (irq > 16))
++		if ((ioapic_idx > 0) && (irq > NR_IRQS_LEGACY))
+ 			continue;
+ 
+ 		/*
+@@ -1388,7 +1388,7 @@ static void __init setup_IO_APIC_irqs(void)
  }
  
+ /*
+- * for the gsit that is not in first ioapic
++ * for the gsi that is not in first ioapic
+  * but could not use acpi_register_gsi()
+  * like some special sci in IBM x3330
+  */
+@@ -2225,7 +2225,7 @@ asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
+ 			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
+ 			goto unlock;
+ 		}
+-		__this_cpu_write(vector_irq[vector], -1);
++		__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+ unlock:
+ 		raw_spin_unlock(&desc->lock);
+ 	}
+@@ -3546,7 +3546,7 @@ void __init setup_ioapic_dest(void)
+ 			continue;
+ 		irq = pin_2_irq(irq_entry, ioapic, pin);
+ 
+-		if ((ioapic > 0) && (irq > 16))
++		if ((ioapic > 0) && (irq > NR_IRQS_LEGACY))
+ 			continue;
+ 
+ 		idata = irq_get_irq_data(irq);
 -- 
 1.7.10.4
 
