@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaESGCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:02:40 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47573 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaESGCj (ORCPT
+	id S1752717AbaESGDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:03:25 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:51883 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624AbaESGDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:02:39 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCH 11/20] perf report: Add -F option to specify output fields
-References: <1399876133-17963-1-git-send-email-namhyung@kernel.org>
-	<1399876133-17963-12-git-send-email-namhyung@kernel.org>
-	<20140515131717.GF25858@krava.brq.redhat.com>
-	<871tvukzbp.fsf@sejong.aot.lge.com>
-Date: Mon, 19 May 2014 15:02:21 +0900
-In-Reply-To: <871tvukzbp.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Fri, 16 May 2014 15:33:14 +0900")
-Message-ID: <87k39ijogi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 19 May 2014 02:03:23 -0400
+Date: Mon, 19 May 2014 08:03:18 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Robert Richter <rric@kernel.org>, kernel-janitors@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        oprofile-list@lists.sf.net, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] s390/irq: make return of 0 explicit
+Message-ID: <20140519060318.GA4459@osiris>
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1400473875-22228-14-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400473875-22228-14-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14051906-0342-0000-0000-000008CF700F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 May 2014 15:33:14 +0900, Namhyung Kim wrote:
-> On Thu, 15 May 2014 15:17:17 +0200, Jiri Olsa wrote:
->> On Mon, May 12, 2014 at 03:28:44PM +0900, Namhyung Kim wrote:
->>
->> SNIP
->>
->>> +
->>> +int setup_output_field(void)
->>> +{
->>> +	char *tmp, *tok, *str;
->>> +	int ret = 0;
->>> +
->>> +	if (field_order == NULL)
->>> +		goto out;
->>> +
->>> +	reset_dimensions();
->>
->> Do we want to call this in setup_sorting as well? In case
->> we mix the order of setup_output_field and setup_sorting
->> in the future?
->
-> Yeah, looks like a good idea.
+On Mon, May 19, 2014 at 06:31:15AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Delete unnecessary local variable whose value is always 0 and that hides
+> the fact that the result is always 0.
+> 
+> A simplified version of the semantic patch that fixes this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  arch/s390/oprofile/hwsampler.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
+> index 276f2e2..28b2760 100644
+> --- a/arch/s390/oprofile/hwsampler.c
+> +++ b/arch/s390/oprofile/hwsampler.c
+> @@ -212,10 +212,8 @@ static void init_all_cpu_buffers(void)
+>  static int prepare_cpu_buffers(void)
+>  {
+>  	int cpu;
+> -	int rc;
+>  	struct hws_cpu_buffer *cb;
+> 
+> -	rc = 0;
+>  	for_each_online_cpu(cpu) {
+>  		cb = &per_cpu(sampler_cpu_buffer, cpu);
+>  		atomic_set(&cb->ext_params, 0);
+> @@ -231,7 +229,7 @@ static int prepare_cpu_buffers(void)
+>  		cb->stop_mode = 0;
+>  	}
+> 
+> -	return rc;
+> +	return 0;
+>  }
 
-Hmm.. I misunderstood your point.  The thing is that the initialization
-step needs to be done in a specific order (due to their implicit
-dependency).  So I change it to be called in one place, setup_sorting().
+Thanks Julia,
 
-Thanks,
-Namhyung
+I applied a slightly different version which also turns prepare_cpu_buffers
+into a void returning function.
+
