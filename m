@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaESV2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:28:40 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:35147 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaESV2i (ORCPT
+	id S1751225AbaESVgg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:36:36 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:60582 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaESVge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:28:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400534436-10913-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1400534436-10913-1-git-send-email-ricardo.ribalda@gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 19 May 2014 23:28:17 +0200
-Message-ID: <CAPybu_2yQ0OzHth31L9oeWQ1nxFZAsbTq_i5=f_gV3E9=ygeLg@mail.gmail.com>
-Subject: Re: [PATCH 0/9] net2280: Support for PLX USB338x and cleanout code
-To: "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Amit Uttamchandani <auttamchandani@logicube.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 May 2014 17:36:34 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: soc: samsung: dma.c:  Fix for possible null pointer dereference
+Date: Mon, 19 May 2014 23:37:23 +0200
+Message-Id: <1400535443-5886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+There is otherwise a risk of a possible null pointer dereference.
 
-I have just realized that I havent moved the changleg information
-under the tear line. I will resend the patchset with this fixed once I
-have received comments about this patchset.
+Was largely found by using a static code analysis program called cppcheck.
 
-Sorry and thanks for your patience.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ sound/soc/samsung/dma.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-
-
-On Mon, May 19, 2014 at 11:20 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
-> Controller. It shares a lot functionatily with the net228x family.
->
-> This series of patches includes some resend of previous patches.
->
-> Please check the changelog for every patch.
->
-> Ricardo Ribalda Delgado (9):
->   usb: gadget: net2280: Add support for PLX USB338X
->   usb: gadget: net2280: Dont use magic numbers
->   usb: gadget: net2280: Use BIT() macro
->   usb: gadget: net2280: Use true/false instead of 1/0
->   usb: gadget: net2280: Use module_pci_driver macro
->   usb: gadget: net2280: Refactor queues_show
->   usb: gadget: net2280: Pass checkpacth.pl test
->   usb: gadget: net2280: Code Cleanup
->   usb: gadget: net2280: Use pr_* function
->
->  drivers/usb/gadget/Kconfig   |   10 +-
->  drivers/usb/gadget/net2280.c | 2746 ++++++++++++++++++++++++++++--------------
->  drivers/usb/gadget/net2280.h |  281 +++--
->  include/linux/usb/usb338x.h  |  199 +++
->  4 files changed, 2225 insertions(+), 1011 deletions(-)
->  create mode 100644 include/linux/usb/usb338x.h
->
-> --
-> 2.0.0.rc2
->
-
-
-
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index dc09b71..1d9bcaa 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -115,17 +115,19 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+ static void audio_buffdone(void *data)
+ {
+ 	struct snd_pcm_substream *substream = data;
+-	struct runtime_data *prtd = substream->runtime->private_data;
++	struct runtime_data *prtd = NULL;
+ 
+ 	pr_debug("Entered %s\n", __func__);
+ 
+-	if (prtd->state & ST_RUNNING) {
++	if (substream)
++		prtd = substream->runtime->private_data;
++
++	if (prtd && prtd->state & ST_RUNNING) {
+ 		prtd->dma_pos += prtd->dma_period;
+ 		if (prtd->dma_pos >= prtd->dma_end)
+ 			prtd->dma_pos = prtd->dma_start;
+ 
+-		if (substream)
+-			snd_pcm_period_elapsed(substream);
++		snd_pcm_period_elapsed(substream);
+ 
+ 		spin_lock(&prtd->lock);
+ 		if (!samsung_dma_has_circular()) {
 -- 
-Ricardo Ribalda
+1.7.10.4
+
