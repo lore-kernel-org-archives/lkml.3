@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaESNaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:30:52 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:53723 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaESNav convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:2>);
-	Mon, 19 May 2014 09:30:51 -0400
-Message-Id: <537A23A50200007800013A7F@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Mon, 19 May 2014 14:30:45 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
-Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
-        <matt.fleming@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
-        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
-        <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH v4 1/5] efi: Introduce EFI_DIRECT flag
-References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
- <1400272904-31121-2-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1400272904-31121-2-git-send-email-daniel.kiper@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754524AbaESNdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:33:05 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:37941 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794AbaESNdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:33:00 -0400
+Date: Mon, 19 May 2014 14:32:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v3 3/7] mfd: add support for sun6i PRCM
+ (Power/Reset/Clock Management) unit
+Message-ID: <20140519133253.GJ4978@lee--X1>
+References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1399633911-7094-4-git-send-email-boris.brezillon@free-electrons.com>
+ <20140509135251.GY5767@lee--X1>
+ <20140515151756.GX29258@lukather>
+ <20140519092159.GE4978@lee--X1>
+ <20140519092725.GE29466@lukather>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140519092725.GE29466@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.05.14 at 22:41, <daniel.kiper@oracle.com> wrote:
-> @@ -457,6 +460,21 @@ void __init efi_free_boot_services(void)
->  	efi_unmap_memmap();
->  }
->  
-> +static void __init __iomem *efi_early_ioremap(resource_size_t phys_addr,
-> +							unsigned long size)
-> +{
-> +	if (efi_enabled(EFI_DIRECT))
-> +		return early_ioremap(phys_addr, size);
-> +
-> +	return (__force void __iomem *)phys_addr;
 
-Now that surely needs some explanation: I can't see how this can
-ever be correct, Xen or not being completely irrelevant.
+> > > > > The PRCM (Power/Reset/Clock Management) block exposes several subdevices
+> > > > > in different subsystems (clk, reset ...)
+> > > > > 
+> > > > > Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
+> > > > > and reset controller subdevices.
+> > > > > 
+> > > > > Other subdevices might be added later (if needed).
+> > > > > 
+> > > > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > > > ---
+> > > > >  drivers/mfd/Kconfig      |   8 +++
+> > > > >  drivers/mfd/Makefile     |   1 +
+> > > > >  drivers/mfd/sun6i-prcm.c | 134 +++++++++++++++++++++++++++++++++++++++++++++++
+> > > > >  3 files changed, 143 insertions(+)
+> > > > >  create mode 100644 drivers/mfd/sun6i-prcm.c
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > +/*
+> > > > > + * Copyright (C) 2014 Free Electrons
+> > > > > + *
+> > > > > + * License Terms: GNU General Public License v2
+> > > > > + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > > + *
+> > > > > + * Allwinner PRCM (Power/Reset/Clock Management) driver
+> > > > > + *
+> > > > > + */
+> > > > > +
+> > > > > +#include <linux/mfd/core.h>
+> > > > > +#include <linux/module.h>
+> > > > > +#include <linux/of.h>
+> > > > 
+> > > > Ah, now isn't that better?
+> > > > 
+> > > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > 
+> > > How do you want to merge this? Do you want me to take it through
+> > > mach-sunxi tree, or do you want to take it in your tree?
+> > 
+> > If Boris can tell me what needs to go in with this patch (or if it
+> > can go in on its own), I will create a(n immutable) branch from which
+> > you can pull into your tree.
+> 
+> We don't have any runtime or compile time dependency on this, so you
+> can merge it through your tree. Unless something change, I don't have
+> to pull anything in my tree.
 
-Jan
+When you say 'this', do you mean this patch, or this set?  If I can
+just apply this patch, that will be ideal?
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
