@@ -1,148 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaESPKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:10:31 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:62044 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaESPK3 (ORCPT
+	id S932254AbaESPKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:10:36 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:50018 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaESPKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:10:29 -0400
+	Mon, 19 May 2014 11:10:34 -0400
+Message-ID: <537A1EE8.6030303@atmel.com>
+Date: Mon, 19 May 2014 17:10:32 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Mon, 19 May 2014 18:10:28 +0300
-Message-ID: <CACiqTEMeRiaio55cj0dc_ErCZe5XTGsQUwqBb90Jg22uN=FvLQ@mail.gmail.com>
-Subject: bcache errors
-From: roma1390 <roma1390@gmail.com>
-To: kmo@daterainc.com, neilb@suse.de, linux-bcache@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Olof Johansson <olof@lixom.net>, <alexandre.belloni@free-electrons.com>,
+        <boris.brezillon@free-electrons.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <arm@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        <linus.walleij@linaro.org>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: cleanup for 3.16 #1
+References: <1399484042-27432-1-git-send-email-nicolas.ferre@atmel.com> <536A6FD7.40402@atmel.com> <20140516232635.GB6423@quad.lixom.net> <20140516233141.GC6423@quad.lixom.net>
+In-Reply-To: <20140516233141.GC6423@quad.lixom.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On 17/05/2014 01:31, Olof Johansson :
+> On Fri, May 16, 2014 at 04:26:35PM -0700, Olof Johansson wrote:
+>> On Wed, May 07, 2014 at 07:39:35PM +0200, Nicolas Ferre wrote:
+>>> On 07/05/2014 19:34, Nicolas Ferre :
+>>>> Arnd, Olof, Kevin,
+>>>>
+>>>> This is the first cleanup pull-request for 3.16. It is pretty big because it
+>>>> integrates the work from Boris about CCF and Alexandre about IIO/ADC. I
+>>>> integrated them in this cleanup topic because they both touch the core at91
+>>>> code, the clk and IIO drivers as well as the DT. The concerned maintainers
+>>>> added their tags.
+>>>>
+>>>> The patch by Linus is a move of at91 specific GPIO definitions out of the
+>>>> include/mach directory which is an step towards single zImage.
+>>>>
+>>>> Thanks, best regards,
+>>>>
+>>>> The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+>>>>
+>>>>   Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+>>>>
+>>>> are available in the git repository at:
+>>>>
+>>>>   git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+>>>
+>>> There is a little conflict with at91-3.16-dt that you already pulled in
+>>> arm-soc: here is the branch that resolves it:
+>>>
+>>> https://github.com/at91linux/linux-at91/commits/at91-3.16-resolved
+>>
+>> That resolution looks odd. Why is one clock under clocks { } and two of them
+>> are at the top level? Shouldn't they all be under the clocks subnode?
+>>
+>> I've merged in now with your resolution, but I think this needs revisiting.
 
-tryed bcache on 3.13-1-amd64 (from debian)
+With information from Alexandre, I have the feeling that we should
+remove the "clocks" container altogether. I propose to clean completely
+this part in 3.17 as it will not change the system but only its
+representation in DT...
+Still, we will fix the ugliest parts like this one:
+http://code.bulix.org/by22lb-86239
 
-Steps:
+> Oh, and also: The branch was named cleanup, but it really contains mostly new
+> driver and new contents, so I merged it under next/soc instead. In the future,
+> for releases when you have more contents, please split it up a bit more (dt
+> updates separately, driver updates separately) if it can be done without too
+> much hassle. For now it's not a huge deal to do it this way though.
 
-git clone https://github.com/g2p/bcache-tools.git
-cd bcache-tools/
-make
+Yes. The issue with these series that switch from one description to
+another is that if we split the driver and dt parts it would add extra
+steps which are not very easy to keep in sync, implement and are kind of
+useless.
 
-dd if=/dev/zero of=data bs=1M count=64
-losetup -d /dev/loop0; losetup /dev/loop0 /tmp/bb/bcache-tools/data
-make-bcache -C /dev/ram0 -B /dev/ram1
-modprobe bcache
-echo /dev/ram0 > /sys/fs/bcache/register
-echo /dev/loop0 > /sys/fs/bcache/register
+I have more series to come for 3.16 that I named "cleanup" as well. I
+will double check to see if I can split them up more...
 
-Got:
-May 19 17:32:55 bump kernel: [670838.280487] bcache: register_bdev()
-registered backing device ram0
-May 19 17:33:02 bump kernel: [670845.209612] bcache: run_cache_set()
-invalidating existing data
-May 19 17:33:02 bump kernel: [670845.277214] bcache:
-bch_cached_dev_attach() Caching ram0 as bcache0 on set
-d01c215c-f038-4e85-9f7f-d1133f080b55
-May 19 17:33:02 bump kernel: [670845.277230] bcache: register_cache()
-registered cache device loop0
-May 19 17:35:28 bump kernel: [670991.228242] INFO: task
-bcache_writebac:6378 blocked for more than 120 seconds.
-May 19 17:35:28 bump kernel: [670991.228246]       Tainted: G
-C   3.13-1-amd64 #1
-May 19 17:35:28 bump kernel: [670991.228247] "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-May 19 17:35:28 bump kernel: [670991.228248] bcache_writebac D
-ffff8804f2ab2350     0  6378      2 0x00000000
-May 19 17:35:28 bump kernel: [670991.228251]  ffff8804f2ab2010
-0000000000000046 0000000000014280 0000000000014280
-May 19 17:35:28 bump kernel: [670991.228252]  ffff880725423fd8
-ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-May 19 17:35:28 bump kernel: [670991.228254]  ffffffffa0866790
-0000000000000000 0000000000000000 0000000000000000
-May 19 17:35:28 bump kernel: [670991.228255] Call Trace:
-May 19 17:35:28 bump kernel: [670991.228262]  [<ffffffffa0866790>] ?
-write_dirty_finish+0x210/0x210 [bcache]
-May 19 17:35:28 bump kernel: [670991.228265]  [<ffffffff8107bb2d>] ?
-kthread+0x9d/0xe0
-May 19 17:35:28 bump kernel: [670991.228266]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:35:28 bump kernel: [670991.228270]  [<ffffffff814aeacc>] ?
-ret_from_fork+0x7c/0xb0
-May 19 17:35:28 bump kernel: [670991.228271]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:37:28 bump kernel: [671111.112160] INFO: task
-bcache_writebac:6378 blocked for more than 120 seconds.
-May 19 17:37:28 bump kernel: [671111.112165]       Tainted: G
-C   3.13-1-amd64 #1
-May 19 17:37:28 bump kernel: [671111.112166] "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-May 19 17:37:28 bump kernel: [671111.112167] bcache_writebac D
-ffff8804f2ab2350     0  6378      2 0x00000000
-May 19 17:37:28 bump kernel: [671111.112170]  ffff8804f2ab2010
-0000000000000046 0000000000014280 0000000000014280
-May 19 17:37:28 bump kernel: [671111.112172]  ffff880725423fd8
-ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-May 19 17:37:28 bump kernel: [671111.112174]  ffffffffa0866790
-0000000000000000 0000000000000000 0000000000000000
-May 19 17:37:28 bump kernel: [671111.112175] Call Trace:
-May 19 17:37:28 bump kernel: [671111.112183]  [<ffffffffa0866790>] ?
-write_dirty_finish+0x210/0x210 [bcache]
-May 19 17:37:28 bump kernel: [671111.112186]  [<ffffffff8107bb2d>] ?
-kthread+0x9d/0xe0
-May 19 17:37:28 bump kernel: [671111.112188]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:37:28 bump kernel: [671111.112191]  [<ffffffff814aeacc>] ?
-ret_from_fork+0x7c/0xb0
-May 19 17:37:28 bump kernel: [671111.112193]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:39:28 bump kernel: [671230.996097] INFO: task
-bcache_writebac:6378 blocked for more than 120 seconds.
-May 19 17:39:28 bump kernel: [671230.996101]       Tainted: G
-C   3.13-1-amd64 #1
-May 19 17:39:28 bump kernel: [671230.996102] "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-May 19 17:39:28 bump kernel: [671230.996103] bcache_writebac D
-ffff8804f2ab2350     0  6378      2 0x00000000
-May 19 17:39:28 bump kernel: [671230.996106]  ffff8804f2ab2010
-0000000000000046 0000000000014280 0000000000014280
-May 19 17:39:28 bump kernel: [671230.996108]  ffff880725423fd8
-ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-May 19 17:39:28 bump kernel: [671230.996109]  ffffffffa0866790
-0000000000000000 0000000000000000 0000000000000000
-May 19 17:39:28 bump kernel: [671230.996111] Call Trace:
-May 19 17:39:28 bump kernel: [671230.996118]  [<ffffffffa0866790>] ?
-write_dirty_finish+0x210/0x210 [bcache]
-May 19 17:39:28 bump kernel: [671230.996121]  [<ffffffff8107bb2d>] ?
-kthread+0x9d/0xe0
-May 19 17:39:28 bump kernel: [671230.996123]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:39:28 bump kernel: [671230.996126]  [<ffffffff814aeacc>] ?
-ret_from_fork+0x7c/0xb0
-May 19 17:39:28 bump kernel: [671230.996127]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:41:28 bump kernel: [671350.880041] INFO: task
-bcache_writebac:6378 blocked for more than 120 seconds.
-May 19 17:41:28 bump kernel: [671350.880045]       Tainted: G
-C   3.13-1-amd64 #1
-May 19 17:41:28 bump kernel: [671350.880046] "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-May 19 17:41:28 bump kernel: [671350.880047] bcache_writebac D
-ffff8804f2ab2350     0  6378      2 0x00000000
-May 19 17:41:28 bump kernel: [671350.880050]  ffff8804f2ab2010
-0000000000000046 0000000000014280 0000000000014280
-May 19 17:41:28 bump kernel: [671350.880051]  ffff880725423fd8
-ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
-May 19 17:41:28 bump kernel: [671350.880060]  ffffffffa0866790
-0000000000000000 0000000000000000 0000000000000000
-May 19 17:41:28 bump kernel: [671350.880062] Call Trace:
-May 19 17:41:28 bump kernel: [671350.880069]  [<ffffffffa0866790>] ?
-write_dirty_finish+0x210/0x210 [bcache]
-May 19 17:41:28 bump kernel: [671350.880073]  [<ffffffff8107bb2d>] ?
-kthread+0x9d/0xe0
-May 19 17:41:28 bump kernel: [671350.880074]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
-May 19 17:41:28 bump kernel: [671350.880078]  [<ffffffff814aeacc>] ?
-ret_from_fork+0x7c/0xb0
-May 19 17:41:28 bump kernel: [671350.880079]  [<ffffffff8107ba90>] ?
-kthread_create_on_node+0x180/0x180
+Thanks, bye,
+-- 
+Nicolas Ferre
