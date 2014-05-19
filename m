@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750996AbaESUmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:42:08 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:46381 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaESUmG (ORCPT
+	id S1751524AbaESUna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:43:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54975 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751103AbaESUnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:42:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400531394.14238.35.camel@joe-AO725>
-References: <Pine.LNX.4.44L0.1405191615451.1538-100000@iolanthe.rowland.org> <1400531394.14238.35.camel@joe-AO725>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 19 May 2014 22:41:45 +0200
-Message-ID: <CAPybu_0_3-a_O8o8P478vupRB44u9jz+cmrQi35jifb6StCn9g@mail.gmail.com>
-Subject: Re: [PATCH 5/5] usb: gadget: net2280: Use pr_* function
-To: Joe Perches <joe@perches.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Amit Uttamchandani <auttamchandani@logicube.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 May 2014 16:43:24 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 resend 00/11] improve PWM lookup support without device tree
+Date: Mon, 19 May 2014 22:42:31 +0200
+Message-Id: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good idea.
+Hi,
 
- I am going to define ep_* and use them.
+Originally sent on Apr 14th, note that this series is blocking another 16
+patches series, I would like it to be taken in 3.16 if we can agree on this
+implementation.
 
-btw, DEBUG cannot be used if not unset, because there is a namespace collision.
+A patch set as suggested by Thierry to make lookup with the lookup table
+instead of device tree behave more like when using device tree.
 
-Regards!
+The first patch adds a period and a polarity member to the lookup table and use
+those to set period and polarity.
 
+Patch 2, 4 and 5 are making use of those new members from the board files.
+Patch 3 removes useless code since setting the polarity is now handled by the
+PWM core.
 
+I couldn't decide on a good name for the extended PWM_LOOKUP macro and I believe
+we won't have to add members to that structure soon so:
+Patch 6 modifies the PWM_LOOKUP macro to also initialize period and polarity
+and
+Patch 7-9 are making use of the new PWM_LOOKUP macro in the board files
 
-On Mon, May 19, 2014 at 10:29 PM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-05-19 at 16:17 -0400, Alan Stern wrote:
->> On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
->> > I really think that setting/unsetting DEBUG and VERBOSE is not a good
->> > idea, and the generic functions are there to be used.
->> You could change the definitions of DEBUG and VDEBUG to make them use
->> the generic functions.
->> > What do you think that makes it more difficult to read? The GETDEV macro?
->
-> Maybe add ep_<level> helper macros and remove xprint
->
-> #define ep_err(ep, fmt, ...)                                    \
->         dev_err(&(ep)->dev->pdev->dev, fmt, ##__VA_ARGS__)
-> #define ep_warn(ep, fmt, ...)                                   \
->         dev_warn(&(ep)->dev->pdev->dev, fmt, ##__VA_ARGS__)
-> #define ep_info(ep, fmt, ...)                                   \
->         dev_info(&(ep)->dev->pdev->dev, fmt, ##__VA_ARGS__)
-> #define ep_dbg(ep, fmt, ...)                                    \
->         dev_dbg(&(ep)->dev->pdev->dev, fmt, ##__VA_ARGS__)
-> #define ep_vdbg(ep, fmt, ...)                                   \
->         dev_vdbg(&(ep)->dev->pdev->dev, fmt, ##__VA_ARGS__)
->
-> but even that conversion isn't straightforward.
->
->
+Patch 10 and 11 are making the leds-pwm and pwm_bl drivers get the period from
+the PWM before using pwm_period_ns if it is not already set.
 
+Patch 10 will obviously conflict with the series of Russell reworking the
+leds-pwm probing. I can rebase if necessary
 
+The final goal would be to get rid of .pwm_period_ns in leds-pwm and pwm_bl
+after moving all the remaining users (still around 25) to pwm_lookup.
+
+Changes in v2:
+ - correctly unlock the pwm_lookup_lock mutex before returning.
+ - don't change PWM_LOOKUP atomically
+ - remove tpu_pwm_platform_data and the associated header file
+ - make the leds-pwm and pwm_bl drivers get the period from the PWM
+
+Alexandre Belloni (11):
+  pwm: add period and polarity to struct pwm_lookup
+  ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup
+    members
+  pwm: renesas-tpu: remove useless struct tpu_pwm_platform_data
+  ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
+  ARM: pxa: hx4700: initialize all the struct pwm_lookup members
+  pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
+  ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize struct pwm_lookup
+  ARM: shmobile: Armadillo 800 EVA: use PWM_LOOKUP to initialize struct
+    pwm_lookup
+  ARM: pxa: hx4700: use PWM_LOOKUP to initialize struct pwm_lookup
+  leds: leds-pwm: retrieve configured pwm period
+  backlight: pwm_bl: retrieve configured pwm period
+
+ Documentation/pwm.txt                          |  3 ++-
+ arch/arm/mach-omap2/board-omap3beagle.c        |  3 ++-
+ arch/arm/mach-pxa/hx4700.c                     |  3 ++-
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 14 +++-----------
+ drivers/leds/leds-pwm.c                        |  5 ++++-
+ drivers/pwm/core.c                             |  8 +++++++-
+ drivers/pwm/pwm-renesas-tpu.c                  | 19 +++----------------
+ drivers/video/backlight/pwm_bl.c               |  8 +++++---
+ include/linux/platform_data/pwm-renesas-tpu.h  | 16 ----------------
+ include/linux/pwm.h                            |  6 +++++-
+ 10 files changed, 33 insertions(+), 52 deletions(-)
+ delete mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
 
 -- 
-Ricardo Ribalda
+1.9.1
+
