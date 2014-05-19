@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaESLjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:39:35 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:51452 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaESLjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:39:33 -0400
-Message-ID: <5379ED6B.8060309@gmail.com>
-Date: Mon, 19 May 2014 13:39:23 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com
-CC: sajjan.linux@gmail.com, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
-        arnd@arndb.de, marc.zyngier@arm.com, t.figa@samsung.com,
-        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
-        inki.dae@samsung.com, kyungmin.park@samsung.com,
-        thomas.abraham@linaro.org, ben-linux@fluff.org, olof@lixom.net,
-        chanho61.park@samsung.com, sachin.kamat@linaro.org,
-        linux-arm-kernel@lists.infradead.org, tushar.behera@linaro.org
-Subject: Re: [PATCHv5 0/5] Support new Exynos3250 SoC based on Cortex-A7 dual
- core
-References: <1399986308-23744-1-git-send-email-cw00.choi@samsung.com> <5374426B.6000505@samsung.com> <5379ECBF.9010706@gmail.com>
-In-Reply-To: <5379ECBF.9010706@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753786AbaESLj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:39:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56380 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752681AbaESLj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 07:39:56 -0400
+Message-ID: <1400499593.31716.16.camel@linux-fkkt.site>
+Subject: Re: [PATCH] scsi: dc395x.c:  Fix for possible null pointer
+ dereference
+From: Oliver Neukum <oneukum@suse.de>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ali Akcaagac <aliakc@web.de>, Jamie Lenehan <lenehan@twibble.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>, dc395x@twibble.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 19 May 2014 13:39:53 +0200
+In-Reply-To: <Pine.LNX.4.64.1405182147500.23804@axis700.grange>
+References: <1400429349-11040-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	 <Pine.LNX.4.64.1405182147500.23804@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 19.05.2014 13:36, Tomasz Figa wrote:
-> Hi Kukjin, Chanwoo,
+On Sun, 2014-05-18 at 21:50 +0200, Guennadi Liakhovetski wrote:
+> On Sun, 18 May 2014, Rickard Strandqvist wrote:
 > 
-> On 15.05.2014 06:28, Chanwoo Choi wrote:
->> Dear Kukjin,
->>
->> Could you please pick following patches?
->> - [PATCHv5 1/5] ARM: EXYNOS: Add Exynos3250 SoC ID
->> - [PATCHv5 2/5] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
+> > There is otherwise a risk of a possible null pointer dereference.
+> > 
+> > Was largely found by using a static code analysis program called cppcheck.
+> > 
+> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> > ---
+> >  drivers/scsi/dc395x.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/scsi/dc395x.c b/drivers/scsi/dc395x.c
+> > index 83d9bf6..0d86bc7 100644
+> > --- a/drivers/scsi/dc395x.c
+> > +++ b/drivers/scsi/dc395x.c
+> > @@ -2637,7 +2637,7 @@ static struct ScsiReqBlk *msgin_qtag(struct AdapterCtlBlk *acb,
+> >  	struct ScsiReqBlk *srb = NULL;
+> >  	struct ScsiReqBlk *i;
+> >  	dprintkdbg(DBG_0, "msgin_qtag: (0x%p) tag=%i srb=%p\n",
+> > -		   srb->cmd, tag, srb);
+> > +		   srb ? srb->cmd : 0, tag, srb);
 > 
-> I'd say that [PATCHv5 5/5] ARM: dts: Add device tree sources for
-> Exynos3250 would be also useful. :)
+> There's not just a risk, it is a NULL-pointer dereference, so, just remove 
+> it, e.g. like
 
-Aha, it is already applied. I should have checked in the tree first. Sorry.
+Indeed. Thank you both for catching this.
 
-Best regards,
-Tomasz
+	Regards
+		Oliver
+
+
+
