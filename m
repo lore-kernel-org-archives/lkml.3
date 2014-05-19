@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaESFrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 01:47:31 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:41092 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaESFr3 (ORCPT
+	id S1752221AbaESFuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 01:50:54 -0400
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:44192 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaESFuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 01:47:29 -0400
+	Mon, 19 May 2014 01:50:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <2098888.ybkVo6Z2Xi@amdc1032>
+In-Reply-To: <1399288539-1793-7-git-send-email-b.zolnierkie@samsung.com>
 References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-	<1399288539-1793-6-git-send-email-b.zolnierkie@samsung.com>
-	<20140515144739.GA27690@developer>
-	<2098888.ybkVo6Z2Xi@amdc1032>
-Date: Mon, 19 May 2014 11:17:28 +0530
-Message-ID: <CADGdYn43aKJRhT9OdA+tDi7UXTaEN8qk_WBV4NrnSrMxqteK9Q@mail.gmail.com>
-Subject: Re: [PATCH 05/10] thermal: exynos: remove redundant pdata checks from exynos_tmu_initialize()
+	<1399288539-1793-7-git-send-email-b.zolnierkie@samsung.com>
+Date: Mon, 19 May 2014 11:20:51 +0530
+Message-ID: <CADGdYn5z8QYDrpA771fSqBZVX4=3q6ig4RU+XHP44qaUpPO_Jg@mail.gmail.com>
+Subject: Re: [PATCH 06/10] thermal: exynos: remove redundant threshold_code
+ checks from exynos_tmu_initialize()
 From: Amit Kachhap <amit.kachhap@gmail.com>
 To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
         Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Kyungmin Park <kyungmin.park@samsung.com>,
@@ -30,92 +28,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> On Thursday, May 15, 2014 10:47:40 AM Eduardo Valentin wrote:
->> Hello Bartlomiej,
+On 5/5/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> Remove runtime checks for negative return values of temp_to_code()
+> from exynos_tmu_initialize().  The current level temperature data
+> hardcoded in pdata will never cause a negative temp_to_code()
+> return values and for the new code potential mistakes should be
+> caught during development/review phases.
+Your arguments looks fine.
 >
-> Hi,
+> Theres should be no functional changes caused by this patch.
 >
->> On Mon, May 05, 2014 at 01:15:34PM +0200, Bartlomiej Zolnierkiewicz
->> wrote:
->> > Remove runtime checks for pdata sanity from exynos_tmu_initialize().
->> > The current values hardcoded in pdata will never trigger the checks
->> > and for the new code potential mistakes should be caught during
->> > development/review phases.
->> >
->> > There should be no functional changes caused by this patch.
->> >
->> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->> > ---
->> >  drivers/thermal/samsung/exynos_thermal_common.h |  1 -
->> >  drivers/thermal/samsung/exynos_tmu.c            | 13 -------------
->> >  2 files changed, 14 deletions(-)
->> >
->> > diff --git a/drivers/thermal/samsung/exynos_thermal_common.h
->> > b/drivers/thermal/samsung/exynos_thermal_common.h
->> > index 3eb2ed9..cd44719 100644
->> > --- a/drivers/thermal/samsung/exynos_thermal_common.h
->> > +++ b/drivers/thermal/samsung/exynos_thermal_common.h
->> > @@ -27,7 +27,6 @@
->> >  #define SENSOR_NAME_LEN	16
->> >  #define MAX_TRIP_COUNT	8
->> >  #define MAX_COOLING_DEVICE 4
->> > -#define MAX_THRESHOLD_LEVS 5
->> >
->> >  #define ACTIVE_INTERVAL 500
->> >  #define IDLE_INTERVAL 10000
->> > diff --git a/drivers/thermal/samsung/exynos_tmu.c
->> > b/drivers/thermal/samsung/exynos_tmu.c
->> > index 903566f..789d745 100644
->> > --- a/drivers/thermal/samsung/exynos_tmu.c
->> > +++ b/drivers/thermal/samsung/exynos_tmu.c
->> > @@ -158,23 +158,10 @@ static int exynos_tmu_initialize(struct
->> > platform_device *pdev)
->> >  	    data->temp_error > pdata->max_efuse_value)
->> >  		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
->> >
->> > -	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
->> > -		dev_err(&pdev->dev, "Invalid max trigger level\n");
->> > -		ret = -EINVAL;
->> > -		goto out;
->> > -	}
->> > -
->> >  	for (i = 0; i < pdata->max_trigger_level; i++) {
->> >  		if (!pdata->trigger_levels[i])
->> >  			continue;
->> >
->> > -		if ((pdata->trigger_type[i] == HW_TRIP) &&
->> > -		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
->> > -			dev_err(&pdev->dev, "Invalid hw trigger level\n");
->> > -			ret = -EINVAL;
->> > -			goto out;
->> > -		}
->> > -
->>
->> Does it mean no new pdata are going to be written? i.e., no new soc is
->> going to be supported by this driver that needs proper pdata checking?
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c | 16 +---------------
+>  1 file changed, 1 insertion(+), 15 deletions(-)
 >
-> This is not a proper checking.  The checks in question are done at runtime
-> in a production code for data that is hardcoded inside driver during
-> development time and later it doesn't change.  Such data should be verified
-> during development and review time (i.e. by a script parsing relevant data
-> from exynos_tmu_data.c, one can also argue that verification to be done is
-> so simple that the review by a maintainer should be enough).
-Agreed to your arguments. These changes looks fine.
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> b/drivers/thermal/samsung/exynos_tmu.c
+> index 789d745..a415829 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -170,10 +170,6 @@ static int exynos_tmu_initialize(struct platform_device
+> *pdev)
+>  	if (data->soc == SOC_ARCH_EXYNOS4210) {
+>  		/* Write temperature code for threshold */
+>  		threshold_code = temp_to_code(data, pdata->threshold);
+> -		if (threshold_code < 0) {
+> -			ret = threshold_code;
+> -			goto out;
+> -		}
+>  		writeb(threshold_code,
+>  			data->base + reg->threshold_temp);
+>  		for (i = 0; i < trigger_levs; i++)
+> @@ -187,18 +183,12 @@ static int exynos_tmu_initialize(struct
+> platform_device *pdev)
+>  		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
+>  			threshold_code = temp_to_code(data,
+>  						pdata->trigger_levels[i]);
+> -			if (threshold_code < 0) {
+> -				ret = threshold_code;
+> -				goto out;
+> -			}
+>  			rising_threshold |= threshold_code << 8 * i;
+>  			if (pdata->threshold_falling) {
+>  				threshold_code = temp_to_code(data,
+>  						pdata->trigger_levels[i] -
+>  						pdata->threshold_falling);
+> -				if (threshold_code > 0)
+> -					falling_threshold |=
+> -						threshold_code << 8 * i;
+> +				falling_threshold |= threshold_code << 8 * i;
+>  			}
+>  		}
 >
->> >  		/* Count trigger levels except the HW trip*/
->> >  		if (!(pdata->trigger_type[i] == HW_TRIP))
->> >  			trigger_levs++;
->
-> Best regards,
+> @@ -217,10 +207,6 @@ static int exynos_tmu_initialize(struct platform_device
+> *pdev)
+>  				(pdata->trigger_type[i] == HW_TRIP)) {
+>  			threshold_code = temp_to_code(data,
+>  						pdata->trigger_levels[i]);
+> -			if (threshold_code < 0) {
+> -				ret = threshold_code;
+> -				goto out;
+> -			}
+>  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
+>  				/* 1-4 level to be assigned in th0 reg */
+>  				rising_threshold |= threshold_code << 8 * i;
 > --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
+> 1.8.2.3
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
