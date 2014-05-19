@@ -1,41 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaESGKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:10:30 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:26413
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750801AbaESGK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:10:29 -0400
-Date: Mon, 19 May 2014 13:51:16 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: imx: remove unused defines
-Message-ID: <20140519055109.GJ10685@dragon>
-References: <1400140671.20469.7.camel@x220>
- <20140515122553.GF5858@pengutronix.de> <1400231369.20342.10.camel@x220>
+	id S1752745AbaESGLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:11:13 -0400
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:42057 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624AbaESGLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 02:11:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1400231369.20342.10.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(189002)(199002)(23726002)(77982001)(77096999)(6806004)(50466002)(83072002)(85852003)(19580395003)(74662001)(31966008)(57986004)(64706001)(74502001)(69596002)(68736004)(79102001)(80022001)(20776003)(83506001)(102836001)(4396001)(97756001)(21056001)(81542001)(87936001)(76482001)(81342001)(47776003)(86362001)(92566001)(92726001)(46102001)(76176999)(19580405001)(33656001)(558084003)(46406003)(33716001)(83322001)(81156002)(50986999)(54356999)(99396002)(44976005);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB023;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 021670B4D2
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1399288539-1793-11-git-send-email-b.zolnierkie@samsung.com>
+References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
+	<1399288539-1793-11-git-send-email-b.zolnierkie@samsung.com>
+Date: Mon, 19 May 2014 11:41:10 +0530
+Message-ID: <CADGdYn5cX7v5cQw_EYFjzQzXhWJ+zrLqRHarT7sR04pYuO_CXw@mail.gmail.com>
+Subject: Re: [PATCH 10/10] thermal: exynos: remove identical values from
+ exynos*_tmu_registers structures
+From: Amit Kachhap <amit.kachhap@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 11:09:29AM +0200, Paul Bolle wrote:
-> None of the defines "for modules using static and dynamic DMA channels"
-> are used. Remove these.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-
-Applied, thanks.
+On 5/5/14, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> There is no need for abstracting configuration for registers that
+> are identical on all SoC types.
+Changes look fine and also that shift and masks may not change in
+future socs also.
+Reviewed-by: Amit Daniel Kachhap<amit.daniel@samsung.com>
+>
+> There should be no functional changes caused by this patch.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c      | 12 ++++++------
+>  drivers/thermal/samsung/exynos_tmu.h      | 11 -----------
+>  drivers/thermal/samsung/exynos_tmu_data.c | 15 ---------------
+>  3 files changed, 6 insertions(+), 32 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c
+> b/drivers/thermal/samsung/exynos_tmu.c
+> index 45d7c6f..d37e755 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -215,11 +215,11 @@ static void exynos_tmu_control(struct platform_device
+> *pdev, bool on)
+>  	if (pdata->test_mux)
+>  		con |= (pdata->test_mux << reg->test_mux_addr_shift);
+>
+> -	con &= ~(reg->buf_vref_sel_mask << reg->buf_vref_sel_shift);
+> -	con |= pdata->reference_voltage << reg->buf_vref_sel_shift;
+> +	con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+> +	con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
+>
+> -	con &= ~(reg->buf_slope_sel_mask << reg->buf_slope_sel_shift);
+> -	con |= (pdata->gain << reg->buf_slope_sel_shift);
+> +	con &= ~(EXYNOS_TMU_BUF_SLOPE_SEL_MASK <<
+> EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT);
+> +	con |= (pdata->gain << EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT);
+>
+>  	if (pdata->noise_cancel_mode) {
+>  		con &= ~(reg->therm_trip_mode_mask <<
+> @@ -228,7 +228,7 @@ static void exynos_tmu_control(struct platform_device
+> *pdev, bool on)
+>  	}
+>
+>  	if (on) {
+> -		con |= (1 << reg->core_en_shift);
+> +		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>  		interrupt_en =
+>  			pdata->trigger_enable[3] << reg->inten_rise3_shift |
+>  			pdata->trigger_enable[2] << reg->inten_rise2_shift |
+> @@ -238,7 +238,7 @@ static void exynos_tmu_control(struct platform_device
+> *pdev, bool on)
+>  			interrupt_en |=
+>  				interrupt_en << reg->inten_fall0_shift;
+>  	} else {
+> -		con &= ~(1 << reg->core_en_shift);
+> +		con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
+>  		interrupt_en = 0; /* Disable all interrupts */
+>  	}
+>  	writel(interrupt_en, data->base + reg->tmu_inten);
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h
+> b/drivers/thermal/samsung/exynos_tmu.h
+> index 4845171..5c25a4b 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -69,15 +69,9 @@ enum soc_type {
+>   * @triminfo_ctrl: trim info controller register.
+>   * @tmu_ctrl: TMU main controller register.
+>   * @test_mux_addr_shift: shift bits of test mux address.
+> - * @buf_vref_sel_shift: shift bits of reference voltage in tmu_ctrl
+> register.
+> - * @buf_vref_sel_mask: mask bits of reference voltage in tmu_ctrl
+> register.
+>   * @therm_trip_mode_shift: shift bits of tripping mode in tmu_ctrl
+> register.
+>   * @therm_trip_mode_mask: mask bits of tripping mode in tmu_ctrl register.
+>   * @therm_trip_en_shift: shift bits of tripping enable in tmu_ctrl
+> register.
+> - * @buf_slope_sel_shift: shift bits of amplifier gain value in tmu_ctrl
+> -	register.
+> - * @buf_slope_sel_mask: mask bits of amplifier gain value in tmu_ctrl
+> register.
+> - * @core_en_shift: shift bits of TMU core enable bit in tmu_ctrl register.
+>   * @tmu_status: register drescribing the TMU status.
+>   * @tmu_cur_temp: register containing the current temperature of the TMU.
+>   * @threshold_temp: register containing the base threshold level.
+> @@ -111,14 +105,9 @@ struct exynos_tmu_registers {
+>
+>  	u32	tmu_ctrl;
+>  	u32     test_mux_addr_shift;
+> -	u32	buf_vref_sel_shift;
+> -	u32	buf_vref_sel_mask;
+>  	u32	therm_trip_mode_shift;
+>  	u32	therm_trip_mode_mask;
+>  	u32	therm_trip_en_shift;
+> -	u32	buf_slope_sel_shift;
+> -	u32	buf_slope_sel_mask;
+> -	u32	core_en_shift;
+>
+>  	u32	tmu_status;
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c
+> b/drivers/thermal/samsung/exynos_tmu_data.c
+> index ef7f186..32530dc 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -28,11 +28,6 @@
+>  static const struct exynos_tmu_registers exynos4210_tmu_registers = {
+>  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+> -	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> -	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+> -	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+> -	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
+> -	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+>  	.tmu_status = EXYNOS_TMU_REG_STATUS,
+>  	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
+>  	.threshold_temp = EXYNOS4210_TMU_REG_THRESHOLD_TEMP,
+> @@ -92,14 +87,9 @@ static const struct exynos_tmu_registers
+> exynos4412_tmu_registers = {
+>  	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
+>  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+>  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+> -	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> -	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+>  	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+>  	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+>  	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> -	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+> -	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
+> -	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+>  	.tmu_status = EXYNOS_TMU_REG_STATUS,
+>  	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
+>  	.threshold_th0 = EXYNOS_THD_TEMP_RISE,
+> @@ -188,14 +178,9 @@ struct exynos_tmu_init_data const
+> exynos5250_default_tmu_data = {
+>  static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>  	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
+>  	.tmu_ctrl = EXYNOS5440_TMU_S0_7_CTRL,
+> -	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> -	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+>  	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+>  	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+>  	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> -	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+> -	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
+> -	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+>  	.tmu_status = EXYNOS5440_TMU_S0_7_STATUS,
+>  	.tmu_cur_temp = EXYNOS5440_TMU_S0_7_TEMP,
+>  	.threshold_th0 = EXYNOS5440_TMU_S0_7_TH0,
+> --
+> 1.8.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
