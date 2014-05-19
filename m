@@ -1,162 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaESQFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:05:14 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:53360 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaESQFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:05:11 -0400
+	id S1754890AbaESQII (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:08:08 -0400
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:21687 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751895AbaESQIH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:08:07 -0400
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Dept-Eng QLA2xxx Upstream <qla2xxx-upstream@qlogic.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/13 v2] [SCSI] qla2xxx: make return of 0 explicit
+Thread-Topic: [PATCH 2/13 v2] [SCSI] qla2xxx: make return of 0 explicit
+Thread-Index: AQHPc3x8ejEU5j1TE0y1VAc+6onFnQ==
+Date: Mon, 19 May 2014 16:07:52 +0000
+Message-ID: <F5D084D6342F9B479C34599BB0A03E4D01284E742E@AVMB1.qlogic.org>
+References: <1400474832-22422-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1400474832-22422-1-git-send-email-Julia.Lawall@lip6.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [10.35.7.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <DD9E880DFA7C314B8FED822F49BFDCDF@qlogic.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1400506776-2816-5-git-send-email-george.cherian@ti.com>
-References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
-	<1400506776-2816-5-git-send-email-george.cherian@ti.com>
-Date: Mon, 19 May 2014 11:05:10 -0500
-Message-ID: <CADYTM3aV7HSi5gcV_-K5nR6Um=pA983oHpmC_cnyeH=G8_R1hA@mail.gmail.com>
-Subject: Re: [PATCH v4 4/6] usb: musb: core: Convert the musb_platform_reset
- to have a return value.
-From: Bin Liu <binmlist@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        zonque@gmail.com, b-liu@ti.com
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7442 signatures=670450
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1405190198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Julia,
 
-On Mon, May 19, 2014 at 8:39 AM, George Cherian <george.cherian@ti.com> wrote:
-> Currently musb_platform_reset() is only used by dsps.
-> In case of BABBLE interrupt for other platforms the  musb_platform_reset()
-> is a NOP. In such situations no need to re-initialize the endpoints.
-> Also in the latest silicon revision of AM335x, we do have a babble recovery
-> mechanism without resetting the IP block. In preperation to add that support
-> its better to have a rest_done return for  musb_platform_reset().
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  drivers/usb/musb/musb_core.c | 38 +++++++++++++++++++++-----------------
->  drivers/usb/musb/musb_core.h | 10 ++++++----
->  drivers/usb/musb/musb_dsps.c |  3 ++-
->  3 files changed, 29 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-> index 8920b80..1b0b85d 100644
-> --- a/drivers/usb/musb/musb_core.c
-> +++ b/drivers/usb/musb/musb_core.c
-> @@ -1755,28 +1755,32 @@ static void musb_irq_work(struct work_struct *data)
->  static void musb_recover_work(struct work_struct *data)
->  {
->         struct musb *musb = container_of(data, struct musb, recover_work.work);
-> -       int status;
-> +       int status, ret;
->
-> -       musb_platform_reset(musb);
-> +       ret  = musb_platform_reset(musb);
-> +       if (ret  < 0)
+Status is already set to 0 at the beginning of the function, I think
+we should just "return status" here to be consistent with the rest of
+the function.
 
-If change it to ' if (ret)' here, you don't have to indent the reset
-of the code.
+==========
+diff --git a/drivers/scsi/qla2xxx/qla_init.c
+b/drivers/scsi/qla2xxx/qla_init.c
+index 76af6b6..e339833 100644
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -4587,7 +4587,6 @@ qla2x00_abort_isp(scsi_qla_host_t *vha)
+                if (unlikely(pci_channel_offline(ha->pdev) &&
+                    ha->flags.pci_channel_io_perm_failure)) {
+                        clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
+-                       status = 0;
+                        return status;
+                }
+=========
 
-Regards,
--Bin.
+Thanks,
+~Saurav
+ 
 
-> +               return;
+
+
+
+>From: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> -       usb_phy_vbus_off(musb->xceiv);
-> -       usleep_range(100, 200);
-> +       if (!ret) {
-> +               usb_phy_vbus_off(musb->xceiv);
-> +               usleep_range(100, 200);
+>Delete unnecessary use of a local variable to immediately return 0.
 >
-> -       usb_phy_vbus_on(musb->xceiv);
-> -       usleep_range(100, 200);
-> +               usb_phy_vbus_on(musb->xceiv);
-> +               usleep_range(100, 200);
+>A simplified version of the semantic patch that fixes this problem is as
+>follows: (http://coccinelle.lip6.fr/)
 >
-> -       /*
-> -        * When a babble condition occurs, the musb controller removes the
-> -        * session bit and the endpoint config is lost.
-> -        */
-> -       if (musb->dyn_fifo)
-> -               status = ep_config_from_table(musb);
-> -       else
-> -               status = ep_config_from_hw(musb);
-> +               /*
-> +                * When a babble condition occurs, the musb controller
-> +                * removes the session bit and the endpoint config is lost.
-> +                */
-> +               if (musb->dyn_fifo)
-> +                       status = ep_config_from_table(musb);
-> +               else
-> +                       status = ep_config_from_hw(musb);
+>// <smpl>
+>@r exists@
+>local idexpression ret;
+>expression e;
+>position p;
+>@@
 >
-> -       /* start the session again */
-> -       if (status == 0)
-> -               musb_start(musb);
-> +               /* start the session again */
-> +               if (status == 0)
-> +                       musb_start(musb);
-> +       }
->  }
+>-ret = 0;
+>... when != ret = e
+>return 
+>- ret
+>+ 0
+>  ;
+>// </smpl>
 >
->  /* --------------------------------------------------------------------------
-> diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-> index 423cd00..3ccb428 100644
-> --- a/drivers/usb/musb/musb_core.h
-> +++ b/drivers/usb/musb/musb_core.h
-> @@ -192,7 +192,7 @@ struct musb_platform_ops {
+>Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 >
->         int     (*set_mode)(struct musb *musb, u8 mode);
->         void    (*try_idle)(struct musb *musb, unsigned long timeout);
-> -       void    (*reset)(struct musb *musb);
-> +       int     (*reset)(struct musb *musb);
+>---
+>Changed subject line, which was not appreciated by some spam filters.
 >
->         int     (*vbus_status)(struct musb *musb);
->         void    (*set_vbus)(struct musb *musb, int on);
-> @@ -554,10 +554,12 @@ static inline void musb_platform_try_idle(struct musb *musb,
->                 musb->ops->try_idle(musb, timeout);
->  }
+> drivers/scsi/qla2xxx/qla_init.c |    3 +--
+> 1 file changed, 1 insertion(+), 2 deletions(-)
 >
-> -static inline void musb_platform_reset(struct musb *musb)
-> +static inline int  musb_platform_reset(struct musb *musb)
->  {
-> -       if (musb->ops->reset)
-> -               musb->ops->reset(musb);
-> +       if (!musb->ops->reset)
-> +               return -EINVAL;
-> +
-> +       return musb->ops->reset(musb);
->  }
->
->  static inline int musb_platform_get_vbus_status(struct musb *musb)
-> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-> index 74c4193..f6f3087 100644
-> --- a/drivers/usb/musb/musb_dsps.c
-> +++ b/drivers/usb/musb/musb_dsps.c
-> @@ -536,7 +536,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
->         return 0;
->  }
->
-> -static void dsps_musb_reset(struct musb *musb)
-> +static int dsps_musb_reset(struct musb *musb)
->  {
->         struct device *dev = musb->controller;
->         struct dsps_glue *glue = dev_get_drvdata(dev->parent);
-> @@ -548,6 +548,7 @@ static void dsps_musb_reset(struct musb *musb)
->         usleep_range(100, 200);
->         usb_phy_init(musb->xceiv);
->
-> +       return 0;
->  }
->
->  static struct musb_platform_ops dsps_ops = {
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>diff --git a/drivers/scsi/qla2xxx/qla_init.c
+>b/drivers/scsi/qla2xxx/qla_init.c
+>index 38aeb54..a63f9b6 100644
+>--- a/drivers/scsi/qla2xxx/qla_init.c
+>+++ b/drivers/scsi/qla2xxx/qla_init.c
+>@@ -4593,8 +4593,7 @@ qla2x00_abort_isp(scsi_qla_host_t *vha)
+> 		if (unlikely(pci_channel_offline(ha->pdev) &&
+> 		    ha->flags.pci_channel_io_perm_failure)) {
+> 			clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
+>-			status = 0;
+>-			return status;
+>+			return 0;
+> 		}
+> 
+> 		ha->isp_ops->get_flash_version(vha, req->ring);
+
