@@ -1,120 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaESC0r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 22:26:47 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:32216
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752221AbaESC0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 22:26:45 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCHv3 3/3] clocksource: Add Freescale FlexTimer Module (FTM)
- timer support
-Thread-Topic: [PATCHv3 3/3] clocksource: Add Freescale FlexTimer Module
- (FTM) timer support
-Thread-Index: AQHPY1ed3mDRWUd51kaK8D+dt0JVM5tDaoGAgAPcT4A=
-Date: Mon, 19 May 2014 02:26:41 +0000
-Message-ID: <0a6cb1e6380f42279a583ebf7e27dd54@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1398737939-5334-1-git-send-email-Li.Xiubo@freescale.com>
- <1398737939-5334-4-git-send-email-Li.Xiubo@freescale.com>
- <537629C3.30507@linaro.org>
-In-Reply-To: <537629C3.30507@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 021670B4D2
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(52604005)(51704005)(74316001)(66066001)(85852003)(83072002)(87936001)(86362001)(575784001)(80022001)(79102001)(21056001)(4396001)(2656002)(20776003)(64706001)(33646001)(101416001)(76576001)(76482001)(81542001)(81342001)(83322001)(77982001)(74502001)(46102001)(99396002)(99286001)(50986999)(31966008)(74662001)(92566001)(2201001)(76176999)(54356999)(77096999)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB474;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="utf-8"
+	id S1752536AbaESC05 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 22:26:57 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47850 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbaESC0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 22:26:55 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 19 May 2014 11:29:23 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma
+ reserved memory when not used
+Message-ID: <20140519022922.GC19615@js1304-P5Q-DELUXE>
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <8761l8ah04.fsf@linux.vnet.ibm.com>
+ <20140515015842.GB10116@js1304-P5Q-DELUXE>
+ <87lhtzng53.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lhtzng53.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4J2R1o7032096
 
-> > +#define FTM_CNTIN	0x4C
-> > +
-> > +static void __iomem *clksrc_base;
-> > +static void __iomem *clkevt_base;
-> > +static unsigned long peroidic_cyc;
-> > +static unsigned long ps;
-> > +bool big_endian;
-> > +
+On Sun, May 18, 2014 at 11:06:08PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> Usually this is encaspulated in a structure.
+> > On Wed, May 14, 2014 at 02:12:19PM +0530, Aneesh Kumar K.V wrote:
+> >> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+> >> 
+> >> 
+> >> 
+> >> Another issue i am facing with the current code is the atomic allocation
+> >> failing even with large number of CMA pages around. In my case we never
+> >> reclaimed because large part of the memory is consumed by the page cache and
+> >> for that, free memory check doesn't include at free_cma. I will test
+> >> with this patchset and update here once i have the results.
+> >> 
+> >
+> > Hello,
+> >
+> > Could you elaborate more on your issue?
+> > I can't completely understand your problem.
+> > So your atomic allocation is movable? And although there are many free
+> > cma pages, that request is fail?
+> >
 > 
-> struct ftm_clock_device {
-> 	void __iomem *clksrc_base;
-> 	...
-> };
->
+> non movable atomic allocations are failing because we don't have
+> anything other than CMA pages left and kswapd is yet to catchup ?
 > 
-> > +static inline u32 ftm_readl(void __iomem *addr)
-> > +{
-> > +	if (big_endian)
 > 
-> I am not a big fan of addressing global variables in the functions, so
-> if you can pass the structure pointer around here and the other
-> functions instead that would be nice.
+>   swapper/0: page allocation failure: order:0, mode:0x20
+>   CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.23-1500.pkvm2_1.5.ppc64 #1
+>   Call Trace:
+>  [c000000ffffcb610] [c000000000017330] .show_stack+0x130/0x200 (unreliable)
+>  [c000000ffffcb6e0] [c00000000087a8c8] .dump_stack+0x28/0x3c
+>  [c000000ffffcb750] [c0000000001e06f0] .warn_alloc_failed+0x110/0x160
+>  [c000000ffffcb800] [c0000000001e5984] .__alloc_pages_nodemask+0x9d4/0xbf0
+>  [c000000ffffcb9e0] [c00000000023775c] .alloc_pages_current+0xcc/0x1b0
+>  [c000000ffffcba80] [c0000000007098d4] .__netdev_alloc_frag+0x1a4/0x1d0
+>  [c000000ffffcbb20] [c00000000070d750] .__netdev_alloc_skb+0xc0/0x130
+>  [c000000ffffcbbb0] [d000000009639b40] .tg3_poll_work+0x900/0x1110 [tg3]
+>  [c000000ffffcbd10] [d00000000963a3a4] .tg3_poll_msix+0x54/0x200 [tg3]
+>  [c000000ffffcbdb0] [c00000000071fcec] .net_rx_action+0x1dc/0x310
+>  [c000000ffffcbe90] [c0000000000c1b08] .__do_softirq+0x158/0x330
+>  [c000000ffffcbf90] [c000000000025744] .call_do_softirq+0x14/0x24
+>  [c000000ffffc7e00] [c000000000011684] .do_softirq+0xf4/0x130
+>  [c000000ffffc7e90] [c0000000000c1f18] .irq_exit+0xc8/0x110
+>  [c000000ffffc7f10] [c000000000011258] .__do_irq+0xc8/0x1f0
+>  [c000000ffffc7f90] [c000000000025768] .call_do_irq+0x14/0x24
+>  [c00000000137b750] [c00000000001142c] .do_IRQ+0xac/0x130
+>  [c00000000137b800] [c000000000002a64]
+>  hardware_interrupt_common+0x164/0x180
 > 
-> Otherwise the patch sounds ok. Thanks for taking care of encapsulating
-> well the functions and commenting the code.
+> ....
+> 
+> 
+>  Node 0 DMA: 408*64kB (C) 408*128kB (C) 408*256kB (C) 408*512kB (C) 408*1024kB (C) 406*2048kB (C) 199*4096kB (C) 97*8192kB (C) 6*16384kB (C) =
+>  3348992kB
+>  Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=16384kB
+>  Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=16777216kB
+> 
+> meminfo details:
+> 
+>  MemTotal:       65875584 kB
+>  MemFree:         8001856 kB
+>  Buffers:        49330368 kB
+>  Cached:           178752 kB
+>  SwapCached:            0 kB
+>  Active:         28550464 kB
+>  Inactive:       25476416 kB
+>  Active(anon):    3771008 kB
+>  Inactive(anon):   767360 kB
+>  Active(file):   24779456 kB
+>  Inactive(file): 24709056 kB
+>  Unevictable:       15104 kB
+>  Mlocked:           15104 kB
+>  SwapTotal:       8384448 kB
+>  SwapFree:        8384448 kB
+>  Dirty:                 0 kB
+> 
+> -aneesh
 > 
 
-Yes, I did think so.
+Hello,
 
-But some callbacks like ï¼š
-+ static u64 ftm_read_sched_clock(void)
-+ {
-+         return ftm_readl(clksrc_base + FTM_CNT);
-+ }
+I think that third patch in this patchset would solve this problem.
+Your problem may occur in following scenario.
 
-Used by :
-+ sched_clock_register(ftm_read_sched_clock,....);
+1. Unmovable, reclaimable page are nearly empty.
+2. There are some movable pages, so watermark checking is ok.
+3. A lot of movable allocations are requested.
+4. Most of movable pages are allocated.
+5. But, watermark checking is still ok, because we have a lot of
+   free cma pages and this allocation is for movable type.
+   No waking up kswapd.
+6. non-movable atomic allocation request => fail
 
-If they are encapsulated in a structure, and should the struct instance
-be one global instance too ? I'm doubting whether will this make sense ?
+So, the problem is in step #5. Althoght we have enough pages for
+movable type, we should prepare allocation request for the others.
+With my third patch, kswapd could be woken by movable allocation, so
+your problem would disappreared.
 
-
-> > +static int __init ftm_calc_closest_round_cyc(unsigned long freq)
-> > +{
-> > +	ps = 0;
-> > +
-> > +	do {
-> > +		peroidic_cyc = DIV_ROUND_CLOSEST(freq, HZ * (1 << ps++));
-> > +	} while (peroidic_cyc > 0xFFFF);
-> > +
-> > +	if (ps > 7) {
-> > +		pr_err("ftm: the max prescaler is %lu > 7\n", ps);
-> > +		return -EINVAL;
-> > +	}
-> > +
-> 
-> Can you explain how this error can happen ?
-> 
-
-Yes, the hardware limitation of the 'ps' is 0~7, and the counter register
-Is only using the lower 16 bits.
-If the 'freq' value is too big here, then the periodic_cyc may exceed 0xFFFF.
-
-Or should I add some comment here ?
-
-
-Thanks very much,
-BRs
-Xiubo
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
