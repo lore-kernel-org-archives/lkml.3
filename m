@@ -1,134 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaESJ3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:29:02 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10491 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398AbaESJ26 (ORCPT
+	id S1753916AbaESJaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:30:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50068 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750803AbaESJaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:28:58 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-83-5379ced833b5
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, robh+dt@kernel.org,
-        stern@rowland.harvard.edu, kishon@ti.com, k.debski@samsung.com,
-        jg1.han@samsung.com
-References: <1399641784-10833-1-git-send-email-gautam.vivek@samsung.com>
- <1399641784-10833-2-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1399641784-10833-2-git-send-email-gautam.vivek@samsung.com>
-Subject: RE: [PATCH v9 1/4] ARM: dts: Add sysreg sytem controller node to
- exynos5250 and exynos5420
-Date: Mon, 19 May 2014 18:28:55 +0900
-Message-id: <02fe01cf7344$c19d36f0$44d7a4d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHPDZLCoGnx6+EQOBbO44c7+dsEuwJd0BHfmzV/NFA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zY90b5yqDDbYcELCYf+Qcq0XblYPs
-	FpcXXmK1+PH6ApvFhac9bBabHl9jtbi8aw6bxYzz+5gsFi1rZbZo3XuE3WLC7wtsDtwem1Z1
-	snlsXlLvMfvuD0aPvi2rGD2O39jO5PF5k1wAWxSXTUpqTmZZapG+XQJXRs/uC2wFa/krXvU+
-	YGlg3MbTxcjJISFgIrHr+Tw2CFtM4sK99UA2F4eQwDJGiVezr7DDFC189pkRIrGIUWLL5y5m
-	COcvo8Ssj5PBqtgENCQOv38GZosI5ErMeruSGcRmFrjIKHH7SjFEQzujxLZdv4ASHBycAp4S
-	b5pDQGqEBVIl9iw6zQhiswioSrTfaAY7iVfAUuLVlXnMELagxI/J91ggZmpJrN95nAnClpfY
-	vOYtM8SlChI7zr5mhLjBSqLr5gyoehGJfS/egX0gIdDLIbF/6hZWiGUCEt8mH2IBuUdCQFZi
-	0wGoOZISB1fcYJkA9B6S1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/d
-	xAiJ+L4djDcPWB9iTAZaP5FZSjQ5H5gw8kriDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QDY+WDHQuq5p/Z9kCk1tTUffndPWxaOxx4GbgEZWuutkg/
-	m5EVo313b3xE1KHkmlVy75JPbpozMTN7oejhteXrN2xdv+PPFafMX5s5Erwkyk8p90bbrryo
-	Y73UOtcp6gu34j69Fz/jdsZ/ufXq9QeV1Ru9fyiJ1beefXJr6w/Z/443OLf8Wa7/o1aJpTgj
-	0VCLuag4EQBHCJz7DgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jAd0b5yqDDZqucFvMP3KO1aLtykF2
-	i8sLL7Fa/Hh9gc3iwtMeNotNj6+xWlzeNYfNYsb5fUwWi5a1Mlu07j3CbjHh9wU2B26PTas6
-	2Tw2L6n3mH33B6NH35ZVjB7Hb2xn8vi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne
-	1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6D4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4h
-	QXA9RgZoIGEdY0bP7gtsBWv5K171PmBpYNzG08XIySEhYCKx8NlnRghbTOLCvfVsXYxcHEIC
-	ixgltnzuYoZw/jJKzPo4mR2kik1AQ+Lw+2dgtohArsSstyuZQWxmgYuMErevFEM0tDNKbNv1
-	CyjBwcEp4CnxpjkEpEZYIFViz6LTYNtYBFQl2m80s4HYvAKWEq+uzGOGsAUlfky+xwIxU0ti
-	/c7jTBC2vMTmNW+ZIS5VkNhx9jUjxA1WEl03Z0DVi0jse/GOcQKj0Cwko2YhGTULyahZSFoW
-	MLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOJ8+kdjCubLA4xCjAwajEwzshvDJYiDWx
-	rLgy9xCjBAezkgiv32mgEG9KYmVValF+fFFpTmrxIcZkoE8nMkuJJucDU11eSbyhsYmZkaWR
-	mYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAaxxkvb2oTSQrruDW7OYvpb4Xd
-	t/vS8QsfKnusa/ugX28kxm8T4/LBdomSPN+C91rFmvEfSu/KqglsWbX2Du/7YyLvF7BGWQqU
-	iYdec/1Ys2gHe6fBlayDt45827/Uu96F67envJHWDs5nU1/stb7MIqw62zx1Jwd37xFfjks+
-	mt81xK7FJymxFGckGmoxFxUnAgCQUGn1awMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 19 May 2014 05:30:05 -0400
+Date: Mon, 19 May 2014 11:27:25 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Chen-Yu Tsai <wens@csie.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v3 3/7] mfd: add support for sun6i PRCM
+ (Power/Reset/Clock Management) unit
+Message-ID: <20140519092725.GE29466@lukather>
+References: <1399633911-7094-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1399633911-7094-4-git-send-email-boris.brezillon@free-electrons.com>
+ <20140509135251.GY5767@lee--X1>
+ <20140515151756.GX29258@lukather>
+ <20140519092159.GE4978@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
+Content-Disposition: inline
+In-Reply-To: <20140519092159.GE4978@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Gautam wrote:
-> 
-> This patch adds sysreg-syscon node to exynos5250 and exynos5420 device
-> tree, to access System Register's registers using syscon driver.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> [gautam.vivek@samsung.com: Split this syreg-syscon dts entry from
-> dts: Add usb2phy to Exynos 5250 patch]
-> [gautam.vivek@samsung.com: added similar syscon entry for exynos5420]
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
-> 
-Vivek,
 
-See my comment below.
+--cHMo6Wbp1wrKhbfi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And please don't version each patch in series...it's really not a good way.
-It cause very big confusing...
+On Mon, May 19, 2014 at 10:21:59AM +0100, Lee Jones wrote:
+> > > > The PRCM (Power/Reset/Clock Management) block exposes several subde=
+vices
+> > > > in different subsystems (clk, reset ...)
+> > > >=20
+> > > > Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0=
+ clks)
+> > > > and reset controller subdevices.
+> > > >=20
+> > > > Other subdevices might be added later (if needed).
+> > > >=20
+> > > > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > > ---
+> > > >  drivers/mfd/Kconfig      |   8 +++
+> > > >  drivers/mfd/Makefile     |   1 +
+> > > >  drivers/mfd/sun6i-prcm.c | 134 +++++++++++++++++++++++++++++++++++=
+++++++++++++
+> > > >  3 files changed, 143 insertions(+)
+> > > >  create mode 100644 drivers/mfd/sun6i-prcm.c
+> > >=20
+> > > [...]
+> > >=20
+> > > > +/*
+> > > > + * Copyright (C) 2014 Free Electrons
+> > > > + *
+> > > > + * License Terms: GNU General Public License v2
+> > > > + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > + *
+> > > > + * Allwinner PRCM (Power/Reset/Clock Management) driver
+> > > > + *
+> > > > + */
+> > > > +
+> > > > +#include <linux/mfd/core.h>
+> > > > +#include <linux/module.h>
+> > > > +#include <linux/of.h>
+> > >=20
+> > > Ah, now isn't that better?
+> > >=20
+> > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> >=20
+> > How do you want to merge this? Do you want me to take it through
+> > mach-sunxi tree, or do you want to take it in your tree?
+>=20
+> If Boris can tell me what needs to go in with this patch (or if it
+> can go in on its own), I will create a(n immutable) branch from which
+> you can pull into your tree.
 
-> Changes since v7:
-> None
-> 
->  arch/arm/boot/dts/exynos5250.dtsi |    5 +++++
->  arch/arm/boot/dts/exynos5420.dtsi |    5 +++++
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
-> b/arch/arm/boot/dts/exynos5250.dtsi
-> index 3742331..70f0cd5 100644
-> --- a/arch/arm/boot/dts/exynos5250.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250.dtsi
-> @@ -175,6 +175,11 @@
->  		reg = <0x10040000 0x5000>;
->  	};
-> 
-> +	sysreg_system_controller: syscon@10050000 {
-> +		compatible = "samsung,exynos5250-sys", "syscon";
+We don't have any runtime or compile time dependency on this, so you
+can merge it through your tree. Unless something change, I don't have
+to pull anything in my tree.
 
-Maybe exynos5250-sysreg?
+Thanks!
+Maxime
 
-And need to add/modify binding doc?
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-- Kukjin
+--cHMo6Wbp1wrKhbfi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +		reg = <0x10050000 0x5000>;
-> +	};
-> +
->  	watchdog@101D0000 {
->  		compatible = "samsung,exynos5250-wdt";
->  		reg = <0x101D0000 0x100>;
-> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
-> b/arch/arm/boot/dts/exynos5420.dtsi
-> index a802f74..5d5d6e3 100644
-> --- a/arch/arm/boot/dts/exynos5420.dtsi
-> +++ b/arch/arm/boot/dts/exynos5420.dtsi
-> @@ -682,6 +682,11 @@
->  		reg = <0x10040000 0x5000>;
->  	};
-> 
-> +	sysreg_system_controller: syscon@10050000 {
-> +		compatible = "samsung,exynos5420-sys", "syscon";
-> +		reg = <0x10050000 0x5000>;
-> +	};
-> +
->  	tmu_cpu0: tmu@10060000 {
->  		compatible = "samsung,exynos5420-tmu";
->  		reg = <0x10060000 0x100>;
-> --
-> 1.7.10.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTec59AAoJEBx+YmzsjxAgNjgP/Rnih10ejkX6sSlRlsCL2Jd8
+NwXHVY+uLzsAqQFsDVyw7yQTm4zKyEqjejgzLsskg8nab9jNrAUHnfySuIUmAO0B
+97nIvKG8jt8zOxqFhryCLouJOfaadhONwtri8W8bd++zvEjPGKFz/UUi453wEhlO
+cVUltXdxdh/Ob8R3yOVOmifHxI948YAms2LqHUJV4lbDQIxds3OydR3PMSmVg4Kc
+ZlevJnpsiujWT4g1LVhFdhB840d0CL2HL/F3E3e7Xu6thDatR2guMDC0asfwxCK1
+VQQ1SkP/3A95KhuyYJseSlIY2kZPS4bU4a2XP46Sn5vNsOUtztcPAQTZY2i9lbvM
+GF15p3KzjJZiuPxRT7sCCi7aHWzk7SX5LnzLB82o5rmc/ayJBClIPx4v6Ad4iaLg
+CmEDmLfdbb558Vqnee6nP1JASU2KnigubfDK1qYkHeOknrO99pjlP1i1LijF3GAu
+ADdmTWkIdpMYpi/baXiNNh72lOZ3y+gd11BH1duhJU94TrddjLXxvH+GSfPdIVg4
+vHYzG+Q2WVOnzPWFMqAG7jLNTztdMK9oMMy3fKNjFZHKZ7eG/Se3PRJxb9AyB5Yu
++OValPg5rTJqikz9mi86VhpNwne1P+OjGRIkel0hj2M4KoQIGbvseVNpnNrSyyCC
+nPAEEnLxaKFaP/SHdkqw
+=BWEd
+-----END PGP SIGNATURE-----
+
+--cHMo6Wbp1wrKhbfi--
