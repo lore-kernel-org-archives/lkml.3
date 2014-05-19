@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaESMWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:22:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36944 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaESMWg (ORCPT
+	id S1754152AbaESMY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:24:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58727 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaESMYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:22:36 -0400
-Message-ID: <5379F7AE.2040806@ti.com>
-Date: Mon, 19 May 2014 15:23:10 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 19 May 2014 08:24:22 -0400
+Date: Mon, 19 May 2014 05:22:31 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-f0d71b3dcb8332f7971b5f2363632573e6d9486a@git.kernel.org>
+Cc: mingo@kernel.org, williams@redhat.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, jakub@redhat.com, rostedt@goodmis.org,
+        bigeasy@linutronix.de, tglx@linutronix.de, laijs@cn.fujitsu.com,
+        davidlohr@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        darren@dvhart.com, davej@redhat.com, paulmck@linux.vnet.ibm.com,
+        carlos@redhat.com, roland@hack.frob.com, mtk.manpages@gmail.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org, williams@redhat.com,
+        peterz@infradead.org, jakub@redhat.com, rostedt@goodmis.org,
+        bigeasy@linutronix.de, tglx@linutronix.de, davidlohr@hp.com,
+        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        darren@dvhart.com, davej@redhat.com, paulmck@linux.vnet.ibm.com,
+        carlos@redhat.com, roland@hack.frob.com, mtk.manpages@gmail.com
+In-Reply-To: <20140512201701.194824402@linutronix.de>
+References: <20140512201701.194824402@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] futex: Prevent attaching to kernel threads
+Git-Commit-ID: f0d71b3dcb8332f7971b5f2363632573e6d9486a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        <kernel-janitors@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        J Keerthy <j-keerthy@ti.com>
-Subject: Re: [PATCH] CLK: TI: DRA7: return error code in failure case
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-4-git-send-email-Julia.Lawall@lip6.fr> <20140519074155.GO15585@mwanda> <5379BC0C.3070401@ti.com> <alpine.DEB.2.10.1405191924330.2564@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1405191924330.2564@hadrien>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 02:25 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> Add a returned error code in the MAX_APLL_WAIT_TRIES case.  Remove the
-> updating of the return variable r to 0 if MAX_APLL_WAIT_TRIES is not yet
-> reached, because r is already 0 at this point.
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Commit-ID:  f0d71b3dcb8332f7971b5f2363632573e6d9486a
+Gitweb:     http://git.kernel.org/tip/f0d71b3dcb8332f7971b5f2363632573e6d9486a
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Mon, 12 May 2014 20:45:35 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 19 May 2014 21:18:49 +0900
 
-Acked-by: Tero Kristo <t-kristo@ti.com>
+futex: Prevent attaching to kernel threads
 
-Mike, do you want to queue this as a fix or shall I add this to be 
-queued for 3.16?
+We happily allow userspace to declare a random kernel thread to be the
+owner of a user space PI futex.
 
--Tero
+Found while analysing the fallout of Dave Jones syscall fuzzer.
 
->
-> ---
-> diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
-> index b986f61..efc71a0 100644
-> --- a/drivers/clk/ti/apll.c
-> +++ b/drivers/clk/ti/apll.c
-> @@ -77,13 +77,11 @@ static int dra7_apll_enable(struct clk_hw *hw)
->   	if (i == MAX_APLL_WAIT_TRIES) {
->   		pr_warn("clock: %s failed transition to '%s'\n",
->   			clk_name, (state) ? "locked" : "bypassed");
-> -	} else {
-> +		r = -EBUSY;
-> +	} else
->   		pr_debug("clock: %s transition to '%s' in %d loops\n",
->   			 clk_name, (state) ? "locked" : "bypassed", i);
->
-> -		r = 0;
-> -	}
-> -
->   	return r;
->   }
->
+We also should validate the thread group for private futexes and find
+some fast way to validate whether the "alleged" owner has RW access on
+the file which backs the SHM, but that's a separate issue.
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+---
+ kernel/futex.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 7c68225..81dbe77 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -814,6 +814,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	if (!p)
+ 		return -ESRCH;
+ 
++	if (!p->mm) {
++		put_task_struct(p);
++		return -EPERM;
++	}
++
+ 	/*
+ 	 * We need to look at the task state flags to figure out,
+ 	 * whether the task is exiting. To protect against the do_exit
