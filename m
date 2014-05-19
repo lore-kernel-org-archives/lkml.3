@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655AbaESQot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:44:49 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:35460 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524AbaESQnp (ORCPT
+	id S1755033AbaESQp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:45:56 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:43902 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932520AbaESQno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:43:45 -0400
+	Mon, 19 May 2014 12:43:44 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
         Jisheng Zhang <jszhang@marvell.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 07/10] clk: berlin: add core clock driver for BG2Q
-Date: Mon, 19 May 2014 18:43:28 +0200
-Message-Id: <1400517811-24668-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v2 05/10] clk: berlin: add driver for BG2x complex divider cells
+Date: Mon, 19 May 2014 18:43:26 +0200
+Message-Id: <1400517811-24668-6-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,16 +24,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-This driver deals with the core clocks found on Marvell Berlin BG2Q. For the
-shared register dividers, make use of the corresponding driver and add some
-single clock muxes and gates for the rest.
+This is a driver for the complex divider cells found on Marvell Berlin2
+SoCs. The cells come in two flavors: single register cells and shared
+register cells.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Changelog:
 v1->v2:
-- adapt to new single chip control node and compatible
-- swallow twd clock node
+- separate include for the DIV cell driver
 
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -41,26 +41,26 @@ Cc: Jisheng Zhang <jszhang@marvell.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/berlin/Makefile |   1 +
- drivers/clk/berlin/bg2q.c   | 389 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 390 insertions(+)
- create mode 100644 drivers/clk/berlin/bg2q.c
+ drivers/clk/berlin/Makefile      |   2 +-
+ drivers/clk/berlin/berlin2-div.c | 265 +++++++++++++++++++++++++++++++++++++++
+ drivers/clk/berlin/berlin2-div.h |  89 +++++++++++++
+ 3 files changed, 355 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/berlin/berlin2-div.c
+ create mode 100644 drivers/clk/berlin/berlin2-div.h
 
 diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
-index 2b33e1e74503..2a36ab710a07 100644
+index 9d3490e9782f..f0a7dc8b5e30 100644
 --- a/drivers/clk/berlin/Makefile
 +++ b/drivers/clk/berlin/Makefile
-@@ -1,3 +1,4 @@
- obj-y += berlin2-avpll.o berlin2-pll.o berlin2-div.o
- obj-$(CONFIG_MACH_BERLIN_BG2)	+= bg2.o
- obj-$(CONFIG_MACH_BERLIN_BG2CD)	+= bg2.o
-+obj-$(CONFIG_MACH_BERLIN_BG2Q)	+= bg2q.o
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+@@ -1 +1 @@
+-obj-y += berlin2-avpll.o berlin2-pll.o
++obj-y += berlin2-avpll.o berlin2-pll.o berlin2-div.o
+diff --git a/drivers/clk/berlin/berlin2-div.c b/drivers/clk/berlin/berlin2-div.c
 new file mode 100644
-index 000000000000..21784e4eb3f0
+index 000000000000..81ff97f8aa0b
 --- /dev/null
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -0,0 +1,389 @@
++++ b/drivers/clk/berlin/berlin2-div.c
+@@ -0,0 +1,265 @@
 +/*
 + * Copyright (c) 2014 Marvell Technology Group Ltd.
 + *
@@ -79,377 +79,348 @@ index 000000000000..21784e4eb3f0
 + * You should have received a copy of the GNU General Public License along with
 + * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+
-+#include <linux/clk.h>
++#include <linux/bitops.h>
 +#include <linux/clk-provider.h>
-+#include <linux/kernel.h>
 +#include <linux/of.h>
 +#include <linux/of_address.h>
 +#include <linux/slab.h>
-+
-+#include <dt-bindings/clock/berlin2q.h>
++#include <linux/spinlock.h>
 +
 +#include "berlin2-div.h"
-+#include "berlin2-pll.h"
-+#include "common.h"
 +
-+#define REG_PINMUX0		0x0018
-+#define REG_PINMUX5		0x002c
-+#define REG_SYSPLLCTL0		0x0030
-+#define REG_SYSPLLCTL4		0x0040
-+#define REG_CLKENABLE		0x00e8
-+#define REG_CLKSELECT0		0x00ec
-+#define REG_CLKSELECT1		0x00f0
-+#define REG_CLKSELECT2		0x00f4
-+#define REG_CLKSWITCH0		0x00f8
-+#define REG_CLKSWITCH1		0x00fc
-+#define REG_SW_GENERIC0		0x0110
-+#define REG_SW_GENERIC3		0x011c
-+#define REG_SDIO0XIN_CLKCTL	0x0158
-+#define REG_SDIO1XIN_CLKCTL	0x015c
++/*
++ * Clock dividers in Berlin2 SoCs comprise a complex cell to select
++ * input pll and divider. The virtual structure as it is used in Marvell
++ * BSP code can be seen as:
++ *
++ *                      +---+
++ * pll0 --------------->| 0 |                   +---+
++ *           +---+      |(B)|--+--------------->| 0 |      +---+
++ * pll1.0 -->| 0 |  +-->| 1 |  |   +--------+   |(E)|----->| 0 |   +---+
++ * pll1.1 -->| 1 |  |   +---+  +-->|(C) 1:M |-->| 1 |      |(F)|-->|(G)|->
++ * ...    -->|(A)|--+          |   +--------+   +---+  +-->| 1 |   +---+
++ * ...    -->|   |             +-->|(D) 1:3 |----------+   +---+
++ * pll1.N -->| N |                 +---------
++ *           +---+
++ *
++ * (A) input pll clock mux controlled by               <PllSelect[1:n]>
++ * (B) input pll bypass mux controlled by              <PllSwitch>
++ * (C) programmable clock divider controlled by        <Select[1:n]>
++ * (D) constant div-by-3 clock divider
++ * (E) programmable clock divider bypass controlled by <Switch>
++ * (F) constant div-by-3 clock mux controlled by       <D3Switch>
++ * (G) clock gate controlled by                        <Enable>
++ *
++ * For whatever reason, above control signals come in two flavors:
++ * - single register dividers with all bits in one register
++ * - shared register dividers with bits spread over multiple registers
++ *   (including signals for the same cell spread over consecutive registers)
++ *
++ * Also, clock gate and pll mux is not available on every div cell, so
++ * we have to deal with those, too. We reuse common clock composite driver
++ * for it.
++ */
 +
-+#define	MAX_CLKS 27
-+static struct clk *clks[MAX_CLKS];
-+static struct clk_onecell_data clk_data;
-+static DEFINE_SPINLOCK(lock);
-+static void __iomem *gbase;
-+static void __iomem *cpupll_base;
++#define PLL_SELECT_MASK	0x7
++#define DIV_SELECT_MASK	0x7
 +
-+enum {
-+	REFCLK,
-+	SYSPLL, CPUPLL,
-+	AVPLL_B1, AVPLL_B2, AVPLL_B3, AVPLL_B4,
-+	AVPLL_B5, AVPLL_B6, AVPLL_B7, AVPLL_B8,
++struct berlin2_div {
++	struct clk_hw hw;
++	void __iomem *base;
++	struct berlin2_div_map map;
++	spinlock_t *lock;
 +};
 +
-+static const char *clk_names[] = {
-+	[REFCLK]		= "refclk",
-+	[SYSPLL]		= "syspll",
-+	[CPUPLL]		= "cpupll",
-+	[AVPLL_B1]		= "avpll_b1",
-+	[AVPLL_B2]		= "avpll_b2",
-+	[AVPLL_B3]		= "avpll_b3",
-+	[AVPLL_B4]		= "avpll_b4",
-+	[AVPLL_B5]		= "avpll_b5",
-+	[AVPLL_B6]		= "avpll_b6",
-+	[AVPLL_B7]		= "avpll_b7",
-+	[AVPLL_B8]		= "avpll_b8",
-+};
++#define to_berlin2_div(hw) container_of(hw, struct berlin2_div, hw)
 +
-+static const struct berlin2_pll_map bg2q_pll_map __initconst = {
-+	.vcodiv		= {1, 0, 2, 0, 3, 4, 0, 6, 8},
-+	.mult		= 1,
-+	.fbdiv_shift	= 7,
-+	.rfdiv_shift	= 2,
-+	.divsel_shift	= 9,
-+};
++static u8 clk_div[] = { 1, 2, 4, 6, 8, 12, 1, 1 };
 +
-+static const u8 default_parent_ids[] = {
-+	SYSPLL, AVPLL_B4, AVPLL_B5, AVPLL_B6, AVPLL_B7, SYSPLL
-+};
-+
-+static const struct berlin2_div_data bg2q_divs[] __initconst = {
-+	{
-+		.name = "sys",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 0),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT0, 0),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT0, 3),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 3),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 4),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 5),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = CLK_IGNORE_UNUSED,
-+	},
-+	{
-+		.name = "drmfigo",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 17),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT0, 6),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT0, 9),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 6),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 7),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 8),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "cfg",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 1),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT0, 12),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT0, 15),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 9),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 10),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 11),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "gfx2d",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 4),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT0, 18),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT0, 21),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 12),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 13),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 14),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "zsp",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 6),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT0, 24),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT0, 27),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 15),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 16),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 17),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "perif",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 7),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT1, 0),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT1, 3),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 18),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 19),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 20),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = CLK_IGNORE_UNUSED,
-+	},
-+	{
-+		.name = "pcube",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 2),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT1, 6),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT1, 9),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 21),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 22),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 23),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "vscope",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 3),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT1, 12),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT1, 15),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 24),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 25),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 26),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "nfc_ecc",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 19),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT1, 18),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT1, 21),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 27),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 28),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH0, 29),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "vpp",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 21),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT1, 24),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT1, 27),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH0, 30),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH0, 31),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH1, 0),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "app",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_DIV_GATE(REG_CLKENABLE, 20),
-+			BERLIN2_PLL_SELECT(REG_CLKSELECT2, 0),
-+			BERLIN2_DIV_SELECT(REG_CLKSELECT2, 3),
-+			BERLIN2_PLL_SWITCH(REG_CLKSWITCH1, 1),
-+			BERLIN2_DIV_SWITCH(REG_CLKSWITCH1, 2),
-+			BERLIN2_DIV_D3SWITCH(REG_CLKSWITCH1, 3),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "sdio0xin",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_SINGLE_DIV(REG_SDIO0XIN_CLKCTL),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+	{
-+		.name = "sdio1xin",
-+		.parent_ids = default_parent_ids,
-+		.num_parents = ARRAY_SIZE(default_parent_ids),
-+		.map = {
-+			BERLIN2_SINGLE_DIV(REG_SDIO1XIN_CLKCTL),
-+		},
-+		.div_flags = BERLIN2_DIV_HAS_GATE | BERLIN2_DIV_HAS_MUX,
-+		.flags = 0,
-+	},
-+};
-+
-+static const struct berlin2_gate_data bg2q_gates[] __initconst = {
-+	{ "gfx2daxi",	"perif",	5 },
-+	{ "geth0",	"perif",	8 },
-+	{ "sata",	"perif",	9 },
-+	{ "ahbapb",	"perif",	10, CLK_IGNORE_UNUSED },
-+	{ "usb0",	"perif",	11 },
-+	{ "usb1",	"perif",	12 },
-+	{ "usb2",	"perif",	13 },
-+	{ "usb3",	"perif",	14 },
-+	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
-+	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
-+	{ "nfc",	"perif",	18 },
-+	{ "smemc",	"perif",	19 },
-+	{ "pcie",	"perif",	22 },
-+};
-+
-+static void __init berlin2q_clock_setup(struct device_node *np)
++static int berlin2_div_is_enabled(struct clk_hw *hw)
 +{
-+	const char *parent_names[9];
-+	struct clk *clk;
-+	int n;
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 reg;
 +
-+	gbase = of_iomap(np, 0);
-+	if (!gbase) {
-+		pr_err("%s: Unable to map global base\n", np->full_name);
-+		return;
-+	}
++	if (div->lock)
++		spin_lock(div->lock);
 +
-+	/* BG2Q CPU PLL is not part of global registers */
-+	cpupll_base = of_iomap(np, 1);
-+	if (!cpupll_base) {
-+		pr_err("%s: Unable to map cpupll base\n", np->full_name);
-+		iounmap(gbase);
-+		return;
-+	}
++	reg = readl_relaxed(div->base + map->gate_offs);
++	reg >>= map->gate_shift;
 +
-+	/* overwrite default clock names with DT provided ones */
-+	clk = of_clk_get_by_name(np, clk_names[REFCLK]);
-+	if (!IS_ERR(clk)) {
-+		clk_names[REFCLK] = __clk_get_name(clk);
-+		clk_put(clk);
-+	}
++	if (div->lock)
++		spin_unlock(div->lock);
 +
-+	/* simple register PLLs */
-+	clk = berlin2_pll_register(&bg2q_pll_map, gbase + REG_SYSPLLCTL0,
-+				   clk_names[SYSPLL], clk_names[REFCLK], 0);
-+	if (IS_ERR(clk))
-+		goto bg2q_fail;
-+
-+	clk = berlin2_pll_register(&bg2q_pll_map, cpupll_base,
-+				   clk_names[CPUPLL], clk_names[REFCLK], 0);
-+	if (IS_ERR(clk))
-+		goto bg2q_fail;
-+
-+	/* TODO: add BG2Q AVPLL */
-+
-+	/*
-+	 * TODO: add reference clock bypass switches:
-+	 * memPLLSWBypass, cpuPLLSWBypass, and sysPLLSWBypass
-+	 */
-+
-+	/* clock divider cells */
-+	for (n = 0; n < ARRAY_SIZE(bg2q_divs); n++) {
-+		const struct berlin2_div_data *dd = &bg2q_divs[n];
-+		int k;
-+
-+		for (k = 0; k < dd->num_parents; k++)
-+			parent_names[k] = clk_names[dd->parent_ids[k]];
-+
-+		clks[CLKID_SYS + n] = berlin2_div_register(&dd->map, gbase,
-+				dd->name, dd->div_flags, parent_names,
-+				dd->num_parents, dd->flags, &lock);
-+	}
-+
-+	/* clock gate cells */
-+	for (n = 0; n < ARRAY_SIZE(bg2q_gates); n++) {
-+		const struct berlin2_gate_data *gd = &bg2q_gates[n];
-+
-+		clks[CLKID_GFX2DAXI + n] = clk_register_gate(NULL, gd->name,
-+			    gd->parent_name, gd->flags, gbase + REG_CLKENABLE,
-+			    gd->bit_idx, 0, &lock);
-+	}
-+
-+	/*
-+	 * twdclk is derived from cpu/3
-+	 * TODO: use cpupll until cpuclk is not available
-+	 */
-+	clks[CLKID_TWD] =
-+		clk_register_fixed_factor(NULL, "twd", clk_names[CPUPLL],
-+					  0, 1, 3);
-+
-+	/* check for errors on leaf clocks */
-+	for (n = 0; n < MAX_CLKS; n++) {
-+		if (!IS_ERR(clks[n]))
-+			continue;
-+
-+		pr_err("%s: Unable to register leaf clock %d\n",
-+		       np->full_name, n);
-+		goto bg2q_fail;
-+	}
-+
-+	/* register clk-provider */
-+	clk_data.clks = clks;
-+	clk_data.clk_num = MAX_CLKS;
-+	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
-+
-+	return;
-+
-+bg2q_fail:
-+	iounmap(cpupll_base);
-+	iounmap(gbase);
++	return (reg & 0x1);
 +}
-+CLK_OF_DECLARE(berlin2q_clock, "marvell,berlin2q-chip-ctrl",
-+	       berlin2q_clock_setup);
++
++static int berlin2_div_enable(struct clk_hw *hw)
++{
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 reg;
++
++	if (div->lock)
++		spin_lock(div->lock);
++
++	reg = readl_relaxed(div->base + map->gate_offs);
++	reg |= BIT(map->gate_shift);
++	writel_relaxed(reg, div->base + map->gate_offs);
++
++	if (div->lock)
++		spin_unlock(div->lock);
++
++	return 0;
++}
++
++static void berlin2_div_disable(struct clk_hw *hw)
++{
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 reg;
++
++	if (div->lock)
++		spin_lock(div->lock);
++
++	reg = readl_relaxed(div->base + map->gate_offs);
++	reg &= ~BIT(map->gate_shift);
++	writel_relaxed(reg, div->base + map->gate_offs);
++
++	if (div->lock)
++		spin_unlock(div->lock);
++}
++
++static int berlin2_div_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 reg;
++
++	if (div->lock)
++		spin_lock(div->lock);
++
++	/* index == 0 is PLL_SWITCH */
++	reg = readl_relaxed(div->base + map->pll_switch_offs);
++	if (index == 0)
++		reg &= ~BIT(map->pll_switch_shift);
++	else
++		reg |= BIT(map->pll_switch_shift);
++	writel_relaxed(reg, div->base + map->pll_switch_offs);
++
++	/* index > 0 is PLL_SELECT */
++	if (index > 0) {
++		reg = readl_relaxed(div->base + map->pll_select_offs);
++		reg &= ~(PLL_SELECT_MASK << map->pll_select_shift);
++		reg |= (index - 1) << map->pll_select_shift;
++		writel_relaxed(reg, div->base + map->pll_select_offs);
++	}
++
++	if (div->lock)
++		spin_unlock(div->lock);
++
++	return 0;
++}
++
++static u8 berlin2_div_get_parent(struct clk_hw *hw)
++{
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 reg;
++	u8 index = 0;
++
++	if (div->lock)
++		spin_lock(div->lock);
++
++	/* PLL_SWITCH == 0 is index 0 */
++	reg = readl_relaxed(div->base + map->pll_switch_offs);
++	reg &= BIT(map->pll_switch_shift);
++	if (reg) {
++		reg = readl_relaxed(div->base + map->pll_select_offs);
++		reg >>= map->pll_select_shift;
++		reg &= PLL_SELECT_MASK;
++		index = 1 + reg;
++	}
++
++	if (div->lock)
++		spin_unlock(div->lock);
++
++	return index;
++}
++
++static unsigned long berlin2_div_recalc_rate(struct clk_hw *hw,
++					     unsigned long parent_rate)
++{
++	struct berlin2_div *div = to_berlin2_div(hw);
++	struct berlin2_div_map *map = &div->map;
++	u32 divsw, div3sw, divider = 1;
++
++	if (div->lock)
++		spin_lock(div->lock);
++
++	divsw = readl_relaxed(div->base + map->div_switch_offs) &
++		(1 << map->div_switch_shift);
++	div3sw = readl_relaxed(div->base + map->div3_switch_offs) &
++		(1 << map->div3_switch_shift);
++
++	/* constant divide-by-3 (dominant) */
++	if (div3sw != 0) {
++		divider = 3;
++	/* divider can be bypassed with DIV_SWITCH == 0 */
++	} else if (divsw == 0) {
++		divider = 1;
++	/* clock divider determined by DIV_SELECT */
++	} else {
++		u32 reg;
++		reg = readl_relaxed(div->base + map->div_select_offs);
++		reg >>= map->div_select_shift;
++		reg &= DIV_SELECT_MASK;
++		divider = clk_div[reg];
++	}
++
++	if (div->lock)
++		spin_unlock(div->lock);
++
++	return parent_rate / divider;
++}
++
++static const struct clk_ops berlin2_div_rate_ops = {
++	.recalc_rate	= berlin2_div_recalc_rate,
++};
++
++static const struct clk_ops berlin2_div_gate_ops = {
++	.is_enabled	= berlin2_div_is_enabled,
++	.enable		= berlin2_div_enable,
++	.disable	= berlin2_div_disable,
++};
++
++static const struct clk_ops berlin2_div_mux_ops = {
++	.set_parent	= berlin2_div_set_parent,
++	.get_parent	= berlin2_div_get_parent,
++};
++
++struct clk * __init
++berlin2_div_register(const struct berlin2_div_map *map,
++		     void __iomem *base, const char *name, u8 div_flags,
++		     const char **parent_names, int num_parents,
++		     unsigned long flags, spinlock_t *lock)
++{
++	const struct clk_ops *mux_ops = &berlin2_div_mux_ops;
++	const struct clk_ops *rate_ops = &berlin2_div_rate_ops;
++	const struct clk_ops *gate_ops = &berlin2_div_gate_ops;
++	struct berlin2_div *div;
++
++	div = kzalloc(sizeof(*div), GFP_KERNEL);
++	if (!div)
++		return ERR_PTR(-ENOMEM);
++
++	/* copy div_map to allow __initconst */
++	memcpy(&div->map, map, sizeof(*map));
++	div->base = base;
++	div->lock = lock;
++
++	if ((div_flags & BERLIN2_DIV_HAS_GATE) == 0)
++		gate_ops = NULL;
++	if ((div_flags & BERLIN2_DIV_HAS_MUX) == 0)
++		mux_ops = NULL;
++
++	return clk_register_composite(NULL, name, parent_names, num_parents,
++				      &div->hw, mux_ops, &div->hw, rate_ops,
++				      &div->hw, gate_ops, flags);
++}
+diff --git a/drivers/clk/berlin/berlin2-div.h b/drivers/clk/berlin/berlin2-div.h
+new file mode 100644
+index 000000000000..15e3384f3116
+--- /dev/null
++++ b/drivers/clk/berlin/berlin2-div.h
+@@ -0,0 +1,89 @@
++/*
++ * Copyright (c) 2014 Marvell Technology Group Ltd.
++ *
++ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
++ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __BERLIN2_DIV_H
++#define __BERLIN2_DIV_H
++
++struct clk;
++
++#define BERLIN2_DIV_HAS_GATE		BIT(0)
++#define BERLIN2_DIV_HAS_MUX		BIT(1)
++
++#define BERLIN2_PLL_SELECT(_off, _sh)	\
++	.pll_select_offs = _off,	\
++	.pll_select_shift = _sh
++
++#define BERLIN2_PLL_SWITCH(_off, _sh)	\
++	.pll_switch_offs = _off,	\
++	.pll_switch_shift = _sh
++
++#define BERLIN2_DIV_SELECT(_off, _sh)	\
++	.div_select_offs = _off,	\
++	.div_select_shift = _sh
++
++#define BERLIN2_DIV_SWITCH(_off, _sh)	\
++	.div_switch_offs = _off,	\
++	.div_switch_shift = _sh
++
++#define BERLIN2_DIV_D3SWITCH(_off, _sh)	\
++	.div3_switch_offs = _off,	\
++	.div3_switch_shift = _sh
++
++#define BERLIN2_DIV_GATE(_off, _sh)	\
++	.gate_offs = _off,		\
++	.gate_shift = _sh
++
++#define BERLIN2_SINGLE_DIV(_off)	\
++	BERLIN2_DIV_GATE(_off, 0),	\
++	BERLIN2_PLL_SELECT(_off, 1),	\
++	BERLIN2_PLL_SWITCH(_off, 4),	\
++	BERLIN2_DIV_SWITCH(_off, 5),	\
++	BERLIN2_DIV_D3SWITCH(_off, 6),	\
++	BERLIN2_DIV_SELECT(_off, 7)
++
++struct berlin2_div_map {
++	u16 pll_select_offs;
++	u16 pll_switch_offs;
++	u16 div_select_offs;
++	u16 div_switch_offs;
++	u16 div3_switch_offs;
++	u16 gate_offs;
++	u8 pll_select_shift;
++	u8 pll_switch_shift;
++	u8 div_select_shift;
++	u8 div_switch_shift;
++	u8 div3_switch_shift;
++	u8 gate_shift;
++};
++
++struct berlin2_div_data {
++	const char *name;
++	const u8 *parent_ids;
++	int num_parents;
++	unsigned long flags;
++	struct berlin2_div_map map;
++	u8 div_flags;
++};
++
++struct clk * __init
++berlin2_div_register(const struct berlin2_div_map *map,
++	     void __iomem *base,  const char *name, u8 div_flags,
++	     const char **parent_names, int num_parents,
++	     unsigned long flags,  spinlock_t *lock);
++
++#endif /* __BERLIN2_DIV_H */
 -- 
 1.9.1
 
