@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaESKwd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 06:52:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36745 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014AbaESKwc (ORCPT
+	id S1754179AbaESKxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 06:53:05 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:44824 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaESKxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 06:52:32 -0400
-Date: Mon, 19 May 2014 13:52:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/28] staging: rtl8188eu: Remove unused function
- rtl8188eu_ps_func()
-Message-ID: <20140519105208.GV15585@mwanda>
-References: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
- <1400426361-19596-6-git-send-email-navin.patidar@gmail.com>
+	Mon, 19 May 2014 06:53:02 -0400
+Message-ID: <5379E284.7030700@gmail.com>
+Date: Mon, 19 May 2014 12:52:52 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400426361-19596-6-git-send-email-navin.patidar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+CC: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix for possible null pointer dereference in dma.c
+References: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 08:48:58PM +0530, navin patidar wrote:
-> Signed-off-by: navin patidar <navin.patidar@gmail.com>
-> ---
->  drivers/staging/rtl8188eu/hal/usb_halinit.c |    8 --------
->  1 file changed, 8 deletions(-)
+Hi Rickard,
+
+On 15.05.2014 23:57, Rickard Strandqvist wrote:
+> There is otherwise a risk of a possible null pointer dereference.
 > 
-> diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
-> index 1a83d31..4c3f8c8 100644
-> --- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
-> +++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
-> @@ -2231,12 +2231,6 @@ static void rtl8188eu_init_default_value(struct adapter *adapt)
->  		haldata->odmpriv.RFCalibrateInfo.ThermalValue_HP[i] = 0;
->  }
->  
-> -static u8 rtl8188eu_ps_func(struct adapter *Adapter, enum hal_intf_ps_func efunc_id, u8 *val)
-> -{
-> -	u8 bResult = true;
-> -	return bResult;
-> -}
-> -
->  void rtl8188eu_set_hal_ops(struct adapter *adapt)
+> Was largely found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  sound/soc/samsung/dma.c |   10 ++++++----
+>  1 fil ändrad, 6 tillägg(+), 4 borttagningar(-)
+> 
+> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+> index dc09b71..b1f6757 100644
+> --- a/sound/soc/samsung/dma.c
+> +++ b/sound/soc/samsung/dma.c
+> @@ -115,17 +115,19 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+>  static void audio_buffdone(void *data)
 >  {
->  	struct hal_ops	*halfunc = &adapt->HalFunc;
-> @@ -2277,7 +2271,5 @@ void rtl8188eu_set_hal_ops(struct adapter *adapt)
->  	halfunc->hal_xmit = &rtl8188eu_hal_xmit;
->  	halfunc->mgnt_xmit = &rtl8188eu_mgnt_xmit;
+>  	struct snd_pcm_substream *substream = data;
+> -	struct runtime_data *prtd = substream->runtime->private_data;
+> +	struct runtime_data *prtd = NULL;
 >  
-> -	halfunc->interface_ps_func = &rtl8188eu_ps_func;
+>  	pr_debug("Entered %s\n", __func__);
+>  
+> -	if (prtd->state & ST_RUNNING) {
+> +	if(substream)
+> +		prtd = substream->runtime->private_data;
+> +
+> +	if (prtd && prtd->state & ST_RUNNING) {
+>  		prtd->dma_pos += prtd->dma_period;
+>  		if (prtd->dma_pos >= prtd->dma_end)
+>  			prtd->dma_pos = prtd->dma_start;
+>  
+> -		if (substream)
+> -			snd_pcm_period_elapsed(substream);
+> +		snd_pcm_period_elapsed(substream);
+>  
+>  		spin_lock(&prtd->lock);
+>  		if (!samsung_dma_has_circular()) {
+> 
 
-No, this is used.  See rtw_hal_intf_ps_func().
+Can you find a path (or use case, if possible) on which any of affected
+pointers will be NULL?
 
-drivers/staging/rtl8188eu/hal/hal_intf.c
-   210  u8 rtw_hal_intf_ps_func(struct adapter *adapt,
-   211                          enum hal_intf_ps_func efunc_id, u8 *val)
-   212  {
-   213          if (adapt->HalFunc.interface_ps_func)
-   214                  return adapt->HalFunc.interface_ps_func(adapt, efunc_id,
-   215                                                             val);
-   216          return _FAIL;
-   217  }
-
-You have changed it to return _FAIL instead of true.  Perhaps that is ok
-but you need to explain it in the changelog.
-
-regards,
-dan carpenter
-
+Best regards,
+Tomasz
