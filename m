@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaESObX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:31:23 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:36966 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaESObV (ORCPT
+	id S1754625AbaESOdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:33:14 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:51897 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaESOdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:31:21 -0400
-Message-ID: <537A15B9.6000102@kernel.dk>
-Date: Mon, 19 May 2014 08:31:21 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 10:33:12 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Mon, 19 May 2014 10:37:11 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: perf: fuzzer induced mutex_lock_nested BUG
+Message-ID: <alpine.DEB.2.10.1405191026400.15561@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: time to move fs/bio.c to block/ ?
-References: <20140519141309.GB21570@infradead.org> <537A11CC.5060708@kernel.dk> <20140519142519.GI18016@ZenIV.linux.org.uk>
-In-Reply-To: <20140519142519.GI18016@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 08:25 AM, Al Viro wrote:
-> On Mon, May 19, 2014 at 08:14:36AM -0600, Jens Axboe wrote:
->> On 05/19/2014 08:13 AM, Christoph Hellwig wrote:
->>> I recently saw patches to fs/bio.c that were sent to Al instead of Jens.
->>> I think having bio.c in fs/ is rather confusing, so maybe it's time to
->>> include the simple git-mv for it in the your for-next tree?
->>
->> Sure, I've been thinking that too for a while. I'll do the move.
-> 
-> While you are at it, could you take bio-integrity.c with it?  _That_
-> has zero excuse being anywhere in fs/* - not even "filesystem code
-> uses quite a few functions from that sucker" as with bio.c.
-> FWIW, consider the move ACKed.
 
-Yeah, I did include that in the move.
+When sorting through the logs of the weekend's fuzzing I found a bunch of 
+these errors which apparently were not fatal.
 
--- 
-Jens Axboe
+This is a Haswell machine running 3.15-rc5 plus a number of PeterZ 
+patches, so sorry if the results are meaningless due to the extra patches.  
+I was hoping some of the fixes would show up in the mainline at some 
+point, running latest -git is enough of a pain, I don't really have the 
+cycles to be running -next or -tip kernels.
+
+If you look up the faulting IP it's actually happening at this line in
+lockdep.c __lock_acquire()
+
+	if (subclass < NR_LOCKDEP_CACHING_CLASSES)
+		class = lock->class_cache[subclass];
+
+
+[ 3884.569315] BUG: unable to handle kernel NULL pointer dereference at 00000000000000b8
+[ 3884.577763] IP: [<ffffffff810b0b03>] __lock_acquire.isra.29+0x173/0xb90
+[ 3884.584901] PGD 1177ed067 PUD 116a4a067 PMD 0 
+[ 3884.589778] Oops: 0000 [#1] SMP 
+[ 4014.688334] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp snd_hda_codec_realtek kvm snd_hda_codec_hdmi snd_hda_codec_generic crc32_pclmul snd_hda_intel ghash_clmulni_intel aesni_intel snd_hda_controller aes_x86_64 snd_hda_codec i915 snd_hwdep iTCO_wdt lrw snd_pcm gf128mul drm_kms_helper glue_helper snd_timer iTCO_vendor_support ppdev evdev drm wmi battery parport_pc mei_me tpm_tis parport ablk_helper button i2c_algo_bit processor video i2c_i801 psmouse i2c_core snd pcspkr serio_raw cryptd soundcore tpm lpc_ich mfd_core mei sd_mod crc_t10dif sr_mod crct10dif_generic cdrom ehci_pci ehci_hcd xhci_hcd ahci e1000e libahci libata crct10dif_pclmul crct10dif_common ptp usbcore crc32c_intel scsi_mod pps_core usb_common fan thermal thermal_sys
+[ 4014.688335] CPU: 1 PID: 1644 Comm: perf_fuzzer Not tainted 3.15.0-rc5+ #108
+[ 4014.688336] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[ 4014.688336] task: ffff880116f22b10 ti: ffff880115c24000 task.ti: ffff880115c24000
+[ 4014.688339] RIP: 0010:[<ffffffff810b0b03>]  [<ffffffff810b0b03>] __lock_acquire.isra.29+0x173/0xb90
+[ 4014.688339] RSP: 0018:ffff880115c25c18  EFLAGS: 00010097
+[ 4014.688339] RAX: 0000000000000000 RBX: ffff880116f22b10 RCX: 0000000000000000
+[ 4014.688340] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+[ 4014.688340] RBP: ffff880115c25c80 R08: 0000000000000000 R09: 0000000000000000
+[ 4014.688340] R10: 0000000000000001 R11: ffff8801175a10e0 R12: 0000000000000000
+[ 4014.688341] R13: 0000000000000000 R14: 00000000000000b0 R15: 0000000000000000
+[ 4014.688341] FS:  00007fc4d2f02700(0000) GS:ffff88011ea40000(0000) knlGS:0000000000000000
+[ 4014.688342] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 4014.688342] CR2: 00000000000000b8 CR3: 0000000117910000 CR4: 00000000001407e0
+[ 4014.688342] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000001510000
+[ 4014.688343] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+[ 4014.688343] Stack:
+[ 4014.688344]  ffffffff810b0d4d 000000000000001e 0000000000000000 ffffffff81c48440
+[ 4014.688345]  ffff880115c25cb0 ffffffff810b0d4d ffff880115c25cc0 ffffffff810b0d4d
+[ 4014.688345]  0000000000000246 0000000000000000 0000000000000000 0000000000000000
+[ 4014.688346] Call Trace:
+[ 4014.688347]  [<ffffffff810b0d4d>] ? __lock_acquire.isra.29+0x3bd/0xb90
+[ 4014.688348]  [<ffffffff810b0d4d>] ? __lock_acquire.isra.29+0x3bd/0xb90
+[ 4014.688349]  [<ffffffff810b0d4d>] ? __lock_acquire.isra.29+0x3bd/0xb90
+[ 4014.688350]  [<ffffffff810b15be>] lock_acquire+0x9e/0x120
+[ 4014.688352]  [<ffffffff8113b62c>] ? perf_event_init_context+0x8c/0x250
+[ 4014.688353]  [<ffffffff8164f7e0>] mutex_lock_nested+0x50/0x360
+[ 4014.688355]  [<ffffffff8113b62c>] ? perf_event_init_context+0x8c/0x250
+[ 4014.688356]  [<ffffffff81133385>] ? perf_lock_task_context+0xa5/0x110
+[ 4014.688357]  [<ffffffff8113b62c>] perf_event_init_context+0x8c/0x250
+[ 4014.688358]  [<ffffffff8113b85d>] perf_event_init_task+0x6d/0x70
+[ 4014.688359]  [<ffffffff81062165>] copy_process.part.23+0x6b5/0x1c60
+[ 4014.688361]  [<ffffffff811d5e7b>] ? mntput_no_expire+0x4b/0x190
+[ 4014.688362]  [<ffffffff810638e5>] do_fork+0xd5/0x330
+[ 4014.688364]  [<ffffffff811b6e2a>] ? __fput+0x17a/0x1e0
+[ 4014.688365]  [<ffffffff813bef46>] ? lockdep_sys_exit_thunk+0x35/0x67
+[ 4014.688366]  [<ffffffff81063bc6>] SyS_clone+0x16/0x20
+[ 4014.688367]  [<ffffffff8165b999>] stub_clone+0x69/0x90
+[ 4014.688368]  [<ffffffff8165b5ed>] ? system_call_fastpath+0x1a/0x1f
+[ 4014.688376] Code: 0f 1f 84 00 00 00 00 00 e8 eb f1 30 00 85 c0 74 0d 83 3d 70 a7 52 01 00 0f 84 d9 06 00 00 45 31 ed e9 d6 01 00 00 66 90 44 89 e8 <4d> 8b 64 c6 08 4d 85 e4 0f 84 ca fe ff ff f0 41 ff 84 24 98 01 
+[ 4014.688377] RIP  [<ffffffff810b0b03>] __lock_acquire.isra.29+0x173/0xb90
+[ 4014.688377]  RSP <ffff880115c25c18>
+[ 4014.688377] CR2: 00000000000000b8
+[ 4014.713508] ---[ end trace 4d7b668c63a63e5b ]---
+[ 4027.809540] [sched_delayed] sched: RT throttling activated
 
