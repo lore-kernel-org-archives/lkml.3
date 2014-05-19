@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964902AbaESQWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:22:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19116 "EHLO mga01.intel.com"
+	id S964925AbaESQW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:22:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34638 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964876AbaESQWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:22:17 -0400
+	id S964876AbaESQWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:22:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,868,1392192000"; 
-   d="scan'208";a="534295247"
+   d="scan'208";a="534295296"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -27,9 +27,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch Part1 V2 08/29] x86, ACPI, irq: enhance error handling in function acpi_register_gsi()
-Date: Tue, 20 May 2014 00:22:52 +0800
-Message-Id: <1400516594-11544-9-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part1 V2 09/29] x86, ACPI, irq: fix possible eror in GSI to IRQ mapping for legacy IRQ
+Date: Tue, 20 May 2014 00:22:53 +0800
+Message-Id: <1400516594-11544-10-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1400516594-11544-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,53 +37,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function mp_register_gsi() may return invalid GSI if error happens,
-so enhance acpi_register_gsi() to handle possible error cases.
+A default identity mapping between GSI and IRQ is built for legacy IRQs.
+So when overriding the default identity mapping for legacy IRQs,
+we should also invalidate isa_irq_to_gsi[gsi] when setting
+isa_irq_to_gsi[irq] = gsi.  Otherwise there may be two entries with the
+same GSI in the isa_irq_to_gsi array, and acpi_isa_irq_to_gsi() may give
+wrong result.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 6d65850f49e9..8b8ff786af12 100644
+index 8b8ff786af12..dccf9e88db30 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -97,6 +97,8 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
- 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
- };
+@@ -508,7 +508,8 @@ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
  
-+#define	ACPI_INVALID_GSI		INT_MIN
-+
- static unsigned int gsi_to_irq(unsigned int gsi)
+ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
  {
- 	unsigned int irq = gsi + NR_IRQS_LEGACY;
-@@ -553,13 +555,13 @@ int (*acpi_suspend_lowlevel)(void);
-  */
- int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
--	unsigned int irq;
- 	unsigned int plat_gsi = gsi;
+-	if (isa_irq < NR_IRQS_LEGACY) {
++	if (isa_irq < NR_IRQS_LEGACY &&
++	    isa_irq_to_gsi[isa_irq] != ACPI_INVALID_GSI) {
+ 		*gsi = isa_irq_to_gsi[isa_irq];
+ 		return 0;
+ 	}
+@@ -913,6 +914,13 @@ static void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
  
- 	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
--	irq = gsi_to_irq(plat_gsi);
-+	if (plat_gsi != ACPI_INVALID_GSI)
-+		return gsi_to_irq(plat_gsi);
+ 	mp_save_irq(&mp_irq);
  
--	return irq;
-+	return -1;
++	/*
++	 * Reset default identity mapping if gsi is also an legacy IRQ,
++	 * otherwise there will be more than one entry with the same GSI
++	 * and acpi_isa_irq_to_gsi() may give wrong result.
++	 */
++	if (gsi < NR_IRQS_LEGACY && isa_irq_to_gsi[gsi] == gsi)
++		isa_irq_to_gsi[gsi] = ACPI_INVALID_GSI;
+ 	isa_irq_to_gsi[bus_irq] = gsi;
  }
- EXPORT_SYMBOL_GPL(acpi_register_gsi);
  
-@@ -1054,7 +1056,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
- 	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
- 	if (ret < 0)
--		gsi = INT_MIN;
-+		gsi = ACPI_INVALID_GSI;
- 
- 	return gsi;
- }
 -- 
 1.7.10.4
 
