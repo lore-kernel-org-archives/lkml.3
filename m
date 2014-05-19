@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaESI2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:28:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50765 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892AbaESI2u (ORCPT
+	id S1753795AbaESI27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:28:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37878 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753757AbaESI2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:28:50 -0400
-Date: Mon, 19 May 2014 09:28:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/16] mfd: max14577: Make of_device_id array const
-Message-ID: <20140519082845.GS2339@lee--X1>
-References: <1399978733-13662-1-git-send-email-k.kozlowski@samsung.com>
- <1399978733-13662-2-git-send-email-k.kozlowski@samsung.com>
+	Mon, 19 May 2014 04:28:51 -0400
+Date: Mon, 19 May 2014 09:28:49 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] mfd-core: Don't register supplies from add_device,
+	add register_supply_aliases()
+Message-ID: <20140519082849.GQ25203@opensource.wolfsonmicro.com>
+References: <1400420953-20705-1-git-send-email-hdegoede@redhat.com> <1400420953-20705-2-git-send-email-hdegoede@redhat.com> <20140519074705.GE2339@lee--X1> <20140519074855.GP25203@opensource.wolfsonmicro.com> <5379BE43.7090809@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1399978733-13662-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5379BE43.7090809@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 May 2014, Krzysztof Kozlowski wrote:
-
-> Array of struct of_device_id should be const as expected by both
-> of_match_table field and of_match_device() call.
+On Mon, May 19, 2014 at 10:18:11AM +0200, Hans de Goede wrote:
+> Hi,
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/max14577.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> On 05/19/2014 09:48 AM, Charles Keepax wrote:
+> > On Mon, May 19, 2014 at 08:47:05AM +0100, Lee Jones wrote:
+> >>> We cannot register supply alias in mfd_add_device before calling
+> >>> platform_add_device, for 2 reasons:
+> >>> 1) devm resources may not be registered before the (platform) drivers probe
+> >>>    method runs
+> >>> 2) The platform-dev's name must be set before registering the aliases which
+> >>>    happens from platform_add_device.
+> >>>
+> >>> So stop registering supply aliases from mfd_add_device, and add a
+> >>> mfd_register_supply_aliases helper functions for the cell's plaform driver
+> >>> probe method to use.
+> >>>
+> >>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> >>> ---
+> >>>  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
+> >>>  include/linux/mfd/core.h |  6 +++++-
+> >>>  2 files changed, 26 insertions(+), 17 deletions(-)
+> >>
+> >> Change looks reasonable to me, but I'd like to have Mark look over the
+> >> changes.  If he's okay with them I think it's best for this set to go
+> >> through the MFD tree as a whole.
+> > 
+> > This should already be fixed by this patch:
+> > 
+> > mfd: core: Don't use devres functions before device is added
+> 
+> Ah, I did not check next, yes that would fix *half* of the problem,
+> the other half is that adding aliases uses dev->name (at least for
+> logging, did not check if it is used for anything else) and that is
+> not set yet before the device is added.
+> 
+> Basically the moral of the story is that it is a BAD idea to do
+> anything with a device before it is added. So my proposed series
+> would replace the "mfd: core: Don't use devres functions before device is added"
+> patch.
+> 
+> Regards,
+> 
+> Hans
 
-Applied, thanks.
+Cool cool, since my patch doesn't seem to have made it in anyway
+I guess lets proceed with your series then.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Charles
