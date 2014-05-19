@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaESPtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:49:10 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:59623 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbaESPtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:49:08 -0400
+	id S932325AbaESPuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:50:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34348 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753843AbaESPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:50:20 -0400
+Date: Mon, 19 May 2014 17:50:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-ID: <20140519155018.GF3017@dhcp22.suse.cz>
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+ <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
+ <20140519140248.GD3017@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140519105208.GV15585@mwanda>
-References: <1400426361-19596-1-git-send-email-navin.patidar@gmail.com>
-	<1400426361-19596-6-git-send-email-navin.patidar@gmail.com>
-	<20140519105208.GV15585@mwanda>
-Date: Mon, 19 May 2014 21:19:07 +0530
-Message-ID: <CAPV97ydMiagwQqS6cAS_ck1+XOZWKH82okPG0V1fLcpsLKL8zg@mail.gmail.com>
-Subject: Re: [PATCH 05/28] staging: rtl8188eu: Remove unused function rtl8188eu_ps_func()
-From: navin patidar <navin.patidar@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519140248.GD3017@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 4:22 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sun, May 18, 2014 at 08:48:58PM +0530, navin patidar wrote:
->> Signed-off-by: navin patidar <navin.patidar@gmail.com>
->> ---
->>  drivers/staging/rtl8188eu/hal/usb_halinit.c |    8 --------
->>  1 file changed, 8 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
->> index 1a83d31..4c3f8c8 100644
->> --- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
->> +++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
->> @@ -2231,12 +2231,6 @@ static void rtl8188eu_init_default_value(struct adapter *adapt)
->>               haldata->odmpriv.RFCalibrateInfo.ThermalValue_HP[i] = 0;
->>  }
->>
->> -static u8 rtl8188eu_ps_func(struct adapter *Adapter, enum hal_intf_ps_func efunc_id, u8 *val)
->> -{
->> -     u8 bResult = true;
->> -     return bResult;
->> -}
->> -
->>  void rtl8188eu_set_hal_ops(struct adapter *adapt)
->>  {
->>       struct hal_ops  *halfunc = &adapt->HalFunc;
->> @@ -2277,7 +2271,5 @@ void rtl8188eu_set_hal_ops(struct adapter *adapt)
->>       halfunc->hal_xmit = &rtl8188eu_hal_xmit;
->>       halfunc->mgnt_xmit = &rtl8188eu_mgnt_xmit;
->>
->> -     halfunc->interface_ps_func = &rtl8188eu_ps_func;
->
-> No, this is used.  See rtw_hal_intf_ps_func().
->
-> drivers/staging/rtl8188eu/hal/hal_intf.c
->    210  u8 rtw_hal_intf_ps_func(struct adapter *adapt,
->    211                          enum hal_intf_ps_func efunc_id, u8 *val)
->    212  {
->    213          if (adapt->HalFunc.interface_ps_func)
->    214                  return adapt->HalFunc.interface_ps_func(adapt, efunc_id,
->    215                                                             val);
->    216          return _FAIL;
->    217  }
->
-> You have changed it to return _FAIL instead of true.  Perhaps that is ok
-> but you need to explain it in the changelog.
->
-oops, I'll resend this patch with proper changelog.
-I have one question, do i need to send v2 of whole patch series or
-just this patch.
+On Mon 19-05-14 16:02:48, Michal Hocko wrote:
+> On Fri 16-05-14 15:00:16, Greg Thelen wrote:
+[...]
+> > -- First, demonstrate that just rmdir, without memory.force_empty,
+> >    temporarily hides reparented child memory stats.
+> > 
+> > $ /test
+> > p/memory.stat:rss 0
+> > p/memory.stat:total_rss 69632
+> > p/c/memory.stat:rss 69632
+> > p/c/memory.stat:total_rss 69632
+> > For a small time the p/c memory has not been reparented to p.
+> > p/memory.stat:rss 0
+> > p/memory.stat:total_rss 0
+> 
+> OK, this is a bug. Our iterators skip the children because css_tryget
+> fails on it but css_offline still not done.
 
-regards,
-navin patidar
+Or use the cgroups iterator directly. Which would be even easier to fix.
+-- 
+Michal Hocko
+SUSE Labs
