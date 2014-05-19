@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaESAUH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 20:20:07 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51982 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752195AbaESAUF (ORCPT
+	id S1752500AbaESA0R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 20:26:17 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:55911 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152AbaESA0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 20:20:05 -0400
-Message-ID: <1400458802.2288.11.camel@dabdike>
-Subject: Re: SCSI "staging" tree for linux-next?
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 19 May 2014 09:20:02 +0900
-In-Reply-To: <1400277676.16968.2.camel@dabdike.int.hansenpartnership.com>
-References: <20140515052645.GA26266@infradead.org>
-	 <537614CC.6020602@suse.de>
-	 <1400277676.16968.2.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 18 May 2014 20:26:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <8761l6lbzi.fsf@rustcorp.com.au>
+References: <1400157181-17800-1-git-send-email-tom.leiming@gmail.com>
+	<8761l6lbzi.fsf@rustcorp.com.au>
+Date: Mon, 19 May 2014 08:26:10 +0800
+Message-ID: <CACVXFVNnQmJ6J3U4xTmKbBQfuYQBxXA4djNL_s7dD3jC1CGhhg@mail.gmail.com>
+Subject: Re: [PATCH] virtio_blk: fix race between start and stop queue
+From: Ming Lei <tom.leiming@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-16 at 15:01 -0700, James Bottomley wrote:
-> On Fri, 2014-05-16 at 15:38 +0200, Hannes Reinecke wrote:
-> > On 05/15/2014 07:26 AM, Christoph Hellwig wrote:
-> > > Hi James,
-> > >
-> > > we're past -rc5 and no SCSI patches have been collected for 3.16 yet,
-> > > despite a lot of patches including a lot of reviewed ones pending on the
-> > > list.
-> > >
-> > > I'd really love to get at least some testing for all the work that
-> > > sometimes has been pending for months in linux-next and would offer to
-> > > put together a tree of reviewed patches for linux-next.  Is this fine
-> > > with you?
-> > >
-> > Seconded. Having a staging tree would make my life _so_ much easier.
-> 
-> OK, I think we can do this easily.  Send me your staging branches and
-> I'll pull them into a global staging branch and merge it with for-next
-> in linux-scsi ... this will ensure we don't get yelled at for duplicate
-> commits causing merge rejections in linux-next.  Since staging will be
-> volatile and for the purposes of testing patches on upstream track, we
-> don't need signed tags or anything.
+On Fri, May 16, 2014 at 9:59 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Ming Lei <tom.leiming@gmail.com> writes:
+>> When there isn't enough vring descriptor for adding to vq,
+>> blk-mq will be put as stopped state until some of pending
+>> descriptors are completed & freed.
+>>
+>> Unfortunately, the vq's interrupt may come just before
+>> blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
+>> still be kept as stopped even though lots of descriptors
+>> are completed and freed in the interrupt handler. The worst
+>> case is that all pending descriptors are freed in the
+>> interrupt handler, and the queue is kept as stopped forever.
+>>
+>> This patch fixes the problem by starting/stopping blk-mq
+>> with holding vq_lock.
+>
+> OK, but why the flag?  Isn't moving the
+>         blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
+>
+> inside the lock sufficient?
 
-Ping ... Git URL, anyone?
+The flag has been removed in v1. I introduced the flag just for
+avoiding unnecessary calling blk_mq_start_stopped_hw_queues()
+at most of time, but it isn't a big deal.
 
-I thought this was something you really wanted and an essential
-component to making your lives easier?
-
-Like I said, just the URL will work for a staging tree, I don't need
-signed tags or commit descriptions ... although if testing by next or
-Fengguang shows fatal problems, I'll drop the branch.
-
-James
-
-
+Thanks,
+-- 
+Ming Lei
