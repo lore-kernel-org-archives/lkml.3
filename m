@@ -1,48 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaESWff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:35:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35580 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaESWfc convert rfc822-to-8bit (ORCPT
+	id S1752087AbaESWhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:37:32 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58374 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751060AbaESWha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:35:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,870,1392192000"; 
-   d="scan'208";a="541727907"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
-Subject: RE: [PATCH] time: Provide full featured jiffies_to_nsecs() function
-Thread-Topic: [PATCH] time: Provide full featured jiffies_to_nsecs() function
-Thread-Index: AQHPcwGiIK4lOPm6x0SG99JQVqbgGJtIeXuQ
-Date: Mon, 19 May 2014 22:35:31 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3280EB34@ORSMSX114.amr.corp.intel.com>
-References: <0286550@agluck-desk.sc.intel.com> <53795E3B.9000004@huawei.com>
-In-Reply-To: <53795E3B.9000004@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 May 2014 18:37:30 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Battery: Accelerate battery resume callback
+Date: Tue, 20 May 2014 00:54:24 +0200
+Message-ID: <4288835.6SVZxzAble@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399183626-13152-1-git-send-email-tianyu.lan@intel.com>
+References: <1399183626-13152-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Another problem, maybe we should use get_jiffies_64() instead of jiffies
-> directly here OR we'll meet wraparound problems on 32bit system. But a
-> same problem is that the jiffies_lock is not safe in NMI context...
+On Sunday, May 04, 2014 02:07:06 PM Lan Tianyu wrote:
+> Most time of battery resume callback is spent on executing AML code
+> _BTP, _BIF and _BIF to get battery info, status and set alarm. These
+> AML methods may access EC operation regions several times and consumes
+> time.
+> 
+> These operations are not necessary during devices resume and can run
+> during POST_SUSPEND/HIBERNATION event when all processes are thawed.
+> 
+> This also can avoid removing and adding battery sysfs nodes every system
+> resume even if the battery unit is not actually changed. The original code
+> updates sysfs nodes without check and this seems not reasonable.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-To quote Winnie the Pooh - "Bother".
+Queued up for 3.16, thanks!
 
-Can someone think of a clever way to get a sane 64 bit jiffie value on
-32-bit systems (even when we get an NMI in the middle of updating the
-64-bit jiffie)?
+> ---
+> This patch is to base on the linux pm tree linux-next branch with
+> patches "ACPI: Revert "ACPI / Battery: Remove battery's proc directory""
+> and "ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"".
+> 
+>  drivers/acpi/battery.c | 36 +++++++++++++++++++++++++++---------
+>  1 file changed, 27 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index 6e7b2a1..3b4921e 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -696,7 +696,7 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
+>  	}
+>  }
+>  
+> -static int acpi_battery_update(struct acpi_battery *battery)
+> +static int acpi_battery_update(struct acpi_battery *battery, bool resume)
+>  {
+>  	int result, old_present = acpi_battery_present(battery);
+>  	result = acpi_battery_get_status(battery);
+> @@ -707,6 +707,10 @@ static int acpi_battery_update(struct acpi_battery *battery)
+>  		battery->update_time = 0;
+>  		return 0;
+>  	}
+> +
+> +	if (resume)
+> +		return 0;
+> +
+>  	if (!battery->update_time ||
+>  	    old_present != acpi_battery_present(battery)) {
+>  		result = acpi_battery_get_info(battery);
+> @@ -915,7 +919,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
+>  static int acpi_battery_read(int fid, struct seq_file *seq)
+>  {
+>  	struct acpi_battery *battery = seq->private;
+> -	int result = acpi_battery_update(battery);
+> +	int result = acpi_battery_update(battery, false);
+>  	return acpi_print_funcs[fid](seq, result);
+>  }
+>  
+> @@ -1030,7 +1034,7 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
+>  	old = battery->bat.dev;
+>  	if (event == ACPI_BATTERY_NOTIFY_INFO)
+>  		acpi_battery_refresh(battery);
+> -	acpi_battery_update(battery);
+> +	acpi_battery_update(battery, false);
+>  	acpi_bus_generate_netlink_event(device->pnp.device_class,
+>  					dev_name(&device->dev), event,
+>  					acpi_battery_present(battery));
+> @@ -1045,13 +1049,27 @@ static int battery_notify(struct notifier_block *nb,
+>  {
+>  	struct acpi_battery *battery = container_of(nb, struct acpi_battery,
+>  						    pm_nb);
+> +	int result;
+> +
+>  	switch (mode) {
+>  	case PM_POST_HIBERNATION:
+>  	case PM_POST_SUSPEND:
+> -		if (battery->bat.dev) {
+> -			sysfs_remove_battery(battery);
+> -			sysfs_add_battery(battery);
+> -		}
+> +		if (!acpi_battery_present(battery))
+> +			return 0;
+> +
+> +		if (!battery->bat.dev) {
+> +			result = acpi_battery_get_info(battery);
+> +			if (result)
+> +				return result;
+> +
+> +			result = sysfs_add_battery(battery);
+> +			if (result)
+> +				return result;
+> +		} else
+> +			acpi_battery_refresh(battery);
+> +
+> +		acpi_battery_init_alarm(battery);
+> +		acpi_battery_get_state(battery);
+>  		break;
+>  	}
+>  
+> @@ -1087,7 +1105,7 @@ static int acpi_battery_add(struct acpi_device *device)
+>  	mutex_init(&battery->sysfs_lock);
+>  	if (acpi_has_method(battery->device->handle, "_BIX"))
+>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+> -	result = acpi_battery_update(battery);
+> +	result = acpi_battery_update(battery, false);
+>  	if (result)
+>  		goto fail;
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+> @@ -1149,7 +1167,7 @@ static int acpi_battery_resume(struct device *dev)
+>  		return -EINVAL;
+>  
+>  	battery->update_time = 0;
+> -	acpi_battery_update(battery);
+> +	acpi_battery_update(battery, true);
+>  	return 0;
+>  }
+>  #else
+> 
 
--Tony
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
