@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaESEfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:35:08 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17570 "EHLO
+	id S1752790AbaESEfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:35:38 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14038 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750928AbaESEcx (ORCPT
+	by vger.kernel.org with ESMTP id S1750890AbaESEcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 00:32:53 -0400
 X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="74474219"
+   d="scan'208";a="74474218"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Henk de Groot <pe1dnn@amsat.org>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/13] staging: wlags49_h2: make return of 0 explicit
-Date: Mon, 19 May 2014 06:31:09 +0200
-Message-Id: <1400473875-22228-8-git-send-email-Julia.Lawall@lip6.fr>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: kernel-janitors@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/13] [NETFILTER]: arp_tables: make return of 0 explicit
+Date: Mon, 19 May 2014 06:31:08 +0200
+Message-Id: <1400473875-22228-7-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -50,61 +56,31 @@ return
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-I'm not sure to understand this code.  There seem to be two cases where
-ret was undefined at the point of the return (on failure of the case 0
-test and in the default case).
+ net/ipv4/netfilter/arp_tables.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
- drivers/staging/wlags49_h2/wl_wext.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
-index 49eeeae..3aeff81 100644
---- a/drivers/staging/wlags49_h2/wl_wext.c
-+++ b/drivers/staging/wlags49_h2/wl_wext.c
-@@ -159,15 +159,12 @@ static int hermes_set_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr,
- /* Set up the LTV to clear the appropriate key */
- static int hermes_clear_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr)
- {
--	int ret;
--
- 	switch (key_idx) {
- 	case 0:
- 		if (!is_broadcast_ether_addr(addr)) {
- 			ltv->len = 7;
- 			ltv->typ = CFG_REMOVE_TKIP_MAPPED_KEY;
- 			memcpy(&ltv->u.u8[0], addr, ETH_ALEN);
--			ret = 0;
- 		}
- 		break;
- 	case 1:
-@@ -178,13 +175,12 @@ static int hermes_clear_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr)
- 		ltv->typ = CFG_REMOVE_TKIP_DEFAULT_KEY;
- 		ltv->u.u16[0] = cpu_to_le16(key_idx);
+diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
+index f95b6f9..89f6737 100644
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1289,9 +1289,8 @@ compat_copy_entry_from_user(struct compat_arpt_entry *e, void **dstptr,
+ 	struct xt_target *target;
+ 	struct arpt_entry *de;
+ 	unsigned int origsize;
+-	int ret, h;
++	int h;
  
--		ret = 0;
- 		break;
- 	default:
- 		break;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /* Set the WEP keys in the wl_private structure */
-@@ -3027,13 +3023,10 @@ static int wireless_set_genie(struct net_device *dev,
- 			      struct iw_point *data, char *extra)
- 
- {
--	int   ret = 0;
--
- 	/* We can't write this to the card, but apparently this
- 	 * operation needs to succeed */
 -	ret = 0;
- 
+ 	origsize = *size;
+ 	de = (struct arpt_entry *)*dstptr;
+ 	memcpy(de, e, sizeof(struct arpt_entry));
+@@ -1312,7 +1311,7 @@ compat_copy_entry_from_user(struct compat_arpt_entry *e, void **dstptr,
+ 		if ((unsigned char *)de - base < newinfo->underflow[h])
+ 			newinfo->underflow[h] -= origsize - *size;
+ 	}
 -	return ret;
 +	return 0;
  }
- /*============================================================================*/
  
+ static int translate_compat_table(const char *name,
 
