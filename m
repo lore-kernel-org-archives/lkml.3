@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaESIej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 04:34:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56195 "EHLO arroyo.ext.ti.com"
+	id S1753664AbaESIeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 04:34:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55423 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582AbaESIee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 04:34:34 -0400
+	id S1751499AbaESIec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 04:34:32 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 2/6] usb: dwc3: dwc3-omap: Add dwc3_omap_map_offset() function
-Date: Mon, 19 May 2014 14:02:53 +0530
-Message-ID: <1400488377-10605-3-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 1/6] usb: dwc3: dwc3-omap: Remove x_major calculation from revision register
+Date: Mon, 19 May 2014 14:02:52 +0530
+Message-ID: <1400488377-10605-2-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1400488377-10605-1-git-send-email-george.cherian@ti.com>
 References: <1400488377-10605-1-git-send-email-george.cherian@ti.com>
@@ -23,63 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move map offset to its own seperate function.
-Improve code readability, decrease the dwc3_probe() size.
+Remove the x_major calculation logic from the wrapper revision register
+to differentiate between OMAP5 and AM437x. This was done to find the
+register offsets of wrapper register. Now that We do it using dt
+compatible, remove the whole logic.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c | 31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c | 35 +++--------------------------------
+ 1 file changed, 3 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 53f6490..0df8adf 100644
+index 1160ff4..53f6490 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -378,6 +378,24 @@ static int dwc3_omap_vbus_notifier(struct notifier_block *nb,
- 	return NOTIFY_DONE;
- }
+@@ -77,10 +77,6 @@
+ #define USBOTGSS_DEV_EBC_EN			0x0110
+ #define USBOTGSS_DEBUG_OFFSET			0x0600
  
-+static void dwc3_omap_map_offset(struct dwc3_omap *omap)
-+{
-+	struct device_node	*node = omap->dev->of_node;
-+
-+	/* Differentiate between OMAP5 and AM437x
-+	 * For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
-+	 * changes in wrapper registers, Using dt compatible for AM437x
-+	 */
-+
-+	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
-+		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
-+		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
-+		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
-+		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
-+		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
-+	}
-+}
-+
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
- 	struct device_node	*node = pdev->dev.of_node;
-@@ -442,18 +460,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+-/* REVISION REGISTER */
+-#define USBOTGSS_REVISION_XMAJOR(reg)		((reg >> 8) & 0x7)
+-#define USBOTGSS_REVISION_XMAJOR1		1
+-#define USBOTGSS_REVISION_XMAJOR2		2
+ /* SYSCONFIG REGISTER */
+ #define USBOTGSS_SYSCONFIG_DMADISABLE		(1 << 16)
+ 
+@@ -129,7 +125,6 @@ struct dwc3_omap {
+ 	u32			irq_eoi_offset;
+ 	u32			debug_offset;
+ 	u32			irq0_offset;
+-	u32			revision;
+ 
+ 	u32			dma_status:1;
+ 
+@@ -397,7 +392,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	int			irq;
+ 
+ 	int			utmi_mode = 0;
+-	int			x_major;
+ 
+ 	u32			reg;
+ 
+@@ -448,32 +442,9 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  		goto err0;
  	}
  
--	/* Differentiate between OMAP5 and AM437x
--	 * For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
--	 * changes in wrapper registers, Using dt compatible for AM437x
--	 */
+-	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
+-	omap->revision = reg;
+-	x_major = USBOTGSS_REVISION_XMAJOR(reg);
 -
--	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
+-	/* Differentiate between OMAP5 and AM437x */
+-	switch (x_major) {
+-	case USBOTGSS_REVISION_XMAJOR1:
+-	case USBOTGSS_REVISION_XMAJOR2:
+-		omap->irq_eoi_offset = 0;
+-		omap->irq0_offset = 0;
+-		omap->irqmisc_offset = 0;
+-		omap->utmi_otg_offset = 0;
+-		omap->debug_offset = 0;
+-		break;
+-	default:
+-		/* Default to the latest revision */
 -		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
 -		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
 -		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
 -		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
 -		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
+-		break;
 -	}
-+	dwc3_omap_map_offset(omap);
+-
+-	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
+-	 * changes in wrapper registers, Using dt compatible for aegis
++	/* Differentiate between OMAP5 and AM437x
++	 * For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
++	 * changes in wrapper registers, Using dt compatible for AM437x
+ 	 */
  
- 	reg = dwc3_omap_read_utmi_status(omap);
- 
+ 	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
 -- 
 1.8.3.1
 
