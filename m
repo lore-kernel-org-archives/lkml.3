@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaESLV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:21:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815AbaESLV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:21:57 -0400
-Date: Mon, 19 May 2014 13:21:16 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/6] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Message-ID: <20140519112116.GC5027@krava.brq.redhat.com>
-References: <1399999697-65875-1-git-send-email-dzickus@redhat.com>
- <1399999697-65875-3-git-send-email-dzickus@redhat.com>
+	id S1753120AbaESLZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:25:56 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:11647 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752555AbaESLZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 07:25:55 -0400
+X-IronPort-AV: E=Sophos;i="4.98,866,1392159600"; 
+   d="scan'208";a="74564408"
+Date: Mon, 19 May 2014 19:25:48 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Tero Kristo <t-kristo@ti.com>
+cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        J Keerthy <j-keerthy@ti.com>
+Subject: [PATCH] CLK: TI: DRA7: return error code in failure case
+In-Reply-To: <5379BC0C.3070401@ti.com>
+Message-ID: <alpine.DEB.2.10.1405191924330.2564@hadrien>
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-4-git-send-email-Julia.Lawall@lip6.fr> <20140519074155.GO15585@mwanda> <5379BC0C.3070401@ti.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399999697-65875-3-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 12:48:13PM -0400, Don Zickus wrote:
-> This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
-> 
-> Conflicts:
-> 	tools/perf/util/event.c
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-also besides the missing Signed-off ;-) could I have more
-info in changelog, like we revert this now etc..?
+Add a returned error code in the MAX_APLL_WAIT_TRIES case.  Remove the
+updating of the return variable r to 0 if MAX_APLL_WAIT_TRIES is not yet
+reached, because r is already 0 at this point.
 
-thanks,
-jirka
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+diff --git a/drivers/clk/ti/apll.c b/drivers/clk/ti/apll.c
+index b986f61..efc71a0 100644
+--- a/drivers/clk/ti/apll.c
++++ b/drivers/clk/ti/apll.c
+@@ -77,13 +77,11 @@ static int dra7_apll_enable(struct clk_hw *hw)
+ 	if (i == MAX_APLL_WAIT_TRIES) {
+ 		pr_warn("clock: %s failed transition to '%s'\n",
+ 			clk_name, (state) ? "locked" : "bypassed");
+-	} else {
++		r = -EBUSY;
++	} else
+ 		pr_debug("clock: %s transition to '%s' in %d loops\n",
+ 			 clk_name, (state) ? "locked" : "bypassed", i);
+
+-		r = 0;
+-	}
+-
+ 	return r;
+ }
+
