@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaESNA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:00:29 -0400
-Received: from imap.thunk.org ([74.207.234.97]:48982 "EHLO imap.thunk.org"
+	id S1754605AbaESNBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:01:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59051 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754301AbaESNA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:00:28 -0400
-Date: Mon, 19 May 2014 09:00:26 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] /dev/random updates for 3.15-rc6
-Message-ID: <20140519130026.GA13093@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+	id S1753843AbaESNBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:01:16 -0400
+Date: Mon, 19 May 2014 15:01:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Kenny Simpson <theonetruekenny@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Armin Rigo <arigo@tunes.org>
+Subject: Re: remap_file_pages() use
+Message-ID: <20140519130114.GA3140@dhcp22.suse.cz>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
+[CCing Kirill and other people involved]
 
-  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
+On Sun 18-05-14 00:03:28, Kenny Simpson wrote:
+> I saw that remap_file_pages() was possibly going away to be replaced
+> by some emulation. I've used this call in several projects over the
+> years mostly as a way of mapping multiple virtual memory pages to
+> alias the same private or shared memory region (to do things like
+> circular buffers). mmap()
+> in the case of anonymous memory doesn't work as well since there is
+> not a file descriptor to reference.
+> 
+> Would this sort of thing be supported in the emulation, or should I be
+> planning on reimplementing/rewriting some things?
+> 
+> thanks,
+> -Kenny
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
-
-for you to fetch changes up to f9c6d4987b23e0a514464bae6771933a48e4cd01:
-
-  random: fix BUG_ON caused by accounting simplification (2014-05-16 22:18:22 -0400)
-
-----------------------------------------------------------------
-This fixes a BUG_ON-causing regression that was introduced during the
-last merge window.
-
-----------------------------------------------------------------
-Theodore Ts'o (1):
-      random: fix BUG_ON caused by accounting simplification
-
- drivers/char/random.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+-- 
+Michal Hocko
+SUSE Labs
