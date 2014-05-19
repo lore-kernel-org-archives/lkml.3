@@ -1,239 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761AbaESRbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:31:15 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:42177
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754863AbaESRbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:31:13 -0400
-Date: Mon, 19 May 2014 10:29:05 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-CC: Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
- <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
- <20140515073816.GI16662@pengutronix.de>
- <91822600-39d0-4e71-b0f5-9eda35b76ec0@BN1AFFO11FD016.protection.gbl>
- <20140519161949.GG16662@pengutronix.de>
- <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
+	id S932637AbaESReI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:34:08 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:57672 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533AbaESReH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 13:34:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <df742b46-c630-49ea-b234-4d746bb66ec1@BL2FFO11FD040.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(24454002)(377424004)(189002)(199002)(51704005)(20776003)(47776003)(74316001)(50986999)(85202002)(83072002)(50466002)(74502001)(83322001)(85852003)(33646001)(76176999)(102836001)(92726001)(19580395003)(87936001)(19580405001)(54356999)(81342001)(86362001)(31696002)(23676002)(83506001)(4396001)(80022001)(31966008)(44976005)(99396002)(70736001)(46102001)(92566001)(81542001)(79102001)(76482001)(85182001)(77982001)(53416003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB044;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 021670B4D2
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+In-Reply-To: <20140519143540.BE9F6E009B@blue.fi.intel.com>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
+	<20140519130114.GA3140@dhcp22.suse.cz>
+	<20140519143540.BE9F6E009B@blue.fi.intel.com>
+Date: Mon, 19 May 2014 13:34:05 -0400
+Message-ID: <CALN0BAu0E9r0hdy_Vc6GoKiXXk_w0vetRdumW-3eFFzOPqsFSQ@mail.gmail.com>
+Subject: Re: remap_file_pages() use
+From: Kenny Simpson <theonetruekenny@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Armin Rigo <arigo@tunes.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+For the circular buffer case, yes I could make some temp file under
+/dev/shm, unlink it, mmap() it multiple times, etc... its just makes
+it a little more hairy.
+https://lkml.org/lkml/2011/3/19/94
 
-On Mon, 2014-05-19 at 09:41AM -0700, Sören Brinkmann wrote:
-> On Mon, 2014-05-19 at 06:19PM +0200, Uwe Kleine-König wrote:
-> > Hi Sören,
-> > 
-> > On Sun, May 18, 2014 at 05:51:05PM -0700, Sören Brinkmann wrote:
-> > > ------------------8<-----------------8<---------------------8<-------------8<---
-> > > From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > > Date: Tue, 2 Apr 2013 10:08:13 -0700
-> > > Subject: [PATCH] clk: Introduce 'clk_round_rate_nearest()'
-> > > 
-> > > Introduce a new API function to round a rate to the closest possible
-> > > rate the HW clock can generate.
-> > > In contrast to 'clk_round_rate()' which works similar, but always returns
-> > > a frequency <= its input rate.
-> > > 
-> > > Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > > ---
-> > >  drivers/clk/clk.c   | 43 +++++++++++++++++++++++++++++++++++++++++--
-> > >  include/linux/clk.h | 14 ++++++++++++--
-> > >  2 files changed, 53 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> > > index dff0373f53c1..faf24d0569df 100644
-> > > --- a/drivers/clk/clk.c
-> > > +++ b/drivers/clk/clk.c
-> > > @@ -1011,8 +1011,9 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
-> > >   * @rate: the rate which is to be rounded
-> > >   *
-> > >   * Takes in a rate as input and rounds it to a rate that the clk can actually
-> > > - * use which is then returned.  If clk doesn't support round_rate operation
-> > > - * then the parent rate is returned.
-> > > + * use and does not exceed the requested frequency, which is then returned.
-> > > + * If clk doesn't support round_rate operation then the parent rate
-> > > + * is returned.
-> > >   */
-> > >  long clk_round_rate(struct clk *clk, unsigned long rate)
-> > >  {
-> > > @@ -1027,6 +1028,44 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
-> > >  EXPORT_SYMBOL_GPL(clk_round_rate);
-> > >  
-> > >  /**
-> > > + * clk_round_rate_nearest - round the given rate for a clk
-> > > + * @clk: the clk for which we are rounding a rate
-> > > + * @rate: the rate which is to be rounded
-> > > + *
-> > > + * Takes in a rate as input and rounds it to the closest rate that the clk
-> > > + * can actually use which is then returned. If clk doesn't support
-> > > + * round_rate operation then the parent rate is returned.
-> > > + */
-> > > +long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
-> > Why does this function doesn't return an unsigned long when it never
-> > returns a negative value? Ditto for clk_round_rate?
-> 
-> I matched the definition of clk_round_rate(). But you're probably right,
-> it may be the right thing to change clk_round_rate to return an
-> unsigned, but with that being exposed API it would be a risky change.
-> 
-> > 
-> > > +{
-> > > +	unsigned long lower, upper, cur, lower_last, upper_last;
-> > > +
-> > > +	lower = clk_round_rate(clk, rate);
-> > > +	if (lower >= rate)
-> > > +		return lower;
-> > Is the >-case worth a warning?
-> 
-> No, it's correct behavior. If you request a rate that is way lower than what the
-> clock can generate, returning something larger is perfectly valid, IMHO.
-> Which reveals one problem in this whole discussion. The API does not
-> require clk_round_rate() to round down. It is actually an implementation
-> choice that had been made for clk-divider.
-> 
-> > 
-> > > +
-> > > +	upper = clk_round_rate(clk, rate + rate - lower);
-> > This was parenthesized in my original patch on purpose. If rate is big
-> > 
-> > 	rate + rate - lower
-> > 
-> > might overflow when
-> > 
-> > 	rate + (rate - lower)
-> > 
-> > doesn't. Thinking again, there is no real problem, because this is
-> > unsigned arithmetic. To be save we still need to check if rate + (rate -
-> > lower) overflows.
-> 
-> Good point. I'll add the parentheses.
-> 
-> > 
-> > > +	if (upper == lower)
-> > if (upper <= rate) is the better check here. (= would be a bug.)
-> 
-> I don't understand. Passing rate + x to round rate can never return
-> something below 'lower'. Only something in the range [lower,lower+x].
-> So, if upper == lower we found our closest frequency and return it.
-> Otherwise we have to iterate over [lower+1,upper]. Or what did I miss?
-> 
-> > 
-> > > +		return upper;
-> > > +
-> > > +	lower = rate + 1;
-> > ok, so your loop invariant is that the best freq is in [lower; upper].
-> 
-> right.
-> 
-> > 
-> > > +	do {
-> > > +		upper_last = upper;
-> > > +		lower_last = lower;
-> > > +
-> > > +		cur = clk_round_rate(clk, lower + ((upper - lower) >> 1));
-> > > +		if (cur < lower)
-> > > +			lower += (upper - lower) >> 1;
-> > You already know that lower + ((upper - lower) >> 1) is too small, so
-> > you can better do
-> > 
-> > 	lower += ((upper - lower) >> 1) + 1;
-> 
-> right. I'll add the '+1'
-> 
-> > 
-> > > +		else
-> > > +			upper = cur;
-> > > +
-> > > +	} while (lower_last != lower && upper_last != upper);
-> > > +
-> > > +	return upper;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(clk_round_rate_nearest);
-> > I think the function still has potential for optimisation, what about:
-> 
-> At first glance, I don't see many differences except for the comments
-> you made above. I'll have a closer look though.
-> 
-> > 
-> > unsigned long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
-> > {
-> > 	unsigned long lower, upper, rounded;
-> > 
-> > 	rounded = clk_round_rate(clk, rate);
-> > 
-> > 	if (rounded >= rate)
-> > 		return rounded;
-> > 
-> > 	/*
-> > 	 * rounded is the best approximation for rate that is not
-> > 	 * bigger than rate. If there is a better one, it must be in the
-> > 	 * interval (rate; rate + (rate - rounded)).
-> > 	 * Note that the upper limit isn't better than rate itself, so
-> > 	 * that one doesn't need to be considered.
-> > 	 */
-> > 	 
-> > 	upper = rate + (rate - rounded) - 1;
-> > 	if (upper < rate)
-> > 		upper = ULONG_MAX; 
-> 
-> Aren't we done here? Your search for an upper boundary resulted in
-> 'lower'. Hence there is no valid frequency closer to 'rate' than 'lower'. Why do
-> you extend to ULONG_MAX?
+For the other cases I had used the remapping to have more of a sliding
+window over a disk-backed file where I also was using aliasing to
+eliminate the corner cases of hitting the end of a window and needing
+to split records due to crossing boundaries, etc..  These were done
+for other projects in the past, but I am no longer on those projects
+(or with some of the companies), so I can't as easily double check the
+code or make changes.
+Being able to replace mappings in-place was logically simpler than
+doing mmap() over the old mappings.  I was also under the impression
+that it should have less pressure on the mm_sem - I'm pretty sure I
+did profile it many years ago (>5), but many things have changed since
+then so maybe this is not a big deal any more.  This use case was more
+performance-critical than the one-time setup of the anonymous circular
+buffer as it was more like a transaction log/journal.
 
-With the improvements suggested by you I have this now:
+All that said, if remap_file_pages were to go away as of a mainline
+kernel this year, the projects I had worked on would probably not be
+impacted for many years and would probably have been retired/rewritten
+before they would ever see the change (unless some Linux vendor in
+N.C. backported its removal).  Since valgrind doesn't support it, I
+tend to write fallback/debug variants anyway.
 
-long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
-{
-	unsigned long lower, upper;
+-Kenny
 
-	lower = clk_round_rate(clk, rate);
-	if (lower >= rate)
-		return lower;
 
-	upper = clk_round_rate(clk, rate + (rate - lower) - 1);
-	if (upper == lower)
-		return upper;
-
-	lower = rate + 1;
-	while (lower < upper) {
-		unsigned long rounded, mid;
-
-		mid = lower + ((upper - lower) >> 1);
-		rounded = clk_round_rate(clk, mid);
-		if (rounded < lower)
-			lower = mid + 1;
-		else
-			upper = rounded;
-	}
-
-	return upper;
-}
-
-	Sören
-
+On Mon, May 19, 2014 at 10:35 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Michal Hocko wrote:
+>> [CCing Kirill and other people involved]
+>>
+>> On Sun 18-05-14 00:03:28, Kenny Simpson wrote:
+>> > I saw that remap_file_pages() was possibly going away to be replaced
+>> > by some emulation. I've used this call in several projects over the
+>> > years mostly as a way of mapping multiple virtual memory pages to
+>> > alias the same private or shared memory region (to do things like
+>> > circular buffers). mmap()
+>> > in the case of anonymous memory doesn't work as well since there is
+>> > not a file descriptor to reference.
+>> >
+>> > Would this sort of thing be supported in the emulation, or should I be
+>> > planning on reimplementing/rewriting some things?
+>
+> From functional POV, emulation *should* be identical to original
+> remap_file_pages(), but slower. It would be nice, if you test it early.
+>
+> It's not clear yet how long emulation will be there.
+> Is there a reason why you can't use fd from shared memory (shm_open() or
+> direct open() on /dev/shm/xxx)?
+>
+> --
+>  Kirill A. Shutemov
