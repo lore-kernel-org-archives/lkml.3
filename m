@@ -1,239 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaESHnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:43:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54016 "EHLO arroyo.ext.ti.com"
+	id S1753028AbaESHnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:43:39 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:51161 "EHLO mx01-fr.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaESHnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:43:08 -0400
-Message-ID: <5379B5F9.70900@ti.com>
-Date: Mon, 19 May 2014 10:42:49 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752955AbaESHnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 03:43:37 -0400
+Message-ID: <5379B61D.7070501@bfs.de>
+Date: Mon, 19 May 2014 09:43:25 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>, <dmitry.torokhov@gmail.com>
-CC: <balbi@ti.com>, <dmurphy@ti.com>, <mugunthanvnm@ti.com>, <nsekhar@ti.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 4/7] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-5-git-send-email-rogerq@ti.com> <5379ACF1.6080305@euromail.se>
-In-Reply-To: <5379ACF1.6080305@euromail.se>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/13] libertas: make return of 0 explicit
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
 
-On 05/19/2014 10:04 AM, Henrik Rydberg wrote:
-> Hi Roger,
+
+Am 19.05.2014 06:31, schrieb Julia Lawall:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Thanks for the patch series. I think the patch looks great in general. Please
-> see some minor comments below.
+> Delete unnecessary local variable whose value is always 0 and that hides
+> the fact that the result is always 0.
 > 
-> On 05/06/2014 01:06 PM, Roger Quadros wrote:
->> Switch to using the Type-B Multi-Touch protocol.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  drivers/input/touchscreen/pixcir_i2c_ts.c | 125 ++++++++++++++++++++++--------
->>  1 file changed, 94 insertions(+), 31 deletions(-)
->>
->> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> index 8a7da61..1b6e4e5 100644
->> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
->> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> @@ -23,9 +23,12 @@
->>  #include <linux/slab.h>
->>  #include <linux/i2c.h>
->>  #include <linux/input.h>
->> +#include <linux/input/mt.h>
->>  #include <linux/input/pixcir_ts.h>
->>  #include <linux/gpio.h>
->>  
->> +#define PIXCIR_MAX_SLOTS       2
->> +
->>  struct pixcir_i2c_ts_data {
->>  	struct i2c_client *client;
->>  	struct input_dev *input;
->> @@ -33,12 +36,25 @@ struct pixcir_i2c_ts_data {
->>  	bool running;
->>  };
->>  
->> -static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->> +struct pixcir_touch {
->> +	int x;
->> +	int y;
->> +};
->> +
->> +struct pixcir_report_data {
->> +	int num_touches;
->> +	struct pixcir_touch touches[PIXCIR_MAX_SLOTS];
->> +};
->> +
->> +static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
->> +			    struct pixcir_report_data *report)
->>  {
->> -	struct pixcir_i2c_ts_data *tsdata = data;
->>  	u8 rdbuf[10], wrbuf[1] = { 0 };
->> +	u8 *bufptr;
->>  	u8 touch;
->> -	int ret;
->> +	int ret, i;
->> +
->> +	memset(report, 0, sizeof(struct pixcir_report_data));
->>  
->>  	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
->>  	if (ret != sizeof(wrbuf)) {
->> @@ -56,45 +72,85 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->>  		return;
->>  	}
->>  
->> -	touch = rdbuf[0];
->> -	if (touch) {
->> -		u16 posx1 = (rdbuf[3] << 8) | rdbuf[2];
->> -		u16 posy1 = (rdbuf[5] << 8) | rdbuf[4];
->> -		u16 posx2 = (rdbuf[7] << 8) | rdbuf[6];
->> -		u16 posy2 = (rdbuf[9] << 8) | rdbuf[8];
->> -
->> -		input_report_key(tsdata->input, BTN_TOUCH, 1);
->> -		input_report_abs(tsdata->input, ABS_X, posx1);
->> -		input_report_abs(tsdata->input, ABS_Y, posy1);
->> -
->> -		input_report_abs(tsdata->input, ABS_MT_POSITION_X, posx1);
->> -		input_report_abs(tsdata->input, ABS_MT_POSITION_Y, posy1);
->> -		input_mt_sync(tsdata->input);
->> -
->> -		if (touch == 2) {
->> -			input_report_abs(tsdata->input,
->> -					 ABS_MT_POSITION_X, posx2);
->> -			input_report_abs(tsdata->input,
->> -					 ABS_MT_POSITION_Y, posy2);
->> -			input_mt_sync(tsdata->input);
->> -		}
->> -	} else {
->> -		input_report_key(tsdata->input, BTN_TOUCH, 0);
->> +	touch = rdbuf[0] & 0x7;
->> +	if (touch > PIXCIR_MAX_SLOTS)
->> +		touch = PIXCIR_MAX_SLOTS;
->> +
->> +	report->num_touches = touch;
->> +	bufptr = &rdbuf[2];
->> +
->> +	for (i = 0; i < touch; i++) {
->> +		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
->> +		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
->> +
->> +		bufptr = &bufptr[4];
->>  	}
->> +}
+> A simplified version of the semantic patch that fixes this problem is as
+> follows: (http://coccinelle.lip6.fr/)
 > 
-> In many places, the '&ptr[index]' form makes a lot of sense, but here, it would
-> have been clearer to use 'bufptr += 4'.
-
-Agreed. I'll update it.
-
+> // <smpl>
+> @r exists@
+> local idexpression ret;
+> expression e;
+> position p;
+> @@
 > 
->> +
->> +static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
->> +			     struct pixcir_report_data *report)
->> +{
->> +	struct input_mt_pos pos[PIXCIR_MAX_SLOTS];
->> +	int slots[PIXCIR_MAX_SLOTS];
->> +	struct pixcir_touch *touch;
->> +	int n, i, slot;
->> +	struct device *dev = &ts->client->dev;
->>  
->> -	input_sync(tsdata->input);
->> +	n = report->num_touches;
->> +	if (n > PIXCIR_MAX_SLOTS)
->> +		n = PIXCIR_MAX_SLOTS;
->> +
->> +	for (i = 0; i < n; i++) {
->> +		touch = &report->touches[i];
->> +		pos[i].x = touch->x;
->> +		pos[i].y = touch->y;
->> +	}
->> +
->> +	input_mt_assign_slots(ts->input, slots, pos, n);
->> +
->> +	for (i = 0; i < n; i++) {
->> +		touch = &report->touches[i];
->> +		slot = slots[i];
->> +
->> +		input_mt_slot(ts->input, slot);
->> +		input_mt_report_slot_state(ts->input,
->> +					   MT_TOOL_FINGER, true);
->> +
->> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_X, touch->x);
->> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_Y, touch->y);
->> +
->> +		dev_dbg(dev, "%d: slot %d, x %d, y %d\n",
->> +			i, slot, touch->x, touch->y);
->> +	}
->> +
->> +	input_mt_sync_frame(ts->input);
->> +	input_sync(ts->input);
->>  }
->>  
->>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->>  {
->>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->>  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
->> +	struct pixcir_report_data report;
->>  
->>  	while (tsdata->running) {
->> -		pixcir_ts_poscheck(tsdata);
->> -
->> -		if (gpio_get_value(pdata->gpio_attb))
->> +		/* parse packet */
->> +		pixcir_ts_parse(tsdata, &report);
->> +
->> +		/* report it */
->> +		pixcir_ts_report(tsdata, &report);
->> +
->> +		if (gpio_get_value(pdata->gpio_attb)) {
->> +			if (report.num_touches) {
->> +				/*
->> +				 * Last report with no finger up?
->> +				 * Do it now then.
->> +				 */
->> +				input_mt_sync_frame(tsdata->input);
->> +				input_sync(tsdata->input);
+> -ret = 0;
+> ... when != ret = e
+> return 
+> - ret
+> + 0
+>   ;
+> // </smpl>
 > 
-> I think this construct is alright for this particular patch. If anything, it
-> points at a need for a better model of interrupted contacts in the core.
-
-OK. 
-
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
->> +			}
->>  			break;
->> +		}
->>  
->>  		msleep(20);
->>  	}
->> @@ -333,6 +389,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->>  	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
->>  	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
->>  
->> +	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
->> +				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
->> +	if (error) {
->> +		dev_err(dev, "Error initializing Multi-Touch slots\n");
->> +		return error;
->> +	}
->> +
->>  	input_set_drvdata(input, tsdata);
->>  
->>  	error = devm_gpio_request_one(dev, pdata->gpio_attb,
->>
+> ---
+> Alternatively, was an error code intended in the bad length case, as is
+> done in process_brxed_802_11_packet?
 > 
->     Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+>  drivers/net/wireless/libertas/rx.c |    7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/rx.c b/drivers/net/wireless/libertas/rx.c
+> index c7366b0..807c5b8 100644
+> --- a/drivers/net/wireless/libertas/rx.c
+> +++ b/drivers/net/wireless/libertas/rx.c
+> @@ -55,7 +55,6 @@ static int process_rxed_802_11_packet(struct lbs_private *priv,
+>   */
+>  int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+>  {
+> -	int ret = 0;
+>  	struct net_device *dev = priv->dev;
+>  	struct rxpackethdr *p_rx_pkt;
+>  	struct rxpd *p_rx_pd;
+> @@ -86,7 +85,6 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+>  	if (skb->len < (ETH_HLEN + 8 + sizeof(struct rxpd))) {
+>  		lbs_deb_rx("rx err: frame received with bad length\n");
+>  		dev->stats.rx_length_errors++;
+> -		ret = 0;
+>  		dev_kfree_skb(skb);
+>  		goto done;
+>  	}
+> @@ -154,10 +152,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+>  	else
+>  		netif_rx_ni(skb);
+>  
+> -	ret = 0;
+>  done:
+> -	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", ret);
+> -	return ret;
+> +	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", 0);
+> +	return 0;
+>  }
 
-Thanks for the review.
+i guess lbs_deb_leave_args() is obsolet now.
 
-cheers,
--roger
+re,
+ wh
 
+
+>  EXPORT_SYMBOL_GPL(lbs_process_rxed_packet);
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
