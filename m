@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801AbaESW6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:58:45 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51451 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaESW6m (ORCPT
+	id S1752112AbaESW7C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:59:02 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51120 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaESW6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:58:42 -0400
+	Mon, 19 May 2014 18:58:48 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Sasha Levin <sasha.levin@oracle.com>,
@@ -15,11 +15,10 @@ To: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
 Cc: LKML <linux-kernel@vger.kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 1/4] x86,vdso: Fix an OOPS accessing the hpet mapping w/o an hpet
-Date: Mon, 19 May 2014 15:58:31 -0700
-Message-Id: <c8b0a9a0b8d011a8b273cbb2de88d37190ed2751.1400538962.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 4/4] x86,mm: Replace arch_vma_name with vm_ops->name for vsyscalls
+Date: Mon, 19 May 2014 15:58:34 -0700
+Message-Id: <e681cb56096eee5b8b8767093a4f6fb82839f0a4.1400538962.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <cover.1400538962.git.luto@amacapital.net>
 References: <cover.1400538962.git.luto@amacapital.net>
@@ -29,52 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The oops can be triggered in qemu using -no-hpet (but not nohpet) by
-reading a couple of pages past the end of the vdso text.  This
-should send SIGBUS instead of OOPSing.
+arch_vma_name is now completely gone from x86.  Good riddance.
 
-The bug was introduced by:
-
-commit 7a59ed415f5b57469e22e41fc4188d5399e0b194
-Author: Stefani Seibold <stefani@seibold.net>
-Date:   Mon Mar 17 23:22:09 2014 +0100
-
-    x86, vdso: Add 32 bit VDSO time support for 32 bit kernel
-
-which is new in 3.15.
-
-This will be fixed separately in 3.15, but that patch will not apply
-to tip/x86/vdso.  This is the equivalent fix for tip/x86/vdso and,
-presumably, 3.16.
-
-Cc: Stefani Seibold <stefani@seibold.net>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/vdso/vma.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/mm/init_64.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index e915eae..8ad0081 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -90,6 +90,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
- 	struct vm_area_struct *vma;
- 	unsigned long addr;
- 	int ret = 0;
-+	static struct page *no_pages[] = {NULL};
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9deb59b..bdcde58 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1185,11 +1185,19 @@ int kern_addr_valid(unsigned long addr)
+  * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
+  * not need special handling anymore:
+  */
++static const char *gate_vma_name(struct vm_area_struct *vma)
++{
++	return "[vsyscall]";
++}
++static struct vm_operations_struct gate_vma_ops = {
++	.name = gate_vma_name,
++};
+ static struct vm_area_struct gate_vma = {
+ 	.vm_start	= VSYSCALL_ADDR,
+ 	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
+ 	.vm_page_prot	= PAGE_READONLY_EXEC,
+-	.vm_flags	= VM_READ | VM_EXEC
++	.vm_flags	= VM_READ | VM_EXEC,
++	.vm_ops		= &gate_vma_ops,
+ };
  
- 	if (calculate_addr) {
- 		addr = vdso_addr(current->mm->start_stack,
-@@ -125,7 +126,7 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
- 				       addr + image->size,
- 				       image->sym_end_mapping - image->size,
- 				       VM_READ,
--				       NULL);
-+				       no_pages);
+ struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
+@@ -1221,13 +1229,6 @@ int in_gate_area_no_mm(unsigned long addr)
+ 	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
+ }
  
- 	if (IS_ERR(vma)) {
- 		ret = PTR_ERR(vma);
+-const char *arch_vma_name(struct vm_area_struct *vma)
+-{
+-	if (vma == &gate_vma)
+-		return "[vsyscall]";
+-	return NULL;
+-}
+-
+ #ifdef CONFIG_X86_UV
+ unsigned long memory_block_size_bytes(void)
+ {
 -- 
 1.9.0
 
