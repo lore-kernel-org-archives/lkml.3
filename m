@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaESWc1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:32:27 -0400
-Received: from smtprelay0111.hostedemail.com ([216.40.44.111]:46429 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751576AbaESWc0 (ORCPT
+	id S1751857AbaESWfb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 18:35:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61232 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750852AbaESWfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:32:26 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:2903:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mass88_6c2c469f48624
-X-Filterd-Recvd-Size: 2429
-Message-ID: <1400538742.14238.51.camel@joe-AO725>
-Subject: Re: [PATCH driver-core-linus] sysfs: make sure read buffer is zeroed
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, Ron <ron@debian.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Date: Mon, 19 May 2014 15:32:22 -0700
-In-Reply-To: <20140519222500.GA14616@kroah.com>
-References: <20140519172334.GK20439@audi.shelbyville.oz>
-	 <20140519195210.GA27506@mtj.dyndns.org> <20140519222500.GA14616@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 18:35:30 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] ACPI: Cleanup to convert acpi.no_static_ssdt into a compile-time configurable.
+Date: Tue, 20 May 2014 00:52:24 +0200
+Message-ID: <7128235.yLzY3DMMj5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3194723.o46ouvvENe@vostro.rjw.lan>
+References: <cover.1396925060.git.lv.zheng@intel.com> <5a2b1a503fbc65f63a18ca28727e023e5f48efcd.1399880919.git.lv.zheng@intel.com> <3194723.o46ouvvENe@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 15:25 -0700, Greg Kroah-Hartman wrote:
-> On Mon, May 19, 2014 at 03:52:10PM -0400, Tejun Heo wrote:
-> > 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
-> > switched sysfs from custom read implementation to seq_file to enable
-> > later transition to kernfs.  After the change, the buffer passed to
-> > ->show() is acquired through seq_get_buf(); unfortunately, this
-> > introduces a subtle behavior change.  Before the commit, the buffer
-> > passed to ->show() was always zero as it was allocated using
-> > get_zeroed_page().  Because seq_file doesn't clear buffers on
-> > allocation and neither does seq_get_buf(), after the commit, depending
-> > on the behavior of ->show(), we may end up exposing uninitialized data
-> > to userland thus possibly altering userland visible behavior and
-> > leaking information.
+On Tuesday, May 20, 2014 12:49:04 AM Rafael J. Wysocki wrote:
+> On Monday, May 12, 2014 03:49:59 PM Lv Zheng wrote:
+> > User can specify a DSDT with SSDT embedded, in which case, no_static_ssdt
+> > must be enforced during compile-time.  If we don't do that and forget to
+> > specify acpi.no_static_ssdt as a boot parameter, then:
+> > 1. The AML executable will be executed twice, the second execution is
+> >    running under a changed environment.
+> > 2. The namespace object conflicts will result in an AE_ALREADY_EXISTS
+> >    exception;
+> > 3. The namespace objects that are deleted from the original SSDT will be
+> >    restored by the auto loading of the original SSDT.
 > > 
-> > Fix it by explicitly clearing the buffer.
-[]
-> > diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-[]
-> > @@ -47,12 +47,13 @@ static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
-> >  	ssize_t count;
-> >  	char *buf;
+> > Note that:
+> > 1. The DSDT customization is a compile-time feature, thus the SSDT
+> >    inclusion indication of the DSDT customization should also be
+> >    implemented as a compile-time configurable.
+> > 2. According to the commit log:
+> >     Commit: 67effe8fff32f60bdf51cba484766ba6003005bb
+> >     Subject: ACPI: add "acpi_no_auto_ssdt" bootparam
+> >    The acpi.no_static_ssdt (originally acpi.no_auto_ssdt) was introduced to
+> >    be used for this use case.  And over a long time, there is no other
+> >    situation than this requires this boot parameter.
+> > This patch thus converts the runtime kernel parameter into the compile-time
+> > configuration item.
+> > 
+> > References: https://bugzilla.kernel.org/show_bug.cgi?id=3774
+> > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=69711
+> > Original-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > ---
+> >  Documentation/kernel-parameters.txt |   10 ----------
+> >  drivers/acpi/Kconfig                |   32 ++++++++++++++++++++++++++------
+> >  drivers/acpi/internal.h             |    5 +++++
+> >  drivers/acpi/osl.c                  |    8 +++-----
+> >  drivers/acpi/tables.c               |    2 ++
+> >  5 files changed, 36 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 831fb1e..ceba0d6 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -237,16 +237,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  			This feature is enabled by default.
+> >  			This option allows to turn off the feature.
 > >  
-> > -	/* acquire buffer and ensure that it's >= PAGE_SIZE */
-> > +	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
-> >  	count = seq_get_buf(sf, &buf);
-> >  	if (count < PAGE_SIZE) {
-> >  		seq_commit(sf, -1);
-> >  		return 0;
-> >  	}
-> > +	memset(buf, 0, PAGE_SIZE);
+> > -	acpi_no_static_ssdt	[HW,ACPI]
+> > -			Disable installation of static SSDTs at early boot time
+> > -			By default, SSDTs contained in the RSDT/XSDT will be
+> > -			installed automatically and they will appear under
+> > -			/sys/firmware/acpi/tables.
+> > -			This option turns off this feature.
+> > -			Note that specifying this option does not affect
+> > -			dynamic table installation which will install SSDT
+> > -			tables to /sys/firmware/acpi/tables/dynamic.
+> > -
+> >  	acpica_no_return_repair [HW, ACPI]
+> >  			Disable AML predefined validation mechanism
+> >  			This mechanism can repair the evaluation result to make
+> > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> > index c0160bb..51dc3b8 100644
+> > --- a/drivers/acpi/Kconfig
+> > +++ b/drivers/acpi/Kconfig
+> > @@ -216,22 +216,40 @@ config ACPI_NUMA
+> >  	depends on (X86 || IA64)
+> >  	default y if IA64_GENERIC || IA64_SGI_SN2
+> >  
+> > -config ACPI_CUSTOM_DSDT_FILE
+> > -	string "Custom DSDT Table file to include"
+> > -	default ""
+> > +menu "Table override"
+> > +
+> > +menuconfig ACPI_CUSTOM_DSDT
+> 
+> I would make this a choice, like the "Kernel compression mode" (in init/Kconfig).
+> 
+> Then ACPI_CUSTOM_DSDT_ONLY and ACPI_CUSTOM_DSDT_WITH_SSDT may be the options
+> and they both would select ACPI_CUSTOM_DSDT (otherwise invisible to the user),
 
-	memset(buf, 0, count)?
+With the third (and default) option NO_ACPI_CUSTOM_DSDT that would not
+select ACPI_CUSTOM_DSDT.
 
-> Thanks, I'll go queue this up.
+Thanks!
 
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
