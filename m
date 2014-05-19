@@ -1,289 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350AbaESL3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:29:45 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:47367 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaESL3m (ORCPT
+	id S1754393AbaESLa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:30:26 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:61967 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaESLaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:29:42 -0400
-Date: Mon, 19 May 2014 13:29:33 +0200
-From: Michael Mueller <mimu@linux.vnet.ibm.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 3/6] KVM: s390: use facilities and
- cpu_id per KVM
-Message-ID: <20140519132933.408a441f@bee>
-In-Reply-To: <5379DFE9.90207@suse.de>
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
-	<1399993114-15333-4-git-send-email-mimu@linux.vnet.ibm.com>
-	<5375FCBD.7010700@suse.de>
-	<20140516164645.57f22213@bee>
-	<53762581.30708@suse.de>
-	<20140516180945.588563ec@bee>
-	<53767696.7050905@suse.de>
-	<20140519121320.0db01521@bee>
-	<5379DFE9.90207@suse.de>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 19 May 2014 07:30:22 -0400
+Message-ID: <5379EB43.2050702@gmail.com>
+Date: Mon, 19 May 2014 13:30:11 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
+CC: Mark Rutland <mark.rutland@arm.com>, Heiko Stuebner <heiko@sntech.de>,
+        linux-doc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Tarek Dakhran <t.dakhran@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-samsung-soc@vger.kernel.org,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v9 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
+References: <1400470640-30611-1-git-send-email-t.dakhran@samsung.com> <1400470640-30611-2-git-send-email-t.dakhran@samsung.com>
+In-Reply-To: <1400470640-30611-2-git-send-email-t.dakhran@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051911-2966-0000-0000-00000B51D7EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 12:41:45 +0200
-Alexander Graf <agraf@suse.de> wrote:
+Hi Tarek,
 
+On 19.05.2014 05:37, Tarek Dakhran wrote:
+> EXYNOS5410 is SoC in Samsung's Exynos5 SoC series.
+> Add initial support for this SoC.
 > 
-> On 19.05.14 12:13, Michael Mueller wrote:
-> > On Fri, 16 May 2014 22:35:34 +0200
-> > Alexander Graf <agraf@suse.de> wrote:
-> >
-> >> On 16.05.14 18:09, Michael Mueller wrote:
-> >>> On Fri, 16 May 2014 16:49:37 +0200
-> >>> Alexander Graf <agraf@suse.de> wrote:
-> >>>
-> >>>> On 16.05.14 16:46, Michael Mueller wrote:
-> >>>>> On Fri, 16 May 2014 13:55:41 +0200
-> >>>>> Alexander Graf <agraf@suse.de> wrote:
-> >>>>>
-> >>>>>> On 13.05.14 16:58, Michael Mueller wrote:
-> >>>>>>> The patch introduces facilities and cpu_ids per virtual machine.
-> >>>>>>> Different virtual machines may want to expose different facilities and
-> >>>>>>> cpu ids to the guest, so let's make them per-vm instead of global.
-> >>>>>>>
-> >>>>>>> In addition this patch renames all ocurrences of *facilities to *fac_list
-> >>>>>>> smilar to the already exiting symbol stfl_fac_list in lowcore.
-> >>>>>>>
-> >>>>>>> Signed-off-by: Michael Mueller <mimu@linux.vnet.ibm.com>
-> >>>>>>> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> >>>>>>> Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> >>>>>>> ---
-> >>>>>>>      arch/s390/include/asm/kvm_host.h |   7 +++
-> >>>>>>>      arch/s390/kvm/gaccess.c          |   4 +-
-> >>>>>>>      arch/s390/kvm/kvm-s390.c         | 107 +++++++++++++++++++++++++++------------
-> >>>>>>>      arch/s390/kvm/kvm-s390.h         |  23 +++++++--
-> >>>>>>>      arch/s390/kvm/priv.c             |  13 +++--
-> >>>>>>>      5 files changed, 113 insertions(+), 41 deletions(-)
-> >>>>>>>
-> >>>>>>> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-> >>>>>>> index 38d487a..b4751ba 100644
-> >>>>>>> --- a/arch/s390/include/asm/kvm_host.h
-> >>>>>>> +++ b/arch/s390/include/asm/kvm_host.h
-> >>>>>>> @@ -414,6 +414,12 @@ struct kvm_s390_config {
-> >>>>>>>      	struct kvm_s390_attr_name name;
-> >>>>>>>      };
-> >>>>>>>      
-> >>>>>>> +struct kvm_s390_cpu_model {
-> >>>>>>> +	unsigned long *sie_fac;
-> >>>>>>> +	struct cpuid cpu_id;
-> >>>>>>> +	unsigned long *fac_list;
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>>      struct kvm_arch{
-> >>>>>>>      	struct sca_block *sca;
-> >>>>>>>      	debug_info_t *dbf;
-> >>>>>>> @@ -427,6 +433,7 @@ struct kvm_arch{
-> >>>>>>>      	wait_queue_head_t ipte_wq;
-> >>>>>>>      	struct kvm_s390_config *cfg;
-> >>>>>>>      	spinlock_t start_stop_lock;
-> >>>>>>> +	struct kvm_s390_cpu_model model;
-> >>>>>>>      };
-> >>>>>>>      
-> >>>>>>>      #define KVM_HVA_ERR_BAD		(-1UL)
-> >>>>>>> diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
-> >>>>>>> index db608c3..4c7ca40 100644
-> >>>>>>> --- a/arch/s390/kvm/gaccess.c
-> >>>>>>> +++ b/arch/s390/kvm/gaccess.c
-> >>>>>>> @@ -358,8 +358,8 @@ static unsigned long guest_translate(struct kvm_vcpu *vcpu, unsigned
-> >>>>>>> long gva, union asce asce;
-> >>>>>>>      
-> >>>>>>>      	ctlreg0.val = vcpu->arch.sie_block->gcr[0];
-> >>>>>>> -	edat1 = ctlreg0.edat && test_vfacility(8);
-> >>>>>>> -	edat2 = edat1 && test_vfacility(78);
-> >>>>>>> +	edat1 = ctlreg0.edat && test_kvm_facility(vcpu->kvm, 8);
-> >>>>>>> +	edat2 = edat1 && test_kvm_facility(vcpu->kvm, 78);
-> >>>>>>>      	asce.val = get_vcpu_asce(vcpu);
-> >>>>>>>      	if (asce.r)
-> >>>>>>>      		goto real_address;
-> >>>>>>> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-> >>>>>>> index 01a5212..a53652f 100644
-> >>>>>>> --- a/arch/s390/kvm/kvm-s390.c
-> >>>>>>> +++ b/arch/s390/kvm/kvm-s390.c
-> >>>>>>> @@ -1,5 +1,5 @@
-> >>>>>>>      /*
-> >>>>>>> - * hosting zSeries kernel virtual machines
-> >>>>>>> + * Hosting zSeries kernel virtual machines
-> >>>>>>>       *
-> >>>>>>>       * Copyright IBM Corp. 2008, 2009
-> >>>>>>>       *
-> >>>>>>> @@ -30,7 +30,6 @@
-> >>>>>>>      #include <asm/pgtable.h>
-> >>>>>>>      #include <asm/nmi.h>
-> >>>>>>>      #include <asm/switch_to.h>
-> >>>>>>> -#include <asm/facility.h>
-> >>>>>>>      #include <asm/sclp.h>
-> >>>>>>>      #include<asm/timex.h>
-> >>>>>>>      #include "kvm-s390.h"
-> >>>>>>> @@ -92,15 +91,33 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
-> >>>>>>>      	{ NULL }
-> >>>>>>>      };
-> >>>>>>>      
-> >>>>>>> -unsigned long *vfacilities;
-> >>>>>>> -static struct gmap_notifier gmap_notifier;
-> >>>>>>> +/* upper facilities limit for kvm */
-> >>>>>>> +unsigned long kvm_s390_fac_list_mask[] = {
-> >>>>>>> +	0xff82fff3f47c2000UL,
-> >>>>>>> +	0x005c000000000000UL,
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>> +unsigned long kvm_s390_fac_list_mask_size(void)
-> >>>>>>> +{
-> >>>>>>> +	BUILD_BUG_ON(ARRAY_SIZE(kvm_s390_fac_list_mask) >
-> >>>>>>> +		     S390_ARCH_FAC_MASK_SIZE_U64);
-> >>>>>>> +	return ARRAY_SIZE(kvm_s390_fac_list_mask);
-> >>>>>>> +}
-> >>>>>>>      
-> >>>>>>> -/* test availability of vfacility */
-> >>>>>>> -int test_vfacility(unsigned long nr)
-> >>>>>>> +void kvm_s390_apply_fac_list_mask(unsigned long fac_list[])
-> >>>>>>>      {
-> >>>>>>> -	return __test_facility(nr, (void *) vfacilities);
-> >>>>>>> +	unsigned int i;
-> >>>>>>> +
-> >>>>>>> +	for (i = 0; i < S390_ARCH_FAC_LIST_SIZE_U64; i++) {
-> >>>>>>> +		if (i < kvm_s390_fac_list_mask_size())
-> >>>>>>> +			fac_list[i] &= kvm_s390_fac_list_mask[i];
-> >>>>>>> +		else
-> >>>>>>> +			fac_list[i] &= 0UL;
-> >>>>>>> +	}
-> >>>>>>>      }
-> >>>>>>>      
-> >>>>>>> +static struct gmap_notifier gmap_notifier;
-> >>>>>>> +
-> >>>>>>>      /* Section: not file related */
-> >>>>>>>      int kvm_arch_hardware_enable(void *garbage)
-> >>>>>>>      {
-> >>>>>>> @@ -485,6 +502,30 @@ long kvm_arch_vm_ioctl(struct file *filp,
-> >>>>>>>      	return r;
-> >>>>>>>      }
-> >>>>>>>      
-> >>>>>>> +/* make sure the memory used for fac_list is zeroed */
-> >>>>>>> +void kvm_s390_get_hard_fac_list(unsigned long *fac_list, int size)
-> >>>>>> Hard? Wouldn't "host" make more sense here?
-> >>>>> Renaming "*hard_fac_list" with "*host_fac_list" here and wherever it appears is ok with
-> >>>>> me.
-> >>>>>
-> >>>>>> I also think it makes sense to expose the native host facility list to
-> >>>>>> user space via an ioctl somehow.
-> >>>>>>
-> >>>>> In which situation do you need the full facility list. Do you have an example?
-> >>>> If you want to just implement -cpu host to get the exact feature set
-> >>>> that the host gives you, how do you know which set that is?
-> >>> During qemu machine initalization I call:
-> >>>
-> >>> kvm_s390_get_machine_props(&mach);
-> >>>
-> >>> which returns the following information:
-> >>>
-> >>> typedef struct S390MachineProps {
-> >>>       uint64_t cpuid;
-> >>>       uint32_t ibc_range;
-> >>>       uint8_t  pad[4];
-> >>>       uint64_t fac_mask[S390_ARCH_FAC_MASK_SIZE_UINT64];
-> >>>       uint64_t hard_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
-> >>>       uint64_t soft_fac_list[S390_ARCH_FAC_LIST_SIZE_UINT64];
-> >>> } S390MachineProps;
-> >> Ah, ok, I missed that part. So "kvm_s390_get_machine_props()" basically
-> >> gets us the full facility list the host supports. That makes sense.
-> >>
-> >> I still don't know whether we should care about hard/soft, but I suppose
-> >> the rest makes sense.
-> > The reason why I differentiate between hardware and software implemented
-> > facilities has several reasons.
-> >
-> > First, one should understand that both lists represent the same set of
-> > features, there is no software feature not being implemented as hardware
-> > feature on an existing S390 system. An optional implementation of a software
-> > feature is usable on back-level hardware to implement functionality, not
-> > quality or performance! That means, on OS and it's application is capable to
-> > run most efficiently on the given hardware without that software feature.
-> > If a system has the same facility in soft- and hardware implemented, KVM
-> > always privileges the hardware implementation.
-> >
-> > Second, separating both features allow user space to differentiate between
-> > hardware and software implemented features and to give up on SW features
-> > if not explicitly requested by the CPU model option "+sofl".
-> 
-> Why? User space has a set of features it wants to expose to the guest.
+> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-You are talking about a different interface here. That is not the intension
-of software / hardware facilities of KVM. They are never implemented in user
-space!
+IIRC, the Reviewed-by tag stands only for the version for which it was
+posted, except versions with no changes. This one apparently contains
+changes compared to previous version.
 
-> If the kernel can handle all of them, fine. If it can't, it can either 
-> decide that the VM can't run on that host or disable features and 
-> *remember it did so* so that on migration it can warn the target host.
+> ---
+>  arch/arm/mach-exynos/Kconfig             |    8 ++++++++
+>  arch/arm/mach-exynos/exynos.c            |    1 +
+>  arch/arm/mach-exynos/platsmp.c           |    4 ++++
+>  arch/arm/plat-samsung/include/plat/cpu.h |   11 ++++++++++-
+>  4 files changed, 23 insertions(+), 1 deletion(-)
 > 
-> > Third, and very important, the main reason for CPU model implementation
-> > is to guarantee an identical environment on source and target side comprised
-> > of facilities, instruction set and CPU id. The capability for migration is
-> 
-> Yes, exactly :).
-> 
-> > lost as soon software implemented facilities become activated!
-> 
-> Why? When something is done in software, I can surely migrate the state?
+> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+> index 1602abc..79a3e85 100644
+> --- a/arch/arm/mach-exynos/Kconfig
+> +++ b/arch/arm/mach-exynos/Kconfig
+> @@ -84,6 +84,14 @@ config SOC_EXYNOS5250
+>  	help
+>  	  Enable EXYNOS5250 SoC support
+>  
+> +config SOC_EXYNOS5410
+> +	bool "SAMSUNG EXYNOS5410"
+> +	default y
+> +	depends on ARCH_EXYNOS5
+> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
+> +	help
+> +	  Enable EXYNOS5410 SoC support
+> +
+>  config SOC_EXYNOS5420
+>  	bool "SAMSUNG EXYNOS5420"
+>  	default y
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index e973ff5..12db6cf 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -312,6 +312,7 @@ static char const *exynos_dt_compat[] __initconst = {
+>  	"samsung,exynos4412",
+>  	"samsung,exynos5",
+>  	"samsung,exynos5250",
+> +	"samsung,exynos5410",
 
-Sure, but in the former case it could be implemented in the source in HW and
-the target in SW.
+AFAIK you don't need this change now, as you can boot using the generic
+Exynos5 compatible string just fine.
 
-> 
-> > Once again the method Qemu uses to define the set of requested facilities.
-> >
-> > The machine properties ioctl provides FMh, HFh, and SFh, ie. the mask and
-> > hardware/software implemented facility sets of the hosts.
-> >
-> > Qemu has knowledge on all real existing CPU models (TYPE-GA), particularly
-> > on the facility set of these model (Fm)
-> >   
-> > During startup, Qemu retrives FMh, HFh and SFh. Then for all CPU models Qemu
-> > is aware off, it calculates (Fm & FMh). If that is a subset of HFh, the model
-> > is a supportable model on this host. If the user has specified to allow
-> > software implemented facilities (-cpu <model>,+sofl), The facilities to
-> > request are calculated like (Fm & FMh | SFh).
-> 
-> Why so complicated? What's the difference between -cpu 
-> z9,cpu-id=z10,+featureA,+featureB,+featureC where A, B and C are the new 
-> features between z9 and z10?
+>  	"samsung,exynos5420",
+>  	"samsung,exynos5440",
+>  	NULL
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+> index 78002c7..a95213d 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -60,6 +60,8 @@ static inline void __iomem *cpu_boot_reg_base(void)
+>  {
+>  	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
+>  		return S5P_INFORM5;
+> +	if (soc_is_exynos5410())
+> +		return sysram_ns_base_addr;
 
-I absolutely want to avoid a facility room of 2**14 bit being specified on the
-command line by an administrator who is even unaware of facilities at all!
-Also libvirt must not be scared by this facility flood when making migration
-decisions. This is what I think would make things complicate.
+This would suggest that instead you need to enable secure firmware
+support on your board, by adding respective firmware node to your dts.
+Tushar just sent a similar patch series for Exynos5420 [1].
 
-I consider an soft defined KVM facility as exception and not the rule.
+[1] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/31840
 
-Michael
+>  	return sysram_base_addr;
+>  }
+>  
+> @@ -72,6 +74,8 @@ static inline void __iomem *cpu_boot_reg(int cpu)
+>  		return ERR_PTR(-ENODEV);
+>  	if (soc_is_exynos4412())
+>  		boot_reg += 4*cpu;
+> +	else if (soc_is_exynos5410())
+> +		boot_reg += (0x1c);
 
-> 
-> There really shouldn't be any difference between those 2 different 
-> invocation types IMHO.
-> 
-> 
-> Alex
-> 
+This offset is typical for secure firmware. The series I mentioned above
+also deals with bypassing adding of 4*cpu offset for Exynos5420. Seems
+like it might be also necessary for Exynos5410, however I will reply in
+that thread with the way I'd see this done.
 
+>  	else if (soc_is_exynos5420())
+>  		boot_reg += 4;
+>  	return boot_reg;
+> diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
+> index 5992b8d..21db380 100644
+> --- a/arch/arm/plat-samsung/include/plat/cpu.h
+> +++ b/arch/arm/plat-samsung/include/plat/cpu.h
+> @@ -49,6 +49,7 @@ extern unsigned long samsung_cpu_id;
+>  #define EXYNOS4_CPU_MASK	0xFFFE0000
+>  
+>  #define EXYNOS5250_SOC_ID	0x43520000
+> +#define EXYNOS5410_SOC_ID	0xE5410000
+>  #define EXYNOS5420_SOC_ID	0xE5420000
+>  #define EXYNOS5440_SOC_ID	0xE5440000
+>  #define EXYNOS5_SOC_MASK	0xFFFFF000
+> @@ -72,6 +73,7 @@ IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
+>  IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
+>  IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
+>  IS_SAMSUNG_CPU(exynos5250, EXYNOS5250_SOC_ID, EXYNOS5_SOC_MASK)
+> +IS_SAMSUNG_CPU(exynos5410, EXYNOS5410_SOC_ID, EXYNOS5_SOC_MASK)
+>  IS_SAMSUNG_CPU(exynos5420, EXYNOS5420_SOC_ID, EXYNOS5_SOC_MASK)
+>  IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+>  
+> @@ -154,6 +156,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+>  # define soc_is_exynos5250()	0
+>  #endif
+>  
+> +#if defined(CONFIG_SOC_EXYNOS5410)
+> +# define soc_is_exynos5410()	is_samsung_exynos5410()
+> +#else
+> +# define soc_is_exynos5410()	0
+> +#endif
+> +
+>  #if defined(CONFIG_SOC_EXYNOS5420)
+>  # define soc_is_exynos5420()	is_samsung_exynos5420()
+>  #else
+> @@ -168,7 +176,8 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+>  
+>  #define soc_is_exynos4() (soc_is_exynos4210() || soc_is_exynos4212() || \
+>  			  soc_is_exynos4412())
+> -#define soc_is_exynos5() (soc_is_exynos5250() || soc_is_exynos5420())
+> +#define soc_is_exynos5() (soc_is_exynos5250() || soc_is_exynos5410() || \
+> +			  soc_is_exynos5420())
+
+After addressing the comments above, you won't need any changes to this
+file anymore (including all the soc_is_*() macros).
+
+Best regards,
+Tomasz
