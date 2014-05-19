@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaERX4A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 19:56:00 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:18103 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752195AbaERXz7 (ORCPT
+	id S1752485AbaERX7A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 19:59:00 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64356 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752262AbaERX67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 19:55:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvtMAK1HeVN5LL1sPGdsb2JhbABZgwZRgnCnLgsBAQEBAQEGmisBgQoXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwctG4glDtBHFoU/iHsHgyuBFQSZWZZvKzA
-Date: Mon, 19 May 2014 09:55:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: daniel@phunq.net
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, tux3@tux3.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Tux3 for review
-Message-ID: <20140518235555.GC18954@dastard>
-References: <5376B273.7000800@partner.samsung.com>
+	Sun, 18 May 2014 19:58:59 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 3/4] clk: new basic clk type for fractional divider
+Date: Mon, 19 May 2014 02:15:52 +0200
+Message-ID: <1514106.ndh3ZJ8v0Y@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140517013403.9521.86191@quantum>
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com> <3823442.HzUarSqr07@vostro.rjw.lan> <20140517013403.9521.86191@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5376B273.7000800@partner.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 05:50:59PM -0700, Daniel Phillips wrote:
-> We would like to offer Tux3 for review for mainline merge. We have
-> prepared a new repository suitable for pulling:
+On Friday, May 16, 2014 06:34:03 PM Mike Turquette wrote:
+> Quoting Rafael J. Wysocki (2014-05-16 17:15:43)
+> > On Friday, May 16, 2014 04:09:05 PM Mike Turquette wrote:
+> > > Quoting Rafael J. Wysocki (2014-05-16 15:38:05)
+> > > > On Thursday, May 15, 2014 09:53:49 AM Mike Turquette wrote:
+> > > > > Quoting Heikki Krogerus (2014-05-15 06:40:25)
+> > > > > > Fractional divider clocks are fairly common. This adds basic
+> > > > > > type for them.
+> > > > > > 
+> > > > > > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > > > > 
+> > > > > Taken into clk-next.
+> > > > > 
+> > > > > Just FYI, there was some talk at Embedded Linux Conference on providing
+> > > > > a better abstraction layer for some of these "basic" clock types. This
+> > > > > abstraction would allow the basic clock types to implement the
+> > > > > machine-agnostic logic (e.g. an incoming rate is divided by a value) and
+> > > > > then platforms and drivers could plug in the machine-specific parts
+> > > > > (e.g. divider is made up of m/n, or divider is power-of-two, or divider
+> > > > > is a simple integer with min == 1 and max == 5).
+> > > > > 
+> > > > > All of that is to say that in time this fractional divider could go away
+> > > > > once the abstraction layer allows us to fold the m/n divider stuff into
+> > > > > a core divider implementation.
+> > > > > 
+> > > > > Nothing wrong with the patch for now, so I've taken it for 3.16.
+> > > > 
+> > > > Well, OK, but I guess [4/4] depends on it and [4/4] also depends on
+> > > > [1-2/4], so how you're proposing to resolve this?
+> > > 
+> > > I haven't yet published this patch to my tree, so no harm done. How
+> > > about the following Formal Proposals?
+> > > 
+> > > 1) I ack the patch and don't merge it through my tree. You take it.
+> > > 2) I provide a topic branch that we both merge.
+> > > 
+> > > Your choice.
+> > 
+> > Thanks!  I'd prefer 1) to be honest. :-)
 > 
-> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/
-> 
-> Tux3 kernel module files are here:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/tree/fs/tux3
-> 
-> Tux3 userspace tools and tests are here:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/tree/fs/tux3/user?h=user
+> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Post patches for review, please.  Go and look at the process used to
-merge f2fs for an example of how to filesystem merged....
+Thanks!
 
-Ignoring this, I had a quick look at the code.  This is not a code
-review - it's a message to tell everyone else not to waste their
-time looking at the code right now...
-
-The code is a dog's breakfast of #ifdef hackery, stuff that doesn't
-work (lots of code surrounded by "#if 0"), there's "#if __KERNEL__
-...  #else .... #endif" all through the code, etc. The "declarations
-within code" stuff is just horrible - it's not even used
-consistently so it just looks like laziness to me.  IOWs, the code
-is an ugly mess and needs a serious amount of cleanup work. Example:
-
-static const struct inode_operations tux_file_iops = {
-//      .permission     = ext4_permission,
-        .setattr        = tux3_setattr,
-        .getattr        = tux3_getattr,
-#ifdef CONFIG_EXT4DEV_FS_XATTR
-//      .setxattr       = generic_setxattr,
-//      .getxattr       = generic_getxattr,
-//      .listxattr      = ext4_listxattr,
-//      .removexattr    = generic_removexattr,
-#endif
-//      .fallocate      = ext4_fallocate,
-//      .fiemap         = ext4_fiemap,
-        .update_time    = tux3_file_update_time,
-};
-
-That's code ready for review and merging? Really?
-
-The hacks around VFS and MM functionality need to have demonstrated
-methods for being removed. We're not going to merge that page
-forking stuff (like you were told at LSF 2013 more than a year ago:
-http://lwn.net/Articles/548091/) without rigorous design review and
-a demonstration of the solutions to all the hard corner cases it
-has. The current code doesn't solve them (e.g. direct IO doesn't
-work in tux3), and there's no clear patch set we can review that
-demonstrates how it is all supposed to work. i.e. you need to
-separate out all the page forking code into a separate patchset for
-review, independent of the tux3 code and applies to the core mm/
-code.
-
-Then there's all the writeback hacks. You've simply copy-n-pasted
-most of fs-writeback.c, including duplicating structures like struct
-wb_writeback_work and then hacked in crap (kallsyms lookups!) to be
-able to access core structures from kernel module context
-(tux3_setup_writeback(), I'm looking at you). This is completely
-unacceptible for a merge. Again, you need to separate out all the
-writeback changes you need into an independent patchset so that they
-can be reviewed independently of the tux3 code that uses it. 
-
-Now, one of the big features tux3 you hyped is built-in snapshotting
-capability. All that talk efficient pointer trees (or whatever they
-were called) and being so much better than ZFS/btrfs-like COW.
-Well, I can't find it anywhere in the code - the only references to
-snapshots are 5 comments like this:
-
-	* FIXME: what happen if snapshot was introduced?
-
-IOWs, tux3 is just a prototype of a standard journaling filesystem.
-The tux3 code is still missing large parts of it's intended core
-functionality and there is nothing to tell us when that might
-appear. It really appears to me that tux3 is where btrfs was 5-6
-years ago - the core of an idea, but a long, long way from being
-feature complete or production ready. btrfs still doesn't handle
-ENOSPC well and given that tux3's is following the same development
-path (BUG on ENOSPC) it doesn't fill me with any confidence that
-tux3 is going to turn out any better than btrfs in 5 years time.
-
-Really, I don't see how you plan to bring tux3 to be feature
-complete and production ready in less than 2-3 years. The current
-code is barely functional at this point and there's still questions
-that haven't been answered about whether core tux3 functionality can
-even be made to work properly, let alone integrated effectively.
-
-IMO, it's a waste of time right now asking anyone to review this
-code for inclusion until it has been cleaned up, the core
-infrastructure problems have been solved and the core filesystem
-code is much closer to feature complete.....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
