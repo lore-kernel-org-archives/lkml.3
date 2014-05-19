@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515AbaESTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:51:16 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:35506 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143AbaESTvO (ORCPT
+	id S1755103AbaESTwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:52:15 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:61383 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaESTwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:51:14 -0400
-Message-ID: <537A6060.7070406@linux.vnet.ibm.com>
-Date: Tue, 20 May 2014 01:19:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de,
-        mingo@kernel.org, rusty@rustcorp.com.au, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, rjw@rjwysocki.net,
+	Mon, 19 May 2014 15:52:14 -0400
+Date: Mon, 19 May 2014 15:52:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 UPDATEDv2 3/3] CPU hotplug, smp: Flush any pending
- IPI callbacks before CPU offline
-References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com> <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com> <5379F6BD.1090809@linux.vnet.ibm.com> <20140519161836.GA30387@redhat.com>
-In-Reply-To: <20140519161836.GA30387@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14051919-1396-0000-0000-000004DE70A2
+Cc: Kay Sievers <kay@vrfy.org>, Ron <ron@debian.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH driver-core-linus] sysfs: make sure read buffer is zeroed
+Message-ID: <20140519195210.GA27506@mtj.dyndns.org>
+References: <20140519172334.GK20439@audi.shelbyville.oz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519172334.GK20439@audi.shelbyville.oz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 09:48 PM, Oleg Nesterov wrote:
-> On 05/19, Srivatsa S. Bhat wrote:
->>
->> However, an IPI sent much earlier might arrive late on the target CPU
->> (possibly _after_ the CPU has gone offline) due to hardware latencies,
->> and due to this, the smp-call-function callbacks queued on the outgoing
->> CPU might not get noticed (and hence not executed) at all.
-> 
-> OK, but
-> 
->> +void flush_smp_call_function_queue(void)
->> +{
->> +	struct llist_head *head;
->> +	struct llist_node *entry;
->> +	struct call_single_data *csd, *csd_next;
->> +
->> +	WARN_ON(!irqs_disabled());
->> +
->> +	head = &__get_cpu_var(call_single_queue);
->> +
->> +	if (likely(llist_empty(head)))
->> +		return;
->> +
->> +	entry = llist_del_all(head);
->> +	entry = llist_reverse_order(entry);
->> +
->> +	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
->> +		csd->func(csd->info);
->> +		csd_unlock(csd);
->> +	}
->> +}
-> 
-> why do we need it? Can't multi_cpu_stop() just call
-> generic_smp_call_function_single_interrupt() ? This cpu is still online,
-> we should not worry about WARN_ON(!cpu_online()) ?
-> 
+13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+switched sysfs from custom read implementation to seq_file to enable
+later transition to kernfs.  After the change, the buffer passed to
+->show() is acquired through seq_get_buf(); unfortunately, this
+introduces a subtle behavior change.  Before the commit, the buffer
+passed to ->show() was always zero as it was allocated using
+get_zeroed_page().  Because seq_file doesn't clear buffers on
+allocation and neither does seq_get_buf(), after the commit, depending
+on the behavior of ->show(), we may end up exposing uninitialized data
+to userland thus possibly altering userland visible behavior and
+leaking information.
 
-Ah, cool idea! :-) I'll use this method and post an updated patch.
+Fix it by explicitly clearing the buffer.
 
-Thank you!
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Ron <ron@debian.org> 
+Fixes: 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+---
+ fs/sysfs/file.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 28cc1acd..e9ef59b 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -47,12 +47,13 @@ static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+ 	ssize_t count;
+ 	char *buf;
  
-Regards,
-Srivatsa S. Bhat
-
+-	/* acquire buffer and ensure that it's >= PAGE_SIZE */
++	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
+ 	count = seq_get_buf(sf, &buf);
+ 	if (count < PAGE_SIZE) {
+ 		seq_commit(sf, -1);
+ 		return 0;
+ 	}
++	memset(buf, 0, PAGE_SIZE);
+ 
+ 	/*
+ 	 * Invoke show().  Control may reach here via seq file lseek even
