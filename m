@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaESGhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:37:38 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:39770 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaESGhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:37:37 -0400
-Date: Sun, 18 May 2014 23:37:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 00/22] atmel_mxt_ts patches, already signed-off
-Message-ID: <20140519063733.GA5209@core.coreip.homeip.net>
-References: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
- <533D3AF5.9060001@itdev.co.uk>
+	id S1752697AbaESGrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:47:18 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:4019
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750993AbaESGrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 02:47:16 -0400
+Date: Mon, 19 May 2014 14:47:02 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Emil Goode <emilgoode@gmail.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        <kernel-janitors@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2 v4] ARM: imx: fix error handling in ipu device
+ registration
+Message-ID: <20140519064701.GK10685@dragon>
+References: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
+ <1400446261-27085-2-git-send-email-emilgoode@gmail.com>
+ <20140519063145.GF16662@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <533D3AF5.9060001@itdev.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140519063145.GF16662@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(51704005)(24454002)(189002)(80022001)(68736004)(69596002)(99396002)(87936001)(81156002)(83322001)(33716001)(79102001)(64706001)(20776003)(86362001)(47776003)(102836001)(77096999)(57986004)(92726001)(23756003)(21056001)(44976005)(19580405001)(19580395003)(50986999)(92566001)(84676001)(81342001)(77982001)(50466002)(83506001)(76482001)(4396001)(74662001)(31966008)(74502001)(33656001)(54356999)(81542001)(6806004)(76176999)(85852003)(83072002)(46102001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB027;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 021670B4D2
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi NIck,
-
-On Thu, Apr 03, 2014 at 11:41:57AM +0100, Nick Dyer wrote:
-> Hi Dmitry-
+On Mon, May 19, 2014 at 08:31:45AM +0200, Uwe Kleine-König wrote:
+> On Sun, May 18, 2014 at 10:50:59PM +0200, Emil Goode wrote:
+> > If we fail to allocate struct platform_device pdev we
+> > dereference it after the goto label err.
+> > 
+> > This bug was found using coccinelle.
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > 
-> Nick Dyer <nick.dyer@itdev.co.uk> wrote:
-> > Here is a set of patches for atmel_mxt_ts that you've already
-> > signed-off. I've rebased them against the most recent mainline and made
-> > some very minor changes such as INIT_COMPLETION->reinit_completion.
-> 
-> It would be useful to have some feedback about this patchset if you have time.
-> 
+> Shawn, is it already to late for 3.15?
 
-I applied majority of the patches, but dropped 11 (firmware loader) as
-it gives trouble in its current for when driver is compiled in and I
-also had to drop 12 and 19 because of reject dues to dropping 11.
+Let me try to see.
 
-Thanks.
-
--- 
-Dmitry
+Shawn
