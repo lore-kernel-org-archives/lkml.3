@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaESEc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 00:32:59 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17570 "EHLO
+	id S1752289AbaESEd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 00:33:29 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14038 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaESEcz (ORCPT
+	by vger.kernel.org with ESMTP id S1751167AbaESEcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 May 2014 00:32:55 -0400
 X-IronPort-AV: E=Sophos;i="4.98,865,1392159600"; 
-   d="scan'208";a="74474224"
+   d="scan'208";a="74474225"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Brett Rudley <brudley@broadcom.com>
-Cc: kernel-janitors@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/13] brcmsmac: make return of 0 explicit
-Date: Mon, 19 May 2014 06:31:14 +0200
-Message-Id: <1400473875-22228-13-git-send-email-Julia.Lawall@lip6.fr>
+To: Robert Richter <rric@kernel.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        oprofile-list@lists.sf.net, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 13/13] s390/irq: make return of 0 explicit
+Date: Mon, 19 May 2014 06:31:15 +0200
+Message-Id: <1400473875-22228-14-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,30 +52,40 @@ return
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/s390/oprofile/hwsampler.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-index 9417cb5..3054725 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -4875,9 +4875,6 @@ static int brcms_b_detach(struct brcms_c_info *wlc)
- 	uint i;
- 	struct brcms_hw_band *band;
- 	struct brcms_hardware *wlc_hw = wlc->hw;
--	int callbacks;
--
--	callbacks = 0;
+diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
+index 276f2e2..28b2760 100644
+--- a/arch/s390/oprofile/hwsampler.c
++++ b/arch/s390/oprofile/hwsampler.c
+@@ -212,10 +212,8 @@ static void init_all_cpu_buffers(void)
+ static int prepare_cpu_buffers(void)
+ {
+ 	int cpu;
+-	int rc;
+ 	struct hws_cpu_buffer *cb;
  
- 	brcms_b_detach_dmapio(wlc_hw);
- 
-@@ -4901,7 +4898,7 @@ static int brcms_b_detach(struct brcms_c_info *wlc)
- 		wlc_hw->sih = NULL;
+-	rc = 0;
+ 	for_each_online_cpu(cpu) {
+ 		cb = &per_cpu(sampler_cpu_buffer, cpu);
+ 		atomic_set(&cb->ext_params, 0);
+@@ -231,7 +229,7 @@ static int prepare_cpu_buffers(void)
+ 		cb->stop_mode = 0;
  	}
  
--	return callbacks;
+-	return rc;
 +	return 0;
- 
  }
  
+ /*
+@@ -1156,7 +1154,7 @@ int hwsampler_stop_all(void)
+ 	rc = 0;
+ 	if (hws_state == HWS_INIT) {
+ 		mutex_unlock(&hws_sem);
+-		return rc;
++		return 0;
+ 	}
+ 	hws_state = HWS_STOPPING;
+ 	mutex_unlock(&hws_sem);
 
