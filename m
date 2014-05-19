@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764AbaESJnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:43:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53783 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaESJnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:43:17 -0400
-Date: Mon, 19 May 2014 11:43:13 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>,
-        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-        sandeen@redhat.com, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V2 2/2] fs: print a message when freezing/unfreezing
- filesystems
-Message-ID: <20140519094313.GA3427@quack.suse.cz>
-References: <20140514220052.GD5421@dastard>
- <20140514223745.GF5421@dastard>
- <5373F0D6.4090600@redhat.com>
- <alpine.LFD.2.00.1405151213160.2112@localhost.localdomain>
- <20140515104746.GF10637@mguzik.redhat.com>
- <20140515222135.GZ26353@dastard>
- <20140515223439.GA24089@mguzik.redhat.com>
- <20140515225141.GA26353@dastard>
- <20140515231908.GB24089@mguzik.redhat.com>
- <20140516001156.GI5421@dastard>
+	id S1753902AbaESJpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:45:15 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:36922 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878AbaESJpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 05:45:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140516001156.GI5421@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHb8M2BeUym+7vc5tnS1jmyr4DXa9QiQNojxJXDZa11JVXR-sQ@mail.gmail.com>
+References: <20140519021030.GA1051@devel.8.8.4.4>
+	<20140519080224.GL16255@mwanda>
+	<CAHb8M2BeUym+7vc5tnS1jmyr4DXa9QiQNojxJXDZa11JVXR-sQ@mail.gmail.com>
+Date: Mon, 19 May 2014 18:45:13 +0900
+Message-ID: <CAHb8M2CaKEJ=+KQtom9QSXGJoPEXEpJkQgByn5VWpZ9ruO9gAQ@mail.gmail.com>
+Subject: Re: [PATCH V3] staging: dgap: implement error handling in dgap_tty_register()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mark Hounschell <markh@compro.net>,
+        driverdev-devel@linuxdriverproject.org,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-05-14 10:11:56, Dave Chinner wrote:
-> On Fri, May 16, 2014 at 01:19:09AM +0200, Mateusz Guzik wrote:
-> > On Fri, May 16, 2014 at 08:51:41AM +1000, Dave Chinner wrote:
-> > > On Fri, May 16, 2014 at 12:34:40AM +0200, Mateusz Guzik wrote:
-> > > > On Fri, May 16, 2014 at 08:21:35AM +1000, Dave Chinner wrote:
-> > > > > > IOW, a new column in mountinfo. For frozen filesystems it would contain
-> > > > > > 'frozen_by=[%s]:[%d]' (escaped comm, pid).
-> > > > > 
-> > > > > I really don't see that the process that froze the filesystem is
-> > > > > particularly useful - it many cases that process is long gone (e.g.
-> > > > > fsfreeze is being used to allow a HW array to take a snapshot). Just
-> > > > > the fact it is in the process of freezing (if stuck, stack trace in
-> > > > > sysrq-w should be present) or frozen (freezing process may be long
-> > > > > gone, and is mostly irrelevant because you're now tracking down why
-> > > > > a thaw hasn't happened)...
-> > > > 
-> > > > There are deamons which perform freezing and unfreezing on their own.
-> > > > Thus storing the name along with pid helps to determine whether someone
-> > > > went behind such daemon's back, or maybe it's the daemon which "forgot" to
-> > > > unfreeze after all.
-> > > 
-> > > Such a daemon should be logging the fact that it's freezing and
-> > > thawing the filesystem. The kernel is not the place to track what
-> > > buggy userspace applications are doing wrong.
-> > > 
-> > 
-> > Except there is no log entry if /var got frozen (and this is not an
-> > imaginary example).
-> 
-> Freezing the filesystem that the freezing daemon logs to is, well, a
-> major application architecture fail. Sorry, catering for the lowest
-> common denominator (i.e. stupidity) is not an valid argument for
-> adding stuff to the kernel....
-  Sure it's not a good architecture but it happens either because of a bug
-or a wrong architecture. So you need to debug it and traces from sysrq-w
-don't tell you who froze the filesystem. Currently you have to use
-tracepoints or similar stuff to find that out (e.g. in one case I was
-debugging it was rpm running a post-install script that froze the fs,
-believe me that was really unexpected :)). But tracepoints aren't useful
-after the fact so sometimes it would be useful to be able to find out
-after the fact who froze the fs (PID and command name to help with
-situations when the process isn't running anymore). Since this is mostly
-debug stuff I'd be OK with dumping this information on sysrq request or as
-Ted suggested from some fs-freeze hang check timer... Hmm?
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+2014-05-19 18:39 GMT+09:00 DaeSeok Youn <daeseok.youn@gmail.com>:
+> 2014-05-19 17:02 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>> Nice, but it needs a couple style improvements below.
+>>
+>> On Mon, May 19, 2014 at 11:10:30AM +0900, Daeseok Youn wrote:
+>>> +     brd->dgap_major_serial_registered = TRUE;
+>>> +     dgap_boards_by_major[brd->serial_driver->major] = brd;
+>>> +     brd->dgap_serial_major = brd->serial_driver->major;
+>>> +
+>>>       brd->dgap_major_transparent_print_registered = TRUE;
+>>>       dgap_boards_by_major[brd->print_driver->major] = brd;
+>>>       brd->dgap_transparent_print_major = brd->print_driver->major;
+>>>
+>>>       return rc;
+>>
+>>         return 0;
+> OK. I will remove "int rc = 0" line and change "return rc" to "return 0"
+Oh.. just remove the initialization to zero.
+>
+>>
+>>> +
+>>> +unregister_serial_drv:
+>>> +     tty_unregister_driver(brd->serial_driver);
+>>> +free_print_ttys:
+>>> +     kfree(brd->print_driver->ttys);
+>>> +     brd->print_driver->ttys = NULL;
+>>
+>> This label isn't needed.  Just goto free_print_drv, because that will
+>> free the brd->print_driver->ttys in destruct_tty_driver().
+>> I do like how you noticed the double free and avoided it by setting
+>> brd->serial_driver->ttys to NULL, so your patch doesn't introduce a
+>> double free bug.
+> Yes, just goto free_print_drv.
+>
+> Thanks for review.
+>
+> Regards,
+> Daeseok Youn
+>>
+>>> +free_print_drv:
+>>> +     put_tty_driver(brd->print_driver);
+>>> +free_serial_ttys:
+>>> +     kfree(brd->serial_driver->ttys);
+>>> +     brd->serial_driver->ttys = NULL;
+>>
+>> Same for this.
+>>
+>>> +free_serial_drv:
+>>> +     put_tty_driver(brd->serial_driver);
+>>> +
+>>> +     return rc;
+>>
+>> regards,
+>> dan carpenter
