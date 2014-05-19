@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaESG0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:26:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59598 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799AbaESG0J (ORCPT
+	id S1753158AbaESG1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:27:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36833 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaESG1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:26:09 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
-Subject: [PATCH 12/20] perf tools: Add ->sort() member to struct sort_entry
-Date: Mon, 19 May 2014 15:25:54 +0900
-Message-Id: <1400480762-22852-13-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
-References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
+	Mon, 19 May 2014 02:27:40 -0400
+Date: Mon, 19 May 2014 08:27:22 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, kernel@pengutronix.de,
+        Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH 2/2] ARM: imx: convert camera init to use
+ platform_device_register_full()
+Message-ID: <20140519062722.GE16662@pengutronix.de>
+References: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
+ <1400446261-27085-3-git-send-email-emilgoode@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400446261-27085-3-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, what the sort_entry does is just identifying hist entries
-so that they can be grouped properly.  However, with -F option
-support, it indeed needs to sort entries appropriately to be shown to
-users.  So add ->sort() member to do it.
+Hello Emil,
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/sort.c | 27 ++++++++++++++++++++++-----
- tools/perf/util/sort.h |  1 +
- 2 files changed, 23 insertions(+), 5 deletions(-)
+thanks for your effort.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b748b02fcb78..5414ba541e47 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -99,6 +99,12 @@ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
- 	return comm__str(right->comm) - comm__str(left->comm);
- }
- 
-+static int64_t
-+sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return strcmp(comm__str(right->comm), comm__str(left->comm));
-+}
-+
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
- {
-@@ -109,6 +115,7 @@ struct sort_entry sort_comm = {
- 	.se_header	= "Command",
- 	.se_cmp		= sort__comm_cmp,
- 	.se_collapse	= sort__comm_collapse,
-+	.se_sort	= sort__comm_sort,
- 	.se_snprintf	= hist_entry__comm_snprintf,
- 	.se_width_idx	= HISTC_COMM,
- };
-@@ -122,7 +129,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- 	const char *dso_name_l, *dso_name_r;
- 
- 	if (!dso_l || !dso_r)
--		return cmp_null(dso_l, dso_r);
-+		return cmp_null(dso_r, dso_l);
- 
- 	if (verbose) {
- 		dso_name_l = dso_l->long_name;
-@@ -138,7 +145,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	return _sort__dso_cmp(left->ms.map, right->ms.map);
-+	return _sort__dso_cmp(right->ms.map, left->ms.map);
- }
- 
- static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-@@ -210,6 +217,15 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
- }
- 
-+static int64_t
-+sort__sym_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (!left->ms.sym || !right->ms.sym)
-+		return cmp_null(left->ms.sym, right->ms.sym);
-+
-+	return strcmp(right->ms.sym->name, left->ms.sym->name);
-+}
-+
- static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 				     u64 ip, char level, char *bf, size_t size,
- 				     unsigned int width)
-@@ -256,6 +272,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
- struct sort_entry sort_sym = {
- 	.se_header	= "Symbol",
- 	.se_cmp		= sort__sym_cmp,
-+	.se_sort	= sort__sym_sort,
- 	.se_snprintf	= hist_entry__sym_snprintf,
- 	.se_width_idx	= HISTC_SYMBOL,
- };
-@@ -283,7 +300,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 					    map__rip_2objdump(map, right->ip));
- 		}
- 	}
--	return strcmp(left->srcline, right->srcline);
-+	return strcmp(right->srcline, left->srcline);
- }
- 
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
-@@ -311,7 +328,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
- 	if (!sym_l || !sym_r)
- 		return cmp_null(sym_l, sym_r);
- 
--	return strcmp(sym_l->name, sym_r->name);
-+	return strcmp(sym_r->name, sym_l->name);
- }
- 
- static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
-@@ -1126,7 +1143,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
- 
- 	hse->hpp.cmp = sd->entry->se_cmp;
- 	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
--	hse->hpp.sort = hse->hpp.collapse;
-+	hse->hpp.sort = sd->entry->se_sort ? : hse->hpp.collapse;
- 
- 	INIT_LIST_HEAD(&hse->hpp.list);
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 89e5057ca378..f5a831c3d0fb 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -182,6 +182,7 @@ struct sort_entry {
- 
- 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
- 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
-+	int64_t	(*se_sort)(struct hist_entry *, struct hist_entry *);
- 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
- 			       unsigned int width);
- 	u8	se_width_idx;
+On Sun, May 18, 2014 at 10:51:00PM +0200, Emil Goode wrote:
+> This converts the imx camera allocation and initialization functions
+> to use platform_device_register_full() thus simplifying the code.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+> Only build tested, unfortunately I currently don't have the hardware.
+> 
+>  arch/arm/mach-imx/devices/platform-ipu-core.c |   43 +++++++++----------------
+>  arch/arm/mach-imx/mach-mx31_3ds.c             |    5 ++-
+>  arch/arm/mach-imx/mach-mx31moboard.c          |    6 ++--
+>  arch/arm/mach-imx/mach-mx35_3ds.c             |    5 ++-
+>  arch/arm/mach-imx/mach-pcm037.c               |    5 ++-
+>  5 files changed, 23 insertions(+), 41 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> index 6bd7c3f..13ea542 100644
+> --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
+> +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+> @@ -69,42 +69,29 @@ struct platform_device *__init imx_alloc_mx3_camera(
+IMHO you should better rename the function because now it doesn't only
+allocate the device, but also registers it.
+
+Also I doubt that it's OK to call dma_declare_coherent_memory after the
+device is added. In this case maybe extend
+platform_device_register_full? And also add a warning to
+dma_declare_coherent_memory if it is called for an already added device?
+(Added a few people to Cc: that might be able to comment this. I don't
+even know if there is a reliable way to check if a device is already
+added.)
+
+Best regards
+Uwe
+
 -- 
-1.9.2
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
