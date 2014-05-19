@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaESW70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 18:59:26 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57394 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaESW6o (ORCPT
+	id S1752343AbaESXBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 19:01:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54878 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266AbaESXBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 18:58:44 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/4] mm,fs: Add vm_ops->name as an alternative to arch_vma_name
-Date: Mon, 19 May 2014 15:58:32 -0700
-Message-Id: <2eee21791bb36a0a408c5c2bdb382a9e6a41ca4a.1400538962.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1400538962.git.luto@amacapital.net>
-References: <cover.1400538962.git.luto@amacapital.net>
-In-Reply-To: <cover.1400538962.git.luto@amacapital.net>
-References: <cover.1400538962.git.luto@amacapital.net>
+	Mon, 19 May 2014 19:01:30 -0400
+Message-ID: <537A8D48.7020201@codeaurora.org>
+Date: Mon, 19 May 2014 16:01:28 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: myungjoo.ham@samsung.com
+CC: =?EUC-KR?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] PM / devfreq: Use freq_table for available_frequencies
+References: <30733097.432311399543337408.JavaMail.weblogic@epv6ml09>
+In-Reply-To: <30733097.432311399543337408.JavaMail.weblogic@epv6ml09>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_vma_name sucks.  It's a silly hack, and it's annoying to
-implement correctly.  In fact, AFAICS, even the straightforward x86
-implementation is incorrect (I suspect that it breaks if the vdso
-mapping is split or gets remapped).
+On 05/08/2014 03:02 AM, MyungJoo Ham wrote:
+>> On 04/29/2014 01:00 PM, Saravana Kannan wrote:
+>>> On 04/27/2014 06:41 PM, MyungJoo Ham wrote:
+>>>> You are hereby changing the semmantics of the original
+>>>> available_frequencies node.
+>>>>
+>>>> When a frequency/voltage pair has been disabled (opp_disable), probably
+>>>> by opp_disable(), the frequency is no more "available".
+>>>> However, when the driver author supplied freq_table as well as OPP
+>>>> in order to see the statistics, the node will behave differently.
+>>>>
+>>>> Please do not affect the current users as long as it does not give
+>>>> additional benefit or fix a bug.
+>>>
+>>> I was actually trying to stick with the semantics as it was documented.
+>>> The documentation for this file says it'll show frequencies that are not
+>>> allowed by the current min/max settings either. To me, an OPP disable
+>>> seems similar to some frequencies "disabled" by min/max settings.
+>>>
+>>> Giving preference to OPP is not a hard change to do, but it seems to go
+>>> againsts the documented semantics.
+>>>
+>>> Thoughts?
+>>
+>> I'll send out another patch like you wanted -- with OPP being given
+>> preference over freq_table when listing frequencies.
+>>
+>> But I would still like to hear your thoughts. As of today, there's no
+>> clean way to get the complete list of available frequencies that would
+>> give a consistent output irrespective of the temporary limits/conditions
+>> imposed by thermal, current limiting, etc. The round about way is to cat
+>> trans_stat and parse the frequencies from that.
+>>
+>> That's why I was trying to give preference to freq_table.
+>>
+>> Thanks,
+>> Saravana
+> 
+> The node, available_frequencies, was suggested before freq_table concept.
+> At that time, available_frequencies was supposed to show the list of
+> available OPP lists for those who use OPP for devfreq device, excluding
+> those disabled by OPP. (OPP lists are external to devfreq and devfreq's
+> min/max are internal to devfreq)
+> 
+> Locally, this node has been used to debug the behavior of a devfreq device.
+> With min/max nodes, we know the range while we cannot (easily at shell)
+> see which OPP points are available at the moment, where we have been able
+> to use available_frequencies.
+> 
+> We do not want to lose such capavility as long as we do not have OPP sysfs
+> automatically assigned to any OPP lists. If I remember correctly, we don't
+> have it, yet.
+> 
+> 
+> A. I want to minimize semantics changes in sysfs. Adding another without
+> interfering with previous usage is ok.
+> B. (more importantly) I don't want to lose the debugging capabilities.
+> 
 
-This adds a new vm_ops->name operation that can replace it.  The
-followup patches will remove all uses of arch_vma_name on x86,
-fixing a couple of annoyances in the process.
+Thanks for the response MyungJoo. Makes sense. I was also discussing
+this internally and was considering a "possible_frequencies" similar to
+available vs possible CPUs.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- fs/binfmt_elf.c    | 8 ++++++++
- fs/proc/task_mmu.c | 6 ++++++
- include/linux/mm.h | 6 ++++++
- 3 files changed, 20 insertions(+)
+I'll make such a patch for that and send it out. In that case, I'll
+probably leave "available_frequencies" alone.
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index aa3cb62..df9ea41 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1108,6 +1108,14 @@ static bool always_dump_vma(struct vm_area_struct *vma)
- 	/* Any vsyscall mappings? */
- 	if (vma == get_gate_vma(vma->vm_mm))
- 		return true;
-+
-+	/*
-+	 * Assume that all vmas with a .name op should always be dumped.
-+	 * If this changes, a new vm_ops field can easily be added.
-+	 */
-+	if (vma->vm_ops && vma->vm_ops->name && vma->vm_ops->name(vma))
-+		return true;
-+
- 	/*
- 	 * arch_vma_name() returns non-NULL for special architecture mappings,
- 	 * such as vDSO sections.
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 442177b..9b2f5d6 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -300,6 +300,12 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
- 		goto done;
- 	}
- 
-+	if (vma->vm_ops && vma->vm_ops->name) {
-+		name = vma->vm_ops->name(vma);
-+		if (name)
-+			goto done;
-+	}
-+
- 	name = arch_vma_name(vma);
- 	if (!name) {
- 		pid_t tid;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index bf9811e..63f8d4e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -239,6 +239,12 @@ struct vm_operations_struct {
- 	 */
- 	int (*access)(struct vm_area_struct *vma, unsigned long addr,
- 		      void *buf, int len, int write);
-+
-+	/* Called by the /proc/PID/maps code to ask the vma whether it
-+	 * has a special name.  Returning non-NULL will also cause this
-+	 * vma to be dumped unconditionally. */
-+	const char *(*name)(struct vm_area_struct *vma);
-+
- #ifdef CONFIG_NUMA
- 	/*
- 	 * set_policy() op must add a reference to any non-NULL @new mempolicy
+-Saravana
+
 -- 
-1.9.0
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
