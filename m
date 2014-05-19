@@ -1,138 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965023AbaESRk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 13:40:26 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60561 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964780AbaESRkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 13:40:24 -0400
-From: bsegall@google.com
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, pjt@google.com,
-        chris.j.arges@canonical.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
-References: <87mwej0yja.wl%klamm@yandex-team.ru>
-	<xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<87lhu215ky.wl%klamm@yandex-team.ru>
-	<xm264n0p4ndk.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	<87wqdi9g8e.wl%klamm@yandex-team.ru>
-Date: Mon, 19 May 2014 10:40:22 -0700
-In-Reply-To: <87wqdi9g8e.wl%klamm@yandex-team.ru> (Roman Gushchin's message of
-	"Mon, 19 May 2014 15:10:09 +0400")
-Message-ID: <xm26iop13bw9.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S932799AbaESRme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 13:42:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932450AbaESRmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 13:42:33 -0400
+Message-ID: <537A4282.804@redhat.com>
+Date: Mon, 19 May 2014 13:42:26 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roman Gushchin <klamm@yandex-team.ru> writes:
+On 05/19/2014 10:40 AM, Tetsuo Handa wrote:
+>>From f016db5d7f84d6321132150b13c5888ef67d694f Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 19 May 2014 23:24:11 +0900
+> Subject: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+> 
+> I can observe that commit 35cd7815 "vmscan: throttle direct reclaim when
+> too many pages are isolated already" causes RHEL7 environment to stall with
+> 0% CPU usage when a certain type of memory pressure is given.
 
-> tg_set_cfs_bandwidth() sets cfs_b->timer_active to 0 to
-> force the period timer restart. It's not safe, because
-> can lead to deadlock, described in commit 927b54fccbf0:
-> "__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
-> waiting for the hrtimer to finish. However, if sched_cfs_period_timer
-> runs for another loop iteration, the hrtimer can attempt to take
-> rq->lock, resulting in deadlock."
-> Three CPUs must be involved:
-> CPU0               CPU1                         CPU2
-> take rq->lock      period timer fired
-> ...                take cfs_b lock
-> ...                ...                          tg_set_cfs_bandwidth()
-> throttle_cfs_rq()  release cfs_b lock           take cfs_b lock
-> ...                distribute_cfs_runtime()     timer_active = 0
-> take cfs_b->lock   wait for rq->lock            ...
-> __start_cfs_bandwidth()
-> {wait for timer callback
->  break if timer_active == 1}
->
-> So, CPU0 and CPU1 are deadlocked.
->
-> Instead of resetting cfs_b->timer_active, tg_set_cfs_bandwidth can
-> wait for period timer callbacks (ignoring cfs_b->timer_active) and
-> restart the timer explicitly.
->
-> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> Cc: Ben Segall <bsegall@google.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: pjt@google.com
-> Cc: Chris J Arges <chris.j.arges@canonical.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Reviewed-by: Ben Segall <bsegall@google.com>
+> Since the kernel worker thread needs to escape from the while loop so that
+> alloc_page() can allocate memory (and eventually allow xfs_vm_writepage()
+> to release memory), I think that we should not block forever. This patch
+> introduces 30 seconds timeout for userspace processes and 5 seconds timeout
+> for kernel processes.
 
-> ---
->  kernel/sched/core.c  |    3 +--
->  kernel/sched/fair.c  |    8 ++++----
->  kernel/sched/sched.h |    2 +-
->  3 files changed, 6 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b4308d7..e122774 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -7826,8 +7826,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
->  	/* restart the period timer (if active) to handle new period expiry */
->  	if (runtime_enabled && cfs_b->timer_active) {
->  		/* force a reprogram */
-> -		cfs_b->timer_active = 0;
-> -		__start_cfs_bandwidth(cfs_b);
-> +		__start_cfs_bandwidth(cfs_b, true);
->  	}
->  	raw_spin_unlock_irq(&cfs_b->lock);
->  
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c7ab8ea..54939f8 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2117,7 +2117,7 @@ static int assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
->  		 */
->  		if (!cfs_b->timer_active) {
->  			__refill_cfs_bandwidth_runtime(cfs_b);
-> -			__start_cfs_bandwidth(cfs_b);
-> +			__start_cfs_bandwidth(cfs_b, false);
->  		}
->  
->  		if (cfs_b->runtime > 0) {
-> @@ -2298,7 +2298,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
->  	raw_spin_lock(&cfs_b->lock);
->  	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
->  	if (!cfs_b->timer_active)
-> -		__start_cfs_bandwidth(cfs_b);
-> +		__start_cfs_bandwidth(cfs_b, false);
->  	raw_spin_unlock(&cfs_b->lock);
->  }
->  
-> @@ -2681,7 +2681,7 @@ static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
->  }
->  
->  /* requires cfs_b->lock, may release to reprogram timer */
-> -void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> +void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force)
->  {
->  	/*
->  	 * The timer may be active because we're trying to set a new bandwidth
-> @@ -2696,7 +2696,7 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
->  		cpu_relax();
->  		raw_spin_lock(&cfs_b->lock);
->  		/* if someone else restarted the timer then we're done */
-> -		if (cfs_b->timer_active)
-> +		if (!force && cfs_b->timer_active)
->  			return;
->  	}
->  
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index dfa31d5..bc150a6 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -209,7 +209,7 @@ extern void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
->  extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
->  
->  extern void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b);
-> -extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
-> +extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force);
->  extern void unthrottle_cfs_rq(struct cfs_rq *cfs_rq);
->  
->  extern void free_rt_sched_group(struct task_group *tg);
+I suspect the fundamental problem is that other processes can
+drive the system back to the limit, and unlucky processes can
+end up starved forever.
+
+This makes your fix (or something like it) necessary.
+
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+
+Acked-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
