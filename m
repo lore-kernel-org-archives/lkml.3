@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaESVYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:24:17 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:62803 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbaESVYN (ORCPT
+	id S1752787AbaESVYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:24:32 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:62539 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728AbaESVYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:24:13 -0400
-Message-ID: <537A7679.5040102@gmail.com>
-Date: Mon, 19 May 2014 17:24:09 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 17:24:30 -0400
+Message-ID: <537A768C.8080807@cogentembedded.com>
+Date: Tue, 20 May 2014 01:24:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Michael Spang <spang@chromium.org>, Patrick McHardy <kaber@trash.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] macvlan: Fix checksum errors when ip_summed is CHECKSUM_PARTIAL
-References: <1400520254-5142-1-git-send-email-spang@chromium.org>
-In-Reply-To: <1400520254-5142-1-git-send-email-spang@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Karsten Keil <isdn@linux-pingi.de>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdn: hisax: l3dss1.c:  Fix for possible null pointer
+ dereference
+References: <1400347101-25476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1400347101-25476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 01:24 PM, Michael Spang wrote:
-> Changing ip_summed from CHECKSUM_PARTIAL to CHECKSUM_UNNECESSARY
-> will result in an incorrect checksum if the packet is sent off the box.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Michael Spang <spang@chromium.org>
+Hello.
+
+On 05/17/2014 09:18 PM, Rickard Strandqvist wrote:
+
+> There is otherwise a risk of a possible null pointer dereference.
+
+> Was largely found by using a static code analysis program called cppcheck.
+
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  drivers/net/macvlan.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> index 753a8c2..806b56a 100644
-> --- a/drivers/net/macvlan.c
-> +++ b/drivers/net/macvlan.c
-> @@ -267,7 +267,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
->  
->  	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
->  		const struct ethhdr *eth = (void *)skb->data;
-> -		skb->ip_summed = CHECKSUM_UNNECESSARY;
+>   drivers/isdn/hisax/l3dss1.c |    8 ++++++--
+>   1 file changed, 6 insertions(+), 2 deletions(-)
+
+> diff --git a/drivers/isdn/hisax/l3dss1.c b/drivers/isdn/hisax/l3dss1.c
+> index cda7006..3ea6257 100644
+> --- a/drivers/isdn/hisax/l3dss1.c
+> +++ b/drivers/isdn/hisax/l3dss1.c
+> @@ -2208,8 +2208,12 @@ static int l3dss1_cmd_global(struct PStack *st, isdn_ctrl *ic)
+>   				{ free_invoke_id(st, id);
+>   					return (-2);
+>   				}
+> -			pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+> -			pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
 > +
-> +		if (skb->ip_summed == CHECKSUM_NONE)
-> +			skb->ip_summed = CHECKSUM_UNNECESSARY;
->  
->  		/* send to other bridge ports directly */
->  		if (is_multicast_ether_addr(eth->h_dest)) {
-> 
+> +			if (pc)
+> +			{
 
-Already done.  See commit f114890cdf84d753f6b41cd0cc44ba51d16313da
+    { sould be on the same line as *if*.
 
--vlad
+> +				pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+> +				pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
+> +			}
+
+WBR, Sergei
+
