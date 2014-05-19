@@ -1,80 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997AbaESHLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 03:11:12 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47861 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945AbaESHLH (ORCPT
+	id S1752941AbaESHLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 03:11:05 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:38196 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaESHLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 03:11:07 -0400
-Date: Mon, 19 May 2014 09:11:05 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        thierry.reding@gmail.com, shawn.guo@freescale.com,
-        LW@KARO-electronics.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] pwm: i.MX: Avoid sample FIFO overflow for i.MX PWM
- version2
-Message-ID: <20140519071105.GZ5858@pengutronix.de>
-References: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
+	Mon, 19 May 2014 03:11:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400217068-22642-1-git-send-email-Ying.Liu@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:48:35 up 26 days, 20 min, 36 users,  load average: 0.03, 0.09,
- 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <53762583.5020907@samsung.com>
+References: <1400095043-685-1-git-send-email-rahul.sharma@samsung.com>
+	<1400095043-685-2-git-send-email-rahul.sharma@samsung.com>
+	<5373CBAD.2010505@gmail.com>
+	<CAPdUM4MT0nZcLRtNcKRAeW4Q3n5z9n4BnzR-7uYMb1gqwEhWXA@mail.gmail.com>
+	<53753527.3000905@gmail.com>
+	<CAPdUM4M5k-aouSA=dyUXWOyFLBhob+o8103a=gAxo-O68i-MCw@mail.gmail.com>
+	<CAPdUM4Py4r3ZV79ULcJ3KojaPQ0hfZTE2XbsY+=hP4LD70mb8Q@mail.gmail.com>
+	<5375ED80.2010008@samsung.com>
+	<CAPdUM4Mfe4xTnh-qPeazcknbCoqX3HcORKHLqBE9ukqa4ULi9A@mail.gmail.com>
+	<53762583.5020907@samsung.com>
+Date: Mon, 19 May 2014 12:40:59 +0530
+X-Google-Sender-Auth: CgKxmDXGTRavl4TzGlfUys1TiDI
+Message-ID: <CAPdUM4OWbDBDNsaETT64sbLs_We40ZeV2WVh09Jkdx_ZPoms4Q@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] phy: Add exynos-simple-phy driver
+From: Rahul Sharma <rahul.sharma@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        PANKAJ KUMAR DUBEY <pankaj.dubey@samsung.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        sunil joshi <joshi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 01:11:08PM +0800, Liu Ying wrote:
-> The i.MX PWM version2 is embedded in several i.MX SoCs,
-> such as i.MX27, i.MX51 and i.MX6SL.  There are four 16bit
-> sample FIFOs in this IP, each of which determines the duty
-> period of a PWM waveform in one full cycle.  The IP spec
-> mentions that we should not write a fourth sample because
-> the FIFOs will become full and trigger a FIFO write error
-> (FWE) which will prevent the PWM from starting once it is
-> enabled.  In order to avoid any sample FIFO overflow issue,
-> this patch clears all sample FIFOs or waits for a rollover
-> event to consume a FIFO slot when necessary.  In this way,
-> only the first FIFO slot will be loaded at most.
-> 
-> Note that the PWM controller will not generate any rollover
-> event if the duty period is zero.  This makes the logic a
-> bit complicated to determine if we clear the sample FIFOs
-> or wait for a rollover event.
-> 
-> The FIFO overflow issue can be reproduced by the following
-> commands on the i.MX6SL EVK platform, assuming we use PWM2
-> for the debug LED which is driven by the pin HSIC_STROBE
-> and the maximal brightness is 255.
-> echo 0   > /sys/class/leds/user/brightness
-> echo 0   > /sys/class/leds/user/brightness
-> echo 0   > /sys/class/leds/user/brightness
-> echo 0   > /sys/class/leds/user/brightness
-> echo 255 > /sys/class/leds/user/brightness
-> Here, FWE happens(PWMSR register reads 0x58) and the LED
-> can not be lighten.
+On 16 May 2014 20:19, Tomasz Figa <t.figa@samsung.com> wrote:
+> On 16.05.2014 16:30, Rahul Sharma wrote:
+>> On 16 May 2014 16:20, Tomasz Figa <t.figa@samsung.com> wrote:
+>>> On 16.05.2014 12:35, Rahul Sharma wrote:
+>>>> On 16 May 2014 15:12, Rahul Sharma <rahul.sharma@samsung.com> wrote:
+>>>>> On 16 May 2014 03:14, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>>>>> On 15.05.2014 06:01, Rahul Sharma wrote:
+>>>> [snip]
+>>>>>>>> the PHY provider.
+>>>>>>>>
+>>>>>>>
+>>>>>>> Please correct me if I got you wrong. You want somthing like this:
+>>>>>>>
+>>>>>>> pmu_system_controller: system-controller@10040000 {
+>>>>>>>          ...
+>>>>>>>           simple_phys: simple-phys {
+>>>>>>>                         compatible = "samsung,exynos5420-simple-phy";
+>>>>>>>                         ...
+>>>>>>>           };
+>>>>>>> };
+>>>>>>
+>>>>>> Not exactly.
+>>>>>>
+>>>>>> What I meant is that the PMU node itself should be the PHY provider, e.g.
+>>>>>>
+>>>>>> pmu_system_controller: system-controller@10040000 {
+>>>>>>         /* ... */
+>>>>>>         #phy-cells = <1>;
+>>>>>> };
+>>>>>>
+>>>>>> and then the PMU node should instantiate the Exynos simple PHY driver,
+>>>>>> as this is a driver for a facility existing entirely inside of the PMU.
+>>>>>> Moreover, the driver should be rather called Exynos PMU PHY.
+>>>>>>
+>>>>>> I know this isn't really possible at the moment, but with device tree we
+>>>>>> must design things carefully, so it's better to take a bit more time and
+>>>>>> do things properly.
+>>>>>>
+>>>>>> So my opinion on this is that there should be a central Exynos PMU
+>>>>>> driver that claims the IO region and instantiates necessary subdrivers,
+>>>>>> such as Exynos PMU PHY driver, Exynos CLKOUT driver, Exynos cpuidle
+>>>>>> driver and more, similar to what is being done in drivers/mfd.
+>>>>>
+>>>>
+>>>> Hi Tomasz,
+>>>>
+>>>> These PHYs are not part of PMU as such. I am not sure if it is correct to
+>>>> probe them as phy provider for all these phys. Only relation of these phys with
+>>>> the PMU is 'enable/disable control'.
+>>>
+>>> Well, in reality what is implemented by this driver is not even a PHY,
+>>> just some kind of power controllers, which are contained entirely in the
+>>> PMU.
+>>>
+>>
+>> I agree. Actually the role of generic phy framework for these 'simple' phys is
+>> only that much.
+>>
+>>>> Controlling this bit using regmap interface
+>>>> still looks better to me.
+>>>
+>>> Well, when there is a choice between using regmap and not using regmap,
+>>> I'd rather choose the latter. Why would you want to introduce additional
+>>> abstraction layer if there is no need for such?
+>>>
+>>>>
+>>>> IMHO Ideal method would be probing these PHYs independently and resolving
+>>>> the necessary dependencies like syscon handle, clocks etc. This way we will
+>>>> not be having any common phy provider for all these independent PHYs and it
+>>>> would be clean to add each of these phy nodes in DT. Please see my original
+>>>> comment below.
+>>>>
+>>>> http://lkml.iu.edu/hypermail/linux/kernel/1404.1/00701.html
+>>>
+>>> With the solution I proposed, you don't need any kind of dependencies
+>>> for those simple power controllers. They are just single bits that don't
+>>> need anything special to operate, except PMU clock running.
+>>
+>> In that case we can further trim it down and let the drivers use the regmap
+>> interface to control this bit. Many drivers including HDMI, DP just need that
+>> much functionality from the phy provider.
+>
+> Well, this is what several drivers already do, like USB PHY (dedicated
+> IP block), watchdog (for watchdog mask), SATA PHY (dedicated IP block
+> too) or will do, like I2C (for configuration of I2C mux on Exynos5).
+>
+> At least this would be consistent with them and wouldn't be an API
+> abuse, so I'd be inclined to go this way more than introducing
+> abstractions like this patch does.
 
-I find this overly complicated. It adds 89 lines to a 300 lines driver
-for a single workaround. Wouldn't it be sufficient to add a delay
-of period_ns in imx_pwm_config_v2 when the FIFO is full?
+Ok. I had already posted a patch for this at
+http://www.spinics.net/lists/linux-samsung-soc/msg28049.html
+I will revive that thread.
 
-Sascha
+@Tomasz Stanislawski, Do you have different opinion here?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards,
+Rahul Sharma.
+
+>
+> Best regards,
+> Tomasz
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
