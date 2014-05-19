@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaESG00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 02:26:26 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59567 "EHLO
+	id S1753071AbaESG0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 02:26:24 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59627 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaESG0I (ORCPT
+	with ESMTP id S1752818AbaESG0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 02:26:08 -0400
+	Mon, 19 May 2014 02:26:09 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@rehdat.com>
-Subject: [PATCH 10/20] perf tools: Call perf_hpp__init() before setting up GUI browsers
-Date: Mon, 19 May 2014 15:25:52 +0900
-Message-Id: <1400480762-22852-11-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/20] perf top: Add --fields option to specify output fields
+Date: Mon, 19 May 2014 15:25:56 +0900
+Message-Id: <1400480762-22852-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
 References: <1400480762-22852-1-git-send-email-namhyung@kernel.org>
@@ -26,95 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that it can be set properly prior to set up output fields.  That
-makes easy to handle/warn errors during the setup since it doesn't
-need to be bothered with the GUI.
+The --fields option is to allow user setup output field in any order.
+It can recieve any sort keys and following (hpp) fields:
+
+  overhead, overhead_sys, overhead_us, sample and period
+
+If guest profiling is enabled, overhead_guest_{sys,us} will be
+available too.
+
+More more information, please see previous patch "perf report:
+Add -F option to specify output fields"
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c    | 6 +++---
- tools/perf/builtin-top.c       | 2 ++
- tools/perf/ui/browsers/hists.c | 2 --
- tools/perf/ui/gtk/hists.c      | 2 --
- tools/perf/ui/setup.c          | 2 --
- 5 files changed, 5 insertions(+), 9 deletions(-)
+ tools/perf/Documentation/perf-top.txt |  9 +++++++++
+ tools/perf/builtin-top.c              | 15 +++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index f4d640cfdf16..c4dab7acbdbb 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -823,16 +823,16 @@ repeat:
- 			goto error;
- 	}
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index df863288752a..dcfa54c851e9 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -116,6 +116,15 @@ Default is to monitor all CPUS.
+ 	local_weight, abort, in_tx, transaction, overhead, sample, period.
+ 	Please see description of --sort in the perf-report man page.
  
-+	perf_hpp__init();
++--fields=::
++	Specify output field - multiple keys can be specified in CSV format.
++	Following fields are available:
++	overhead, overhead_sys, overhead_us, sample and period.
++	Also it can contain any sort key(s).
 +
- 	/* Force tty output for header output. */
- 	if (report.header || report.header_only)
- 		use_browser = 0;
- 
- 	if (strcmp(input_name, "-") != 0)
- 		setup_browser(true);
--	else {
-+	else
- 		use_browser = 0;
--		perf_hpp__init();
--	}
- 
- 	if (report.header || report.header_only) {
- 		perf_session__fprintf_info(session, stdout,
++	By default, every sort keys not specified in --field will be appended
++	automatically.
++
+ -n::
+ --show-nr-samples::
+ 	Show a column with the number of samples.
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 34764b6eabf9..280945bab66d 100644
+index 280945bab66d..5b389ce4cd15 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -1147,6 +1147,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	/* display thread wants entries to be collapsed in a different tree */
- 	sort__need_collapse = 1;
+@@ -1085,6 +1085,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
+ 		   " Please refer the man page for the complete list."),
++	OPT_STRING(0, "fields", &field_order, "key[,keys...]",
++		   "output field(s): overhead, period, sample plus all of sort keys"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+@@ -1138,17 +1140,18 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		usage_with_options(top_usage, options);
  
-+	perf_hpp__init();
-+
+ 	sort__mode = SORT_MODE__TOP;
++	/* display thread wants entries to be collapsed in a different tree */
++	sort__need_collapse = 1;
+ 
+ 	if (setup_sorting() < 0) {
+-		parse_options_usage(top_usage, options, "s", 1);
++		if (sort_order)
++			parse_options_usage(top_usage, options, "s", 1);
++		if (field_order)
++			parse_options_usage(sort_order ? NULL : top_usage,
++					    options, "fields", 0);
+ 		goto out_delete_evlist;
+ 	}
+ 
+-	/* display thread wants entries to be collapsed in a different tree */
+-	sort__need_collapse = 1;
+-
+-	perf_hpp__init();
+-
  	if (top.use_stdio)
  		use_browser = 0;
  	else if (top.use_tui)
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 4e9b82b5fb1f..2d39e982ab8c 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -661,8 +661,6 @@ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
- 
- void hist_browser__init_hpp(void)
- {
--	perf_hpp__init();
--
- 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
- 				hist_browser__hpp_color_overhead;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_SYS].color =
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 2237245bfac0..fd52669018ee 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -58,8 +58,6 @@ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
- 
- void perf_gtk__init_hpp(void)
- {
--	perf_hpp__init();
--
- 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
- 				perf_gtk__hpp_color_overhead;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_SYS].color =
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 5df5140a9f29..ba51fa8a1176 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -86,8 +86,6 @@ void setup_browser(bool fallback_to_pager)
- 		use_browser = 0;
- 		if (fallback_to_pager)
- 			setup_pager();
--
--		perf_hpp__init();
- 		break;
- 	}
- }
 -- 
 1.9.2
 
