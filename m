@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaESOf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:35:29 -0400
-Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:56597
-	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750787AbaESOf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:35:27 -0400
-Date: Mon, 19 May 2014 14:30:33 +0000
-From: dwalker@fifo99.com
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: msm: remove board file for Nexus One (ie. mahimahi)
-Message-ID: <20140519143033.GA17442@fifo99.com>
-References: <1400101656.9826.4.camel@x220>
- <20140515174448.GA31159@fifo99.com>
- <1400177413.11786.11.camel@x220>
- <20140515215726.GA1171@fifo99.com>
- <1400500408.2007.29.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400500408.2007.29.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932245AbaESOfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:35:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19596 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754627AbaESOfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:35:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,867,1392192000"; 
+   d="scan'208";a="541484182"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Kenny Simpson <theonetruekenny@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Armin Rigo <arigo@tunes.org>
+In-Reply-To: <20140519130114.GA3140@dhcp22.suse.cz>
+References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
+ <20140519130114.GA3140@dhcp22.suse.cz>
+Subject: Re: remap_file_pages() use
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140519143540.BE9F6E009B@blue.fi.intel.com>
+Date: Mon, 19 May 2014 17:35:40 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 01:53:28PM +0200, Paul Bolle wrote:
-> Daniel,
+Michal Hocko wrote:
+> [CCing Kirill and other people involved]
 > 
-> On Thu, 2014-05-15 at 21:57 +0000, dwalker@fifo99.com wrote:
-> > On Thu, May 15, 2014 at 08:10:13PM +0200, Paul Bolle wrote:
-> > > This is not something I get to decide. Nevertheless, given that this
-> > > file shouldn't have been merged to begin with, I'd appreciate it if some
-> > > deadline could be agreed upon.
+> On Sun 18-05-14 00:03:28, Kenny Simpson wrote:
+> > I saw that remap_file_pages() was possibly going away to be replaced
+> > by some emulation. I've used this call in several projects over the
+> > years mostly as a way of mapping multiple virtual memory pages to
+> > alias the same private or shared memory region (to do things like
+> > circular buffers). mmap()
+> > in the case of anonymous memory doesn't work as well since there is
+> > not a file descriptor to reference.
 > > 
-> > I think I merged it actually, but there's no rules about what gets merged. How when what order, etc.
-> > It's all free form.
-> 
-> There do not seem to be formal rules. But there surely are some
-> requirements for code to be added. One of the requirements is, I think,
-> that it should build. This file cannot be built: it is not wired into a
-> Makefile and it also includes, what appears to be, its own header file,
-> but that header is not part of the tree.
+> > Would this sort of thing be supported in the emulation, or should I be
+> > planning on reimplementing/rewriting some things?
 
-The requirements are created by the maintainers.. In this case I would have expected
-support for this phone much sooner, and there are in fact patches on the list to support
-it which just haven't been merged yet. 
+>From functional POV, emulation *should* be identical to original
+remap_file_pages(), but slower. It would be nice, if you test it early.
 
-> Even the most dubious of code in drivers/staging is expected to "compile
-> properly"!
+It's not clear yet how long emulation will be there.
+Is there a reason why you can't use fd from shared memory (shm_open() or
+direct open() on /dev/shm/xxx)?
 
-But mach-msm isn't staging, different rules apply there.
-
-Daniel
+-- 
+ Kirill A. Shutemov
