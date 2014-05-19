@@ -1,143 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaESM2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:28:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34341 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaESM2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:28:30 -0400
-Message-ID: <5379F8E5.2070802@canonical.com>
-Date: Mon, 19 May 2014 05:28:21 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754210AbaESM24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:28:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43232 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752756AbaESM2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 08:28:55 -0400
+Message-ID: <5379F92F.2030400@ti.com>
+Date: Mon, 19 May 2014 15:29:35 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, miklos@szeredi.hu,
-        jmorris@namei.org, selinux@tycho.nsa.gov
-CC: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
-References: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>	<201405012058.JEG30273.LJFHOOFMtOFQVS@I-love.SAKURA.ne.jp>	<201405051449.GAE81222.LOOFtFJMQFOSVH@I-love.SAKURA.ne.jp>	<201405120053.HJG95368.HFLQSFMOOtOVJF@I-love.SAKURA.ne.jp>	<201405122221.DBG43278.LOQtJSOFVFFOHM@I-love.SAKURA.ne.jp> <201405122224.BJB51546.VJOtMSQOLOFFHF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405122224.BJB51546.VJOtMSQOLOFFHF@I-love.SAKURA.ne.jp>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com> <535927DF.90404@ti.com> <5368E604.4040107@ti.com>
+In-Reply-To: <5368E604.4040107@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 06:24 AM, Tetsuo Handa wrote:
->>From 819e94ae3a6d9235196d137a39afa4e0bbd79770 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 12 May 2014 21:54:05 +0900
-> Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
-> 
-> For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
-> reversed arguments" and "distinguish condition of source and target".
-> Future patches will stop re-calculating pathnames.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+On 05/06/2014 04:39 PM, Peter Ujfalusi wrote:
+> Mike,
+>
+> On 04/24/2014 06:03 PM, Tero Kristo wrote:
+>> On 04/24/2014 12:11 PM, Peter Ujfalusi wrote:
+>>> Mike, Tero,
+>>>
+>>> On 04/03/2014 09:29 AM, Peter Ujfalusi wrote:
+>>>> On 04/02/2014 05:12 PM, Tero Kristo wrote:
+>>>>> On 04/02/2014 04:48 PM, Peter Ujfalusi wrote:
+>>>>>> ABE DPLL frequency need to be lowered from 361267200
+>>>>>> to 180633600 to facilitate the ATL requironments.
+>>>>>> The dpll_abe_m2x2_ck clock need to be set to double
+>>>>>> of ABE DPLL rate in order to have correct clocks
+>>>>>> for audio.
+>>>>>
+>>>>> Do you have some sort of TRM reference for this?
+>>>>
+>>>> The ATL's max divider is 32.
+>>>> For audio purpose the clock coming out from the ATL instance should be
+>>>> 128 * fs. It is only possible to have 44.1KHz sampling rate with ABE DPLL set
+>>>> to 361267200 or 180633600. Which means:
+>>>> The atl generated clock should be 128 * 44100 = 5644800
+>>>>   From ABE_DPLL 361267200 we would need to have 64 as divider (ATL can't do
+>>>> this).
+>>>>   From the suggested ABE_DPLL of 180633600 we can use ATL divider of 32, which
+>>>> is the maximum it can do.
+>>>>
+>>>> So the reason for the change is to have ATLPCLK clock which can be used for
+>>>> audio in the future, the 361267200 is just too high.
+>>>
+>>> Tero: can I have your ack for this patch or do you have further concerns?
+>>
+>> Yea looks good to me, except for the fact that there is some work on getting
+>> default rate/parent support through DT. I would like a comment from Mike about
+>> the estimate when this can get in, and whether we should merge intermediate
+>> solutions still like this.
+>>
+>> Anyway, you can consider this patch acked by me, I'll let Mike to decide what
+>> to do with it though.
+>
+> Do you have anything against this patch? Since right now there is no other
+> ways to fix the ABE DPLL for dra7 it would be great if we could have this in
+> till we have the final solution. Also I'd like to point out that the original
+> frequency the ABE DPLL was not correct and renders the audio to be not usable
+> on the platform.
+>
+> Thanks,
+> Péter
 
-This isn't quite right. For apparmor at this point these paths need to
-be still treated like they are separate. The second aa_path_perm, is
-checking the permission to move old_inode to new_path.
+Thanks, queued for 3.16/ti-clk-drv.
 
-see below
+-Tero
 
-I've added an updated patch below
-
-> ---
->  security/apparmor/lsm.c |   22 ++++++++++++++++++++--
->  1 files changed, 20 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-> index c0b4366..9f21296 100644
-> --- a/security/apparmor/lsm.c
-> +++ b/security/apparmor/lsm.c
-> @@ -331,7 +331,14 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
->  		struct path_cond cond = { old_dentry->d_inode->i_uid,
->  					  old_dentry->d_inode->i_mode
->  		};
-> +		struct path_cond new_cond = cond;
->  
-> +		if (flags & RENAME_EXCHANGE) {
-> +			/* Cross rename requires both inodes to exist. */
-> +			new_cond.uid = new_dentry->d_inode->i_uid;
-> +			new_cond.mode = new_dentry->d_inode->i_mode;
-> +		}
-> +retry:
->  		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
->  				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
->  				     AA_MAY_META_WRITE | AA_MAY_DELETE,
-> @@ -339,7 +346,18 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
->  		if (!error)
->  			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
->  					     0, MAY_WRITE | AA_MAY_META_WRITE |
-> -					     AA_MAY_CREATE, &cond);
-> +					     AA_MAY_CREATE, &new_cond);
-This isn't new_cond because its the permission to move old_inode to new_path
-
-> +		if (!error && (flags & RENAME_EXCHANGE)) {
-> +			struct path tmp_path = new_path;
-> +			struct path_cond tmp_cond = new_cond;
-> +
-> +			new_path = old_path;
-> +			old_path = tmp_path;
-> +			new_cond = cond;
-> +			cond = tmp_cond;
-> +			flags = 0;
-> +			goto retry;
-> +		}
->  
->  	}
->  	return error;
-> 
-
->From c07677ce007bbb5689b82bce0fab15a159f59874 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 12 May 2014 21:54:05 +0900
-Subject: [PATCH] AppArmor: Handle the rename flags.
-
-For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
-reversed arguments" and "distinguish condition of source and target".
-Future patches will stop re-calculating pathnames.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/lsm.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index c0b4366..d7d92ad 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -332,6 +332,7 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 					  old_dentry->d_inode->i_mode
- 		};
- 
-+retry:
- 		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
- 				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
- 				     AA_MAY_META_WRITE | AA_MAY_DELETE,
-@@ -340,6 +341,16 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
- 					     0, MAY_WRITE | AA_MAY_META_WRITE |
- 					     AA_MAY_CREATE, &cond);
-+		if (!error && (flags & RENAME_EXCHANGE)) {
-+			struct path tmp_path = new_path;
-+			new_path = old_path;
-+			old_path = tmp_path;
-+			/* Cross rename requires both inodes to exist. */
-+			cond.uid = new_dentry->d_inode->i_uid;
-+			cond.mode = new_dentry->d_inode->i_mode;
-+			flags = 0;
-+			goto retry;
-+		}
- 
- 	}
- 	return error;
--- 
-2.0.0.rc0
+>
+>>
+>> -Tero
+>>
+>>> Mike: do you want me to resend this patch?
+>>>
+>>> Thanks,
+>>> Péter
+>>>
+>>>>
+>>>>>
+>>>>> -Tero
+>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>>>> ---
+>>>>>>     drivers/clk/ti/clk-7xx.c | 7 ++++++-
+>>>>>>     1 file changed, 6 insertions(+), 1 deletion(-)
+>>>>>>
+>>>>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+>>>>>> index f7e40734c819..19a55bf407dd 100644
+>>>>>> --- a/drivers/clk/ti/clk-7xx.c
+>>>>>> +++ b/drivers/clk/ti/clk-7xx.c
+>>>>>> @@ -16,7 +16,7 @@
+>>>>>>     #include <linux/clkdev.h>
+>>>>>>     #include <linux/clk/ti.h>
+>>>>>>
+>>>>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
+>>>>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
+>>>>>>     #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>>>>>
+>>>>>>
+>>>>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+>>>>>>         if (rc)
+>>>>>>             pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+>>>>>>
+>>>>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
+>>>>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
+>>>>>> +    if (rc)
+>>>>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
+>>>>>> +
+>>>>>>         dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+>>>>>>         rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+>>>>>>         if (rc)
+>>>>>>
+>>>>>
+>>>>
+>>>>
+>>>
+>>
+>
 
