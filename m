@@ -1,76 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaESQQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 12:16:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33317 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaESQQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 12:16:06 -0400
-Date: Mon, 19 May 2014 17:15:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Message-ID: <20140519161548.GZ12304@sirena.org.uk>
-References: <1400483625-29312-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1754538AbaESQSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 12:18:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35077 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985AbaESQSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 12:18:32 -0400
+Date: Mon, 19 May 2014 18:18:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140519161830.GC3140@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
+ <20140502164930.GP3446@dhcp22.suse.cz>
+ <20140502220056.GP23420@cmpxchg.org>
+ <20140505142100.GC32598@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="en/7uzihPWgzh7Vo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400483625-29312-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: You will be successful in your work.
+In-Reply-To: <20140505142100.GC32598@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
- dereferencing error.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrew, it seems this one got lost as well.
 
---en/7uzihPWgzh7Vo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon 05-05-14 16:21:00, Michal Hocko wrote:
+> On Fri 02-05-14 18:00:56, Johannes Weiner wrote:
+> > On Fri, May 02, 2014 at 06:49:30PM +0200, Michal Hocko wrote:
+> > > On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
+> > > > On Fri, May 02, 2014 at 11:36:28AM +0200, Michal Hocko wrote:
+> > > > > On Wed 30-04-14 18:55:50, Johannes Weiner wrote:
+> > > > > > On Mon, Apr 28, 2014 at 02:26:42PM +0200, Michal Hocko wrote:
+> [...]
+> > > > > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > > > > > index c1cd99a5074b..0f428158254e 100644
+> > > > > > > --- a/mm/vmscan.c
+> > > > > > > +++ b/mm/vmscan.c
+> > > > > [...]
+> > > > > > > +static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> > > > > > > +{
+> > > > > > > +	if (!__shrink_zone(zone, sc, true)) {
+> > > > > > > +		/*
+> > > > > > > +		 * First round of reclaim didn't find anything to reclaim
+> > > > > > > +		 * because of low limit protection so try again and ignore
+> > > > > > > +		 * the low limit this time.
+> > > > > > > +		 */
+> > > > > > > +		__shrink_zone(zone, sc, false);
+> > > > > > > +	}
+> > > > 
+> > > > So I don't think this can work as it is, because we are not actually
+> > > > changing priority levels yet. 
+> > > 
+> > > __shrink_zone returns with 0 only if the whole hierarchy is is under low
+> > > limit. This means that they are over-committed and it doesn't make much
+> > > sense to play with priority. Low limit reclaimability is independent on
+> > > the priority.
+> > > 
+> > > > It will give up on the guarantees of bigger groups way before smaller
+> > > > groups are even seriously looked at.
+> > > 
+> > > How would that happen? Those (smaller) groups would get reclaimed and we
+> > > wouldn't fallback. Or am I missing your point?
+> > 
+> > Lol, I hadn't updated my brain to a394cb8ee632 ("memcg,vmscan: do not
+> > break out targeted reclaim without reclaimed pages") yet...  Yes, you
+> > are right.
+> 
+> You made me think about this more and you are right ;).
+> The code as is doesn't cope with many racing reclaimers when some
+> threads can fallback to ignore the lowlimit although there are groups to
+> scan in the hierarchy but they were visited by other reclaimers.
+> The patch bellow should help with that. What do you think?
+> I am also thinking we want to add a fallback counter in memory.stat?
+> ---
+> From e997b8b4ac724aa29bdeff998d2186ee3c0a97d8 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 5 May 2014 15:12:18 +0200
+> Subject: [PATCH] vmscan: memcg: check whether the low limit should be ignored
+> 
+> Low-limit (aka guarantee) is ignored when there is no group scanned
+> during the first round of __shink_zone. This approach doesn't work when
+> multiple reclaimers race and reclaim the same hierarchy (e.g. kswapd
+> vs. direct reclaim or multiple tasks hitting the hard limit) because
+> memcg iterator makes sure that multiple reclaimers are interleaved
+> in the hierarchy. This means that some reclaimers can see 0 scanned
+> groups although there are groups which are above the low-limit and they
+> were reclaimed on behalf of other reclaimers. This leads to a premature
+> low-limit break.
+> 
+> This patch adds mem_cgroup_all_within_guarantee() which will check
+> whether all the groups in the reclaimed hierarchy are within their low
+> limit and shrink_zone will allow the fallback reclaim only when that is
+> true. This alone is still not sufficient however because it would lead
+> to another problem. If a reclaimer constantly fails to scan anything
+> because it sees only groups within their guarantees while others do the
+> reclaim then the reclaim priority would drop down very quickly.
+> shrink_zone has to be careful to preserve scan at least one group
+> semantic so __shrink_zone has to be retried until at least one group
+> is scanned.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  include/linux/memcontrol.h |  5 +++++
+>  mm/memcontrol.c            | 13 +++++++++++++
+>  mm/vmscan.c                | 17 ++++++++++++-----
+>  3 files changed, 30 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index c00ccc5f70b9..077a777bd9ff 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -94,6 +94,7 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  
+>  extern bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+>  		struct mem_cgroup *root);
+> +extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root);
+>  
+>  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+>  extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+> @@ -296,6 +297,10 @@ static inline bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+>  {
+>  	return false;
+>  }
+> +static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+> +{
+> +	return false;
+> +}
+>  
+>  static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 58982d18f6ea..4fd4784d1548 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2833,6 +2833,19 @@ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+>  	return false;
+>  }
+>  
+> +bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+> +{
+> +	struct mem_cgroup *iter;
+> +
+> +	for_each_mem_cgroup_tree(iter, root)
+> +		if (!mem_cgroup_within_guarantee(iter, root)) {
+> +			mem_cgroup_iter_break(root, iter);
+> +			return false;
+> +		}
+> +
+> +	return true;
+> +}
+> +
+>  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 5f923999bb79..2686e47f04cc 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2293,13 +2293,20 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+>  
+>  static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  {
+> -	if (!__shrink_zone(zone, sc, true)) {
+> +	bool honor_guarantee = true;
+> +
+> +	while (!__shrink_zone(zone, sc, honor_guarantee)) {
+>  		/*
+> -		 * First round of reclaim didn't find anything to reclaim
+> -		 * because of the memory guantees for all memcgs in the
+> -		 * reclaim target so try again and ignore guarantees this time.
+> +		 * The previous round of reclaim didn't find anything to scan
+> +		 * because
+> +		 * a) the whole reclaimed hierarchy is within guarantee so
+> +		 *    we fallback to ignore the guarantee because other option
+> +		 *    would be the OOM
+> +		 * b) multiple reclaimers are racing and so the first round
+> +		 *    should be retried
+>  		 */
+> -		__shrink_zone(zone, sc, false);
+> +		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
+> +			honor_guarantee = false;
+>  	}
+>  }
+>  
+> -- 
+> 2.0.0.rc0
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-On Mon, May 19, 2014 at 03:13:45PM +0800, Xiubo Li wrote:
-> Since we cannot make sure the 'chip->num_regs' will always be none zero
-> from the users, and then if 'chip->num_regs' equals to zero by mistake
-> or other reasons, the kzalloc() will return ZERO_SIZE_PTR, which equals
-> to ((void *)16).
->=20
-> So this patch fix this with just checking the 'chip->num_regs' before
-> calling kzalloc().
-
-Where is the actual dereference that's being protected against here?
-
-> This also sorts the header files in alphabetical order at the same time.
-
-No, don't do things like this.  It just makes things harder to review.
-
---en/7uzihPWgzh7Vo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTei4xAAoJELSic+t+oim96xYP/0cc1qLl1df8JUABsq/KCEDF
-OzV2KMP5PgvXb3RUKZSznvH+ilvjfv258Ee5yLtVnYokpgySbeqOzfLnJMUfUYrk
-vz4M/9zQz8G9FwJ2RDh/21NqlIqbgDo+lJluLh4ncZJ7Hjq4Bw78wLTzlYw2AIfA
-kD5UHDzjbSzA2ezVjdN+8Ildv/jDIO4xXxRnYzJreeJjI0vMp0YLsBP5KHKat0IK
-k7IG5hVUUcFmhMX5+7F7rGSpLrRuBAf2ulc2zKLpVkpQl+nERaw6XRtNa05veglN
-uJPi5ADm7Pwj2kkhCiQ3viNRAZNlCVQtQnXzK5dqdOchQ1mb1QlJCXEbtBkH1cTF
-euY+4vuRQMLeNDn6QejdUALF1l+iYkTqv8Vw5OjHBqIDNNSp+HnP/LhU2vEGNjKE
-p3QPBa3ILO2QHaAwucg96nx+KyCvsYOVCSPJMJ5yiFjloEzGCU7l9zSMCZwkuM9E
-i0gG+5Sa2XwJYRv3mtjI5v6kOV746Bv4/O7iG0qhn7HZSPd3O7IWPLIAB2sqZGeQ
-Lk5mXQXFKEu3MX+SRK6Pov5hB4uBKXMHwnwYE5l/qWH6EzW6u0hvCvAjoRGyGfaD
-pqhCShtLZ1W6tC/SifKryYypUBelEITtATPnr2dWQ8vmaCb83CDlRmpK6L371RN9
-dcvQOeOw49w8BJoEMw40
-=E5qX
------END PGP SIGNATURE-----
-
---en/7uzihPWgzh7Vo--
+-- 
+Michal Hocko
+SUSE Labs
