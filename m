@@ -1,153 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbaESNNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 09:13:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59554 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaESNNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 09:13:30 -0400
-Date: Mon, 19 May 2014 06:12:57 -0700
-From: tip-bot for Waiman Long <tipbot@zytor.com>
-Message-ID: <tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] x86,locking: Enable qrwlock
-Git-Commit-ID: 19a3e44df0600750c69d6fdffe7cb26eb3c2cfd5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S964773AbaESNNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 09:13:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45118 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932229AbaESNNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 09:13:43 -0400
+Message-ID: <537A037E.8000800@ti.com>
+Date: Mon, 19 May 2014 08:13:34 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Inderpal Singh <inderpal.s@samsung.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <rjw@rjwysocki.net>, <pavel@ucw.cz>, <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] PM / OPP: Implement free_opp_table function
+References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+In-Reply-To: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  19a3e44df0600750c69d6fdffe7cb26eb3c2cfd5
-Gitweb:     http://git.kernel.org/tip/19a3e44df0600750c69d6fdffe7cb26eb3c2cfd5
-Author:     Waiman Long <Waiman.Long@hp.com>
-AuthorDate: Mon, 3 Feb 2014 13:18:57 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 19 May 2014 22:06:01 +0900
+On 05/16/2014 04:09 AM, Inderpal Singh wrote:
+> At the driver unloading time the associated opp table may need
+> to be deleted. Otherwise it amounts to memory leak. The existing
+> OPP library does not have provison to do so.
+> 
+> Hence this patch implements the function to free the opp table.
+> 
+> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+> ---
+>  drivers/base/power/opp.c | 41 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pm_opp.h   |  6 ++++++
+>  2 files changed, 47 insertions(+)
+> 
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index d9e376a..d45ffd5 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -654,4 +654,45 @@ int of_init_opp_table(struct device *dev)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(of_init_opp_table);
+> +
+> +/**
+> + * dev_pm_opp_free_opp_table() - free the opp table
+> + * @dev:	device for which we do this operation
+> + *
+> + * Free up the allocated opp table
+> + *
+> + * Locking: The internal device_opp and opp structures are RCU protected.
+> + * Hence this function internally uses RCU updater strategy with mutex locks to
+> + * keep the integrity of the internal data structures. Callers should ensure
+> + * that this function is *NOT* called under RCU protection or in contexts where
+> + * mutex locking or synchronize_rcu() blocking calls cannot be used.
+> + */
+> +void dev_pm_opp_free_opp_table(struct device *dev)
+> +{
+> +	struct device_opp *dev_opp = NULL;
+> +	struct dev_pm_opp *opp;
+> +
+if (!dev)
+	return;
 
-x86,locking: Enable qrwlock
+> +	/* Hold our list modification lock here */
+> +	mutex_lock(&dev_opp_list_lock);
+> +
+> +	/* Check for existing list for 'dev' */
+> +	dev_opp = find_device_opp(dev);
+> +	if (IS_ERR(dev_opp)) {
+> +		mutex_unlock(&dev_opp_list_lock);
+> +		return;
+> +	}
+> +
+> +	while (!list_empty(&dev_opp->opp_list)) {
+> +		opp = list_entry_rcu(dev_opp->opp_list.next,
+> +					struct dev_pm_opp, node);
+> +		list_del_rcu(&opp->node);
+> +		kfree_rcu(opp, head);
+> +	}
 
-Make x86 use the fair rwlock_t.
+How about the OPP notifiers? should'nt we add a new event
+OPP_EVENT_REMOVE?
 
-Implement the custom queue_write_unlock() for best performance.
+To maintain non-dt behavior coherency, should'nt we rather add a
+opp_remove or an opp_del function?
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-[peterz: near complete rewrite]
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/Kconfig                      |  1 +
- arch/x86/include/asm/paravirt_types.h |  7 +------
- arch/x86/include/asm/qrwlock.h        | 17 +++++++++++++++++
- arch/x86/include/asm/spinlock.h       |  4 ++++
- arch/x86/include/asm/spinlock_types.h |  4 ++++
- 5 files changed, 27 insertions(+), 6 deletions(-)
+> +
+> +	list_del_rcu(&dev_opp->node);
+> +	mutex_unlock(&dev_opp_list_lock);
+> +	synchronize_rcu();
+> +	kfree(dev_opp);
+> +}
+> +EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
+>  #endif
+> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+> index 0330217..3c29620 100644
+> --- a/include/linux/pm_opp.h
+> +++ b/include/linux/pm_opp.h
+> @@ -50,6 +50,8 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
+>  int dev_pm_opp_disable(struct device *dev, unsigned long freq);
+>  
+>  struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
+> +
+> +void dev_pm_opp_free_opp_table(struct device *dev);
+>  #else
+>  static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
+>  {
+> @@ -105,6 +107,10 @@ static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
+>  {
+>  	return ERR_PTR(-EINVAL);
+>  }
+> +
+> +void dev_pm_opp_free_opp_table(struct device *dev)
+> +{
+> +}
+>  #endif		/* CONFIG_PM_OPP */
+>  
+>  #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
+> 
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f..bf7626f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -121,6 +121,7 @@ config X86
- 	select MODULES_USE_ELF_RELA if X86_64
- 	select CLONE_BACKWARDS if X86_32
- 	select ARCH_USE_BUILTIN_BSWAP
-+	select ARCH_USE_QUEUE_RWLOCK
- 	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
- 	select OLD_SIGACTION if X86_32
- 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 7549b8b..3d9c6be 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -326,12 +326,7 @@ struct pv_mmu_ops {
- 			   phys_addr_t phys, pgprot_t flags);
- };
- 
--struct arch_spinlock;
--#ifdef CONFIG_SMP
--#include <asm/spinlock_types.h>
--#else
--typedef u16 __ticket_t;
--#endif
-+#include <linux/spinlock_types.h>
- 
- struct pv_lock_ops {
- 	struct paravirt_callee_save lock_spinning;
-diff --git a/arch/x86/include/asm/qrwlock.h b/arch/x86/include/asm/qrwlock.h
-new file mode 100644
-index 0000000..70f46f0
---- /dev/null
-+++ b/arch/x86/include/asm/qrwlock.h
-@@ -0,0 +1,17 @@
-+#ifndef _ASM_X86_QRWLOCK_H
-+#define _ASM_X86_QRWLOCK_H
-+
-+#include <asm-generic/qrwlock_types.h>
-+
-+#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
-+#define queue_write_unlock queue_write_unlock
-+static inline void queue_write_unlock(struct qrwlock *lock)
-+{
-+        barrier();
-+        ACCESS_ONCE(*(u8 *)&lock->cnts) = 0;
-+}
-+#endif
-+
-+#include <asm-generic/qrwlock.h>
-+
-+#endif /* _ASM_X86_QRWLOCK_H */
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 0f62f54..54f1c80 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -187,6 +187,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- 		cpu_relax();
- }
- 
-+#ifndef CONFIG_QUEUE_RWLOCK
- /*
-  * Read-write spinlocks, allowing multiple readers
-  * but only one writer.
-@@ -269,6 +270,9 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
- 	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
- 		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
- }
-+#else
-+#include <asm/qrwlock.h>
-+#endif /* CONFIG_QUEUE_RWLOCK */
- 
- #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
- #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 4f1bea1..73c4c00 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -34,6 +34,10 @@ typedef struct arch_spinlock {
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
- 
-+#ifdef CONFIG_QUEUE_RWLOCK
-+#include <asm-generic/qrwlock_types.h>
-+#else
- #include <asm/rwlock.h>
-+#endif
- 
- #endif /* _ASM_X86_SPINLOCK_TYPES_H */
+
+-- 
+Regards,
+Nishanth Menon
