@@ -1,138 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaESBrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 21:47:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:53994 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447AbaESBrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 21:47:15 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <537962A0.4090600@lge.com>
-Date: Mon, 19 May 2014 10:47:12 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752480AbaESBzu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 21:55:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:35097 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969AbaESBzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 21:55:49 -0400
+Date: Mon, 19 May 2014 11:55:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Amos Kong <akong@redhat.com>, linux-kernel@vger.kernel.org,
+        "Sasha Levin" <sasha.levin@oracle.com>
+Subject: Re: [PATCH 1/2] virtio-rng: cope if struct hwrng.name is changed to
+ const
+Message-ID: <20140519115541.659bdc03@canb.auug.org.au>
+In-Reply-To: <87zjiek56y.fsf@rustcorp.com.au>
+References: <20140515153140.49b8028b@canb.auug.org.au>
+	<87zjiek56y.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Minchan Kim <minchan.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Laura Abbott <lauraa@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com
-Subject: Re: [RFC][PATCH] CMA: drivers/base/Kconfig: restrict CMA size to
- non-zero value
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <20140513030057.GC32092@bbox> <20140515015301.GA10116@js1304-P5Q-DELUXE> <5375C619.8010501@lge.com> <xa1tppjdfwif.fsf@mina86.com>
-In-Reply-To: <xa1tppjdfwif.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/A4uXY6LnxDq8KnA.G24.E+V"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your advice. I didn't notice it.
+--Sig_/A4uXY6LnxDq8KnA.G24.E+V
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I'm adding followings according to your advice:
+Hi Rusty,
 
-- range restrict for CMA_SIZE_MBYTES and *CMA_SIZE_PERCENTAGE*
-I think this can prevent the wrong kernel option.
-
-- change size_cmdline into default value SZ_16M
-I am not sure this can prevent if cma=0 cmdline option is also with base and limit options.
-
-
-I don't know how to send the second patch.
-Please pardon me that I just copy the patch here.
-
---------------------------------- 8< -------------------------------------
- From c283eaac41b044a2abb11cfd32a60fff034633c3 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Fri, 16 May 2014 16:15:43 +0900
-Subject: [PATCH] drivers/base/Kconfig: restrict CMA size to non-zero value
-
-The size of CMA area must be larger than zero.
-If the size is zero, all physically-contiguous allocation
-can be failed.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.co.kr>
----
-  drivers/base/Kconfig          |   14 ++++++++++++--
-  drivers/base/dma-contiguous.c |    3 ++-
-  2 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 4b7b452..a7292ac 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -222,17 +222,27 @@ config DMA_CMA
-  if  DMA_CMA
-  comment "Default contiguous memory area size:"
-
-+config CMA_SIZE_MBYTES_DEFAULT
-+       int
-+       default 16
-+
-+config CMA_SIZE_MBYTES_MAX
-+       int
-+       default 1024
-+
-  config CMA_SIZE_MBYTES
-         int "Size in Mega Bytes"
-         depends on !CMA_SIZE_SEL_PERCENTAGE
--       default 16
-+       range 1 CMA_SIZE_MBYTES_MAX
-+       default CMA_SIZE_MBYTES_DEFAULT
-         help
-           Defines the size (in MiB) of the default memory area for Contiguous
--         Memory Allocator.
-+         Memory Allocator. This value must be larger than zero.
-
-  config CMA_SIZE_PERCENTAGE
-         int "Percentage of total memory"
-         depends on !CMA_SIZE_SEL_MBYTES
-+       range 1 100
-         default 10
-         help
-           Defines the size of the default memory area for Contiguous Memory
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index b056661..5b70442 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -125,7 +125,8 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
-         pr_debug("%s(limit %08lx)\n", __func__, (unsigned long)limit);
-
-         if (size_cmdline != -1) {
--               selected_size = size_cmdline;
-+               selected_size = ((size_cmdline == 0) ?
-+                                CONFIG_CMA_SIZE_MBYTES_DEFAULT : size_cmdline);
-                 selected_base = base_cmdline;
-                 selected_limit = min_not_zero(limit_cmdline, limit);
-                 if (base_cmdline + size_cmdline == limit_cmdline)
---
-1.7.9.5
-
-
-2014-05-17 오전 2:45, Michal Nazarewicz 쓴 글:
-> On Fri, May 16 2014, Gioh Kim wrote:
->> If CMA_SIZE_MBYTES is allowed to be zero, there should be defense code
->> to check CMA is initlaized correctly. And atomic_pool initialization
->> should be done by __alloc_remap_buffer instead of
->> __alloc_from_contiguous if __alloc_from_contiguous is failed.
+On Mon, 19 May 2014 09:30:53 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
+ote:
 >
-> Agreed, and this is the correct fix.
->
->> IMPO, it is more simple and powerful to restrict CMA_SIZE_MBYTES_MAX
->> configuration to be larger than zero.
->
-> No, because it makes it impossible to have CMA disabled by default and
-> only enabled if command line argument is given.
->
-> Furthermore, your patch does *not* guarantee CMA region to always be
-> allocated.  If CMA_SIZE_SEL_PERCENTAGE is selected for instance.  Or if
-> user explicitly passes 0 on command line.
->
->
->
+> Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  drivers/char/hw_random/virtio-rng.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > Based on the current virtio tree in linux-next.
+>=20
+> Actually, Sasha Levin did a nice cleanup which replaces these two,
+> and restores the const.
+>=20
+> I've applied them, so you should have it in today's linux-next.
+
+Yep, saw that. Thanks.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/A4uXY6LnxDq8KnA.G24.E+V
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTeWShAAoJEMDTa8Ir7ZwV3kUP/AxNImzKXMpHEuBRNPtWNz1L
+lfNAvaisjIW/Vu+aHwZqx0Qp+nwtOG+0ewLUIhSxsYKo3pz59eSA0L0/xKiqSnA7
+oI3hp5bwV6N99aONPaBX/07XI+Jz0R+dnWRtYvXATqOyJ29sJ1r4tIQ8Kd9duBWo
+1QAGD3KhVS9HUdKZWbthvCHOfhuSG2/rvfqKlv/aA1UGi5Z+qrrdw5t/bK61EWNJ
+5sFOVj/YNf+sJnhp2lGvVW/yR4zu7KsNOiW4RY37GsIii/ONcB5yhe62A5h9yoEk
+ur6gOMi6hiY8LNJ9HFTX8LfxCaP5giARUhqBvhT5rxLlI47p8LGGuXl6vmxSzIW8
+zxsw2zUa2+aeQ+5UjKBtuZQOo8iWi2OBB8lU8wfetM+zBfVq5YPhg3blurrMlz4n
+qm2JVXB96ozXCIar6eftXqum7kZx1S1X+D322yt5QqXrrSPOf2XPGBP5eIxqof1z
+javEBAxoPolmwDyeuADyR+5mclSmiuFHlz0TuspNrsvwlbesyOezC1CsCagpSVw/
+OW3o7EVZXcR0iOMeJjC2ceaELI7FR+JQCSPFhMef+41cwcVnOuV7CCdpHLlBkD+7
+i09CFgvrAmulIZKOZKlNj/8OewnhKjlGh2Gp6SiQy1jqq+39xkgUFGe1uh8t804q
+vcLR1VIAVjKrsszQ6KuN
+=g04y
+-----END PGP SIGNATURE-----
+
+--Sig_/A4uXY6LnxDq8KnA.G24.E+V--
