@@ -1,92 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaESL1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:27:18 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:42114 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754188AbaESL1P (ORCPT
+	id S1754287AbaESL2A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 07:28:00 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.111]:60743 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102AbaESL15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:27:15 -0400
-Date: Mon, 19 May 2014 12:27:04 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: kernel 3.14.2 oops: seems related to EFI
-Message-ID: <20140519112704.GG4798@console-pimps.org>
-References: <53777F7B.8060407@gmail.com>
- <20140518134206.GA8040@pd.tnic>
- <5379AE46.3000407@gmail.com>
+	Mon, 19 May 2014 07:27:57 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-5.tower-193.messagelabs.com!1400498869!9506713!2
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 19 May 2014 13:27:52 +0200
+Date: Mon, 19 May 2014 14:20:26 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
+        <johannes.thumshirn@men.de>, <thomas.schnuerer@men.de>,
+        <wernerandy@gmx.de>
+Subject: Re: [PATCH 2/3] drivers/watchdog/menf21bmc_wd: introduce MEN
+ 14F021P00 BMC Watchdog driver
+Message-ID: <20140519122025.GA398@awelinux>
+References: <cover.1400258021.git.andreas.werner@men.de>
+ <15d55a5ab077171a120d70ea83a05634ff06b2d0.1400258021.git.andreas.werner@men.de>
+ <537786E7.3030502@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5379AE46.3000407@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <537786E7.3030502@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May, at 09:09:58AM, Francis Moreau wrote:
-> On 05/18/2014 03:42 PM, Borislav Petkov wrote:
-> > On Sat, May 17, 2014 at 05:25:47PM +0200, Francis Moreau wrote:
-> >> [  +0.018677] general protection fault: 0000 [#1] PREEMPT SMP
-> >> [  +0.000068] Modules linked in: usb_storage tun raid1 md_mod loop fuse
-> >> joydev coretemp hwmon arc4 intel_rapl x86_pkg_temp_thermal
-> >> intel_powerclamp kvm_intel nls_iso8859_1 nls_cp437 iTCO_wdt kvm vfat fat
-> >> iTCO_vendor_support iwldvm uvcvideo led_class crct10dif_pclmul
-> >> crc32_pclmul crc32c_intel ghash_clmulni_intel mac80211 videobuf2_vmalloc
-> >> videobuf2_memops videobuf2_core aesni_intel videodev aes_x86_64
-> >> snd_hda_codec_hdmi lrw gf128mul mousedev glue_helper btusb
-> >> snd_hda_codec_via ablk_helper media cryptd iwlwifi snd_hda_codec_generic
-> >> bluetooth psmouse microcode i2c_i801 serio_raw cfg80211 6lowpan_iphc
-> >> rtsx_pci_ms r8169 memstick rfkill lpc_ich mii snd_hda_intel
-> >> snd_hda_codec thermal snd_hwdep wmi snd_pcm tpm_infineon snd_timer
-> >> tpm_tis mei_me snd tpm mei shpchp evdev soundcore processor battery
-> >> mac_hid ac
-> >> [  +0.000803]  ext4 crc16 mbcache jbd2 hid_generic usbhid hid bcache
-> >> sd_mod sr_mod crc_t10dif cdrom crct10dif_common rtsx_pci_sdmmc mmc_core
-> >> atkbd libps2 ahci libahci ehci_pci libata xhci_hcd ehci_hcd scsi_mod
-> >> rtsx_pci usbcore usb_common i8042 serio i915 video button intel_gtt
-> >> i2c_algo_bit drm_kms_helper drm i2c_core
-> >> [  +0.000328] CPU: 0 PID: 30835 Comm: systemd-udevd Not tainted
-> >> 3.14.2-1-ARCH #1
-> >> [  +0.000064] Hardware name: CLEVO CO.                        W55xEU
-> >>                       /W55xEU                          , BIOS 4.6.5
-> >> 03/05/2013
-> >> [  +0.000102] task: ffff880405ee6bf0 ti: ffff880400f4a000 task.ti:
-> >> ffff880400f4a000
-> >> [  +0.000060] RIP: 0010:[<ffffffff810655af>]  [<ffffffff810655af>]
-> >> efi_call5+0x6f/0xf0
-> >> [  +0.000071] RSP: 0018:ffff880400f4bdb0  EFLAGS: 00010002
-> >> [  +0.000045] RAX: 0000000080050033 RBX: ffff8804040e3000 RCX:
-> >> ffff8804040e3000
-> >> [  +0.000055] RDX: ffff8804040e3400 RSI: ffff8804040e3000 RDI:
-> >> bff7fffff7afffff
-> > 
-> > So you get a #GP while executing call *rdi and %rdi is supposed to
-> > contain ->get_variable. But instead it contains some very funky shit:
-> > 
-> > 0xbff7fffff7afffff
-> > 
-> > Who made it contain that nuisance of a pointer which thinks it is
-> > ->get_variable, huh? If only I could get my hands on that guy! :-P
-> > 
-> > Ok, seriously, how reproducible is this?
+aOn Sat, May 17, 2014 at 08:57:27AM -0700, Guenter Roeck wrote:
+> On 05/16/2014 09:37 AM, Andreas Werner wrote:
+> >Added driver to support the 14F021P00 BMC Watchdog.
+> >The BMC is a Board Management Controller including watchdog functionality.
+> >
+> >This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
+> >
+> >Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> >---
+> >  drivers/watchdog/Kconfig        |   7 ++
+> >  drivers/watchdog/Makefile       |   1 +
+> >  drivers/watchdog/menf21bmc_wd.c | 263 ++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 271 insertions(+)
+> >  create mode 100644 drivers/watchdog/menf21bmc_wd.c
+> >
+> >diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> >index 2b4c1fc..ede3201 100644
+> >--- a/drivers/watchdog/Kconfig
+> >+++ b/drivers/watchdog/Kconfig
+> >@@ -95,6 +95,13 @@ config GPIO_WATCHDOG
+> >  	  If you say yes here you get support for watchdog device
+> >  	  controlled through GPIO-line.
+> >
+> >+config MENF21BMC_WATCHDOG
+> >+	tristate "MEN 14F021P00 BMC Watchdog"
+> >+	depends on MFD_MENF21BMC
+> >+	select WATCHDOG_CORE
+> >+	help
+> >+	  Say Y here to include support for the MEN 14F021P00 BMC Watchdog.
+> >+
+> >  config WM831X_WATCHDOG
+> >  	tristate "WM831x watchdog"
+> >  	depends on MFD_WM831X
+> >diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> >index 1b5f3d5..0a5465d 100644
+> >--- a/drivers/watchdog/Makefile
+> >+++ b/drivers/watchdog/Makefile
+> >@@ -178,3 +178,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
+> >  obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
+> >  obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
+> >  obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
+> >+obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wd.o
+> >diff --git a/drivers/watchdog/menf21bmc_wd.c b/drivers/watchdog/menf21bmc_wd.c
+> >new file mode 100644
+> >index 0000000..31ccea8
+> >--- /dev/null
+> >+++ b/drivers/watchdog/menf21bmc_wd.c
+> >@@ -0,0 +1,263 @@
+> >+/*
+> >+ *  MEN 14F021P00 Board Management Controller (BMC) Watchdog Driver.
+> >+ *
+> >+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> >+ *  Author: Andreas Werner <andreas.werner@men.de>
+> >+ *  All rights reserved.
+> >+ *
+> >+ *  This program is free software; you can redistribute  it and/or modify it
+> >+ *  under  the terms of  the GNU General  Public License as published by the
+> >+ *  Free Software Foundation;  either version 2 of the  License, or (at your
+> >+ *  option) any later version.
+> >+ *
+> >+ */
+> >+
+> >+#include <linux/kernel.h>
+> >+#include <linux/device.h>
+> >+#include <linux/module.h>
+> >+#include <linux/watchdog.h>
+> >+#include <linux/platform_device.h>
+> >+#include <linux/mfd/menf21bmc.h>
+> >+
+> >+#define DEVNAME "menf21bmc_wd"
+> >+
+> >+#define BMC_CMD_WD_ON		0x11
+> >+#define BMC_CMD_WD_OFF		0x12
+> >+#define BMC_CMD_WD_TRIG		0x13
+> >+#define BMC_CMD_WD_TIME		0x14
+> >+#define BMC_CMD_WD_STATE	0x17
+> >+#define BMC_CMD_WD_ARM_SET	0x18
+> >+#define BMC_CMD_WD_ARM_GET	0x19
+> >+#define BMC_CMD_ARM_STATE	0x19
+> >+#define BMC_WD_OFF_VAL		0x69
+> >+#define BMC_CMD_RST_RSN		0x92
+> >+
+> >+#define BMC_WD_TIMEOUT_MIN	1	/*  in sec -> BMC min = 0.1 s */
 > 
-> I don't really know how to reproduce this, I only can say that it
-> usually happens while partitioning the loop device or perhaps when the
-> kernel reads the partition table afterwards.
- 
-It looks like it's oopsing as a result of systemd-udevd trying to
-read a variable via the efivarfs mount,
+> I find the comment a bit confusing. The timeout is in seconds. The BMC minimum
+> timeout may be 0.1s, but that is not reflected in the define. Maybe replace
+> the comment with something like
+> 					/* in sec (BMC min = 0.1 s) */
 
- Call Trace:
-  [<ffffffff81064901>] ? virt_efi_get_variable+0x51/0x80
-  [<ffffffff813dbb71>] efivar_entry_size+0x41/0x80
-  [<ffffffff81245659>] efivarfs_file_read+0x49/0x100
-  [<ffffffff811ba797>] vfs_read+0x97/0x160
-  [<ffffffff811bb2e9>] SyS_read+0x59/0xd0
-  [<ffffffff81517629>] system_call_fastpath+0x16/0x1b
+OK. I think I just write /* in sec */ as the comment because
+it is explained in menf21bmc_wd_settimout() function.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> 
+> >+#define BMC_WD_TIMEOUT_MAX	6553	/*  in sec -> BMC max = 6553,5 s */
+> >+
+> >+static bool nowayout = WATCHDOG_NOWAYOUT;
+> >+module_param(nowayout, bool, 0);
+> >+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> >+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> >+
+> >+struct menf21bmc_wd_data {
+> >+	struct watchdog_device wdt;
+> >+	struct menf21bmc *menf21bmc;
+> >+};
+> >+
+> >+static int menf21bmc_wd_set_bootstatus(struct menf21bmc_wd_data *data)
+> >+{
+> >+	u8 rst_rsn;
+> >+	int ret;
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	ret = menf21bmc->read_byte_data(menf21bmc->client,
+> >+						BMC_CMD_RST_RSN, &rst_rsn);
+> >+	if (ret < 0)
+> >+		return -EIO;
+> >+
+> Please return the original error.
+I agree, will be changed.
+> 
+> >+	if (rst_rsn == 0x02)
+> >+		data->wdt.bootstatus |= WDIOF_CARDRESET;
+> >+	else if (rst_rsn == 0x05)
+> >+		data->wdt.bootstatus |= WDIOF_EXTERN1;
+> >+	else if (rst_rsn == 0x06)
+> >+		data->wdt.bootstatus |= WDIOF_EXTERN2;
+> >+	else if (rst_rsn == 0x0A)
+> >+		data->wdt.bootstatus |= WDIOF_POWERUNDER;
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static int menf21bmc_wd_leave_prod_mode(struct platform_device *pdev)
+> >+{
+> >+	int ret;
+> >+	uint8_t val;
+> >+	struct menf21bmc_wd_data *data = platform_get_drvdata(pdev);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	ret = menf21bmc->read_byte_data(menf21bmc->client,
+> >+						BMC_CMD_WD_ARM_GET, &val);
+> >+	if (ret < 0)
+> >+		return -EIO;
+> >+
+> Please return the original error.
+
+I agree, will be changed.
+
+> 
+> >+	/*
+> >+	 * Production mode should be not active after delivery of the Board.
+> >+	 * To be sure we check it, inform the user and leave the mode
+> >+	 * if active.
+> >+	 */
+> >+	if (val == 0x00) {
+> >+		dev_info(&pdev->dev,
+> >+			"BMC in production mode. Leave production mode\n");
+> >+
+> >+		ret = menf21bmc->write_byte(menf21bmc->client,
+> >+							BMC_CMD_WD_ARM_SET);
+> >+		if (ret < 0)
+> >+			return -EIO;
+> 
+> Please return the original error.
+
+I agree, will be changed.
+
+> 
+> >+	}
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static int menf21bmc_wd_start(struct watchdog_device *wdt)
+> >+{
+> >+	struct menf21bmc_wd_data *data = watchdog_get_drvdata(wdt);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	return menf21bmc->write_byte(menf21bmc->client, BMC_CMD_WD_ON);
+> >+}
+> >+
+> >+static int menf21bmc_wd_stop(struct watchdog_device *wdt)
+> >+{
+> >+	struct menf21bmc_wd_data *data = watchdog_get_drvdata(wdt);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	return menf21bmc->write_byte_data(menf21bmc->client,
+> >+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
+> >+}
+> >+
+> >+static int
+> >+menf21bmc_wd_settimeout(struct watchdog_device *wdt, unsigned int timeout)
+> >+{
+> >+	int ret;
+> >+	struct menf21bmc_wd_data *data = watchdog_get_drvdata(wdt);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	/*
+> >+	 *  BMC Watchdog does have a resolution of 100ms.
+> >+	 *  Watchdog API defines the timeout in seconds, so we have to
+> >+	 *  multiply the value.
+> >+	 */
+> >+	ret = menf21bmc->write_word_data(menf21bmc->client,
+> >+						BMC_CMD_WD_TIME, timeout * 10);
+> >+	if (ret < 0)
+> >+		return -EIO;
+> >+
+> Please return the original error.
+
+I agree, will be changed.
+
+> 
+> >+	wdt->timeout = timeout;
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static int menf21bmc_wd_ping(struct watchdog_device *wdt)
+> >+{
+> >+	struct menf21bmc_wd_data *data = watchdog_get_drvdata(wdt);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	return menf21bmc->write_byte(menf21bmc->client, BMC_CMD_WD_TRIG);
+> >+}
+> >+
+> >+static const struct watchdog_info menf21bmc_wd_info = {
+> >+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
+> >+	.identity = DEVNAME,
+> >+};
+> >+
+> >+static const struct watchdog_ops menf21bmc_wd_ops = {
+> >+	.owner		= THIS_MODULE,
+> >+	.start		= menf21bmc_wd_start,
+> >+	.stop		= menf21bmc_wd_stop,
+> >+	.ping		= menf21bmc_wd_ping,
+> >+	.set_timeout	= menf21bmc_wd_settimeout,
+> >+};
+> >+
+> >+static int menf21bmc_wd_probe(struct platform_device *pdev)
+> >+{
+> >+	int ret;
+> >+	uint16_t bmc_timeout;
+> >+	struct menf21bmc_wd_data *driver_data;
+> >+	struct watchdog_device *menf21bmc_wd;
+> >+	struct menf21bmc *menf21bmc = dev_get_drvdata(pdev->dev.parent);
+> >+
+> >+	driver_data = devm_kzalloc(&pdev->dev,
+> >+				sizeof(struct menf21bmc_wd_data), GFP_KERNEL);
+> >+	if (!driver_data)
+> >+		return -ENOMEM;
+> >+
+> >+	driver_data->menf21bmc = menf21bmc;
+> >+
+> >+	menf21bmc_wd = &driver_data->wdt;
+> >+	menf21bmc_wd->ops = &menf21bmc_wd_ops;
+> >+	menf21bmc_wd->info = &menf21bmc_wd_info;
+> >+	menf21bmc_wd->min_timeout = BMC_WD_TIMEOUT_MIN;
+> >+	menf21bmc_wd->max_timeout = BMC_WD_TIMEOUT_MAX;
+> >+
+> >+
+> Please no more than one empty line.
+
+arg, i thought I've catched them all but missed one.
+
+> 
+> >+	/*
+> >+	 * Get the current wdt timeout value from the BMC because
+> >+	 * the BMC will save the value set before if the system restarts.
+> >+	 */
+> >+	ret = menf21bmc->read_word_data(menf21bmc->client,
+> >+					 BMC_CMD_WD_TIME, &bmc_timeout);
+> >+	if (ret < 0) {
+> >+		dev_err(&pdev->dev, "failed to get current WDT timeout\n");
+> >+		return ret;
+> >+	}
+> >+
+> >+	watchdog_init_timeout(menf21bmc_wd, bmc_timeout / 10, &pdev->dev);
+> >+
+> >+	watchdog_set_nowayout(menf21bmc_wd, nowayout);
+> >+	watchdog_set_drvdata(menf21bmc_wd, driver_data);
+> >+	platform_set_drvdata(pdev, driver_data);
+> >+
+> >+	/*
+> >+	 * We have to leave the Production Mode of the BMC to activate the
+> >+	 * Watchdog functionality.
+> >+	 */
+> >+	ret = menf21bmc_wd_leave_prod_mode(pdev);
+> >+	if (ret < 0) {
+> >+		dev_err(&pdev->dev, "failed to leave production mode\n");
+> >+		return ret;
+> >+	}
+> >+
+> Shouldn't this be in the mfd code ?
+
+Yes and no :-)
+The Production mode needs to be left just to activate the watchdog. That is the
+reason why I've put these code inside of the watchdog driver.
+
+The other thing is, that we leave the prodcution which is related to the whole BMC,
+so may be it is really better to put this in the mfd core.
+
+I think I will put it in the mfd core.
+
+> 
+> 
+> >+	ret = menf21bmc_wd_set_bootstatus(driver_data);
+> >+	if (ret < 0) {
+> >+		dev_err(&pdev->dev, "failed to set Watchdog bootstatus\n");
+> >+		return ret;
+> >+	}
+> >+
+> >+	ret = watchdog_register_device(&driver_data->wdt);
+> >+	if (ret) {
+> >+		dev_err(&pdev->dev, "failed to register Watchdog device\n");
+> >+		return ret;
+> >+	}
+> >+
+> >+	dev_info(&pdev->dev, "MEN 14F021P00 BMC Watchdog device enabled\n");
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static int menf21bmc_wd_remove(struct platform_device *pdev)
+> >+{
+> >+	struct menf21bmc_wd_data *data = platform_get_drvdata(pdev);
+> >+
+> >+	dev_warn(&pdev->dev,
+> >+		"Untregister MEN 14F021P00 BMC Watchdog device, board may reset\n");
+> >+
+> >+	watchdog_unregister_device(&data->wdt);
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static void menf21bmc_wd_shutdown(struct platform_device *pdev)
+> >+{
+> >+	struct menf21bmc_wd_data *data = platform_get_drvdata(pdev);
+> >+	struct menf21bmc *menf21bmc = data->menf21bmc;
+> >+
+> >+	menf21bmc->write_word_data(menf21bmc->client,
+> >+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
+> >+}
+> >+
+> >+static struct  platform_driver menf21bmc_wd = {
+> >+	.driver		= {
+> >+		.owner = THIS_MODULE,
+> >+		.name	= DEVNAME,
+> >+	},
+> >+	.probe		= menf21bmc_wd_probe,
+> >+	.remove		= menf21bmc_wd_remove,
+> >+	.shutdown	= menf21bmc_wd_shutdown,
+> >+};
+> >+
+> >+module_platform_driver(menf21bmc_wd);
+> >+
+> >+MODULE_DESCRIPTION("MEN 14F021P00 BMC Watchdog driver");
+> >+MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
+> >+MODULE_LICENSE("GPL");
+> >+MODULE_ALIAS("platform:menf21bmc_wd");
+> >
+> 
