@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaESVQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:16:37 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43019 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaESVQf (ORCPT
+	id S1751662AbaESVSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:18:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49618 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaESVSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:16:35 -0400
-Message-ID: <537A74B0.604@wwwdotorg.org>
-Date: Mon, 19 May 2014 15:16:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com, Thierry Reding <treding@nvidia.com>
-Subject: Re: [PATCH 3/5] ARM: tegra: add GK20A GPU to Tegra124 DT
-References: <1400491450-19223-1-git-send-email-acourbot@nvidia.com> <1400491450-19223-4-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1400491450-19223-4-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 May 2014 17:18:00 -0400
+Date: Mon, 19 May 2014 14:17:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the akpm tree
+Message-Id: <20140519141758.37af77506f42b0e11a0b1bae@linux-foundation.org>
+In-Reply-To: <1400532980.6399.0.camel@buesod1.americas.hpqcorp.net>
+References: <20140519181314.1b92c548@canb.auug.org.au>
+	<1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
+	<20140519124850.7d4470e179c237552f363658@linux-foundation.org>
+	<1400532980.6399.0.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 03:24 AM, Alexandre Courbot wrote:
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> Add the GK20A device node to Tegra124's device tree.
+On Mon, 19 May 2014 13:56:20 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-At a quick glance, patches 3-5 look fine too. I'll hold off on applying
-them until patches 1-2 have been applied to the DRM/... tree.
+> On Mon, 2014-05-19 at 12:48 -0700, Andrew Morton wrote:
+> > On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > 
+> > > > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
+> > > > spinning").
+> > > 
+> > > If CONFIG_SMP, we add two new fields to the rwsem structure
+> > > (include/linux/rwsem.h) and likewise we update the
+> > > __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
+> > > something like that is to be using the spinlock variant
+> > > (rwsem-spinlock.h).
+> > > 
+> > > The fix for that would be:
+> > > 
+> > > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> > > index 3e108f1..091d993 100644
+> > > --- a/include/linux/rwsem.h
+> > > +++ b/include/linux/rwsem.h
+> > > @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+> > >  # define __RWSEM_DEP_MAP_INIT(lockname)
+> > >  #endif
+> > >  
+> > > -#ifdef CONFIG_SMP
+> > > +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
+> > >  #define __RWSEM_INITIALIZER(name)                      \
+> > >         { RWSEM_UNLOCKED_VALUE,                         \
+> > >           __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),     \
+> > 
+> > that squishes the warnings for me.
+> 
+> You guys know best, but shouldn't this change be routed through -tip?
+
+Yes, this patch and the two fixes I have applied to it should be sent
+that way.  If/when they turn up in -next I will drop my copies.
+
+Keep sending ;)
