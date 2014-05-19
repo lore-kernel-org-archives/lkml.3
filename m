@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaESUn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 16:43:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54977 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751145AbaESUnY (ORCPT
+	id S1752578AbaESUrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 16:47:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42408 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaESUrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 16:43:24 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 resend 02/11] ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup members
-Date: Mon, 19 May 2014 22:42:33 +0200
-Message-Id: <1400532162-29483-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 19 May 2014 16:47:45 -0400
+Date: Mon, 19 May 2014 22:46:57 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: david.vrabel@citrix.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, jeremy@goop.org,
+        matt.fleming@intel.com, x86@kernel.org, tglx@linutronix.de,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        konrad.wilk@oracle.com, eshelton@pobox.com, mingo@redhat.com,
+        mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH v4 1/5] efi: Introduce EFI_DIRECT flag
+Message-ID: <20140519204657.GB3529@olila.local.net-space.pl>
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
+ <1400272904-31121-2-git-send-email-daniel.kiper@oracle.com>
+ <537A23A50200007800013A7F@mail.emea.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537A23A50200007800013A7F@mail.emea.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initializing all the struc pwm_lookup members allows to get rid of the struct
-tpu_pwm_platform_data as the polarity initialization will be taken care of by
-the PWM core.
+On Mon, May 19, 2014 at 02:30:45PM +0100, Jan Beulich wrote:
+> >>> On 16.05.14 at 22:41, <daniel.kiper@oracle.com> wrote:
+> > @@ -457,6 +460,21 @@ void __init efi_free_boot_services(void)
+> >  	efi_unmap_memmap();
+> >  }
+> >
+> > +static void __init __iomem *efi_early_ioremap(resource_size_t phys_addr,
+> > +							unsigned long size)
+> > +{
+> > +	if (efi_enabled(EFI_DIRECT))
+> > +		return early_ioremap(phys_addr, size);
+> > +
+> > +	return (__force void __iomem *)phys_addr;
+>
+> Now that surely needs some explanation: I can't see how this can
+> ever be correct, Xen or not being completely irrelevant.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Simon Horman <horms@verge.net.au>
----
- arch/arm/mach-shmobile/board-armadillo800eva.c | 20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+I hope that efi_enabled(EFI_DIRECT) is obvious. However, in case of
+!efi_enabled(EFI_DIRECT) some structures are created artificially
+and they live in virtual address space. So that is why they should
+not be mapped. If you wish I could add relevant comment here.
 
-diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
-index 2858f380beae..1bf61dad9a35 100644
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -31,7 +31,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/regulator/driver.h>
- #include <linux/pinctrl/machine.h>
--#include <linux/platform_data/pwm-renesas-tpu.h>
-+#include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/gpio-regulator.h>
-@@ -399,24 +399,22 @@ static struct resource pwm_resources[] = {
- 	},
- };
- 
--static struct tpu_pwm_platform_data pwm_device_data = {
--	.channels[2] = {
--		.polarity = PWM_POLARITY_INVERSED,
--	}
--};
--
- static struct platform_device pwm_device = {
- 	.name = "renesas-tpu-pwm",
- 	.id = -1,
--	.dev = {
--		.platform_data = &pwm_device_data,
--	},
- 	.num_resources = ARRAY_SIZE(pwm_resources),
- 	.resource = pwm_resources,
- };
- 
- static struct pwm_lookup pwm_lookup[] = {
--	PWM_LOOKUP("renesas-tpu-pwm", 2, "pwm-backlight.0", NULL),
-+	{
-+		.provider = "renesas-tpu-pwm",
-+		.index = 2,
-+		.dev_id = "pwm-backlight.0",
-+		.con_id = NULL,
-+		.period = 33333,
-+		.polarity = PWM_POLARITY_INVERSED,
-+	},
- };
- 
- /* LCDC and backlight */
--- 
-1.9.1
-
+Daniel
