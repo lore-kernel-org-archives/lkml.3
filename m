@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaESTLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:11:45 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:33274 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaESTLn (ORCPT
+	id S932548AbaESTLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:11:55 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46667 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932395AbaESTLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 15:11:43 -0400
+	Mon, 19 May 2014 15:11:49 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org, joe@perches.com,
         auttamchandani@logicube.com, stern@rowland.harvard.edu
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 1/5] usb: gadget: net2280: Refactor queues_show
-Date: Mon, 19 May 2014 21:11:29 +0200
-Message-Id: <1400526693-29776-2-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 4/5] usb: gadget: net2280: Code Cleanup
+Date: Mon, 19 May 2014 21:11:32 +0200
+Message-Id: <1400526693-29776-5-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1400526693-29776-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1400526693-29776-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -22,34 +22,367 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a long and ugly expresion with an already available function.
+Move logical continuations to end of line
 
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/usb/gadget/net2280.c | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/usb/gadget/net2280.c | 145 +++++++++++++++++++++----------------------
+ drivers/usb/gadget/net2280.h |   4 +-
+ 2 files changed, 73 insertions(+), 76 deletions(-)
 
 diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-index bd851de..c3205ec 100644
+index 35527d0..e67ae96 100644
 --- a/drivers/usb/gadget/net2280.c
 +++ b/drivers/usb/gadget/net2280.c
-@@ -1777,15 +1777,7 @@ static ssize_t queues_show(struct device *_dev, struct device_attribute *attr,
- 				"\n%s (ep%d%s-%s) max %04x %s fifo %d\n",
- 				ep->ep.name, t & USB_ENDPOINT_NUMBER_MASK,
- 				(t & USB_DIR_IN) ? "in" : "out",
--				({ char *val;
--				 switch (d->bmAttributes & 0x03) {
--				 case USB_ENDPOINT_XFER_BULK:
--					val = "bulk"; break;
--				 case USB_ENDPOINT_XFER_INT:
--					val = "intr"; break;
--				 default:
--					val = "iso"; break;
--				 } val; }),
-+				type_string(d->bmAttributes),
- 				usb_endpoint_maxp (d) & 0x1fff,
- 				ep->dma ? "dma" : "pio", ep->fifo_size
- 				);
+@@ -169,8 +169,8 @@ static int net2280_enable(struct usb_ep *_ep,
+ 	static const u32 ep_key[9] = { 1, 0, 1, 0, 1, 1, 0, 1, 0 };
+ 
+ 	ep = container_of(_ep, struct net2280_ep, ep);
+-	if (!_ep || !desc || ep->desc || _ep->name == ep0name
+-			|| desc->bDescriptorType != USB_DT_ENDPOINT)
++	if (!_ep || !desc || ep->desc || _ep->name == ep0name ||
++			desc->bDescriptorType != USB_DT_ENDPOINT)
+ 		return -EINVAL;
+ 	dev = ep->dev;
+ 	if (!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN)
+@@ -220,9 +220,9 @@ static int net2280_enable(struct usb_ep *_ep,
+ 	tmp = (desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK);
+ 	if (tmp == USB_ENDPOINT_XFER_INT) {
+ 		/* erratum 0105 workaround prevents hs NYET */
+-		if (dev->chiprev == 0100
+-				&& dev->gadget.speed == USB_SPEED_HIGH
+-				&& !(desc->bEndpointAddress & USB_DIR_IN))
++		if (dev->chiprev == 0100 &&
++				dev->gadget.speed == USB_SPEED_HIGH &&
++				!(desc->bEndpointAddress & USB_DIR_IN))
+ 			writel(BIT(CLEAR_NAK_OUT_PACKETS_MODE),
+ 				&ep->regs->ep_rsp);
+ 	} else if (tmp == USB_ENDPOINT_XFER_BULK) {
+@@ -402,8 +402,8 @@ static void ep_reset_228x(struct net2280_regs __iomem *regs,
+ 		BIT(DATA_PACKET_RECEIVED_INTERRUPT) |
+ 		BIT(DATA_PACKET_TRANSMITTED_INTERRUPT) |
+ 		BIT(DATA_OUT_PING_TOKEN_INTERRUPT) |
+-		BIT(DATA_IN_TOKEN_INTERRUPT)
+-		, &ep->regs->ep_stat);
++		BIT(DATA_IN_TOKEN_INTERRUPT),
++		&ep->regs->ep_stat);
+ 
+ 	/* fifo size is handled separately */
+ }
+@@ -425,9 +425,9 @@ static void ep_reset_338x(struct net2280_regs __iomem *regs,
+ 		writel(BIT(DMA_ABORT_DONE_INTERRUPT) |
+ 		       BIT(DMA_PAUSE_DONE_INTERRUPT) |
+ 		       BIT(DMA_SCATTER_GATHER_DONE_INTERRUPT) |
+-		       BIT(DMA_TRANSACTION_DONE_INTERRUPT)
+-		       /* | BIT(DMA_ABORT) */
+-		       , &ep->dma->dmastat);
++		       BIT(DMA_TRANSACTION_DONE_INTERRUPT),
++		       /* | BIT(DMA_ABORT), */
++		       &ep->dma->dmastat);
+ 
+ 		dmastat = readl(&ep->dma->dmastat);
+ 		if (dmastat == 0x5002) {
+@@ -618,15 +618,15 @@ static void out_flush(struct net2280_ep *ep)
+ 
+ 	statp = &ep->regs->ep_stat;
+ 	writel(BIT(DATA_OUT_PING_TOKEN_INTERRUPT) |
+-		BIT(DATA_PACKET_RECEIVED_INTERRUPT)
+-		, statp);
++		BIT(DATA_PACKET_RECEIVED_INTERRUPT),
++		statp);
+ 	writel(BIT(FIFO_FLUSH), statp);
+ 	/* Make sure stap is written before readded back */
+ 	mb();
+ 	tmp = readl(statp);
+-	if (tmp & BIT(DATA_OUT_PING_TOKEN_INTERRUPT)
++	if (tmp & BIT(DATA_OUT_PING_TOKEN_INTERRUPT) &&
+ 			/* high speed did bulk NYET; fifo isn't filling */
+-			&& ep->dev->gadget.speed == USB_SPEED_FULL) {
++			ep->dev->gadget.speed == USB_SPEED_FULL) {
+ 		unsigned	usec;
+ 
+ 		usec = 50;		/* 64 byte bulk/interrupt */
+@@ -653,8 +653,8 @@ static int read_fifo(struct net2280_ep *ep, struct net2280_request *req)
+ 	/* erratum 0106 ... packets coming in during fifo reads might
+ 	 * be incompletely rejected.  not all cases have workarounds.
+ 	 */
+-	if (ep->dev->chiprev == 0x0100
+-			&& ep->dev->gadget.speed == USB_SPEED_FULL) {
++	if (ep->dev->chiprev == 0x0100 &&
++			ep->dev->gadget.speed == USB_SPEED_FULL) {
+ 		udelay(1);
+ 		tmp = readl(&ep->regs->ep_stat);
+ 		if ((tmp & BIT(NAK_OUT_PACKETS)))
+@@ -726,8 +726,8 @@ static int read_fifo(struct net2280_ep *ep, struct net2280_request *req)
+ 		(void) readl(&ep->regs->ep_rsp);
+ 	}
+ 
+-	return is_short || ((req->req.actual == req->req.length)
+-				&& !req->req.zero);
++	return is_short || ((req->req.actual == req->req.length) &&
++				!req->req.zero);
+ }
+ 
+ /* fill out dma descriptor to match a given request */
+@@ -744,8 +744,8 @@ static void fill_dma_desc(struct net2280_ep *ep,
+ 	 */
+ 	if (ep->is_in)
+ 		dmacount |= BIT(DMA_DIRECTION);
+-	if ((!ep->is_in && (dmacount % ep->ep.maxpacket) != 0)
+-			|| ep->dev->pdev->device != 0x2280)
++	if ((!ep->is_in && (dmacount % ep->ep.maxpacket) != 0) ||
++					ep->dev->pdev->device != 0x2280)
+ 		dmacount |= BIT(END_OF_CHAIN);
+ 
+ 	req->valid = valid;
+@@ -836,8 +836,8 @@ static void start_dma(struct net2280_ep *ep, struct net2280_request *req)
+ 
+ 			/* dma irq, faking scatterlist status */
+ 			req->td->dmacount = cpu_to_le32(req->req.length - tmp);
+-			writel(BIT(DMA_DONE_INTERRUPT_ENABLE)
+-				| tmp, &dma->dmacount);
++			writel(BIT(DMA_DONE_INTERRUPT_ENABLE) | tmp,
++							&dma->dmacount);
+ 			req->td->dmadesc = 0;
+ 			req->valid = 1;
+ 
+@@ -1119,8 +1119,8 @@ static void scan_dma_completions(struct net2280_ep *ep)
+ 			/* single transfer mode */
+ 			dma_done(ep, req, tmp, 0);
+ 			break;
+-		} else if (!ep->is_in
+-				&& (req->req.length % ep->ep.maxpacket) != 0) {
++		} else if (!ep->is_in &&
++				(req->req.length % ep->ep.maxpacket) != 0) {
+ 			tmp = readl(&ep->regs->ep_stat);
+ 			if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX)
+ 				return dma_done(ep, req, tmp, 0);
+@@ -1316,8 +1316,8 @@ static int net2280_dequeue(struct usb_ep *_ep, struct usb_request *_req)
+ 			writel(le32_to_cpu(req->td->dmadesc),
+ 				&ep->dma->dmadesc);
+ 			if (req->td->dmacount & dma_done_ie)
+-				writel(readl(&ep->dma->dmacount)
+-						| le32_to_cpu(dma_done_ie),
++				writel(readl(&ep->dma->dmacount) |
++						le32_to_cpu(dma_done_ie),
+ 					&ep->dma->dmacount);
+ 		} else {
+ 			struct net2280_request	*prev;
+@@ -2254,8 +2254,8 @@ static void ep0_start_228x(struct net2280 *dev)
+ {
+ 	writel(BIT(CLEAR_EP_HIDE_STATUS_PHASE) |
+ 		BIT(CLEAR_NAK_OUT_PACKETS) |
+-		BIT(CLEAR_CONTROL_STATUS_PHASE_HANDSHAKE)
+-		, &dev->epregs[0].ep_rsp);
++		BIT(CLEAR_CONTROL_STATUS_PHASE_HANDSHAKE),
++		&dev->epregs[0].ep_rsp);
+ 
+ 	/*
+ 	 * hardware optionally handles a bunch of standard requests
+@@ -2267,8 +2267,8 @@ static void ep0_start_228x(struct net2280 *dev)
+ 		BIT(SET_ADDRESS) |
+ 		BIT(DEVICE_SET_CLEAR_DEVICE_REMOTE_WAKEUP) |
+ 		BIT(GET_DEVICE_STATUS) |
+-		BIT(GET_INTERFACE_STATUS)
+-		, &dev->usb->stdrsp);
++		BIT(GET_INTERFACE_STATUS),
++		&dev->usb->stdrsp);
+ 	writel(BIT(USB_ROOT_PORT_WAKEUP_ENABLE) |
+ 		BIT(SELF_POWERED_USB_DEVICE) |
+ 		BIT(REMOTE_WAKEUP_SUPPORT) |
+@@ -2329,8 +2329,8 @@ static void ep0_start_338x(struct net2280 *dev)
+ 
+ 	/* enable irqs so we can see ep0 and general operation  */
+ 	writel(BIT(SETUP_PACKET_INTERRUPT_ENABLE) |
+-	       BIT(ENDPOINT_0_INTERRUPT_ENABLE)
+-	       , &dev->regs->pciirqenb0);
++	       BIT(ENDPOINT_0_INTERRUPT_ENABLE),
++	       &dev->regs->pciirqenb0);
+ 	writel(BIT(PCI_INTERRUPT_ENABLE) |
+ 	       BIT(ROOT_PORT_RESET_INTERRUPT_ENABLE) |
+ 	       BIT(SUSPEND_REQUEST_CHANGE_INTERRUPT_ENABLE) |
+@@ -2365,8 +2365,8 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 	 * (dev->usb->xcvrdiag & FORCE_FULL_SPEED_MODE)
+ 	 * "must not be used in normal operation"
+ 	 */
+-	if (!driver || driver->max_speed < USB_SPEED_HIGH
+-			|| !driver->setup)
++	if (!driver || driver->max_speed < USB_SPEED_HIGH ||
++						!driver->setup)
+ 		return -EINVAL;
+ 
+ 	dev = container_of(_gadget, struct net2280, gadget);
+@@ -2541,10 +2541,10 @@ static void handle_ep_small(struct net2280_ep *ep)
+ 				}
+ 				mode = 2;
+ 			/* an extra OUT token is an error */
+-			} else if (((t & BIT(DATA_OUT_PING_TOKEN_INTERRUPT))
+-					&& req
+-					&& req->req.actual == req->req.length)
+-					|| (ep->responded && !req)) {
++			} else if (((t & BIT(DATA_OUT_PING_TOKEN_INTERRUPT)) &&
++					req &&
++					req->req.actual == req->req.length) ||
++					(ep->responded && !req)) {
+ 				ep->dev->protocol_stall = 1;
+ 				set_halt(ep);
+ 				ep->stopped = 1;
+@@ -2575,8 +2575,8 @@ static void handle_ep_small(struct net2280_ep *ep)
+ 				 * dma handles (M >= N), may empty the queue
+ 				 */
+ 				scan_dma_completions(ep);
+-				if (unlikely(list_empty(&ep->queue)
+-						|| ep->out_overflow)) {
++				if (unlikely(list_empty(&ep->queue) ||
++							ep->out_overflow)) {
+ 					req = NULL;
+ 					break;
+ 				}
+@@ -2610,10 +2610,10 @@ static void handle_ep_small(struct net2280_ep *ep)
+ 			}
+ 
+ 			/* also flush to prevent erratum 0106 trouble */
+-			if (unlikely(ep->out_overflow
+-					|| (ep->dev->chiprev == 0x0100
+-						&& ep->dev->gadget.speed
+-							== USB_SPEED_FULL))) {
++			if (unlikely(ep->out_overflow ||
++					(ep->dev->chiprev == 0x0100 &&
++					ep->dev->gadget.speed
++					== USB_SPEED_FULL))) {
+ 				out_flush(ep);
+ 				ep->out_overflow = 0;
+ 			}
+@@ -2807,9 +2807,9 @@ static void ep_stall(struct net2280_ep *ep, int stall)
+ 		val = readl(&ep->regs->ep_rsp);
+ 		val |= BIT(CLEAR_ENDPOINT_HALT) |
+ 			BIT(CLEAR_ENDPOINT_TOGGLE);
+-		writel(val
+-		       /* | BIT(CLEAR_NAK_PACKETS)*/
+-		       , &ep->regs->ep_rsp);
++		writel(val,
++		       /* | BIT(CLEAR_NAK_PACKETS),*/
++		       &ep->regs->ep_rsp);
+ 		ep->is_halt = 0;
+ 		val = readl(&ep->regs->ep_rsp);
+ 	}
+@@ -3124,8 +3124,8 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
+ 				   BIT(DATA_PACKET_RECEIVED_INTERRUPT) |
+ 				   BIT(DATA_PACKET_TRANSMITTED_INTERRUPT) |
+ 				   BIT(DATA_OUT_PING_TOKEN_INTERRUPT) |
+-				   BIT(DATA_IN_TOKEN_INTERRUPT)
+-				   , &ep->regs->ep_stat);
++				   BIT(DATA_IN_TOKEN_INTERRUPT),
++				   &ep->regs->ep_stat);
+ 		}
+ 		u.raw[0] = readl(&dev->usb->setup0123);
+ 		u.raw[1] = readl(&dev->usb->setup4567);
+@@ -3205,8 +3205,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
+ 			/* hw handles device features */
+ 			if (u.r.bRequestType != USB_RECIP_ENDPOINT)
+ 				goto delegate;
+-			if (w_value != USB_ENDPOINT_HALT
+-					|| w_length != 0)
++			if (w_value != USB_ENDPOINT_HALT || w_length != 0)
+ 				goto do_stall;
+ 			e = get_ep_by_addr(dev, w_index);
+ 			if (!e)
+@@ -3232,8 +3231,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
+ 			/* hw handles device features */
+ 			if (u.r.bRequestType != USB_RECIP_ENDPOINT)
+ 				goto delegate;
+-			if (w_value != USB_ENDPOINT_HALT
+-					|| w_length != 0)
++			if (w_value != USB_ENDPOINT_HALT || w_length != 0)
+ 				goto do_stall;
+ 			e = get_ep_by_addr(dev, w_index);
+ 			if (!e)
+@@ -3325,12 +3323,11 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
+ 	 */
+ 	if (stat & tmp) {
+ 		writel(tmp, &dev->regs->irqstat1);
+-		if ((((stat & BIT(ROOT_PORT_RESET_INTERRUPT))
+-					&& ((readl(&dev->usb->usbstat) & mask)
+-							== 0))
+-				|| ((readl(&dev->usb->usbctl)
+-					& BIT(VBUS_PIN)) == 0)
+-			    ) && (dev->gadget.speed != USB_SPEED_UNKNOWN)) {
++		if ((((stat & BIT(ROOT_PORT_RESET_INTERRUPT)) &&
++				(readl(&dev->usb->usbstat) & mask)) ||
++				((readl(&dev->usb->usbctl) &
++					BIT(VBUS_PIN)) == 0)) &&
++				(dev->gadget.speed != USB_SPEED_UNKNOWN)) {
+ 			DEBUG(dev, "disconnect %s\n",
+ 					dev->driver->driver.name);
+ 			stop_activity(dev, dev->driver);
+@@ -3559,7 +3556,7 @@ static void net2280_remove(struct pci_dev *pdev)
+ 		pci_disable_device(pdev);
+ 	device_remove_file(&pdev->dev, &dev_attr_registers);
+ 
+-	INFO (dev, "unbind\n");
++	INFO(dev, "unbind\n");
+ }
+ 
+ /* wrap this driver around the specified device, but
+@@ -3782,29 +3779,29 @@ static const struct pci_device_id pci_ids[] = { {
+ 	.device =	0x2280,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
+-}, {
++	}, {
+ 	.class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+ 	.class_mask =	~0,
+ 	.vendor =	PCI_VENDOR_ID_PLX_LEGACY,
+ 	.device =	0x2282,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
+-},
++	},
+ 	{
+-	 .class = ((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+-	 .class_mask = ~0,
+-	 .vendor = PCI_VENDOR_ID_PLX,
+-	 .device = 0x3380,
+-	 .subvendor = PCI_ANY_ID,
+-	 .subdevice = PCI_ANY_ID,
++	 .class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
++	 .class_mask =	~0,
++	 .vendor =	PCI_VENDOR_ID_PLX,
++	 .device =	0x3380,
++	 .subvendor =	PCI_ANY_ID,
++	 .subdevice =	PCI_ANY_ID,
+ 	 },
+ 	{
+-	 .class = ((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+-	 .class_mask = ~0,
+-	 .vendor = PCI_VENDOR_ID_PLX,
+-	 .device = 0x3382,
+-	 .subvendor = PCI_ANY_ID,
+-	 .subdevice = PCI_ANY_ID,
++	 .class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
++	 .class_mask =	~0,
++	 .vendor =	PCI_VENDOR_ID_PLX,
++	 .device =	0x3382,
++	 .subvendor =	PCI_ANY_ID,
++	 .subdevice =	PCI_ANY_ID,
+ 	 },
+ { /* end: all zeroes */ }
+ };
+diff --git a/drivers/usb/gadget/net2280.h b/drivers/usb/gadget/net2280.h
+index 683b6fc..106624a 100644
+--- a/drivers/usb/gadget/net2280.h
++++ b/drivers/usb/gadget/net2280.h
+@@ -117,8 +117,8 @@ static inline void allow_status(struct net2280_ep *ep)
+ 	/* ep0 only */
+ 	writel(BIT(CLEAR_CONTROL_STATUS_PHASE_HANDSHAKE) |
+ 		BIT(CLEAR_NAK_OUT_PACKETS) |
+-		BIT(CLEAR_NAK_OUT_PACKETS_MODE)
+-		, &ep->regs->ep_rsp);
++		BIT(CLEAR_NAK_OUT_PACKETS_MODE),
++		&ep->regs->ep_rsp);
+ 	ep->stopped = 1;
+ }
+ 
 -- 
 2.0.0.rc2
 
