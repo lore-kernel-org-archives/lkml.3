@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaESJpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:45:15 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:36922 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878AbaESJpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:45:13 -0400
+	id S1753966AbaESJp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:45:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38007 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752978AbaESJpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 05:45:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,866,1392192000"; 
+   d="scan'208";a="513825508"
+Message-ID: <5379D28F.1020200@intel.com>
+Date: Mon, 19 May 2014 17:44:47 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAHb8M2BeUym+7vc5tnS1jmyr4DXa9QiQNojxJXDZa11JVXR-sQ@mail.gmail.com>
-References: <20140519021030.GA1051@devel.8.8.4.4>
-	<20140519080224.GL16255@mwanda>
-	<CAHb8M2BeUym+7vc5tnS1jmyr4DXa9QiQNojxJXDZa11JVXR-sQ@mail.gmail.com>
-Date: Mon, 19 May 2014 18:45:13 +0900
-Message-ID: <CAHb8M2CaKEJ=+KQtom9QSXGJoPEXEpJkQgByn5VWpZ9ruO9gAQ@mail.gmail.com>
-Subject: Re: [PATCH V3] staging: dgap: implement error handling in dgap_tty_register()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Lidza Louina <lidza.louina@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Mark Hounschell <markh@compro.net>,
-        driverdev-devel@linuxdriverproject.org,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: rjw@rjwysocki.net, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <1398695268-28645-1-git-send-email-tianyu.lan@intel.com> <1398695268-28645-10-git-send-email-tianyu.lan@intel.com> <20140429081609.GF1684@lahna.fi.intel.com> <20140517174834.GA2858@katana> <20140519084944.GH2067@lahna.fi.intel.com>
+In-Reply-To: <20140519084944.GH2067@lahna.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-19 18:39 GMT+09:00 DaeSeok Youn <daeseok.youn@gmail.com>:
-> 2014-05-19 17:02 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
->> Nice, but it needs a couple style improvements below.
->>
->> On Mon, May 19, 2014 at 11:10:30AM +0900, Daeseok Youn wrote:
->>> +     brd->dgap_major_serial_registered = TRUE;
->>> +     dgap_boards_by_major[brd->serial_driver->major] = brd;
->>> +     brd->dgap_serial_major = brd->serial_driver->major;
->>> +
->>>       brd->dgap_major_transparent_print_registered = TRUE;
->>>       dgap_boards_by_major[brd->print_driver->major] = brd;
->>>       brd->dgap_transparent_print_major = brd->print_driver->major;
+On 05/19/2014 04:49 PM, Mika Westerberg wrote:
+> On Sat, May 17, 2014 at 07:48:34PM +0200, Wolfram Sang wrote:
+>> On Tue, Apr 29, 2014 at 11:16:09AM +0300, Mika Westerberg wrote:
+>>> On Mon, Apr 28, 2014 at 10:27:48PM +0800, Lan Tianyu wrote:
+>>>> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
+>>>> removing I2C ACPI operation region and ACPI AML code accessing.
+>>>> So make i2c core built-in if CONFIG_I2C_ACPI is set.
+>>>>
+>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>>>> ---
+>>>>   drivers/i2c/Kconfig  | 17 ++++++++++++++++-
+>>>>   drivers/i2c/Makefile |  2 +-
+>>>>   include/linux/i2c.h  |  2 +-
+>>>>   3 files changed, 18 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+>>>> index 7b7ea32..c670d49 100644
+>>>> --- a/drivers/i2c/Kconfig
+>>>> +++ b/drivers/i2c/Kconfig
+>>>> @@ -2,7 +2,9 @@
+>>>>   # I2C subsystem configuration
+>>>>   #
+>>>>
+>>>> -menuconfig I2C
+>>>> +menu "I2C support"
+>>>> +
+>>>> +config I2C
+>>>>   	tristate "I2C support"
+>>>>   	select RT_MUTEXES
+>>>>   	---help---
+>>>> @@ -21,6 +23,17 @@ menuconfig I2C
+>>>>   	  This I2C support can also be built as a module.  If so, the module
+>>>>   	  will be called i2c-core.
+>>>>
+>>>> +config I2C_ACPI
+>>>> +	bool "I2C ACPI support"
+>>>> +	select I2C
+>>>> +	depends on ACPI
+>>>> +	default y
+>>>> +	help
+>>>> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
+>>>> +	  provides I2C slave devices' information to enumerate these devices.
+>>>> +	  This option also allows ACPI AML code to access I2C slave devices
+>>>> +	  via I2C ACPI operation region to fulfill ACPI method.
 >>>
->>>       return rc;
+>>> I would prefer something like:
+>>>
+>>> Say Y here if you want to enable ACPI I2C support. This includes support
+>>> for automatic enumeration of I2C slave devices and support for ACPI I2C
+>>> Operation Regions. Operation Regions allow firmware (BIOS) code to
+>>> access I2C slave devices, such as smart batteries through an I2C host
+>>> controller driver.
+>>>
+>>> But it is really up to you so,
+>>>
+>>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 >>
->>         return 0;
-> OK. I will remove "int rc = 0" line and change "return rc" to "return 0"
-Oh.. just remove the initialization to zero.
+>> How does this fit into the context of
+>> 55e71edb81b2b45273e7b284cce13ff24bde846f ("i2c: move ACPI helpers into
+>> the core")?
 >
->>
->>> +
->>> +unregister_serial_drv:
->>> +     tty_unregister_driver(brd->serial_driver);
->>> +free_print_ttys:
->>> +     kfree(brd->print_driver->ttys);
->>> +     brd->print_driver->ttys = NULL;
->>
->> This label isn't needed.  Just goto free_print_drv, because that will
->> free the brd->print_driver->ttys in destruct_tty_driver().
->> I do like how you noticed the double free and avoided it by setting
->> brd->serial_driver->ttys to NULL, so your patch doesn't introduce a
->> double free bug.
-> Yes, just goto free_print_drv.
+> With that commit we moved ACPI code to live inside I2C module (given
+> that it was compiled as a module). However, you still can remove that
+> module from userspace.
 >
-> Thanks for review.
+> With this patch we make sure that the I2C core can't be removed if you
+> have ACPI enabled. This prevents the potential race.
 >
-> Regards,
-> Daeseok Youn
->>
->>> +free_print_drv:
->>> +     put_tty_driver(brd->print_driver);
->>> +free_serial_ttys:
->>> +     kfree(brd->serial_driver->ttys);
->>> +     brd->serial_driver->ttys = NULL;
->>
->> Same for this.
->>
->>> +free_serial_drv:
->>> +     put_tty_driver(brd->serial_driver);
->>> +
->>> +     return rc;
->>
->> regards,
->> dan carpenter
+
+Yes, these are the two patches' purposes. Thanks Mika's explanation. If you 
+like, I can merge them into one patch.
+
