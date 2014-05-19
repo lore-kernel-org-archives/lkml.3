@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaESM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 08:56:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59098 "EHLO
+	id S1754261AbaESMzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:55:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59078 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbaESM4V (ORCPT
+	with ESMTP id S1753056AbaESMzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 08:56:21 -0400
-Date: Mon, 19 May 2014 05:55:23 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-722e76e60f2775c21b087ff12c5e678cf0ebcaaf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        dzickus@redhat.com
-In-Reply-To: <20140515155644.GA3884@quad>
-References: <20140515155644.GA3884@quad>
+	Mon, 19 May 2014 08:55:39 -0400
+Date: Mon, 19 May 2014 05:54:48 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-7da7c131fcbdc4b023048bd39fac019ae195ccc5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        catalin.marinas@arm.com, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        catalin.marinas@arm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140509170649.GG13658@twins.programming.kicks-ass.net>
+References: <20140509170649.GG13658@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] fix Haswell precise store data source encoding
-Git-Commit-ID: 722e76e60f2775c21b087ff12c5e678cf0ebcaaf
+Subject: [tip:sched/arch] arm64: Remove TIF_POLLING_NRFLAG
+Git-Commit-ID: 7da7c131fcbdc4b023048bd39fac019ae195ccc5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,89 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  722e76e60f2775c21b087ff12c5e678cf0ebcaaf
-Gitweb:     http://git.kernel.org/tip/722e76e60f2775c21b087ff12c5e678cf0ebcaaf
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 15 May 2014 17:56:44 +0200
+Commit-ID:  7da7c131fcbdc4b023048bd39fac019ae195ccc5
+Gitweb:     http://git.kernel.org/tip/7da7c131fcbdc4b023048bd39fac019ae195ccc5
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 9 May 2014 19:04:00 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 19 May 2014 21:52:59 +0900
+CommitDate: Mon, 19 May 2014 21:50:30 +0900
 
-fix Haswell precise store data source encoding
+arm64: Remove TIF_POLLING_NRFLAG
 
-This patch fixes a bug in  precise_store_data_hsw() whereby
-it would set the data source memory level to the wrong value.
+The only idle method for arm64 is WFI and it therefore
+unconditionally requires the reschedule interrupt when idle.
 
-As per the the SDM Vol 3b Table 18-41 (Layout of Data Linear
-Address Information in PEBS Record), when status bit 0 is set
-this is a L1 hit, otherwise this is a L1 miss.
-
-This patch encodes the memory level according to the specification.
-
-In V2, we added the filtering on the store events.
-Only the following events produce L1 information:
- * MEM_UOPS_RETIRED.STLB_MISS_STORES
- * MEM_UOPS_RETIRED.LOCK_STORES
- * MEM_UOPS_RETIRED.SPLIT_STORES
- * MEM_UOPS_RETIRED.ALL_STORES
-
-Cc: mingo@elte.hu
-Cc: acme@ghostprotocols.net
-Cc: jolsa@redhat.com
-Cc: jmario@redhat.com
-Cc: ak@linux.intel.com
-Tested-and-Reviewed-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Suggested-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140515155644.GA3884@quad
+Link: http://lkml.kernel.org/r/20140509170649.GG13658@twins.programming.kicks-ass.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/thread_info.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index ae96cfa..980970c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -108,15 +108,31 @@ static u64 precise_store_data(u64 status)
- 	return val;
- }
- 
--static u64 precise_store_data_hsw(u64 status)
-+static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
- {
- 	union perf_mem_data_src dse;
-+	u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
- 
- 	dse.val = 0;
- 	dse.mem_op = PERF_MEM_OP_STORE;
- 	dse.mem_lvl = PERF_MEM_LVL_NA;
-+
-+	/*
-+	 * L1 info only valid for following events:
-+	 *
-+	 * MEM_UOPS_RETIRED.STLB_MISS_STORES
-+	 * MEM_UOPS_RETIRED.LOCK_STORES
-+	 * MEM_UOPS_RETIRED.SPLIT_STORES
-+	 * MEM_UOPS_RETIRED.ALL_STORES
-+	 */
-+	if (cfg != 0x12d0 && cfg != 0x22d0 && cfg != 0x42d0 && cfg != 0x82d0)
-+		return dse.mem_lvl;
-+
- 	if (status & 1)
--		dse.mem_lvl = PERF_MEM_LVL_L1;
-+		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_HIT;
-+	else
-+		dse.mem_lvl = PERF_MEM_LVL_L1 | PERF_MEM_LVL_MISS;
-+
- 	/* Nothing else supported. Sorry. */
- 	return dse.val;
- }
-@@ -887,7 +903,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 				data.data_src.val = load_latency_data(pebs->dse);
- 			else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
- 				data.data_src.val =
--					precise_store_data_hsw(pebs->dse);
-+					precise_store_data_hsw(event, pebs->dse);
- 			else
- 				data.data_src.val = precise_store_data(pebs->dse);
- 		}
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 720e70b..7b8e3a2 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -95,13 +95,11 @@ static inline struct thread_info *current_thread_info(void)
+  *  TIF_NEED_RESCHED	- rescheduling necessary
+  *  TIF_NOTIFY_RESUME	- callback before returning to user
+  *  TIF_USEDFPU		- FPU was used by this task this quantum (SMP)
+- *  TIF_POLLING_NRFLAG	- true if poll_idle() is polling TIF_NEED_RESCHED
+  */
+ #define TIF_SIGPENDING		0
+ #define TIF_NEED_RESCHED	1
+ #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+ #define TIF_SYSCALL_TRACE	8
+-#define TIF_POLLING_NRFLAG	16
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_FREEZE		19
+ #define TIF_RESTORE_SIGMASK	20
