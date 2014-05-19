@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148AbaESOB1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 10:01:27 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:46150 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754479AbaESOBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 10:01:25 -0400
-Date: Mon, 19 May 2014 16:01:19 +0200
-From: Florian Westphal <fw@strlen.de>
-To: David Newall <davidn@davidnewall.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge :
- Sanitize skb before it enters the IP stack)
-Message-ID: <20140519140119.GA24523@breakpoint.cc>
-References: <537621AC.1060409@davidnewall.com>
- <5379FFFD.1050705@davidnewall.com>
+	id S932168AbaESOBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 10:01:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37823 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753291AbaESOBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 10:01:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,867,1392192000"; 
+   d="scan'208";a="534215261"
+Message-ID: <537A117A.7050802@linux.intel.com>
+Date: Mon, 19 May 2014 17:13:14 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5379FFFD.1050705@davidnewall.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bin.yang@intel.com, Darren Hart <dvhart@linux.intel.com>,
+        "Holmberg, Hans" <hans.holmberg@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+References: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com> <CACRpkdZ67KoaMWUzpPm5g7yvQ-_q9zxuS+4wcXP0u18MW=XovA@mail.gmail.com> <53794FDC.6080908@linux.intel.com>
+In-Reply-To: <53794FDC.6080908@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Newall <davidn@davidnewall.com> wrote:
-> Having received no feedback of substance from netdev, I now address
-> my previous email to a wider audience for discussion and in
-> preparation for submitting a patch based closely on that below.
-> 
-> This email is not addressed to Bandan Das <bandan.das@stratus.com>,
-> who is the author of the commit I propose reverting, as his email
-> address is no longer current.  I believe I have otherwise addressed
-> all appropriate recipients and will circulate a formal patch to the
-> same recipients if no adverse comments are received.  (That would
-> surprise me.)
-> 
-> -------- Original Message --------
-> Subject: 	Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge :
-> Sanitize skb before it enters the IP stack)
-> Date: 	Sat, 17 May 2014 00:03:16 +0930
-> From: 	David Newall <davidn@davidnewall.com>
-> To: 	Lukas Tribus <luky-37@hotmail.com>, Eric Dumazet
-> <eric.dumazet@gmail.com>, Netdev <netdev@vger.kernel.org>
-> CC: 	fw@strlen.de <fw@strlen.de>
+On 05/19/2014 03:27 AM, Zhu, Lejun wrote:
 > 
 > 
+> On 5/17/2014 1:33 AM, Linus Walleij wrote:
+>> On Wed, May 14, 2014 at 5:44 PM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
+>>
+>>> Devices based on Intel SoC products such as Baytrail have a Power
+>>> Management IC. In the PMIC there are subsystems for voltage regulation,
+>>> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
+>>> Crystal Cove.
+>>>
+>>> This patch adds support for the GPIO function in Crystal Cove.
+>>>
+>>> Signed-off-by: Yang, Bin <bin.yang@intel.com>
+>>> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+>>
+>> (...)
+>>
+>>> +config GPIO_INTEL_SOC_PMIC
+>>> +       bool "GPIO on Intel SoC PMIC"
+>>> +       depends on INTEL_SOC_PMIC
 > 
-> We should revert commit 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge
-> : Sanitize skb before it enters the IP stack) because it corrupts IP
-> packets with RR or TS options set, only partially updating the IP header
-> and leaving an incorrect checksum.
+> Thank you. That's a long list and all of them indeed need to be fixed.
+> I'll work on them and submit v2 when ready.
 > 
-> The argument for introducing the change is at lkml.org/lkml/2010/8/30/391:
-> 
-> The bridge layer can overwrite the IPCB using the
-> BR_INPUT_SKB_CB macro. In br_nf_dev_queue_xmit,
-> if we recieve a packet greater in size than the bridge
-> device MTU, we call ip_fragment which in turn will lead to
-> icmp_send calling ip_options_echo if the DF flag is set.
-> ip_options_echo will then incorrectly try to parse the IPCB as
-> IP options resulting in a buffer overflow.
-> This change refills the CB area back with IP
-> options before ip_fragment calls icmp_send. If we fail parsing,
-> we zero out the IPCB area to guarantee that the stack does
-> not get corrupted.
->
-> A bridge should not fragment packets; an *ethernet* bridge should not
-> need to.  Fragmenting packets is the job of higher level protocol.
 
-Well, did you test what happens if we try to refrag a packet
-containing ip options after the revert?
+Shouldn't there be a .remove function undoing everything probe did?
+Freeing interrupts, removing irq domains, calling gpiochip_remove etc.
 
-can happen e.g. when using netfilter conntrack on top of a bridge.
+Or is there something I'm missing?
+I see there's no option to compile this as module, but It might be added later so
+proper remove function would still be nice.
+
+-Mathias
+
+
+
+
+
