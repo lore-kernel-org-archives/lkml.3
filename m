@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaESVSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 17:18:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49618 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaESVSA (ORCPT
+	id S1752128AbaESVSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 17:18:39 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:52377 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbaESVSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 17:18:00 -0400
-Date: Mon, 19 May 2014 14:17:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tim Chen <tim.c.chen@linux.intel.com>
-Subject: Re: linux-next: build warning after merge of the akpm tree
-Message-Id: <20140519141758.37af77506f42b0e11a0b1bae@linux-foundation.org>
-In-Reply-To: <1400532980.6399.0.camel@buesod1.americas.hpqcorp.net>
-References: <20140519181314.1b92c548@canb.auug.org.au>
-	<1400512396.2560.9.camel@buesod1.americas.hpqcorp.net>
-	<20140519124850.7d4470e179c237552f363658@linux-foundation.org>
-	<1400532980.6399.0.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 17:18:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140518.211237.1637671513066247487.davem@davemloft.net>
+References: <1400347101-25476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140518.211237.1637671513066247487.davem@davemloft.net>
+Date: Mon, 19 May 2014 23:18:36 +0200
+Message-ID: <CAFo99gZwnvtResqq12LJk-g0AVrZDwyAjOehvWhEnHkUx6o42g@mail.gmail.com>
+Subject: Re: [PATCH] isdn: hisax: l3dss1.c: Fix for possible null pointer dereference
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: David Miller <davem@davemloft.net>
+Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 13:56:20 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+Hi
 
-> On Mon, 2014-05-19 at 12:48 -0700, Andrew Morton wrote:
-> > On Mon, 19 May 2014 08:13:16 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > > Presumably a result of commit fe2038c57c03 ("rwsem: Support optimistic
-> > > > spinning").
-> > > 
-> > > If CONFIG_SMP, we add two new fields to the rwsem structure
-> > > (include/linux/rwsem.h) and likewise we update the
-> > > __RWSEM_INITIALIZER(name) macro. Afaict the only way to trigger
-> > > something like that is to be using the spinlock variant
-> > > (rwsem-spinlock.h).
-> > > 
-> > > The fix for that would be:
-> > > 
-> > > diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> > > index 3e108f1..091d993 100644
-> > > --- a/include/linux/rwsem.h
-> > > +++ b/include/linux/rwsem.h
-> > > @@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
-> > >  # define __RWSEM_DEP_MAP_INIT(lockname)
-> > >  #endif
-> > >  
-> > > -#ifdef CONFIG_SMP
-> > > +#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
-> > >  #define __RWSEM_INITIALIZER(name)                      \
-> > >         { RWSEM_UNLOCKED_VALUE,                         \
-> > >           __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),     \
-> > 
-> > that squishes the warnings for me.
-> 
-> You guys know best, but shouldn't this change be routed through -tip?
+Ahh, yes. That's niecer..
+I am sending a new patch. If it is as you intended, I do the same with
+the l3ni1.c file.
 
-Yes, this patch and the two fixes I have applied to it should be sent
-that way.  If/when they turn up in -next I will drop my copies.
 
-Keep sending ;)
+Best regards
+Rickard Strandqvist
+
+
+2014-05-19 3:12 GMT+02:00 David Miller <davem@davemloft.net>:
+> From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Date: Sat, 17 May 2014 19:18:21 +0200
+>
+>> There is otherwise a risk of a possible null pointer dereference.
+>>
+>> Was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>  ...
+>
+>> @@ -2208,8 +2208,12 @@ static int l3dss1_cmd_global(struct PStack *st, isdn_ctrl *ic)
+>>                               { free_invoke_id(st, id);
+>>                                       return (-2);
+>>                               }
+>> -                     pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+>> -                     pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
+>> +
+>> +                     if (pc)
+>> +                     {
+>> +                             pc->prot.dss1.ll_id = ic->parm.dss1_io.ll_id; /* remember id */
+>> +                             pc->prot.dss1.proc = ic->parm.dss1_io.proc; /* and procedure */
+>> +                     }
+>
+> I think rather the intention was to put these pc-> assignments in the
+> timeout > 0 code block.
