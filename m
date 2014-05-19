@@ -1,159 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaESLze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 07:55:34 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:52027 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752631AbaESLzb (ORCPT
+	id S1753100AbaESMGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 08:06:48 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:64261 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaESMGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 07:55:31 -0400
-From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-To: "Arnd Bergmann (arnd@arndb.de)" <arnd@arndb.de>
-Cc: spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mark Nicholson <mark@nicholnet.com>,
-        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>
-Date: Mon, 19 May 2014 19:55:12 +0800
-Subject: RE: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
-Thread-Topic: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
-Thread-Index: Ac9YoNy6ZxnIuk9YRSWZy+OTkyUsoAat2s+A
-Message-ID: <2CC2A0A4A178534D93D5159BF3BCB6619B94997E2B@EAPEX1MAIL1.st.com>
-References: <cover.1397555158.git.mohit.kumar@st.com>
-In-Reply-To: <cover.1397555158.git.mohit.kumar@st.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 19 May 2014 08:06:45 -0400
+Message-ID: <5379F3CE.8030404@linaro.org>
+Date: Mon, 19 May 2014 17:36:38 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-19_01:2014-05-19,2014-05-18,1970-01-01 signatures=0
+To: Mark Brown <broonie@kernel.org>
+CC: Doug Anderson <dianders@chromium.org>, alsa-devel@alsa-project.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        sbkim73@samsung.com, Randy Dunlap <rdunlap@infradead.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
+References: <20140424133920.GA12304@sirena.org.uk> <5359E18B.60600@linaro.org> <20140429222915.GU15125@sirena.org.uk> <5360E5E7.8090807@linaro.org> <20140430180314.GA3245@sirena.org.uk> <53623004.5010805@linaro.org> <20140501141510.GW3245@sirena.org.uk> <CAD=FV=Wa4CovkxBng0SkUUAryiFqa=m63tro1Yv1jRgp4e95aw@mail.gmail.com> <20140501164003.GC3245@sirena.org.uk> <53632568.5020200@linaro.org> <20140502165643.GQ3245@sirena.org.uk>
+In-Reply-To: <20140502165643.GQ3245@sirena.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4JBteJ2003032
 
-Hello Arnd,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> -----Original Message-----
-> From: Mohit KUMAR DCG
-> Sent: Tuesday, April 15, 2014 5:20 PM
-> To: spear-devel; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org;
-> linux-pci@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> Cc: Mohit KUMAR DCG
-> Subject: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+On 05/02/2014 10:26 PM, Mark Brown wrote:
+> On Fri, May 02, 2014 at 10:26:08AM +0530, Tushar Behera wrote:
+>> On 05/01/2014 10:10 PM, Mark Brown wrote:
 > 
-> Patch# 1 and 2: Improvement and fixes for SPEAr13xx support.
-> Patch# 3,4 and 6: Add DT bindings for spear1310/40-miphy, misc and pcie
-> node Patch# 5: Add spear1310/40-miphy driver and support for spear1310/40
-> miphy wrapper.
-> Patch# 7-9: Add SPEAr13xx PCIe driver and dt support.
+>>> There's patches been posted by (IIRC) Sylvester Nawrocki for
+>>> this which I think Mike was basically happy with - I don't
+>>> immediately see them in -next though, but I may be looking in
+>>> the wrong place.
 > 
-> These pathes are tested with linux-3.15 tag of arm-soc tree.
-> Tested with SPEAr1310 evaluation board with:
-> 	- INTEL PRO 100/100 EP card
-> 	- USB xhci gen2 card
->  	- Above cards connected through LeCROY PTC switch
+>> Right, there are some patches from Sylwester regarding this. I
+>> dont' think the patches are accepted yet as Rob has some
+>> reservations against the clock parents.
 > 
-> Modifications for SATA are tested with SPEAr1340-evb board
+>> https://lkml.org/lkml/2014/4/9/173
+> 
+> Well, OK - that's the bit to fix.  Speaking to Mike the other day
+> he said there was also another competing implementation of this.
 > 
 
-I think 3.16 windows is about to close, are you planning to merge this series?
-Pls let me know if something pending on our part.
+Instead of setting the parent clock, setting the desired rate on
+XCLKOUT works for audio playback.
 
-Regards
-Mohit
+Will it be okay to do a 'clk_set_rate(mclk, 24000000)' in sound card
+driver or should we wait for Sylwester's patch to get merged?
 
-> Changes since v7:
-> - Rebase over for-linus-3.15 tag of arm-soc tree so that complete patch series
-> can be applied cleanly.
-> - Incorporated few comments on comment style and superfluous comments
-> Changes since v6:
-> - Split miphy driver for SPEAr1310 and SPEAr1340
-> - Some cleanup and incorporated other minor comments Changes since v5:
-> - Split DT bindings for misc, miphy-40lp and pcie node into sepearte patches
-> - Merge config options PCIE_SPEAR13XX and PCI_MSI into defconfig patch
-> - Incorporated other minor comments
-> Changes since v4:
-> - Uses per device function pointers passed from .data field to
->   the of_device_id instead of of_device_is_compatible.
-> - Incorporated other minor comments from v4
-> 
-> Changes since v3:
-> - Phy driver renamed to phy-miphy40lp
-> - ahci phy hook patch used as suggested by Arnd
-> - Incorporated other minor comments from v3
-> 
-> Changes since v2:
-> - Incorporated comments to move SPEAr13xx PCIe and SATA phy specific
-> routines to
->   the phy framework
-> - Modify ahci driver to include phy hooks
-> - phy-core driver modifications for subsys_initcall()
-> 
-> Changes since v1:
-> - Few patches of the series are already accepted and applied to mainline e.g.
->  pcie designware driver improvements,fixes for IO translation bug, PCIe dw
-> driver maintainer. So dropped these from v2.
-> - Incorporated comment to move the common/reset PCIe code to the
-> seperate driver
-> - PCIe and SATA share common PHY configuration registers, so move SATA
-> platform code to the system config driver Fourth patch is improves pcie
-> designware driver and fixes the IO translation bug. IO translation bug fix
-> leads to the working of PCIe EP devices connected to RC through switch.
-> 
-> Mohit Kumar (1):
->   SPEAr13xx: defconfig: Update
-> 
-> Pratyush Anand (8):
->   clk: SPEAr13XX: Fix pcie clock name
->   SPEAr13XX: Fix static mapping table
->   phy: SPEAr1310/40-miphy: Add binding information
->   SPEAr: misc: Add binding information
->   phy: SPEAr1310/40-miphy: Add phy driver for PCIe and SATA
->   SPEAr13XX: Add binding information for PCIe controller
->   SPEAr13XX: dts: Add PCIe node information
->   pcie: SPEAr13xx: Add designware wrapper support
-> 
->  .../devicetree/bindings/arm/spear-misc.txt         |    9 +
->  .../devicetree/bindings/pci/spear13xx-pcie.txt     |   14 +
->  .../devicetree/bindings/phy/st-spear1310-miphy.txt |   12 +
->  .../devicetree/bindings/phy/st-spear1340-miphy.txt |   11 +
->  MAINTAINERS                                        |    6 +
->  arch/arm/boot/dts/spear1310-evb.dts                |    4 +
->  arch/arm/boot/dts/spear1310.dtsi                   |   93 +++++-
->  arch/arm/boot/dts/spear1340-evb.dts                |    4 +
->  arch/arm/boot/dts/spear1340.dtsi                   |   30 ++-
->  arch/arm/boot/dts/spear13xx.dtsi                   |    9 +-
->  arch/arm/configs/spear13xx_defconfig               |   16 +
->  arch/arm/mach-spear/Kconfig                        |    4 +
->  arch/arm/mach-spear/include/mach/spear.h           |    4 +-
->  arch/arm/mach-spear/spear1340.c                    |  127 +------
->  arch/arm/mach-spear/spear13xx.c                    |    2 +-
->  drivers/clk/spear/spear1310_clock.c                |    6 +-
->  drivers/clk/spear/spear1340_clock.c                |    2 +-
->  drivers/pci/host/Kconfig                           |    8 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pcie-spear13xx.c                  |  407 ++++++++++++++++++++
->  drivers/phy/Kconfig                                |   12 +
->  drivers/phy/Makefile                               |    2 +
->  drivers/phy/phy-spear1310-miphy.c                  |  274 +++++++++++++
->  drivers/phy/phy-spear1340-miphy.c                  |  300 ++++++++++++++
->  24 files changed, 1218 insertions(+), 139 deletions(-)  create mode 100644
-> Documentation/devicetree/bindings/arm/spear-misc.txt
->  create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-
-> pcie.txt
->  create mode 100644 Documentation/devicetree/bindings/phy/st-
-> spear1310-miphy.txt
->  create mode 100644 Documentation/devicetree/bindings/phy/st-
-> spear1340-miphy.txt
->  create mode 100644 drivers/pci/host/pcie-spear13xx.c  create mode 100644
-> drivers/phy/phy-spear1310-miphy.c  create mode 100644 drivers/phy/phy-
-> spear1340-miphy.c
+- -- 
+Tushar Behera
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+iQEcBAEBAgAGBQJTefPOAAoJELqclMPPkq4N6UIH/i5W7KYjyKTQtX+AGdUmJwIx
+3TTwyWVz5YQ6gFpLHwwy5AwIkj4mygox2e7l0qWU6yOXCMceaXrvzxOK+B/LRXlp
++s8xjd+C+Idxhs0T6V4GkJRA9jtari3gcIGfz4tFtWY5O0l0eNTUduILhAvmE/Sw
+c4m8aOwK33P0kvkTIp/ShSujYa8v82XosMRuf4P0iEz9I3qw3syJkWWvqNZFrnPs
+B7i+9ZiZkyttsUVBOAWMBfOdLP5sMtxKDdk1GTkN1plxAE8lKdNVATR5htQL4bxo
+ZFcWJxE14pWQ770gEJVXkDT9o8dhmVNrDVp4eGe3m+43gN+Bssh+9kgdxb3vmIY=
+=gXaJ
+-----END PGP SIGNATURE-----
