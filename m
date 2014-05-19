@@ -1,154 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433AbaESTAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 15:00:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38917 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389AbaESS7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 14:59:40 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH 1/2] x86: Carve out cmdline parsing function
-Date: Mon, 19 May 2014 20:59:16 +0200
-Message-Id: <1400525957-11525-2-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400525957-11525-1-git-send-email-bp@alien8.de>
-References: <1400525957-11525-1-git-send-email-bp@alien8.de>
+	id S932512AbaESTBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 15:01:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33714 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455AbaESTBC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 15:01:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140417202209.GA30268@www.outflux.net>
+References: <20140417202209.GA30268@www.outflux.net>
+Date: Mon, 19 May 2014 12:01:01 -0700
+X-Google-Sender-Auth: xtFsXYIbDy8xJDoal3-v7NkT3VE
+Message-ID: <CAGXu5jJLKQiC4zwYJ9dpVvELoYBKZ4OFsqKdQXQW9OyDwsdvmg@mail.gmail.com>
+Subject: Re: [PATCH] HID: core: fix validation of report id 0
+From: Kees Cook <keescook@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Simon Wood <simon@mungewell.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Roland Bosa <rbosa@logitech.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Pinging on this patch... I don't see it in -next yet. I've had more
+reports of trouble with logitech devices, and this seems to solve the
+problem.
 
-into .../lib/cmdline.c to use by kernel proper too.
+-Kees
 
-Adapted from arch/x86/boot/cmdline.c.
+On Thu, Apr 17, 2014 at 1:22 PM, Kees Cook <keescook@chromium.org> wrote:
+> Some drivers use the first HID report in the list instead of using an
+> index. In these cases, validation uses ID 0, which was supposed to mean
+> "first known report". This fixes the problem, which was causing at least
+> the lgff family of devices to stop working since hid_validate_values
+> was being called with ID 0, but the devices used single numbered IDs
+> for their reports:
+>
+> 0x05, 0x01,         /*  Usage Page (Desktop),                   */
+> 0x09, 0x05,         /*  Usage (Gamepad),                        */
+> 0xA1, 0x01,         /*  Collection (Application),               */
+> 0xA1, 0x02,         /*      Collection (Logical),               */
+> 0x85, 0x01,         /*          Report ID (1),                  */
+> ...
+>
+> Reported-by: Simon Wood <simon@mungewell.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/hid/hid-core.c |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 9e8064205bc7..07ce28175168 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -839,7 +839,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
+>          * ->numbered being checked, which may not always be the case when
+>          * drivers go to access report values.
+>          */
+> -       report = hid->report_enum[type].report_id_hash[id];
+> +       if (id == 0) {
+> +               /*
+> +                * Validating on id 0 means we should examine the first
+> +                * report in the list.
+> +                */
+> +               report = list_entry(
+> +                               hid->report_enum[type].report_list.next,
+> +                               struct hid_report, list);
+> +       } else {
+> +               report = hid->report_enum[type].report_id_hash[id];
+> +       }
+>         if (!report) {
+>                 hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+>                 return NULL;
+> --
+> 1.7.9.5
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/cmdline.h |  6 +++
- arch/x86/lib/Makefile          |  2 +-
- arch/x86/lib/cmdline.c         | 84 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 91 insertions(+), 1 deletion(-)
- create mode 100644 arch/x86/include/asm/cmdline.h
- create mode 100644 arch/x86/lib/cmdline.c
 
-diff --git a/arch/x86/include/asm/cmdline.h b/arch/x86/include/asm/cmdline.h
-new file mode 100644
-index 000000000000..e01f7f7ccb0c
---- /dev/null
-+++ b/arch/x86/include/asm/cmdline.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_X86_CMDLINE_H
-+#define _ASM_X86_CMDLINE_H
-+
-+int cmdline_find_option_bool(const char *cmdline_ptr, const char *option);
-+
-+#endif /* _ASM_X86_CMDLINE_H */
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index eabcb6e6a900..4d4f96a27638 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -16,7 +16,7 @@ clean-files := inat-tables.c
- 
- obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
- 
--lib-y := delay.o misc.o
-+lib-y := delay.o misc.o cmdline.o
- lib-y += thunk_$(BITS).o
- lib-y += usercopy_$(BITS).o usercopy.o getuser.o putuser.o
- lib-y += memcpy_$(BITS).o
-diff --git a/arch/x86/lib/cmdline.c b/arch/x86/lib/cmdline.c
-new file mode 100644
-index 000000000000..422db000d727
---- /dev/null
-+++ b/arch/x86/lib/cmdline.c
-@@ -0,0 +1,84 @@
-+/*
-+ * This file is part of the Linux kernel, and is made available under
-+ * the terms of the GNU General Public License version 2.
-+ *
-+ * Misc librarized functions for cmdline poking.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/ctype.h>
-+#include <asm/setup.h>
-+
-+static inline int myisspace(u8 c)
-+{
-+	return c <= ' ';	/* Close enough approximation */
-+}
-+
-+/**
-+ * Find a boolean option (like quiet,noapic,nosmp....)
-+ *
-+ * @cmdline: the cmdline string
-+ * @option: option string to look for
-+ *
-+ * Returns the position of that @option (starts counting with 1)
-+ * or 0 on not found.
-+ */
-+int cmdline_find_option_bool(const char *cmdline, const char *option)
-+{
-+	char c;
-+	int len, pos = 0, wstart = 0;
-+	const char *opptr = NULL;
-+	enum {
-+		st_wordstart = 0,	/* Start of word/after whitespace */
-+		st_wordcmp,	/* Comparing this word */
-+		st_wordskip,	/* Miscompare, skip */
-+	} state = st_wordstart;
-+
-+	if (!cmdline)
-+		return -1;      /* No command line */
-+
-+	len = min_t(int, strlen(cmdline), COMMAND_LINE_SIZE);
-+	if (!len)
-+		return 0;
-+
-+	while (len--) {
-+		c = *(char *)cmdline++;
-+		pos++;
-+
-+		switch (state) {
-+		case st_wordstart:
-+			if (!c)
-+				return 0;
-+			else if (myisspace(c))
-+				break;
-+
-+			state = st_wordcmp;
-+			opptr = option;
-+			wstart = pos;
-+			/* fall through */
-+
-+		case st_wordcmp:
-+			if (!*opptr)
-+				if (!c || myisspace(c))
-+					return wstart;
-+				else
-+					state = st_wordskip;
-+			else if (!c)
-+				return 0;
-+			else if (c != *opptr++)
-+				state = st_wordskip;
-+			else if (!len)		/* last word and is matching */
-+				return wstart;
-+			break;
-+
-+		case st_wordskip:
-+			if (!c)
-+				return 0;
-+			else if (myisspace(c))
-+				state = st_wordstart;
-+			break;
-+		}
-+	}
-+
-+	return 0;	/* Buffer overrun */
-+}
+
 -- 
-1.9.0
-
+Kees Cook
+Chrome OS Security
