@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaESJp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:45:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38007 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978AbaESJpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:45:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,866,1392192000"; 
-   d="scan'208";a="513825508"
-Message-ID: <5379D28F.1020200@intel.com>
-Date: Mon, 19 May 2014 17:44:47 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-CC: rjw@rjwysocki.net, awilliam@redhat.com, lenb@kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <1398695268-28645-1-git-send-email-tianyu.lan@intel.com> <1398695268-28645-10-git-send-email-tianyu.lan@intel.com> <20140429081609.GF1684@lahna.fi.intel.com> <20140517174834.GA2858@katana> <20140519084944.GH2067@lahna.fi.intel.com>
-In-Reply-To: <20140519084944.GH2067@lahna.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754020AbaESJqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:46:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52033 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667AbaESJqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 05:46:12 -0400
+Message-ID: <1400492696.8467.21.camel@weser.hi.pengutronix.de>
+Subject: Re: [PATCH 3/4] drm/nouveau: hook up cache sync functions
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, gnurou@gmail.com,
+        nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>,
+        linux-tegra@vger.kernel.org
+Date: Mon, 19 May 2014 11:44:56 +0200
+In-Reply-To: <20140519084620.GB7138@ulmo>
+References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
+	 <1400483458-9648-4-git-send-email-acourbot@nvidia.com>
+	 <20140519084620.GB7138@ulmo>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 04:49 PM, Mika Westerberg wrote:
-> On Sat, May 17, 2014 at 07:48:34PM +0200, Wolfram Sang wrote:
->> On Tue, Apr 29, 2014 at 11:16:09AM +0300, Mika Westerberg wrote:
->>> On Mon, Apr 28, 2014 at 10:27:48PM +0800, Lan Tianyu wrote:
->>>> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
->>>> removing I2C ACPI operation region and ACPI AML code accessing.
->>>> So make i2c core built-in if CONFIG_I2C_ACPI is set.
->>>>
->>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->>>> ---
->>>>   drivers/i2c/Kconfig  | 17 ++++++++++++++++-
->>>>   drivers/i2c/Makefile |  2 +-
->>>>   include/linux/i2c.h  |  2 +-
->>>>   3 files changed, 18 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
->>>> index 7b7ea32..c670d49 100644
->>>> --- a/drivers/i2c/Kconfig
->>>> +++ b/drivers/i2c/Kconfig
->>>> @@ -2,7 +2,9 @@
->>>>   # I2C subsystem configuration
->>>>   #
->>>>
->>>> -menuconfig I2C
->>>> +menu "I2C support"
->>>> +
->>>> +config I2C
->>>>   	tristate "I2C support"
->>>>   	select RT_MUTEXES
->>>>   	---help---
->>>> @@ -21,6 +23,17 @@ menuconfig I2C
->>>>   	  This I2C support can also be built as a module.  If so, the module
->>>>   	  will be called i2c-core.
->>>>
->>>> +config I2C_ACPI
->>>> +	bool "I2C ACPI support"
->>>> +	select I2C
->>>> +	depends on ACPI
->>>> +	default y
->>>> +	help
->>>> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
->>>> +	  provides I2C slave devices' information to enumerate these devices.
->>>> +	  This option also allows ACPI AML code to access I2C slave devices
->>>> +	  via I2C ACPI operation region to fulfill ACPI method.
->>>
->>> I would prefer something like:
->>>
->>> Say Y here if you want to enable ACPI I2C support. This includes support
->>> for automatic enumeration of I2C slave devices and support for ACPI I2C
->>> Operation Regions. Operation Regions allow firmware (BIOS) code to
->>> access I2C slave devices, such as smart batteries through an I2C host
->>> controller driver.
->>>
->>> But it is really up to you so,
->>>
->>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>
->> How does this fit into the context of
->> 55e71edb81b2b45273e7b284cce13ff24bde846f ("i2c: move ACPI helpers into
->> the core")?
->
-> With that commit we moved ACPI code to live inside I2C module (given
-> that it was compiled as a module). However, you still can remove that
-> module from userspace.
->
-> With this patch we make sure that the I2C core can't be removed if you
-> have ACPI enabled. This prevents the potential race.
->
+Am Montag, den 19.05.2014, 10:46 +0200 schrieb Thierry Reding:
+> On Mon, May 19, 2014 at 04:10:57PM +0900, Alexandre Courbot wrote:
+> > From: Lucas Stach <dev@lynxeye.de>
+> > 
+> > Signed-off-by: Lucas Stach <dev@lynxeye.de>
+> > [acourbot@nvidia.com: make conditional and platform-friendly]
+> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> 
+> Perhaps having a propery commit message here would be good.
+> 
+> > diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> [...]
+> > +#ifdef NOUVEAU_NEED_CACHE_SYNC
+> > +void
+> > +nouveau_bo_sync_for_cpu(struct nouveau_bo *nvbo)
+> > +{
+> > +	struct nouveau_device *device;
+> > +	struct ttm_tt *ttm = nvbo->bo.ttm;
+> > +
+> > +	device = nouveau_dev(nouveau_bdev(ttm->bdev)->dev);
+> > +
+> > +	if (nvbo->bo.ttm && nvbo->bo.ttm->caching_state == tt_cached)
+> > +		ttm_dma_tt_cache_sync_for_cpu((struct ttm_dma_tt *)nvbo->bo.ttm,
+> > +					      nv_device_base(device));
+> 
+> Can we be certain at this point that the struct ttm_tt is in fact a
+> struct ttm_dma_tt?
 
-Yes, these are the two patches' purposes. Thanks Mika's explanation. If you 
-like, I can merge them into one patch.
+Yes, for all cases except AGP, where things are mapped WC anyways (so
+caching_state is always != cached) nouveau_bo_driver uses
+nouveau_ttm_tt_create() as its ttm_tt_create callback. This in turn
+calls nouveau_sgdma_create_ttm() which uses ttm_dma_tt_init()
+unconditionally.
+
+Regards,
+Lucas
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
