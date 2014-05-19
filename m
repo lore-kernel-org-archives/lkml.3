@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325AbaESPuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 11:50:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34348 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843AbaESPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 11:50:20 -0400
-Date: Mon, 19 May 2014 17:50:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
-Message-ID: <20140519155018.GF3017@dhcp22.suse.cz>
-References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
- <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
- <20140519140248.GD3017@dhcp22.suse.cz>
+	id S1754712AbaESPvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 11:51:13 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:42434 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420AbaESPvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 11:51:11 -0400
+Date: Mon, 19 May 2014 16:51:06 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [STLinux Kernel] [PATCH 3/4] ARM: DT: STi: Add DT node for
+ MiPHY365x
+Message-ID: <20140519155106.GR4978@lee--X1>
+References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org>
+ <1398756095-32542-4-git-send-email-lee.jones@linaro.org>
+ <537A265E.8080407@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140519140248.GD3017@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537A265E.8080407@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-05-14 16:02:48, Michal Hocko wrote:
-> On Fri 16-05-14 15:00:16, Greg Thelen wrote:
-[...]
-> > -- First, demonstrate that just rmdir, without memory.force_empty,
-> >    temporarily hides reparented child memory stats.
-> > 
-> > $ /test
-> > p/memory.stat:rss 0
-> > p/memory.stat:total_rss 69632
-> > p/c/memory.stat:rss 69632
-> > p/c/memory.stat:total_rss 69632
-> > For a small time the p/c memory has not been reparented to p.
-> > p/memory.stat:rss 0
-> > p/memory.stat:total_rss 0
-> 
-> OK, this is a bug. Our iterators skip the children because css_tryget
-> fails on it but css_offline still not done.
+> >The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> >devices. It has 2 ports which it can use for either; both SATA, both
+> >PCIe or one of each in any configuration.
+> >
+> >Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >Acked-by: Mark Rutland <mark.rutland@arm.com>
+> >Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >---
+> >  arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
+> >  arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
+> >  arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
+> >  3 files changed, 42 insertions(+)
+> >  create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
+> >
+> >diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> >new file mode 100644
+> >index 0000000..23fdaf7
+> >--- /dev/null
+> >+++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> >@@ -0,0 +1,22 @@
+> >+/*
+> >+ * Copyright (C) 2014 STMicroelectronics Limited.
+> >+ * Author: Lee Jones <lee.jones@linaro.org>
+> >+ *
+> >+ * This program is free software; you can redistribute it and/or modify
+> >+ * it under the terms of the GNU General Public License version 2 as
+> >+ * publishhed by the Free Software Foundation.
+> >+ */
+> >+/dts-v1/;
+> >+#include "stih416.dtsi"
+> >+#include "stih41x-b2020.dtsi"
+> >+/ {
+> >+        model = "STiH416 B2020 REV-E";
+> >+	compatible = "st,stih416-b2020", "st,stih416";
+> >+
+> >+	soc {
+> >+		miphy365x_phy: miphy365x@fe382000 {
+> >+			st,pcie-tx-pol-inv;
+> >+			st,sata-gen = <3>;
+> >+		};
+> >+	};
+> >+};
+> Shouldn't this new board being added in a separate patch?
 
-Or use the cgroups iterator directly. Which would be even easier to fix.
+I certainly can do that, but I don't think that it's necessary?
+
+> >diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+> >index 276f28d..172f222 100644
+> >--- a/arch/arm/boot/dts/stih416-b2020.dts
+> >+++ b/arch/arm/boot/dts/stih416-b2020.dts
+> >@@ -13,4 +13,10 @@
+> >  	model = "STiH416 B2020";
+> >  	compatible = "st,stih416", "st,stih416-b2020";
+> >
+> >+	soc {
+> >+		miphy365x_phy: miphy365x@fe382000 {
+> >+			st,pcie-tx-pol-inv;
+> >+			st,sata-gen = <3>;
+> >+		};
+> >+	};
+> >  };
+> ...
+
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
