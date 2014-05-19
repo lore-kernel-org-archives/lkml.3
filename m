@@ -1,114 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaESCf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 May 2014 22:35:27 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:36372
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751897AbaESCf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 May 2014 22:35:26 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
+	id S1752445AbaESCmW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 May 2014 22:42:22 -0400
+Received: from mailout.micron.com ([137.201.242.129]:36599 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaESCmV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 May 2014 22:42:21 -0400
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Christian Riesch <christian.riesch@omicron.at>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: RE: [PATCHv2 1/2] clocksource: fix type confusion for
- clocksource_mmio_readX_Y
-Thread-Topic: [PATCHv2 1/2] clocksource: fix type confusion for
- clocksource_mmio_readX_Y
-Thread-Index: AQHPXp+EEHZ9UXv4rUWfmoNIjU+5FJtHV7sg
-Date: Mon, 19 May 2014 02:35:21 +0000
-Message-ID: <7dd1dc731dd24e15a170ef95aeee2a2e@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1398219120-23029-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1398219120-23029-1-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCH 1/1] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Topic: [PATCH 1/1] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Index: Ac9zC9WvVS1si7dTS9qWoVuHEN6sWA==
+Date: Mon, 19 May 2014 02:41:29 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315D03AC@NTXXIAMBX02.xacn.micron.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 021670B4D2
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(377454003)(189002)(199002)(164054003)(51704005)(101416001)(575784001)(86362001)(81542001)(74316001)(50986999)(54356999)(77096999)(33646001)(19580395003)(76176999)(76576001)(4396001)(77982001)(99396002)(99286001)(2201001)(92566001)(21056001)(31966008)(74502001)(64706001)(83322001)(46102001)(79102001)(74662001)(76482001)(83072002)(2656002)(81342001)(20776003)(87936001)(66066001)(80022001)(19580405001)(85852003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="gb2312"
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20702.004
+X-TM-AS-Result: No--7.654600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4J2ZXrs032110
 
-Hi,
+The size of the buffer program has been increased from 256 to 512 ,
+2ms maximum timeout can not adapt to all the different vendor's norflash,
+There maximum timeout information in the CFI area,so the best way is to
+choose the result calculated according to timeout field of struct cfi_ident
+that probed from norflash's CFI aera.This is also a standard defined by CFI.
 
-I'd like to know the status about this patch series...
-:£©
+Without this change, if the size of buffer program is 512 or bigger than 256,
+due to timeout is the shorter than that the chip required,do_write_buffer
+sometimes fails.
 
-Thanks,
-BRs
-Xiubo
+Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
 
+Signed-off-by: bean huo <beanhuo@micron.com>
+---
+ drivers/mtd/chips/cfi_cmdset_0002.c |   46 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 43 insertions(+), 3 deletions(-)
 
-
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Wednesday, April 23, 2014 10:12 AM
-> To: daniel.lezcano@linaro.org; tglx@linutronix.de; linux-
-> kernel@vger.kernel.org
-> Cc: Xiubo Li-B47053
-> Subject: [PATCHv2 1/2] clocksource: fix type confusion for
-> clocksource_mmio_readX_Y
-> 
-> The types' definations are:
->    o  cycle_t       -> u64
->    o  readl_relaxed -> u32
->    o  readw_relaxed -> u16
-> 
-> So let clocksource_mmio_readX_Ys return a cast to cycle_t, though
-> this maybe look reduntant sometimes, it make sense and they will be
-> more readable and less confusion...
-> 
-> This patch clarifies the functions type and fix it.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/clocksource/mmio.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
-> index c0e2512..19a6b3f 100644
-> --- a/drivers/clocksource/mmio.c
-> +++ b/drivers/clocksource/mmio.c
-> @@ -22,22 +22,22 @@ static inline struct clocksource_mmio
-> *to_mmio_clksrc(struct clocksource *c)
-> 
->  cycle_t clocksource_mmio_readl_up(struct clocksource *c)
->  {
-> -	return readl_relaxed(to_mmio_clksrc(c)->reg);
-> +	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
->  }
-> 
->  cycle_t clocksource_mmio_readl_down(struct clocksource *c)
->  {
-> -	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
-> +	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
->  }
-> 
->  cycle_t clocksource_mmio_readw_up(struct clocksource *c)
->  {
-> -	return readw_relaxed(to_mmio_clksrc(c)->reg);
-> +	return (cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
->  }
-> 
->  cycle_t clocksource_mmio_readw_down(struct clocksource *c)
->  {
-> -	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
-> +	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
->  }
-> 
->  /**
-> --
-> 1.8.4
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+index e21fde9..2a08f9f 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+@@ -628,10 +628,42 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
+ 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
+ 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
+ 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
++		/*
++		 * We first calculate the timeout max according to timeout
++		 * field of struct cfi_ident that probed from chip's CFI
++		 * aera,If haven't probed this information,we will specify
++		 * a default value,and the time unit is us.
++		 */
++		if (cfi->cfiq->WordWriteTimeoutTyp &&
++			cfi->cfiq->WordWriteTimeoutMax){
++			cfi->chips[i].word_write_time_max =
++				1<<(cfi->cfiq->WordWriteTimeoutTyp +
++					cfi->cfiq->WordWriteTimeoutMax);
++			} else {
++		/* specify maximum timeout for byte/word program 2000us */
++				cfi->chips[i].word_write_time_max = 2000;
++				}
++		if (cfi->cfiq->BufWriteTimeoutTyp &&
++			cfi->cfiq->BufWriteTimeoutMax){
++			cfi->chips[i].buffer_write_time_max =
++				1<<(cfi->cfiq->BufWriteTimeoutTyp +
++					cfi->cfiq->BufWriteTimeoutMax);
++			} else {
++		/* specify maximum timeout for buffer program 2000us */
++				cfi->chips[i].buffer_write_time_max = 2000;
++				}
++		if (cfi->cfiq->BlockEraseTimeoutTyp &&
++			cfi->cfiq->BlockEraseTimeoutMax){
++			cfi->chips[i].erase_time_max =
++				1<<(cfi->cfiq->BlockEraseTimeoutTyp +
++					cfi->cfiq->BlockEraseTimeoutMax);
++			} else {
++	/* specify maximum timeout per individual block erase 3000000us */
++				cfi->chips[i].erase_time_max = 3000000;
++				}
+ 		cfi->chips[i].ref_point_counter = 0;
+ 		init_waitqueue_head(&(cfi->chips[i].wq));
+ 	}
+-
+ 	map->fldrv = &cfi_amdstd_chipdrv;
+ 
+ 	return cfi_amdstd_setup(mtd);
+@@ -1462,8 +1494,16 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
+ {
+ 	struct cfi_private *cfi = map->fldrv_priv;
+ 	unsigned long timeo = jiffies + HZ;
+-	/* see comments in do_write_oneword() regarding uWriteTimeo. */
+-	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
++	/* The size of the buffer program has been increased from 256 to 512,
++	 * 2ms maximum timeout can not adapt to all the different vendor's
++	 * norflash.There maximum timeout information in the CFI area,so the
++	 * best way is to choose the result calculated according to timeout
++	 * field of struct cfi_ident that probed from norflash's CFI aera,see
++	 * comments in cfi_cmdset_0002().The time unit of uWriteTimeout is ms.
++	 */
++	unsigned long uWriteTimeout = (chip->buffer_write_time_max % 1000) ?
++			(chip->buffer_write_time_max / 1000 + 1) :
++			(chip->buffer_write_time_max / 1000);
+ 	int ret = -EIO;
+ 	unsigned long cmd_adr;
+ 	int z, words;
+-- 
+1.7.9.5
