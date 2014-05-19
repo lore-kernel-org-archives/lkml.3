@@ -1,78 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaESJ2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 05:28:41 -0400
-Received: from smtp-out-051.synserver.de ([212.40.185.51]:1052 "EHLO
-	smtp-out-145.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752832AbaESJ2j (ORCPT
+	id S1753726AbaESJ3C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 05:29:02 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:10491 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaESJ26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 05:28:39 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5070
-Message-ID: <5379CEC4.9050001@metafoo.de>
-Date: Mon, 19 May 2014 11:28:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org, tiwai@suse.de,
-        perex@perex.cz
-Subject: Re: [PATCH] ALSA: pcm_dmaengine: Add check during device suspend
-References: <1400491433-16860-1-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1400491433-16860-1-git-send-email-tushar.behera@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 05:28:58 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-83-5379ced833b5
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, robh+dt@kernel.org,
+        stern@rowland.harvard.edu, kishon@ti.com, k.debski@samsung.com,
+        jg1.han@samsung.com
+References: <1399641784-10833-1-git-send-email-gautam.vivek@samsung.com>
+ <1399641784-10833-2-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1399641784-10833-2-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v9 1/4] ARM: dts: Add sysreg sytem controller node to
+ exynos5250 and exynos5420
+Date: Mon, 19 May 2014 18:28:55 +0900
+Message-id: <02fe01cf7344$c19d36f0$44d7a4d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHPDZLCoGnx6+EQOBbO44c7+dsEuwJd0BHfmzV/NFA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zY90b5yqDDbYcELCYf+Qcq0XblYPs
+	FpcXXmK1+PH6ApvFhac9bBabHl9jtbi8aw6bxYzz+5gsFi1rZbZo3XuE3WLC7wtsDtwem1Z1
+	snlsXlLvMfvuD0aPvi2rGD2O39jO5PF5k1wAWxSXTUpqTmZZapG+XQJXRs/uC2wFa/krXvU+
+	YGlg3MbTxcjJISFgIrHr+Tw2CFtM4sK99UA2F4eQwDJGiVezr7DDFC189pkRIrGIUWLL5y5m
+	COcvo8Ssj5PBqtgENCQOv38GZosI5ErMeruSGcRmFrjIKHH7SjFEQzujxLZdv4ASHBycAp4S
+	b5pDQGqEBVIl9iw6zQhiswioSrTfaAY7iVfAUuLVlXnMELagxI/J91ggZmpJrN95nAnClpfY
+	vOYtM8SlChI7zr5mhLjBSqLr5gyoehGJfS/egX0gIdDLIbF/6hZWiGUCEt8mH2IBuUdCQFZi
+	0wGoOZISB1fcYJkA9B6S1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/d
+	xAiJ+L4djDcPWB9iTAZaP5FZSjQ5H5gw8kriDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2x
+	JDU7NbUgtSi+qDQntfgQIxMHp1QDY+WDHQuq5p/Z9kCk1tTUffndPWxaOxx4GbgEZWuutkg/
+	m5EVo313b3xE1KHkmlVy75JPbpozMTN7oejhteXrN2xdv+PPFafMX5s5Erwkyk8p90bbrryo
+	Y73UOtcp6gu34j69Fz/jdsZ/ufXq9QeV1Ru9fyiJ1beefXJr6w/Z/443OLf8Wa7/o1aJpTgj
+	0VCLuag4EQBHCJz7DgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jAd0b5yqDDZqucFvMP3KO1aLtykF2
+	i8sLL7Fa/Hh9gc3iwtMeNotNj6+xWlzeNYfNYsb5fUwWi5a1Mlu07j3CbjHh9wU2B26PTas6
+	2Tw2L6n3mH33B6NH35ZVjB7Hb2xn8vi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne
+	1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6D4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4h
+	QXA9RgZoIGEdY0bP7gtsBWv5K171PmBpYNzG08XIySEhYCKx8NlnRghbTOLCvfVsXYxcHEIC
+	ixgltnzuYoZw/jJKzPo4mR2kik1AQ+Lw+2dgtohArsSstyuZQWxmgYuMErevFEM0tDNKbNv1
+	CyjBwcEp4CnxpjkEpEZYIFViz6LTYNtYBFQl2m80s4HYvAKWEq+uzGOGsAUlfky+xwIxU0ti
+	/c7jTBC2vMTmNW+ZIS5VkNhx9jUjxA1WEl03Z0DVi0jse/GOcQKj0Cwko2YhGTULyahZSFoW
+	MLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOJ8+kdjCubLA4xCjAwajEwzshvDJYiDWx
+	rLgy9xCjBAezkgiv32mgEG9KYmVValF+fFFpTmrxIcZkoE8nMkuJJucDU11eSbyhsYmZkaWR
+	mYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAaxxkvb2oTSQrruDW7OYvpb4Xd
+	t/vS8QsfKnusa/ugX28kxm8T4/LBdomSPN+C91rFmvEfSu/KqglsWbX2Du/7YyLvF7BGWQqU
+	iYdec/1Ys2gHe6fBlayDt45827/Uu96F67envJHWDs5nU1/stb7MIqw62zx1Jwd37xFfjks+
+	mt81xK7FJymxFGckGmoxFxUnAgCQUGn1awMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 11:23 AM, Tushar Behera wrote:
-> Currently snd_dmaengine_pcm_trigger() calls dmaengine_pause()
-> unconditinally during device suspend. In case where DMA controller
-> doesn't support PAUSE/RESUME functionality, this call is not able
-> to stop the DMA controller. In this scenario, audio playback doesn't
-> resume after device resume.
->
-> Calling dmaengine_pause/dmaengine_terminate_all conditionally fixes
-> the issue.
->
-> It has been tested with audio playback on Samsung platform having
-> PL330 DMA controller which doesn't support PAUSE/RESUME.
->
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-
-Thanks.
-
+Vivek Gautam wrote:
+> 
+> This patch adds sysreg-syscon node to exynos5250 and exynos5420 device
+> tree, to access System Register's registers using syscon driver.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> [gautam.vivek@samsung.com: Split this syreg-syscon dts entry from
+> dts: Add usb2phy to Exynos 5250 patch]
+> [gautam.vivek@samsung.com: added similar syscon entry for exynos5420]
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > ---
->   sound/core/pcm_dmaengine.c |    6 ++++++
->   1 file changed, 6 insertions(+)
->
-> diff --git a/sound/core/pcm_dmaengine.c b/sound/core/pcm_dmaengine.c
-> index 94d0873..76cbb9e 100644
-> --- a/sound/core/pcm_dmaengine.c
-> +++ b/sound/core/pcm_dmaengine.c
-> @@ -182,6 +182,7 @@ static int dmaengine_pcm_prepare_and_submit(struct snd_pcm_substream *substream)
->   int snd_dmaengine_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
->   {
->   	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
-> +	struct snd_pcm_runtime *runtime = substream->runtime;
->   	int ret;
->
->   	switch (cmd) {
-> @@ -196,6 +197,11 @@ int snd_dmaengine_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
->   		dmaengine_resume(prtd->dma_chan);
->   		break;
->   	case SNDRV_PCM_TRIGGER_SUSPEND:
-> +		if (runtime->info & SNDRV_PCM_INFO_PAUSE)
-> +			dmaengine_pause(prtd->dma_chan);
-> +		else
-> +			dmaengine_terminate_all(prtd->dma_chan);
-> +		break;
->   	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
->   		dmaengine_pause(prtd->dma_chan);
->   		break;
->
+> 
+Vivek,
+
+See my comment below.
+
+And please don't version each patch in series...it's really not a good way.
+It cause very big confusing...
+
+> Changes since v7:
+> None
+> 
+>  arch/arm/boot/dts/exynos5250.dtsi |    5 +++++
+>  arch/arm/boot/dts/exynos5420.dtsi |    5 +++++
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+> b/arch/arm/boot/dts/exynos5250.dtsi
+> index 3742331..70f0cd5 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -175,6 +175,11 @@
+>  		reg = <0x10040000 0x5000>;
+>  	};
+> 
+> +	sysreg_system_controller: syscon@10050000 {
+> +		compatible = "samsung,exynos5250-sys", "syscon";
+
+Maybe exynos5250-sysreg?
+
+And need to add/modify binding doc?
+
+- Kukjin
+
+> +		reg = <0x10050000 0x5000>;
+> +	};
+> +
+>  	watchdog@101D0000 {
+>  		compatible = "samsung,exynos5250-wdt";
+>  		reg = <0x101D0000 0x100>;
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
+> b/arch/arm/boot/dts/exynos5420.dtsi
+> index a802f74..5d5d6e3 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -682,6 +682,11 @@
+>  		reg = <0x10040000 0x5000>;
+>  	};
+> 
+> +	sysreg_system_controller: syscon@10050000 {
+> +		compatible = "samsung,exynos5420-sys", "syscon";
+> +		reg = <0x10050000 0x5000>;
+> +	};
+> +
+>  	tmu_cpu0: tmu@10060000 {
+>  		compatible = "samsung,exynos5420-tmu";
+>  		reg = <0x10060000 0x100>;
+> --
+> 1.7.10.4
 
