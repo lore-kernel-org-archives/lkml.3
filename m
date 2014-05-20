@@ -1,675 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaETOBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:01:44 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:45995 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097AbaETN5K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:57:10 -0400
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v3 08/16] drm: sti: add GDP layer
-Date: Tue, 20 May 2014 15:56:18 +0200
-Message-Id: <1400594186-8956-9-git-send-email-benjamin.gaignard@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
-References: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
+	id S1754062AbaETOCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:02:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14337 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129AbaETOB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:01:59 -0400
+Date: Tue, 20 May 2014 10:01:46 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, arozansk@redhat.com,
+        serge@hallyn.com, ebiederm@xmission.com, sgrubb@redhat.com
+Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
+Message-ID: <20140520140146.GA8079@madcap2.tricolour.ca>
+References: <cover.1400271129.git.rgb@redhat.com>
+ <1400593754.15733.4.camel@flatline.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400593754.15733.4.camel@flatline.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic Display Pipeline are one of the compositor input sub-devices.
-GDP are dedicated to graphic input like RGB plans.
+On 14/05/20, Eric Paris wrote:
+> On Tue, 2014-05-20 at 09:12 -0400, Richard Guy Briggs wrote:
+> > The purpose is to track namespaces in use by logged processes from the
+> > perspective of init_*_ns.
+> > 
+> > 1/6 defines a function to generate them and assigns them.
+> > 
+> > Use a serial number per namespace (unique across one boot of one kernel)
+> > instead of the inode number (which is claimed to have had the right to change
+> > reserved and is not necessarily unique if there is more than one proc fs).  It
+> > could be argued that the inode numbers have now become a defacto interface and
+> > can't change now, but I'm proposing this approach to see if this helps address
+> > some of the objections to the earlier patchset.
+> > 
+> > 2/6 adds access functions to get to the serial numbers in a similar way to
+> > inode access for namespace proc operations.
+> > 
+> > 3/6 implements, as suggested by Serge Hallyn, making these serial numbers
+> > available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose "snum"
+> > instead of "seq" for consistency with inum and there are a number of other uses
+> > of "seq" in the namespace code.
+> > 
+> > 4/6 exposes proc's ns entries structure which lists a number of useful
+> > operations per namespace type for other subsystems to use.
+> > 
+> > 5/6 provides an example of usage for audit_log_task_info() which is used by
+> > syscall audits, among others.  audit_log_task() and audit_common_recv_message()
+> > would be other potential use cases.
+> > 
+> > Proposed output format:
+> > This differs slightly from Aristeu's patch because of the label conflict with
+> > "pid=" due to including it in existing records rather than it being a seperate
+> > record.  The serial numbers are printed in hex.
+> > 	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+> 
+> I'm undecided if I'd rather see this as a separate NS_INFO record type.
+> It would mean we could filter them out of the logs...
 
-Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
----
- drivers/gpu/drm/sti/Makefile    |   3 +-
- drivers/gpu/drm/sti/sti_gdp.c   | 491 ++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_gdp.h   |  73 ++++++
- drivers/gpu/drm/sti/sti_layer.h |   5 +
- 4 files changed, 571 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
+I don't have a strong opinion either way.  Steve G.'s opinion would be
+helpful here.
 
-diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index 45536c3..cc04475 100644
---- a/drivers/gpu/drm/sti/Makefile
-+++ b/drivers/gpu/drm/sti/Makefile
-@@ -1,10 +1,11 @@
- ccflags-y := -Iinclude/drm
- 
--stidrm-y :=	sti_tvout.o \
-+stidrm-y := sti_tvout.o \
- 			sti_hdmi.o \
- 			sti_hdmi_tx3g0c55phy.o \
- 			sti_hdmi_tx3g4c28phy.o \
- 			sti_hda.o \
-+			sti_gdp.o \
- 			sti_ddc.o
- 
- obj-$(CONFIG_VTAC_STI) += sti_vtac_tx.o sti_vtac_rx.o
-diff --git a/drivers/gpu/drm/sti/sti_gdp.c b/drivers/gpu/drm/sti/sti_gdp.c
-new file mode 100644
-index 0000000..00ff7f9
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.c
-@@ -0,0 +1,491 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2013
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+
-+#include "sti_layer.h"
-+#include "sti_gdp.h"
-+#include "sti_vtg_utils.h"
-+
-+#define ENA_COLOR_FILL  (1 << 8)
-+#define WAIT_NEXT_VSYNC (1 << 31)
-+
-+/* GDP color formats */
-+#define GDP_RGB565	0x00
-+#define GDP_RGB888	0x01
-+#define GDP_RGB888_32	0x02
-+#define GDP_ARGB8565	0x04
-+#define GDP_ARGB8888	0x05
-+#define GDP_ARGB1555	0x06
-+#define GDP_ARGB4444	0x07
-+#define GDP_CLUT8	0x0B
-+#define GDP_YCBR888	0x10
-+#define GDP_YCBR422R	0x12
-+#define GDP_AYCBR8888	0x15
-+
-+#define GAM_GDP_CTL_OFFSET	0x00
-+#define GAM_GDP_AGC_OFFSET	0x04
-+#define GAM_GDP_VPO_OFFSET	0x0C
-+#define GAM_GDP_VPS_OFFSET	0x10
-+#define GAM_GDP_PML_OFFSET	0x14
-+#define GAM_GDP_PMP_OFFSET	0x18
-+#define GAM_GDP_SIZE_OFFSET	0x1C
-+#define GAM_GDP_NVN_OFFSET	0x24
-+#define GAM_GDP_KEY1_OFFSET	0x28
-+#define GAM_GDP_KEY2_OFFSET	0x2C
-+#define GAM_GDP_PPT_OFFSET	0x34
-+#define GAM_GDP_CML_OFFSET	0x3C
-+#define GAM_GDP_MST_OFFSET	0x68
-+
-+#define GAM_GDP_ALPHARANGE_255  (1 << 5)
-+#define GAM_GDP_AGC_FULL_RANGE	0x00808080
-+#define GAM_GDP_PPT_IGNORE      ((1 << 1) | (1 << 0))
-+#define GAM_GDP_SIZE_MAX        0x7FF
-+
-+static const uint32_t gdp_supported_formats[] = {
-+	DRM_FORMAT_XRGB8888,
-+	DRM_FORMAT_ARGB8888,
-+	DRM_FORMAT_ARGB4444,
-+	DRM_FORMAT_ARGB1555,
-+	DRM_FORMAT_RGB565,
-+	DRM_FORMAT_RGB888,
-+	DRM_FORMAT_AYUV,
-+	DRM_FORMAT_YUV444,
-+	DRM_FORMAT_VYUY,
-+	DRM_FORMAT_C8,
-+};
-+
-+static const uint32_t *sti_gdp_get_formats(void)
-+{
-+	return gdp_supported_formats;
-+}
-+
-+static int sti_gdp_get_nb_formats(void)
-+{
-+	return ARRAY_SIZE(gdp_supported_formats);
-+}
-+
-+static int sti_gdp_fourcc2format(int fourcc)
-+{
-+	switch (fourcc) {
-+	case DRM_FORMAT_XRGB8888:
-+		return GDP_RGB888_32;
-+	case DRM_FORMAT_ARGB8888:
-+		return GDP_ARGB8888;
-+	case DRM_FORMAT_ARGB4444:
-+		return GDP_ARGB4444;
-+	case DRM_FORMAT_ARGB1555:
-+		return GDP_ARGB1555;
-+	case DRM_FORMAT_RGB565:
-+		return GDP_RGB565;
-+	case DRM_FORMAT_RGB888:
-+		return GDP_RGB888;
-+	case DRM_FORMAT_AYUV:
-+		return GDP_AYCBR8888;
-+	case DRM_FORMAT_YUV444:
-+		return GDP_YCBR888;
-+	case DRM_FORMAT_VYUY:
-+		return GDP_YCBR422R;
-+	case DRM_FORMAT_C8:
-+		return GDP_CLUT8;
-+	}
-+	return -1;
-+}
-+
-+static int sti_gdp_get_alpharange(int format)
-+{
-+	switch (format) {
-+	case GDP_ARGB8565:
-+	case GDP_ARGB8888:
-+	case GDP_AYCBR8888:
-+		return GAM_GDP_ALPHARANGE_255;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_get_free_nodes
-+ * @layer: gdp layer
-+ *
-+ * Look for a GDP node list that is not currently read by the HW.
-+ *
-+ * RETURNS:
-+ * Pointer to the free GDP node list
-+ */
-+static struct sti_gdp_node_list *sti_gdp_get_free_nodes(struct sti_layer *layer)
-+{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = layer->gdp;
-+	int i;
-+
-+	hw_nvn = readl(gdp->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
-+
-+	virt_nvn = dma_to_virt(gdp->dev, (dma_addr_t) hw_nvn);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn != gdp->node_list[i].btm_field) &&
-+		    (virt_nvn != gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
-+
-+end:
-+	return &gdp->node_list[0];
-+}
-+
-+/**
-+ * sti_gdp_get_current_nodes
-+ * @layer: GDP layer
-+ *
-+ * Look for GDP nodes that are currently read by the HW.
-+ *
-+ * RETURNS:
-+ * Pointer to the current GDP node list
-+ */
-+static
-+struct sti_gdp_node_list *sti_gdp_get_current_nodes(struct sti_layer *layer)
-+{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = layer->gdp;
-+	int i;
-+
-+	hw_nvn = readl(gdp->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
-+
-+	virt_nvn = dma_to_virt(gdp->dev, (dma_addr_t) hw_nvn);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn == gdp->node_list[i].btm_field) ||
-+				(virt_nvn == gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
-+
-+end:
-+	return NULL;
-+}
-+
-+/**
-+ * sti_gdp_prepare_layer
-+ * @lay: gdp layer
-+ * @first_prepare: true if it is the first time this function is called
-+ *
-+ * Update the free GDP node list according to the layer properties.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_prepare_layer(void *lay, bool first_prepare)
-+{
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp_node_list *list;
-+	struct sti_gdp_node *top_field, *btm_field;
-+	struct drm_display_mode *mode = layer->mode;
-+	struct device *dev = layer->gdp->dev;
-+	int format, depth, bpp;
-+	int rate = mode->clock * 1000;
-+	int res;
-+	u32 ydo, xdo, yds, xds;
-+
-+	list = sti_gdp_get_free_nodes(layer);
-+	top_field = list->top_field;
-+	btm_field = list->btm_field;
-+
-+	/* Build the top field from layer params */
-+	top_field->gam_gdp_agc = GAM_GDP_AGC_FULL_RANGE;
-+	top_field->gam_gdp_ctl = WAIT_NEXT_VSYNC;
-+	format = sti_gdp_fourcc2format(layer->format);
-+	if (format == -1) {
-+		DRM_ERROR("Format not supported by GDP %.4s\n",
-+			  (char *)&layer->format);
-+		return 1;
-+	}
-+	top_field->gam_gdp_ctl |= format;
-+	top_field->gam_gdp_ctl |= sti_gdp_get_alpharange(format);
-+	top_field->gam_gdp_ppt &= ~GAM_GDP_PPT_IGNORE;
-+
-+	/* pixel memory location */
-+	drm_fb_get_bpp_depth(layer->format, &depth, &bpp);
-+	top_field->gam_gdp_pml = (u32) layer->paddr + layer->offsets[0];
-+	top_field->gam_gdp_pml += layer->src_x * (bpp >> 3);
-+	top_field->gam_gdp_pml += layer->src_y * layer->pitches[0];
-+
-+	/* input parameters */
-+	top_field->gam_gdp_pmp = layer->pitches[0];
-+	top_field->gam_gdp_size =
-+	    clamp_val(layer->src_h, 0, GAM_GDP_SIZE_MAX) << 16 |
-+	    clamp_val(layer->src_w, 0, GAM_GDP_SIZE_MAX);
-+
-+	/* output parameters */
-+	ydo = sti_vtg_get_line_number(*mode, layer->dst_y);
-+	yds = sti_vtg_get_line_number(*mode, layer->dst_y + layer->dst_h - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, layer->dst_x);
-+	xds = sti_vtg_get_pixel_number(*mode, layer->dst_x + layer->dst_w - 1);
-+	top_field->gam_gdp_vpo = (ydo << 16) | xdo;
-+	top_field->gam_gdp_vps = (yds << 16) | xds;
-+
-+	/* Same content and chained together */
-+	memcpy(btm_field, top_field, sizeof(*btm_field));
-+	top_field->gam_gdp_nvn = virt_to_dma(dev, btm_field);
-+	btm_field->gam_gdp_nvn = virt_to_dma(dev, top_field);
-+
-+	/* Interlaced mode */
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE)
-+		btm_field->gam_gdp_pml = top_field->gam_gdp_pml +
-+		    layer->pitches[0];
-+
-+	if (first_prepare) {
-+		/* Register gdp callback */
-+		if (sti_vtg_register_client(layer->mixer_id,
-+					&layer->gdp->vtg_field_nb)) {
-+			DRM_ERROR("Cannot register VTG notifier\n");
-+			return 1;
-+		}
-+
-+		/* Set and enable gdp clock */
-+		if (layer->gdp->clk_pix) {
-+			res = clk_set_rate(layer->gdp->clk_pix, rate);
-+			if (res < 0) {
-+				DRM_ERROR("Cannot set rate (%dHz) for gdp\n",
-+						rate);
-+				return 1;
-+			}
-+
-+			if (clk_prepare_enable(layer->gdp->clk_pix)) {
-+				DRM_ERROR("Failed to prepare/enable gdp\n");
-+				return 1;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_commit_layer
-+ * @lay: gdp layer
-+ *
-+ * Update the NVN field of the 'right' field of the current GDP node (being
-+ * used by the HW) with the address of the updated ('free') top field GDP node.
-+ * - In interlaced mode the 'right' field is the bottom field as we update
-+ *   frames starting from their top field
-+ * - In progressive mode, we update both bottom and top fields which are
-+ *   equal nodes.
-+ * At the next VSYNC, the updated node list will be used by the HW.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_commit_layer(void *lay)
-+{
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp_node_list *updated_list = sti_gdp_get_free_nodes(layer);
-+	struct sti_gdp_node *updated_top_node = updated_list->top_field;
-+	struct sti_gdp_node *updated_btm_node = updated_list->btm_field;
-+	struct sti_gdp *gdp = layer->gdp;
-+	u32 dma_updated_top = virt_to_dma(gdp->dev, updated_top_node);
-+	u32 dma_updated_btm = virt_to_dma(gdp->dev, updated_btm_node);
-+	struct sti_gdp_node_list *curr_list = sti_gdp_get_current_nodes(layer);
-+
-+	dev_dbg(gdp->dev, "Current NVN:0x%X\n",
-+		readl(gdp->regs + GAM_GDP_NVN_OFFSET));
-+	dev_dbg(gdp->dev, "Posted buff: %lx current buff: %x\n",
-+		(unsigned long)layer->paddr,
-+		readl(gdp->regs + GAM_GDP_PML_OFFSET));
-+
-+	if (curr_list == NULL) {
-+		/* First update or invalid node should directly write in the
-+		 * hw register */
-+		writel(gdp->is_curr_top == true ?
-+				dma_updated_btm : dma_updated_top,
-+				gdp->regs + GAM_GDP_NVN_OFFSET);
-+		return 0;
-+	}
-+
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE) {
-+		if (gdp->is_curr_top == true) {
-+			/* Do not update in the middle of the frame, but
-+			 * postpone the update after the bottom field has
-+			 * been displayed */
-+			curr_list->btm_field->gam_gdp_nvn = dma_updated_top;
-+		} else {
-+			/* Direct update to avoid one frame delay */
-+			writel(dma_updated_top, gdp->regs + GAM_GDP_NVN_OFFSET);
-+		}
-+	} else {
-+		/* Direct update for progressive to avoid one frame delay */
-+		writel(dma_updated_top, gdp->regs + GAM_GDP_NVN_OFFSET);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_disable_layer
-+ * @lay: gdp layer
-+ *
-+ * Disable a GDP.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_disable_layer(void *lay)
-+{
-+	int i;
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp *gdp = layer->gdp;
-+
-+	/* Set the nodes as 'to be ignored on mixer' */
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		gdp->node_list[i].top_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+		gdp->node_list[i].btm_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+	}
-+
-+	if (sti_vtg_unregister_client(layer->mixer_id, &gdp->vtg_field_nb))
-+		DRM_DEBUG_DRIVER("Warning: cannot unregister VTG notifier\n");
-+
-+	if (gdp->clk_pix)
-+		clk_disable_unprepare(gdp->clk_pix);
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_field_cb
-+ * @nb: notifier block
-+ * @event: event message
-+ * @data: private data
-+ *
-+ * Handle VTG top field and bottom field event.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+int sti_gdp_field_cb(struct notifier_block *nb,
-+		unsigned long event, void *data)
-+{
-+	struct sti_gdp *gdp = container_of(nb, struct sti_gdp, vtg_field_nb);
-+
-+	switch (event) {
-+	case VTG_TOP_FIELD_EVENT:
-+		gdp->is_curr_top = true;
-+		break;
-+	case VTG_BOTTOM_FIELD_EVENT:
-+		gdp->is_curr_top = false;
-+		break;
-+	default:
-+		DRM_ERROR("unsupported event: %lu\n", event);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_create
-+ * @dev:      device
-+ * @id:       gdp id
-+ * @baseaddr: IO addr
-+ *
-+ * Create a gdp object. Allocate memory and initialize parameters.
-+ *
-+ *
-+ * RETURNS:
-+ * Pointer to the created gdp object.
-+ */
-+struct sti_gdp *sti_gdp_create(struct device *dev, int id,
-+			       void __iomem *baseaddr)
-+{
-+	struct sti_gdp *gdp;
-+	struct device_node *np = dev->of_node;
-+	dma_addr_t dma;
-+	void *base;
-+	int i, size;
-+
-+	gdp = devm_kzalloc(dev, sizeof(*gdp), GFP_KERNEL);
-+	if (!gdp) {
-+		DRM_ERROR("Failed to allocate memory for GDP\n");
-+		return NULL;
-+	}
-+
-+	/* Allocate all the nodes within a single memory page */
-+	size = sizeof(struct sti_gdp_node) *
-+	    GDP_NODE_PER_FIELD * GDP_NODE_NB_BANK;
-+
-+	base = dma_alloc_writecombine(dev, size, &dma, GFP_KERNEL | GFP_DMA);
-+	if (!base) {
-+		DRM_ERROR("Failed to allocate memory for GDP node\n");
-+		goto mem_err;
-+	}
-+	memset(base, 0, size);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		if (virt_to_dma(dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			goto mem_err;
-+		}
-+		gdp->node_list[i].top_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].top_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+
-+		if (virt_to_dma(dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			goto mem_err;
-+		}
-+		gdp->node_list[i].btm_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].btm_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+	}
-+
-+	gdp->dev = dev;
-+	gdp->regs = baseaddr;
-+	gdp->get_formats = sti_gdp_get_formats;
-+	gdp->get_nb_formats = sti_gdp_get_nb_formats;
-+	gdp->prepare = sti_gdp_prepare_layer;
-+	gdp->commit = sti_gdp_commit_layer;
-+	gdp->disable = sti_gdp_disable_layer;
-+	gdp->vtg_field_nb.notifier_call = sti_gdp_field_cb;
-+
-+	if (of_device_is_compatible(np, "st,stih407-compositor")) {
-+		/* GDP of STiH407 chip have its own pixel clock */
-+		char *clk_name;
-+
-+		switch (id) {
-+		case STI_GDP_0:
-+			clk_name = "pix_gdp1";
-+			break;
-+		case STI_GDP_1:
-+			clk_name = "pix_gdp2";
-+			break;
-+		case STI_GDP_2:
-+			clk_name = "pix_gdp3";
-+			break;
-+		case STI_GDP_3:
-+			clk_name = "pix_gdp4";
-+			break;
-+		default:
-+			DRM_ERROR("GDP id not recognized\n");
-+			goto err_clk_pix_gdp;
-+		}
-+
-+		gdp->clk_pix = devm_clk_get(dev, clk_name);
-+		if (IS_ERR(gdp->clk_pix)) {
-+			DRM_ERROR("Cannot get %s clock\n", clk_name);
-+			goto err_clk_pix_gdp;
-+		}
-+	}
-+
-+	return gdp;
-+
-+err_clk_pix_gdp:
-+mem_err:
-+	devm_kfree(dev, gdp);
-+	return NULL;
-+}
-diff --git a/drivers/gpu/drm/sti/sti_gdp.h b/drivers/gpu/drm/sti/sti_gdp.h
-new file mode 100644
-index 0000000..4f7f40b
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.h
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2013
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_GDP_H_
-+#define _STI_GDP_H_
-+
-+#include <linux/types.h>
-+
-+#define GDP_NODE_NB_BANK	2
-+#define GDP_NODE_PER_FIELD	2
-+
-+struct sti_gdp_node {
-+	u32 gam_gdp_ctl;
-+	u32 gam_gdp_agc;
-+	u32 reserved1;
-+	u32 gam_gdp_vpo;
-+	u32 gam_gdp_vps;
-+	u32 gam_gdp_pml;
-+	u32 gam_gdp_pmp;
-+	u32 gam_gdp_size;
-+	u32 reserved2;
-+	u32 gam_gdp_nvn;
-+	u32 gam_gdp_key1;
-+	u32 gam_gdp_key2;
-+	u32 reserved3;
-+	u32 gam_gdp_ppt;
-+	u32 reserved4;
-+	u32 gam_gdp_cml;
-+};
-+
-+struct sti_gdp_node_list {
-+	struct sti_gdp_node *top_field;
-+	struct sti_gdp_node *btm_field;
-+};
-+
-+/*
-+ * STI GDP structure
-+ *
-+ * @device:		driver device
-+ * @regs:               subdevice register
-+ * @clk_pix:            pixel clock for the current gdp
-+ * @vtg_field_nb:       callback for VTG FIELD (top or bottom) notification
-+ * @is_curr_top:        true if the current node processed is the top field
-+ * @get_formats:	get GDP supported formats
-+ * @get_nb_formats:	get number of format supported
-+ * @prepare:		prepare GDP before rendering
-+ * @commit:		set GDP for rendering
-+ * @disable:		disable GDP
-+ * @node_list:		array of node list
-+ */
-+struct sti_gdp {
-+	struct device *dev;
-+	void __iomem *regs;
-+	struct clk *clk_pix;
-+	struct notifier_block vtg_field_nb;
-+	bool is_curr_top;
-+	const uint32_t* (*get_formats)(void);
-+	int (*get_nb_formats)(void);
-+	int (*prepare)(void *layer, bool first_prepare);
-+	int (*commit)(void *layer);
-+	int (*disable)(void *layer);
-+	struct sti_gdp_node_list node_list[GDP_NODE_NB_BANK];
-+};
-+
-+struct sti_gdp *sti_gdp_create(struct device *dev, int id,
-+		void __iomem *baseaddr);
-+
-+#endif
-diff --git a/drivers/gpu/drm/sti/sti_layer.h b/drivers/gpu/drm/sti/sti_layer.h
-index ed8386a..45cd1ea 100644
---- a/drivers/gpu/drm/sti/sti_layer.h
-+++ b/drivers/gpu/drm/sti/sti_layer.h
-@@ -10,6 +10,7 @@
- #define _STI_LAYER_H_
- 
- #include <drm/drmP.h>
-+#include "sti_gdp.h"
- 
- #define to_sti_layer(x) container_of(x, struct sti_layer, plane)
- 
-@@ -67,6 +68,7 @@ struct sti_fps_info {
-  * @offsets:		offset of 'planes'
-  * @paddr:		physical address of the input buffer
-  * @fps_info:		frame per second info
-+ * @gdp:                related GDP (if the layer is a GDP)
-  */
- struct sti_layer {
- 	struct drm_plane plane;
-@@ -74,6 +76,7 @@ struct sti_layer {
- 	struct drm_display_mode *mode;
- 	enum sti_layer_desc desc;
- 	int zorder;
-+	int mixer_id;
- 	bool enabled;
- 	int src_x, src_y;
- 	int src_w, src_h;
-@@ -84,12 +87,14 @@ struct sti_layer {
- 	int offsets[4];
- 	dma_addr_t paddr;
- 	struct sti_fps_info fps_info;
-+	struct sti_gdp *gdp;
- };
- 
- struct sti_layer *sti_layer_create(struct device *dev, int desc,
- 			void __iomem *baseaddr);
- int sti_layer_prepare(struct sti_layer *layer, struct drm_framebuffer *fb,
- 			struct drm_display_mode *mode,
-+			int mixer_id,
- 			int dest_x, int dest_y,
- 			int dest_w, int dest_h,
- 			int src_x, int src_y,
--- 
-1.9.1
+> Do we print out lots of pidns=0 for tasks not in a newly created NS?  Do
+> we want to?
 
+There is no "pidns=0", but I understand your point.  This would come
+back to Steve G.'s point about disappearing fields, and the value of
+having it as a seperate record that could be filtered.
+
+> > 6/6 tracks the creation and deletion of of namespaces, listing the type of
+> > namespace instance, related namespace id if there is one and the newly minted
+> > serial number.
+> > 
+> > Proposed output format:
+> > 	type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
+> 
+> I'd love to be able to grep for netns=20 and find both the NS_INIT and
+> the SYSCALL/NS_INFO records, instead of having them named different
+> things.  So basically I think you want to translate the type= into a
+> string for the old_X= and X=...
+
+That actually makes a bit more sense, and we could do away with the
+"type=" field since the "Xns=" fields are self-describing.
+
+
+Any hints on the timing issues mentioned in one of the notes?  I'm
+missing initial mntns and netns messages.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
