@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaETSNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:13:19 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:50559 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaETSNR (ORCPT
+	id S1753149AbaETSOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:14:36 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:59989 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaETSOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:13:17 -0400
-Date: Tue, 20 May 2014 11:13:12 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        dev@linux-sunxi.org, linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-mtd@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/9] mtd: nand: define struct nand_timings
-Message-ID: <20140520181312.GR28907@ld-irv-0074>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
- <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com>
- <20140430175157.GB2497@norris-Latitude-E6410>
- <20140508142930.GC5767@lee--X1>
+	Tue, 20 May 2014 14:14:35 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 2A6D952A40C
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-04.vodafone.de EE000E5758
+Message-ID: <537B9B79.8030104@vodafone.de>
+Date: Tue, 20 May 2014 20:14:17 +0200
+From: =?windows-1252?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140508142930.GC5767@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?windows-1252?Q?Marek_Ol=9A=E1k?= <maraeo@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+CC: "Deucher, Alexander" <alexander.deucher@amd.com>,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH 7/8] radeon: Out of line radeon_get_ib_value
+References: <1400276595-6965-1-git-send-email-andi@firstfloor.org> <1400276595-6965-8-git-send-email-andi@firstfloor.org> <CAAxE2A4YvKRNMu6ogYOX2zE2=N1Q6hd1c0niB3jf9f3P8rwoRw@mail.gmail.com>
+In-Reply-To: <CAAxE2A4YvKRNMu6ogYOX2zE2=N1Q6hd1c0niB3jf9f3P8rwoRw@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 03:29:30PM +0100, Lee Jones wrote:
-> > 
-> > Please document the units for these fields here. It looks like you're
-> > using picoseconds.
-> 
-> Can't we leave this open to interpretation?  For instance, it's more
-> convenient for our driver to handle these as nano second values.
+Yeah, agree. That function is quite critical for command stream parsing 
+and patching.
 
-No, their values will be determined by the nand_base core, and we must
-have something consistent for drivers to rely on. However, I don't
-really have a hard preference on nanoseconds versus picoseconds. If we
-see that many of the values reach low-digit nanosecons, or fractional
-nanoseconds, it probably makes sense to have the higher resolution.
+Christian.
 
-> > > +struct nand_sdr_timings {
-...
-> > > +	u32 tCS_min;
-> 
-> 	u32 tCSD_min;
+Am 20.05.2014 18:16, schrieb Marek Olšák:
+> I think the function should stay in the header file. It's used in
+> performance-critical code, so we want it to be inlined.
+>
+> Marek
+>
+> On Fri, May 16, 2014 at 11:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> From: Andi Kleen <ak@linux.intel.com>
+>>
+>> Saves about 5k of text
+>>
+>>     text    data     bss     dec     hex filename
+>> 14080360        2008168 1507328 17595856        10c7dd0 vmlinux-before-radeon
+>> 14074978        2008168 1507328 17590474        10c68ca vmlinux-radeon
+>>
+>> Cc: alexander.deucher@amd.com
+>> Cc: dri-devel@lists.freedesktop.org
+>> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>> ---
+>>   drivers/gpu/drm/radeon/radeon.h        | 10 +---------
+>>   drivers/gpu/drm/radeon/radeon_device.c |  9 +++++++++
+>>   2 files changed, 10 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+>> index 6852861..8cae409 100644
+>> --- a/drivers/gpu/drm/radeon/radeon.h
+>> +++ b/drivers/gpu/drm/radeon/radeon.h
+>> @@ -1032,15 +1032,7 @@ struct radeon_cs_parser {
+>>          struct ww_acquire_ctx   ticket;
+>>   };
+>>
+>> -static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
+>> -{
+>> -       struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
+>> -
+>> -       if (ibc->kdata)
+>> -               return ibc->kdata[idx];
+>> -       return p->ib.ptr[idx];
+>> -}
+>> -
+>> +u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
+>>
+>>   struct radeon_cs_packet {
+>>          unsigned        idx;
+>> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+>> index 0e770bb..1cbd171 100644
+>> --- a/drivers/gpu/drm/radeon/radeon_device.c
+>> +++ b/drivers/gpu/drm/radeon/radeon_device.c
+>> @@ -112,6 +112,15 @@ bool radeon_is_px(struct drm_device *dev)
+>>          return false;
+>>   }
+>>
+>> +u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
+>> +{
+>> +       struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
+>> +
+>> +       if (ibc->kdata)
+>> +               return ibc->kdata[idx];
+>> +       return p->ib.ptr[idx];
+>> +}
+>> +
+>>   /**
+>>    * radeon_program_register_sequence - program an array of registers.
+>>    *
+>> --
+>> 1.9.0
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-Is this a suggested addition, Lee? I agree with Boris that this looks
-like a DDR mode, which should not be covered here.
-
-> > > +	u32 tDH_min;
-> > > +	u32 tDS_min;
-> > > +	u32 tFEAT_max;
-> > > +	u32 tIR_min;
-> > > +	u32 tITC_max;
-> 
-> 	u32 tR_max;
-
-Same here, is this a suggested new field? If you need it, then we can
-follow up like Boris suggested, with a different method, since tR is not
-part of the electrical parameters of the timing mode.
-
-...
-> > > +};
-> > > +
-> > >  #endif /* __LINUX_MTD_NAND_H */
-
-Brian
