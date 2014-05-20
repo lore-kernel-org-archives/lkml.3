@@ -1,254 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaETCGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:06:24 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:29815 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750870AbaETCGW (ORCPT
+	id S932079AbaETCHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:07:06 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:32895 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979AbaETCHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:06:22 -0400
-Message-ID: <1400551571.10728.31.camel@pippen.local.home>
-Subject: Re: [PATCH 2/4] tools lib traceevent: Add options to plugins
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 19 May 2014 22:06:11 -0400
-In-Reply-To: <1400509775.1742.15.camel@leonhard>
-References: <20140516140215.149535442@goodmis.org>
-	 <20140516140502.340008258@goodmis.org> <1400509775.1742.15.camel@leonhard>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 19 May 2014 22:07:03 -0400
+Message-ID: <537AB8B2.3040000@linux.vnet.ibm.com>
+Date: Tue, 20 May 2014 07:36:42 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
+ for powerpc
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052002-7014-0000-0000-000004EA5F62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 23:29 +0900, Namhyung Kim wrote:
-> Hi Steve,
+On Tuesday 20 May 2014 04:53 AM, Hugh Dickins wrote:
+> On Mon, 19 May 2014, Madhavan Srinivasan wrote:
+>> On Monday 19 May 2014 05:42 AM, Rusty Russell wrote:
+>>> Hugh Dickins <hughd@google.com> writes:
+>>>> On Thu, 15 May 2014, Madhavan Srinivasan wrote:
+>>>>>
+>>>>> Hi Ingo,
+>>>>>
+>>>>> 	Do you have any comments for the latest version of the patchset. If
+>>>>> not, kindly can you pick it up as is.
+>>>>>
+>>>>>
+>>>>> With regards
+>>>>> Maddy
+>>>>>
+>>>>>> Kirill A. Shutemov with 8c6e50b029 commit introduced
+>>>>>> vm_ops->map_pages() for mapping easy accessible pages around
+>>>>>> fault address in hope to reduce number of minor page faults.
+>>>>>>
+>>>>>> This patch creates infrastructure to modify the FAULT_AROUND_ORDER
+>>>>>> value using mm/Kconfig. This will enable architecture maintainers
+>>>>>> to decide on suitable FAULT_AROUND_ORDER value based on
+>>>>>> performance data for that architecture. First patch also defaults
+>>>>>> FAULT_AROUND_ORDER Kconfig element to 4. Second patch list
+>>>>>> out the performance numbers for powerpc (platform pseries) and
+>>>>>> initialize the fault around order variable for pseries platform of
+>>>>>> powerpc.
+>>>>
+>>>> Sorry for not commenting earlier - just reminded by this ping to Ingo.
+>>>>
+>>>> I didn't study your numbers, but nowhere did I see what PAGE_SIZE you use.
+>>>>
+>>>> arch/powerpc/Kconfig suggests that Power supports base page size of
+>>>> 4k, 16k, 64k or 256k.
+>>>>
+>>>> I would expect your optimal fault_around_order to depend very much on
+>>>> the base page size.
+>>>
+>>> It was 64k, which is what PPC64 uses on all the major distributions.
+>>> You really only get a choice of 4k and 64k with 64 bit power.
+>>>
+>> This is true. PPC64 support multiple pagesize and yes the default page
+>> size of 64k, is taken as base pagesize for the tests.
+>>
+>>>> Perhaps fault_around_size would provide a more useful default?
+>>>
+>>> That seems to fit.  With 4k pages and order 4, you're asking for 64k.
+>>> Maddy's result shows 64k is also reasonable for 64k pages.
+>>>
+>>> Perhaps we try to generalize from two data points (a slight improvement
+>>> over doing it from 1!), eg:
+>>>
+>>> /* 4 seems good for 4k-page x86, 0 seems good for 64k page ppc64, so: */
+>>> unsigned int fault_around_order __read_mostly =
+>>>         (16 - PAGE_SHIFT < 0 ? 0 : 16 - PAGE_SHIFT);
 > 
-> 2014-05-16 (금), 10:02 -0400, Steven Rostedt:
+> Rusty's bimodal answer doesn't seem the right starting point to me.
 > 
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > 
-> > The traceevent plugins allows developers to have their events print out
-> > information that is more advanced than what can be achieved by the
-> > trace event format files.
-> > 
-> > As these plugins are used on the userspace side of the tracing tools, it
-> > is only logical that the tools should be able to produce different types
-> > of output for the events. The types of events still need to be defined by
-> > the plugins thus we need a way to pass information from the tool to the
-> > plugin to specify what type of information to be shown.
-> > 
-> > Not only does the information need to be passed by the tool to plugin, but
-> > the plugin also requires a way to notify the tool of what options it can
-> > provide.
-> > 
-> > This builds the plugin option infrastructure that is taken from trace-cmd
-> > that is used to allow plugins to produce different output based on the
-> > options specified by the tool.
-> > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  tools/lib/traceevent/event-parse.h  |  16 ++-
-> >  tools/lib/traceevent/event-plugin.c | 197 ++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 209 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-> > index a68ec3d8289f..d6c610a66006 100644
-> > --- a/tools/lib/traceevent/event-parse.h
-> > +++ b/tools/lib/traceevent/event-parse.h
-> > @@ -107,8 +107,8 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
-> >  typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
-> >  typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
-> >  
-> > -struct plugin_option {
-> > -	struct plugin_option		*next;
-> > +struct pevent_plugin_option {
-> > +	struct pevent_plugin_option	*next;
+> Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
+> the order of the fault-around size in bytes, and fault_around_pages()
+> use 1UL << (fault_around_order - PAGE_SHIFT)
+> - when that doesn't wrap, of course!
 > 
-> Hmm.. this name change reminds me that it might be better if this plugin
-> and option list belong to a pevent..
+> That would at least have a better chance of being appropriate for
+> architectures with 8k and 16k pages (Itanium springs to mind).
+> 
+> Not necessarily right for them, since each architecture may have
+> different faulting overheads; but a better chance of being right
+> than blindly assuming 4k or 64k pages for everyone.
+> 
+> I'd be glad to see that change go into v3.15: what do you think,
+> Kirill, are we too late to make such a change now?
+> Or do you see some objection to it?
+> 
+>> This may be right. But these are the concerns, will not this make other
+>> arch to pick default without any tuning
+> 
+> Wasn't FAULT_AROUND_ORDER 4 chosen solely on the basis of x86 4k pages?
+> Did other architectures, with other page sizes, back that default?
+> Clearly not powerpc.
 
-Yeah, eventually, but for now I want to try to sync what I have in
-trace-cmd with what is here in libtraceevent. At least to save history.
-Then we can modify it to be per pevent. For now, there's no users that
-need it per pevent. But that should definitely be changed before we push
-this out to distros.
-
-
-
-> 
-> 
-> >  	void				*handle;
-> >  	char				*file;
-> >  	char				*name;
-> > @@ -135,7 +135,7 @@ struct plugin_option {
-> >   * PEVENT_PLUGIN_OPTIONS:  (optional)
-> >   *   Plugin options that can be set before loading
-> >   *
-> > - *   struct plugin_option PEVENT_PLUGIN_OPTIONS[] = {
-> > + *   struct pevent_plugin_option PEVENT_PLUGIN_OPTIONS[] = {
-> >   *	{
-> >   *		.name = "option-name",
-> >   *		.plugin_alias = "overide-file-name", (optional)
-> > @@ -355,7 +355,7 @@ enum pevent_func_arg_type {
-> >  enum pevent_flag {
-> >  	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
-> >  	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
-> > -	PEVENT_DISABLE_PLUGINS		= 1 << 2,
-> > +	PEVENT_DISABLE_PLUGINS		= 1 << 2
-> 
-> Unnecessary change?
-
-Heh, probably from my ediff (in emacs) making this file more like what I
-had in trace-cmd. I can nuke it.
-
-> 
-> 
-> >  };
-> >  
-> >  #define PEVENT_ERRORS 							      \
-> > @@ -415,6 +415,14 @@ struct plugin_list;
-> >  struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
-> >  void traceevent_unload_plugins(struct plugin_list *plugin_list,
-> >  			       struct pevent *pevent);
-> > +char **traceevent_plugin_list_options(void);
-> > +void traceevent_plugin_free_options_list(char **list);
-> > +int traceevent_plugin_add_options(const char *name,
-> > +				  struct pevent_plugin_option *options);
-> > +void traceevent_plugin_remove_options(struct pevent_plugin_option *options);
-> > +void traceevent_print_plugins(struct trace_seq *s,
-> > +			      const char *prefix, const char *suffix,
-> > +			      const struct plugin_list *list);
-> >  
-> >  struct cmdline;
-> >  struct cmdline_list;
-> > diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-> > index 317466bd1a37..a24479426d58 100644
-> > --- a/tools/lib/traceevent/event-plugin.c
-> > +++ b/tools/lib/traceevent/event-plugin.c
-> > @@ -18,6 +18,7 @@
-> >   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> >   */
-> >  
-> > +#include <stdio.h>
-> >  #include <string.h>
-> >  #include <dlfcn.h>
-> >  #include <stdlib.h>
-> > @@ -30,12 +31,208 @@
-> >  
-> >  #define LOCAL_PLUGIN_DIR ".traceevent/plugins"
-> >  
-> > +static struct registered_plugin_options {
-> > +	struct registered_plugin_options	*next;
-> > +	struct pevent_plugin_option		*options;
-> > +} *registered_options;
-> > +
-> > +static struct trace_plugin_options {
-> > +	struct trace_plugin_options	*next;
-> > +	char				*plugin;
-> > +	char				*option;
-> > +	char				*value;
-> > +} *trace_plugin_options;
-> > +
-> >  struct plugin_list {
-> >  	struct plugin_list	*next;
-> >  	char			*name;
-> >  	void			*handle;
-> >  };
-> >  
-> > +/**
-> > + * traceevent_plugin_list_options - get list of plugin options
-> > + *
-> > + * Returns an array of char strings that list the currently registered
-> > + * plugin options in the format of <plugin>:<option>. This list can be
-> > + * used by toggling the option.
-> > + *
-> > + * Returns NULL if there's no options registered. On error it returns
-> > + * an (char **)-1 (must check for that)
-> 
-> What about making it a macro like INVALID_OPTION_LIST?
-
-Sure.
+Ok.
 
 > 
-> > + *
-> > + * Must be freed with traceevent_plugin_free_options_list().
-> > + */
-> > +char **traceevent_plugin_list_options(void)
-> > +{
-> > +	struct registered_plugin_options *reg;
-> > +	struct pevent_plugin_option *op;
-> > +	char **list = NULL;
-> > +	char *name;
-> > +	int count = 0;
-> > +
-> > +	for (reg = registered_options; reg; reg = reg->next) {
-> > +		for (op = reg->options; op->name; op++) {
-> > +			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
-> > +
-> > +			name = malloc(strlen(op->name) + strlen(alias) + 2);
-> > +			if (!name)
-> > +				goto err;
-> > +
-> > +			sprintf(name, "%s:%s", alias, op->name);
-> > +			list = realloc(list, count + 2);
-> > +			if (!list) {
+>> and also this will remove the
+>> compile time option to disable the feature?
 > 
-> This will lost the original list pointer.  Please use a temp variable.
-
-Thanks, will do.
-
-
+> Compile time option meaning your FAULT_AROUND_ORDER in mm/Kconfig
+> for v3.16?
 > 
-> 
-> > +				free(name);
-> > +				goto err;
-> > +			}
-> > +			list[count++] = name;
-> > +			list[count] = NULL;
-> > +		}
-> > +	}
-> > +	if (!count)
-> > +		return NULL;
-> > +	return list;
-> 
-> Isn't it enough to simply return the list?
+> I'm not sure whether Rusty was arguing against that or not I think
 
-Confused. Do you mean "Is it enough to simply return the list?"
+> we are all three concerned to have a more sensible default than what's
+> there at present.  I don't feel very strongly about your Kconfig
 
+Added it as one way to reset or disable the default value. But then I
+guess we decided on having FAULT_AROUND_ORDER as a variable which is
+more important than Kconfig option.
 
-> 
-> > +
-> > + err:
-> > +	while (--count > 0)
-> 
-> Shouldn't it be >= instead of > ?
-
-Yes! Nice catch.
-
-
-> 
-> Thanks,
-> Namhyung
-
-BTW, Are you at LinuxCon Japan?
-
--- Steve
-
-> 
-> 
-> > +		free(list[count]);
-> > +	free(list);
-> > +
-> > +	return (char **)((unsigned long)-1);
-> > +}
+> option: I've no objection, if it were to default to byte order 16.
 > 
 
+Thanks for review
+With regards
+Maddy
+
+> Hugh
+> 
 
