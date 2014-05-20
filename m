@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbaETJOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:14:09 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59941 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750808AbaETJOH (ORCPT
+	id S1752709AbaETJPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:15:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58529 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751260AbaETJPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:14:07 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches\@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH 2/2] irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
-In-Reply-To: <CAL85gmByuxTdPWaDZENDz=rKQtfZc44eUaCsnK04DfeXknAoYg@mail.gmail.com>
-	(Feng Kan's message of "Tue, 20 May 2014 02:26:33 +0100")
-Organization: ARM Ltd
-References: <1400278813-3048-1-git-send-email-fkan@apm.com>
-	<1400278813-3048-3-git-send-email-fkan@apm.com>
-	<878upynlz4.fsf@approximate.cambridge.arm.com>
-	<CAL85gmByuxTdPWaDZENDz=rKQtfZc44eUaCsnK04DfeXknAoYg@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Tue, 20 May 2014 10:14:05 +0100
-Message-ID: <87wqdg3j8i.fsf@approximate.cambridge.arm.com>
+	Tue, 20 May 2014 05:15:14 -0400
+Date: Tue, 20 May 2014 11:15:10 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        tj@kernel.org, kishon@ti.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/7] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140520091510.GA25381@kwain>
+References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
+ <537B1C35.20107@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537B1C35.20107@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20 2014 at  2:26:33 am BST, Feng Kan <fkan@apm.com> wrote:
->>>  #ifdef CONFIG_CPU_PM
->>> @@ -613,7 +636,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>                                       dist_base + GIC_DIST_PRI + i * 4);
->>>
->>>       writel_relaxed(GIC_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
->>> +     gic_cpu_if_up();
->>
->> Have you tested the save/restore path? It seems that we dont save
->> GICC_CTLR, so it may not do what you think it will...
->
-> We are debating which is the better method. Currently we are only
-> disabling the GIC distributor so it is not a problem. Later on, with
-> more aggressive PM we could have the helper core to setup the GIC CTLR
-> prior to releasing out of the PM state. However, it seems it would be
-> more cleaner if we save off the GIC_CTLR bits in the
-> gic_cpu_save. This would add additional items in to the
-> gic_chip_data. Would you be open to that?
+On Tue, May 20, 2014 at 11:11:17AM +0200, Sebastian Hesselbarth wrote:
+> On 05/20/2014 11:04 AM, Antoine Ténart wrote:
+> >+#define HOST_VSA_ADDR		0x0
+> >+#define HOST_VSA_DATA		0x4
+> >+#define PORT_VSR_ADDR           0x78
+> >+#define PORT_VSR_DATA           0x7c
+> 
+> Above two lines are indented with spaces.
 
-I'm open to anything that looks reasonable and doesn't introduce
-regressions. Saving/restoring the CPU interface state should be fine.
+Indeed ... sorry for that.
 
-	M.
+> >+#define PORT_SCR_CTL		0x2c
+> >+
+> >+#define CONTROL_REGISTER	0x0
+> >+#define MBUS_SIZE_CONTROL	0x4
+> >+
+> >+#define POWER_DOWN_PHY0			BIT(6)
+> >+#define POWER_DOWN_PHY1			BIT(14)
+> >+#define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+> >+#define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+> >+
+> >+#define PHY_BASE                0x200
+> 
+> ditto.
+> 
+> >+
+> >+/* register 0x01 */
+> >+#define REF_FREF_SEL_25         BIT(0)
+> >+#define PHY_MODE_SATA           (0x0 << 5)
+> 
+> ditto.
+> 
+> >+
+> >+/* register 0x02 */
+> >+#define USE_MAX_PLL_RATE        BIT(12)
+> 
+> ditto.
+> 
+> >+
+> >+/* register 0x23 */
+> >+#define DATA_BIT_WIDTH_10       (0x0 << 10)
+> >+#define DATA_BIT_WIDTH_20       (0x1 << 10)
+> >+#define DATA_BIT_WIDTH_40       (0x2 << 10)
+> 
+> ditto.
+> 
+> >+
+> >+/* register 0x25 */
+> >+#define PHY_GEN_MAX_1_5         (0x0 << 10)
+> >+#define PHY_GEN_MAX_3_0         (0x1 << 10)
+> >+#define PHY_GEN_MAX_6_0         (0x2 << 10)
+> 
+> ditto.
+
+Antoine
+
 -- 
-Jazz is not dead. It just smells funny.
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
