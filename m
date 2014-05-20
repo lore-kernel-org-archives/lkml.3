@@ -1,90 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaETWSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:18:14 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34813 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaETWSM (ORCPT
+	id S1751167AbaETWW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:22:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:62363 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaETWW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:18:12 -0400
-Date: Tue, 20 May 2014 23:17:58 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Message-ID: <20140520221758.GH12304@sirena.org.uk>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
- <1398295293-11033-3-git-send-email-mporter@linaro.org>
- <20140428115627.GY21279@lee--X1>
- <20140428140910.GB7719@beef>
- <20140520161131.GB32025@lee--X1>
- <20140520190055.GQ12304@sirena.org.uk>
- <20140520202923.GT32082@beef>
- <20140520214439.GS12304@sirena.org.uk>
- <20140520215726.GU32082@beef>
+	Tue, 20 May 2014 18:22:27 -0400
+Date: Wed, 21 May 2014 00:22:24 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Joe Perches <joe@perches.com>
+cc: Kurt Garloff <kurt@garloff.de>, Fabian Frederick <fabf@skynet.be>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Fwd: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop
+ by ilog2]
+In-Reply-To: <1400605982.26709.15.camel@joe-AO725>
+Message-ID: <Pine.LNX.4.64.1405210018540.8218@axis700.grange>
+References: <1400605982.26709.15.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rl31vBGKDBpRqJCj"
-Content-Disposition: inline
-In-Reply-To: <20140520215726.GU32082@beef>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/4] mfd: bcm590xx: add support for secondary I2C
- slave address
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:6xcJu9DytfcscJyzXBoaNnMVb5fUBxiR8d2Vsq83CDp
+ l9olXw4XVEugseqEg0QbNz/zSsT6LH6QHUqIEl4WmfzZwT8bDl
+ oDnLsUQbULZUXTqlv85aJD9Ql0wOx/Uk0h1rvUWWitunUXbyqj
+ vA1puQ52Cdh0tEWpUlYS4qfaIdHh4QAjIDPUiRkvJWQ7grTNuz
+ ZNnYFJa//Ale0K4ySN8UTurWi3mq182w674LWHVlI75MSzozye
+ 6gLSpIuSRKq7Xb02qTbgkatc91xZ/mCxbcehiajeN/+OwlTpKN
+ 7zkVl9t9oHusYlWoRts4t7BSIti4DhjxUxGqTs+BtWeqfJ+U7S
+ pPsRXifDR/1OTscD/ugAFPZe6Xh9rXr0M69eqHd5vnbPebEveH
+ wGmmtEZFMoLPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---Rl31vBGKDBpRqJCj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, 20 May 2014, Joe Perches wrote:
 
-On Tue, May 20, 2014 at 05:57:26PM -0400, Matt Porter wrote:
-> On Tue, May 20, 2014 at 10:44:39PM +0100, Mark Brown wrote:
+> Hello Kurt.
+> 
+> If you're still interested in tmscim.
+> 
+> Your garloff@suse.de address bounces....
+> 
+> btw:  Your MAINTAINERS entry is out of date.
+> 
+> MAINTAINERS-DC390/AM53C974 SCSI driver
+> MAINTAINERS:M:  Kurt Garloff <garloff@suse.de>
+> MAINTAINERS:W:  http://www.garloff.de/kurt/linux/dc390/
+> MAINTAINERS-M:  Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> MAINTAINERS-S:  Maintained
+> MAINTAINERS-F:  drivers/scsi/tmscsim.*
+> 
+> -------- Forwarded Message --------
+> From: Joe Perches <joe@perches.com>
+> To: Fabian Frederick <fabf@skynet.be>
+> Cc: linux-kernel <linux-kernel@vger.kernel.org>, Kurt Garloff
+> <garloff@suse.de>, akpm <akpm@linux-foundation.org>
+> Subject: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop by
+> ilog2
+> 
+> On Tue, 2014-05-20 at 18:48 +0200, Fabian Frederick wrote:
+> > Cc: Kurt Garloff <garloff@suse.de>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >  drivers/scsi/tmscsim.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
+> []
+> > @@ -1611,7 +1611,7 @@ dc390_Reselect( struct dc390_acb* pACB )
+> >        printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
+> >      else
+> >        lun ^= 1 << pACB->pScsiHost->this_id; /* Mask AdapterID */
+> > -    id = 0; while (lun >>= 1) id++;
+> > +    id = ilog2(lun);
+> >      /* Get LUN */
+> >      lun = DC390_read8 (ScsiFifo);
+> >      if (!(lun & IDENTIFY_BASE)) printk (KERN_ERR "DC390: Resel: Expect identify message!\n");
+> 
+> Hey Fabian.
+> 
+> You've submitted several of these now.
+> 
+> Have you gone through all of these to make sure
+> that the ilog2(<foo>) uses are always using a
+> non-zero <foo>?
 
-> > I looked at that but it seems I already acked the regulator part of the
-> > series and nothing else looked immediately relevant?
+I think here at least, lun indeed can be 0, at least there's a test there:
 
-> The series has cross dependencies (shared header include) and thus needs
-> to have both the mfd and regulator portions merged together. You had
-> mentioned in the v1 version that you'd like to take it through the
-> regulator tree and so Lee's comments earlier were with regard to you
-> taking the mfd portions.
+    if (!(lun & (1 << pACB->pScsiHost->this_id)))
+      printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
 
-Right, OK - because it depends on the earlier MFD patches (I think?) I
-was expecting it to be applied in MFD and merged over to regulator.
+So, it is possible, that the "1 << this_id" bit is not set, then possibly 
+it can be 0 too... Although from the hardware / SCSI PoV I'm not sure TBH. 
+To be on the safe side we could at least add a check for 0 and only use 
+ilog2, for != 0.
 
---Rl31vBGKDBpRqJCj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks
+Guennadi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> If so, that should be mentioned in the changelog.
+> 
+> These should probably add #include <linux/log2.h>
+> 
+> It would have been nicer to use a patch series
+> and a cover letter so I could make this reply to
+> to cover letter.
+> 
+> Please take the time to setup and use git send-email
+> instead of sylpheed.
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-iQIcBAEBAgAGBQJTe9SSAAoJELSic+t+oim9QOIP/16xpmlilX1hQbrOrr75vRYK
-SkMn8naEAWOn/gphQvLAatKSiAEbpZa0ITzknU3tjszoMNpCxZmiwzP79acJDmJQ
-tfD55V279M11FrBLGHkkmkBTaahFclPG16dD3GmdOXPjBya1EOCnAmml3XSnEwF5
-i56ZcC+UrCif9dQ64Km86+U95P7DvjVeuh9AaE3ScztzKTroguOmqoIbrVixdcCl
-sS6RmaNnXam0aXjiAoyN6kTuFdTk5tAo0u7Gf1ej4CSalKJnwySr5ejcEAYHACkN
-aTdHVM6tbnTffWp8bL1VwFc3QyLp3+QKnU7nrRtGPnTHItYCNduGK+IEo9cuMITe
-GyEcdfrJ4Z+N7TgHEfbT+H3iC9X59rPgQKz9LBi86gfsnYmeUkGYwDK97HFOXGEv
-B9ITG8rbY4xriYtS6FK0em04ylGfaMRGhEZX9eKT3DCSa0OLUdNBUOX3lDCJgMjB
-EgwNQ2kVtE7/FtNzHQjak5kB933g3YHCWfgNRB6jqjq3astg/JtGX/yzqGW99uK9
-Tumz1a3gBDaDOWpCpxQmjraXdKAAgDsAM2R7DymaFPkE0BDlFaJ2blw6vbNBz90b
-8XLLdukw6zYds01xE+R7yMQDG5EHmz0wvb/O/+xEuRd9zKKnUDG76mW3qGGEVVRO
-8Q+kUiNRm2WRNOvLtuxP
-=Cjmu
------END PGP SIGNATURE-----
-
---Rl31vBGKDBpRqJCj--
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
