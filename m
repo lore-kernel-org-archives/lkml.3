@@ -1,62 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaETLtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 07:49:46 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:17638 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbaETLto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 07:49:44 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-f3-537b41558366
-Message-id: <537B4153.8030203@samsung.com>
-Date: Tue, 20 May 2014 13:49:39 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Cc: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
-        pawel.moll@arm.com, kyungmin.park@samsung.com, sw0312.kim@samsung.com,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC V6 2/2] clk: Add handling of clk parent and rate
- assigned from DT
-References: <1400520171-6698-1-git-send-email-s.nawrocki@samsung.com>
- <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xq7qhjtXBBn+uClrMP3KO1aL/zUJW
-	iwN/djBanG16w26x6fE1VovLu+awWdy+zGux9shddoul1y8yWTydcJHNYsL0tSwWrXuPsFvM
-	mPySzWL9jNcsDnwea+atYfRoae5h87jc18vksWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5AI4o
-	LpuU1JzMstQifbsErozjcw4yF5xgqbjRcZC9gfECcxcjJ4eEgInE0tbJjBC2mMSFe+vZuhi5
-	OIQEljJKvD5+Bsr5xCixYv5PsCpeAS2JF5+6wbpZBFQlfl3ZBBZnEzCU6D3aB2RzcIgKREg8
-	viAEUS4o8WPyPRYQW0TARaLzwTowm1lgMZPEgV+RILawQLTErc3PmCB2NTJK3N79mB0kwSng
-	JvFqwkkmiAYdif2t09ggbHmJzWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWppcUJyUnmuoV5yY
-	W1yal66XnJ+7iRESR192MC4+ZnWIUYCDUYmH18G2KliINbGsuDL3EKMEB7OSCK+2bXWwEG9K
-	YmVValF+fFFpTmrxIUYmDk6pBsbZhTe7vl5I1HWpdA3tjHW/V9O4zV5dZun2D68yp8fPOWvT
-	eZMzJdVm14bjLMc/nQps3rbaTf00z7eVU9i2BMiwR3d+2/dnaS1rk0Sx5zTJtmuyHKfzr7yr
-	E2IvzLg//fzNc7+Ez5eETtYqWvDjx4Epjzs6/mkxFvR2RnKYMNRa/H5suyrXa5ESS3FGoqEW
-	c1FxIgAG3dzegQIAAA==
+	id S1753182AbaETLww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 07:52:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760AbaETLwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 07:52:51 -0400
+Date: Tue, 20 May 2014 14:50:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Igor Royzis <igorr@swortex.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
+        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
+Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
+Message-ID: <20140520115047.GB29805@redhat.com>
+References: <1400585062-13580-1-git-send-email-igorr@swortex.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400585062-13580-1-git-send-email-igorr@swortex.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/05/14 19:22, Sylwester Nawrocki wrote:
-> @@ -2620,7 +2639,10 @@ void __init of_clk_init(const struct of_device_id *matches)
->  		list_for_each_entry_safe(clk_provider, next,
->  					&clk_provider_list, node) {
->  			if (force || parent_ready(clk_provider->np)) {
+On Tue, May 20, 2014 at 02:24:21PM +0300, Igor Royzis wrote:
+> Fix accessing GSO fragments memory (and a possible corruption therefore) after
+> reporting completion in a zero copy callback. The previous fix in the commit 1fd819ec
+> orphaned frags which eliminates zero copy advantages. The fix makes the completion
+> called after all the fragments were processed avoiding unnecessary orphaning/copying
+> from userspace.
+> 
+> The GSO fragments corruption issue was observed in a typical QEMU/KVM VM setup that
+> hosts a Windows guest (since QEMU virtio-net Windows driver doesn't support GRO).
+> The fix has been verified by running the HCK OffloadLSO test.
+> 
+> Signed-off-by: Igor Royzis <igorr@swortex.com>
+> Signed-off-by: Anton Nayshtut <anton@swortex.com>
+
+OK but with 1fd819ec there's no corruption, correct?
+So this patch is in fact an optimization?
+If true, I'd like to see some performance numbers please.
+
+Thanks!
+
+> ---
+>  include/linux/skbuff.h |    1 +
+>  net/core/skbuff.c      |   18 +++++++++++++-----
+>  2 files changed, 14 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 08074a8..8c49edc 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -287,6 +287,7 @@ struct skb_shared_info {
+>  	struct sk_buff	*frag_list;
+>  	struct skb_shared_hwtstamps hwtstamps;
+>  	__be32          ip6_frag_id;
+> +	struct sk_buff  *zcopy_src;
+>  
+>  	/*
+>  	 * Warning : all fields before dataref are cleared in __alloc_skb()
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 1b62343..6fa6342 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -610,14 +610,18 @@ EXPORT_SYMBOL(__kfree_skb);
+>   */
+>  void kfree_skb(struct sk_buff *skb)
+>  {
+> +	struct sk_buff *zcopy_src;
+>  	if (unlikely(!skb))
+>  		return;
+>  	if (likely(atomic_read(&skb->users) == 1))
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+>  		return;
+> +	zcopy_src = skb_shinfo(skb)->zcopy_src;
+>  	trace_kfree_skb(skb, __builtin_return_address(0));
+>  	__kfree_skb(skb);
+> +	if (unlikely(zcopy_src))
+> +		kfree_skb(zcopy_src);
+>  }
+>  EXPORT_SYMBOL(kfree_skb);
+>  
+> @@ -662,14 +666,18 @@ EXPORT_SYMBOL(skb_tx_error);
+>   */
+>  void consume_skb(struct sk_buff *skb)
+>  {
+> +	struct sk_buff *zcopy_src;
+>  	if (unlikely(!skb))
+>  		return;
+>  	if (likely(atomic_read(&skb->users) == 1))
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+>  		return;
+> +	zcopy_src = skb_shinfo(skb)->zcopy_src;
+>  	trace_consume_skb(skb);
+>  	__kfree_skb(skb);
+> +	if (unlikely(zcopy_src))
+> +		consume_skb(zcopy_src);
+>  }
+>  EXPORT_SYMBOL(consume_skb);
+>  
+> @@ -2867,7 +2875,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>  	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
+>  	unsigned int mss = skb_shinfo(head_skb)->gso_size;
+>  	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+> -	struct sk_buff *frag_skb = head_skb;
+>  	unsigned int offset = doffset;
+>  	unsigned int tnl_hlen = skb_tnl_header_len(head_skb);
+>  	unsigned int headroom;
+> @@ -2913,7 +2920,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>  			i = 0;
+>  			nfrags = skb_shinfo(list_skb)->nr_frags;
+>  			frag = skb_shinfo(list_skb)->frags;
+> -			frag_skb = list_skb;
+>  			pos += skb_headlen(list_skb);
+>  
+>  			while (pos < offset + len) {
+> @@ -2975,6 +2981,11 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>  						 nskb->data - tnl_hlen,
+>  						 doffset + tnl_hlen);
+>  
+> +		if (skb_shinfo(head_skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
+> +			skb_shinfo(nskb)->zcopy_src = head_skb;
+> +			atomic_inc(&head_skb->users);
+> +		}
 > +
->  				clk_provider->clk_init_cb(clk_provider->np);
-> +				of_clk_set_defaults(np, true);
-
-There is an error in this patch, this line should read:
-
-+				of_clk_set_defaults(clk_provider->np, true);
-
->  				list_del(&clk_provider->node);
->  				kfree(clk_provider);
->  				is_init_done = true;
-
+>  		if (nskb->len == len + doffset)
+>  			goto perform_csum_check;
+>  
+> @@ -3001,7 +3012,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>  				i = 0;
+>  				nfrags = skb_shinfo(list_skb)->nr_frags;
+>  				frag = skb_shinfo(list_skb)->frags;
+> -				frag_skb = list_skb;
+>  
+>  				BUG_ON(!nfrags);
+>  
+> @@ -3016,8 +3026,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>  				goto err;
+>  			}
+>  
+> -			if (unlikely(skb_orphan_frags(frag_skb, GFP_ATOMIC)))
+> -				goto err;
+>  
+>  			*nskb_frag = *frag;
+>  			__skb_frag_ref(nskb_frag);
+> -- 
+> 1.7.9.5
