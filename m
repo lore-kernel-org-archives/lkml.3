@@ -1,267 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaETOLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:11:49 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37742 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaETOLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754020AbaETOLr (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 20 May 2014 10:11:47 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37550 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533AbaETOLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:11:44 -0400
 From: Javi Merino <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Punit.Agrawal@arm.com, Javi Merino <javi.merino@arm.com>,
         Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <edubezval@gmail.com>
-Subject: [RFC PATCH v2 4/7] thermal: introduce the Power Actor API
-Date: Tue, 20 May 2014 15:10:54 +0100
-Message-Id: <1400595057-8585-5-git-send-email-javi.merino@arm.com>
+Subject: [RFC PATCH v2 3/7] thermal: let governors have private data for each thermal zone
+Date: Tue, 20 May 2014 15:10:53 +0100
+Message-Id: <1400595057-8585-4-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
 References: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
-X-OriginalArrivalTime: 20 May 2014 14:11:46.0474 (UTC) FILETIME=[6F3310A0:01CF7435]
-X-MC-Unique: 114052015114511601
+X-OriginalArrivalTime: 20 May 2014 14:11:42.0849 (UTC) FILETIME=[6D09EF10:01CF7435]
+X-MC-Unique: 114052015114300301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4KEBrfm012778
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4KEC6Hw012786
 
-This patch introduces the Power Actor API in the thermal framework.
-With it, devices that can report their power consumption and control
-it can be registered.  This base interface is meant to be used to
-derive specific power actors, such as a cpu power actor.
+A governor may need to store its current state between calls to
+throttle().  That state depends on the thermal zone, so store it as
+private data in struct thermal_zone_device.
+
+The governors may have two new ops: bind_to_tz() and unbind_from_tz().
+When provided, these functions let governors do some initialization
+and teardown when they are bound/unbound to a tz and possibly store that
+information in the governor_data field of the struct
+thermal_zone_device.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: Eduardo Valentin <edubezval@gmail.com>
 Signed-off-by: Javi Merino <javi.merino@arm.com>
 ---
- Documentation/thermal/power_actor.txt     |   29 +++++++++++++
- drivers/thermal/Kconfig                   |    3 ++
- drivers/thermal/Makefile                  |    2 +
- drivers/thermal/power_actor/Makefile      |    5 +++
- drivers/thermal/power_actor/power_actor.c |   66 +++++++++++++++++++++++++++++
- drivers/thermal/power_actor/power_actor.h |   63 +++++++++++++++++++++++++++
- 6 files changed, 168 insertions(+)
- create mode 100644 Documentation/thermal/power_actor.txt
- create mode 100644 drivers/thermal/power_actor/Makefile
- create mode 100644 drivers/thermal/power_actor/power_actor.c
- create mode 100644 drivers/thermal/power_actor/power_actor.h
+ drivers/thermal/thermal_core.c |   83 ++++++++++++++++++++++++++++++++++++----
+ include/linux/thermal.h        |    9 +++++
+ 2 files changed, 84 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/thermal/power_actor.txt b/Documentation/thermal/power_actor.txt
-new file mode 100644
-index 000000000000..a0f06e091907
---- /dev/null
-+++ b/Documentation/thermal/power_actor.txt
-@@ -0,0 +1,29 @@
-+
-+Power Actor API
-+===============
-+
-+The base power actor API is meant to be used to derive specific power
-+actors, such as a cpu power actor.  When registering, they should call
-+`power_actor_register()` with a unique `enum power_actor_types`.  When
-+unregistering, the power actor should call `power_actor_unregister()`
-+with the `struct power_actor *` received in the call to
-+`power_actor_register()`.
-+
-+Callbacks
-+---------
-+
-+1. u32 get_req_power(struct power_actor *actor)
-+@actor: a valid `struct power_actor *` registered with
-+        `power_actor_register()`
-+
-+`get_req_power()` returns the current requested power in milliwatts.
-+
-+2. int set_power(struct power_actor *actor, u32 power)
-+@actor: a valid `struct power_actor *` registered with
-+        `power_actor_register()`
-+@power: power in milliwatts
-+
-+`set_power()` should configure the device to consume @power
-+milliwatts.
-+
-+Returns 0 on success, -E* on error.
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 2d51912a6e40..47e2f15537ca 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -89,6 +89,9 @@ config THERMAL_GOV_USER_SPACE
- 	help
- 	  Enable this to let the user space manage the platform thermals.
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 71b0ec0c370d..1b13d8e0cfd1 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -72,6 +72,58 @@ static struct thermal_governor *__find_governor(const char *name)
+ 	return NULL;
+ }
  
-+config THERMAL_POWER_ACTOR
-+	bool
-+
- config CPU_THERMAL
- 	bool "generic cpu cooling support"
- 	depends on CPU_FREQ
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 54e4ec9eb5df..878a02cab7d1 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -14,6 +14,8 @@ thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
- thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
- thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
- 
-+obj-$(CONFIG_THERMAL_POWER_ACTOR) += power_actor/
-+
- # cpufreq cooling
- thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
- 
-diff --git a/drivers/thermal/power_actor/Makefile b/drivers/thermal/power_actor/Makefile
-new file mode 100644
-index 000000000000..46478f4928be
---- /dev/null
-+++ b/drivers/thermal/power_actor/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the power actors
-+#
-+
-+obj-y += power_actor.o
-diff --git a/drivers/thermal/power_actor/power_actor.c b/drivers/thermal/power_actor/power_actor.c
-new file mode 100644
-index 000000000000..3edcb1ab4dff
---- /dev/null
-+++ b/drivers/thermal/power_actor/power_actor.c
-@@ -0,0 +1,66 @@
-+/*
-+ * Basic interface for power actors
-+ *
-+ * Copyright (C) 2014 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#define pr_fmt(fmt) "Power actor: " fmt
-+
-+#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+
-+#include "power_actor.h"
-+
-+LIST_HEAD(actor_list);
-+
 +/**
-+ * power_actor_register - Register an actor in the power actor API
-+ * @type:	actor type
-+ * @ops:	struct power_actor_ops for this actor
-+ * @max_power:	maximum power that this actor can consume
-+ * @privdata:	pointer to private data related to the actor
++ * bind_previous_governor - bind the previous governor of the thermal zone
++ * @tz:		a valid pointer to a struct thermal_zone_device
++ * @failed_gov_name:	the name of the governor that failed to register
 + *
-+ * Returns the struct power_actor * on success, ERR_PTR() on failure
++ * Register the previous governor of the thermal zone after a new
++ * governor has failed to be bound.
 + */
-+struct power_actor *power_actor_register(enum power_actor_types type,
-+					struct power_actor_ops *ops,
-+					u32 max_power, void *privdata)
++static void bind_previous_governor(struct thermal_zone_device *tz,
++				const char *failed_gov_name)
 +{
-+	struct power_actor *actor;
-+
-+	if (!ops->get_req_power || !ops->set_power)
-+		return ERR_PTR(-EINVAL);
-+
-+	actor = kzalloc(sizeof(*actor), GFP_KERNEL);
-+	if (!actor)
-+		return ERR_PTR(-ENOMEM);
-+
-+	actor->type = type;
-+	actor->ops = ops;
-+	actor->max_power = max_power;
-+	actor->data = privdata;
-+
-+	list_add(&actor->actor_node, &actor_list);
-+
-+	return actor;
++	if (tz->governor && tz->governor->bind_to_tz) {
++		if (tz->governor->bind_to_tz(tz)) {
++			dev_warn(&tz->device,
++				"governor %s failed to bind and the previous one (%s) failed to register again, thermal zone %s has no governor\n",
++				failed_gov_name, tz->governor->name, tz->type);
++			tz->governor = NULL;
++		}
++	}
 +}
 +
 +/**
-+ * power_actor_unregister - Unregister an actor
-+ * @actor:	the actor to unregister
++ * thermal_set_governor() - Switch to another governor
++ * @tz:		a valid pointer to a struct thermal_zone_device
++ * @new_gov:	pointer to the new governor
++ *
++ * Change the governor of thermal zone @tz.
++ *
++ * Returns 0 on success, an error if the new governor's bind_to_tz() failed.
 + */
-+void power_actor_unregister(struct power_actor *actor)
++static int thermal_set_governor(struct thermal_zone_device *tz,
++				struct thermal_governor *new_gov)
 +{
-+	list_del(&actor->actor_node);
-+	kfree(actor);
++	int ret = 0;
++
++	if (tz->governor && tz->governor->unbind_from_tz)
++		tz->governor->unbind_from_tz(tz);
++
++	if (new_gov && new_gov->bind_to_tz) {
++		ret = new_gov->bind_to_tz(tz);
++		if (ret) {
++			bind_previous_governor(tz, new_gov->name);
++
++			return ret;
++		}
++	}
++
++	tz->governor = new_gov;
++
++	return ret;
 +}
-diff --git a/drivers/thermal/power_actor/power_actor.h b/drivers/thermal/power_actor/power_actor.h
-new file mode 100644
-index 000000000000..82be19ce741d
---- /dev/null
-+++ b/drivers/thermal/power_actor/power_actor.h
-@@ -0,0 +1,63 @@
-+/*
-+ * Copyright (C) 2014 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
 +
-+#ifndef __POWER_ACTOR_H__
-+#define __POWER_ACTOR_H__
+ int thermal_register_governor(struct thermal_governor *governor)
+ {
+ 	int err;
+@@ -104,8 +156,15 @@ int thermal_register_governor(struct thermal_governor *governor)
+ 
+ 		name = pos->tzp->governor_name;
+ 
+-		if (!strnicmp(name, governor->name, THERMAL_NAME_LENGTH))
+-			pos->governor = governor;
++		if (!strnicmp(name, governor->name, THERMAL_NAME_LENGTH)) {
++			int ret;
 +
-+#include <linux/list.h>
++			ret = thermal_set_governor(pos, governor);
++			if (ret)
++				dev_warn(&pos->device,
++					"Failed to set governor %s for thermal zone %s: %d\n",
++					governor->name, pos->type, ret);
++		}
+ 	}
+ 
+ 	mutex_unlock(&thermal_list_lock);
+@@ -131,7 +190,7 @@ void thermal_unregister_governor(struct thermal_governor *governor)
+ 	list_for_each_entry(pos, &thermal_tz_list, node) {
+ 		if (!strnicmp(pos->governor->name, governor->name,
+ 						THERMAL_NAME_LENGTH))
+-			pos->governor = NULL;
++			thermal_set_governor(pos, NULL);
+ 	}
+ 
+ 	mutex_unlock(&thermal_list_lock);
+@@ -756,8 +815,9 @@ policy_store(struct device *dev, struct device_attribute *attr,
+ 	if (!gov)
+ 		goto exit;
+ 
+-	tz->governor = gov;
+-	ret = count;
++	ret = thermal_set_governor(tz, gov);
++	if (!ret)
++		ret = count;
+ 
+ exit:
+ 	mutex_unlock(&thermal_governor_lock);
+@@ -1452,6 +1512,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	int result;
+ 	int count;
+ 	int passive = 0;
++	struct thermal_governor *governor;
+ 
+ 	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
+ 		return ERR_PTR(-EINVAL);
+@@ -1542,9 +1603,15 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	mutex_lock(&thermal_governor_lock);
+ 
+ 	if (tz->tzp)
+-		tz->governor = __find_governor(tz->tzp->governor_name);
++		governor = __find_governor(tz->tzp->governor_name);
+ 	else
+-		tz->governor = def_governor;
++		governor = def_governor;
 +
-+#define MAX_NUM_ACTORS 8
-+
-+enum power_actor_types {
-+};
-+
-+struct power_actor;
-+
-+/**
-+ * struct power_actor_ops - callbacks for power actors
-+ * @get_req_power:	return the current requested power in milliwatts
-+ * @set_power:		configure the device to consume a certain power in
-+ *			milliwatts
-+ */
-+struct power_actor_ops {
-+	u32 (*get_req_power)(struct power_actor *);
-+	int (*set_power)(struct power_actor *, u32);
-+};
-+
-+/**
-+ * struct power_actor - structure for a power actor
-+ * @type:	the type of power actor.
-+ * @ops:	callbacks for the power actor
-+ * @max_power:	the maximum power that this actor can consume, in milliwatts
-+ * @data:	a private pointer for type-specific data
-+ * @actor_node:	node in actor_list
-+ */
-+struct power_actor {
-+	enum power_actor_types type;
-+	struct power_actor_ops *ops;
-+	u32 max_power;
-+	void *data;
-+	struct list_head actor_node;
-+};
-+
-+struct power_actor *power_actor_register(enum power_actor_types type,
-+					struct power_actor_ops *ops,
-+					u32 max_power, void *privdata);
-+void power_actor_unregister(struct power_actor *actor);
-+
-+extern struct list_head actor_list;
-+
-+#endif /* __POWER_ACTOR_H__ */
++	result = thermal_set_governor(tz, governor);
++	if (result) {
++		mutex_unlock(&thermal_governor_lock);
++		goto unregister;
++	}
+ 
+ 	mutex_unlock(&thermal_governor_lock);
+ 
+@@ -1634,7 +1701,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+ 		device_remove_file(&tz->device, &dev_attr_mode);
+ 	device_remove_file(&tz->device, &dev_attr_policy);
+ 	remove_trip_attrs(tz);
+-	tz->governor = NULL;
++	thermal_set_governor(tz, NULL);
+ 
+ 	thermal_remove_hwmon_sysfs(tz);
+ 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 9b7cb804e03f..06971c4779a8 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -186,6 +186,7 @@ struct thermal_attr {
+  * @ops:	operations this thermal_zone_device supports
+  * @tzp:	thermal zone parameters
+  * @governor:	pointer to the governor for this thermal zone
++ * @governor_data:	private pointer for governor data
+  * @thermal_instances:	list of struct thermal_instance of this thermal zone
+  * @idr:	struct idr to generate unique id for this zone's cooling devices
+  * @lock:	lock to protect thermal_instances list
+@@ -211,6 +212,7 @@ struct thermal_zone_device {
+ 	struct thermal_zone_device_ops *ops;
+ 	const struct thermal_zone_params *tzp;
+ 	struct thermal_governor *governor;
++	void *governor_data;
+ 	struct list_head thermal_instances;
+ 	struct idr idr;
+ 	struct mutex lock;
+@@ -221,12 +223,19 @@ struct thermal_zone_device {
+ /**
+  * struct thermal_governor - structure that holds thermal governor information
+  * @name:	name of the governor
++ * @bind_to_tz: callback called when binding to a thermal zone.  If it
++ *		returns 0, the governor is bound to the thermal zone,
++ *		otherwise it fails.
++ * @unbind_from_tz:	callback called when a governor is unbound from a
++ *			thermal zone.
+  * @throttle:	callback called for every trip point even if temperature is
+  *		below the trip point temperature
+  * @governor_list:	node in thermal_governor_list (in thermal_core.c)
+  */
+ struct thermal_governor {
+ 	char name[THERMAL_NAME_LENGTH];
++	int (*bind_to_tz)(struct thermal_zone_device *tz);
++	void (*unbind_from_tz)(struct thermal_zone_device *tz);
+ 	int (*throttle)(struct thermal_zone_device *tz, int trip);
+ 	struct list_head	governor_list;
+ };
 -- 
 1.7.9.5
 
