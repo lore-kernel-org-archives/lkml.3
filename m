@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaETDHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 23:07:40 -0400
-Received: from alerce.vps.bitfolk.com ([85.119.82.134]:45240 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaETDHj (ORCPT
+	id S1752619AbaETDNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 23:13:50 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:50650 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaETDNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 23:07:39 -0400
-Date: Tue, 20 May 2014 04:06:43 +0100
-From: Rodrigo Campos <rodrigo@sdfg.com.ar>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCHSET 00/21] perf tools: Add support to accumulate hist
- periods (v9)
-Message-ID: <20140520030643.GB29706@sdfg.com.ar>
-References: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
- <20140519151120.GE24333@sdfg.com.ar>
- <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
+	Mon, 19 May 2014 23:13:49 -0400
+Date: Mon, 19 May 2014 23:13:47 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
+        "superlibj8301@gmail.com" <superlibj8301@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3] arm: ioremap: Fix static vm area boundary check.
+In-Reply-To: <9258c0b00a33484a8d289378047f8cd4@BY2PR03MB505.namprd03.prod.outlook.com>
+Message-ID: <alpine.LFD.2.11.1405192306390.17310@knanqh.ubzr>
+References: <1400232920-25079-1-git-send-email-Li.Xiubo@freescale.com> <alpine.LFD.2.11.1405161403400.17310@knanqh.ubzr> <9258c0b00a33484a8d289378047f8cd4@BY2PR03MB505.namprd03.prod.outlook.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 02:29:31AM +0000, Namhyung Kim wrote:
-> Hi Rodrigo,
-> 
-> On Mon, May 19, 2014 at 3:11 PM, Rodrigo Campos <rodrigo@sdfg.com.ar> wrote:
-> > Is there something I can help to have this merged ? As far as I tested, this
-> > works fine here. Or is this ok, just waiting on the "perf report: Add -F option for
-> > specifying output fields" patchset ?
-> 
-> Thanks for testing!!  As I never got (negative) feedbacks or reviews
-> so far, I'd assume it's ok. :)  But as you said, it should wait for
-> the output field option merged which I hope to be done soon.  I'll
-> update and report this once it's done.
+On Mon, 19 May 2014, Li.Xiubo@freescale.com wrote:
 
-Great, thanks a lot! :-)
+> > > For each vmalloc area, there is one guard page at the end of it.
+> > > so the vm->size = PAGE_ALIGN(offset + request size) + guard page size.
+> > 
+> > Nope.  There is no guard page for statically created vmalloc areas.
+> > 
+> 
+> Yes, you are right, I'm thinking why the static area has no guard page?
+
+The virtual addresses being used are provided by the static mapping 
+descriptions themselves.  Sometimes those mappings are large and 
+contiguous, covering multiple peripherals at once with a single TLB, 
+etc.  There is simply no room for a guard page, or no guard page at all 
+between different areas covered by a single section mapping (1MB worth 
+of mapping from a single page table entry).
+
+All this to say that trying to enforce a guard page in those cases is 
+likely to throw away all the performance advantage and conplexify 
+things.
+
+
+Nicolas
