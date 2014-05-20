@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012AbaETOAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:00:43 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45793 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753972AbaETOAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:00:40 -0400
-Message-ID: <537B5FCD.8040704@st.com>
-Date: Tue, 20 May 2014 15:59:41 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753989AbaETOAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:00:39 -0400
+Received: from tex.lwn.net ([70.33.254.29]:33372 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444AbaETOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:00:35 -0400
+Date: Tue, 20 May 2014 08:00:33 -0600
+From: Jake Edge <jake@lwn.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jason Cooper <jason@lakedaemon.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Anton Saraev <antonysaraev@gmail.com>
+Subject: [PATCH 2/3] staging/skein: comment typos
+Message-ID: <20140520080033.2e54e6d0@chukar.edge2.net>
+In-Reply-To: <20140520075612.220a13ae@chukar.edge2.net>
+References: <20140520075612.220a13ae@chukar.edge2.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, <olof@lixom.net>
-Cc: <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH v3 00/11] ARM: STi: Add Clock driver support STiH415 &
- STiH416
-References: <1400592175-13176-1-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1400592175-13176-1-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-20_03:2014-05-20,2014-05-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the series:
+fix some comment typos
 
-Acked-by: Maxime Coquelin <maixme.coquelin@st.com>
+Signed-off-by: Jake Edge <jake@lwn.net>
+---
 
-Thanks,
-Maxime
+against staging-next branch of staging tree
 
-On 05/20/2014 03:22 PM, Gabriel FERNANDEZ wrote:
-> Changes in v2:
->   - cosmetic changes (lower case of clock nodes and names)
->
-> Changes in v2:
->   - move stih415-clks.h & stih416-clks.h to include/dt-bindings/clock/
->   - add clk_ignore_unused to bootargs. Interconnect clocks are not yet
->     managed at the init, then we have to start the kernel with
->     clk_ignore_unused.
->
-> The goal of this series is to add DT definition for STiH415
-> and STiH416 SoCs on B2000 and B2020 boards.
->
-> Gabriel Fernandez (11):
->    ARM: STi: DT: STiH41x: Rename CLK_SYSIN into clk_sysin
->    ARM: STi: DT: STiH416: 416 DT Entry for clockgen A0/1/10/11/12
->    ARM: STi: DT: STiH416: Remove unused CLK_S_ICN_REG_0 fixed clock
->    ARM: STi: DT: STiH416: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY
->      fixed clocks
->    ARM: STi: DT: STiH416: 416 DT Entry for clockgen B/C/D/E/F
->    ARM: STi: DT: STiH416: 416 DT Entry for clockgen A9/DDR/GPU
->    ARM: STi: DT: STiH415: 415 DT Entry for clockgen A0/1/10/11/12
->    ARM: STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock
->    ARM: STi: DT: STiH415: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY
->      fixed clocks
->    ARM: STi: DT: STiH415: 415 DT Entry for clockgen A9
->    ARM: STi: DT: STiH41x Add clk_ignore_unused to bootargs
->
->   arch/arm/boot/dts/stih415-clock.dtsi     | 519 +++++++++++++++++++++-
->   arch/arm/boot/dts/stih415.dtsi           |  18 +-
->   arch/arm/boot/dts/stih416-clock.dtsi     | 735 ++++++++++++++++++++++++++++++-
->   arch/arm/boot/dts/stih416.dtsi           |  18 +-
->   arch/arm/boot/dts/stih41x-b2000.dtsi     |   2 +-
->   arch/arm/boot/dts/stih41x-b2020.dtsi     |   2 +-
->   include/dt-bindings/clock/stih415-clks.h |  15 +
->   include/dt-bindings/clock/stih416-clks.h |  15 +
->   8 files changed, 1268 insertions(+), 56 deletions(-)
->   create mode 100644 include/dt-bindings/clock/stih415-clks.h
->   create mode 100644 include/dt-bindings/clock/stih416-clks.h
->
+ drivers/staging/skein/threefish_api.h | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/skein/threefish_api.h b/drivers/staging/skein/threefish_api.h
+index 2fce154..8d5ddf8 100644
+--- a/drivers/staging/skein/threefish_api.h
++++ b/drivers/staging/skein/threefish_api.h
+@@ -12,7 +12,7 @@
+  * follow the openSSL design but at the same time take care of some Threefish
+  * specific behaviour and possibilities.
+  *
+- * These are the low level functions that deal with Threefisch blocks only.
++ * These are the low level functions that deal with Threefish blocks only.
+  * Implementations for cipher modes such as ECB, CFB, or CBC may use these
+  * functions.
+  *
+@@ -77,9 +77,9 @@ void threefish_set_key(struct threefish_key *key_ctx,
+ 		       u64 *key_data, u64 *tweak);
+ 
+ /**
+- * Encrypt Threefisch block (bytes).
++ * Encrypt Threefish block (bytes).
+  *
+- * The buffer must have at least the same length (number of bits) aas the
++ * The buffer must have at least the same length (number of bits) as the
+  * state size for this key. The function uses the first @c state_size bits
+  * of the input buffer, encrypts them and stores the result in the output
+  * buffer.
+@@ -95,9 +95,9 @@ void threefish_encrypt_block_bytes(struct threefish_key *key_ctx, u8 *in,
+ 				   u8 *out);
+ 
+ /**
+- * Encrypt Threefisch block (words).
++ * Encrypt Threefish block (words).
+  *
+- * The buffer must have at least the same length (number of bits) aas the
++ * The buffer must have at least the same length (number of bits) as the
+  * state size for this key. The function uses the first @c state_size bits
+  * of the input buffer, encrypts them and stores the result in the output
+  * buffer.
+@@ -115,9 +115,9 @@ void threefish_encrypt_block_words(struct threefish_key *key_ctx, u64 *in,
+ 				   u64 *out);
+ 
+ /**
+- * Decrypt Threefisch block (bytes).
++ * Decrypt Threefish block (bytes).
+  *
+- * The buffer must have at least the same length (number of bits) aas the
++ * The buffer must have at least the same length (number of bits) as the
+  * state size for this key. The function uses the first @c state_size bits
+  * of the input buffer, decrypts them and stores the result in the output
+  * buffer
+@@ -133,9 +133,9 @@ void threefish_decrypt_block_bytes(struct threefish_key *key_ctx, u8 *in,
+ 				   u8 *out);
+ 
+ /**
+- * Decrypt Threefisch block (words).
++ * Decrypt Threefish block (words).
+  *
+- * The buffer must have at least the same length (number of bits) aas the
++ * The buffer must have at least the same length (number of bits) as the
+  * state size for this key. The function uses the first @c state_size bits
+  * of the input buffer, encrypts them and stores the result in the output
+  * buffer.
+-- 
+1.9.0
+
+
+
+-- 
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
