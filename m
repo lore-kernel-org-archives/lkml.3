@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaETT77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:59:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34266 "EHLO
+	id S1753612AbaETUBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:01:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaETT75 (ORCPT
+	with ESMTP id S1750826AbaETUBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:59:57 -0400
-Date: Tue, 20 May 2014 12:59:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
-        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
-        mingo@kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-Message-Id: <20140520125956.aa61a3bfd84d4d6190740ce2@linux-foundation.org>
-In-Reply-To: <20140520102738.7F096E009B@blue.fi.intel.com>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
-	<537479E7.90806@linux.vnet.ibm.com>
-	<alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
-	<87wqdik4n5.fsf@rustcorp.com.au>
-	<53797511.1050409@linux.vnet.ibm.com>
-	<alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
-	<20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
-	<20140520004429.E660AE009B@blue.fi.intel.com>
-	<87oaythsvk.fsf@rustcorp.com.au>
-	<20140520102738.7F096E009B@blue.fi.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 16:01:15 -0400
+Date: Wed, 21 May 2014 05:01:04 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v2 0/6] soc: ti: Add Keystone Navigator drivers
+Message-ID: <20140520200104.GA27786@kroah.com>
+References: <1398296783-1176-1-git-send-email-santosh.shilimkar@ti.com>
+ <537B5F5E.9080703@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537B5F5E.9080703@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 13:27:38 +0300 (EEST) "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-
-> Rusty Russell wrote:
-> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
-> > > Andrew Morton wrote:
-> > >> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
-> > >> 
-> > >> > Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
-> > >> > the order of the fault-around size in bytes, and fault_around_pages()
-> > >> > use 1UL << (fault_around_order - PAGE_SHIFT)
-> > >> 
-> > >> Yes.  And shame on me for missing it (this time!) at review.
-> > >> 
-> > >> There's still time to fix this.  Patches, please.
-> > >
-> > > Here it is. Made at 3.30 AM, build tested only.
+On Tue, May 20, 2014 at 09:57:50AM -0400, Santosh Shilimkar wrote:
+> Greg,
+> 
+> On Wednesday 23 April 2014 07:46 PM, Santosh Shilimkar wrote:
+> > Here is an updated version of the Keystone Navigator drivers after
+> > addressing comments from earlier version [1].
 > > 
-> > Prefer on top of Maddy's patch which makes it always a variable, rather
-> > than CONFIG_DEBUG_FS.  It's got enough hair as it is.
-> 
-> Something like this?
+> > The QMSS found on Keystone SOCs is one of the main hardware sub
+> > system which forms the backbone of the Keystone Multi-core Navigator.
+> > QMSS consist of queue managers, packed-data structure processors(PDSP),
+> > linking RAM, descriptor pools and infrastructure DMA.
+> > 
+> > After the discussion and alignment [2] on Navigator DMA, now we pair
+> > this driver along with QMSS. Initially this driver was proposed as DMA
+> > engine driver but since the hardware is not typical DMA engine and doesn't
+> > comply with typical DMA engine driver needs, that approach was naked.
+> > 
+> > These two drivers works as infrastructure drivers for subsystems like
+> > Ethernet subsystem, SRIO subsystem, Crypto Engines etc on Keystone
+> > SOC families. Testing is done with NetCP(ethernet) subsystem drivers.
+> > 
+> > I would like to get these drivers merged in upcoming(3.16) window, so
+> > any help in terms of review is appreciated. Thanks
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Cc: Olof Johansson <olof@lixom.net>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > 
+> I plan to respin v3 of the series for the few device tree related
+> comments I received from Rob H (thanks Rob). Can you please have a
+> look and gsee if you have any comments so that I can include them
+> in next version.
 
-This appears to be against mainline, not against Madhavan's patch.  As
-mentioned previously, I'd prefer it that way but confused.
+I am so far behind in patch review, please just redo them based on
+other's comments and resend, don't wait for me.
 
-
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Tue, 20 May 2014 13:02:03 +0300
-> Subject: [PATCH] mm: nominate faultaround area in bytes rather then page order
-> 
-> There are evidences that faultaround feature is less relevant on
-> architectures with page size bigger then 4k. Which makes sense since
-> page fault overhead per byte of mapped area should be less there.
-> 
-> Let's rework the feature to specify faultaround area in bytes instead of
-> page order. It's 64 kilobytes for now.
-> 
-> The patch effectively disables faultaround on architectures with
-> page size >= 64k (like ppc64).
-> 
-> It's possible that some other size of faultaround area is relevant for a
-> platform. We can expose `fault_around_bytes' variable to arch-specific
-> code once such platforms will be found.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/memory.c | 62 +++++++++++++++++++++++--------------------------------------
->  1 file changed, 23 insertions(+), 39 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 037b812a9531..252b319e8cdf 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3402,63 +3402,47 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
->  	update_mmu_cache(vma, address, pte);
->  }
->  
-> -#define FAULT_AROUND_ORDER 4
-> +static unsigned long fault_around_bytes = 65536;
-> +
-> +static inline unsigned long fault_around_pages(void)
-> +{
-> +	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
-> +}
-
-I think we should round up, not down.  So if the user asks for 1kb,
-they get one page.
-
-So this becomes
-
-	return PAGE_ALIGN(fault_around_bytes) / PAGE_SIZE;
-
-> +static inline unsigned long fault_around_mask(void)
-> +{
-> +	return ~(rounddown_pow_of_two(fault_around_bytes) - 1) & PAGE_MASK;
-> +}
-
-And this has me a bit stumped.  It's not helpful that do_fault_around()
-is undocumented.  Does it fault in N/2 pages ahead and N/2 pages
-behind?  Or does it align the address down to the highest multiple of
-fault_around_bytes?  It appears to be the latter, so the location of
-the faultaround window around the fault address is basically random,
-depending on what address userspace happened to pick.  I don't know why
-we did this :(
-
-Or something.  Can we please get some code commentary over
-do_fault_around() describing this design decision and explaining the
-reasoning behind it?
-
-
-Also, "neast" is not a word.
+greg k-h
