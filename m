@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaETU7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:59:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969AbaETU7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:59:46 -0400
-Message-ID: <537BC208.5030904@redhat.com>
-Date: Tue, 20 May 2014 16:58:48 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>, Tim Chen <tim.c.chen@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
-References: <1400617046.2970.270.camel@schen9-DESK> <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
-In-Reply-To: <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751014AbaETVC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:02:59 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61930 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750699AbaETVC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 17:02:58 -0400
+Message-ID: <1400619776.4912.71.camel@x220>
+Subject: [PATCH] powerpc: remove check for CONFIG_SERIAL_TEXT_DEBUG
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 May 2014 23:02:56 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 May 2014 21:02:57.0169 (UTC) FILETIME=[E0146010:01CF746E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 04:51 PM, Jason Low wrote:
-> On Tue, May 20, 2014 at 1:17 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> 
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 9b4c4f3..97132db 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -6764,12 +6764,17 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
->>
->>                 rq = cpu_rq(balance_cpu);
->>
->> -               raw_spin_lock_irq(&rq->lock);
->> -               update_rq_clock(rq);
->> -               update_idle_cpu_load(rq);
->> -               raw_spin_unlock_irq(&rq->lock);
->> -
->> -               rebalance_domains(rq, CPU_IDLE);
->> +               /*
->> +                * If time for next balance is due,
->> +                * do the balance.
->> +                */
->> +               if (time_after(jiffies + 1, rq->next_balance)) {
-> 
-> Hi Tim,
-> 
-> If we want to do idle load balancing only when it is due for a
-> balance, shouldn't the above just be "if (time_after(jiffies,
-> rq->next_balance))"?
+The Kconfig symbol SERIAL_TEXT_DEBUG was removed from
+arch/powerpc/Kconfig.debug in v2.6.22. (In v2.6.27 it was also removed
+from arch/ppc/Kconfig.debug.) So the check for its macro has evaluated
+to false for over five years now. Remove that check and the few lines
+of code hidden behind it.
 
-I was wondering the same.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-Everything else gets my
+ arch/powerpc/kernel/head_40x.S | 19 -------------------
+ 1 file changed, 19 deletions(-)
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
+diff --git a/arch/powerpc/kernel/head_40x.S b/arch/powerpc/kernel/head_40x.S
+index 67ee0d6c1070..7d7d8635227a 100644
+--- a/arch/powerpc/kernel/head_40x.S
++++ b/arch/powerpc/kernel/head_40x.S
+@@ -930,25 +930,6 @@ initial_mmu:
+ 	tlbwe	r4,r0,TLB_DATA		/* Load the data portion of the entry */
+ 	tlbwe	r3,r0,TLB_TAG		/* Load the tag portion of the entry */
+ 
+-#if defined(CONFIG_SERIAL_TEXT_DEBUG) && defined(SERIAL_DEBUG_IO_BASE)
+-
+-	/* Load a TLB entry for the UART, so that ppc4xx_progress() can use
+-	 * the UARTs nice and early.  We use a 4k real==virtual mapping. */
+-
+-	lis	r3,SERIAL_DEBUG_IO_BASE@h
+-	ori	r3,r3,SERIAL_DEBUG_IO_BASE@l
+-	mr	r4,r3
+-	clrrwi	r4,r4,12
+-	ori	r4,r4,(TLB_WR|TLB_I|TLB_M|TLB_G)
+-
+-	clrrwi	r3,r3,12
+-	ori	r3,r3,(TLB_VALID | TLB_PAGESZ(PAGESZ_4K))
+-
+-	li	r0,0			/* TLB slot 0 */
+-	tlbwe	r4,r0,TLB_DATA
+-	tlbwe	r3,r0,TLB_TAG
+-#endif /* CONFIG_SERIAL_DEBUG_TEXT && SERIAL_DEBUG_IO_BASE */
+-
+ 	isync
+ 
+ 	/* Establish the exception vector base
 -- 
-All rights reversed
+1.9.0
+
