@@ -1,66 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaETVjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:39:18 -0400
-Received: from mail2.nust.ac.zw ([196.220.96.63]:35901 "EHLO mail2.nust.ac.zw"
+	id S1751467AbaETVje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:39:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62483 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737AbaETVjR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:39:17 -0400
-X-Amavis-Modified: Mail body modified (using disclaimer) - mail2.nust.ac.zw
-Date: Tue, 20 May 2014 23:35:40 +0200 (SAST)
-From: DIAMONDSWISS LOANSCOMPANY <registrar@nust.ac.zw>
-Reply-To: "diamondswissloans@outlook.com" <diamondswissloans@outlook.com>
-Subject: =?utf-8?Q?kred=C4=ABta_pied=C4=81v=C4=81jums?=
-Message-ID: <454961c1-affe-454a-b6b4-307bc55d7512@mail2.nust.ac.zw>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [41.220.69.153]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+	id S1750735AbaETVjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 17:39:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,876,1392192000"; 
+   d="scan'208";a="543852342"
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAGQ1y=4z69iNRAM8eZFhh=kjRYQgwDxyMjyNG4XJ0b1xOxLURA@mail.gmail.com>
+References: <1400617046.2970.270.camel@schen9-DESK>
+	 <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+	 <1400619550.2970.274.camel@schen9-DESK>
+	 <CAGQ1y=4z69iNRAM8eZFhh=kjRYQgwDxyMjyNG4XJ0b1xOxLURA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 May 2014 14:39:27 -0700
+Message-ID: <1400621967.2970.280.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-05-20 at 14:09 -0700, Jason Low wrote:
+
+> Hi Tim, Rik
+> 
+> Yes, that makes sense that we want to balance if they are equal. We
+> may also consider using "if (time_after_eq(jiffies,
+> rq->next_balance)".
+> 
+> Reviewed-by: Jason Low <jason.low2@hp.com>
+
+Jason & Rik,
+
+Thanks for reviewing the patch.  I've updated the patch below as
+suggested.
+
+Tim
+
+---
+
+From: Tim Chen <tim.c.chen@linux.intel.com>
+Subject: [PATCH v2] sched: Reduce the rate of needless idle load balancing
+
+
+The current no_hz idle load balancer do load balancing for *all* idle cpus,
+even though the time due to load balance for a particular
+idle cpu could be still a while in the future.  This introduces a much
+higher load balancing rate than what is necessary.  The patch
+changes the behavior by only doing idle load balancing on
+behalf of an idle cpu only when it is due for load balancing.
+
+On SGI's systems with over 3000 cores, the cpu responsible for idle balancing
+got overwhelmed with idle balancing, and introduces a lot of OS noise
+to workloads.  This patch fixes the issue.
+
+Acked-by: Russ Anderson <rja@sgi.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ kernel/sched/fair.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9b4c4f3..b826c3a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6764,12 +6764,17 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+ 
+ 		rq = cpu_rq(balance_cpu);
+ 
+-		raw_spin_lock_irq(&rq->lock);
+-		update_rq_clock(rq);
+-		update_idle_cpu_load(rq);
+-		raw_spin_unlock_irq(&rq->lock);
+-
+-		rebalance_domains(rq, CPU_IDLE);
++		/*
++		 * If time for next balance is due,
++		 * do the balance.
++		 */
++		if (time_after_eq(jiffies, rq->next_balance)) {
++			raw_spin_lock_irq(&rq->lock);
++			update_rq_clock(rq);
++			update_idle_cpu_load(rq);
++			raw_spin_unlock_irq(&rq->lock);
++			rebalance_domains(rq, CPU_IDLE);
++		}
+ 
+ 		if (time_after(this_rq->next_balance, rq->next_balance))
+ 			this_rq->next_balance = rq->next_balance;
+-- 
+1.7.11.7
 
 
 
-Laba diena, 
 
- Mēs esam DIAMOND ŠVEICES aizdevumu uzņēmumam sniedzot aizdevumus ar pasta reklāma. Mēs piedāvājam dažāda veida aizdevumu (īstermiņa un ilgtermiņa aizdevumi, individuālie aizņēmumi, aizdevumi uzņēmumiem uc), par 3% procentu likmi. Mēs izsniegt aizdevumus cilvēkiem, kam nepieciešama ne neatkarīgi no to atrašanās vietas, dzimuma, ģimenes stāvokļa, izglītības, nodarbinātības statusu, bet ir jābūt ar tiesiskiem līdzekļiem atmaksu. Mūsu aizdevumu svārstās no 5,000.00 līdz 10,000,000.00 ASV dolāru vai eiro, vai mārciņa ar maksimālo ilgumu 20 gadi. Ja jūs interesē vairāk informācijas, lūdzu, aizpildiet zemāk esošo formu un nosūtiet to uz mūsu e-pasta adresi: diamondswissloans@outlook.com 
-
-Lūdzu, aizpildiet: 
-
-vārds: 
-
-adrese: 
-
-vecums: 
-
-dzimums: 
-
-Kontaktu Tālrunis: 
-
-Nodarbošanās: 
-
-Ikmēneša ienākumi: 
-
-Nepieciešama aizdevuma summa: 
-
-Ilgums aizdevums: 
-
-Aizdevuma mērķis: 
-
-Valsts: 
-
-ZIP kods: 
-
-
-"Mēs parādīsim jums labāku veidu, lai jūsu finansiālo brīvību" 
-
-Ar cieņu, 
-Mr Diamond Peters (Managing Director). 
-Mr Bill Anthony (mārketinga vadītājs).
-                                                                                                                                                                                                                                                                                                                                                                                                                                    This message is intended only for the named recipient. If you are not the intended recipient you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited. This emailis confidential, may be legally privileged, and is for the intended recipient only. If an addressing or transmission error has misdirected this e-mail, please notify the author by replying to this e-mail. If you are not the intended recipient you must not use, disclose, distribute, copy, print or rely on this email. 
- Any views or opinions presented are solely those of the author and do not necessarily represent those of the National University of Science and Technology. The National University of Science and Technology, Zimbabwe, does not accept legal responsibility for the contents of this message. Whilst all reasonable steps are taken to ensure the accuracy and integrity of information and data transmitted electronically and to preserve the confidentiality thereof, no liability or responsibility whatsoever is accepted if information or data is, for whatever reason, corrupted or does not reach its intended destination. Replies to this email may be monitored by the National University of Science and Technology, Zimbabwe, for operational, security or business reasons.
