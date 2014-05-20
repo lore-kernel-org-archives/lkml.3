@@ -1,113 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaETTMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:12:25 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:35765 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaETTMX convert rfc822-to-8bit (ORCPT
+	id S1753800AbaETTOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:14:11 -0400
+Received: from smtprelay0075.hostedemail.com ([216.40.44.75]:53106 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751244AbaETTOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:12:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <5379E284.7030700@gmail.com>
-References: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<5379E284.7030700@gmail.com>
-Date: Tue, 20 May 2014 21:12:22 +0200
-Message-ID: <CAFo99gZ3kVGn04we5OtRtbkceYRs6SiHXRyoX1Gb-SknJH=z=w@mail.gmail.com>
-Subject: Re: [PATCH] Fix for possible null pointer dereference in dma.c
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 May 2014 15:14:09 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3870:3871:3876:4321:5007:6119:7652:7809:9040:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pen14_239387cbd9606
+X-Filterd-Recvd-Size: 3637
+Message-ID: <1400613243.26709.26.camel@joe-AO725>
+Subject: [PATCH] staging: realtek: Convert /n to \n
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Date: Tue, 20 May 2014 12:14:03 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz
+Use proper line terminations.
 
-What I based my patch on is really because of this line:
-if (substream)
-         snd_pcm_period_elapsed(substream);
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/staging/rtl8188eu/hal/usb_ops_linux.c | 2 +-
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c   | 2 +-
+ drivers/staging/rtl8723au/hal/usb_ops_linux.c | 4 ++--
+ drivers/staging/rtl8723au/os_dep/usb_intf.c   | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-Boojin Kim thought that this was needed, if this is true anymore..? I
-have not been able to immerse myself so much in all patches.
-I'm working on about 100 similar patches.
+diff --git a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
+index d8fc747..d9f60ab 100644
+--- a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
++++ b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
+@@ -558,7 +558,7 @@ static void usb_read_port_complete(struct urb *purb, struct pt_regs *regs)
+ 			rtw_read_port(adapt, precvpriv->ff_hwaddr, 0, (unsigned char *)precvbuf);
+ 			break;
+ 		case -EINPROGRESS:
+-			DBG_88E("ERROR: URB IS IN PROGRESS!/n");
++			DBG_88E("ERROR: URB IS IN PROGRESS!\n");
+ 			break;
+ 		default:
+ 			break;
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+index 8ed2ac8..c63e263 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -88,7 +88,7 @@ static u8 rtw_init_intf_priv(struct dvobj_priv *dvobj)
+ 
+ 	dvobj->usb_alloc_vendor_req_buf = rtw_zmalloc(MAX_USB_IO_CTL_SIZE);
+ 	if (dvobj->usb_alloc_vendor_req_buf == NULL) {
+-		DBG_88E("alloc usb_vendor_req_buf failed... /n");
++		DBG_88E("alloc usb_vendor_req_buf failed...\n");
+ 		rst = _FAIL;
+ 		goto exit;
+ 	}
+diff --git a/drivers/staging/rtl8723au/hal/usb_ops_linux.c b/drivers/staging/rtl8723au/hal/usb_ops_linux.c
+index 73b49ac..df2e884 100644
+--- a/drivers/staging/rtl8723au/hal/usb_ops_linux.c
++++ b/drivers/staging/rtl8723au/hal/usb_ops_linux.c
+@@ -439,7 +439,7 @@ urb_submit:
+ 		case -EPROTO:
+ 			break;
+ 		case -EINPROGRESS:
+-			DBG_8723A("ERROR: URB IS IN PROGRESS!/n");
++			DBG_8723A("ERROR: URB IS IN PROGRESS!\n");
+ 			break;
+ 		default:
+ 			break;
+@@ -734,7 +734,7 @@ static void usb_read_port_complete(struct urb *purb)
+ 					    precvbuf);
+ 			break;
+ 		case -EINPROGRESS:
+-			DBG_8723A("ERROR: URB IS IN PROGRESS!/n");
++			DBG_8723A("ERROR: URB IS IN PROGRESS!\n");
+ 			break;
+ 		default:
+ 			break;
+diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+index d00ccdc..f78be19 100644
+--- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+@@ -107,7 +107,7 @@ static int rtw_init_intf_priv(struct dvobj_priv *dvobj)
+ 	dvobj->usb_alloc_vendor_req_buf = kzalloc(MAX_USB_IO_CTL_SIZE,
+ 						  GFP_KERNEL);
+ 	if (dvobj->usb_alloc_vendor_req_buf == NULL) {
+-		DBG_8723A("alloc usb_vendor_req_buf failed... /n");
++		DBG_8723A("alloc usb_vendor_req_buf failed...\n");
+ 		rst = _FAIL;
+ 		goto exit;
+ 	}
 
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 123)              prtd->dma_pos += prtd->dma_period;
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 124)              if (prtd->dma_pos >= prtd->dma_end)
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 125)                      prtd->dma_pos =
-prtd->dma_start;
-5111c075 sound/soc/s3c24xx/s3c24xx-pcm.c (Mark Brown        2008-04-30
-17:19:32 +0200 126)
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 127)              if (substream)
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 128)
-snd_pcm_period_elapsed(substream);
-c0f41bb1 sound/soc/s3c24xx/s3c24xx-pcm.c (Ben Dooks         2007-02-14
-13:20:03 +0100 129)
-344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-09:44:43 +0900 130)              spin_lock(&prtd->lock);
 
-
-Best regards
-Rickard Strandqvist
-
-
-2014-05-19 12:52 GMT+02:00 Tomasz Figa <tomasz.figa@gmail.com>:
-> Hi Rickard,
->
-> On 15.05.2014 23:57, Rickard Strandqvist wrote:
->> There is otherwise a risk of a possible null pointer dereference.
->>
->> Was largely found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  sound/soc/samsung/dma.c |   10 ++++++----
->>  1 fil ändrad, 6 tillägg(+), 4 borttagningar(-)
->>
->> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
->> index dc09b71..b1f6757 100644
->> --- a/sound/soc/samsung/dma.c
->> +++ b/sound/soc/samsung/dma.c
->> @@ -115,17 +115,19 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
->>  static void audio_buffdone(void *data)
->>  {
->>       struct snd_pcm_substream *substream = data;
->> -     struct runtime_data *prtd = substream->runtime->private_data;
->> +     struct runtime_data *prtd = NULL;
->>
->>       pr_debug("Entered %s\n", __func__);
->>
->> -     if (prtd->state & ST_RUNNING) {
->> +     if(substream)
->> +             prtd = substream->runtime->private_data;
->> +
->> +     if (prtd && prtd->state & ST_RUNNING) {
->>               prtd->dma_pos += prtd->dma_period;
->>               if (prtd->dma_pos >= prtd->dma_end)
->>                       prtd->dma_pos = prtd->dma_start;
->>
->> -             if (substream)
->> -                     snd_pcm_period_elapsed(substream);
->> +             snd_pcm_period_elapsed(substream);
->>
->>               spin_lock(&prtd->lock);
->>               if (!samsung_dma_has_circular()) {
->>
->
-> Can you find a path (or use case, if possible) on which any of affected
-> pointers will be NULL?
->
-> Best regards,
-> Tomasz
