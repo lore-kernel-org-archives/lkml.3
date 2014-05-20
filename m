@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaETRCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:02:49 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:25394 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128AbaETRCs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:02:48 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai4WANuJe1NbsnsG/2dsb2JhbABZgwaCRKhIAQEBAQEBBQGDOpZuAgIBgRsXdIIlAQEEATo/BQsIAxguOR4GExSIJQwB1BMXhVWIeQeEQAEDmWcBkyCDOjs
-Date: Tue, 20 May 2014 19:02:46 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH V3 mmots] fs/hfsplus/wrapper.c: replace shift loop by
- ilog2
-Message-Id: <20140520190246.cb6de4afd7946e2ce8b9f595@skynet.be>
-In-Reply-To: <1400604934.19170.6.camel@buesod1.americas.hpqcorp.net>
-References: <20140520184334.9e903b4965a5776eb0e771e2@skynet.be>
-	<1400604934.19170.6.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753480AbaETRFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:05:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47489 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaETRFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:05:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="514921011"
+Date: Tue, 20 May 2014 10:04:49 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Marek =?utf-8?B?T2zFocOhaw==?= <maraeo@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        "Deucher, Alexander" <alexander.deucher@amd.com>,
+        akpm@linux-foundation.org, dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH 7/8] radeon: Out of line radeon_get_ib_value
+Message-ID: <20140520170449.GK19657@tassilo.jf.intel.com>
+References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
+ <1400276595-6965-8-git-send-email-andi@firstfloor.org>
+ <CAAxE2A4YvKRNMu6ogYOX2zE2=N1Q6hd1c0niB3jf9f3P8rwoRw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAxE2A4YvKRNMu6ogYOX2zE2=N1Q6hd1c0niB3jf9f3P8rwoRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 09:55:34 -0700
-Davidlohr Bueso <davidlohr@hp.com> wrote:
+On Tue, May 20, 2014 at 06:16:48PM +0200, Marek Olšák wrote:
+> I think the function should stay in the header file. It's used in
+> performance-critical code, so we want it to be inlined.
 
-> On Tue, 2014-05-20 at 18:43 +0200, Fabian Frederick wrote:
-> > Replace while blocksize;shift by ilog2
-> 
-> Fabian, please start getting into the habit of improving your
-> changelogs. Unlike a lot of OSS projects, the kernel community (usually)
-> takes pride in having good ones. You send a number of patches but rarely
-> explain a key concept of software development in general: *WHY* do we
-> need this.
-> 
-> Thanks,
-> Davidlohr
-> 
+This doesn't make any sense. If it's talking to the hardware it will
+be dominated by the cache misses.
 
-Hello Davidlohr,
-
-	You're absolutely right, I'll do my best to improve that in the future.
-
-Regards,	
-Fabian
+-Andi
