@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751147AbaETViv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:38:51 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48611 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750815AbaETVit (ORCPT
+	id S1751395AbaETVjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:39:18 -0400
+Received: from mail2.nust.ac.zw ([196.220.96.63]:35901 "EHLO mail2.nust.ac.zw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaETVjR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:38:49 -0400
-Message-ID: <537BCB63.1020200@logitech.com>
-Date: Tue, 20 May 2014 14:38:43 -0700
-From: Roland Bosa <rbosa@logitech.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 17:39:17 -0400
+X-Amavis-Modified: Mail body modified (using disclaimer) - mail2.nust.ac.zw
+Date: Tue, 20 May 2014 23:35:40 +0200 (SAST)
+From: DIAMONDSWISS LOANSCOMPANY <registrar@nust.ac.zw>
+Reply-To: "diamondswissloans@outlook.com" <diamondswissloans@outlook.com>
+Subject: =?utf-8?Q?kred=C4=ABta_pied=C4=81v=C4=81jums?=
+Message-ID: <454961c1-affe-454a-b6b4-307bc55d7512@mail2.nust.ac.zw>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Michal_Mal=FD?= <madcatxster@devoid-pointer.net>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net> <2965006.XKYHWj9YzJ@sigyn> <537B9FAE.9070602@logitech.com> <10859911.6zyzadbfH9@sigyn>
-In-Reply-To: <10859911.6zyzadbfH9@sigyn>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [41.220.69.153]
+X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 12:00 PM, Michal Mal� wrote:
-> Hi,
-> 
-> "ff-memless-next" was designed with behavior of Logitech devices in mind, 
-> however it was always meant as a general replacement for the current "ff-
-> memless". After some followup discussion it's unlikely that it will be 
-> mainlined in its current form. See the discussion here 
-> "http://www.spinics.net/lists/linux-input/msg31426.html" for more details.
-> 
-> We would however really appreciate some information regarding Logitech devices 
-> specifically. Although we have reverse engineered most of things, I believe 
-> there are still areas we're not entirely clear about. I realize that you'd 
-> probably have to take it up with the legal deparment but if someone at 
-> Logitech could at least take a look at what we've found so far at fill in the 
-> blanks it'd be most helpful.
 
-I'm your guy, then. Please send any questions my way and I'll dig out
-the information you need - with the lawyer's blessings, if need be.
 
-> Please note that we found numerous bugs and DirectInput specs violations in 
-> the Windows driver which might have impacted our understading of how the 
-> driver works. "ff-memless-next" and "lg4ff" tries to fix or work around these. A 
-> link to out-of-tree update to lg4ff which takes full advantage of "ff-memless-
-> next" is also provided in this thread.
 
-lg4ff is mostly wheels, from what I saw. We should be able to fold in
-the G940 (Flight System) as well as other joysticks into the same
-driver. The underlying model driving the forces of our devices is
-essentially the same, there are just slight improvements made over the
-years to accommodate higher resolutions and more powerful micro processors.
+Laba diena, 
 
-Each device has a unique number (say 2 or 4) of force 'slots' per axis,
-which is running a force calculation in firmware. Typically, one of
-these slots is allocated by the host driver for a constant force, that's
-streamed to the device (and comprises all constant and periodic forces
-sent by the 'game' - that's the combined type of your code, as far as I
-can tell). The other slot may be used for position-based effects
-(springs, centering spring) as well as velocity-based effects (dampers,
-friction) - that's the un-combinable type. There's a healthy amount of
-code in the Windows driver that you would call 'quirks' which deals with
-deciding how to allocate multiple springs and dampers to a single slot.
-Sometimes, even the springs and dampers are being streamed in via the
-constants force, but that requires (as you pointed out earlier) a fast
-update rate and some "smartness" (I'm getting in hot territory with the
-lawyers now - let me stop).
+ Mēs esam DIAMOND ŠVEICES aizdevumu uzņēmumam sniedzot aizdevumus ar pasta reklāma. Mēs piedāvājam dažāda veida aizdevumu (īstermiņa un ilgtermiņa aizdevumi, individuālie aizņēmumi, aizdevumi uzņēmumiem uc), par 3% procentu likmi. Mēs izsniegt aizdevumus cilvēkiem, kam nepieciešama ne neatkarīgi no to atrašanās vietas, dzimuma, ģimenes stāvokļa, izglītības, nodarbinātības statusu, bet ir jābūt ar tiesiskiem līdzekļiem atmaksu. Mūsu aizdevumu svārstās no 5,000.00 līdz 10,000,000.00 ASV dolāru vai eiro, vai mārciņa ar maksimālo ilgumu 20 gadi. Ja jūs interesē vairāk informācijas, lūdzu, aizpildiet zemāk esošo formu un nosūtiet to uz mūsu e-pasta adresi: diamondswissloans@outlook.com 
 
-One of the key features of the design is the decoupling of the USB
-updates from the force feedback IOCTL's from the 'game'. I don't think
-this is currently the case with today's drivers. I was able to send
-force updates to a gamepad faster than the USB update rate, which led to
-some lost packets which in turn left the device in a inconsistent state
-- the motors were still rumbling although they should have stopped. If
-the 'ff-memless-next' driver offers this decoupling, it is a step in the
-right direction, IMO.
+Lūdzu, aizpildiet: 
 
-I will try to apply the patch mentioned in this thread and see where it
-leads me...
+vārds: 
 
-Thanks
-roland
+adrese: 
 
+vecums: 
+
+dzimums: 
+
+Kontaktu Tālrunis: 
+
+Nodarbošanās: 
+
+Ikmēneša ienākumi: 
+
+Nepieciešama aizdevuma summa: 
+
+Ilgums aizdevums: 
+
+Aizdevuma mērķis: 
+
+Valsts: 
+
+ZIP kods: 
+
+
+"Mēs parādīsim jums labāku veidu, lai jūsu finansiālo brīvību" 
+
+Ar cieņu, 
+Mr Diamond Peters (Managing Director). 
+Mr Bill Anthony (mārketinga vadītājs).
+                                                                                                                                                                                                                                                                                                                                                                                                                                    This message is intended only for the named recipient. If you are not the intended recipient you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited. This emailis confidential, may be legally privileged, and is for the intended recipient only. If an addressing or transmission error has misdirected this e-mail, please notify the author by replying to this e-mail. If you are not the intended recipient you must not use, disclose, distribute, copy, print or rely on this email. 
+ Any views or opinions presented are solely those of the author and do not necessarily represent those of the National University of Science and Technology. The National University of Science and Technology, Zimbabwe, does not accept legal responsibility for the contents of this message. Whilst all reasonable steps are taken to ensure the accuracy and integrity of information and data transmitted electronically and to preserve the confidentiality thereof, no liability or responsibility whatsoever is accepted if information or data is, for whatever reason, corrupted or does not reach its intended destination. Replies to this email may be monitored by the National University of Science and Technology, Zimbabwe, for operational, security or business reasons.
