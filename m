@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaETDU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 23:20:28 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:43822 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaETDU0 (ORCPT
+	id S1752514AbaETDid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 23:38:33 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36708 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaETDic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 23:20:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140519151824.GA21762@lst.de>
-References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com>
-	<20140519151824.GA21762@lst.de>
-Date: Tue, 20 May 2014 11:20:25 +0800
-Message-ID: <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com>
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
- flush worker
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 May 2014 23:38:32 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Petr Mladek <pmladek@suse.cz>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>
+Subject: Re: [RFC PATCH 1/2] printk: Add context information to the header of /dev/kmsg
+In-Reply-To: Your message of "Mon, 19 May 2014 19:28:38 +0900."
+             <20140519102838.30455.86863.stgit@yunodevel>
+From: Valdis.Kletnieks@vt.edu
+References: <20140519102835.30455.10437.stgit@yunodevel>
+            <20140519102838.30455.86863.stgit@yunodevel>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1400556970_1944P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 19 May 2014 23:36:10 -0400
+Message-ID: <11176.1400556970@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 11:18 PM, Christoph Hellwig <hch@lst.de> wrote:
-> On Mon, May 19, 2014 at 11:05:50PM +0800, Ming Lei wrote:
->> Another simple fix is to disable ipi for flush request, but looks
->> this one should be better.
->
-> I think the first thing is to bite the bullet and sort out and document
-> the various unions in struct request for real.
+--==_Exmh_1400556970_1944P
+Content-Type: text/plain; charset=us-ascii
 
-Considered the problem can be reproduced easily and cause
-data loss on kvm-guest, I hope fix can be seen in 3.15. Also
-it should be backported to 3.14 because someone may
-enable ctx->ipi_redirect.
+On Mon, 19 May 2014 19:28:38 +0900, Yoshihiro YUNOMAE said:
 
-Thinking it further, looks the patch is fine:
+> The header information is changed as follows:
+>    <prefix>,<seq#>,<timestamp>,<fragmented>,<PID>/<interrupt context>;<msg>
 
-- sizeof(call_single_data) and sizeof(work_struct) is very close
-and both are not small, so it is reasonable to put the two in
-one union for saving request space
+Has this been tested with popular userspace that reads /dev/kmsg, to make
+sure that it actually plays nice with a 5th field being added?  Yes, I know
+that Documentation/ABI/dev-kmsg says that added fields should be gracefully
+ignored - but we all know how good userspace programmers are about that
+sort of thing. :)
 
-- the conflict on the two structures just happens with flush
-requests because rq->requeue_work is only used to queue
-flush requests
+--==_Exmh_1400556970_1944P
+Content-Type: application/pgp-signature
 
-- in the flush sequence, the conflict won't happen on request
-with data, so it only happens with completing and queueing
-PREFLUSH/POSTFLUSH request.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-Any comments and suggestions?
+iQIVAwUBU3rNqgdmEQWDXROgAQIRsA//V2f7QX96ca2NkFPKxUTOOBZRjJHG5MaB
+5QeKdKEtZXxM1pLaWWaAGv0fZkzKjkhzSICgah+Cy0OwlW9WdcYWGhduV2j9yVTf
+KYcznFQFArsxPQL9/zXvEkE00VSB3vua2ts+Fr+l0UCKO10QgvurMZ6LKRhR89B7
+HxfqYxiFzCHqDa7kWhDSqJn8HQ6hD3L1ie5ZPJ+z318ZcMTFtHCnKAnLKguhXH7J
+QqqZWSUbdkiqZwNSxzZ5ZaExcjmj3RIlY6WPo5Mf2i2A5uy/DADptEUdy/vs2f34
+DL7YVxYbiMRGXvkWPn5MGYtk39XemnvSvQXAudEwlgMHScguMcxkgaAIKRB8JW1f
+5yRBzwqJGtGAlfq2FHXR+lxoe95XqsineRDrmRpj46EV11qnDTTMM3DnndSDHYYW
+5G0n8jgGSAkFwSNKj1/8r6ZzKduf37BLlnsWPlkVNRs6we0pGOCC9lnvy8ghHDfz
+j7AAgTk44MyUIgxSNwCSTjX0o9T+EqcCRrOu7Jm6apdAmJhxPK2Zdb4EOsz4lddp
+FWkCOt1l+G9TMxEHFroWv+wP9BZIVwR7bsfuCMFKizrxLyzkeIel8PDJEbrZ7Vzx
+lywc5WJGmCXTYWM/ZE05lfudTici2XDX8rZo9MkT7NhoHfgYsaWCYhyBZTT99v3j
+ytD7F9VwE60=
+=9pjj
+-----END PGP SIGNATURE-----
 
-
-Thanks,
--- 
-Ming Lei
+--==_Exmh_1400556970_1944P--
