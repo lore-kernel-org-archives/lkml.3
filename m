@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaETQWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:22:47 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:52203 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319AbaETQWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:22:46 -0400
-Date: Tue, 20 May 2014 17:22:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: [PATCH v4 3/3] mfd: max8997: change irq names to upper case
-Message-ID: <20140520162239.GB32496@lee--X1>
-References: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
- <1398693358-28336-4-git-send-email-r.baldyga@samsung.com>
+	id S1753882AbaETQYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:24:13 -0400
+Received: from tex.lwn.net ([70.33.254.29]:34304 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266AbaETQYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 12:24:12 -0400
+Date: Tue, 20 May 2014 10:24:11 -0600
+From: Jake Edge <jake@lwn.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Anton Saraev <antonysaraev@gmail.com>
+Subject: Re: [PATCH 0/3] staging/skein: more cleanup
+Message-ID: <20140520102411.413d565d@chukar.edge2.net>
+In-Reply-To: <20140520144757.GA8664@titan.lakedaemon.net>
+References: <20140520075612.220a13ae@chukar.edge2.net>
+	<20140520144757.GA8664@titan.lakedaemon.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398693358-28336-4-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch changes naming convention of MUIC interrupts form CamelCase
-> to upper case. It makes names more readable and consistent with another
-> interrupt names in max8997 driver.
-> 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/extcon/extcon-max8997.c     | 32 ++++++++++++++++----------------
->  include/linux/mfd/max8997-private.h | 16 ++++++++--------
+On Tue, 20 May 2014 10:47:57 -0400 Jason Cooper wrote:
 
-For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+> Do you have any other series pending for this driver?
 
-I think this set should go in together via the MFD tree.
+No and I won't be doing anything else for the next couple of days --
+some darn weekly edition to deal with :)
+
+It seems like most of the straightforward stuff has been dealt with at
+this point.  That rats nest of ifdefs in skein_block.c needs attention,
+but some kind of tests are needed to ensure nothing breaks before
+digging into that ...
+
+jake
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
