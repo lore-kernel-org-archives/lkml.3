@@ -1,122 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaETOSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:18:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41562 "EHLO
+	id S1753470AbaETOUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:20:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41582 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaETOSe (ORCPT
+	with ESMTP id S1750745AbaETOUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:18:34 -0400
-Date: Tue, 20 May 2014 14:18:30 +0000
+	Tue, 20 May 2014 10:20:07 -0400
+Date: Tue, 20 May 2014 14:19:31 +0000
 From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Richard Weinberger <richard@nod.at>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>
 Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
  namespaces
-Message-ID: <20140520141830.GG26600@ubuntumail>
-References: <20140515174254.GM21073@ubuntumail>
- <20140515221551.GB13306@kroah.com>
- <20140516014959.GD22591@ubuntumail>
- <20140516043532.GA14149@kroah.com>
- <20140516140607.GA23902@ubuntu-hedt>
- <20140516185749.GA5131@kroah.com>
- <1400268515.2221.91.camel@dabdike.int.hansenpartnership.com>
- <20140516201841.GC23902@ubuntu-hedt>
- <87mwedfh7c.fsf@x220.int.ebiederm.org>
- <1400548481.3540.247.camel@canyon.ip6.wittsend.com>
+Message-ID: <20140520141931.GH26600@ubuntumail>
+References: <1400120251.7699.11.camel@canyon.ip6.wittsend.com>
+ <20140515031527.GA146352@ubuntu-hedt>
+ <20140515040032.GA6702@kroah.com>
+ <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+ <20140515140856.GA17453@kroah.com>
+ <CAFLxGvwfbVdLUq0NrSrQNYH+bTzYLuCE2moooHH319qRfDkS6Q@mail.gmail.com>
+ <20140515195010.GA22317@ubuntumail>
+ <53751FFA.5040103@nod.at>
+ <20140515202628.GB25896@mail.hallyn.com>
+ <CALCETrWE72G86QKVZT2aqWsEmjwOPwsWMUNz5-JkDvbqaGbrvw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400548481.3540.247.camel@canyon.ip6.wittsend.com>
+In-Reply-To: <CALCETrWE72G86QKVZT2aqWsEmjwOPwsWMUNz5-JkDvbqaGbrvw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Michael H. Warfield (mhw@WittsEnd.com):
-> On Mon, 2014-05-19 at 17:04 -0700, Eric W. Biederman wrote:
-> > Seth Forshee <seth.forshee@canonical.com> writes:
-> > 
-> > > What I set out for was feature parity between loop devices in a secure
-> > > container and loop devices on the host. Since some operations currently
-> > > check for system-wide CAP_SYS_ADMIN, the only way I see to accomplish
-> > > this is to push knowledge of the user namespace farther down into the
-> > > driver stack so the check can instead be for CAP_SYS_ADMIN in the user
-> > > namespace associated with the device.
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On May 15, 2014 1:26 PM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
+> >
+> > Quoting Richard Weinberger (richard@nod.at):
+> > > Am 15.05.2014 21:50, schrieb Serge Hallyn:
+> > > > Quoting Richard Weinberger (richard.weinberger@gmail.com):
+> > > >> On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman
+> > > >> <gregkh@linuxfoundation.org> wrote:
+> > > >>> Then don't use a container to build such a thing, or fix the build
+> > > >>> scripts to not do that :)
+> > > >>
+> > > >> I second this.
+> > > >> To me it looks like some folks try to (ab)use Linux containers
+> > > >> for purposes where KVM would much better fit in.
+> > > >> Please don't put more complexity into containers. They are already
+> > > >> horrible complex
+> > > >> and error prone.
+> > > >
+> > > > I, naturally, disagree :)  The only use case which is inherently not
+> > > > valid for containers is running a kernel.  Practically speaking there
+> > > > are other things which likely will never be possible, but if someone
+> > > > offers a way to do something in containers, "you can't do that in
+> > > > containers" is not an apropos response.
+> > > >
+> > > > "That abstraction is wrong" is certainly valid, as when vpids were
+> > > > originally proposed and rejected, resulting in the development of
+> > > > pid namespaces.  "We have to work out (x) first" can be valid (and
+> > > > I can think of examples here), assuming it's not just trying to hide
+> > > > behind a catch-22/chicken-egg problem.
+> > > >
+> > > > Finally, saying "containers are complex and error prone" is conflating
+> > > > several large suites of userspace code and many kernel features which
+> > > > support them.  Being more precise would, if the argument is valid,
+> > > > lend it a lot more weight.
 > > >
-> > > That said, I suspect our current use cases can get by without these
-> > > capabilities. Really though I suspect this is just deferring the
-> > > discussion rather than settling it, and what we'll end up with is little
-> > > more than a fancy way for userspace to ask the kernel to run mknod on
-> > > its behalf.
+> > > We (my company) use Linux containers since 2011 in production. First LXC, now libvirt-lxc.
+> > > To understand the internals better I also wrote my own userspace to create/start
+> > > containers. There are so many things which can hurt you badly.
+> > > With user namespaces we expose a really big attack surface to regular users.
+> > > I.e. Suddenly a user is allowed to mount filesystems.
+> >
+> > That is currently not the case.  They can mount some virtual filesystems
+> > and do bind mounts, but cannot mount most real filesystems.  This keeps
+> > us protected (for now) from potentially unsafe superblock readers in the
+> > kernel.
+> >
+> > > Ask Andy, he found already lots of nasty things...
 > 
-> > A fancy way to ask the kernel to run mknod on its behalf is what
-> > /dev/pts is.
+> I don't think I have anything brilliant to add to this discussion
+> right now, except possibly:
 > 
-> > When I suggested this I did not mean you should forgo making changes to
-> > allow partitions and the like.  What I itended is that you should find a
-> > way to make this safe for users who don't have root capabilities.
-> 
-> I like to think in terms of the "rootless" configurations where "root"
-> per se is not absolute and everything is framed in terms of
-> capabilities.
-> 
-> > Which possibly means that mount needs to learn how to keep a more
-> > privileged user from using your new loop devices.
-> 
-> Not sure I got that one.  As user with "more" privileges may or may not
-> have access dependent on the congruence of the privileges.  They're not
+> ISTM that Linux distributions are, in general, vulnerable to all kinds
+> of shenanigans that would happen if an untrusted user can cause a
+> block device to appear.  That user doesn't need permission to mount it
 
-Yes so in this case by more privileged' he meant a privileged user in a
-userns which is ancestor to the current userns.  It is in fact *more*
-privileged than any user in the current userns.
+Interesting point.  This would further suggest that we absolutely must
+ensure that a loop device which shows up in the container does not also
+show up in the host.
 
-> heiarchial.  If someone has that "priv" then they have access.  If they
-
-They are in fact implicitly hierarchical due to the hierarchical userns
-design.
-
-> do not, they do not.
+> or even necessarily to change its contents on the fly.
 > 
-> > To get to the point where this is really and truly usable I expect to be
-> > technically daunting.
+> E.g. what happens if you boot a machine that contains a malicious disk
+> image that has the same partition UUID as /?  Nothing good, I imagine.
 > 
-> Most technically non-trivial problems generally are.
+> So if we're going to go down this road, we really need some way to
+> tell the host that certain devices are not trusted.
 > 
-> > Ultimately the technical challenge is how do we create a block device
-> > that is safe for a user who does not have any capabilities to use, and
-> > what can we do with that block device to make it useful.
-> 
-> Concur.  It boils down to privilege management and access.  Absolutely
-> concur.
-> 
-> > Only when the question is can this kernel functionality which is
-> > otherwise safe confuse a preexisting setuid application do namespace
-> > or container bits significantly come into play.
-> 
-> Ah...  Admittedly it's not as late as our conversation at LinuxPlumbers
-> last year in NOLA but...  Maybe late at night but I failed to parse the
-> above.
-> 
-> > Eric
-> 
-> Regards,
-> Mike
-> -- 
-> Michael H. Warfield (AI4NB) | (770) 978-7061 |  mhw@WittsEnd.com
->    /\/\|=mhw=|\/\/          | (678) 463-0932 |  http://www.wittsend.com/mhw/
->    NIC whois: MHW9          | An optimist believes we live in the best of all
->  PGP Key: 0x674627FF        | possible worlds.  A pessimist is sure of it!
-> 
-
-
-
-> _______________________________________________
-> lxc-devel mailing list
-> lxc-devel@lists.linuxcontainers.org
-> http://lists.linuxcontainers.org/listinfo/lxc-devel
-
+> --Andy
