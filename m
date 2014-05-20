@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaETO0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:26:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41616 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaETO0r (ORCPT
+	id S1754050AbaETO2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:28:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34306 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231AbaETO2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:26:47 -0400
-Date: Tue, 20 May 2014 14:26:29 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
- namespaces
-Message-ID: <20140520142629.GI26600@ubuntumail>
-References: <20140515140856.GA17453@kroah.com>
- <20140515174254.GM21073@ubuntumail>
- <20140515221551.GB13306@kroah.com>
- <20140516014959.GD22591@ubuntumail>
- <20140516043532.GA14149@kroah.com>
- <87mwehgh5i.fsf@x220.int.ebiederm.org>
- <20140517160145.GA44802@ubuntu-hedt>
- <20140518024458.GB25613@mail.hallyn.com>
- <20140519132703.GA49509@ubuntu-hedt>
- <20140520141539.GF26600@ubuntumail>
+	Tue, 20 May 2014 10:28:10 -0400
+Date: Tue, 20 May 2014 16:28:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: "bsegall@google.com" <bsegall@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "chris.j.arges@canonical.com" <chris.j.arges@canonical.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
+Message-ID: <20140520142804.GB30445@twins.programming.kicks-ass.net>
+References: <87mwej0yja.wl%klamm@yandex-team.ru>
+ <xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <87lhu215ky.wl%klamm@yandex-team.ru>
+ <20140519103247.GX30445@twins.programming.kicks-ass.net>
+ <xm26wqdh3cde.fsf@sword-of-the-dawn.mtv.corp.google.com>
+ <20140520131526.GE11096@twins.programming.kicks-ass.net>
+ <99801400595675@webcorp1f.yandex-team.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Epdev7n9Nu0o9kVy"
 Content-Disposition: inline
-In-Reply-To: <20140520141539.GF26600@ubuntumail>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <99801400595675@webcorp1f.yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
-> Quoting Seth Forshee (seth.forshee@canonical.com):
-> > On Sun, May 18, 2014 at 04:44:58AM +0200, Serge E. Hallyn wrote:
-> > > Quoting Seth Forshee (seth.forshee@canonical.com):
-> > > > On Fri, May 16, 2014 at 09:31:37PM -0700, Eric W. Biederman wrote:
-> > > > > Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> > > > > 
-> > > > > > On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
-> > > > > >> > I think having to pick and choose what device nodes you want in a
-> > > > > >> > container is a good thing.  Becides, you would have to do the same thing
-> > > > > >> > in the kernel anyway, what's wrong with userspace making the decision
-> > > > > >> > here, especially as it knows exactly what it wants to do much more so
-> > > > > >> > than the kernel ever can.
-> > > > > >> 
-> > > > > >> For 'real' devices that sounds sensible.  The thing about loop devices
-> > > > > >> is that we simply want to allow a container to say "give me a loop
-> > > > > >> device to use" and have it receive a unique loop device (or 3), without
-> > > > > >> having to pre-assign them.  I think that would be cleaner to do using
-> > > > > >> a pseudofs and loop-control device, rather than having to have a
-> > > > > >> daemon in userspace on the host farming those out in response to
-> > > > > >> some, I don't know, dbus request?
-> > > > > >
-> > > > > > I agree that loop devices would be nice to have in a container, and that
-> > > > > > the existing loop interface doesn't really lend itself to that.  So
-> > > > > > create a new type of thing that acts like a loop device in a container.
-> > > > > > But don't try to mess with the whole driver core just for a single type
-> > > > > > of device.
-> > > > > 
-> > > > > Yes. Something like devpts (without the newinstance option).  Built to
-> > > > > allow unprivileged users to create loopback devices.
-> > > > 
-> > > > That's where I started, and I've got code, so I guess I'll clean it up
-> > > > and send patches. If the stance is that only system-wide CAP_SYS_ADMIN
-> > > > gets to do privileged block device ioctls, including reading partitions
-> > > 
-> > > Sorry, where did that come from?  What Eric was referring to below is
-> > > the fs superblock readers not being trusted.  Maybe I glossed over another
-> > > email where it was mentioned?
-> > 
-> > You must have. Take a look at [1].
-> > 
-> > To repeat the point: the ioctl to reread partitions (along with several
-> > other block device ioctls) has a capable(CAP_SYS_ADMIN) check. We can't
-> > change this to an ns_capable check without at minimum the block layer
-> > knowing about the namespace associated with the block device. Ergo we
-> 
-> Which only means those changes are necessary :)
-> 
-> So far as I understand, a namespaced devtmpfs is nacked, but a loopfs
-> is interesting (and, depending on the implementation, acceptable).  That
-> necessarily includes the minimal blockdev changes to support it.
-> 
-> > can't reread paritions if this is done entirely within the loop driver
-> > via a psuedo fs.
-> > 
-> > [1] http://article.gmane.org/gmane.linux.kernel.containers.lxc.devel/8191
 
-Hm, yeah, I was confuddling two issues.  Nevertheless, for real block devices I
-absolutely agree.  For loop devices I don't.  My answer to
+--Epdev7n9Nu0o9kVy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I don't think unpriviliged containers should be able to do partitioning.
-> An unpriviliged user can't do that, so why should a container be any
-> different?
+On Tue, May 20, 2014 at 06:21:15PM +0400, Roman Gushchin wrote:
+> 20.05.2014, 17:15, "Peter Zijlstra" <peterz@infradead.org>:
+> > Completely untested... does anybody have a 'useful' test case for this
+> > bw stuff?
+>=20
+> I can test it for stability.
+> I'll start tomorrow, now I'm testing Ben's + my patches together.
 
-would be that the loop device is a convenience built atop the backing image,
-and if the user had the rights to loop-attach the backing image, he can
-just as will partition using write(2), so why artificially plac this limit?
+Do you have an easy to reproduce setup and workload so I might be able
+to test as well? Or are you simply dumping it in 'production' to see
+what happens?
 
-Nevertheless this is not really a debate worth having until we have a
-blockdev fs mountable in a userns.
+I mean, the trivial setup with a few cgroups and spinners isn't that
+interesting because it'll just keep the timer ticking and never go idle.
 
-My main interest currently is with privileged containers.  I think we can
-learn plenty from that for now.
+I suppose I could try writing a sleep/spinner which randomly exceeds bw
+constraints.
+
+--Epdev7n9Nu0o9kVy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTe2Z0AAoJEHZH4aRLwOS6dngP/20hRT0SW+AhScht3lFLjLUE
+iki8Ex/pF9UXAV4LjX04t2yYNIgG/B8qO+a+vo5Rr0hlOwTP5foitnRQXQht9JJe
+oIn+j7jfjjX7XQJ/cR3BYlVR+GfmnCOsr15/imthi9u7SVAKQRDLmmQZ1OgtGv8v
+eCBqX61n+Z7CtGsnI/d3AIPSIXJthGRyDVXMy+Gd8xM8iBuiiJNDmNL1jTn0C9iB
+rPEAAgv3Jdp0tVZc3z3b2Df+3Z7v78nhMNgt7l44ja5DSQnaLpkJX0ywkh3GWGG3
+BA6qjxGgtMM9CNOOILsDLdRM1Qm9wWmCTpY1ePNbezwq1BkgDvI2efEJ5PMQPupW
+rxxLSYFUC/GtcCFA8Qb6n8aFFjh6PNTEJn369tLD3bcGLlYpPVi+TG2xdsdZBnB5
+FxFiHFXinhGq9gVhMhjeBEkhCwbLTY9pKM2ksOlfct6y5Phx8w2/3+43kFvGKQzv
+T92rM40Q/6R/+n3BQFRulSdqK6n7PJ5ohwztJUPhDaP1xatryuC34MqvTKse+IsX
+no9mmvuev4Ou3CE4hShCIZZmD6tK5TkdvzA8HXPcZGTipNYikhZ74XuQ2AWONrU8
+bEFMTvuMUQ3DE9XsvdwojOSlLiDGBWWKfXIZ9e0RRP6o3/qoQPlqFfNxJHfuGsDL
+rcOWNqEjvlPlfNE4ZeAP
+=b/yB
+-----END PGP SIGNATURE-----
+
+--Epdev7n9Nu0o9kVy--
