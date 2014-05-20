@@ -1,176 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaETJdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092AbaETJdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:33:04 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, xen-devel@lists.xenproject.org,
-        felipe.franciosi@citrix.com, roger.pau@citrix.com,
-        jerry.snitselaar@oracle.com, axboe@kernel.dk
-Subject: Re: [Xen-devel] Backport request to stable of two performance related fixes for xen-blkfront (3.13 fixes to earlier trees)
-References: <20140514191122.GA7659@phenom.dumpdata.com>
-Date: Tue, 20 May 2014 11:32:50 +0200
-In-Reply-To: <20140514191122.GA7659@phenom.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Wed, 14 May 2014 15:11:22 -0400")
-Message-ID: <8738g44wxp.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752710AbaETJdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:33:51 -0400
+Received: from forward20.mail.yandex.net ([95.108.253.145]:52455 "EHLO
+	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaETJdt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 05:33:49 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+In-Reply-To: <20140520101730.ab593e41d5ee5949740de52e@gmail.com>
+References: <20140516213003.10384.7946.stgit@localhost>
+	<20140519151233.5043b749361e1b384f1e5562@gmail.com>
+	<783871400527879@web2j.yandex.ru>
+	<20140520000026.GD11096@twins.programming.kicks-ass.net>
+	<1413311400562533@web30m.yandex.ru>
+	<20140520075315.GQ2485@laptop.programming.kicks-ass.net> <20140520101730.ab593e41d5ee5949740de52e@gmail.com>
+Subject: Re: [PATCH] sched/dl: Fix race between dl_task_timer() and sched_setaffinity()
 MIME-Version: 1.0
-Content-Type: text/plain
+Message-Id: <3056991400578422@web14g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Tue, 20 May 2014 13:33:42 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+20.05.2014, 12:16, "Juri Lelli" <juri.lelli@gmail.com>:
+> Hi,
+>
+> On Tue, 20 May 2014 09:53:15 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> šOn Tue, May 20, 2014 at 09:08:53AM +0400, Kirill Tkhai wrote:
+>>> š20.05.2014, 04:00, "Peter Zijlstra" <peterz@infradead.org>:
+>>>> šOn Mon, May 19, 2014 at 11:31:19PM +0400, Kirill Tkhai wrote:
+>>>>> šš@@ -513,9 +513,17 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+>>>>> ššššššššššššššššššššššššššššššššššššššššššššššššššššššššstruct sched_dl_entity,
+>>>>> ššššššššššššššššššššššššššššššššššššššššššššššššššššššššdl_timer);
+>>>>> šššššššššššstruct task_struct *p = dl_task_of(dl_se);
+>>>>> šš- struct rq *rq = task_rq(p);
+>>>>> šš+ struct rq *rq;
+>>>>> šš+again:
+>>>>> šš+ rq = task_rq(p);
+>>>>> šššššššššššraw_spin_lock(&rq->lock);
+>>>>>
+>>>>> šš+ if (unlikely(rq != task_rq(p))) {
+>>>>> šš+ /* Task was moved, retrying. */
+>>>>> šš+ raw_spin_unlock(&rq->lock);
+>>>>> šš+ goto again;
+>>>>> šš+ }
+>>>>> šš+
+>>>> šThat thing is called: rq = __task_rq_lock(p);
+>>> šBut p->pi_lock is not held. The problem is __task_rq_lock() has lockdep assert.
+>>> šShould we change it?
+>> šOk, so now that I'm awake ;-)
+>>
+>> šSo the trivial problem as described by your initial changelog isn't
+>> šright, because we cannot call sched_setaffinity() on deadline tasks, or
+>> šrather we can, but we can't actually change the affinity mask.
+>
+> Well, if we disable AC we can. And I was able to recreate that race in
+> that case.
+>
+>> šNow I suppose the problem can still actually happen when you change the
+>> šroot domain and trigger a effective affinity change that way.
+>
+> Yeah, I think here too.
+>
+>> šThat said, no leave it as you proposed, adding a *task_rq_lock() variant
+>> šwithout lockdep assert in will only confuse things, as normally we
+>> šreally should be also taking ->pi_lock.
+>>
+>> šThe only reason we don't strictly need ->pi_lock now is because we're
+>> šguaranteed to have p->state == TASK_RUNNING here and are thus free of
+>> šttwu races.
+>
+> Maybe we could add this as part of the comment.
 
-> Hey Greg
->
-> This email is in regards to backporting two patches to stable that
-> fall under the 'performance' rule:
->
->  bfe11d6de1c416cea4f3f0f35f864162063ce3fa
->  fbe363c476afe8ec992d3baf682670a4bd1b6ce6
->
-> I've copied Jerry - the maintainer of the Oracle's kernel. I don't have
-> the emails of the other distros maintainers but the bugs associated with it are:
->
-> https://bugzilla.redhat.com/show_bug.cgi?id=1096909
-> (RHEL7)
+Peter, Juri, thanks for comment. Hope, I understood you right :)
 
-I was doing tests with RHEL7 kernel and these patches and unfortunately
-I see huge performance degradation in some workloads.
+[PATCH] sched/dl: Fix race in dl_task_timer()
 
-I'm in the middle of my testing now but here are some intermediate
-results. 
-Test environment:
-Fedora-20, xen-4.3.2-2.fc20.x86_64, 3.11.10-301.fc20.x86_64
-I do testing with 1-9 RHEL7 PVHVM guests with:
-1) Unmodified RHEL7 kernel
-2) Only fbe363c476afe8ec992d3baf682670a4bd1b6ce6 applied (revoke foreign
-access)
-3) Both fbe363c476afe8ec992d3baf682670a4bd1b6ce6 and
-bfe11d6de1c416cea4f3f0f35f864162063ce3fa
-(actually 427bfe07e6744c058ce6fc4aa187cda96b635539 is required as well
-to make build happy, I suggest we backport that to stable as well)
+Throttled task is still on rq, and it may be moved to other cpu
+if user is playing with sched_setaffinity(). Therefore, unlocked
+task_rq() access makes the race.
 
-Storage devices are:
-1) ramdisks (/dev/ram*) (persistent grants and indirect descriptors disabled)
-2) /tmp/img*.img on tmpfs (persistent grants and indirect descriptors disabled)
+Juri Lelli reports he got this race when dl_bandwidth_enabled()
+was not set.
 
-Test itself: direct random read with bs=2048k (using fio). (Actually
-'dd', 'read/write access', ... show same results)
+Other thing, pointed by Peter Zijlstra:
 
-fio test file:
-[fio_read]
-ioengine=libaio
-blocksize=2048k
-rw=randread
-filename=/dev/xvdc
-randrepeat=1
-fallocate=none
-direct=1
-invalidate=0
-runtime=20
-time_based
+   "Now I suppose the problem can still actually happen when
+    you change the root domain and trigger a effective affinity
+    change that way".
 
-I run fio simultaneously and sum up the result. So, results are:
-1) ramdisks: http://hadoop.ru/pubfiles/b1096909_3.11.10_ramdisk.png
-2) tmpfiles: http://hadoop.ru/pubfiles/b1096909_3.11.10_tmpfile.png
+To fix that we do the same as made in __task_rq_lock(). We do not
+use __task_rq_lock() itself, because it has a useful lockdep check,
+which is not correct in case of dl_task_timer(). We do not need
+pi_lock locked here. This case is an exception (PeterZ):
 
-In few words: patch series has (almost) no effect when persistent grants
-are enabled (that was expected) and gives me performance regression when
-persistent grants are disabled (that wasn't expected).
+   "The only reason we don't strictly need ->pi_lock now is because
+    we're guaranteed to have p->state == TASK_RUNNING here and are
+    thus free of ttwu races".
 
-My thoughts are: it seems fbe363c476afe8ec992d3baf682670a4bd1b6ce6
-brings performance regression in some cases (at least when persistent
-grants are disabled). My guess atm is that gnttab_end_foreign_access()
-(gnttab_end_foreign_access_ref_v1() is being used here) is guilty, for
-some reason it is looping for some
-time. bfe11d6de1c416cea4f3f0f35f864162063ce3fa really brings performance
-improvement over fbe363c476afe8ec992d3baf682670a4bd1b6ce6 but whole
-series still brings regression.
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Juri Lelli <juri.lelli@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>
+Cc: <stable@vger.kernel.org> # v3.14
+---
+ kernel/sched/deadline.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-I would be glad to hear what could be wrong with my testing in case I'm
-the only one who sees such behavior. Any other pointers are more than
-welcome and please feel free to ask for any additional
-info/testing/whatever from me.
-
-> https://bugs.launchpad.net/ubuntu/+bug/1319003
-> (Ubuntu 13.10)
->
-> The following distros are affected:
->
-> (x) Ubuntu 13.04 and derivatives (3.8)
-> (v) Ubuntu 13.10 and derivatives (3.11), supported until 2014-07
-> (x) Fedora 17 (3.8 and 3.9 in updates)
-> (x) Fedora 18 (3.8, 3.9, 3.10, 3.11 in updates)
-> (v) Fedora 19 (3.9; 3.10, 3.11, 3.12 in updates; fixed with latest update to 3.13), supported until TBA
-> (v) Fedora 20 (3.11; 3.12 in updates; fixed with latest update to 3.13), supported until TBA
-> (v) RHEL 7 and derivatives (3.10), expected to be supported until about 2025
-> (v) openSUSE 13.1 (3.11), expected to be supported until at least 2016-08
-> (v) SLES 12 (3.12), expected to be supported until about 2024
-> (v) Mageia 3 (3.8), supported until 2014-11-19
-> (v) Mageia 4 (3.12), supported until 2015-08-01
-> (v) Oracle Enterprise Linux with Unbreakable Enterprise Kernel Release 3 (3.8), supported until TBA
->
-> Here is the analysis of the problem and what was put in the RHEL7 bug.
-> The Oracle bug does not exist (as I just backport them in the kernel and
-> send a GIT PULL to Jerry) - but if you would like I can certainly furnish
-> you with one (it would be identical to what is mentioned below).
->
-> If you are OK with the backport, I am volunteering Roger and Felipe to assist
-> in jamming^H^H^H^Hbackporting the patches into earlier kernels.
->
-> Summary:
-> Storage performance regression when Xen backend lacks persistent-grants support
->
-> Description of problem:
-> When used as a Xen guest, RHEL 7 will be slower than older releases in terms
-> s of storage performance. This is due to the persistent-grants feature introduced
-> in xen-blkfront on the Linux Kernel 3.8 series. From 3.8 to 3.12 (inclusive),
-> xen-blkfront will add an extra set of memcpy() operations regardless of
-> persistent-grants support in the backend (i.e. xen-blkback, qemu, tapdisk).
-> This has been identified and fixed in the 3.13 kernel series, but was not
-> backported to previous LTS kernels due to the nature of the bug (performance only).
->
-> While persistent grants reduce the stress on the Xen grant table and allow
-> for much better aggregate throughput (at the cost of an extra set of memcpy
-> operations), adding the copy overhead when the feature is unsupported on
-> the backend combines the worst of both worlds.   This is particularly noticeable
-> when intensive storage workloads are active from many guests.
->
-> How reproducible:
-> This is always reproducible when a RHEL 7 guest is running on Xen and the
-> storage backend (i.e. xen-blkback, qemu, tapdisk) does not have support for
-> persistent grants.
->
-> Steps to Reproduce:
-> 1. Install a Xen dom0 running a kernel prior to 3.8 (without
-> persistent-grants support) - or run it under Amazon EC2
-> 2. Install a set of RHEL 7 guests (which uses kernel 3.10).
-> 3. Measure aggregate storage throughput from all guests.
->
-> NOTE: The storage infrastructure (e.g. local SSDs, network-attached storage)
-> cannot be a bottleneck in itself. If tested on a single SATA disk, for
-> example, the issue will probably be unnoticeable as the infrastructure will
-> be limiting response time and throughput.
->
-> Actual results:
-> Aggregate storage throughput will be lower than with a xen-blkfront
-> versions prior to 3.8 or newer than 3.12.
->
-> Expected results:
-> Aggregate storage throughput should be at least as good or better if the
-> backend supports persistent grants.
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-
--- 
-  Vitaly
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 800e99b..14bc348 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -513,9 +513,17 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+ 						     struct sched_dl_entity,
+ 						     dl_timer);
+ 	struct task_struct *p = dl_task_of(dl_se);
+-	struct rq *rq = task_rq(p);
++	struct rq *rq;
++again:
++	rq = task_rq(p);
+ 	raw_spin_lock(&rq->lock);
+ 
++	if (rq != task_rq(p)) {
++		/* Task was moved, retrying. */
++		raw_spin_unlock(&rq->lock);
++		goto again;
++	}
++
+ 	/*
+ 	 * We need to take care of a possible races here. In fact, the
+ 	 * task might have changed its scheduling policy to something
