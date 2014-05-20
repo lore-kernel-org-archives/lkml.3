@@ -1,81 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030AbaETSjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:39:13 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:35181 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaETSjK (ORCPT
+	id S1754187AbaETSj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:39:58 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:36932 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaETSj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:39:10 -0400
-Date: Tue, 20 May 2014 22:39:07 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix x86
- vdso naming
-Message-ID: <20140520183907.GM2185@moon>
-References: <cover.1400538962.git.luto@amacapital.net>
- <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
- <20140520172134.GJ2185@moon>
- <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com>
- <20140520174759.GK2185@moon>
- <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com>
- <20140520180104.GL2185@moon>
- <537B9C6D.7010705@zytor.com>
- <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
+	Tue, 20 May 2014 14:39:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LFD.2.11.1405201945280.1631@denkbrett>
+References: <alpine.LFD.2.11.1405191908450.1847@denkbrett>
+	<20140519180851.GD2915@kvack.org>
+	<alpine.LFD.2.11.1405200950480.1606@denkbrett>
+	<alpine.LFD.2.11.1405201508450.1606@denkbrett>
+	<CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
+	<alpine.LFD.2.11.1405201945280.1631@denkbrett>
+Date: Tue, 20 May 2014 11:39:55 -0700
+Message-ID: <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com>
+Subject: Re: hanging aio process
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:24:56AM -0700, Andy Lutomirski wrote:
-> On Tue, May 20, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 05/20/2014 11:01 AM, Cyrill Gorcunov wrote:
-> >>>
-> >>> This patch should fix this issue, at least.  If there's still a way to
-> >>> get a native vdso that doesn't say "[vdso]", please let me know/
-> >>
-> >> Yes, having a native procfs way to detect vdso is much preferred!
-> >>
-> >
-> > Is there any path by which we can end up with [vdso] without a leading
-> > slash in /proc/self/maps?  Otherwise, why is that not "native"?
-> 
-> Dunno.  But before this patch the reverse was possible: we can end up
-> with a vdso that doesn't say [vdso].
+Hi
 
-I fear I don't understand the phrase "leading slash in /proc/self/maps".
-Peter could you rephrase please?
+On Tue, May 20, 2014 at 11:09 AM, Sebastian Ott
+<sebott@linux.vnet.ibm.com> wrote:
+> Hi,
+>
+> On Tue, 20 May 2014, Anatol Pomozov wrote:
+>> On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
+>> <sebott@linux.vnet.ibm.com> wrote:
+>> > On Tue, 20 May 2014, Sebastian Ott wrote:
+>> >> On Mon, 19 May 2014, Benjamin LaHaise wrote:
+>> >> > It is entirely possible the bug isn't
+>> >> > caused by the referenced commit, as the commit you're pointing to merely
+>> >> > makes io_destroy() syscall wait for all aio outstanding to complete
+>> >> > before returning.
+>> >>
+>> >> I cannot reproduce this when I revert said commit (on top of 14186fe). If
+>> >> that matters - the arch is s390.
+>> >
+>> > Hm, ok - maybe that commit is really just highlighting a refcounting bug.
+>> > I just compared traces for a good and a few bad cases. The good case:
+>> > # tracer: function
+>> > #
+>> > # entries-in-buffer/entries-written: 16/16   #P:4
+>> > #
+>> > #                              _-----=> irqs-off
+>> > #                             / _----=> need-resched
+>> > #                            | / _---=> hardirq/softirq
+>> > #                            || / _--=> preempt-depth
+>> > #                            ||| /     delay
+>> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+>> > #              | |       |   ||||       |         |
+>> >              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
+>> >              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
+>> >      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
+>> >      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
+>> >              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
+>> >      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
+>> >      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
+>> >      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
+>> >              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
+>> >           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
+>> >      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
+>> >           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
+>> >
+>> > (4 fio workers, free_ioctx_reqs is called 4 times)
+>> >
+>> > One of the bad cases:
+>> > # tracer: function
+>> > #
+>> > # entries-in-buffer/entries-written: 14/14   #P:4
+>> > #
+>> > #                              _-----=> irqs-off
+>> > #                             / _----=> need-resched
+>> > #                            | / _---=> hardirq/softirq
+>> > #                            || / _--=> preempt-depth
+>> > #                            ||| /     delay
+>> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+>> > #              | |       |   ||||       |         |
+>> >              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
+>> >           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
+>> >              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
+>> >              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
+>> >           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
+>> >           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
+>> >              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
+>> >            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
+>> >           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
+>> >      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
+>> >              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
+>> >      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
+>> >
+>> > (1 fio worker in D state, free_ioctx_reqs is called 3 times)
+>>
+>>
+>> Looking at the second trace: the first 3 io_destroy() calls cause
+>> free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
+>> Do you have more logs after the last line?
+>
+> Nope that was all.
+>
+>> If there is no more
+>> free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
+>> I suggest to add some logging to kernel to figure out what is the
+>> refcount value at this moment.
+>
+> Jep, I did that this morning (via atomic_read(&ctx->reqs.count) in
+> free_ioctx_users before percpu_ref_kill(&ctx->reqs); is called) and
+> the value was always the same
+>         1 + (1UL << 31)
+> even for the free_ioctx_users invocations that were not followed by
+> free_ioctx_reqs.
 
-> >>>>   The situation get worse when task was dumped on one kernel and
-> >>>> then restored on another kernel where vdso content is different
-> >>>> from one save in image -- is such case as I mentioned we need
-> >>>> that named vdso proxy which redirect calls to vdso of the system
-> >>>> where task is restoring. And when such "restored" task get checkpointed
-> >>>> second time we don't dump new living vdso but save only old vdso
-> >>>> proxy on disk (detecting it is a different story, in short we
-> >>>> inject a unique mark into elf header).
-> >>>
-> >>> Yuck.  But I don't know whether the kernel can help much here.
-> >>
-> >> Some prctl which would tell kernel to put vdso at specifed address.
-> >> We can live without it for now so not a big deal (yet ;)
-> >
-> > mremap() will do this for you.
-> 
-> Except that it's buggy: it doesn't change mm->context.vdso.  For
-> 64-bit tasks, the only consumer outside exec was arch_vma_name, and
-> this patch removes even that.  For 32-bit tasks, though, it's needed
-> for signal delivery.
+Could you add atomic_read(&ctx->reqs.count) *after* the
+percpu_ref_kill(&ctx->reqs)?
 
-yes, fwiw we can deal with it currently but i'm not sure yet about
-compat case simply because didn't look presicely.
+before percpu_ref_kill() the refcounter is per-CPU one and correctly
+calculate the real value you need to take &ctx->reqs.pcpu_count into
+account. But after percpu_ref_kill() the reqs.count become the normal
+shared refcounter.
+
+>
+>>
+>> But *if* there was one more free_ioctx_reqs() that does not
+>> complete(ctx->requests_done) then it means the thread does not see
+>> value of requests_done field. It would make me believe there is a
+>> problem with memory reordering. I do not know whether s390 reorders
+>> stores, but anyway, could you please check this patch?
+>
+> Nope s390 doesn't reorder stores - I tried the patch anyway, but it didn't
+> help.
+>
+> Regards,
+> Sebastian
+>>
+>> anatol:linux $ git diff
+>> diff --git a/fs/aio.c b/fs/aio.c
+>> index a0ed6c7..6e3c0bb 100644
+>> --- a/fs/aio.c
+>> +++ b/fs/aio.c
+>> @@ -514,6 +514,7 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
+>>         struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
+>>
+>>         /* At this point we know that there are no any in-flight requests */
+>> +       rmb();
+>>         if (ctx->requests_done)
+>>                 complete(ctx->requests_done);
+>>
+>> @@ -758,6 +759,7 @@ static void kill_ioctx(struct mm_struct *mm,
+>> struct kioctx *ctx,
+>>                         vm_munmap(ctx->mmap_base, ctx->mmap_size);
+>>
+>>                 ctx->requests_done = requests_done;
+>> +               wmb();
+>>                 percpu_ref_kill(&ctx->users);
+>>         } else {
+>>                 if (requests_done)
+>>
+>>
+>
