@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaETXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 19:40:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26122 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaETXkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 19:40:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,877,1392192000"; 
-   d="scan'208";a="542425954"
-Message-ID: <537BE806.4020004@linux.intel.com>
-Date: Wed, 21 May 2014 07:40:54 +0800
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751056AbaETXps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 19:45:48 -0400
+Received: from host171.canaca.com ([67.55.55.225]:50939 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaETXpq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 19:45:46 -0400
+Message-ID: <7e57db42a261a54d38a3a7bb068c3ce2.squirrel@mungewell.org>
+In-Reply-To: <6970969.ej8OFzkVkO@sigyn>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+    <2965006.XKYHWj9YzJ@sigyn>
+    <865ad8dbc7ae0d13c045bd2a85cff2e2.squirrel@mungewell.org>
+    <6970969.ej8OFzkVkO@sigyn>
+Date: Tue, 20 May 2014 19:45:44 -0400
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: simon@mungewell.org
+To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>
+Cc: simon@mungewell.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: sameo@linux.intel.com, linux-kernel@vger.kernel.org, bin.yang@intel.com
-Subject: Re: [PATCH 1/4] mfd: intel_soc_pmic: Core driver
-References: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com> <1400079578-32329-2-git-send-email-lejun.zhu@linux.intel.com> <20140520145827.GV24991@lee--X1>
-In-Reply-To: <20140520145827.GV24991@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+>> Regarding the question of emulated vs. real effects, can we extend the
+>> API
+>> so that applications can know which effects are really supported, and
+>> enable/disable emulation somehow?
+>
+> I suppose that a few extra flags (FF_PERIODIC_EMULATED etc.) defined in
+> "uapi/linux/input.h" should suffice.
 
-On 5/20/2014 10:58 PM, Lee Jones wrote:
->> This patch provides the common code for the intel_soc_pmic MFD driver,
->> such as read/write register and set up IRQ.
->>
->> Signed-off-by: Yang, Bin <bin.yang@intel.com>
->> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
->> ---
->>  drivers/mfd/intel_soc_pmic_core.c  | 543 +++++++++++++++++++++++++++++++++++++
->>  drivers/mfd/intel_soc_pmic_core.h  |  83 ++++++
->>  include/linux/mfd/intel_soc_pmic.h |  29 ++
->>  3 files changed, 655 insertions(+)
->>  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
->>  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
->>  create mode 100644 include/linux/mfd/intel_soc_pmic.h
-> 
-> This whole driver needs converting over to regmap.
-> 
-OK, working on it... Thanks.
+The only problem is that we probably want to maintain backward
+compatibility so that older apps still see 'PERIODIC' (even though it is
+emulated).
+--
+#define FF_RUMBLE	0x50
+#define FF_PERIODIC	0x51
+#define FF_CONSTANT	0x52
+#define FF_SPRING	0x53
+#define FF_FRICTION	0x54
+#define FF_DAMPER	0x55
+#define FF_INERTIA	0x56
+#define FF_RAMP		0x57
+--
 
-Best Regards
-Lejun
+Do we therefore have to list extra items in our capabilities?
+--
+static const signed short lg4ff_wheel_effects[] = {
+	FF_CONSTANT,
+	FF_PERIODIC,
+	FF_PERIODIC_NOT_EMULATED,
+	FF_AUTOCENTER,
+	-1
+};
+--
+
+Simon
+
