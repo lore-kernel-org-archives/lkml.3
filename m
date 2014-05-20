@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaETHRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 03:17:11 -0400
-Received: from ozlabs.org ([103.22.144.67]:42378 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969AbaETHRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 03:17:09 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
-        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
-        mingo@kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
-In-Reply-To: <20140520004429.E660AE009B@blue.fi.intel.com>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils> <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org> <20140520004429.E660AE009B@blue.fi.intel.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 20 May 2014 15:52:07 +0930
-Message-ID: <87oaythsvk.fsf@rustcorp.com.au>
+	id S1752133AbaETHTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 03:19:52 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:60196 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750819AbaETHTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 03:19:51 -0400
+Message-ID: <537B01E9.8020507@st.com>
+Date: Tue, 20 May 2014 09:19:05 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lee Jones <lee.jones@linaro.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [STLinux Kernel] [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
+References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org> <1398756095-32542-4-git-send-email-lee.jones@linaro.org> <537A265E.8080407@st.com> <20140519155106.GR4978@lee--X1>
+In-Reply-To: <20140519155106.GR4978@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-19_03:2014-05-19,2014-05-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
-> Andrew Morton wrote:
->> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
->> 
->> > Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
->> > the order of the fault-around size in bytes, and fault_around_pages()
->> > use 1UL << (fault_around_order - PAGE_SHIFT)
->> 
->> Yes.  And shame on me for missing it (this time!) at review.
->> 
->> There's still time to fix this.  Patches, please.
+
+On 05/19/2014 05:51 PM, Lee Jones wrote:
+>>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+>>> devices. It has 2 ports which it can use for either; both SATA, both
+>>> PCIe or one of each in any configuration.
+>>>
+>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>>> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>   arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
+>>>   arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
+>>>   arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
+>>>   3 files changed, 42 insertions(+)
+>>>   create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
+>>>
+>>> diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+>>> new file mode 100644
+>>> index 0000000..23fdaf7
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+>>> @@ -0,0 +1,22 @@
+>>> +/*
+>>> + * Copyright (C) 2014 STMicroelectronics Limited.
+>>> + * Author: Lee Jones <lee.jones@linaro.org>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * publishhed by the Free Software Foundation.
+>>> + */
+>>> +/dts-v1/;
+>>> +#include "stih416.dtsi"
+>>> +#include "stih41x-b2020.dtsi"
+>>> +/ {
+>>> +        model = "STiH416 B2020 REV-E";
+>>> +	compatible = "st,stih416-b2020", "st,stih416";
+>>> +
+>>> +	soc {
+>>> +		miphy365x_phy: miphy365x@fe382000 {
+>>> +			st,pcie-tx-pol-inv;
+>>> +			st,sata-gen = <3>;
+>>> +		};
+>>> +	};
+>>> +};
+>> Shouldn't this new board being added in a separate patch?
 >
-> Here it is. Made at 3.30 AM, build tested only.
+> I certainly can do that, but I don't think that it's necessary?
 
-Prefer on top of Maddy's patch which makes it always a variable, rather
-than CONFIG_DEBUG_FS.  It's got enough hair as it is.
+I think it is, as you introduce a new board.
+Moreover, the miphy description being the same as in stih416-b2020.dts, 
+so I don't understand why you introduce this board for this feature.
 
-Cheers,
-Rusty.
+
+>
+>>> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+>>> index 276f28d..172f222 100644
+>>> --- a/arch/arm/boot/dts/stih416-b2020.dts
+>>> +++ b/arch/arm/boot/dts/stih416-b2020.dts
+>>> @@ -13,4 +13,10 @@
+>>>   	model = "STiH416 B2020";
+>>>   	compatible = "st,stih416", "st,stih416-b2020";
+>>>
+>>> +	soc {
+>>> +		miphy365x_phy: miphy365x@fe382000 {
+>>> +			st,pcie-tx-pol-inv;
+>>> +			st,sata-gen = <3>;
+>>> +		};
+>>> +	};
+>>>   };
+>> ...
+>
