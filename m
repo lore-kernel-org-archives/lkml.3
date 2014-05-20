@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaETQxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:53:00 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:59444 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217AbaETQw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:52:59 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: sboyd@codeaurora.org
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH] clk: qcom: Fix blsp2_ahb_clk register offset
-Date: Tue, 20 May 2014 19:50:54 +0300
-Message-Id: <1400604654-27701-1-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753866AbaETQzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:55:35 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:55340 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbaETQze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 12:55:34 -0400
+Message-ID: <1400604934.19170.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH V3 mmots] fs/hfsplus/wrapper.c: replace shift loop by
+ ilog2
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
+Date: Tue, 20 May 2014 09:55:34 -0700
+In-Reply-To: <20140520184334.9e903b4965a5776eb0e771e2@skynet.be>
+References: <20140520184334.9e903b4965a5776eb0e771e2@skynet.be>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of the blsp2_ahb_clk register is incorrect. Fix it.
+On Tue, 2014-05-20 at 18:43 +0200, Fabian Frederick wrote:
+> Replace while blocksize;shift by ilog2
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- drivers/clk/qcom/gcc-msm8974.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Fabian, please start getting into the habit of improving your
+changelogs. Unlike a lot of OSS projects, the kernel community (usually)
+takes pride in having good ones. You send a number of patches but rarely
+explain a key concept of software development in general: *WHY* do we
+need this.
 
-diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
-index 51d457e..7968ed2 100644
---- a/drivers/clk/qcom/gcc-msm8974.c
-+++ b/drivers/clk/qcom/gcc-msm8974.c
-@@ -1340,7 +1340,7 @@ static struct clk_branch gcc_blsp1_uart6_apps_clk = {
- };
- 
- static struct clk_branch gcc_blsp2_ahb_clk = {
--	.halt_reg = 0x05c4,
-+	.halt_reg = 0x0944,
- 	.halt_check = BRANCH_HALT_VOTED,
- 	.clkr = {
- 		.enable_reg = 0x1484,
--- 
-1.7.9.5
+Thanks,
+Davidlohr
 
