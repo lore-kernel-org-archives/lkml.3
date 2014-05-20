@@ -1,228 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295AbaETGyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 02:54:17 -0400
-Received: from relay-s04-hub005.domainlocalhost.com ([74.115.207.216]:37834
-	"EHLO relay-S04-HUB005.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750731AbaETGyP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 02:54:15 -0400
-From: Dudley Du <dudl@cypress.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
-        "David Solda" <dso@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/6] input: cyapa: enable/disable trackpad device based
- on LID state
-Thread-Topic: [PATCH 4/6] input: cyapa: enable/disable trackpad device based
- on LID state
-Thread-Index: Ac9Xtrung2rcRTzSQqSjaCWaMF8SMwBmHYhABqv7vAAAAgOL4A==
-Date: Tue, 20 May 2014 06:54:07 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C326DE@S04-MBX01-01.s04.local>
-References: <77BC725C9062764F874D79F51E1F1A8F40C14099@S04-MBX01-01.s04.local>
- <20140520034302.GB986@core.coreip.homeip.net>
-In-Reply-To: <20140520034302.GB986@core.coreip.homeip.net>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.30.12.154]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751610AbaETGzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 02:55:11 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:32879 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745AbaETGzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 02:55:09 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-11.tower-178.messagelabs.com!1400568905!25716545!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Tue, 20 May 2014 08:55:05 +0200
+Date: Tue, 20 May 2014 09:47:49 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Andreas Werner <andreas.werner@men.de>,
+        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <cooloney@gmail.com>, <rpurdie@rpsys.net>,
+        <linux-leds@vger.kernel.org>, <johannes.thumshirn@men.de>,
+        <thomas.schnuerer@men.de>, <wernerandy@gmx.de>
+Subject: Re: [PATCH 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC
+ MFD Core driver
+Message-ID: <20140520074748.GC398@awelinux>
+References: <cover.1400258021.git.andreas.werner@men.de>
+ <58de41a38511a107941d9c3b2cea314c0becfff7.1400258021.git.andreas.werner@men.de>
+ <5377849E.7020001@roeck-us.net>
+ <20140519124324.GB398@awelinux>
+ <537A05D4.6080308@roeck-us.net>
+ <20140519173953.GA20874@lee--X1>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140519173953.GA20874@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+aOn Mon, May 19, 2014 at 06:39:53PM +0100, Lee Jones wrote:
+> On Mon, 19 May 2014, Guenter Roeck wrote:
+> 
+> > On 05/19/2014 05:43 AM, Andreas Werner wrote:
+> > >aOn Sat, May 17, 2014 at 08:47:42AM -0700, Guenter Roeck wrote:
+> > >>On 05/16/2014 09:37 AM, Andreas Werner wrote:
+> > >>>The MEN 14F021P00 Board Management Controller provides an
+> > >>>I2C interface to the host to access the feature implemented in the BMC.
+> > >>>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> > >>>and on a few Box/Display Computer.
+> > >>>
+> > >>>Added MFD Core driver, supporting the I2C communication to the device.
+> > >>>
+> > >>>The MFD driver currently supports the following features:
+> > >>>	- Watchdog
+> > >>>	- LEDs
+> > >>>
+> > >>>Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > >>>---
+> > >>>  drivers/mfd/Kconfig           |  12 +++
+> > >>>  drivers/mfd/Makefile          |   1 +
+> > >>>  drivers/mfd/menf21bmc.c       | 193 ++++++++++++++++++++++++++++++++++++++++++
+> > >>>  include/linux/mfd/menf21bmc.h |  32 +++++++
+> > >>>  4 files changed, 238 insertions(+)
+> > >>>  create mode 100644 drivers/mfd/menf21bmc.c
+> > >>>  create mode 100644 include/linux/mfd/menf21bmc.h
+> > >>>
+> > >>>diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > >>>index ab5a43c..7c2e8d2 100644
+> > >>>--- a/drivers/mfd/Kconfig
+> > >>>+++ b/drivers/mfd/Kconfig
+> > >>>@@ -427,6 +427,18 @@ config MFD_MAX8998
+> > >>>  	  additional drivers must be enabled in order to use the functionality
+> > >>>  	  of the device.
+> > >>>
+> > >>>+config MFD_MENF21BMC
+> > >>>+	tristate "MEN 14F021P00 Board Management Controller Support"
+> > >>>+	depends on I2C=y
+> > >>>+	select MFD_CORE
+> > >>>+	help
+> > >>>+	  Say yes here to add support for the MEN 14F021P00 BMC
+> > >>>+	  which is a Board Management Controller connected to the I2C bus.
+> > >>>+	  This driver provides common support for accessing the devices;
+> > >>>+	  additional drivers must be enabled in order to use the
+> > >>>+	  functionality of the BMC device.
+> > >>>+
+> > >>>+
+> > >>>  config EZX_PCAP
+> > >>>  	bool "Motorola EZXPCAP Support"
+> > >>>  	depends on SPI_MASTER
+> > >>>diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > >>>index 5913208..8f2be38 100644
+> > >>>--- a/drivers/mfd/Makefile
+> > >>>+++ b/drivers/mfd/Makefile
+> > >>>@@ -167,3 +167,4 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+> > >>>  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+> > >>>  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+> > >>>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+> > >>>+obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+> > >>>diff --git a/drivers/mfd/menf21bmc.c b/drivers/mfd/menf21bmc.c
+> > >>>new file mode 100644
+> > >>>index 0000000..77de1a8
+> > >>>--- /dev/null
+> > >>>+++ b/drivers/mfd/menf21bmc.c
+> > >>>@@ -0,0 +1,193 @@
+> > >>>+/*
+> > >>>+ *  MEN 14F021P00 Board Management Controller (BMC) MFD Core Driver.
+> > >>>+ *
+> > >>>+ *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> > >>>+ *  Author: Andreas Werner <andreas.werner@men.de>
+> > >>>+ *  All rights reserved.
+> > >>>+ *
+> > >>>+ *  This program is free software; you can redistribute  it and/or modify it
+> > >>>+ *  under  the terms of  the GNU General  Public License as published by the
+> > >>>+ *  Free Software Foundation;  either version 2 of the  License, or (at your
+> > >>>+ *  option) any later version.
+> > >>>+ *
+> > >>>+ */
+> > >>>+
+> > >>>+#include <linux/kernel.h>
+> > >>>+#include <linux/device.h>
+> > >>>+#include <linux/module.h>
+> > >>>+#include <linux/i2c.h>
+> > >>>+#include <linux/mfd/core.h>
+> > >>>+#include <linux/mfd/menf21bmc.h>
+> > >>>+
+> > >>>+#define BMC_CMD_REV_MAJOR	0x80
+> > >>>+#define BMC_CMD_REV_MINOR	0x81
+> > >>>+#define BMC_CMD_REV_MAIN	0x82
+> > >>>+#define BMC_CMD_REV_BUILD	0x83
+> > >>>+#define BMC_CMD_REV_VERI	0x84
+> > >>>+
+> > >>>+static struct mfd_cell menf21bmc_cell[] = {
+> > >>>+	{
+> > >>>+		.name = "menf21bmc_wd",
+> > >>>+	},
+> > >>>+	{
+> > >>>+		.name = "menf21bmc_led",
+> > >>>+	},
+> > >>>+};
+> > >>>+
+> > >>>+static int
+> > >>>+menf21bmc_read_byte_data(struct i2c_client *client, u8 reg, uint8_t *val)
+> > >>>+{
+> > >>>+	int ret;
+> > >>>+	struct menf21bmc *data = i2c_get_clientdata(client);
+> > >>>+
+> > >>>+	mutex_lock(&data->lock);
+> > >>>+	ret = i2c_smbus_read_byte_data(client, reg);
+> > >>>+	mutex_unlock(&data->lock);
+> > >>>+
+> > >>>+	if (ret < 0) {
+> > >>>+		dev_err(&client->dev, "failed to read byte at 0x%02x\n", reg);
+> > >>>+		return ret;
+> > >>>+	}
+> > >>>+
+> > >>>+	*val = (uint8_t)ret;
+> > >>>+
+> > >>>+	return 0;
+> > >>>+}
+> > >>>+
+> > >>I personally would prefer if you would retain the original API, which returns both value
+> > >>and error code as return value. I don't see the benefit of changing the API as you did -
+> > >>it just complicates the code.
+> > >>
+> > >>Thanks,
+> > >>Guenter
+> > >>
+> > >I think it is ok for a wrapper like this because it does not really change an API because
+> > >it is menf21bmc related.
+> > >
+> > >I did the same in rtc-rx8581, and it was already done in rtc_ds1307.c.
+> > >
+> > >I personally prefer this way because the return of the function and the return
+> > >value of the i2c_smbus_read - which is the value read from the device - are seperated.
+> > >
+> > >If it is a no go for the mfd/wdt core i can change it back to the original i2c_smbus API.
+> > >If it is ok on your side for a wrapper like this, we can let it as it is.
+> > >
+> > 
+> > Not my call to make; depends on the mfd maintainer. I would not accept it, as I see it
+> > as unnecessary, adding complexity, and pointless. Sure, you can always find examples
+> > for everything somewhere in the kernel, but that doesn't make it better.
+> 
+> I'm inclined to agree with Guenter, this patch is just noise.
 
-Could you help give some advice on how to apply the function to put the trackpad device into low power mode with LID in current kernel?
-or it's just a policy and should not be submitted to kernel right now?
+Ok no problem, i will fix it and resend the patch.
+For now I know it for the future :-)
 
-Thanks,
-Dudley
+Any other comments about the patch series?
 
->
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Tuesday, May 20, 2014 11:43 AM
-> To: Dudley Du
-> Cc: Benson Leung; Daniel Kurtz; David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 4/6] input: cyapa: enable/disable trackpad device based on LID state
->
-> Hi Dudley,
->
-> On Wed, Apr 16, 2014 at 08:39:34AM +0000, Dudley Du wrote:
-> > Rely on EV_SW and SW_LID bits to identify a LID device, and hook up
-> > our filter to listen for SW_LID events to enable/disable touchpad when
-> > LID is open/closed.
-> > TEST=test on Chomebooks.
->
-> This is a policy and it does not belong in the kernel. Please work with Rafael to establish generic interface to put devices into low power mode (like accelerating runtime PM idle timeout) and use it when userspace detects that lid is closed.
->
-> Thanks.
->
-> >
-> > Signed-off-by: Du, Dudley <dudl@cypress.com>
-> > ---
-> > diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-> > index 6820b3f..da03427 100644
-> > --- a/drivers/input/mouse/cyapa.c
-> > +++ b/drivers/input/mouse/cyapa.c
-> > @@ -523,6 +523,9 @@ struct cyapa {
-> >         int physical_size_x;
-> >         int physical_size_y;
-> >
-> > +       bool lid_handler_registered;
-> > +       struct input_handler lid_handler;
-> > +
-> >         /* used in ttsp and truetouch based trackpad devices. */
-> >         u8 x_origin;  /* X Axis Origin: 0 = left side; 1 = rigth side. */
-> >         u8 y_origin;  /* Y Axis Origin: 0 = top; 1 = bottom. */ @@
-> > -3107,6 +3110,125 @@ static void cyapa_start_runtime(struct cyapa
-> > *cyapa)  static void cyapa_start_runtime(struct cyapa *cyapa) {}
-> > #endif /* CONFIG_PM_RUNTIME */
-> >
-> > +
-> > +/*
-> > + * We rely on EV_SW and SW_LID bits to identify a LID device, and
-> > +hook
-> > + * up our filter to listen for SW_LID events to enable/disable
-> > +touchpad when
-> > + * LID is open/closed.
-> > + */
-> > +static const struct input_device_id lid_device_ids[] = {
-> > +       {
-> > +               .flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-> > +                        INPUT_DEVICE_ID_MATCH_SWBIT,
-> > +               .evbit = { BIT_MASK(EV_SW) },
-> > +               .swbit = { BIT_MASK(SW_LID) },
-> > +       },
-> > +       { },
-> > +};
-> > +
-> > +static int lid_device_connect(struct input_handler *handler,
-> > +                             struct input_dev *dev,
-> > +                             const struct input_device_id *id) {
-> > +       struct input_handle *lid_handle;
-> > +       int error;
-> > +
-> > +       lid_handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
-> > +       if (!lid_handle)
-> > +               return -ENOMEM;
-> > +
-> > +       lid_handle->dev = dev;
-> > +       lid_handle->handler = handler;
-> > +       lid_handle->name = "lid_event_handler";
-> > +       lid_handle->private = handler->private;
-> > +
-> > +       error = input_register_handle(lid_handle);
-> > +       if (error)
-> > +               goto err_free;
-> > +
-> > +       error = input_open_device(lid_handle);
-> > +       if (error)
-> > +               goto err_unregister;
-> > +
-> > +       return 0;
-> > +err_unregister:
-> > +       input_unregister_handle(lid_handle);
-> > +err_free:
-> > +       kfree(lid_handle);
-> > +       return error;
-> > +}
-> > +
-> > +static void lid_device_disconnect(struct input_handle *handle) {
-> > +       input_close_device(handle);
-> > +       input_unregister_handle(handle);
-> > +       kfree(handle);
-> > +}
-> > +
-> > +static bool lid_event_filter(struct input_handle *handle,
-> > +                            unsigned int type, unsigned int code, int
-> > +value) {
-> > +       struct cyapa *cyapa = handle->private;
-> > +       struct device *dev = &cyapa->client->dev;
-> > +
-> > +       if (type == EV_SW && code == SW_LID) {
-> > +               if (cyapa->suspended) {
-> > +                       /*
-> > +                        * If the lid event filter is called while suspended,
-> > +                        * there is no guarantee that the underlying i2cs are
-> > +                        * resumed at this point, so it is not safe to issue
-> > +                        * the command to change power modes.
-> > +                        * Instead, rely on cyapa_resume to set us back to
-> > +                        * PWR_MODE_FULL_ACTIVE.
-> > +                        */
-> > +                       return false;
-> > +               }
-> > +               if (value == 0) {
-> > +                       if (cyapa->cyapa_set_power_mode)
-> > +                               cyapa->cyapa_set_power_mode(cyapa,
-> > +                                               PWR_MODE_FULL_ACTIVE, 0);
-> > +                       pm_runtime_set_active(dev);
-> > +                       pm_runtime_enable(dev);
-> > +               } else {
-> > +                       pm_runtime_disable(dev);
-> > +                       if (cyapa->cyapa_set_power_mode)
-> > +                               cyapa->cyapa_set_power_mode(cyapa,
-> > +                                               PWR_MODE_OFF, 0);
-> > +               }
-> > +       }
-> > +
-> > +       return false;
-> > +}
-> > +
-> > +static void lid_event_register_handler(struct cyapa *cyapa) {
-> > +       int error;
-> > +       struct input_handler *lid_handler = &cyapa->lid_handler;
-> > +
-> > +       if (cyapa->lid_handler_registered)
-> > +               return;
-> > +
-> > +       lid_handler->filter     = lid_event_filter;
-> > +       lid_handler->connect    = lid_device_connect;
-> > +       lid_handler->disconnect = lid_device_disconnect;
-> > +       lid_handler->name       = "cyapa_lid_event_handler";
-> > +       lid_handler->id_table   = lid_device_ids;
-> > +       lid_handler->private    = cyapa;
-> > +
-> > +       error = input_register_handler(lid_handler);
-> > +       if (error)
-> > +               return;
-> > +       cyapa->lid_handler_registered = true; }
-> > +
-> > +static void lid_event_unregister_handler(struct cyapa *cyapa) {
-> > +       if (cyapa->lid_handler_registered) {
-> > +               input_unregister_handler(&cyapa->lid_handler);
-> > +               cyapa->lid_handler_registered = false;
-> > +       }
-> > +}
-> > +
-> >  static void cyapa_detect_async(void *data, async_cookie_t cookie)  {
-> >         struct cyapa *cyapa = (struct cyapa *)data; @@ -3126,6 +3248,7
-> > @@ static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
-> >         cyapa_detect_async(data, cookie);
-> >
-> >         cyapa_start_runtime(cyapa);
-> > +       lid_event_register_handler(cyapa);
-> >  }
-> >
-> >  static int cyapa_probe(struct i2c_client *client, @@ -3221,7 +3344,7
-> > @@ static int cyapa_remove(struct i2c_client *client)
-> >
-> >         free_irq(cyapa->irq, cyapa);
-> >         input_unregister_device(cyapa->input);
-> > -
-> > +       lid_event_unregister_handler(cyapa);
-> >         if (cyapa->cyapa_set_power_mode)
-> >                 cyapa->cyapa_set_power_mode(cyapa, PWR_MODE_OFF, 0);
-> >         i2c_set_clientdata(client, NULL); This message and any
-> > attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
->
-> --
-> Dmitry
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+> 
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+
+Regards
+Andy
