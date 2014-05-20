@@ -1,113 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaETRA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:00:28 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:52692 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaETRA0 convert rfc822-to-8bit (ORCPT
+	id S1753641AbaETRAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:00:48 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:38625 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450AbaETRAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:00:26 -0400
-X-AuditID: cbfec373-b7fd56d0000060dc-b6-537b8a283cf5
-Date: Tue, 20 May 2014 14:00:19 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.15-rc6] media fixes
-Message-id: <20140520140019.4bb688d3.m.chehab@samsung.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnluLIzCtJLcpLzFFi42I5/e9woK5GV3WwwYMX0hZz1q9hs7i8aw6b
-	Rc+GrawWj/resjuweJyY8ZvF4/MmuQCmKC6blNSczLLUIn27BK6MZafWsxZ0SlYcmLuGsYHx
-	unAXIweHhICJxLXbkV2MnECmmMSFe+vZuhi5OIQEljBK9DY9YIJwmpkkFn14xA5SxSKgKrHx
-	+mdWEJtNwEjiVWMLmC0CZH9+cYUVpIFZYDGjxMfn68EahAV0JXqaDjODbOMVsJK4cVMMYpuT
-	xKvXk5lAbF4BQYkfk++xgNjMAuoSk+YtYoawtSWevLvAOoGRbxaSsllIymYhKVvAyLyKUbS0
-	OLmgOCk910ivODG3uDQvXS85P3cTIyTwincwvthgdYhRgINRiYdXQbEqWIg1say4MvcQowQH
-	s5IIr31wdbAQb0piZVVqUX58UWlOavEhRiYOTqkGRt/cIA+hV6Eb4p/ItoieXuOmHH9l1byd
-	M1t03BbUMmdl/LFQzlQwk7K4EPj8nneRiN08rd5PC9Y/jC6XlytP90h+PXvZzPdr+V0vzH7n
-	Ef7ZbO4i9r73yh8PN51p+bFfZYVWvauhybwyFaY53b9uPXV/e55bdX5H1rKIw5VLDKuXHni2
-	a4cLtxJLcUaioRZzUXEiAPEuQb8aAgAA
+	Tue, 20 May 2014 13:00:46 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: olof@lixom.net, Sachin Kamat <sachin.kamat@linaro.org>,
+        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
+        broonie@kernel.org, lee.jones@linaro.org,
+        Anton Vorontsov <anton@enomsg.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH v3] charger: tps65090: Allow charger module to be used when no irq
+Date: Tue, 20 May 2014 10:00:21 -0700
+Message-Id: <1400605221-15326-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On the ARM Chromebook tps65090 has two masters: the AP (the main
+processor running linux) and the EC (the embedded controller).  The AP
+is allowed to mess with FETs but the EC is in charge of charge control.
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+The tps65090 interupt line is routed to both the AP and the EC, which
+can cause quite a headache.  Having two people adjusting masks and
+acking interrupts is a recipe for disaster.
 
+In the shipping kernel we had a hack to have the AP pay attention to
+the IRQ but not to ack it.  It also wasn't supposed to configure the
+IRQ in any way.  That hack allowed us to detect when the device was
+charging without messing with the EC's state.
 
-Most of the changes are drivers fixes (rtl28xuu, fc2580, ov7670, davinci,
-gspca, s5p-fimc and s5c73m3). There is also a compat32 fix and one infoleak
-fixup at the media controller.
+The current tps65090 infrastructure makes the above difficult, and it
+was a bit of a hack to begin with.  Rather than uglify the driver to
+support it, just extend the driver's existing notion of "no irq" to
+the charger.  This makes the charger code poll every 2 seconds for AC
+detect, which is sufficient.
 
-Thanks!
-Mauro.
+For proper functioning, requires (mfd: tps65090: Don't tell child
+devices we have an IRQ if we don't).  If we don't have that patch
+we'll simply fail to probe on devices without an interrupt (just like
+we did before this patch).
 
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+
+Note that this patch was part of a larger series
+<https://patchwork.kernel.org/patch/4042751/>.  The rest of the series
+has been applied, so just RESENDing this one part.
+
+Changes in v3: None
+Changes in v2:
+- Split noirq (polling mode) changes into MFD and charger
+
+ drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 59 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+index 8fc9d6d..cc26c12 100644
+--- a/drivers/power/tps65090-charger.c
++++ b/drivers/power/tps65090-charger.c
+@@ -17,9 +17,11 @@
+  */
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/freezer.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <linux/kthread.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+@@ -43,11 +45,15 @@
+ #define TPS65090_VACG		BIT(1)
+ #define TPS65090_NOITERM	BIT(5)
+ 
++#define POLL_INTERVAL		(HZ * 2)	/* Used when no irq */
++
+ struct tps65090_charger {
+ 	struct	device	*dev;
+ 	int	ac_online;
+ 	int	prev_ac_online;
+ 	int	irq;
++	struct task_struct	*poll_task;
++	bool			passive_mode;
+ 	struct power_supply	ac;
+ 	struct tps65090_platform_data *pdata;
+ };
+@@ -60,6 +66,9 @@ static int tps65090_low_chrg_current(struct tps65090_charger *charger)
+ {
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	ret = tps65090_write(charger->dev->parent, TPS65090_REG_CG_CTRL5,
+ 			TPS65090_NOITERM);
+ 	if (ret < 0) {
+@@ -75,6 +84,9 @@ static int tps65090_enable_charging(struct tps65090_charger *charger)
+ 	int ret;
+ 	uint8_t ctrl0 = 0;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	ret = tps65090_read(charger->dev->parent, TPS65090_REG_CG_CTRL0,
+ 			    &ctrl0);
+ 	if (ret < 0) {
+@@ -98,6 +110,9 @@ static int tps65090_config_charger(struct tps65090_charger *charger)
+ 	uint8_t intrmask = 0;
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	if (charger->pdata->enable_low_current_chrg) {
+ 		ret = tps65090_low_chrg_current(charger);
+ 		if (ret < 0) {
+@@ -175,10 +190,14 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	/* Clear interrupts. */
+-	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_STS, 0x00);
+-	if (ret < 0) {
+-		dev_err(charger->dev, "%s(): Error in writing reg 0x%x\n",
++	if (!charger->passive_mode) {
++		ret = tps65090_write(charger->dev->parent,
++				     TPS65090_REG_INTR_STS, 0x00);
++		if (ret < 0) {
++			dev_err(charger->dev,
++				"%s(): Error in writing reg 0x%x\n",
+ 				__func__, TPS65090_REG_INTR_STS);
++		}
+ 	}
+ 
+ 	if (charger->prev_ac_online != charger->ac_online)
+@@ -209,6 +228,18 @@ static struct tps65090_platform_data *
+ 
+ }
+ 
++static int tps65090_charger_poll_task(void *data)
++{
++	set_freezable();
++
++	while (!kthread_should_stop()) {
++		schedule_timeout_interruptible(POLL_INTERVAL);
++		try_to_freeze();
++		tps65090_charger_isr(-1, data);
++	}
++	return 0;
++}
++
+ static int tps65090_charger_probe(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata;
+@@ -255,22 +286,10 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
+-	if (irq <= 0) {
+-		dev_warn(&pdev->dev, "Unable to get charger irq = %d\n", irq);
+-		ret = irq;
+-		goto fail_unregister_supply;
+-	}
 -
-
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-for you to fetch changes up to 97d9d23dda6f37d90aefeec4ed619d52df525382:
-
-  [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode (2014-05-13 20:03:31 -0300)
-
-----------------------------------------------------------------
-Antti Palosaari (3):
-      [media] rtl28xxu: do not hard depend on staging SDR module
-      [media] rtl28xxu: silence error log about disabled rtl2832_sdr module
-      [media] fc2580: fix tuning failure on 32-bit arch
-
-Guennadi Liakhovetski (2):
-      [media] V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
-      [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
-
-Jean Delvare (1):
-      [media] Prefer gspca_sonixb over sn9c102 for all devices
-
-Lad, Prabhakar (5):
-      [media] media: davinci: vpif_capture: fix releasing of active buffers
-      [media] media: davinci: vpif_display: fix releasing of active buffers
-      [media] media: davinci: vpbe_display: fix releasing of active buffers
-      [media] staging: media: davinci: vpfe: make sure all the buffers are released
-      [media] media: davinci: vpfe: make sure all the buffers unmapped and released
-
-Mauro Carvalho Chehab (1):
-      Merge tag 'v3.15-rc1' into patchwork
-
-Nicolas Dufresne (1):
-      [media] s5p-fimc: Fix YUV422P depth
-
-Salva Peiró (1):
-      [media] media-device: fix infoleak in ioctl media_enum_entities()
-
-Sylwester Nawrocki (1):
-      [media] s5c73m3: Add missing rename of v4l2_of_get_next_endpoint() function
-
- drivers/media/i2c/ov7670.c                       |  2 +-
- drivers/media/i2c/s5c73m3/s5c73m3-core.c         |  2 +-
- drivers/media/media-device.c                     |  1 +
- drivers/media/platform/davinci/vpbe_display.c    | 16 +++++++-
- drivers/media/platform/davinci/vpfe_capture.c    |  2 +
- drivers/media/platform/davinci/vpif_capture.c    | 34 +++++++++++------
- drivers/media/platform/davinci/vpif_display.c    | 35 +++++++++++------
- drivers/media/platform/exynos4-is/fimc-core.c    |  2 +-
- drivers/media/tuners/fc2580.c                    |  6 +--
- drivers/media/tuners/fc2580_priv.h               |  1 +
- drivers/media/usb/dvb-usb-v2/Makefile            |  1 -
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c          | 48 +++++++++++++++++++++---
- drivers/media/usb/gspca/sonixb.c                 |  2 -
- drivers/media/v4l2-core/v4l2-compat-ioctl32.c    | 12 +++---
- drivers/staging/media/davinci_vpfe/vpfe_video.c  | 13 ++++++-
- drivers/staging/media/sn9c102/sn9c102_devtable.h |  2 -
- 16 files changed, 132 insertions(+), 47 deletions(-)
++	if (irq < 0)
++		irq = NO_IRQ;
+ 	cdata->irq = irq;
+ 
+-	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+-		tps65090_charger_isr, 0, "tps65090-charger", cdata);
+-	if (ret) {
+-		dev_err(cdata->dev, "Unable to register irq %d err %d\n", irq,
+-			ret);
+-		goto fail_unregister_supply;
+-	}
+-
+ 	ret = tps65090_config_charger(cdata);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "charger config failed, err %d\n", ret);
+@@ -296,6 +315,27 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 		power_supply_changed(&cdata->ac);
+ 	}
+ 
++	if (irq != NO_IRQ) {
++		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++			tps65090_charger_isr, 0, "tps65090-charger", cdata);
++		if (ret) {
++			dev_err(cdata->dev,
++				"Unable to register irq %d err %d\n", irq,
++				ret);
++			goto fail_unregister_supply;
++		}
++	} else {
++		cdata->poll_task = kthread_run(tps65090_charger_poll_task,
++					      cdata, "ktps65090charger");
++		cdata->passive_mode = true;
++		if (IS_ERR(cdata->poll_task)) {
++			ret = PTR_ERR(cdata->poll_task);
++			dev_err(cdata->dev,
++				"Unable to run kthread err %d\n", ret);
++			goto fail_unregister_supply;
++		}
++	}
++
+ 	return 0;
+ 
+ fail_unregister_supply:
+@@ -308,6 +348,8 @@ static int tps65090_charger_remove(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata = platform_get_drvdata(pdev);
+ 
++	if (cdata->irq == NO_IRQ)
++		kthread_stop(cdata->poll_task);
+ 	power_supply_unregister(&cdata->ac);
+ 
+ 	return 0;
+-- 
+1.9.1.423.g4596e3a
 
