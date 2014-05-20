@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaETCfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:35:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60505 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaETCfo (ORCPT
+	id S932144AbaETCgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:36:08 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63762 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaETCgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:35:44 -0400
-Date: Mon, 19 May 2014 19:34:27 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
-        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-In-Reply-To: <87d2f9jlpd.fsf@rustcorp.com.au>
-Message-ID: <alpine.LSU.2.11.1405191930130.3574@eggly.anvils>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
- <87d2f9jlpd.fsf@rustcorp.com.au>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 19 May 2014 22:36:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 20 May 2014 10:35:24 +0800
+Message-ID: <CAHz2CGU-0pvu=jMx88BG5e2CJCByZGQR_v=T-c+6eeOzciESPw@mail.gmail.com>
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: Rik van Riel <riel@redhat.com>, kosaki.motohiro@jp.fujitsu.com,
+        Fengguang Wu <fengguang.wu@intel.com>, kamezawa.hiroyu@jp.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014, Rusty Russell wrote:
-> Hugh Dickins <hughd@google.com> writes:
-> >> On Monday 19 May 2014 05:42 AM, Rusty Russell wrote:
-> >> > 
-> >> > Perhaps we try to generalize from two data points (a slight improvement
-> >> > over doing it from 1!), eg:
-> >> > 
-> >> > /* 4 seems good for 4k-page x86, 0 seems good for 64k page ppc64, so: */
-> >> > unsigned int fault_around_order __read_mostly =
-> >> >         (16 - PAGE_SHIFT < 0 ? 0 : 16 - PAGE_SHIFT);
-> >
-> > Rusty's bimodal answer doesn't seem the right starting point to me.
-> 
-> ?  It's not bimodal, it's graded.  I think you misread?
+On Mon, May 19, 2014 at 10:40 PM, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
+>
+> Since the kernel worker thread needs to escape from the while loop so that
+> alloc_page() can allocate memory (and eventually allow xfs_vm_writepage()
+> to release memory), I think that we should not block forever. This patch
+> introduces 30 seconds timeout for userspace processes and 5 seconds timeout
+> for kernel processes.
+>
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> ---
+>  mm/vmscan.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 32c661d..3eeeda6 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1459,13 +1459,18 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>         int file = is_file_lru(lru);
+>         struct zone *zone = lruvec_zone(lruvec);
+>         struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
+> +       int i = 0;
+>
+> -       while (unlikely(too_many_isolated(zone, file, sc))) {
+> +       /* Throttle with timeout. */
+> +       while (unlikely(too_many_isolated(zone, file, sc)) && i++ < 300) {
+>                 congestion_wait(BLK_RW_ASYNC, HZ/10);
+>
+>                 /* We are about to die and free our memory. Return now. */
+>                 if (fatal_signal_pending(current))
+>                         return SWAP_CLUSTER_MAX;
+> +               /* Kernel threads should not be blocked for too long. */
+> +               if (i == 50 && (current->flags & PF_KTHREAD))
+> +                       break;
+>         }
+>
+>         lru_add_drain();
 
-Yikes, worse than misread, more like I was too rude even to read: sorry!
+Hi, Tetsuo Handa
 
-Hugh
+I think it is good to use a MACRO for this magic number instead of harding code
+it, in a long-term maintainability view,  and would better with
+appropriate document.
+
+Thanks,
+Jianyu Zhan
