@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaETRle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:41:34 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:39137 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaETRlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:41:32 -0400
-Message-ID: <537B93CB.3040109@cogentembedded.com>
-Date: Tue, 20 May 2014 21:41:31 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] kernel: add calibration_delay_done()
-References: <1400600176-435-1-git-send-email-pdeschrijver@nvidia.com> <1400600176-435-2-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1400600176-435-2-git-send-email-pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754568AbaETRmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:42:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36262 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116AbaETRmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:42:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="542247689"
+Message-Id: <eb791998a8ada97b204dddf2719a359149e9ae31.1400607328.git.tony.luck@intel.com>
+In-Reply-To: <cover.1400607328.git.tony.luck@intel.com>
+References: <cover.1400607328.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 20 May 2014 09:28:00 -0700
+Subject: [PATCH 1/2] memory-failure: Send right signal code to correct thread
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 07:36 PM, Peter De Schrijver wrote:
+When a thread in a multi-threaded application hits a machine
+check because of an uncorrectable error in memory - we want to
+send the SIGBUS with si.si_code = BUS_MCEERR_AR to that thread.
+Currently we fail to do that if the active thread is not the
+primary thread in the process. collect_procs() just finds primary
+threads and this test:
+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
+will see that the thread we found isn't the current thread
+and so send a si.si_code = BUS_MCEERR_AO to the primary
+(and nothing to the active thread at this time).
 
-> Add calibration_delay_done() call and dummy implementation. This allows
-> architectures to stop accepting registrations for new timer based delay
-> functions.
+We can fix this by checking whether "current" shares the same
+mm with the process that collect_procs() said owned the page.
+If so, we send the SIGBUS to current (with code BUS_MCEERR_AR).
 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->   init/calibrate.c |   12 ++++++++++++
->   1 files changed, 12 insertions(+), 0 deletions(-)
+Reported-by: Otto Bruggeman <otto.g.bruggeman@intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ mm/memory-failure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> diff --git a/init/calibrate.c b/init/calibrate.c
-> index 520702d..31cae76 100644
-> --- a/init/calibrate.c
-> +++ b/init/calibrate.c
-> @@ -262,6 +262,16 @@ unsigned long __attribute__((weak)) calibrate_delay_is_known(void)
->   	return 0;
->   }
->
-> +/*
-> + * Indicate the cpu delay calibration is done. This can be used by
-> + * architectures to stop accepting delay timer registrations after this point.
-> + */
-> +
-> +void __attribute__((weak)) calibration_delay_done(void)
-> +{
-> +	return;
-
-    Not really needed.
-
-> +}
-> +
->   void calibrate_delay(void)
->   {
->   	unsigned long lpj;
-
-WBR, Sergei
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 35ef28acf137..642c8434b166 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -204,9 +204,9 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
+ #endif
+ 	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
+ 
+-	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+ 		si.si_code = BUS_MCEERR_AR;
+-		ret = force_sig_info(SIGBUS, &si, t);
++		ret = force_sig_info(SIGBUS, &si, current);
+ 	} else {
+ 		/*
+ 		 * Don't use force here, it's convenient if the signal
+-- 
+1.8.4.1
 
