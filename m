@@ -1,164 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaETSJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:09:39 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:43878 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaETSJi (ORCPT
+	id S1753122AbaETSJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:09:51 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:37557 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788AbaETSJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:09:38 -0400
-Date: Tue, 20 May 2014 20:09:31 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hanging aio process
-In-Reply-To: <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405201945280.1631@denkbrett>
-References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett>  <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Tue, 20 May 2014 14:09:49 -0400
+Date: Tue, 20 May 2014 23:39:42 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] MIPS: mti-sead3: Introduce the use of the managed version of
+ kzalloc
+Message-ID: <20140520180942.GA11445@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052018-8372-0000-0000-000009C1ED9F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, the now unnecessary labels out_mem and out are done
+away with. The error handling code is moved under if and return 0 is now
+at the end of the function.
 
-On Tue, 20 May 2014, Anatol Pomozov wrote:
-> On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
-> <sebott@linux.vnet.ibm.com> wrote:
-> > On Tue, 20 May 2014, Sebastian Ott wrote:
-> >> On Mon, 19 May 2014, Benjamin LaHaise wrote:
-> >> > It is entirely possible the bug isn't
-> >> > caused by the referenced commit, as the commit you're pointing to merely
-> >> > makes io_destroy() syscall wait for all aio outstanding to complete
-> >> > before returning.
-> >>
-> >> I cannot reproduce this when I revert said commit (on top of 14186fe). If
-> >> that matters - the arch is s390.
-> >
-> > Hm, ok - maybe that commit is really just highlighting a refcounting bug.
-> > I just compared traces for a good and a few bad cases. The good case:
-> > # tracer: function
-> > #
-> > # entries-in-buffer/entries-written: 16/16   #P:4
-> > #
-> > #                              _-----=> irqs-off
-> > #                             / _----=> need-resched
-> > #                            | / _---=> hardirq/softirq
-> > #                            || / _--=> preempt-depth
-> > #                            ||| /     delay
-> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> > #              | |       |   ||||       |         |
-> >              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
-> >              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
-> >      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
-> >      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
-> >              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
-> >      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
-> >      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
-> >      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
-> >              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
-> >           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
-> >      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
-> >           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
-> >
-> > (4 fio workers, free_ioctx_reqs is called 4 times)
-> >
-> > One of the bad cases:
-> > # tracer: function
-> > #
-> > # entries-in-buffer/entries-written: 14/14   #P:4
-> > #
-> > #                              _-----=> irqs-off
-> > #                             / _----=> need-resched
-> > #                            | / _---=> hardirq/softirq
-> > #                            || / _--=> preempt-depth
-> > #                            ||| /     delay
-> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> > #              | |       |   ||||       |         |
-> >              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
-> >           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
-> >              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
-> >              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
-> >           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
-> >           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
-> >              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
-> >            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
-> >           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
-> >      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
-> >              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
-> >      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
-> >
-> > (1 fio worker in D state, free_ioctx_reqs is called 3 times)
-> 
-> 
-> Looking at the second trace: the first 3 io_destroy() calls cause
-> free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
-> Do you have more logs after the last line?
+The following Coccinelle semantic patch was used for making the change:
 
-Nope that was all.
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-> If there is no more
-> free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
-> I suggest to add some logging to kernel to figure out what is the
-> refcount value at this moment.
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-Jep, I did that this morning (via atomic_read(&ctx->reqs.count) in
-free_ioctx_users before percpu_ref_kill(&ctx->reqs); is called) and
-the value was always the same
-	1 + (1UL << 31)
-even for the free_ioctx_users invocations that were not followed by
-free_ioctx_reqs.
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
 
-> 
-> But *if* there was one more free_ioctx_reqs() that does not
-> complete(ctx->requests_done) then it means the thread does not see
-> value of requests_done field. It would make me believe there is a
-> problem with memory reordering. I do not know whether s390 reorders
-> stores, but anyway, could you please check this patch?
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ arch/mips/mti-sead3/sead3-pic32-i2c-drv.c | 36 +++++++++++--------------------
+ 1 file changed, 13 insertions(+), 23 deletions(-)
 
-Nope s390 doesn't reorder stores - I tried the patch anyway, but it didn't
-help.
-
-Regards,
-Sebastian
-> 
-> anatol:linux $ git diff
-> diff --git a/fs/aio.c b/fs/aio.c
-> index a0ed6c7..6e3c0bb 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -514,6 +514,7 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
->         struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
-> 
->         /* At this point we know that there are no any in-flight requests */
-> +       rmb();
->         if (ctx->requests_done)
->                 complete(ctx->requests_done);
-> 
-> @@ -758,6 +759,7 @@ static void kill_ioctx(struct mm_struct *mm,
-> struct kioctx *ctx,
->                         vm_munmap(ctx->mmap_base, ctx->mmap_size);
-> 
->                 ctx->requests_done = requests_done;
-> +               wmb();
->                 percpu_ref_kill(&ctx->users);
->         } else {
->                 if (requests_done)
-> 
-> 
+diff --git a/arch/mips/mti-sead3/sead3-pic32-i2c-drv.c b/arch/mips/mti-sead3/sead3-pic32-i2c-drv.c
+index b921e5e..80fe194 100644
+--- a/arch/mips/mti-sead3/sead3-pic32-i2c-drv.c
++++ b/arch/mips/mti-sead3/sead3-pic32-i2c-drv.c
+@@ -312,16 +312,13 @@ static int i2c_platform_probe(struct platform_device *pdev)
+ 
+ 	pr_debug("i2c_platform_probe\n");
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!r) {
+-		ret = -ENODEV;
+-		goto out;
+-	}
++	if (!r)
++		return -ENODEV;
+ 
+-	priv = kzalloc(sizeof(struct i2c_platform_data), GFP_KERNEL);
+-	if (!priv) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	priv = devm_kzalloc(&pdev->dev, sizeof(struct i2c_platform_data),
++			    GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
+ 
+ 	/* FIXME: need to allocate resource in PIC32 space */
+ #if 0
+@@ -330,10 +327,8 @@ static int i2c_platform_probe(struct platform_device *pdev)
+ #else
+ 	priv->base = r->start;
+ #endif
+-	if (!priv->base) {
+-		ret = -EBUSY;
+-		goto out_mem;
+-	}
++	if (!priv->base)
++		return -EBUSY;
+ 
+ 	priv->xfer_timeout = 200;
+ 	priv->ack_timeout = 200;
+@@ -348,17 +343,13 @@ static int i2c_platform_probe(struct platform_device *pdev)
+ 	i2c_platform_setup(priv);
+ 
+ 	ret = i2c_add_numbered_adapter(&priv->adap);
+-	if (ret == 0) {
+-		platform_set_drvdata(pdev, priv);
+-		return 0;
++	if (ret) {
++		i2c_platform_disable(priv);
++		return ret;
+ 	}
+ 
+-	i2c_platform_disable(priv);
+-
+-out_mem:
+-	kfree(priv);
+-out:
+-	return ret;
++	platform_set_drvdata(pdev, priv);
++	return 0;
+ }
+ 
+ static int i2c_platform_remove(struct platform_device *pdev)
+@@ -369,7 +360,6 @@ static int i2c_platform_remove(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, NULL);
+ 	i2c_del_adapter(&priv->adap);
+ 	i2c_platform_disable(priv);
+-	kfree(priv);
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
