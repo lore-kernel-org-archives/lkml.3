@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaETPg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:36:59 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13406 "EHLO
+	id S1753430AbaETPlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:41:52 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13653 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaETPg4 (ORCPT
+	with ESMTP id S1751062AbaETPlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:36:56 -0400
+	Tue, 20 May 2014 11:41:49 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 20 May 2014 08:32:03 -0700
+	by hqnvupgp08.nvidia.com on Tue, 20 May 2014 08:36:55 -0700
+Date: Tue, 20 May 2014 18:41:45 +0300
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Andrew Bresticker <abrestic@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "Prashant Gaikwad" <pgaikwad@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Mathias Nyman" <mathias.nyman@intel.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jim Lin <jilin@nvidia.com>, "Kishon Vijay Abraham I" <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH 3/3] clocksource: tegra: Use uS counter as delay timer
-Date: Tue, 20 May 2014 18:36:11 +0300
-Message-ID: <1400600176-435-4-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1400600176-435-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1400600176-435-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+        Randy Dunlap <rdunlap@infradead.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH 04/10] clk: tegra: Initialize xusb clocks
+Message-ID: <20140520154145.GY15168@tbergstrom-lnx.Nvidia.com>
+References: <1400113986-339-1-git-send-email-abrestic@chromium.org>
+ <1400113986-339-5-git-send-email-abrestic@chromium.org>
+ <537513D8.7060203@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <537513D8.7060203@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All Tegra SoCs have a freerunning microsecond counter which can be used as a
-delay timer.
+On Thu, May 15, 2014 at 09:22:00PM +0200, Stephen Warren wrote:
+> On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
+> > Initialize the XUSB-related clocks with appropriate parents and rates
+> > for both Tegra114 and Tegra124.
+> 
+> These first 4 clock driver patches look plausible to me, although I
+> didn't look that hard!
+> 
+> Peter or Mike, if they look OK to you, can you please pick them up for
+> 3.16 so that by the time we apply the rest of the patches in this series
+> for 3.17, the clock dependencies are already there? Thanks.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clocksource/tegra20_timer.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+Looks fine to me. Applied for 3.16, hopefully it will still make it.
 
-diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-index d1869f0..ed49a0b 100644
---- a/drivers/clocksource/tegra20_timer.c
-+++ b/drivers/clocksource/tegra20_timer.c
-@@ -28,6 +28,7 @@
- #include <linux/of_irq.h>
- #include <linux/sched_clock.h>
- 
-+#include <asm/delay.h>
- #include <asm/mach/time.h>
- #include <asm/smp_twd.h>
- 
-@@ -53,6 +54,8 @@ static void __iomem *rtc_base;
- static struct timespec persistent_ts;
- static u64 persistent_ms, last_persistent_ms;
- 
-+static struct delay_timer tegra_delay_timer;
-+
- #define timer_writel(value, reg) \
- 	__raw_writel(value, timer_reg_base + (reg))
- #define timer_readl(reg) \
-@@ -139,6 +142,11 @@ static void tegra_read_persistent_clock(struct timespec *ts)
- 	*ts = *tsp;
- }
- 
-+static unsigned long tegra_delay_timer_read_counter_long(void)
-+{
-+	return readl(timer_reg_base + TIMERUS_CNTR_1US);
-+}
-+
- static irqreturn_t tegra_timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
-@@ -206,6 +214,11 @@ static void __init tegra20_init_timer(struct device_node *np)
- 		BUG();
- 	}
- 
-+	tegra_delay_timer.read_current_timer =
-+			tegra_delay_timer_read_counter_long;
-+	tegra_delay_timer.freq = 1000000;
-+	register_current_timer_delay(&tegra_delay_timer);
-+
- 	ret = setup_irq(tegra_timer_irq.irq, &tegra_timer_irq);
- 	if (ret) {
- 		pr_err("Failed to register timer IRQ: %d\n", ret);
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Cheers,
 
+Peter.
