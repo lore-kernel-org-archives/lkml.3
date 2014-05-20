@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaETQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:28:35 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25769 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752045AbaETQ2e (ORCPT
+	id S1754033AbaETQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:29:22 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:10703 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751266AbaETQ3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:28:34 -0400
-Date: Tue, 20 May 2014 17:28:14 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] EFI changes for arm64
-Message-ID: <20140520162814.GB28293@arm.com>
-References: <20140430200332.GO26088@console-pimps.org>
- <20140519105042.GE4798@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519105042.GE4798@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 May 2014 12:29:21 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtEWAHGBe1NbsnsG/2dsb2JhbABZgwarBQQBAQEBAQEFAYM6lm4CAoEcF3SCUxM/GIECJBOIRQHUIYVViHmERwEDjzyKKwGLEogOgzo7
+Date: Tue, 20 May 2014 18:29:18 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 1/1]  drivers/gpu/drm/radeon/ci_dpm.c: replace shift loop by
+ ilog2
+Message-Id: <20140520182918.0259b9804a1b01693cb2b287@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 11:50:42AM +0100, Matt Fleming wrote:
-> On Wed, 30 Apr, at 09:03:32PM, Matt Fleming wrote:
-> > I pulled the arm64 EFI changes into the following topic branch. Catalin
-> > was happy for this to go through tip, which definitely makes things
-> > easier for the next merge window because of the dependency these patches
-> > have on tip/x86/efi.
-> > 
-> > The following changes since commit e33655a386ed3b26ad36fb97a47ebb1c2ca1e928:
-> > 
-> >   efivars: Add compatibility code for compat tasks (2014-04-17 13:53:53 +0100)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git arm64-efi
-> > 
-> > for you to fetch changes up to 345c736edd07b657a8c48190baed2719b85d0938:
-> > 
-> >   efi/arm64: ignore dtb= when UEFI SecureBoot is enabled (2014-04-30 19:57:06 +0100)
-> 
-> Ping?
 
-Alternatively, I can merge the arm64-efi tree and wait for tip x86/efi
-to go in before sending my pull request. Peter, Ingo, do you have any
-preference?
+Cc: Alex Deucher <alexander.deucher@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/gpu/drm/radeon/ci_dpm.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-Either way, I'd like to see this branch in -next to make sure there are
-no (significant) conflicts before the merging window.
-
-Thanks.
-
+diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
+index 10dae41..e4abf9e 100644
+--- a/drivers/gpu/drm/radeon/ci_dpm.c
++++ b/drivers/gpu/drm/radeon/ci_dpm.c
+@@ -3725,10 +3725,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
+ 	if (level == RADEON_DPM_FORCED_LEVEL_HIGH) {
+ 		if ((!pi->sclk_dpm_key_disabled) &&
+ 		    pi->dpm_level_enable_mask.sclk_dpm_enable_mask) {
+-			levels = 0;
+ 			tmp = pi->dpm_level_enable_mask.sclk_dpm_enable_mask;
+-			while (tmp >>= 1)
+-				levels++;
++			levels = ilog2(tmp);
+ 			if (levels) {
+ 				ret = ci_dpm_force_state_sclk(rdev, levels);
+ 				if (ret)
+@@ -3744,10 +3742,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
+ 		}
+ 		if ((!pi->mclk_dpm_key_disabled) &&
+ 		    pi->dpm_level_enable_mask.mclk_dpm_enable_mask) {
+-			levels = 0;
+ 			tmp = pi->dpm_level_enable_mask.mclk_dpm_enable_mask;
+-			while (tmp >>= 1)
+-				levels++;
++			levels = ilog2(tmp);
+ 			if (levels) {
+ 				ret = ci_dpm_force_state_mclk(rdev, levels);
+ 				if (ret)
+@@ -3763,10 +3759,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
+ 		}
+ 		if ((!pi->pcie_dpm_key_disabled) &&
+ 		    pi->dpm_level_enable_mask.pcie_dpm_enable_mask) {
+-			levels = 0;
+ 			tmp = pi->dpm_level_enable_mask.pcie_dpm_enable_mask;
+-			while (tmp >>= 1)
+-				levels++;
++			levels = ilog2(tmp);
+ 			if (levels) {
+ 				ret = ci_dpm_force_state_pcie(rdev, level);
+ 				if (ret)
 -- 
-Catalin
+1.8.4.5
+
