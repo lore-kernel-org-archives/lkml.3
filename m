@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaETHpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 03:45:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57556 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752082AbaETHpE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 03:45:04 -0400
-Date: Tue, 20 May 2014 09:42:58 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Max Schwarz <max.schwarz@online.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Subject: Re: [PATCH v4] i2c: add driver for Rockchip RK3xxx SoC I2C adapter
-Message-ID: <20140520074258.GC27329@lukather>
-References: <5192968.EzcUiXba22@typ>
- <1956748.HoDAyYWJMb@typ>
- <1547619.upPdAXDT0W@typ>
+	id S1752631AbaETHpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 03:45:25 -0400
+Received: from ozlabs.org ([103.22.144.67]:33831 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752520AbaETHpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 03:45:21 -0400
+Date: Tue, 20 May 2014 17:45:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: linux-next: build warnings after merge of the input tree
+Message-ID: <20140520174513.26247582@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7qSK/uQB79J36Y4o"
-Content-Disposition: inline
-In-Reply-To: <1547619.upPdAXDT0W@typ>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Ocshdhk+reSrLYg7U13RCD5"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---7qSK/uQB79J36Y4o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_/Ocshdhk+reSrLYg7U13RCD5
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, May 19, 2014 at 11:32:55AM +0200, Max Schwarz wrote:
-> Driver for the native I2C adapter found in Rockchip RK3xxx SoCs.
->=20
-> Configuration is only possible through devicetree. The driver is
-> interrupt driven and supports the I2C_M_IGNORE_NAK mangling bit.
->=20
-> Signed-off-by: Max Schwarz <max.schwarz@online.de>
+Hi Dmitry,
 
-Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+After merging the input tree, today's linux-next build (powerpc
+allyesconfig) produced these warnings:
 
+drivers/input/touchscreen/atmel_mxt_ts.c: In function 'mxt_read_t9_resoluti=
+on':
+drivers/input/touchscreen/atmel_mxt_ts.c:1043:2: warning: passing argument =
+1 of '__swab16s' makes pointer from integer without a cast [enabled by defa=
+ult]
+  le16_to_cpus(range.x);
+  ^
+In file included from include/linux/swab.h:4:0,
+                 from include/uapi/linux/byteorder/big_endian.h:12,
+                 from include/linux/byteorder/big_endian.h:4,
+                 from arch/powerpc/include/uapi/asm/byteorder.h:13,
+                 from include/asm-generic/bitops/le.h:5,
+                 from arch/powerpc/include/asm/bitops.h:279,
+                 from include/linux/bitops.h:33,
+                 from include/linux/kernel.h:10,
+                 from include/asm-generic/bug.h:13,
+                 from arch/powerpc/include/asm/bug.h:127,
+                 from include/linux/bug.h:4,
+                 from include/linux/thread_info.h:11,
+                 from include/asm-generic/preempt.h:4,
+                 from arch/powerpc/include/generated/asm/preempt.h:1,
+                 from include/linux/preempt.h:18,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:35,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/input/touchscreen/atmel_mxt_ts.c:16:
+include/uapi/linux/swab.h:223:20: note: expected '__u16 *' but argument is =
+of type 'u16'
+ static inline void __swab16s(__u16 *p)
+                    ^
+drivers/input/touchscreen/atmel_mxt_ts.c:1044:2: warning: passing argument =
+1 of '__swab16s' makes pointer from integer without a cast [enabled by defa=
+ult]
+  le16_to_cpus(range.y);
+  ^
+In file included from include/linux/swab.h:4:0,
+                 from include/uapi/linux/byteorder/big_endian.h:12,
+                 from include/linux/byteorder/big_endian.h:4,
+                 from arch/powerpc/include/uapi/asm/byteorder.h:13,
+                 from include/asm-generic/bitops/le.h:5,
+                 from arch/powerpc/include/asm/bitops.h:279,
+                 from include/linux/bitops.h:33,
+                 from include/linux/kernel.h:10,
+                 from include/asm-generic/bug.h:13,
+                 from arch/powerpc/include/asm/bug.h:127,
+                 from include/linux/bug.h:4,
+                 from include/linux/thread_info.h:11,
+                 from include/asm-generic/preempt.h:4,
+                 from arch/powerpc/include/generated/asm/preempt.h:1,
+                 from include/linux/preempt.h:18,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:35,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/input/touchscreen/atmel_mxt_ts.c:16:
+include/uapi/linux/swab.h:223:20: note: expected '__u16 *' but argument is =
+of type 'u16'
+ static inline void __swab16s(__u16 *p)
+                    ^
+Introduced by commit de22385758fa ("Input: atmel_mxt_ts - read screen
+config from chip").
 --=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---7qSK/uQB79J36Y4o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/Ocshdhk+reSrLYg7U13RCD5
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTeweCAAoJEBx+YmzsjxAglZ4P/RCAiHZmM8OP60R04F+ZMvdO
-qvDPSzIpoyTmD1rdVmlBW/WyCCBQIk+i2BPidMm1YH1PNewcUQlwSDiquPgvG9sK
-n3DkPmYFTOGPYDcD2F17h0iW9E4Y9QWM2/AeqGnCqGa2XkEVIxJoqXWrc/LZs/nU
-/aGtmT+7wxsfjSiIBR+RppQ3J7jna2YKaOiJtBodxb6snaVj+Pt9NvljQsU15kA6
-JGIxRwVdtCQHHKrFVuPTJVBgx3ZRGAuUaaS8VJ/mUd4800mikPoRlyVcmYuCFEM1
-996MyS89hG3qpmdxxEZgXRXme46zK0QrSwO8K3mikOqk62KScS/IvtT0zsP+0UXf
-k0X0SFNE5+iIl2O3R451pd2tprgMdqCeUXKYoIXz7AkZR3I7XAzAlnWZedqbyAI6
-aOHzeo8cLh4765G2TY477rh09Q+DFSDfvl73Bi4r4k923oi2cbeBC52GdF6nHLtJ
-zE+NjIqTw2V1nSkOWu0kUWViZiu3uINK4J6s6WcyHoP1g1g6ac0MhpeCwelatfyy
-pON7TwfMD2PNwAcxJjVcbs0DjKxoD7yEYQDCYiADvSWqtcBKvClrlUzGM3EvLm8H
-Ux3bdXaJM1/cdX4rdgeYbVnm5xEuF52Rxylh/2P5HCa+5FPvJmVKJxCkE3i2jPxU
-fkfxowJW3LPLgNFgky03
-=dKs+
+iQIcBAEBCAAGBQJTewgPAAoJEMDTa8Ir7ZwVEDAP/iWJ02uz8xcR8StrOwOwCqzp
+Jg7olnFCwRLD6wR2U+dJ4HgOQbl0DAnOevQEBw1/uux/T9JfVM3eV0+WqHECfjC2
+R0Oj0bKk0+8T6+BHeFErPEeQfOYmKDmwsvSJo+vy/FFFk73CbKwwu3kJdXKv8dts
+n8xgBoA4kFWQkCnlImoMLxO/JFvkAPTvJ/MKiNDRDD8u9Y9yEEhZSAFcyvI/DEWf
+yeYdhATBMVxjX2/jBYCIV9pkV9TitsoRlHPMl2BXRy96uGw+LbRtHYIbO8o8QmPE
+NMwB82/PLU73hv4G9vxXXiwPXbiyQmjfZyig1a6H3B2jO0NHc5Ae5PkqqGdzj2wv
+9XYaQpxlSuzcdpGPZHjp/CIMXt5yZZZ7iqLNlYhTO72mslTft0uV5Vx4klQGEpM5
+6NzJ2mdG0c2qVpniQMa3uZ05xcV5BKtL60Kiegy5ej6bFrYH0k3gE7a5Aibr2Rs0
+Aq2BIvE9pQspcUjDDQ9U6I/teE2WKhf9RGkB+xoE8TAdVkglopx+m88RBkp+F1WH
+2ZmS1nRpXjodJNdNsDvkM7WaUOSFRdg/1EYCFVFgd3/tQtG0V6hQN4o2kntkMhOZ
+NbSdg16RQGS15CvQ7Z5kEJSJszSfvVgm+G3P3momxOR5JtJag+ecnEbmr/7WAazf
+D2tP9mzVXLf1Z6wVIq0f
+=MdQi
 -----END PGP SIGNATURE-----
 
---7qSK/uQB79J36Y4o--
+--Sig_/Ocshdhk+reSrLYg7U13RCD5--
