@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaETJmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:42:43 -0400
+	id S1752862AbaETJmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:42:46 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:23330 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751874AbaETJml (ORCPT
+	with ESMTP id S1752425AbaETJmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:42:41 -0400
+	Tue, 20 May 2014 05:42:43 -0400
 X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762560"
+   d="scan'208";a="30762566"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH V3 02/10] workqueue: destroy_worker() should destroy idle workers only
-Date: Tue, 20 May 2014 17:46:28 +0800
-Message-ID: <1400579204-3647-3-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH V3 04/10] workqueue: destroy worker directly in the idle timeout handler
+Date: Tue, 20 May 2014 17:46:30 +0800
+Message-ID: <1400579204-3647-5-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
@@ -26,99 +26,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to have the CPU online failure path where a worker is created
-and then destroyed without being started. A worker was created for
-the CPU coming online and if the online operation failed the created worker
-was shut down without being started.  But this behavior was changed.
-The first worker is created and started at the same time for the CPU coming
-online.
+Since destroy_worker() doesn't need to sleep nor require manager_mutex,
+destroy_worker() can be directly called in the idle timeout
+handler, it helps us remove POOL_MANAGE_WORKERS and
+maybe_destroy_worker() and simplify the manage_workers()
 
-It means that we had already ensured in the code that destroy_worker()
-destroys idle workers only. And we don't want to allow it destroys any
-non-idle worker future. Otherwise, it may be buggy and it may be
-extremely hard to check. We should force destroy_worker()
-to destroy idle workers only explicitly.
-
-Since destroy_worker() destroys idle only, this patch does not change any
-functionality. We just need to update the comments and the sanity check code.
-
-In the sanity check code, we will refuse to destroy the worker
-if !(worker->flags & WORKER_IDLE).
-
-If the worker entered idle which means it is already started,
-so we remove the check of "worker->flags & WORKER_STARTED",
-after this removal, WORKER_STARTED is totally unneeded,
-so we remove WORKER_STARTED too.
-
-In the comments for create_worker(), "Create a new worker which is bound..."
-is changed to "... which is attached..." due to we change the name of this
-behavior to attaching.
+After POOL_MANAGE_WORKERS is removed, worker_thread() doesn't
+need to test whether it needs to manage after processed works.
+So we can remove the test branch.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+ kernel/workqueue.c |   67 ++++------------------------------------------------
+ 1 files changed, 5 insertions(+), 62 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 910d963..862b7ba 100644
+index 98d04a4..1236544 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -73,7 +73,6 @@ enum {
+@@ -68,7 +68,6 @@ enum {
+ 	 * manager_mutex to avoid changing binding state while
+ 	 * create_worker() is in progress.
+ 	 */
+-	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+ 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
  	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
  
- 	/* worker flags */
--	WORKER_STARTED		= 1 << 0,	/* started */
- 	WORKER_DIE		= 1 << 1,	/* die die die */
- 	WORKER_IDLE		= 1 << 2,	/* is idle */
- 	WORKER_PREP		= 1 << 3,	/* preparing to run works */
-@@ -1692,9 +1691,8 @@ static struct worker *alloc_worker(void)
-  * create_worker - create a new workqueue worker
-  * @pool: pool the new worker will belong to
-  *
-- * Create a new worker which is bound to @pool.  The returned worker
-- * can be started by calling start_worker() or destroyed using
-- * destroy_worker().
-+ * Create a new worker which is attached to @pool.  The new worker must
-+ * be started and enter idle via start_worker().
-  *
-  * CONTEXT:
-  * Might sleep.  Does GFP_KERNEL allocations.
-@@ -1778,7 +1776,6 @@ fail:
-  */
- static void start_worker(struct worker *worker)
+@@ -752,13 +751,6 @@ static bool need_to_create_worker(struct worker_pool *pool)
+ 	return need_more_worker(pool) && !may_start_working(pool);
+ }
+ 
+-/* Do I need to be the manager? */
+-static bool need_to_manage_workers(struct worker_pool *pool)
+-{
+-	return need_to_create_worker(pool) ||
+-		(pool->flags & POOL_MANAGE_WORKERS);
+-}
+-
+ /* Do we have too many workers and should some go away? */
+ static bool too_many_workers(struct worker_pool *pool)
  {
--	worker->flags |= WORKER_STARTED;
- 	worker->pool->nr_workers++;
- 	worker_enter_idle(worker);
- 	wake_up_process(worker->task);
-@@ -1814,7 +1811,8 @@ static int create_and_start_worker(struct worker_pool *pool)
-  * destroy_worker - destroy a workqueue worker
-  * @worker: worker to be destroyed
+@@ -1868,7 +1860,7 @@ static void idle_worker_timeout(unsigned long __pool)
+ 
+ 	spin_lock_irq(&pool->lock);
+ 
+-	if (too_many_workers(pool)) {
++	while (too_many_workers(pool)) {
+ 		struct worker *worker;
+ 		unsigned long expires;
+ 
+@@ -1876,13 +1868,12 @@ static void idle_worker_timeout(unsigned long __pool)
+ 		worker = list_entry(pool->idle_list.prev, struct worker, entry);
+ 		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
+ 
+-		if (time_before(jiffies, expires))
++		if (time_before(jiffies, expires)) {
+ 			mod_timer(&pool->idle_timer, expires);
+-		else {
+-			/* it's been idle for too long, wake up manager */
+-			pool->flags |= POOL_MANAGE_WORKERS;
+-			wake_up_worker(pool);
++			break;
+ 		}
++
++		destroy_worker(worker);
+ 	}
+ 
+ 	spin_unlock_irq(&pool->lock);
+@@ -2001,44 +1992,6 @@ restart:
+ }
+ 
+ /**
+- * maybe_destroy_worker - destroy workers which have been idle for a while
+- * @pool: pool to destroy workers for
+- *
+- * Destroy @pool workers which have been idle for longer than
+- * IDLE_WORKER_TIMEOUT.
+- *
+- * LOCKING:
+- * spin_lock_irq(pool->lock) which may be released and regrabbed
+- * multiple times.  Called only from manager.
+- *
+- * Return:
+- * %false if no action was taken and pool->lock stayed locked, %true
+- * otherwise.
+- */
+-static bool maybe_destroy_workers(struct worker_pool *pool)
+-{
+-	bool ret = false;
+-
+-	while (too_many_workers(pool)) {
+-		struct worker *worker;
+-		unsigned long expires;
+-
+-		worker = list_entry(pool->idle_list.prev, struct worker, entry);
+-		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
+-
+-		if (time_before(jiffies, expires)) {
+-			mod_timer(&pool->idle_timer, expires);
+-			break;
+-		}
+-
+-		destroy_worker(worker);
+-		ret = true;
+-	}
+-
+-	return ret;
+-}
+-
+-/**
+  * manage_workers - manage worker pool
+  * @worker: self
   *
-- * Destroy @worker and adjust @pool stats accordingly.
-+ * Destroy @worker and adjust @pool stats accordingly.  The worker should
-+ * be idle.
-  *
-  * CONTEXT:
-  * spin_lock_irq(pool->lock) which is released and regrabbed.
-@@ -1828,13 +1826,12 @@ static void destroy_worker(struct worker *worker)
+@@ -2101,13 +2054,6 @@ static bool manage_workers(struct worker *worker)
+ 		ret = true;
+ 	}
  
- 	/* sanity check frenzy */
- 	if (WARN_ON(worker->current_work) ||
--	    WARN_ON(!list_empty(&worker->scheduled)))
-+	    WARN_ON(!list_empty(&worker->scheduled)) ||
-+	    WARN_ON(!(worker->flags & WORKER_IDLE)))
- 		return;
+-	pool->flags &= ~POOL_MANAGE_WORKERS;
+-
+-	/*
+-	 * Destroy and then create so that may_start_working() is true
+-	 * on return.
+-	 */
+-	ret |= maybe_destroy_workers(pool);
+ 	ret |= maybe_create_worker(pool);
  
--	if (worker->flags & WORKER_STARTED)
--		pool->nr_workers--;
--	if (worker->flags & WORKER_IDLE)
--		pool->nr_idle--;
-+	pool->nr_workers--;
-+	pool->nr_idle--;
+ 	mutex_unlock(&pool->manager_mutex);
+@@ -2349,9 +2295,6 @@ recheck:
  
+ 	worker_set_flags(worker, WORKER_PREP, false);
+ sleep:
+-	if (unlikely(need_to_manage_workers(pool)) && manage_workers(worker))
+-		goto recheck;
+-
  	/*
- 	 * Once WORKER_DIE is set, the kworker may destroy itself at any
+ 	 * pool->lock is held and there's no work to process and no need to
+ 	 * manage, sleep.  Workers are woken up only while holding
 -- 
 1.7.4.4
 
