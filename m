@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaETMU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:20:57 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59787 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaETMUz (ORCPT
+	id S1753243AbaETMXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:23:20 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62225 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750808AbaETMXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:20:55 -0400
-Date: Tue, 20 May 2014 13:20:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Olof Johansson <olof@lixom.net>, Rob Landley <rob@landley.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
-Subject: Re: [PATCH v6 4/4] ARM: dts: STiH407: Add B2120 board support
-Message-ID: <20140520122048.GO24991@lee--X1>
-References: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com>
- <1400579192-17620-5-git-send-email-maxime.coquelin@st.com>
+	Tue, 20 May 2014 08:23:17 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Dudley Du <dudl@cypress.com>, Benson Leung <bleung@google.com>,
+        Daniel Kurtz <djkurtz@google.com>, David Solda <dso@cypress.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] input: cyapa: enable/disable trackpad device based on LID state
+Date: Tue, 20 May 2014 14:40:12 +0200
+Message-ID: <1507406.BNOsJcxmP9@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140520034302.GB986@core.coreip.homeip.net>
+References: <77BC725C9062764F874D79F51E1F1A8F40C14099@S04-MBX01-01.s04.local> <20140520034302.GB986@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1400579192-17620-5-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014, Maxime COQUELIN wrote:
-
-> B2120 HDK is the reference board for STiH407 SoC.
-> It has the following characteristics:
->  - 1GB DDR3
->  - 8GB eMMC / SD-Card slot
->  - 32MB NOR Flash
->  - 1 x Gbit Ethernet
->  - 1 x USB 3.0 port
->  - 1 x Mini-PCIe
->  - 1 x SATA
->  - 1 x HDMI output
->  - 1 x HDMI input
->  - 1 x SPDIF
+On Monday, May 19, 2014 08:43:02 PM Dmitry Torokhov wrote:
+> Hi Dudley,
 > 
-> This patch only introduces basic functionnalities, such as I2C and UART.
+> On Wed, Apr 16, 2014 at 08:39:34AM +0000, Dudley Du wrote:
+> > Rely on EV_SW and SW_LID bits to identify a LID device, and hook
+> > up our filter to listen for SW_LID events to enable/disable touchpad when
+> > LID is open/closed.
+> > TEST=test on Chomebooks.
 > 
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Patrice Chotard <patrice.chotard@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> ---
->  arch/arm/boot/dts/Makefile          |  3 +-
->  arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
->  2 files changed, 80 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
+> This is a policy and it does not belong in the kernel. Please work with
+> Rafael to establish generic interface to put devices into low power mode
+> (like accelerating runtime PM idle timeout)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+I'm not really sure what you mean here, care to be more specific?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> and use it when userspace detects that lid is closed.
+
+I guess we get an event then, don't we?
+
+Rafael
+
