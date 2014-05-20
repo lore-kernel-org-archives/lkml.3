@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaETOx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:53:59 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:50204 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851AbaETOx4 (ORCPT
+	id S1754133AbaETOyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:54:20 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39975 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728AbaETOyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:53:56 -0400
-Date: Tue, 20 May 2014 16:53:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-Message-ID: <20140520145350.GC17741@localhost.localdomain>
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
- <20140514154459.GE4570@linux.vnet.ibm.com>
- <1400123931.5175.38.camel@marge.simpson.net>
- <1400386954.5140.36.camel@marge.simpson.net>
- <20140518052039.GF4570@linux.vnet.ibm.com>
- <1400402201.5166.13.camel@marge.simpson.net>
- <20140518155815.GK4570@linux.vnet.ibm.com>
- <1400467481.5211.48.camel@marge.simpson.net>
- <20140519053401.GP4570@linux.vnet.ibm.com>
+	Tue, 20 May 2014 10:54:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519053401.GP4570@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpok5QZvQzSkDxeLTnRK9F0Zf0kr2PD+gbP+FqmhL_dYLCQ@mail.gmail.com>
+References: <d0200ee9e30de19f69ca1b7e53a8cd7a047fa436.1400595283.git.viresh.kumar@linaro.org>
+	<537B6663.30005@ti.com>
+	<CAKohpok5QZvQzSkDxeLTnRK9F0Zf0kr2PD+gbP+FqmhL_dYLCQ@mail.gmail.com>
+Date: Tue, 20 May 2014 09:54:14 -0500
+X-Google-Sender-Auth: Hvp2C49_JlJlyWR_OtpUGK_uJHE
+Message-ID: <CAGo_u6p0VMEOxcvQMzyCjTN2MQqgdPCsuYvJdKRmdoqDs0qKLw@mail.gmail.com>
+Subject: Re: [PATCH V4] PM/OPP: discard duplicate OPPs
+From: Nishanth Menon <nm@ti.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Viresh Kumar <viresh.kumar@linrao.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 10:34:01PM -0700, Paul E. McKenney wrote:
-> On Mon, May 19, 2014 at 04:44:41AM +0200, Mike Galbraith wrote:
-> > On Sun, 2014-05-18 at 08:58 -0700, Paul E. McKenney wrote: 
-> > > On Sun, May 18, 2014 at 10:36:41AM +0200, Mike Galbraith wrote:
-> > > > On Sat, 2014-05-17 at 22:20 -0700, Paul E. McKenney wrote:
-> > > > 
-> > > > > If you are saying that turning on nohz_full doesn't help unless you
-> > > > > also ensure that there is only one runnable task per CPU, I completely
-> > > > > agree.  If you are saying something else, you lost me.  ;-)
-> > > > 
-> > > > Yup, that's it more or less.  It's not only single task loads that could
-> > > > benefit from better isolation, but if isolation improving measures are
-> > > > tied to nohz_full, other sensitive loads will suffer if they try to use
-> > > > isolation improvements.
-> > > 
-> > > So you are arguing for a separate Kconfig variable that does the isolation?
-> > > So that NO_HZ_FULL selects this new variable, and (for example) RCU
-> > > uses this new variable to decide when to pin the grace-period kthreads
-> > > onto the housekeeping CPU?
-> > 
-> > I'm thinking more about runtime, but yes.
-> > 
-> > The tick mode really wants to be selectable per set (in my boxen you can
-> > switch between nohz off/idle, but not yet nohz_full, that might get real
-> > interesting).  You saw in my numbers that ticked is far better for the
-> > threaded rt load, but what if the total load has both sensitive rt and
-> > compute components to worry about?  The rt component wants relief from
-> > the jitter that flipping the tick inflicts, but also wants as little
-> > disturbance as possible, so RCU offload and whatever other measures that
-> > are or become available are perhaps interesting to it as well.  The
-> > numbers showed that here and now the two modes can work together in the
-> > same box, I can have my rt set ticking away, and other cores doing
-> > tickless compute, but enabling that via common config (distros don't
-> > want to ship many kernel flavors) has a cost to rt performance.
-> > 
-> > Ideally, bean counting would be switchable too, giving all components
-> > the environment they like best.
-> 
-> Sounds like a question for Frederic (now CCed).  ;-)
+On Tue, May 20, 2014 at 9:49 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>
+> breaking printk string into multiple line isn't suggested as it affects
+> readability and so I kept it this way. Another was was to break printk
+> itself intro two-three printk lines, but that would have looked bad
+> on console.
+>
+> So, will retain it :(
+OK, dev_warn at least should be done.. we use dev_warn everywhere else.
 
-I'm not sure that I really understand what you want here.
-
-The current state of the art is that when you enable CONFIG_NO_HZ_FULL=y, full dynticks
-is actually off by default. This is only overriden by "nohz_full=" boot parameter.
-
-Now if what you need is to enable or disable it at runtime instead of boottime,
-I must warn you that this is going to complicate the nohz code a lot (and also perhaps sched
-and RCU).
-
-I've already been eyed by vulturous frozen sharks flying in circles above me lately
-after a few overengineering visions.
-
-And given that the full nohz code is still in a baby shape, it's probably not the right
-time to expand it that way. I haven't even yet heard about users who crossed the testing
-stage of full nohz.
-
-We'll probably extend it that way in the future. But likely not in a near future.
+Regards,
+Nishanth Menon
