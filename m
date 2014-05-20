@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277AbaETVIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:08:51 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51667 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751056AbaETVIu (ORCPT
+	id S1751373AbaETVJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:09:27 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:45964 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaETVJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:08:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
-        lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
-Date: Tue, 20 May 2014 23:25:46 +0200
-Message-ID: <6169981.jIBZPeBvRE@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
-References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
+	Tue, 20 May 2014 17:09:26 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1400619550.2970.274.camel@schen9-DESK>
+References: <1400617046.2970.270.camel@schen9-DESK>
+	<CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+	<1400619550.2970.274.camel@schen9-DESK>
+Date: Tue, 20 May 2014 14:09:26 -0700
+X-Google-Sender-Auth: bEMylmxoeum4LtdTrfegdXMhv1U
+Message-ID: <CAGQ1y=4z69iNRAM8eZFhh=kjRYQgwDxyMjyNG4XJ0b1xOxLURA@mail.gmail.com>
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Jason Low <jason.low2@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 20, 2014 08:59:19 PM Lan Tianyu wrote:
-> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
-> region. It allows ACPI aml code able to access such kind of devices to
-> implement some ACPI standard method.
-> 
-> On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> i2c device to get battery info. So battery function depends on the I2C
-> operation region support. Here is the bug link.
-> https://bugzilla.kernel.org/show_bug.cgi?id=69011
-> 
-> Change since V2:
->         Drop patchs of adding I2C smbus quick read/write and word/block
-> process call functions because not find machines supporting such protocols
-> so far and can't test these functions.
->         Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
-> config"
-> 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
-> ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
-> error log.  
-> 
-> Change since V1:
->        Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
-> Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
-> and make i2c core built-in when it's set to avoid i2c ACPI operation region
-> being removed.
-> 
-> Lan Tianyu (5):
->   ACPICA: Export acpi_buffer_to_resource symbol
+On Tue, May 20, 2014 at 1:59 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> On Tue, 2014-05-20 at 13:51 -0700, Jason Low wrote:
+>> On Tue, May 20, 2014 at 1:17 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+>>
+>> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> > index 9b4c4f3..97132db 100644
+>> > --- a/kernel/sched/fair.c
+>> > +++ b/kernel/sched/fair.c
+>> > @@ -6764,12 +6764,17 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+>> >
+>> >                 rq = cpu_rq(balance_cpu);
+>> >
+>> > -               raw_spin_lock_irq(&rq->lock);
+>> > -               update_rq_clock(rq);
+>> > -               update_idle_cpu_load(rq);
+>> > -               raw_spin_unlock_irq(&rq->lock);
+>> > -
+>> > -               rebalance_domains(rq, CPU_IDLE);
+>> > +               /*
+>> > +                * If time for next balance is due,
+>> > +                * do the balance.
+>> > +                */
+>> > +               if (time_after(jiffies + 1, rq->next_balance)) {
+>>
+>> Hi Tim,
+>>
+>> If we want to do idle load balancing only when it is due for a
+>> balance, shouldn't the above just be "if (time_after(jiffies,
+>> rq->next_balance))"?
+>
+> If rq->next_balance and jiffies are equal, then
+> time_after(jiffies, rq->next_balance) check will be false and
+> you will not do balance.  But actually you want to balance
+> for this case so the jiffies+1 was used.
 
-Redundant?
+Hi Tim, Rik
 
->   ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
->     to ACPI handle
->   ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
->     data
+Yes, that makes sense that we want to balance if they are equal. We
+may also consider using "if (time_after_eq(jiffies,
+rq->next_balance)".
 
-I can take the above two regardless of the I2C material below I guess?
-
->   I2C/ACPI: Add i2c ACPI operation region support
->   I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
-> 
->  drivers/acpi/acpica/rscreate.c |   1 +
->  drivers/acpi/bus.c             |  28 +++-
->  drivers/acpi/thermal.c         |  11 +-
->  drivers/i2c/Kconfig            |  18 +-
->  drivers/i2c/Makefile           |   5 +-
->  drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
->  drivers/i2c/i2c-core.c         |  97 +----------
->  include/acpi/acpi_bus.h        |   2 +
->  include/linux/acpi.h           |  11 ++
->  include/linux/i2c.h            |  12 ++
->  10 files changed, 439 insertions(+), 108 deletions(-)
->  create mode 100644 drivers/i2c/i2c-acpi.c
-> 
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Reviewed-by: Jason Low <jason.low2@hp.com>
