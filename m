@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaETEcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 00:32:46 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:57425 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaETEcp (ORCPT
+	id S1753110AbaETEcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 00:32:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51589 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbaETEcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 00:32:45 -0400
+	Tue, 20 May 2014 00:32:52 -0400
+Message-ID: <537ADAEF.9060105@ti.com>
+Date: Tue, 20 May 2014 10:02:47 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20140520042525.GA18956@quad.lixom.net>
-References: <1399484042-27432-1-git-send-email-nicolas.ferre@atmel.com>
-	<536A6FD7.40402@atmel.com>
-	<20140516232635.GB6423@quad.lixom.net>
-	<20140517042216.GI29318@piout.net>
-	<20140520042525.GA18956@quad.lixom.net>
-Date: Mon, 19 May 2014 21:32:44 -0700
-Message-ID: <CAOesGMjLqurfyGPuF_nhtg+MY+_NGLs_A318JQ=zBQJ1cM0NYA@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: cleanup for 3.16 #1
-From: Olof Johansson <olof@lixom.net>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        LinusW <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Bin Liu <binmlist@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <zonque@gmail.com>, <b-liu@ti.com>
+Subject: Re: [PATCH v4 1/6] usb: musb: core: Handle Babble condition only
+ in HOST mode
+References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>	<1400506776-2816-2-git-send-email-george.cherian@ti.com> <CADYTM3bd8Bq5QTn-HC4jYX-owEw_sF1DOtXsc-cMDqKHGJHXjQ@mail.gmail.com>
+In-Reply-To: <CADYTM3bd8Bq5QTn-HC4jYX-owEw_sF1DOtXsc-cMDqKHGJHXjQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Really adding Mark]
+Hi Bin,
+On 5/19/2014 9:24 PM, Bin Liu wrote:
+> Hi,
+>
+> On Mon, May 19, 2014 at 8:39 AM, George Cherian <george.cherian@ti.com> wrote:
+>> BABBLE and RESET share the same interrupt. The interrupt
+>> is considered to be RESET if MUSB is in peripheral mode and
+>> as a BABBLE if MUSB is in HOST mode.
+>>
+>> Handle babble condition iff MUSB is in HOST mode.
+>>
+>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>> ---
+>>   drivers/usb/musb/musb_core.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+>> index 61da471..eff3c5c 100644
+>> --- a/drivers/usb/musb/musb_core.c
+>> +++ b/drivers/usb/musb/musb_core.c
+>> @@ -849,7 +849,7 @@ b_host:
+>>          }
+>>
+>>          /* handle babble condition */
+>> -       if (int_usb & MUSB_INTR_BABBLE)
+>> +       if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
+>>                  schedule_work(&musb->recover_work);
+> I guess my following comments are for Daniel's patch as while which
+> initially added the babble work.
+>
+> Should this if statement be merged into the previous 'if(int_usb &
+> MUSB_INTR_RESET)' one, which handles the same interrupt and already
+> handles host and device mode respectively.
 
-On Mon, May 19, 2014 at 9:25 PM, Olof Johansson <olof@lixom.net> wrote:
-> [adding Mark]
+Initially I too had the babble handling as part of  'if(int_usb & 
+MUSB_INTR_RESET)'
+one. But during my tests I hit a corner case where in we hit a BABBLE 
+condition
+on disconnect. In such case the babble interrupt can be handled only if 
+we have a seperate
+check, else its considered as a BUS RESET.
+
+When all devices are disconnected  MUSB_DEVCTL_HM = 0 and the code 
+always enter the
+else path. In this path it treats the BABBLE as a BUS RESET.
+
+> Regards,
+> -Bin.
 >
-> On Sat, May 17, 2014 at 06:22:16AM +0200, Alexandre Belloni wrote:
->> On 16/05/2014 at 16:26:35 -0700, Olof Johansson wrote :
->> > On Wed, May 07, 2014 at 07:39:35PM +0200, Nicolas Ferre wrote:
->> > > There is a little conflict with at91-3.16-dt that you already pulled in
->> > > arm-soc: here is the branch that resolves it:
->> > >
->> > > https://github.com/at91linux/linux-at91/commits/at91-3.16-resolved
->> >
->> > That resolution looks odd. Why is one clock under clocks { } and two of them
->> > are at the top level? Shouldn't they all be under the clocks subnode?
->> >
->> > I've merged in now with your resolution, but I think this needs revisiting.
->> >
+>>   #if 0
+>> --
+>> 1.8.3.1
 >>
->> Actually, all the clocks should end up at the root, please refer to:
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/240219.html
->>
->> I feel that was one of the topics we should have discussed at ELC but we
->> ended up talking about DT ABI stability instead...
->
-> I'm looking more for consistency than anything else. Having a few in the
-> root and the few in a subnode certainly indicates that something's wrong.
->
-> It's a good thing that we have several DT maintainers to spread the load,
-> but it's also harder to learn the preferences of the maintainer(s) since
-> there seems to be variety (some care more about some things than others).
->
-> I'm not saying that Mark is wrong, but it's quite possible that someone
-> else would disagree or not care enough to point it out. The current
-> practice of having clocks under a subnode is prevalent almost everywhere
-> in the tree, and this is a mostly new direction set by Mark. It makes
-> it very hard to figure out what's the best way to do things when there's
-> less consistency.
->
-> Clearly, having clocks grouped in a subnode is common practice already, and
-> makes some sense from a readability point of view.
->
-> Anyway, I'll leave the rest for some DT maintainer to sort out. Please
-> follow up with patches to switch over to one or the other model no matter
-> what, please.
->
->
-> -Olof
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+-George
+
