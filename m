@@ -1,76 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaETRp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:45:26 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:57219 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175AbaETRnv (ORCPT
+	id S1754813AbaETRpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:45:35 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:47778 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475AbaETRp2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:43:51 -0400
-From: Alex Elder <elder@linaro.org>
-To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, jason@lakedaemon.net,
-        lorenzo.pieralisi@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, rjui@broadcom.com, robh+dt@kernel.org,
-        rvaswani@codeaurora.org
-Subject: [PATCH v4 1/5] devicetree: bindings: document Broadcom CPU enable method
-Date: Tue, 20 May 2014 12:43:46 -0500
-Message-Id: <1400607830-10989-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400607830-10989-1-git-send-email-elder@linaro.org>
-References: <1400607830-10989-1-git-send-email-elder@linaro.org>
+	Tue, 20 May 2014 13:45:28 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, grant.likely@linaro.org,
+        tony@atomide.com, t-kristo@ti.com
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1399458048-28213-4-git-send-email-peter.ujfalusi@ti.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-doc@vger.kernel.org,
+        robh+dt@kernel.org, bcousson@baylibre.com,
+        linux-arm-kernel@lists.infradead.org
+References: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com>
+ <1399458048-28213-4-git-send-email-peter.ujfalusi@ti.com>
+Message-ID: <20140520174519.9521.26102@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2 3/4] clk: ti: Driver for DRA7 ATL (Audio Tracking Logic)
+Date: Tue, 20 May 2014 10:45:19 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Broadcom mobile SoCs use a ROM-implemented holding pen for
-controlled boot of secondary cores.  A special register is
-used to communicate to the ROM that a secondary core should
-start executing kernel code.  This enable method is currently
-used for members of the bcm281xx and bcm21664 SoC families.
+Quoting Peter Ujfalusi (2014-05-07 03:20:47)
+> Audio Tracking Logic is designed to be used by HD Radio applications to
+> synchronize the audio output clocks to the baseband clock. ATL can be also
+> used to track errors between two reference clocks (BWS, AWS) and generate a modulated
+> clock output which averages to some desired frequency.
+> In essence ATL is generating a clock to be used by an audio codec and also
+> to be used by the SoC as MCLK.
+> 
+> To be able to integrate the ATL provided clocks to the clock tree we need
+> two types of DT binding:
+> - DT clock nodes to represent the ATL clocks towards the CCF
+> - binding for the ATL IP itself which is going to handle the hw
+>   configuration
+> 
+> The reason for this type of setup is that ATL itself is a separate device
+> in the SoC, it has it's own address space and clock domain. Other IPs can
+> use the ATL generated clock as their functional clock (McASPs for example)
+> and external components like audio codecs can also use the very same clock
+> as their MCLK.
+> 
+> The ATL IP in DRA7 contains 4 ATL instences.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-The use of an enable method also allows the SMP operation vector to
-be assigned as a result of device tree content for these SoCs.
+Looks good to me.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- Documentation/devicetree/bindings/arm/cpus.txt | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Regards,
+Mike
 
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index 333f4ae..c6a2411 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -185,6 +185,7 @@ nodes to be present and contain the properties described below.
- 			    "qcom,gcc-msm8660"
- 			    "qcom,kpss-acc-v1"
- 			    "qcom,kpss-acc-v2"
-+			    "brcm,bcm11351-cpu-method"
- 
- 	- cpu-release-addr
- 		Usage: required for systems that have an "enable-method"
-@@ -209,6 +210,17 @@ nodes to be present and contain the properties described below.
- 		Value type: <phandle>
- 		Definition: Specifies the ACC[2] node associated with this CPU.
- 
-+	- secondary-boot-reg
-+		Usage:
-+			Required for systems that have an "enable-method"
-+			property value of "brcm,bcm11351-cpu-method".
-+		Value type: <u32>
-+		Definition:
-+			Specifies the physical address of the register used to
-+			request the ROM holding pen code release a secondary
-+			CPU.  The value written to the register is formed by
-+			encoding the target CPU id into the low bits of the
-+			physical start address it should jump to.
- 
- Example 1 (dual-cluster big.LITTLE system 32-bit):
- 
--- 
-1.9.1
-
+> ---
+>  drivers/clk/ti/Makefile       |   3 +-
+>  drivers/clk/ti/clk-dra7-atl.c | 313 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 315 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/clk/ti/clk-dra7-atl.c
+> 
+> diff --git a/drivers/clk/ti/Makefile b/drivers/clk/ti/Makefile
+> index 4319d4031aa3..18e2443224e6 100644
+> --- a/drivers/clk/ti/Makefile
+> +++ b/drivers/clk/ti/Makefile
+> @@ -6,6 +6,7 @@ obj-$(CONFIG_SOC_AM33XX)                += $(clk-common) clk-33xx.o
+>  obj-$(CONFIG_ARCH_OMAP3)               += $(clk-common) interface.o clk-3xxx.o
+>  obj-$(CONFIG_ARCH_OMAP4)               += $(clk-common) clk-44xx.o
+>  obj-$(CONFIG_SOC_OMAP5)                        += $(clk-common) clk-54xx.o
+> -obj-$(CONFIG_SOC_DRA7XX)               += $(clk-common) clk-7xx.o
+> +obj-$(CONFIG_SOC_DRA7XX)               += $(clk-common) clk-7xx.o \
+> +                                          clk-dra7-atl.o
+>  obj-$(CONFIG_SOC_AM43XX)               += $(clk-common) clk-43xx.o
+>  endif
+> diff --git a/drivers/clk/ti/clk-dra7-atl.c b/drivers/clk/ti/clk-dra7-atl.c
+> new file mode 100644
+> index 000000000000..97a8992eebb7
+> --- /dev/null
+> +++ b/drivers/clk/ti/clk-dra7-atl.c
+> @@ -0,0 +1,313 @@
+> +/*
+> + * DRA7 ATL (Audio Tracking Logic) clock driver
+> + *
+> + * Copyright (C) 2013 Texas Instruments, Inc.
+> + *
+> + * Peter Ujfalusi <peter.ujfalusi@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
+> +
+> +#define DRA7_ATL_INSTANCES     4
+> +
+> +#define DRA7_ATL_PPMR_REG(id)          (0x200 + (id * 0x80))
+> +#define DRA7_ATL_BBSR_REG(id)          (0x204 + (id * 0x80))
+> +#define DRA7_ATL_ATLCR_REG(id)         (0x208 + (id * 0x80))
+> +#define DRA7_ATL_SWEN_REG(id)          (0x210 + (id * 0x80))
+> +#define DRA7_ATL_BWSMUX_REG(id)                (0x214 + (id * 0x80))
+> +#define DRA7_ATL_AWSMUX_REG(id)                (0x218 + (id * 0x80))
+> +#define DRA7_ATL_PCLKMUX_REG(id)       (0x21c + (id * 0x80))
+> +
+> +#define DRA7_ATL_SWEN                  BIT(0)
+> +#define DRA7_ATL_DIVIDER_MASK          (0x1f)
+> +#define DRA7_ATL_PCLKMUX               BIT(0)
+> +struct dra7_atl_clock_info;
+> +
+> +struct dra7_atl_desc {
+> +       struct clk *clk;
+> +       struct clk_hw hw;
+> +       struct dra7_atl_clock_info *cinfo;
+> +       int id;
+> +
+> +       bool probed;            /* the driver for the IP has been loaded */
+> +       bool valid;             /* configured */
+> +       bool enabled;
+> +       u32 bws;                /* Baseband Word Select Mux */
+> +       u32 aws;                /* Audio Word Select Mux */
+> +       u32 divider;            /* Cached divider value */
+> +};
+> +
+> +struct dra7_atl_clock_info {
+> +       struct device *dev;
+> +       void __iomem *iobase;
+> +
+> +       struct dra7_atl_desc *cdesc;
+> +};
+> +
+> +#define to_atl_desc(_hw)       container_of(_hw, struct dra7_atl_desc, hw)
+> +
+> +static inline void atl_write(struct dra7_atl_clock_info *cinfo, u32 reg,
+> +                            u32 val)
+> +{
+> +       __raw_writel(val, cinfo->iobase + reg);
+> +}
+> +
+> +static inline int atl_read(struct dra7_atl_clock_info *cinfo, u32 reg)
+> +{
+> +       return __raw_readl(cinfo->iobase + reg);
+> +}
+> +
+> +static int atl_clk_enable(struct clk_hw *hw)
+> +{
+> +       struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+> +
+> +       if (!cdesc->probed)
+> +               goto out;
+> +
+> +       if (unlikely(!cdesc->valid))
+> +               dev_warn(cdesc->cinfo->dev, "atl%d has not been configured\n",
+> +                        cdesc->id);
+> +       pm_runtime_get_sync(cdesc->cinfo->dev);
+> +
+> +       atl_write(cdesc->cinfo, DRA7_ATL_ATLCR_REG(cdesc->id),
+> +                 cdesc->divider - 1);
+> +       atl_write(cdesc->cinfo, DRA7_ATL_SWEN_REG(cdesc->id), DRA7_ATL_SWEN);
+> +
+> +out:
+> +       cdesc->enabled = true;
+> +
+> +       return 0;
+> +}
+> +
+> +static void atl_clk_disable(struct clk_hw *hw)
+> +{
+> +       struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+> +
+> +       if (!cdesc->probed)
+> +               goto out;
+> +
+> +       atl_write(cdesc->cinfo, DRA7_ATL_SWEN_REG(cdesc->id), 0);
+> +       pm_runtime_put_sync(cdesc->cinfo->dev);
+> +
+> +out:
+> +       cdesc->enabled = false;
+> +}
+> +
+> +static int atl_clk_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+> +
+> +       return cdesc->enabled;
+> +}
+> +
+> +static unsigned long atl_clk_recalc_rate(struct clk_hw *hw,
+> +                                        unsigned long parent_rate)
+> +{
+> +       struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+> +
+> +       return parent_rate / cdesc->divider;
+> +}
+> +
+> +static long atl_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                              unsigned long *parent_rate)
+> +{
+> +       unsigned divider;
+> +
+> +       divider = (*parent_rate + rate / 2) / rate;
+> +       if (divider > DRA7_ATL_DIVIDER_MASK + 1)
+> +               divider = DRA7_ATL_DIVIDER_MASK + 1;
+> +
+> +       return *parent_rate / divider;
+> +}
+> +
+> +static int atl_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+> +                           unsigned long parent_rate)
+> +{
+> +       struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+> +       u32 divider;
+> +
+> +       divider = ((parent_rate + rate / 2) / rate) - 1;
+> +       if (divider > DRA7_ATL_DIVIDER_MASK)
+> +               divider = DRA7_ATL_DIVIDER_MASK;
+> +
+> +       cdesc->divider = divider + 1;
+> +
+> +       return 0;
+> +}
+> +
+> +const struct clk_ops atl_clk_ops = {
+> +       .enable         = atl_clk_enable,
+> +       .disable        = atl_clk_disable,
+> +       .is_enabled     = atl_clk_is_enabled,
+> +       .recalc_rate    = atl_clk_recalc_rate,
+> +       .round_rate     = atl_clk_round_rate,
+> +       .set_rate       = atl_clk_set_rate,
+> +};
+> +
+> +static void __init of_dra7_atl_clock_setup(struct device_node *node)
+> +{
+> +       struct dra7_atl_desc *clk_hw = NULL;
+> +       struct clk_init_data init = { 0 };
+> +       const char **parent_names = NULL;
+> +       struct clk *clk;
+> +
+> +       clk_hw = kzalloc(sizeof(*clk_hw), GFP_KERNEL);
+> +       if (!clk_hw) {
+> +               pr_err("%s: could not allocate dra7_atl_desc\n", __func__);
+> +               return;
+> +       }
+> +
+> +       clk_hw->hw.init = &init;
+> +       clk_hw->divider = 1;
+> +       init.name = node->name;
+> +       init.ops = &atl_clk_ops;
+> +       init.flags = CLK_IGNORE_UNUSED;
+> +       init.num_parents = of_clk_get_parent_count(node);
+> +
+> +       if (init.num_parents != 1) {
+> +               pr_err("%s: atl clock %s must have 1 parent\n", __func__,
+> +                      node->name);
+> +               goto cleanup;
+> +       }
+> +
+> +       parent_names = kzalloc(sizeof(char *), GFP_KERNEL);
+> +
+> +       if (!parent_names)
+> +               goto cleanup;
+> +
+> +       parent_names[0] = of_clk_get_parent_name(node, 0);
+> +
+> +       init.parent_names = parent_names;
+> +
+> +       clk = clk_register(NULL, &clk_hw->hw);
+> +
+> +       if (!IS_ERR(clk)) {
+> +               of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +               return;
+> +       }
+> +cleanup:
+> +       kfree(parent_names);
+> +       kfree(clk_hw);
+> +}
+> +CLK_OF_DECLARE(dra7_atl_clock, "ti,dra7-atl-clock", of_dra7_atl_clock_setup);
+> +
+> +static int of_dra7_atl_clk_probe(struct platform_device *pdev)
+> +{
+> +       struct device_node *node = pdev->dev.of_node;
+> +       struct dra7_atl_clock_info *cinfo;
+> +       int i;
+> +       int ret = 0;
+> +
+> +       if (!node)
+> +               return -ENODEV;
+> +
+> +       cinfo = devm_kzalloc(&pdev->dev, sizeof(*cinfo), GFP_KERNEL);
+> +       if (!cinfo)
+> +               return -ENOMEM;
+> +
+> +       cinfo->iobase = of_iomap(node, 0);
+> +       cinfo->dev = &pdev->dev;
+> +       pm_runtime_enable(cinfo->dev);
+> +
+> +       pm_runtime_get_sync(cinfo->dev);
+> +       atl_write(cinfo, DRA7_ATL_PCLKMUX_REG(0), DRA7_ATL_PCLKMUX);
+> +
+> +       for (i = 0; i < DRA7_ATL_INSTANCES; i++) {
+> +               struct device_node *cfg_node;
+> +               char prop[5];
+> +               struct dra7_atl_desc *cdesc;
+> +               struct of_phandle_args clkspec;
+> +               struct clk *clk;
+> +               int rc;
+> +
+> +               rc = of_parse_phandle_with_args(node, "ti,provided-clocks",
+> +                                               NULL, i, &clkspec);
+> +
+> +               if (rc) {
+> +                       pr_err("%s: failed to lookup atl clock %d\n", __func__,
+> +                              i);
+> +                       return -EINVAL;
+> +               }
+> +
+> +               clk = of_clk_get_from_provider(&clkspec);
+> +
+> +               cdesc = to_atl_desc(__clk_get_hw(clk));
+> +               cdesc->cinfo = cinfo;
+> +               cdesc->id = i;
+> +
+> +               /* Get configuration for the ATL instances */
+> +               snprintf(prop, sizeof(prop), "atl%u", i);
+> +               cfg_node = of_find_node_by_name(node, prop);
+> +               if (cfg_node) {
+> +                       ret = of_property_read_u32(cfg_node, "bws",
+> +                                                  &cdesc->bws);
+> +                       ret |= of_property_read_u32(cfg_node, "aws",
+> +                                                   &cdesc->aws);
+> +                       if (!ret) {
+> +                               cdesc->valid = true;
+> +                               atl_write(cinfo, DRA7_ATL_BWSMUX_REG(i),
+> +                                         cdesc->bws);
+> +                               atl_write(cinfo, DRA7_ATL_AWSMUX_REG(i),
+> +                                         cdesc->aws);
+> +                       }
+> +               }
+> +
+> +               cdesc->probed = true;
+> +               /*
+> +                * Enable the clock if it has been asked prior to loading the
+> +                * hw driver
+> +                */
+> +               if (cdesc->enabled)
+> +                       atl_clk_enable(__clk_get_hw(clk));
+> +       }
+> +       pm_runtime_put_sync(cinfo->dev);
+> +
+> +       return ret;
+> +}
+> +
+> +static int of_dra7_atl_clk_remove(struct platform_device *pdev)
+> +{
+> +       pm_runtime_disable(&pdev->dev);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct of_device_id of_dra7_atl_clk_match_tbl[] = {
+> +       { .compatible = "ti,dra7-atl", },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, of_dra7_atl_clk_match_tbl);
+> +
+> +static struct platform_driver dra7_atl_clk_driver = {
+> +       .driver = {
+> +               .name = "dra7-atl",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = of_dra7_atl_clk_match_tbl,
+> +       },
+> +       .probe = of_dra7_atl_clk_probe,
+> +       .remove = of_dra7_atl_clk_remove,
+> +};
+> +
+> +module_platform_driver(dra7_atl_clk_driver);
+> +
+> +MODULE_DESCRIPTION("Clock driver for DRA7 Audio Tracking Logic");
+> +MODULE_ALIAS("platform:dra7-atl-clock");
+> +MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
+> +MODULE_LICENSE("GPL v2");
+> +
+> -- 
+> 1.9.2
+> 
