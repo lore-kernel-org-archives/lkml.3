@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750808AbaETUQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:16:17 -0400
-Received: from host171.canaca.com ([67.55.55.225]:59980 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbaETUQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:16:15 -0400
-Message-ID: <865ad8dbc7ae0d13c045bd2a85cff2e2.squirrel@mungewell.org>
-In-Reply-To: <2965006.XKYHWj9YzJ@sigyn>
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
-    <1818063.tFLKhAd1oy@sigyn>
-    <20140514180558.GB30089@core.coreip.homeip.net>
-    <2965006.XKYHWj9YzJ@sigyn>
-Date: Tue, 20 May 2014 16:16:12 -0400
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-From: simon@mungewell.org
-To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1750897AbaETURl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:17:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33470 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaETURk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 16:17:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="543815942"
+Subject: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Len Brown <len.brown@intel.com>,
+        Russ Anderson <rja@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Hedi Berriche <hedi@sgi.com>, Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 May 2014 13:17:26 -0700
+Message-ID: <1400617046.2970.270.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current no_hz idle load balancer do load balancing on *all* idle cpus,
+even though the time due to load balance for a particular
+idle cpu could be still a while in future.  This introduces a much
+higher load balancing rate than what is necessary.  The patch
+changes the behavior by only doing idle load balancing on
+behalf of an idle cpu only when time is due for load balancing.
 
-> To bring this to a conclusion we could go from, would this be an
-> acceptable
-> solution?
->
-> - Have the HW-specific driver talk directly to ff-core and reimplement
-> upload(),
-> play(), etc.
-> - Rewrite "ff-memless-next" so that it is not a self-contained module but
-> a
-> library of functions.
-> - Have the driver either:
->   - Upload an effect to a device directly if the device can fully manage
-> the
-> effect by itself.
->   - Use provided timing functions to know when an effect should start,
-> stop,
-> restart etc...
->   - Use provided timing AND processing functions to combine effects that
-> can be
-> combined into one, calculate periodic waveforms etc?
->
-> I have no problem with throwing my current approach away but before I
-> start working on a new one I'd like to know which way to go...
+On SGI's systems with over 3000 cores, the cpu responsible for idle balancing
+got overwhelmed with idle balancing, and introduces a lot of OS noise
+to workloads.  This patch fixes the issue.
 
-Hi all,
-If the driver itself (hid-logitech, via hid-lg4ff for example) is more
-involved in the creation/timing/management of the effects, does this mean
-that we end up with code duplicated in lots of places?
+Thanks.
 
-Also, does this mean that the 'old' ff-memless system would remain in
-kernel? If not, who will reworking each driver?
+Tim
 
+Acked-by: Russ Anderson <rja@sgi.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ kernel/sched/fair.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9b4c4f3..97132db 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6764,12 +6764,17 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+ 
+ 		rq = cpu_rq(balance_cpu);
+ 
+-		raw_spin_lock_irq(&rq->lock);
+-		update_rq_clock(rq);
+-		update_idle_cpu_load(rq);
+-		raw_spin_unlock_irq(&rq->lock);
+-
+-		rebalance_domains(rq, CPU_IDLE);
++		/*
++		 * If time for next balance is due,
++		 * do the balance.
++		 */
++		if (time_after(jiffies + 1, rq->next_balance)) {
++			raw_spin_lock_irq(&rq->lock);
++			update_rq_clock(rq);
++			update_idle_cpu_load(rq);
++			raw_spin_unlock_irq(&rq->lock);
++			rebalance_domains(rq, CPU_IDLE);
++		}
+ 
+ 		if (time_after(this_rq->next_balance, rq->next_balance))
+ 			this_rq->next_balance = rq->next_balance;
+-- 
+1.7.11.7
 
-Regarding the question of emulated vs. real effects, can we extend the API
-so that applications can know which effects are really supported, and
-enable/disable emulation somehow?
-
-Apologies for asking some many questions, without answering anything...
-Simon
 
