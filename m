@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaETNu0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:50:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55968 "EHLO bear.ext.ti.com"
+	id S1753189AbaETNxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:53:06 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:48679 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456AbaETNuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:50:24 -0400
-Message-ID: <537B5D5D.8030106@ti.com>
-Date: Tue, 20 May 2014 09:49:17 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751092AbaETNxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:53:04 -0400
+Date: Tue, 20 May 2014 15:49:42 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        tj@kernel.org, linux-arm-kernel@lists.infradead.org,
+        sebastian.hesselbarth@gmail.com
+Subject: Re: [PATCH v4 1/7] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140520134942.GC9873@lunn.ch>
+References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
+ <1821771.zFvTDGF2Ae@amdc1032>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
-        <ijc+devicetree@hellion.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <galak@codeaurora.org>,
-        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
-        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>, <olof@lixom.net>,
-        <w-kwok2@ti.com>, <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch v3 0/5] Introduce keystone reset driver
-References: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com> <5095812.b6DgWAxYzH@wuerfel> <537B5598.8070603@ti.com> <5272855.vIyLIadgKe@wuerfel>
-In-Reply-To: <5272855.vIyLIadgKe@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1821771.zFvTDGF2Ae@amdc1032>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 May 2014 09:44 AM, Arnd Bergmann wrote:
-> On Tuesday 20 May 2014 16:16:08 Ivan Khoronzhuk wrote:
->> Thank for the reply
->>
->> The reset driver uses two ranges:
->> - RSTYPE, RSTCTRL,RSTCFG, RSISO  (Reset Main PLL Controller)
->> - RESETMUX8-10 registers
->>
->> The content of these register ranges are completely used by the reset 
->> driver.
->> Currently no one on the SoC can access them instead of the reset driver.
->> Also we don't use syscon/regmap at all - so adding this will be some 
->> overhead.
->>
->> As I posted previously:
->> "...configuring Reset multiplexer & PLL. And it tunes not only watchdog 
->> usage..."
->>
->> Yes, it tunes not only watchdog usage and uses part of registers from 
->> PLL controller,
->> but all it works with are connected with reset functionality. These 
->> ranges are used only
->> by reset driver and their purpose is reset functionality.
->>
->> Maybe in the future some soft can use ranges in question for own tasks, 
->> but it should be
->> done via reset driver. So as I see there is no reasons to use regmap for 
->> reset driver.
+On Tue, May 20, 2014 at 02:34:20PM +0200, Bartlomiej Zolnierkiewicz wrote:
 > 
-> You should not look at these registers in isolation, they are part of
-> some register area that has other functions as well and that you should
-> at least represent correctly in DT.
->
-> When I see something like
+> Hi,
 > 
-> +                       reg = <0x23100e4 0x10>,
-> +                             <0x2620328 0x10>;
+> Few minor issues below..
 > 
-> I am certain that there are other things between 0x2310000 and 0x23100e3, and
-> probably after 0x23100f4 as well. There must be some data sheet that
-> gives this register range a proper name, so put that into DT rather than
-> making up some arbitrary stuff that happens to match how today's kernel
-> driver needs it.
+> On Tuesday, May 20, 2014 11:04:29 AM Antoine Ténart wrote:
+> > The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
+> > 
+> > The mode selection can let us think this PHY can be configured to fit
+> > other purposes. But there are reasons to think the SATA mode will be
+> > the only one usable: the PHY registers are only accessible indirectly
+> > through two registers in the SATA range, the PHY seems to be integrated
+> > and no information tells us the contrary. For these reasons, make the
+> > driver a SATA PHY driver.
+> > 
+> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> > ---
+> >  drivers/phy/Kconfig           |   5 +
+> >  drivers/phy/Makefile          |   1 +
+> >  drivers/phy/phy-berlin-sata.c | 230 ++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 236 insertions(+)
+> >  create mode 100644 drivers/phy/phy-berlin-sata.c
+> > 
+> > diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> > index 4906c27fa3bd..b31b1986fda4 100644
+> > --- a/drivers/phy/Kconfig
+> > +++ b/drivers/phy/Kconfig
+> > @@ -15,6 +15,11 @@ config GENERIC_PHY
+> >  	  phy users can obtain reference to the PHY. All the users of this
+> >  	  framework should select this config.
+> >  
+> > +config PHY_BERLIN_SATA
+> > +	bool
 > 
-Even though there are no other users, I think you have a valid point about
-DT representing the hardware layout in the correct form.
+> Is there any real reason why this cannot be tristate?
 
-Regards,
-Santosh
+What we have seen with SATA drivers and phys, is there is link time
+breakage if the SATA driver is built in and the phy is modular.
 
+Maybe this has been fixed now? 
+ 
+	Andrew
