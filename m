@@ -1,77 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaETAnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:43:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53152 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaETAny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:43:54 -0400
-Date: Tue, 20 May 2014 09:43:56 +0900 (JST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch 2/2] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
-In-Reply-To: <20140515130435.24132d1b@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1405200936320.7325@ionos.tec.linutronix.de>
-References: <20140514195705.618583609@linutronix.de> <20140514200104.670614672@linutronix.de> <20140515130435.24132d1b@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752600AbaETAoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:44:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38274 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758AbaETAoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 20:44:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,870,1392192000"; 
+   d="scan'208";a="543203289"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
+        mingo@kernel.org, dave.hansen@intel.com
+In-Reply-To: <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <537479E7.90806@linux.vnet.ibm.com>
+ <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
+ <87wqdik4n5.fsf@rustcorp.com.au>
+ <53797511.1050409@linux.vnet.ibm.com>
+ <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
+ <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
+ for powerpc
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140520004429.E660AE009B@blue.fi.intel.com>
+Date: Tue, 20 May 2014 03:44:29 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Steven Rostedt wrote:
-> On Wed, 14 May 2014 20:03:27 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+Andrew Morton wrote:
+> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
 > 
-> > In case the dead lock detector is enabled we follow the lock chain to
-> > the end in rt_mutex_adjust_prio_chain, even if we could stop earlier
-> > due to the priority/waiter constellation.
+> > Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
+> > the order of the fault-around size in bytes, and fault_around_pages()
+> > use 1UL << (fault_around_order - PAGE_SHIFT)
 > 
-> I'm assuming that we want to detect deadlocks for all futex calls
-> even when CONFIG_DEBUG_RT_MUTEXES is set?
+> Yes.  And shame on me for missing it (this time!) at review.
 > 
-> In kernel/locking/rtmutex_common.h:
-> 
-> #ifdef CONFIG_DEBUG_RT_MUTEXES
-> # include "rtmutex-debug.h"
-> #else
-> # include "rtmutex.h"
-> #endif
-> 
-> In kernel/locking/rtmutex.h:
-> 
-> #define debug_rt_mutex_detect_deadlock(w,d)             (d)
-> 
-> In kernel/locking/rtmutex.h:
-> 
-> static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
->                                                  int detect)
-> {
->         return (waiter != NULL);
-> }
-> 
-> Shouldn't that be: return detect || waiter != NULL;
-> 
+> There's still time to fix this.  Patches, please.
 
-No. We do not care about whether the caller handed in detect or not.
+Here it is. Made at 3.30 AM, build tested only.
 
-> 
-> I know this a separate issue from this patch series, but it's
-> something that I just noticed.
+I'll sign it off tomorrow after testing.
 
-It's not really intuitive. We might make the call sites hand in
-constants. RTMUTEX_DETECT_DEADLOCK, RTMUTEX_IGNORE_DEADLOCK or
-something like that and switch it depending on
-CONFIG_DEBUG_RT_MUTEXES.
-
-Thanks,
-
-	tglx
+diff --git a/mm/memory.c b/mm/memory.c
+index 037b812a9531..9d6941c9a9e4 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3402,62 +3402,62 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+ 	update_mmu_cache(vma, address, pte);
+ }
+ 
+-#define FAULT_AROUND_ORDER 4
++#define FAULT_AROUND_BYTES 65536
+ 
+ #ifdef CONFIG_DEBUG_FS
+-static unsigned int fault_around_order = FAULT_AROUND_ORDER;
++static unsigned int fault_around_bytes = FAULT_AROUND_BYTES;
+ 
+-static int fault_around_order_get(void *data, u64 *val)
++static int fault_around_bytes_get(void *data, u64 *val)
+ {
+-	*val = fault_around_order;
++	*val = fault_around_bytes;
+ 	return 0;
+ }
+ 
+-static int fault_around_order_set(void *data, u64 val)
++static int fault_around_bytes_set(void *data, u64 val)
+ {
+-	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
+-	if (1UL << val > PTRS_PER_PTE)
++	BUILD_BUG_ON(FAULT_AROUND_BYTES / PAGE_SIZE > PTRS_PER_PTE);
++	if (val / PAGE_SIZE > PTRS_PER_PTE)
+ 		return -EINVAL;
+-	fault_around_order = val;
++	fault_around_bytes = val;
+ 	return 0;
+ }
+-DEFINE_SIMPLE_ATTRIBUTE(fault_around_order_fops,
+-		fault_around_order_get, fault_around_order_set, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
++		fault_around_bytes_get, fault_around_bytes_set, "%llu\n");
+ 
+ static int __init fault_around_debugfs(void)
+ {
+ 	void *ret;
+ 
+-	ret = debugfs_create_file("fault_around_order",	0644, NULL, NULL,
+-			&fault_around_order_fops);
++	ret = debugfs_create_file("fault_around_bytes", 0644, NULL, NULL,
++			&fault_around_bytes_fops);
+ 	if (!ret)
+-		pr_warn("Failed to create fault_around_order in debugfs");
++		pr_warn("Failed to create fault_around_bytes in debugfs");
+ 	return 0;
+ }
+ late_initcall(fault_around_debugfs);
+ 
+ static inline unsigned long fault_around_pages(void)
+ {
+-	return 1UL << fault_around_order;
++	return fault_around_bytes / PAGE_SIZE;
+ }
+ 
+ static inline unsigned long fault_around_mask(void)
+ {
+-	return ~((1UL << (PAGE_SHIFT + fault_around_order)) - 1);
++	return ~(round_down(fault_around_bytes, PAGE_SIZE) - 1);
+ }
+ #else
+ static inline unsigned long fault_around_pages(void)
+ {
+ 	unsigned long nr_pages;
+ 
+-	nr_pages = 1UL << FAULT_AROUND_ORDER;
++	nr_pages = FAULT_AROUND_BYTES / PAGE_SIZE;
+ 	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
+ 	return nr_pages;
+ }
+ 
+ static inline unsigned long fault_around_mask(void)
+ {
+-	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
++	return ~(round_down(FAULT_AROUND_BYTES, PAGE_SIZE) - 1);
+ }
+ #endif
+ 
+@@ -3515,7 +3515,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * if page by the offset is not ready to be mapped (cold cache or
+ 	 * something).
+ 	 */
+-	if (vma->vm_ops->map_pages) {
++	if (vma->vm_ops->map_pages && fault_around_pages() > 1) {
+ 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		do_fault_around(vma, address, pte, pgoff, flags);
+ 		if (!pte_same(*pte, orig_pte))
+-- 
+ Kirill A. Shutemov
