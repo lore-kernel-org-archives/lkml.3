@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaETNJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:09:48 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:33962 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295AbaETNJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:09:45 -0400
-Message-ID: <537B53D9.9080206@st.com>
-Date: Tue, 20 May 2014 15:08:41 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, Rob Landley <rob@landley.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>
-Subject: Re: [PATCH v6 3/4] ARM: dts: Add STiH407 SoC support
-References: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com> <1400579192-17620-4-git-send-email-maxime.coquelin@st.com> <20140520121717.GL24991@lee--X1>
-In-Reply-To: <20140520121717.GL24991@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-20_02:2014-05-20,2014-05-20,1970-01-01 signatures=0
+	id S1753300AbaETNMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:12:20 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:37170 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266AbaETNMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:12:19 -0400
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH] Documentation: fix DOCBOOKS=... building
+Date: Tue, 20 May 2014 15:12:07 +0200
+Message-Id: <1400591527-16685-1-git-send-email-johannes@sipsolutions.net>
+X-Mailer: git-send-email 2.0.0.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Johannes Berg <johannes.berg@intel.com>
 
+Prior to
+commit 4266129964b8238526936d723de65b419d8069c6
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Tue May 31 16:27:44 2011 -0300
 
-On 05/20/2014 02:17 PM, Lee Jones wrote:
->> The STiH407 is advanced multi-HD AVC processor with 3D graphics acceleration
->> and 1.5-GHz ARM Cortex-A9 SMP CPU.
->>
->> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> Acked-by: Lee Jones <lee.jones@linaro.org>
->> Acked-by: Patrice Chotard <patrice.chotard@st.com>
->> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
->> ---
->>   arch/arm/boot/dts/stih407-clock.dtsi   |  40 +++
->>   arch/arm/boot/dts/stih407-pinctrl.dtsi | 615 +++++++++++++++++++++++++++++++++
->>   arch/arm/boot/dts/stih407.dtsi         | 263 ++++++++++++++
->>   3 files changed, 918 insertions(+)
->>   create mode 100644 arch/arm/boot/dts/stih407-clock.dtsi
->>   create mode 100644 arch/arm/boot/dts/stih407-pinctrl.dtsi
->>   create mode 100644 arch/arm/boot/dts/stih407.dtsi
->>
->> diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
->> new file mode 100644
->> index 0000000..ae8068c
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/stih407-clock.dtsi
->> @@ -0,0 +1,40 @@
->> +/*
->> + * Copyright (C) 2014 STMicroelectronics R&D Limited
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +/ {
->> +	clocks {
->> +		/*
->> +		 * Fixed 30MHz oscillator inputs to SoC
->> +		 */
->> +		CLK_SYSIN: CLK_SYSIN {
->
-> I thought we weren't using upper case clk names anymore?
->
->> +			#clock-cells = <0>;
->> +			compatible = "fixed-clock";
->> +			clock-frequency = <30000000>;
->> +			clock-output-names = "CLK_SYSIN";
->> +		};
->> +
->> +		/*
->> +		 * ARM Peripheral clock for timers
->> +		 */
->> +		arm_periph_clk: arm_periph_clk {
->> +			#clock-cells = <0>;
->> +			compatible = "fixed-clock";
->> +			clock-frequency = <600000000>;
->> +		};
->> +
->> +		/*
->> +		 * Bootloader initialized system infrastructure clock for
->> +		 * serial devices.
->> +		 */
->> +		CLK_EXT2F_A9: clockgenC0@13 {
->
-> Or camel?
+    [media] DocBook: Move all media docbook stuff into its own directory
 
-Good catch, v7 is in the pipe.
+it was possible to build only a single (or more)
+book(s) by calling, for example
+	make htmldocs DOCBOOKS=80211.xml
+
+This now fails:
+cp: target `.../Documentation/DocBook//media_api' is not a directory
+
+Ignore errors from that copy to make this possible again.
+
+Fixes: 4266129964b8 ("[media] DocBook: Move all media docbook stuff into its own directory")
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+Both Rand and I sent this patch almost a year ago, but it didn't stick.
+Can somebody please take it? :-)
 
 Thanks,
-Maxime
+johannes
+---
+ Documentation/DocBook/media/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> [...]
->
+diff --git a/Documentation/DocBook/media/Makefile b/Documentation/DocBook/media/Makefile
+index f9fd615427fb..1d27f0a1abd1 100644
+--- a/Documentation/DocBook/media/Makefile
++++ b/Documentation/DocBook/media/Makefile
+@@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
+ #
+ 
+ install_media_images = \
+-	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
++	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
+ 
+ $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
+ 	$(Q)base64 -d $< >$@
+-- 
+2.0.0.rc0
+
