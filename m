@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaETUJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:09:47 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43359 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaETUJo (ORCPT
+	id S1751696AbaETUJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:09:59 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:62238 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaETUJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:09:44 -0400
-Date: Tue, 20 May 2014 16:08:03 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: mix all saved registers into entropy pool
-Message-ID: <20140520200803.GA22308@logfs.org>
-References: <20140519211719.GA14563@logfs.org>
- <8761l0r6nc.fsf@tassilo.jf.intel.com>
+	Tue, 20 May 2014 16:09:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
+Date: Tue, 20 May 2014 22:09:48 +0200
+Message-ID: <4437236.32BrGIk46D@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140520160512.GE27830@atomide.com>
+References: <1364507176.1345.45.camel@x61.thuisdomein> <5053472.zFAHKQVpbv@wuerfel> <20140520160512.GE27830@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <8761l0r6nc.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wAdaEGixmIOjwnMh8IAh9ZSQvqhHCErhDh5xrKdymIS
+ KjoCXW7jGbziHaGHxI2Glsn7+sA9twoeIc/S/ol0AE2/dsdgUl
+ Q1Bx2x2V3rx8Cg2DXg2P4PvVDeHd0EbW2lUAhoPOPWUoz4c2pS
+ 3fzveZn4euoyz+AQRMflnJANeZKLBXaWEETRG10BVSlMHDMQfl
+ h0AF1gCZ4UBhzNuWCcu9p0EdxxYu8TBH+d+nUcbJCTZQBs+OPi
+ H7PMnptEBdFusYGZprWB+5RtC4L0MQ2IrUJeySN1l0f0QoxyoH
+ iooqLzl9KSFCCUyNW5NpfNJG8yFWZtj5CmA7P5CIbLzA5qugks
+ L7ebJtl/94RvCUWWhSYM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 05:12:07 -0700, Andi Kleen wrote:
-> Jörn Engel <joern@logfs.org> writes:
-> >
-> > An alternate high-resolution timer is the register content at the time
-> > of an interrupt. 
+On Tuesday 20 May 2014 09:05:13 Tony Lindgren wrote:
+> * Arnd Bergmann <arnd@arndb.de> [140519 04:27]:
+> > On Saturday 17 May 2014 10:56:02 Catalin Marinas wrote:
+> > 
+> > For the case of ARM710T, I think the last remaining user that can be
+> > configured is mach-integrator, but I don't know if anybody even has that
+> > CPU tile, or wants to keep using it. If Russell and Linus as the only
+> > people that have cared about Integrator in the past years want to
+> > cut down the number of supported CPUs, that would be a different matter:
+> > quite a number of CPUs are not supported in any other platform.
+> > Note that the integrator target in qemu does not support any ARM7, only
+> > StrongARM, ARM9 or later. I also double-checked about mach-clps711x,
+> > but I'm pretty sure those SoCs are all either ARM710a (no longer supported)
+> > or ARM720T (quite active).
 > 
-> So if you interrupt a cryptographic function you may hash in parts
-> of the key?
+> Hmm I don't think mach-integrator is using ARM710T?
 
-Yes.  And if there was an efficient way to deduce random generator
-inputs, that would be a new side channel attack.  An efficient way to
-deduce random generator inputs would allow many other attacks as well.
-I don't know of such an attack nor can I conceive it being possible
-under normal circumstances.
+I don't know, we don't have a separate Kconfig option, so ARM710T and ARM720T
+use the same CONFIG_CPU_ARM720T symbol that can be enabled for integrator.
+Without any further information, I assumed that both might potentially be used.
 
-There are of course two exceptions.  If the attacker can read
-arbitrary kernel memory - and therefore could read the private key
-directly.  And if there is so little entropy that an attacker can
-enumerate all possible states of the random generator and read enough
-random numbers to exclude most of those states.
+> The ARM710T was done by NEC and was used by the Psion MX hardware.
+> It's very close to ARM720T as far as I remember so might as well keep
+> the CPU support for it as that's just a few lines of code in the
+> mainline kernel.
+> 
+> I don't think we have any mach directories using ARM710T, but I
+> would not be surprised if somebody comes along with device tree
+> based booting patches for Psion MX at some point.
 
-The second case also allows for many more interesting attacks and is
-exactly the sort of hole I want to plug with this patch.
+Of course, if someone does this, the CPU support would be the least
+of their work ;-)
 
-I think leaking of private keys or similar information is not a
-concern.  But please prove me wrong.  Better you now than someone else
-later.
+Just out of curiosity: was that NEC 710T a SoC that replaced the
+CL/PS7110, or a standalone CPU that Psion combined with a custom
+ASIC?
 
-Jörn
-
---
-When in doubt, punt.  When somebody actually complains, go back and fix it...
-The 90% solution is a good thing.
--- Rob Landley
+	Arnd
