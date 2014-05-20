@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaETHzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 03:55:20 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:41625 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750699AbaETHzR (ORCPT
+	id S1752017AbaETH4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 03:56:14 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:51018 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750747AbaETH4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 03:55:17 -0400
-Message-ID: <537B0A15.409@st.com>
-Date: Tue, 20 May 2014 09:53:57 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Olof Johansson <olof@lixom.net>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>
-Subject: Re: [PATCH v4 6/6] ARM: dts: STiH407: Add B2120 board support
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com> <1394614210-15698-7-git-send-email-maxime.coquelin@st.com> <CAOesGMg5Jk_XB3zdfKz8VxRObYbFO8OMuRyo7Ba-kavANbci1w@mail.gmail.com> <20140520072048.GC20874@lee--X1> <CAOesGMioLwX3jgGEsR=rHV0u6yR54b4x8BfyZ91vjJnMapUHew@mail.gmail.com> <20140520074353.GD20874@lee--X1>
-In-Reply-To: <20140520074353.GD20874@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 20 May 2014 03:56:13 -0400
+Message-ID: <1400572571.4912.7.camel@x220>
+Subject: [PATCH] m68k: remove check for CONFIG_BSEIP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 May 2014 09:56:11 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-19_03:2014-05-19,2014-05-19,1970-01-01 signatures=0
+X-OriginalArrivalTime: 20 May 2014 07:56:12.0161 (UTC) FILETIME=[F7B3C710:01CF7400]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There used to be a Kconfig symbol BSEIP. It was PPC specific and was
+removed in v2.6.27. So the check for CONFIG_BSEIP can be removed. This
+means a few defines will be removed. None of the macros involved are
+used, so no one should care.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-On 05/20/2014 09:43 AM, Lee Jones wrote:
->>>>> +       soc {
->>>>> +               sbc_serial0: serial@9530000 {
->>>>> +                       status = "okay";
->>>>> +               };
->>>>
->>>> You might want to consider reference-based syntax here instead, so you
->>>> don't have to mimic the hierarchy. That'd be (at the root level of the
->>>> file, below this secion:
->>>>
->>>> &sbc_serial0: {
->>>>          status = "okay";
->>>> };
->>>
->>> I'm personally not keen on this scheme.  It's sometimes helpful to know
->>> the hierarchy and I don't think it's a large overhead to format the
->>> subordinate DTS files in this way.
->>>
->>> Please consider not enforcing this.
->>
->> Definitely not enforcing it, and I didn't use to like it either but it
->> has some real upsides.
->>
->> In particular, it saves a lot of grief when you're changing something
->> like the unit-id of a node in .dtsi and forget to do the same update
->> in the dts.
->
-> I'm not entirely sure what a unit-id is, but I can see that there
-> would be benefits to using the referenced-based syntax as you call
-> it.  If any of those benefits hold true here I won't push back, but I
-> would personally like to see us default to the hierarchical scheme.
+ arch/m68k/include/asm/commproc.h | 22 ----------------------
+ 1 file changed, 22 deletions(-)
 
+diff --git a/arch/m68k/include/asm/commproc.h b/arch/m68k/include/asm/commproc.h
+index 66a36bd51aa1..c67e09279ea9 100644
+--- a/arch/m68k/include/asm/commproc.h
++++ b/arch/m68k/include/asm/commproc.h
+@@ -480,28 +480,6 @@ typedef struct scc_enet {
+ #define SICR_ENET_CLKRT	((uint)0x0000003d)
+ #endif
+ 
+-#ifdef CONFIG_BSEIP
+-/* This ENET stuff is for the MPC823 with ethernet on SCC2.
+- * This is unique to the BSE ip-Engine board.
+- */
+-#define PA_ENET_RXD	((ushort)0x0004)
+-#define PA_ENET_TXD	((ushort)0x0008)
+-#define PA_ENET_TCLK	((ushort)0x0100)
+-#define PA_ENET_RCLK	((ushort)0x0200)
+-#define PB_ENET_TENA	((uint)0x00002000)
+-#define PC_ENET_CLSN	((ushort)0x0040)
+-#define PC_ENET_RENA	((ushort)0x0080)
+-
+-/* BSE uses port B and C bits for PHY control also.
+-*/
+-#define PB_BSE_POWERUP	((uint)0x00000004)
+-#define PB_BSE_FDXDIS	((uint)0x00008000)
+-#define PC_BSE_LOOPBACK	((ushort)0x0800)
+-
+-#define SICR_ENET_MASK	((uint)0x0000ff00)
+-#define SICR_ENET_CLKRT	((uint)0x00002c00)
+-#endif
+-
+ /* SCC Event register as used by Ethernet.
+ */
+ #define SCCE_ENET_GRA	((ushort)0x0080)	/* Graceful stop complete */
+-- 
+1.9.0
 
-+1, I would prefer to keep the hierarchical scheme.
