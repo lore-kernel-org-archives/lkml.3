@@ -1,184 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaETLap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 07:30:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51000 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaETLan (ORCPT
+	id S1752991AbaETLbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 07:31:34 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46577 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaETLbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 07:30:43 -0400
-Date: Tue, 20 May 2014 13:29:33 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: Re: [PATCH v4 3/5] xen: Put EFI machinery in place
-Message-ID: <20140520112933.GF3529@olila.local.net-space.pl>
-References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
- <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
- <537B2494.2080702@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537B2494.2080702@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 20 May 2014 07:31:33 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
+Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v8_1] ftrace: make CALLER_ADDRx macros more generic
+Date: Tue, 20 May 2014 20:31:04 +0900
+Message-Id: <1400585464-30333-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
+References: <1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 10:47:00AM +0100, David Vrabel wrote:
-> On 16/05/14 21:41, Daniel Kiper wrote:
-> > Put EFI machinery for Xen in place.
->
-> Put what machinery to do what?
->
-> > @@ -1714,6 +1725,21 @@ asmlinkage __visible void __init xen_start_kernel(void)
-> >
-> >  	xen_setup_runstate_info(0);
-> >
-> > +	efi_systab_xen = xen_efi_probe();
-> > +
-> > +	if (efi_systab_xen) {
-> > +		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
-> > +				sizeof(boot_params.efi_info.efi_loader_signature));
-> > +		boot_params.efi_info.efi_systab = (__u32)((__u64)efi_systab_xen);
-> > +		boot_params.efi_info.efi_systab_hi = (__u32)((__u64)efi_systab_xen >> 32);
-> > +
-> > +		x86_platform.get_wallclock = efi_get_time;
->
-> x86_platform.get_wallclock should always be xen_get_wallclock().
+Most archs with HAVE_ARCH_CALLER_ADDR have pretty much the same
+definitions of CALLER_ADDRx(n). Instead of duplicating the code for all
+the archs, define a ftrace_return_address0() and
+ftrace_return_address(n) that can be overwritten by the archs if they
+need to do something different. Instead of 7 macros in every arch, we
+now only have at most 2 (and actually only 1 as
+ftrace_return_address0() should be the same for all archs).
 
-Hmmm... Make sens... Jan, why did you replace x86_platform.get_wallclock
-with efi_get_time() in your implementation?
+The CALLER_ADDRx(n) will now be defined in linux/ftrace.h and use the
+ftrace_return_address*(n?) macros. This removes a lot of the duplicate
+code.
 
-> > +		x86_platform.set_wallclock = efi_set_rtc_mmss;
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm/include/asm/ftrace.h      |   10 +---------
+ arch/blackfin/include/asm/ftrace.h |   11 +----------
+ arch/parisc/include/asm/ftrace.h   |   10 +---------
+ arch/sh/include/asm/ftrace.h       |   10 +---------
+ arch/xtensa/include/asm/ftrace.h   |   14 ++++----------
+ include/linux/ftrace.h             |   34 ++++++++++++++++++----------------
+ 6 files changed, 26 insertions(+), 63 deletions(-)
 
-Now I am not sure even about that. As I can see Linux Kernel
-running on bare metal EFI platform directly sets RTC omitting
-efi_set_rtc_mmss(). Am I missing something? IIRC, there was
-discussion about that once. But where and when?
+diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+index f89515a..eb577f4 100644
+--- a/arch/arm/include/asm/ftrace.h
++++ b/arch/arm/include/asm/ftrace.h
+@@ -52,15 +52,7 @@ extern inline void *return_address(unsigned int level)
+ 
+ #endif
+ 
+-#define HAVE_ARCH_CALLER_ADDR
+-
+-#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#define CALLER_ADDR1 ((unsigned long)return_address(1))
+-#define CALLER_ADDR2 ((unsigned long)return_address(2))
+-#define CALLER_ADDR3 ((unsigned long)return_address(3))
+-#define CALLER_ADDR4 ((unsigned long)return_address(4))
+-#define CALLER_ADDR5 ((unsigned long)return_address(5))
+-#define CALLER_ADDR6 ((unsigned long)return_address(6))
++#define ftrace_return_addr(n) return_address(n)
+ 
+ #endif /* ifndef __ASSEMBLY__ */
+ 
+diff --git a/arch/blackfin/include/asm/ftrace.h b/arch/blackfin/include/asm/ftrace.h
+index 8a02950..2f1c3c2 100644
+--- a/arch/blackfin/include/asm/ftrace.h
++++ b/arch/blackfin/include/asm/ftrace.h
+@@ -66,16 +66,7 @@ extern inline void *return_address(unsigned int level)
+ 
+ #endif /* CONFIG_FRAME_POINTER */
+ 
+-#define HAVE_ARCH_CALLER_ADDR
+-
+-/* inline function or macro may lead to unexpected result */
+-#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#define CALLER_ADDR1 ((unsigned long)return_address(1))
+-#define CALLER_ADDR2 ((unsigned long)return_address(2))
+-#define CALLER_ADDR3 ((unsigned long)return_address(3))
+-#define CALLER_ADDR4 ((unsigned long)return_address(4))
+-#define CALLER_ADDR5 ((unsigned long)return_address(5))
+-#define CALLER_ADDR6 ((unsigned long)return_address(6))
++#define ftrace_return_address(n) return_address(n)
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+diff --git a/arch/parisc/include/asm/ftrace.h b/arch/parisc/include/asm/ftrace.h
+index 72c0faf..544ed8e 100644
+--- a/arch/parisc/include/asm/ftrace.h
++++ b/arch/parisc/include/asm/ftrace.h
+@@ -24,15 +24,7 @@ extern void return_to_handler(void);
+ 
+ extern unsigned long return_address(unsigned int);
+ 
+-#define HAVE_ARCH_CALLER_ADDR
+-
+-#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#define CALLER_ADDR1 return_address(1)
+-#define CALLER_ADDR2 return_address(2)
+-#define CALLER_ADDR3 return_address(3)
+-#define CALLER_ADDR4 return_address(4)
+-#define CALLER_ADDR5 return_address(5)
+-#define CALLER_ADDR6 return_address(6)
++#define ftrace_return_address(n) return_address(n)
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+diff --git a/arch/sh/include/asm/ftrace.h b/arch/sh/include/asm/ftrace.h
+index 13e9966..e79fb6e 100644
+--- a/arch/sh/include/asm/ftrace.h
++++ b/arch/sh/include/asm/ftrace.h
+@@ -40,15 +40,7 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ /* arch/sh/kernel/return_address.c */
+ extern void *return_address(unsigned int);
+ 
+-#define HAVE_ARCH_CALLER_ADDR
+-
+-#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#define CALLER_ADDR1 ((unsigned long)return_address(1))
+-#define CALLER_ADDR2 ((unsigned long)return_address(2))
+-#define CALLER_ADDR3 ((unsigned long)return_address(3))
+-#define CALLER_ADDR4 ((unsigned long)return_address(4))
+-#define CALLER_ADDR5 ((unsigned long)return_address(5))
+-#define CALLER_ADDR6 ((unsigned long)return_address(6))
++#define ftrace_return_address(n) return_address(n)
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+diff --git a/arch/xtensa/include/asm/ftrace.h b/arch/xtensa/include/asm/ftrace.h
+index 736b9d2..6c6d9a9 100644
+--- a/arch/xtensa/include/asm/ftrace.h
++++ b/arch/xtensa/include/asm/ftrace.h
+@@ -12,24 +12,18 @@
+ 
+ #include <asm/processor.h>
+ 
+-#define HAVE_ARCH_CALLER_ADDR
+ #ifndef __ASSEMBLY__
+-#define CALLER_ADDR0 ({ unsigned long a0, a1; \
++#define ftrace_return_address0 ({ unsigned long a0, a1; \
+ 		__asm__ __volatile__ ( \
+ 			"mov %0, a0\n" \
+ 			"mov %1, a1\n" \
+ 			: "=r"(a0), "=r"(a1)); \
+ 		MAKE_PC_FROM_RA(a0, a1); })
++
+ #ifdef CONFIG_FRAME_POINTER
+ extern unsigned long return_address(unsigned level);
+-#define CALLER_ADDR1 return_address(1)
+-#define CALLER_ADDR2 return_address(2)
+-#define CALLER_ADDR3 return_address(3)
+-#else /* CONFIG_FRAME_POINTER */
+-#define CALLER_ADDR1 (0)
+-#define CALLER_ADDR2 (0)
+-#define CALLER_ADDR3 (0)
+-#endif /* CONFIG_FRAME_POINTER */
++#define ftrace_return_address(n) return_address(n)
++#endif
+ #endif /* __ASSEMBLY__ */
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9212b01..18f1ae7 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -614,25 +614,27 @@ static inline void __ftrace_enabled_restore(int enabled)
+ #endif
+ }
+ 
+-#ifndef HAVE_ARCH_CALLER_ADDR
++/* All archs should have this, but we define it for consistency */
++#ifndef ftrace_return_address0
++# define ftrace_return_address0 __builtin_return_address(0)
++#endif
++
++/* Archs may use other ways for ADDR1 and beyond */
++#ifndef ftrace_return_address
+ # ifdef CONFIG_FRAME_POINTER
+-#  define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#  define CALLER_ADDR1 ((unsigned long)__builtin_return_address(1))
+-#  define CALLER_ADDR2 ((unsigned long)__builtin_return_address(2))
+-#  define CALLER_ADDR3 ((unsigned long)__builtin_return_address(3))
+-#  define CALLER_ADDR4 ((unsigned long)__builtin_return_address(4))
+-#  define CALLER_ADDR5 ((unsigned long)__builtin_return_address(5))
+-#  define CALLER_ADDR6 ((unsigned long)__builtin_return_address(6))
++#  define ftrace_return_address(n) __builtin_return_address(n)
+ # else
+-#  define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+-#  define CALLER_ADDR1 0UL
+-#  define CALLER_ADDR2 0UL
+-#  define CALLER_ADDR3 0UL
+-#  define CALLER_ADDR4 0UL
+-#  define CALLER_ADDR5 0UL
+-#  define CALLER_ADDR6 0UL
++#  define ftrace_return_address(n) 0UL
+ # endif
+-#endif /* ifndef HAVE_ARCH_CALLER_ADDR */
++#endif
++
++#define CALLER_ADDR0 ((unsigned long)ftrace_return_address0)
++#define CALLER_ADDR1 ((unsigned long)ftrace_return_address(1))
++#define CALLER_ADDR2 ((unsigned long)ftrace_return_address(2))
++#define CALLER_ADDR3 ((unsigned long)ftrace_return_address(3))
++#define CALLER_ADDR4 ((unsigned long)ftrace_return_address(4))
++#define CALLER_ADDR5 ((unsigned long)ftrace_return_address(5))
++#define CALLER_ADDR6 ((unsigned long)ftrace_return_address(6))
+ 
+ #ifdef CONFIG_IRQSOFF_TRACER
+   extern void time_hardirqs_on(unsigned long a0, unsigned long a1);
+-- 
+1.7.9.5
 
-Anyway, now I think that this initialization should be done
-in arch/x86/xen/time.c if needed.
-
-> > +
-> > +		set_bit(EFI_BOOT, &efi.flags);
-> > +		set_bit(EFI_64BIT, &efi.flags);
-> > +	}
-> > +
-> >  	/* Start the world */
-> >  #ifdef CONFIG_X86_32
-> >  	i386_start_kernel();
-> > --- /dev/null
-> > +++ b/drivers/xen/efi.c
-> > @@ -0,0 +1,374 @@
-> > + * Copyright (c) 2014 Daniel Kiper, Oracle Corporation
->
-> Is this really copyright by you personally and not Oracle?
-
-As I know it is correct but I will double check it.
-
->
->
-> > +#define call (op.u.efi_runtime_call)
-> > +#define DECLARE_CALL(what) \
-> > +	struct xen_platform_op op; \
-> > +	op.cmd = XENPF_efi_runtime_call; \
-> > +	call.function = XEN_EFI_##what; \
-> > +	call.misc = 0
->
-> Macros that declare local variables are awful.
->
-> Use what Andrew suggested and something like
->
-> struct xen_blah *call = &op.u.efi_runtime_call;
->
->
-> > +static const struct efi efi_xen __initconst = {
-> > +	.systab                   = NULL, /* Initialized later. */
-> > +	.runtime_version	  = 0,    /* Initialized later. */
-> > +	.mps                      = EFI_INVALID_TABLE_ADDR,
-> > +	.acpi                     = EFI_INVALID_TABLE_ADDR,
-> > +	.acpi20                   = EFI_INVALID_TABLE_ADDR,
-> > +	.smbios                   = EFI_INVALID_TABLE_ADDR,
-> > +	.sal_systab               = EFI_INVALID_TABLE_ADDR,
-> > +	.boot_info                = EFI_INVALID_TABLE_ADDR,
-> > +	.hcdp                     = EFI_INVALID_TABLE_ADDR,
-> > +	.uga                      = EFI_INVALID_TABLE_ADDR,
-> > +	.uv_systab                = EFI_INVALID_TABLE_ADDR,
-> > +	.fw_vendor                = EFI_INVALID_TABLE_ADDR,
-> > +	.runtime                  = EFI_INVALID_TABLE_ADDR,
-> > +	.config_table             = EFI_INVALID_TABLE_ADDR,
-> > +	.get_time                 = xen_efi_get_time,
-> > +	.set_time                 = xen_efi_set_time,
-> > +	.get_wakeup_time          = xen_efi_get_wakeup_time,
-> > +	.set_wakeup_time          = xen_efi_set_wakeup_time,
-> > +	.get_variable             = xen_efi_get_variable,
-> > +	.get_next_variable        = xen_efi_get_next_variable,
-> > +	.set_variable             = xen_efi_set_variable,
-> > +	.query_variable_info      = xen_efi_query_variable_info,
-> > +	.update_capsule           = xen_efi_update_capsule,
-> > +	.query_capsule_caps       = xen_efi_query_capsule_caps,
-> > +	.get_next_high_mono_count = xen_efi_get_next_high_mono_count,
-> > +	.reset_system             = NULL, /* Functionality provided by Xen. */
->
-> Xen provides functionality to reset (just maybe not via an EFI call).
-> Should an implementation be provided that does this?
-
-I do not think so. efi.reset_system() would not be called on Xen because
-all reset related stuff is replaced by Xen reset specific functions.
-Please check arch/x86/xen/enlighten.c. Additionally, I think that
-situation is a bit similar to time issue. If we are running on Xen
-then we should ask Xen to do reset because Xen controls platform
-and it knows how to do that.
-
-> > +	.set_virtual_address_map  = NULL, /* Not used under Xen. */
-> > +	.memmap                   = NULL, /* Not used under Xen. */
-> > +	.flags			  = 0     /* Initialized later. */
-> > +};
-> > +
-> > +efi_system_table_t __init *xen_efi_probe(void)
-> > +{
-> > +	struct xen_platform_op op = {
-> > +		.cmd = XENPF_firmware_info,
-> > +		.u.firmware_info = {
-> > +			.type = XEN_FW_EFI_INFO,
-> > +			.index = XEN_FW_EFI_CONFIG_TABLE
-> > +		}
-> > +	};
-> > +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
-> > +
-> > +	if (!xen_initial_domain() || HYPERVISOR_dom0_op(&op))
-> > +		return NULL;
->
-> 	if (!xen_initial_domain())
-> 		return NULL;
->
-> 	if (HYPERVISOR_dom0_op(&op) < 0)
-> 		return NULL;
-
-What is wrong with my if?
-
-> > +
-> > +	/* Here we know that Xen runs on EFI platform. */
-> > +
-> > +	efi = efi_xen;
-> > +
-> > +	op.cmd = XENPF_firmware_info;
-> > +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
-> > +	op.u.firmware_info.index = XEN_FW_EFI_VENDOR;
-> > +	info->vendor.bufsz = sizeof(vendor);
-> > +	set_xen_guest_handle(info->vendor.name, vendor);
-> > +
-> > +	if (!HYPERVISOR_dom0_op(&op)) {
->
-> if (HYPERVISOR_dom0_op(&op) == 0)
-
-Ditto?
-
-Daniel
