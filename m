@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaETJtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:49:53 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:35637 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751755AbaETJtv (ORCPT
+	id S1753345AbaETJtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:49:08 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45007 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750846AbaETJrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:49:51 -0400
-X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762969"
-Message-ID: <537B263F.3050904@cn.fujitsu.com>
-Date: Tue, 20 May 2014 17:54:07 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10 V2] workqueue: async worker destruction
-References: <20140505150514.GI11231@htj.dyndns.org> <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com> <1399877792-13046-4-git-send-email-laijs@cn.fujitsu.com> <20140512212022.GC18959@mtj.dyndns.org> <5371BC94.5080507@cn.fujitsu.com> <20140513141418.GA23710@htj.dyndns.org>
-In-Reply-To: <20140513141418.GA23710@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	Tue, 20 May 2014 05:47:55 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Olof Johansson <olof@lixom.net>, Rob Landley <rob@landley.net>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
+Cc: lee.jones@linaro.org
+Subject: [PATCH v6 1/4] ARM: dts: Sort STi boards in Makefile
+Date: Tue, 20 May 2014 11:46:29 +0200
+Message-Id: <1400579192-17620-2-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com>
+References: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-19_03:2014-05-19,2014-05-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2014 10:14 PM, Tejun Heo wrote:
-> Hello,
+The boards have to be sorted in alphanumerical order in the Makefile.
 
-> Given how other kworkers are named, maybe a better name is
-> "kworker/dying" or "kworker/detached"?
+Cc: Olof Johansson <olof@lixom.net>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ arch/arm/boot/dts/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I use "kworker/dying". the name of "attach/detach" should be hidden from userspace 
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 35c146f..6fa1343 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -336,8 +336,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
+ 	spear320-hmi.dtb
+ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
+ dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
+-	stih416-b2000.dtb \
+ 	stih415-b2020.dtb \
++	stih416-b2000.dtb \
+ 	stih416-b2020.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun4i-a10-a1000.dtb \
+-- 
+1.9.1
 
-> 
-> On Tue, May 13, 2014 at 02:32:52PM +0800, Lai Jiangshan wrote:
->>>> +	if (detach_completion)
->>>> +		complete(detach_completion);
->>>> +}
->>>
->>> Are we gonna use this function from somewhere else too?
->>
->> it is called from worker_thread().
->>
->> I don't want to unfold it into worker_thread(), it is better
->> readability when it is wrapped and it will be called in patch10
->> for rescuer.
-> 
-> Yeah, it's shared by rescuer later, so it's fine but, again, it
-> probably helps to mention that it's planned to do so; otherwise, the
-> rationale is kinda weak and what belongs to that function is rather
-> arbitrary.
-
-changelog is updated.
-
-> 
->>>>  	/*
->>>>  	 * Become the manager and destroy all workers.  Grabbing
->>>> -	 * manager_arb prevents @pool's workers from blocking on
->>>> -	 * manager_mutex.
->>>> +	 * manager_arb ensures manage_workers() finish and enter idle.
->>>
->>> I don't follow what the above comment update is trying to say.
->>
->> If a pool is destroying, the worker will not call manage_workers().
->> but the existing manage_workers() may be still running.
->>
->> mutex_lock(&manager_arb) in put_unbound_pool() should wait this manage_workers()
->> finished due to the manager-worker (non-idle-worker) can't be destroyed.
-> 
-> Hmmm... I think it'd be better to spell it out then.  The single
-> sentence is kinda cryptic especially because the two verbs in the
-> sentence don't have the same subject (managee_workers() can't enter
-> idle).
-> 
-
-All your comments in this patchset are handled except this one.
-modifying to this comments is not necessarily in this patchset, so I just
-remove this it. Your original comments in the code is OK for me.
-
-Thanks,
-Lai
