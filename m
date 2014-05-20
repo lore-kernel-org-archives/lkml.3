@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaETSjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:39:15 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:49819 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaETSjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754030AbaETSjN (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 20 May 2014 14:39:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <537B9EA6.3030103@zytor.com>
-References: <cover.1400538962.git.luto@amacapital.net> <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
- <20140520172134.GJ2185@moon> <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com>
- <20140520174759.GK2185@moon> <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com>
- <20140520180104.GL2185@moon> <537B9C6D.7010705@zytor.com> <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
- <537B9EA6.3030103@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 May 2014 11:38:52 -0700
-Message-ID: <CALCETrVbdWSxgSjNnmqjtDLYKpiah09VUGA56_abrPwUC6q=mA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix x86
- vdso naming
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, X86 ML <x86@kernel.org>,
+Received: from mail-la0-f48.google.com ([209.85.215.48]:35181 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaETSjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 14:39:10 -0400
+Date: Tue, 20 May 2014 22:39:07 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Sasha Levin <sasha.levin@oracle.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix x86
+ vdso naming
+Message-ID: <20140520183907.GM2185@moon>
+References: <cover.1400538962.git.luto@amacapital.net>
+ <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
+ <20140520172134.GJ2185@moon>
+ <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com>
+ <20140520174759.GK2185@moon>
+ <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com>
+ <20140520180104.GL2185@moon>
+ <537B9C6D.7010705@zytor.com>
+ <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/20/2014 11:24 AM, Andy Lutomirski wrote:
->> On Tue, May 20, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 05/20/2014 11:01 AM, Cyrill Gorcunov wrote:
->>>>>
->>>>> This patch should fix this issue, at least.  If there's still a way to
->>>>> get a native vdso that doesn't say "[vdso]", please let me know/
->>>>
->>>> Yes, having a native procfs way to detect vdso is much preferred!
->>>>
->>>
->>> Is there any path by which we can end up with [vdso] without a leading
->>> slash in /proc/self/maps?  Otherwise, why is that not "native"?
->>
->> Dunno.  But before this patch the reverse was possible: we can end up
->> with a vdso that doesn't say [vdso].
->>
->
-> That's a bug, which is being fixed.  We can't go back in time and create
-> new interfaces on old kernels.
->
->>>
->>>>>>   The situation get worse when task was dumped on one kernel and
->>>>>> then restored on another kernel where vdso content is different
->>>>>> from one save in image -- is such case as I mentioned we need
->>>>>> that named vdso proxy which redirect calls to vdso of the system
->>>>>> where task is restoring. And when such "restored" task get checkpointed
->>>>>> second time we don't dump new living vdso but save only old vdso
->>>>>> proxy on disk (detecting it is a different story, in short we
->>>>>> inject a unique mark into elf header).
->>>>>
->>>>> Yuck.  But I don't know whether the kernel can help much here.
->>>>
->>>> Some prctl which would tell kernel to put vdso at specifed address.
->>>> We can live without it for now so not a big deal (yet ;)
->>>
->>> mremap() will do this for you.
->>
->> Except that it's buggy: it doesn't change mm->context.vdso.  For
->> 64-bit tasks, the only consumer outside exec was arch_vma_name, and
->> this patch removes even that.  For 32-bit tasks, though, it's needed
->> for signal delivery.
->>
->
-> Again, a bug, let's fix it rather than saying we need a new interface.
+On Tue, May 20, 2014 at 11:24:56AM -0700, Andy Lutomirski wrote:
+> On Tue, May 20, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 05/20/2014 11:01 AM, Cyrill Gorcunov wrote:
+> >>>
+> >>> This patch should fix this issue, at least.  If there's still a way to
+> >>> get a native vdso that doesn't say "[vdso]", please let me know/
+> >>
+> >> Yes, having a native procfs way to detect vdso is much preferred!
+> >>
+> >
+> > Is there any path by which we can end up with [vdso] without a leading
+> > slash in /proc/self/maps?  Otherwise, why is that not "native"?
+> 
+> Dunno.  But before this patch the reverse was possible: we can end up
+> with a vdso that doesn't say [vdso].
 
-What happens if someone remaps just part of the vdso?
+I fear I don't understand the phrase "leading slash in /proc/self/maps".
+Peter could you rephrase please?
 
-Presumably we'd just track the position of the first page of the vdso,
-but this might be hard to implement: I don't think there's any
-callback from the core mm code for ths.
+> >>>>   The situation get worse when task was dumped on one kernel and
+> >>>> then restored on another kernel where vdso content is different
+> >>>> from one save in image -- is such case as I mentioned we need
+> >>>> that named vdso proxy which redirect calls to vdso of the system
+> >>>> where task is restoring. And when such "restored" task get checkpointed
+> >>>> second time we don't dump new living vdso but save only old vdso
+> >>>> proxy on disk (detecting it is a different story, in short we
+> >>>> inject a unique mark into elf header).
+> >>>
+> >>> Yuck.  But I don't know whether the kernel can help much here.
+> >>
+> >> Some prctl which would tell kernel to put vdso at specifed address.
+> >> We can live without it for now so not a big deal (yet ;)
+> >
+> > mremap() will do this for you.
+> 
+> Except that it's buggy: it doesn't change mm->context.vdso.  For
+> 64-bit tasks, the only consumer outside exec was arch_vma_name, and
+> this patch removes even that.  For 32-bit tasks, though, it's needed
+> for signal delivery.
 
---Andy
+yes, fwiw we can deal with it currently but i'm not sure yet about
+compat case simply because didn't look presicely.
