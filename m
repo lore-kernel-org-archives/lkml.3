@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158AbaETVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:03:59 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:65294 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaETVD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:03:57 -0400
-Date: Tue, 20 May 2014 15:03:53 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, nic_swsd@realtek.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: quirk RTL8110SC INTx masking
-Message-ID: <20140520210353.GB22821@google.com>
-References: <20140501203525.27822.98248.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501203525.27822.98248.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751292AbaETVEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:04:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27522 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841AbaETVEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 17:04:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,876,1392192000"; 
+   d="scan'208";a="543836854"
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1400619550.2970.274.camel@schen9-DESK>
+References: <1400617046.2970.270.camel@schen9-DESK>
+	 <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+	 <1400619550.2970.274.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 May 2014 14:04:38 -0700
+Message-ID: <1400619878.2970.276.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 02:36:31PM -0600, Alex Williamson wrote:
-> INTx masking does not work on this device.  To see this, configure
-> the network device UP on an active network, note that the interrupt
-> count continues to increment for the device in /proc/interrupts.  Use
-> setpci to set the PCI_COMMAND_INTX_DISABLE bit in the PCI_COMMAND
-> register.  As expected, the interrupt count ceases to increment.
-> However, reading the PCI_STATUS_INTERRUPT bit of the PCI_STATUS
-> register does not indicate that interrupts are pending and clearing
-> PCI_COMMAND_INTX_DISABLE in the PCI_COMMAND register does not allow
-> the device to continue operation.
+On Tue, 2014-05-20 at 13:59 -0700, Tim Chen wrote:
+> On Tue, 2014-05-20 at 13:51 -0700, Jason Low wrote:
+> > On Tue, May 20, 2014 at 1:17 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > 
+> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > > index 9b4c4f3..97132db 100644
+> > > --- a/kernel/sched/fair.c
+> > > +++ b/kernel/sched/fair.c
+> > > @@ -6764,12 +6764,17 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+> > >
+> > >                 rq = cpu_rq(balance_cpu);
+> > >
+> > > -               raw_spin_lock_irq(&rq->lock);
+> > > -               update_rq_clock(rq);
+> > > -               update_idle_cpu_load(rq);
+> > > -               raw_spin_unlock_irq(&rq->lock);
+> > > -
+> > > -               rebalance_domains(rq, CPU_IDLE);
+> > > +               /*
+> > > +                * If time for next balance is due,
+> > > +                * do the balance.
+> > > +                */
+> > > +               if (time_after(jiffies + 1, rq->next_balance)) {
+> > 
+> > Hi Tim,
+> > 
+> > If we want to do idle load balancing only when it is due for a
+> > balance, shouldn't the above just be "if (time_after(jiffies,
+> > rq->next_balance))"?
 > 
-> This does not affect operation of the host r8169 driver, but it does
-> prevent the device from being functional when assigned to a VM, such
-> as with QEMU and VFIO.  The guest driver successfully probes the
-> device, but there is no traffic.  Mark INTx masking as broken,
-> allowing the more restrictive APIC masking to be used instead.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> If rq->next_balance and jiffies are equal, then
+> time_after(jiffies, rq->next_balance) check will be false and
+> you will not do balance.  But actually you want to balance
+> for this case so the jiffies+1 was used.
 
-Applied to pci/virtualization for v3.16, thanks.
+So maybe I should switch the check to 
+if (time_before(rq->next_balance, jiffies))
 
-> ---
->  drivers/pci/quirks.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index ea55b0f..e15a5da 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2991,6 +2991,14 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_CHELSIO, 0x0030,
->  			 quirk_broken_intx_masking);
->  DECLARE_PCI_FIXUP_HEADER(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
->  			 quirk_broken_intx_masking);
-> +/*
-> + * Realtek RTL8169 PCI Gigabit Ethernet Controller (rev 10)
-> + * Subsystem: Realtek RTL8169/8110 Family PCI Gigabit Ethernet NIC
-> + *
-> + * RTL8110SC - Fails under PCI device assignment using DisINTx masking.
-> + */
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_REALTEK, 0x8169,
-> +			 quirk_broken_intx_masking);
->  
->  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
->  			  struct pci_fixup *end)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Tim
+
+
