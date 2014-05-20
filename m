@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaETRdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:33:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37528 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704AbaETRda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:33:30 -0400
-Date: Tue, 20 May 2014 19:33:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, ak@linux.intel.com, ying.huang@intel.com,
-        seto.hidetoshi@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
- to Per-CPU rather than only monarch CPU
-Message-ID: <20140520173308.GE16428@pd.tnic>
-References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+	id S1754203AbaETRgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:36:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34348 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaETRgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:36:03 -0400
+Message-ID: <537B927F.4070504@wwwdotorg.org>
+Date: Tue, 20 May 2014 11:35:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Doug Anderson <dianders@chromium.org>, wsa@the-dreams.de,
+        abrestic@chromium.org, dgreid@chromium.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 6/7] i2c: ChromeOS EC tunnel driver
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org> <1398879850-9111-7-git-send-email-dianders@chromium.org> <20140520084702.GG24991@lee--X1>
+In-Reply-To: <20140520084702.GG24991@lee--X1>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 10:11:25AM +0800, Chen Yucong wrote:
-> mces_seen is a Per-CPU variable which should only be accessed by
-> Per-CPU as possible. So the clear operation of mces_seen should also
-> be lcoal to Per-CPU rather than monarch CPU.
->
-> Meanwhile, there is also a potential risk that mces_seen will not
-> be be cleared if a timeout occors in mce_end for monarch CPU. As a
-> reuslt, the stale value of mces_seen will reappear on the next mce.
+On 05/20/2014 02:47 AM, Lee Jones wrote:
+> On Wed, 30 Apr 2014, Doug Anderson wrote:
+> 
+>> On ARM Chromebooks we have a few devices that are accessed by both the
+>> AP (the main "Application Processor") and the EC (the Embedded
+>> Controller).  These are:
+>> * The battery (sbs-battery).
+>> * The power management unit tps65090.
+>>
+>> On the original Samsung ARM Chromebook these devices were on an I2C
+>> bus that was shared between the AP and the EC and arbitrated using
+>> some extranal GPIOs (see i2c-arb-gpio-challenge).
+...
+> Applied, thanks.
 
-I don't know how many times I have to tell you this already: if we reach
-the timeout, we have a much bigger friggin' problem!
-
-What you could do instead is make the machine panic in the tolerant==1,
-i.e., the default case, in mce_timed_out().
-
-Basically, in the case any core is stuck and we reach a timeout, we want
-to panic the whole box immediately. There's a very little chance we can
-recover so panic is the only sane thing left to do.
-
-Ok?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Was the branch pushed too? I can't see these patches at
+git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git for-mfd-next
+(or master or for-mfd-fixes)
