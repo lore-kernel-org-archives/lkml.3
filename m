@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaETQTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:19:55 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:58638 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534AbaETQTy (ORCPT
+	id S1754085AbaETQVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:21:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54746 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaETQVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:19:54 -0400
-Date: Tue, 20 May 2014 17:19:48 +0100
+	Tue, 20 May 2014 12:21:24 -0400
+Date: Tue, 20 May 2014 17:21:19 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Robert Baldyga <r.baldyga@samsung.com>
 Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
         k.kozlowski@samsung.com
-Subject: Re: [PATCH v4 1/3] mfd: max8997: use regmap to access registers
-Message-ID: <20140520161948.GE32025@lee--X1>
+Subject: Re: [PATCH v4 2/3] mfd: max8997: handle IRQs using regmap
+Message-ID: <20140520162119.GA32496@lee--X1>
 References: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
- <1398693358-28336-2-git-send-email-r.baldyga@samsung.com>
- <20140520161902.GD32025@lee--X1>
+ <1398693358-28336-3-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140520161902.GD32025@lee--X1>
+In-Reply-To: <1398693358-28336-3-git-send-email-r.baldyga@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014, Lee Jones wrote:
+On Mon, 28 Apr 2014, Robert Baldyga wrote:
 
-> > This patch modifies max8997 driver and each associated function driver,
-> > to use regmap instead of operating directly on i2c bus. It will allow to
-> > simplify IRQ handling using regmap-irq.
-> > 
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> > Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > 
-> > [For extcon part]
-> > Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > 
-> > [For leds part]
-> > Acked-by: Bryan Wu <cooloney@gmail.com>
-> > ---
-> >  drivers/extcon/extcon-max8997.c     |  31 ++++----
-> >  drivers/input/misc/max8997_haptic.c |  34 +++++----
-> >  drivers/leds/leds-max8997.c         |  13 ++--
-> >  drivers/mfd/Kconfig                 |   1 +
-> >  drivers/mfd/max8997-irq.c           |  64 +++++++---------
-> >  drivers/mfd/max8997.c               | 141 ++++++++++++++++-------------------
+> This patch modifies mfd driver to use regmap for handling interrupts.
+> It allows to simplify irq handling process. This modifications needed
+> to make small changes in function drivers, which use interrupts.
 > 
-> Looks to be doing the right things and the diff looks good.
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > 
-> For the MFD part:
->   Acked-by: Lee Jones <lee.jones@linaro.org>
+> [For extcon part]
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/extcon/extcon-max8997.c     |   3 +-
+>  drivers/mfd/Kconfig                 |   2 +-
+>  drivers/mfd/Makefile                |   2 +-
+>  drivers/mfd/max8997-irq.c           | 373 -----------------------------------
+>  drivers/mfd/max8997.c               | 112 ++++++++++-
 
-I should add that I'd like this to go through the MFD tree.
+For the MFD changes:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-I can supply the other maintainers with a pull-request as required.
-
-> >  drivers/power/max8997_charger.c     |  33 +++++----
-> >  drivers/regulator/max8997.c         |  87 +++++++++++-----------
-> >  drivers/rtc/rtc-max8997.c           |  56 +++++++-------
-> >  include/linux/mfd/max8997-private.h |  17 ++---
-> >  10 files changed, 228 insertions(+), 249 deletions(-)
-> 
+>  drivers/rtc/rtc-max8997.c           |   2 +-
+>  include/linux/mfd/max8997-private.h |  63 +++++-
+>  7 files changed, 165 insertions(+), 392 deletions(-)
+>  delete mode 100644 drivers/mfd/max8997-irq.c
 
 -- 
 Lee Jones
