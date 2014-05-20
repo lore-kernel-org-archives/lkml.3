@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaETT07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:26:59 -0400
-Received: from smtprelay0068.hostedemail.com ([216.40.44.68]:45938 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750766AbaETT05 (ORCPT
+	id S1753893AbaETT3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:29:12 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:59063 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaETT3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:26:57 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:3870:3872:3873:3874:4321:5007:7652:7875:9121:10004:10400:10848:11232:11658:11914:12043:12262:12438:12517:12519:12555:12679:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rifle18_22fbfb016d4a
-X-Filterd-Recvd-Size: 2064
-Message-ID: <1400614013.26709.29.camel@joe-AO725>
-Subject: Re: [PATCH 4/5] appledisplay: Convert /n to \n
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 May 2014 12:26:53 -0700
-In-Reply-To: <9bbe7dc36e6b609512f166e10b6b99a706fbbd11.1398390579.git.joe@perches.com>
-References: <cover.1398390579.git.joe@perches.com>
-	 <9bbe7dc36e6b609512f166e10b6b99a706fbbd11.1398390579.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 15:29:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com, galak@codeaurora.org,
+        grant.likely@linaro.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        grygorii.strashko@ti.com, olof@lixom.net, w-kwok2@ti.com,
+        sboyd@codeaurora.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch v3 0/5] Introduce keystone reset driver
+Date: Tue, 20 May 2014 21:27:48 +0200
+Message-ID: <10992709.10WgsOixXr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <537BA06B.5060200@ti.com>
+References: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com> <537B5D5D.8030106@ti.com> <537BA06B.5060200@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wtN+1jjlk7DXKm2TmoKmEIXdhtK2LuescadjXPxfWtf
+ cMU+eEFJuLMo1HlDdVEasPD0O3RT0J/UCAGTBfLtpgA9G5Z6j+
+ hLXhI1U7U5hFyzUmbRYi3y233e7FDUGcMWsqZW5t/nhP2w9ub2
+ EPH0iH2tDkHdqbWCoZGryFk42YbvJoFuGHMEn9ZLpHaY0r1nfZ
+ kSUxS9+M/DJ4uxWuh5tJd4qDQh0ubDdeorRhzqeYp+XeNVQBHr
+ biQBYN0DNk48JHzJBCvgm2088pHJ7Y56F0m5zr2uzw/TyEOO/x
+ Lq20VI/5PiDWIgElXZFUE4uXzpV0bOfC4q1c+kIJ+oEpAAEvPC
+ Qb9LYofqVLTQYQ0692fI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 18:51 -0700, Joe Perches wrote:
-> Use a newline character appropriately.
+On Tuesday 20 May 2014 21:35:23 Ivan Khoronzhuk wrote:
+> Thank for the note.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-
-Greg?  Ping?
-
-You inadvertently added this "/n" use in
-commit 0a3fd536e685e0ceb646de1a43821bd11c0be75c
-Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date:   Tue May 1 21:33:54 2012 -0700
-
-    USB: appledisplay.c: remove dbg() usage
-    
-    dbg() was a very old USB-specific macro that should no longer
-    be used. This patch removes it from being used in the driver
-    and uses dev_dbg() instead.
-
->  drivers/usb/misc/appledisplay.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Ok.
 > 
-> diff --git a/drivers/usb/misc/appledisplay.c b/drivers/usb/misc/appledisplay.c
-> index ba6a5d6..f37c78d 100644
-> --- a/drivers/usb/misc/appledisplay.c
-> +++ b/drivers/usb/misc/appledisplay.c
-> @@ -110,7 +110,7 @@ static void appledisplay_complete(struct urb *urb)
->  			__func__, status);
->  		return;
->  	default:
-> -		dev_dbg(dev, "%s - nonzero urb status received: %d/n",
-> +		dev_dbg(dev, "%s - nonzero urb status received: %d\n",
->  			__func__, status);
->  		goto exit;
->  	}
+> Memory map:
+> [00 02310000 - 00 023101FF] size=512 PLL Controller
+> [00 02620000 - 00 02620FFF] size=4K device state control registers
+> 
+> I'll define in DT two new syscon compatible nodes like:
+> 
+>          pllctrl: pll_controller {
+>              compatible = "syscon";
+>              reg = <0x2310000 0x200>;
+>          };
+> 
+>          devctrl: device_state_control {
+>              compatible = "syscon";
+>              reg = <0x2620000 0x1000>;
+>          };
 
+Please add a well-defined compatible-string in addition to "syscon" as
+well.
 
+> then correct reset-controller node like:
+> 
+>          rstctrl: reset-controller {
+>              compatible = "ti,keystone-reset";
+>              reg = <0xE4 0x10>, <0x328 0x10>;
+>              reg-names = "pllregs", "muxregs";
+>              syscon1 = <&pllctrl>;
+>              syscon2 = <&devctrl>;
+>              ti,wdt_list = <0>;
+>          };
 
+You can't really use the "reg" property to refer to syscon
+registers, but you can make up your own property for that,
+or put the register numbers into the syscon1/2 properties,
+or just hardcode the offsets in the driver.
+
+> And correct reset-controller code to get regmap by phandle,
+> then access registers by regmap.
+> 
+> Also I'll post two separate patches that add syscon nodes in question.
+
+Sounds good, thanks!
+
+	Arnd
