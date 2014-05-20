@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507AbaETMxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:53:53 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:58938 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaETMwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:52:42 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
-        devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/5] clk: bcm281xx: add an initialized flag
-Date: Tue, 20 May 2014 07:52:38 -0500
-Message-Id: <1400590362-11177-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400590362-11177-1-git-send-email-elder@linaro.org>
-References: <1400590362-11177-1-git-send-email-elder@linaro.org>
+	id S1751974AbaETM7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:59:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23694 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaETM7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 08:59:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,874,1392192000"; 
+   d="scan'208";a="542072720"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [Patch V3 1/5] ACPICA: Export acpi_buffer_to_resource symbol
+Date: Tue, 20 May 2014 20:59:20 +0800
+Message-Id: <1400590764-11108-2-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a flag that tracks whether a clock has already been initialized.
-This will be used by the next patch to avoid initializing a clock
-more than once when it's listed as a prerequisite.
+The acpi_buffer_to_resource is needed in i2c module
+to convert aml buffer to struct acpi_resource
 
-Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- drivers/clk/bcm/clk-kona.c | 17 +++++++++++++++--
- drivers/clk/bcm/clk-kona.h |  7 +++++++
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/rscreate.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index d603c4e..d8a7f38 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -27,6 +27,9 @@
- #define CCU_ACCESS_PASSWORD      0xA5A500
- #define CLK_GATE_DELAY_LOOP      2000
+diff --git a/drivers/acpi/acpica/rscreate.c b/drivers/acpi/acpica/rscreate.c
+index 75d3690..5828649 100644
+--- a/drivers/acpi/acpica/rscreate.c
++++ b/drivers/acpi/acpica/rscreate.c
+@@ -112,6 +112,7 @@ acpi_buffer_to_resource(u8 *aml_buffer,
  
-+#define clk_is_initialized(_clk)	FLAG_TEST((_clk), KONA, INITIALIZED)
-+#define clk_set_initialized(_clk)	FLAG_SET((_clk), KONA, INITIALIZED)
-+
- /* Bitfield operations */
- 
- /* Produces a mask of set bits covering a range of a 32-bit value */
-@@ -1194,13 +1197,23 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
- 
- static bool __kona_clk_init(struct kona_clk *bcm_clk)
- {
-+	bool ret;
-+
-+	if (clk_is_initialized(bcm_clk))
-+		return true;
-+
- 	switch (bcm_clk->type) {
- 	case bcm_clk_peri:
--		return __peri_clk_init(bcm_clk);
-+		ret = __peri_clk_init(bcm_clk);
-+		break;
- 	default:
-+		ret = false;
- 		BUG();
- 	}
--	return -EINVAL;
-+	if (ret)
-+		clk_set_initialized(bcm_clk);
-+
-+	return ret;
+ 	return (status);
  }
++ACPI_EXPORT_SYMBOL(acpi_buffer_to_resource);
  
- /* Set a CCU and all its clocks into their desired initial state */
-diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-index 2537b30..10e238d 100644
---- a/drivers/clk/bcm/clk-kona.h
-+++ b/drivers/clk/bcm/clk-kona.h
-@@ -406,6 +406,7 @@ struct kona_clk {
- 	struct clk_init_data init_data;	/* includes name of this clock */
- 	struct ccu_data *ccu;	/* ccu this clock is associated with */
- 	enum bcm_clk_type type;
-+	u32 flags;		/* BCM_CLK_KONA_FLAGS_* below */
- 	union {
- 		void *data;
- 		struct peri_clk_data *peri;
-@@ -414,6 +415,12 @@ struct kona_clk {
- #define to_kona_clk(_hw) \
- 	container_of(_hw, struct kona_clk, hw)
- 
-+/*
-+ * Kona clock flags:
-+ *   INITIALIZED	clock has been initialized already
-+ */
-+#define BCM_CLK_KONA_FLAGS_INITIALIZED	((u32)1 << 0)	/* Clock initialized */
-+
- /* Initialization macro for an entry in a CCU's kona_clks[] array. */
- #define KONA_CLK(_ccu_name, _clk_name, _type)				\
- 	{								\
+ /*******************************************************************************
+  *
 -- 
-1.9.1
+1.8.3.1
 
