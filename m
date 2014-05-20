@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaETOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:47:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808AbaETOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:47:07 -0400
-Date: Tue, 20 May 2014 16:47:05 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jamie Lentin <jm@lentin.co.uk>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: Add custom driver for Lenovo ThinkPad Compact
- Bluetooth Keyboard
-In-Reply-To: <1395786407-11273-1-git-send-email-jm@lentin.co.uk>
-Message-ID: <alpine.LNX.2.00.1405201644230.1615@pobox.suse.cz>
-References: <1395786407-11273-1-git-send-email-jm@lentin.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753587AbaETOsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:48:05 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59077 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163AbaETOsD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:48:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX192I1OqUFkEYUnCXjcCzAdmlIgIpctY6zQ=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 80F9F57AFC4
+Date: Tue, 20 May 2014 10:47:57 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jake Edge <jake@lwn.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Anton Saraev <antonysaraev@gmail.com>
+Subject: Re: [PATCH 0/3] staging/skein: more cleanup
+Message-ID: <20140520144757.GA8664@titan.lakedaemon.net>
+References: <20140520075612.220a13ae@chukar.edge2.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520075612.220a13ae@chukar.edge2.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar 2014, Jamie Lentin wrote:
+Jake,
 
-> This keyboard requires some custom mappings for all keys to be
-> available, and the Fn-lock toggle needs to be controlled in software.
+On Tue, May 20, 2014 at 07:56:12AM -0600, Jake Edge wrote:
 > 
-> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
-> ---
-> I assume that Linux users want Fn-Lock enabled by default, so they can
-> get at the function keys. If this is an incorrect assumption then can
-> change it---so long as there's some way of me leaving it enabled :)
-> 
-> Tested with and applies cleanly to 3.13.6.
-> 
->  drivers/hid/Kconfig                   |  10 ++
->  drivers/hid/Makefile                  |   1 +
->  drivers/hid/hid-core.c                |   3 +
->  drivers/hid/hid-ids.h                 |   1 +
->  drivers/hid/hid-lenovo-tpcompactkbd.c | 191 ++++++++++++++++++++++++++++++++++
->  5 files changed, 206 insertions(+)
+> Clean up a few more things in skein to get it closer to mainline
+> inclusion.  The first may be questionable (so I probably should have
+> put it last -- oh well, I can always respin), but it seemed like
+> putting all of the threefish block functions in one file, like the
+> skein block functions are all in one file, made sense.
 
-Jamie,
+Fine by me.  For the whole series:
 
-thanks for the driver.
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-I think it'd make more sense if this could be folded into hid-lenovo-tpkbd 
-driver. Could you please do that and resubmit?
+Thanks for the help!
 
--- 
-Jiri Kosina
-SUSE Labs
+Do you have any other series pending for this driver?  I suspect Anton
+does and I'd like to deconflict the two efforts.
+
+thx,
+
+Jason.
