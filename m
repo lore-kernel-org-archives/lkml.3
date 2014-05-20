@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaETRoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:44:04 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:46730 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721AbaETRn6 (ORCPT
+	id S1754717AbaETRn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:43:57 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:41178 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722AbaETRny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:43:58 -0400
+	Tue, 20 May 2014 13:43:54 -0400
 From: Alex Elder <elder@linaro.org>
 To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
         devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
@@ -17,9 +17,9 @@ Cc: bcm-kernel-feedback-list@broadcom.com,
         lorenzo.pieralisi@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
         rdunlap@infradead.org, rjui@broadcom.com, robh+dt@kernel.org,
         rvaswani@codeaurora.org
-Subject: [PATCH v4 5/5] ARM: dts: enable SMP support for bcm21664
-Date: Tue, 20 May 2014 12:43:50 -0500
-Message-Id: <1400607830-10989-6-git-send-email-elder@linaro.org>
+Subject: [PATCH v4 3/5] ARM: configs: enable SMP in bcm_defconfig
+Date: Tue, 20 May 2014 12:43:48 -0500
+Message-Id: <1400607830-10989-4-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400607830-10989-1-git-send-email-elder@linaro.org>
 References: <1400607830-10989-1-git-send-email-elder@linaro.org>
@@ -27,43 +27,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define nodes representing the two Cortex A9 CPUs in a bcm21644 SoC.
+Also explicitly set CONFIG_NR_CPUS to 2, limiting it to the most we
+currently need.
 
+Signed-off-by: Ray Jui <rjui@broadcom.com>
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- arch/arm/boot/dts/bcm21664.dtsi | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ arch/arm/configs/bcm_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/bcm21664.dtsi b/arch/arm/boot/dts/bcm21664.dtsi
-index 08a44d4..a37ded1 100644
---- a/arch/arm/boot/dts/bcm21664.dtsi
-+++ b/arch/arm/boot/dts/bcm21664.dtsi
-@@ -25,6 +25,25 @@
- 		bootargs = "console=ttyS0,115200n8";
- 	};
- 
-+       cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		enable-method = "brcm,bcm11351-cpu-method";
-+		secondary-boot-reg = <0x35004178>;
-+
-+		cpu0: cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <0>;
-+		};
-+
-+		cpu1: cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <1>;
-+		};
-+	};
-+
- 	gic: interrupt-controller@3ff00100 {
- 		compatible = "arm,cortex-a9-gic";
- 		#interrupt-cells = <3>;
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index 3df3f3a..af1f911 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -27,6 +27,7 @@ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_BCM=y
+ CONFIG_ARCH_BCM_MOBILE=y
+ CONFIG_ARM_THUMBEE=y
++CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ # CONFIG_COMPACTION is not set
 -- 
 1.9.1
 
