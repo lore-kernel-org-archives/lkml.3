@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaETD4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 23:56:07 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:57980 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332AbaETD4F (ORCPT
+	id S1750948AbaETEAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 00:00:05 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:55790 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaETEAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 23:56:05 -0400
-X-Nat-Received: from [202.181.97.72]:54800 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1400558070.13671
-Message-Id: <201405200354.s4K3sTUx057458@www262.sakura.ne.jp>
-Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: Dave Chinner <david@fromorbit.com>
-Cc: riel@redhat.com, kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
+	Tue, 20 May 2014 00:00:03 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Tue, 20 May 2014 12:54:29 +0900
-References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp> <20140520004449.GE18954@dastard>
-In-Reply-To: <20140520004449.GE18954@dastard>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 20052014 #7957577, status: clean
+In-Reply-To: <537A0247.1030503@ti.com>
+References: <1400230809-11401-1-git-send-email-chander.kashyap@linaro.org>
+	<537A0247.1030503@ti.com>
+Date: Tue, 20 May 2014 09:30:02 +0530
+Message-ID: <CAKohpoknoFuz8qnDpunA7oxr5E_18=+EQsFEy0P39fcU=4Ps9w@mail.gmail.com>
+Subject: Re: [PATCH v3] PM / OPP: discard duplicate OPPs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Chander Kashyap <chander.kashyap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> So, XFS should be passing kswapd context to the workqueue allocation
-> context. The patch below does this.
-> 
-> Tetsuo-san, when it comes to problems involving XFS, you should
-> really CC xfs@oss.sgi.com because very few people really know how
-> XFS works and even fewer still know how it is supposed to interact
-> with memory reclaim....
+On 19 May 2014 18:38, Nishanth Menon <nm@ti.com> wrote:
 
-Thank you for the patch, but ...
+>> +     if (new_opp->rate == opp->rate) {
+>> +             mutex_unlock(&dev_opp_list_lock);
+>> +             kfree(new_opp);
+>> +             return 0;
+>
+> IF we decide on ensuring that the OPP additions are done one time[1] -
 
-  #define PF_KSWAPD       0x00040000      /* I am kswapd */
+Fingers crossed :)
 
-  static inline int current_is_kswapd(void)
-  {
-  	return current->flags & PF_KSWAPD;
-  }
+But that doesn't mean we covered everything. First of all platforms can
+still add OPPs directly and then there are other OPPs than CPU's.
 
-I think ((char) (current->flags & 0x00040000)) == 0.
-Your patch wants
+> then returning -EEXIST is appropriate here. we want to be able to
+> catch warnings of sequencing errors, and returning 0 is not the way to
+> do it.
 
-  -args->kswapd = current_is_kswapd();
-  +args->kswapd = (current_is_kswapd() != 0);
+I have asked this on the earlier thread as well, let me ask it again.
+What would callers do on return value of EEXIST ? Is there anything
+special we may want to handle ?
+
+Yes, we shouldn't fix everything silently and so a pr_warn() can/should
+be added here. But returning is zero is better in order not to complicate
+error handling at callers side.
+
+Isn't it ?
