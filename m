@@ -1,101 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268AbaETXqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 19:46:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:36024 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbaETXqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 19:46:45 -0400
-Date: Wed, 21 May 2014 09:46:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] scsi patch queue tree
-Message-ID: <20140521094636.515289e8@canb.auug.org.au>
-In-Reply-To: <20140520053928.GA1751@infradead.org>
-References: <20140519140614.GA12183@infradead.org>
-	<20140520100343.31490551@canb.auug.org.au>
-	<20140520053928.GA1751@infradead.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1750923AbaETX4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 19:56:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18265 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaETX4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 19:56:06 -0400
+Date: Wed, 21 May 2014 02:55:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Manu Gupta <manugupt1@gmail.com>
+Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c: Fix for possible
+ null pointer dereference
+Message-ID: <20140520235539.GS15585@mwanda>
+References: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/BLXwGnY2=g.BoJG1vfX9+Rw"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/BLXwGnY2=g.BoJG1vfX9+Rw
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 20, 2014 at 11:31:16PM +0200, Rickard Strandqvist wrote:
+> +	if (!padapter)  {
+> +		goto error_exit;
+> +	}
 
-Hi Christoph,
+Btw, I forgot to mention this before but please run your patches through
+scripts/checkpatch.pl.
 
-On Mon, 19 May 2014 22:39:28 -0700 Christoph Hellwig <hch@infradead.org> wr=
-ote:
->
-> On Tue, May 20, 2014 at 10:03:43AM +1000, Stephen Rothwell wrote:
-> > Is this a request for inclusion of those branches into linux-next
-> > separately from the scsi tree itself?
->=20
-> James said he wants to include it in the scsi tree, but given how late
-> we are in the cycle I'd love to see separate exposure until that happens
-> on a temporary basis.
+regards,
+dan carpenter
 
-OK, I have added them from today (called scsi-core and scsi-drivers).
-James, feel free to yell if that is not OK.  If these are to stay
-longer term (and I have no objections given your list of requirements),
-then you should rename the branches (maybe to -next instead of -3.16).
-
-These will be merged after the scsi tree so that they effectively
-disappear from my radar when they have been merged into James' tree.
-
-Currently you are the only contact for problems - let me know if I
-should add someone else (or a list).
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your branches have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to James (or ask him
-to fetch).  They are allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
---Sig_/BLXwGnY2=g.BoJG1vfX9+Rw
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTe+liAAoJEMDTa8Ir7ZwVWPkP+gNQnvMEJzbzemODiQBIudOd
-uqfWlZlaf1jYWuaoMPj9kXTL16At/1IjDlqSDzKIJKpOwc4MrfdKB/4Qcregskxi
-+u1AvgV+oVAqDcg+DeelfOXH+pCiGGN2g6nR7Q+fYo+QXkQxSZIAhxfFaQ/AX+fV
-wt1Xz4PB6Nqq/UGGeWn3KMJdYJmnHDv5+txvzB/E4amZ4WhzpyccMlPMXhxYZ/Fd
-V+l08Yr5wOEtqUwd6kjnTthm0+tw+P7FgM+mzxZWLgGcDV08KeYgTj3kPBGMh4e8
-HyaSuuozRarG//uAz6Fq3LZ+eSaZiOu5yfTumPCIKdH+SVypuDk47DHwNYkfvIgq
-Hmtepv6dhnEOVvkvbCN8e8VGQ8L74SN8UYpSi+J1T6GdjZzIbqFL2WzpJooq7P4w
-0D/Wodc5zHX8pTAIdeCW7eymZW5HJMxWFu5VaLFO1dhV249onFq2RW4Pazmj+Xha
-t3IgTSZ+28eyT6/Oddjcu8+YNknC2hlQmElgTBxArgjEvvVL38yvIrFsjIeSMdrt
-NGlBgT4brfV/L33Z9v+ru2P09+s8isrhdF5G49oHIfbPbBaDvz0SSGkqmc0sm1Yr
-UMkrCeJydfRjbbVdwdGZtz8v7i1sAgUFl6R6KArG7uptWKrrDz1N3aCro8L4Uw3a
-GmFJIKvZsmdFHy9Tsdli
-=YPMm
------END PGP SIGNATURE-----
-
---Sig_/BLXwGnY2=g.BoJG1vfX9+Rw--
