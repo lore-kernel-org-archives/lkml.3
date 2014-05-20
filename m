@@ -1,204 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaETWKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:10:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35361 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaETWKx (ORCPT
+	id S1751448AbaETWLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:11:19 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:51146 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaETWLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:10:53 -0400
-Date: Tue, 20 May 2014 15:10:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>, "'Nitin Gupta'" <ngupta@vflare.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>,
-        "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'Heesub Shin'" <heesub.shin@samsung.com>,
-        "'Davidlohr Bueso'" <davidlohr@hp.com>,
-        "'Joonsoo Kim'" <js1304@gmail.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>
-Subject: Re: [PATCH v2] zram: remove global tb_lock with fine grain lock
-Message-Id: <20140520151051.72912b8a7ecc5d460c871a58@linux-foundation.org>
-In-Reply-To: <000101cf7013$f646ac30$e2d40490$%yang@samsung.com>
-References: <000101cf7013$f646ac30$e2d40490$%yang@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 20 May 2014 18:11:18 -0400
+Subject: [PATCH RESEND 0/2] ftrace: Add funcgraph-tail option
+To: elliott@hp.com, fweisbec@gmail.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org
+From: Robert Elliott <elliott@hp.com>
+Date: Tue, 20 May 2014 17:10:26 -0500
+Message-ID: <20140520220958.8359.42839.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014 16:00:47 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+Using ftrace function-graph to examine the times consumed by
+functions, the time shows up on the line where the call is made
+if no other traceable functions were called by that function:
+ 11)   0.672 us    |    cmd_alloc [hpsa]();
 
-> Currently, we use a rwlock tb_lock to protect concurrent access to
-> the whole zram meta table. However, according to the actual access model,
-> there is only a small chance for upper user to access the same table[index],
-> so the current lock granularity is too big.
-> 
-> The idea of optimization is to change the lock granularity from whole
-> meta table to per table entry (table -> table[index]), so that we can
-> protect concurrent access to the same table[index], meanwhile allow
-> the maximum concurrency.
-> With this in mind, several kinds of locks which could be used as a
-> per-entry lock were tested and compared:
-> 
-> ...
->
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -179,23 +179,32 @@ static ssize_t comp_algorithm_store(struct device *dev,
->  	return len;
->  }
->  
-> -/* flag operations needs meta->tb_lock */
-> -static int zram_test_flag(struct zram_meta *meta, u32 index,
-> -			enum zram_pageflags flag)
-> +static int zram_test_zero(struct zram_meta *meta, u32 index)
->  {
-> -	return meta->table[index].flags & BIT(flag);
-> +	return meta->table[index].value & BIT(ZRAM_ZERO);
->  }
->  
-> -static void zram_set_flag(struct zram_meta *meta, u32 index,
-> -			enum zram_pageflags flag)
-> +static void zram_set_zero(struct zram_meta *meta, u32 index)
->  {
-> -	meta->table[index].flags |= BIT(flag);
-> +	meta->table[index].value |= BIT(ZRAM_ZERO);
->  }
->  
-> -static void zram_clear_flag(struct zram_meta *meta, u32 index,
-> -			enum zram_pageflags flag)
-> +static void zram_clear_zero(struct zram_meta *meta, u32 index)
->  {
-> -	meta->table[index].flags &= ~BIT(flag);
-> +	meta->table[index].value &= ~BIT(ZRAM_ZERO);
-> +}
-> +
-> +static int zram_get_obj_size(struct zram_meta *meta, u32 index)
-> +{
-> +	return meta->table[index].value & (BIT(ZRAM_FLAG_SHIFT) - 1);
-> +}
-> +
-> +static void zram_set_obj_size(struct zram_meta *meta,
-> +					u32 index, int size)
-> +{
-> +	meta->table[index].value = (unsigned long)size |
-> +		((meta->table[index].value >> ZRAM_FLAG_SHIFT)
-> +		<< ZRAM_FLAG_SHIFT );
->  }
+but the time shows up down by the } if the were other traceable
+functions called by that function:
+ 11)               |              cmd_alloc [hpsa]() {
+ 11)   0.129 us    |                cmd_free [hpsa]();
+ 11)   0.106 us    |                cmd_free [hpsa]();
+ 11)   2.014 us    |              }
 
-Let's sort out the types here?  It makes no sense for `size' to be
-signed.  And I don't think we need *any* 64-bit quantities here
-(discussed below).
+On its own, the } line doesn't indicate which function it is
+closing, so grep cannot be used to search for all the times
+for this function. You have to write a parser.
 
-So I think we can make `size' a u32 and remove that typecast.
+The function name does get printed on those lines when the
+start of the function is off the trace.
 
-Also, please use checkpatch ;)
+This patch series adds a funcgraph-tail option to do that
+in all cases.
 
->  static inline int is_partial_io(struct bio_vec *bvec)
-> @@ -255,7 +264,6 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
->  		goto free_table;
->  	}
->  
-> -	rwlock_init(&meta->tb_lock);
->  	return meta;
->  
->  free_table:
-> @@ -304,19 +312,19 @@ static void handle_zero_page(struct bio_vec *bvec)
->  	flush_dcache_page(page);
->  }
->  
-> -/* NOTE: caller should hold meta->tb_lock with write-side */
+echo 1 > /sys/kernel/debug/tracing/options/funcgraph-tail
+or
+echo funcgraph-tail > /sys/kernel/debug/tracing/trace_options
+yields:
+ 11)               |    hpsa_scsi_ioaccel_raid_map [hpsa]() {
+ 11)               |      hpsa_scsi_ioaccel_queue_command [hpsa]() {
+ 11)               |        hpsa_scsi_ioaccel2_queue_command [hpsa]() {
+ 11)   0.067 us    |          fixup_ioaccel_cdb [hpsa]();
+ 11)   0.053 us    |          set_encrypt_ioaccel2 [hpsa]();
+ 11)   0.199 us    |          enqueue_cmd_and_start_io [hpsa]();
+ 11)   1.952 us    |        } /* hpsa_scsi_ioaccel2_queue_command [hpsa] */
+ 11)   2.501 us    |      } /* hpsa_scsi_ioaccel_queue_command [hpsa] */
+ 11)   3.093 us    |    } /* hpsa_scsi_ioaccel_raid_map [hpsa] */
+ 11)   4.667 us    |  } /* hpsa_scsi_queue_command [hpsa] */
 
-Can we please update this important comment rather than simply deleting
-it?
-
->  static void zram_free_page(struct zram *zram, size_t index)
->  {
->  	struct zram_meta *meta = zram->meta;
->  	unsigned long handle = meta->table[index].handle;
-> +	int size;
->  
->  	if (unlikely(!handle)) {
->  		/*
->  		 * No memory is allocated for zero filled pages.
->  		 * Simply clear zero page flag.
->  		 */
-> -		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
-> -			zram_clear_flag(meta, index, ZRAM_ZERO);
-> +		if (zram_test_zero(meta, index)) {
-> +			zram_clear_zero(meta, index);
->  			atomic64_dec(&zram->stats.zero_pages);
->  		}
->  		return;
->
-> ...
->
-> @@ -64,9 +76,8 @@ enum zram_pageflags {
->  /* Allocated for each disk page */
->  struct table {
->  	unsigned long handle;
-> -	u16 size;	/* object size (excluding header) */
-> -	u8 flags;
-> -} __aligned(4);
-> +	unsigned long value;
-> +};
-
-Does `value' need to be 64 bit on 64-bit machines?  I think u32 will be
-sufficient?  The struct will still be 16 bytes but if we then play
-around adding __packed to this structure we should be able to shrink it
-to 12 bytes, save large amounts of memory?
-
-And does `handle' need to be 64-bit on 64-bit?
+echo 0 > /sys/kernel/debug/tracing/options/funcgraph-tail
+or
+echo nofuncgraph-tail > /sys/kernel/debug/tracing/trace_options
+(which is the default setting) still yields:
+ 11)               |    hpsa_scsi_ioaccel_raid_map [hpsa]() {
+ 11)               |      hpsa_scsi_ioaccel_queue_command [hpsa]() {
+ 11)               |        hpsa_scsi_ioaccel2_queue_command [hpsa]() {
+ 11)   0.067 us    |          fixup_ioaccel_cdb [hpsa]();
+ 11)   0.053 us    |          set_encrypt_ioaccel2 [hpsa]();
+ 11)   0.199 us    |          enqueue_cmd_and_start_io [hpsa]();
+ 11)   1.952 us    |        }
+ 11)   2.501 us    |      }
+ 11)   3.093 us    |    }
+ 11)   4.667 us    |  }
 
 
-Problem is, if we make optimisations such as this we will smash head-on
-into the bit_spin_lock() requirement that it operate on a ulong*. 
-Which is due to the bitops requiring a ulong*.  How irritating.
+---
+
+Robert Elliott (2):
+      ftrace: Eliminate duplicate TRACE_GRAPH_PRINT_xx defines
+      ftrace: Add funcgraph_tail option to print function name after closing braces
 
 
-um, something like
+ Documentation/trace/ftrace.txt       |   26 ++++++++++++++++++++++++++
+ kernel/trace/trace.h                 |    2 ++
+ kernel/trace/trace_functions_graph.c |   18 ++++++------------
+ 3 files changed, 34 insertions(+), 12 deletions(-)
 
-union table {		/* Should be called table_entry */
-	unsigned long ul;
-	struct {
-		u32 size_and_flags;
-		u32 handle;
-	} s;
-};
-
-That's a 64-bit structure containing 32-bit handle and 8-bit flags and
-24-bit size.
-
-I'm tempted to use bitfields here but that could get messy as we handle
-endianness.
-
-static void zram_table_lock(union table *table)
-{
-#ifdef __LITTLE_ENDIAN
-	bit_spin_lock(ZRAM_ACCESS, &t->ul);
-#else
-#ifdef CONFIG_64BIT
-	bit_spin_lock(ZRAM_ACCESS ^ (3 << 3), &t->ul);
-#else
-	bit_spin_lock(ZRAM_ACCESS ^ (7 << 3), &t->ul);
-#endif
-#endif
-}
-
-Or something like that ;)  And I don't know if it's correct to use
-32-bit handle on 64-bit.
-
-But you get the idea.  It's worth spending time over this because the
-space savings will be quite large.
-
->  struct zram_stats {
->  	atomic64_t compr_data_size;	/* compressed size of pages stored */
->
-> ...
->
+-- 
+Rob Elliott, HP Server Storage
