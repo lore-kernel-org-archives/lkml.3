@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaETIo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:44:56 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:53267 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaETIow (ORCPT
+	id S1752170AbaETIpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:45:17 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47938 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaETIpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:44:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Scott Lurndal <kdb@lurndal.org>,
-        "yu.zhao@intel.com" <yu.zhao@intel.com>
-Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
-Date: Tue, 20 May 2014 10:44:30 +0200
-Message-ID: <5759329.P75jKFdv3B@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CA+sq2Ce+8YB+02B7zhxTXwropZXv9spy-w=AJ8YXCP69kr-_1A@mail.gmail.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com> <4292818.mI6kZGgTzd@wuerfel> <CA+sq2Ce+8YB+02B7zhxTXwropZXv9spy-w=AJ8YXCP69kr-_1A@mail.gmail.com>
+	Tue, 20 May 2014 04:45:09 -0400
+Date: Tue, 20 May 2014 09:45:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/7] mfd: cros_ec: spi: Make the cros_ec_spi timeout
+ more reliable
+Message-ID: <20140520084503.GD24991@lee--X1>
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
+ <1398879850-9111-4-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:YQCjMl25gBmiVpOt0qDEzmbrSblAoub1Nl97K5/aeWj
- d6YaAXFZ8VNM0OEn7JnqzlI6Jm7RUgxTmjs/TByGjpXQKpMKI7
- IXgcvHfp/TUETG3IMhl11BZIbC1SclQPhac4Ju/PP1oDojdsf8
- 3C62yuFLBiW5IWeA7UyvVfjeoQ3Ha7KmSjgZO/gD7ZZ/2Xml4P
- ym3varoggOqkg3Z5olkqIXzA5K4UzBGk9bAHTtF/cSY0CltGYD
- bFUXkyvT4EOVJmRjz4+P7hLodKC5tH7Nsl1ISF3Y4qr3fd9rFN
- pEpXj1v5xLQBZ+6Bjp1Bs/4hc/eVtZhAo3ivZi5+D6p1j0+Afa
- LDfYBWzli0E+Bkyq1rqM=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398879850-9111-4-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 May 2014 09:52:33 Sunil Kovvuri wrote:
-> >> In sriov_enable() (drivers/pci/iov.c)
-> >>
-> >>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
-> >>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
-> >>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
-> >>  299                 if (res->parent)
-> >>  300                         nres++;
-> >>  301         }
-> >>  302         if (nres != iov->nres) {
-> >>  303                 dev_err(&dev->dev, "not enough MMIO resources for
-> >>  SR-IOV\n");
-> >>  304                 return -ENOMEM;
-> >>  305         }
-> >>
-> >> Here its checking if physical function's IOV resource has a parent or not.
-> >> Which is pci-pci bridge in this case. Otherwise it doesn't consider
-> >> that resource.
-> >>
-> >> Added below api to your patch.
-> >> This will try to claim a resource while creating a PCI device which
-> >> inturn sets 'res->parent'.
-> >
-> > This looks like the wrong approach. The PCI host controller should
-> > really have been registered with the root 'iomem_resource' during
-> > the probe of the host controller.
-> >
-> I didn't get this, if a SR-IOV device is connected to a PCI-PCI bridge
-> and inturn bridge connected to root port. Then the parent bus is not root,
-> but the bridge.  The issue is either hierarchy should not be checked for
-> SR-IOV resources or someone should set the hierarchy (i.e parent resources).
+On Wed, 30 Apr 2014, Doug Anderson wrote:
 
-Ah, I misunderstood the problem, I thought the PCI core was complaining
-about lack of space in the resources, not about a lack of BARs.
+> The cros_ec_spi transfer had two problems with its timeout code:
+> 
+> 1. It looked at the timeout even in the case that it found valid data.
+> 2. If the cros_ec_spi code got switched out for a while, it's possible
+>    it could get a timeout after a single loop.  Let's be paranoid and
+>    make sure we do one last transfer after the timeout expires.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes in v3: None
+> Changes in v2: None
+> 
+>  drivers/mfd/cros_ec_spi.c | 15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
 
-It seems there is code like yours in a couple of architectures, but they
-only claim the resources of bridges, not the actual devices as you
-seem to be doing. Can you check if the x86 version of
-pcibios_allocate_bus_resources() does the trick for you? Maybe we can
-turn that into a generic helper.
+Applied, thanks.
 
-	Arnd
+> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+> index a2a605d..4f863c3 100644
+> --- a/drivers/mfd/cros_ec_spi.c
+> +++ b/drivers/mfd/cros_ec_spi.c
+> @@ -113,7 +113,9 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+>  
+>  	/* Receive data until we see the header byte */
+>  	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
+> -	do {
+> +	while (true) {
+> +		unsigned long start_jiffies = jiffies;
+> +
+>  		memset(&trans, 0, sizeof(trans));
+>  		trans.cs_change = 1;
+>  		trans.rx_buf = ptr = ec_dev->din;
+> @@ -134,12 +136,19 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+>  				break;
+>  			}
+>  		}
+> +		if (ptr != end)
+> +			break;
+>  
+> -		if (time_after(jiffies, deadline)) {
+> +		/*
+> +		 * Use the time at the start of the loop as a timeout.  This
+> +		 * gives us one last shot at getting the transfer and is useful
+> +		 * in case we got context switched out for a while.
+> +		 */
+> +		if (time_after(start_jiffies, deadline)) {
+>  			dev_warn(ec_dev->dev, "EC failed to respond in time\n");
+>  			return -ETIMEDOUT;
+>  		}
+> -	} while (ptr == end);
+> +	}
+>  
+>  	/*
+>  	 * ptr now points to the header byte. Copy any valid data to the
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
