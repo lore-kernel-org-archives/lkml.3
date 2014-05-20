@@ -1,110 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781AbaETNOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:14:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510AbaETNMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:12:51 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com, serge@hallyn.com,
-        ebiederm@xmission.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V3 5/6] audit: log namespace serial numbers
-Date: Tue, 20 May 2014 09:12:06 -0400
-Message-Id: <b3179496aaed0eca9a2f21e752e4d5417bea6027.1400271129.git.rgb@redhat.com>
-In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
-References: <cover.1400271129.git.rgb@redhat.com>
-In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
-References: <cover.1400271129.git.rgb@redhat.com>
+	id S1753834AbaETNPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:15:31 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:51230 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaETNPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:15:30 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 20 May 2014 09:19:27 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/3] perf: disable sampled events if no PMU interrupt
+In-Reply-To: <20140520091216.GS2485@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405200917060.18606@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405161701160.11099@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu> <20140520091216.GS2485@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Log the namespace serial numbers of a task in audit_log_task_info() which
-is used by syscall audits, among others..
+On Tue, 20 May 2014, Peter Zijlstra wrote:
 
-Idea first presented:
-	https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
+> > +#define PERF_PMU_NO_INTERRUPT		1
+> 
+> Are you ok with me making that:
+> 
+> #define PERF_PMU_CAP_NO_INTERRUPT		0x01
 
-Typical output format would look something like:
-	        type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+sounds good.  All my recent fuzzing has made me paranoid enough to 
+double check that yes indeed we don't need to slap an ULL on the end of 
+that.
 
-The serial numbers are printed in hex.
+Though I hope 32-bits is enough for this, I feel like we've just added the 
+feature and suddenly all kinds of uses are coming out of the woodwork.
 
-Suggested-by: Aristeu Rozanski <arozansk@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
----
- include/linux/audit.h |    7 +++++++
- kernel/audit.c        |   21 ++++++++++++++++++++-
- 2 files changed, 27 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 22cfddb..0ef404a 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -101,6 +101,13 @@ extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
- struct filename;
- 
- extern void audit_log_session_info(struct audit_buffer *ab);
-+#ifdef CONFIG_NAMESPACES
-+extern void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk);
-+#else
-+void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
-+{
-+}
-+#endif
- 
- #ifdef CONFIG_AUDIT_COMPAT_GENERIC
- #define audit_is_compat(arch)  (!((arch) & __AUDIT_ARCH_64BIT))
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 59c0bbe..6452278 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -64,7 +64,7 @@
- #endif
- #include <linux/freezer.h>
- #include <linux/tty.h>
--#include <linux/pid_namespace.h>
-+#include <linux/proc_ns.h>
- #include <net/netns/generic.h>
- 
- #include "audit.h"
-@@ -1617,6 +1617,24 @@ void audit_log_session_info(struct audit_buffer *ab)
- 	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
- }
- 
-+#ifdef CONFIG_NAMESPACES
-+void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
-+{
-+	const struct proc_ns_operations **entry;
-+	bool end = false;
-+
-+	if (!tsk)
-+		return;
-+	for (entry = ns_entries; !end; entry++) {
-+		void *ns = (*entry)->get(tsk);
-+		audit_log_format(ab, " %sns=%llx", (*entry)->name,
-+				 (*entry)->snum(ns));
-+		(*entry)->put(ns);
-+		end = (*entry)->type == CLONE_NEWNS;
-+	}
-+}
-+#endif /* CONFIG_NAMESPACES */
-+
- void audit_log_key(struct audit_buffer *ab, char *key)
- {
- 	audit_log_format(ab, " key=");
-@@ -1861,6 +1879,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 		up_read(&mm->mmap_sem);
- 	} else
- 		audit_log_format(ab, " exe=(null)");
-+	audit_log_namespace_info(ab, tsk);
- 	audit_log_task_context(ab);
- }
- EXPORT_SYMBOL(audit_log_task_info);
--- 
-1.7.1
-
+Vince
