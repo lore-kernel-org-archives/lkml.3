@@ -1,167 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaETJtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:49:20 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:38428 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaETJtO (ORCPT
+	id S1753373AbaETJtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:49:11 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37255 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167AbaETJtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:49:14 -0400
+	Tue, 20 May 2014 05:49:08 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
         namhyung@kernel.org, dsahern@gmail.com,
         Michael Lentine <mlentine@google.com>
-Subject: [PATCH v2 2/2] perf tools: add automatic remapping of Android libraries
-Date: Tue, 20 May 2014 11:48:50 +0200
-Message-Id: <1400579330-5043-3-git-send-email-eranian@google.com>
+Subject: [PATCH v2 0/2] perf tools: improve perf support on Android
+Date: Tue, 20 May 2014 11:48:48 +0200
+Message-Id: <1400579330-5043-1-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400579330-5043-1-git-send-email-eranian@google.com>
-References: <1400579330-5043-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Lentine <mlentine@google.com>
 
-This patch automtically adjusts the path of MMAP records
-associated with Android system libraries. 
+This short series of patches allow for the execution of perf natively
+on the android devices.
 
-The Android system is organized with system libraries found in
-/system/lib and user libraries in /data/app-lib. On the host system
-(not running Android), system libraries can be found in the downloaded
-NDK directory under ${NDK_ROOT}/platforms/${APP_PLATFORM}/arch-${ARCH}/usr/lib
-and the user libraries are installed under libs/${APP_ABI} within
-the apk build directory. This patch makes running the reporting
-tools possible on the host system using the libraries from the NDK.
+The following changes are implemented:
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
+ - Have cat be the default page. Android does not have less or more pager.
+   this is a generic change which cleans up the code a bit
+
+ - Remap library paths to allow for data reporting on a linux pc with data
+   collected from an android device.
+
+
+In V2, we address the feedback from LKML. Use explicit path
+for less pager. Document Android system libraries better.
+
 Signed-off-by: Michael Lentine <mlentine@google.com>
----
- tools/perf/util/map.c | 95 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index ba5f5c0c..e1974e7 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -32,6 +32,93 @@ static inline int is_no_dso_memory(const char *filename)
- 	       !strcmp(filename, "[heap]");
- }
- 
-+static inline int is_android_lib(const char *filename)
-+{
-+	return !strncmp(filename, "/data/app-lib", 13) ||
-+	       !strncmp(filename, "/system/lib", 11);
-+}
-+
-+static inline bool replace_android_lib(const char *filename, char *newfilename)
-+{
-+	const char *libname;
-+	char *app_abi;
-+	size_t app_abi_length, new_length;
-+	size_t lib_length = 0;
-+
-+	libname  = strrchr(filename, '/');
-+	if (libname)
-+		lib_length = strlen(libname);
-+
-+	app_abi = getenv("APP_ABI");
-+	if (!app_abi)
-+		return false;
-+
-+	app_abi_length = strlen(app_abi);
-+
-+	if (!strncmp(filename, "/data/app-lib", 13)) {
-+		char *apk_path;
-+
-+		if (!app_abi_length)
-+			return false;
-+
-+		new_length = 7 + app_abi_length + lib_length;
-+
-+		apk_path = getenv("APK_PATH");
-+		if(apk_path) {
-+			new_length += strlen(apk_path) + 1;
-+			if(new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "%s/libs/%s/%s", apk_path, app_abi, libname);
-+		} else {
-+			if(new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "libs/%s/%s", app_abi, libname);
-+		}
-+		return true;
-+	}
-+
-+	if (!strncmp(filename, "/system/lib/", 11)) {
-+		char *ndk, *app;
-+		const char *arch;
-+		size_t ndk_length;
-+		size_t app_length;
-+
-+		ndk = getenv("NDK_ROOT");
-+		app = getenv("APP_PLATFORM");
-+
-+		if (!(ndk && app))
-+			return false;
-+
-+		ndk_length = strlen(ndk);
-+		app_length = strlen(app);
-+
-+		if (!(ndk_length && app_length && app_abi_length))
-+			return false;
-+
-+		arch = !strncmp(app_abi, "arm", 3) ? "arm" :
-+		       !strncmp(app_abi, "mips", 4) ? "mips" :
-+		       !strncmp(app_abi, "x86", 3) ? "x86" : NULL;
-+
-+		if (!arch)
-+			return false;
-+
-+		new_length = 27 + ndk_length +
-+			     app_length + lib_length
-+			   + strlen(arch);
-+
-+		if(new_length > PATH_MAX)
-+			return false;
-+		snprintf(newfilename, new_length,
-+			"%s/platforms/%s/arch-%s/usr/lib/%s",
-+			ndk, app, arch, libname);
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
- void map__init(struct map *map, enum map_type type,
- 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
- {
-@@ -59,8 +146,9 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 	if (map != NULL) {
- 		char newfilename[PATH_MAX];
- 		struct dso *dso;
--		int anon, no_dso, vdso;
-+		int anon, no_dso, vdso, android;
- 
-+		android = is_android_lib(filename);
- 		anon = is_anon_memory(filename);
- 		vdso = is_vdso_map(filename);
- 		no_dso = is_no_dso_memory(filename);
-@@ -75,6 +163,11 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			filename = newfilename;
- 		}
- 
-+		if (android) {
-+			if (replace_android_lib(filename, newfilename))
-+				filename = newfilename;
-+		}
-+
- 		if (vdso) {
- 			pgoff = 0;
- 			dso = vdso__dso_findnew(dsos__list);
+Michael Lentine (2):
+  perf tools: add a fallback for pager to use cat if less does not exist.
+  perf tools: add automatic remapping of Android libraries
+
+ tools/perf/util/map.c   | 89 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/pager.c | 12 +++----
+ 2 files changed, 94 insertions(+), 7 deletions(-)
+
 -- 
 1.9.1.423.g4596e3a
 
