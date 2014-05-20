@@ -1,112 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaETHYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 03:24:34 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:52956 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaETHYc (ORCPT
+	id S1752195AbaETH26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 03:28:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53609 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824AbaETH24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 03:24:32 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20140520072048.GC20874@lee--X1>
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
-	<1394614210-15698-7-git-send-email-maxime.coquelin@st.com>
-	<CAOesGMg5Jk_XB3zdfKz8VxRObYbFO8OMuRyo7Ba-kavANbci1w@mail.gmail.com>
-	<20140520072048.GC20874@lee--X1>
-Date: Tue, 20 May 2014 00:24:31 -0700
-Message-ID: <CAOesGMioLwX3jgGEsR=rHV0u6yR54b4x8BfyZ91vjJnMapUHew@mail.gmail.com>
-Subject: Re: [PATCH v4 6/6] ARM: dts: STiH407: Add B2120 board support
-From: Olof Johansson <olof@lixom.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Maxime COQUELIN <maxime.coquelin@st.com>, Rob Landley <rob@landley.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 May 2014 03:28:56 -0400
+Date: Tue, 20 May 2014 00:28:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 2/2] powerpc/pseries: init fault_around_order for
+ pseries
+Message-Id: <20140520002834.aefb5a90.akpm@linux-foundation.org>
+In-Reply-To: <1399541296-18810-3-git-send-email-maddy@linux.vnet.ibm.com>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
+	<1399541296-18810-3-git-send-email-maddy@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 12:20 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > B2120 HDK is the reference board for STiH407 SoC.
->> > It has the following characteristics:
->> >  - 1GB DDR3
->> >  - 8GB eMMC / SD-Card slot
->> >  - 32MB NOR Flash
->> >  - 1 x Gbit Ethernet
->> >  - 1 x USB 3.0 port
->> >  - 1 x Mini-PCIe
->> >  - 1 x SATA
->> >  - 1 x HDMI output
->> >  - 1 x HDMI input
->> >  - 1 x SPDIF
->> >
->> > This patch only introduces basic functionnalities, such as I2C and UART.
->> >
->> > Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> > Acked-by: Lee Jones <lee.jones@linaro.org>
->> > Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> > Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
->> > ---
->> >  arch/arm/boot/dts/Makefile          |  3 +-
->> >  arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
->> >  2 files changed, 80 insertions(+), 1 deletion(-)
->> >  create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
->
-> [...]
->
->> > +/ {
->> > +       model = "STiH407 B2120";
->> > +       compatible = "st,stih407", "st,stih407-b2120";
->>
->> This should go from specific to generic, so the order needs to be the other way.
->
-> I did have a patch-set that changed all of these.  Wonder where that went!
+On Thu,  8 May 2014 14:58:16 +0530 Madhavan Srinivasan <maddy@linux.vnet.ibm.com> wrote:
 
-Cool.
+> --- a/arch/powerpc/platforms/pseries/pseries.h
+> +++ b/arch/powerpc/platforms/pseries/pseries.h
+> @@ -17,6 +17,8 @@ struct device_node;
+>  extern void request_event_sources_irqs(struct device_node *np,
+>  				       irq_handler_t handler, const char *name);
+>  
+> +extern unsigned int fault_around_order;
 
->
-> [...]
->
->> > +       soc {
->> > +               sbc_serial0: serial@9530000 {
->> > +                       status = "okay";
->> > +               };
->>
->> You might want to consider reference-based syntax here instead, so you
->> don't have to mimic the hierarchy. That'd be (at the root level of the
->> file, below this secion:
->>
->> &sbc_serial0: {
->>         status = "okay";
->> };
->
-> I'm personally not keen on this scheme.  It's sometimes helpful to know
-> the hierarchy and I don't think it's a large overhead to format the
-> subordinate DTS files in this way.
->
-> Please consider not enforcing this.
+This isn't an appropriate header file for exporting something from core
+mm - what happens if arch/mn10300 wants it?.
 
-Definitely not enforcing it, and I didn't use to like it either but it
-has some real upsides.
+I guess include/linux/mm.h is the place.
 
-In particular, it saves a lot of grief when you're changing something
-like the unit-id of a node in .dtsi and forget to do the same update
-in the dts.
-
-
-
--Olof
