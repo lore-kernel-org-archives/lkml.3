@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaETBZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 21:25:46 -0400
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:54736 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750894AbaETBZo (ORCPT
+	id S932110AbaETB0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 21:26:35 -0400
+Received: from exprod5og122.obsmtp.com ([64.18.0.192]:52289 "HELO
+	exprod5og122.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932070AbaETB0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 21:25:44 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1568:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:2903:3138:3139:3140:3141:3142:3622:3865:3868:3872:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: debt54_149b59f5f153b
-X-Filterd-Recvd-Size: 1452
-Message-ID: <1400549140.19786.6.camel@joe-AO725>
-Subject: Re: [PATCH driver-core-linus] sysfs: make sure read buffer is zeroed
-From: Joe Perches <joe@perches.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        Ron <ron@debian.org>, Ben Hutchings <ben@decadent.org.uk>
-Date: Mon, 19 May 2014 18:25:40 -0700
-In-Reply-To: <20140520004955.GA30633@mtj.dyndns.org>
-References: <20140519172334.GK20439@audi.shelbyville.oz>
-	 <20140519195210.GA27506@mtj.dyndns.org> <20140519222500.GA14616@kroah.com>
-	 <1400538742.14238.51.camel@joe-AO725>
-	 <20140520004955.GA30633@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 19 May 2014 21:26:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <878upynlz4.fsf@approximate.cambridge.arm.com>
+References: <1400278813-3048-1-git-send-email-fkan@apm.com>
+	<1400278813-3048-3-git-send-email-fkan@apm.com>
+	<878upynlz4.fsf@approximate.cambridge.arm.com>
+Date: Mon, 19 May 2014 18:26:33 -0700
+Message-ID: <CAL85gmByuxTdPWaDZENDz=rKQtfZc44eUaCsnK04DfeXknAoYg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
+From: Feng Kan <fkan@apm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-19 at 20:49 -0400, Tejun Heo wrote:
-> On Mon, May 19, 2014 at 03:32:22PM -0700, Joe Perches wrote:
-> > > > +	memset(buf, 0, PAGE_SIZE);
-> > 
-> > 	memset(buf, 0, count)?
-> 
-> It's always PAGE_SIZE.  Outputs longer than that are truncated.
+>>  #ifdef CONFIG_CPU_PM
+>> @@ -613,7 +636,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>                                       dist_base + GIC_DIST_PRI + i * 4);
+>>
+>>       writel_relaxed(GIC_INT_PRI_THRESHOLD, cpu_base + GIC_CPU_PRIMASK);
+>> -     writel_relaxed(GIC_CPU_ENABLE, cpu_base + GIC_CPU_CTRL);
+>> +     gic_cpu_if_up();
+>
+> Have you tested the save/restore path? It seems that we dont save
+> GICC_CTLR, so it may not do what you think it will...
 
-Yeah, I know, but the code and comment above it don't match.
+We are debating which is the better method. Currently we are only
+disabling the GIC distributor so it is not a problem. Later on, with
+more
+aggressive PM we could have the helper core to setup the GIC CTLR prior to
+releasing out of the PM state. However, it seems it would be more
+cleaner if we save off the GIC_CTLR bits in the gic_cpu_save. This
+would add additional items in to the gic_chip_data. Would you be open
+to that?
 
-/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
-
-
-
+>
+>>  }
+>>
+>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
+>
+> --
+> Jazz is not dead. It just smells funny.
