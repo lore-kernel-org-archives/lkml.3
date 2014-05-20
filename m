@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaETGKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 02:10:07 -0400
-Received: from relay-s04-hub002.domainlocalhost.com ([74.115.207.101]:52354
-	"EHLO relay-S04-HUB002.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750714AbaETGKF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 02:10:05 -0400
-From: Dudley Du <dudl@cypress.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
-        "David Solda" <dso@cypress.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/6] input: cyapa: rearchitecture driver to support
- function pointers
-Thread-Topic: [PATCH 1/6] input: cyapa: rearchitecture driver to support
- function pointers
-Thread-Index: Ac9Xtq9L7NojvOgjROesZ4GoflAFFABl+2KwBqxKswAAA5snQA==
-Date: Tue, 20 May 2014 06:10:01 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C32648@S04-MBX01-01.s04.local>
-References: <77BC725C9062764F874D79F51E1F1A8F40C1405E@S04-MBX01-01.s04.local>
- <20140520034742.GC986@core.coreip.homeip.net>
-In-Reply-To: <20140520034742.GC986@core.coreip.homeip.net>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.30.12.154]
-Content-Type: text/plain; charset="us-ascii"
+	id S1751002AbaETGQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 02:16:28 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:44514 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaETGQ1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:2>);
+	Tue, 20 May 2014 02:16:27 -0400
+Message-Id: <537B0F560200007800013E3E@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Tue, 20 May 2014 07:16:22 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
+        <matt.fleming@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
+        <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH v4 1/5] efi: Introduce EFI_DIRECT flag
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
+ <1400272904-31121-2-git-send-email-daniel.kiper@oracle.com>
+ <537A23A50200007800013A7F@mail.emea.novell.com>
+ <20140519204657.GB3529@olila.local.net-space.pl>
+In-Reply-To: <20140519204657.GB3529@olila.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+>>> On 19.05.14 at 22:46, <daniel.kiper@oracle.com> wrote:
+> On Mon, May 19, 2014 at 02:30:45PM +0100, Jan Beulich wrote:
+>> >>> On 16.05.14 at 22:41, <daniel.kiper@oracle.com> wrote:
+>> > @@ -457,6 +460,21 @@ void __init efi_free_boot_services(void)
+>> >  	efi_unmap_memmap();
+>> >  }
+>> >
+>> > +static void __init __iomem *efi_early_ioremap(resource_size_t phys_addr,
+>> > +							unsigned long size)
+>> > +{
+>> > +	if (efi_enabled(EFI_DIRECT))
+>> > +		return early_ioremap(phys_addr, size);
+>> > +
+>> > +	return (__force void __iomem *)phys_addr;
+>>
+>> Now that surely needs some explanation: I can't see how this can
+>> ever be correct, Xen or not being completely irrelevant.
+> 
+> I hope that efi_enabled(EFI_DIRECT) is obvious. However, in case of
+> !efi_enabled(EFI_DIRECT) some structures are created artificially
+> and they live in virtual address space. So that is why they should
+> not be mapped. If you wish I could add relevant comment here.
 
-Thanks for your advice, I will organize it and resubmit it as v2.
+That would be the very minimum I suppose. But I wonder whether
+you wouldn't be better off storing their physical addresses in the
+first place (and then decide whether you can stay with early_ioremap()
+or want/need to use early_memremap() if !EFI_DIRECT).
 
-Thanks,
-Dudley
+Jan
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Tuesday, May 20, 2014 11:48 AM
-> To: Dudley Du
-> Cc: Benson Leung; Daniel Kurtz; David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/6] input: cyapa: rearchitecture driver to support function pointers
->
-> Hi Dudley,
->
-> On Wed, Apr 16, 2014 at 08:35:52AM +0000, Dudley Du wrote:
-> > Re-architecture the driver to support function pointers, so it can support and integrate new devices later in one driver.
-> > Including use async thread in device proble to speed up system boot time.
-> > TEST=test on Chomebooks.
->
-> There seems to be changes implementing aasync probing intermixed with the function pointers change, it had to be split out and justification needs to be provided - I am not quite convinced we should be doing this, at least not at individual driver level.
->
-> Also instead of listing individual function pointers consider defining
->
-> struct cyapa_ops {
->       void (*irq_handler)(struct cyapa *);
->       int (*set_power_mode)(struct cyapa *, u8, u16);
->       int (*bl_enter_func)(struct cyapa *);
->       ....
-> };
->
-> and use const pointer to it in cyapa_state. Then you can have gen3 and
-> gen5 implementation separated into individual files and the rest forming cyapa core.
->
-> Thanks.
->
-> --
-> Dmitry
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
