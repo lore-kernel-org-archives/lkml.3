@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaETJsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:48:04 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45008 "EHLO
+	id S1753088AbaETJsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:48:02 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:60426 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750870AbaETJrz (ORCPT
+	by vger.kernel.org with ESMTP id S1750714AbaETJrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 05:47:55 -0400
 From: Maxime COQUELIN <maxime.coquelin@st.com>
@@ -21,9 +21,9 @@ To: Olof Johansson <olof@lixom.net>, Rob Landley <rob@landley.net>,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
 Cc: lee.jones@linaro.org
-Subject: [PATCH v6 4/4] ARM: dts: STiH407: Add B2120 board support
-Date: Tue, 20 May 2014 11:46:32 +0200
-Message-Id: <1400579192-17620-5-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH v6 2/4] ARM: dts: Fix STi boards compatibles
+Date: Tue, 20 May 2014 11:46:30 +0200
+Message-Id: <1400579192-17620-3-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com>
 References: <1400579192-17620-1-git-send-email-maxime.coquelin@st.com>
@@ -33,130 +33,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B2120 HDK is the reference board for STiH407 SoC.
-It has the following characteristics:
- - 1GB DDR3
- - 8GB eMMC / SD-Card slot
- - 32MB NOR Flash
- - 1 x Gbit Ethernet
- - 1 x USB 3.0 port
- - 1 x Mini-PCIe
- - 1 x SATA
- - 1 x HDMI output
- - 1 x HDMI input
- - 1 x SPDIF
+The compatible strings have to be ordered from specific to generic.
+This patch fixes this for STi boards, which did the exact opposite.
 
-This patch only introduces basic functionnalities, such as I2C and UART.
-
-Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Patrice Chotard <patrice.chotard@st.com>
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: Olof Johansson <olof@lixom.net>
 Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 ---
- arch/arm/boot/dts/Makefile          |  3 +-
- arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
+ arch/arm/boot/dts/stih415-b2000.dts | 2 +-
+ arch/arm/boot/dts/stih415-b2020.dts | 2 +-
+ arch/arm/boot/dts/stih416-b2000.dts | 3 +--
+ arch/arm/boot/dts/stih416-b2020.dts | 3 +--
+ 4 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 6fa1343..19322a1 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -335,7 +335,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
- 	spear320-evb.dtb \
- 	spear320-hmi.dtb
- dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
--dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
-+dtb-$(CONFIG_ARCH_STI)+= stih407-b2120.dtb \
-+	stih415-b2000.dtb \
- 	stih415-b2020.dtb \
- 	stih416-b2000.dtb \
- 	stih416-b2020.dtb
-diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
-new file mode 100644
-index 0000000..be82beb
---- /dev/null
-+++ b/arch/arm/boot/dts/stih407-b2120.dts
-@@ -0,0 +1,78 @@
-+/*
-+ * Copyright (C) 2014 STMicroelectronics (R&D) Limited.
-+ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih407.dtsi"
-+/ {
-+	model = "STiH407 B2120";
-+	compatible = "st,stih407-b2120", "st,stih407";
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &sbc_serial0;
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &sbc_serial0;
-+	};
-+
-+	soc {
-+		sbc_serial0: serial@9530000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible = "gpio-leds";
-+			red {
-+				#gpio-cells = <2>;
-+				label = "Front Panel LED";
-+				gpios = <&PIO4 1 0>;
-+				linux,default-trigger = "heartbeat";
-+			};
-+			green {
-+				#gpio-cells = <2>;
-+				gpios = <&PIO1 3 0>;
-+				default-state = "off";
-+			};
-+		};
-+
-+		i2c@9842000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9843000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9844000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9845000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9540000 {
-+			status = "okay";
-+		};
-+
-+		/* SSC11 to HDMI */
-+		i2c@9541000 {
-+			status = "okay";
-+			/* HDMI V1.3a supports Standard mode only */
-+			clock-frequency = <100000>;
-+			st,i2c-min-scl-pulse-width-us = <0>;
-+			st,i2c-min-sda-pulse-width-us = <5>;
-+		};
-+	};
-+};
+diff --git a/arch/arm/boot/dts/stih415-b2000.dts b/arch/arm/boot/dts/stih415-b2000.dts
+index d4af531..bdfbd37 100644
+--- a/arch/arm/boot/dts/stih415-b2000.dts
++++ b/arch/arm/boot/dts/stih415-b2000.dts
+@@ -11,5 +11,5 @@
+ #include "stih41x-b2000.dtsi"
+ / {
+ 	model = "STiH415 B2000 Board";
+-	compatible = "st,stih415", "st,stih415-b2000";
++	compatible = "st,stih415-b2000", "st,stih415";
+ };
+diff --git a/arch/arm/boot/dts/stih415-b2020.dts b/arch/arm/boot/dts/stih415-b2020.dts
+index 442b019..71903a8 100644
+--- a/arch/arm/boot/dts/stih415-b2020.dts
++++ b/arch/arm/boot/dts/stih415-b2020.dts
+@@ -11,5 +11,5 @@
+ #include "stih41x-b2020.dtsi"
+ / {
+ 	model = "STiH415 B2020 Board";
+-	compatible = "st,stih415", "st,stih415-b2020";
++	compatible = "st,stih415-b2020", "st,stih415";
+ };
+diff --git a/arch/arm/boot/dts/stih416-b2000.dts b/arch/arm/boot/dts/stih416-b2000.dts
+index a5eb6ee..488e80a 100644
+--- a/arch/arm/boot/dts/stih416-b2000.dts
++++ b/arch/arm/boot/dts/stih416-b2000.dts
+@@ -9,8 +9,7 @@
+ /dts-v1/;
+ #include "stih416.dtsi"
+ #include "stih41x-b2000.dtsi"
+-
+ / {
+-	compatible = "st,stih416", "st,stih416-b2000";
+ 	model = "STiH416 B2000";
++	compatible = "st,stih416-b2000", "st,stih416";
+ };
+diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+index 276f28d..4e2df66 100644
+--- a/arch/arm/boot/dts/stih416-b2020.dts
++++ b/arch/arm/boot/dts/stih416-b2020.dts
+@@ -11,6 +11,5 @@
+ #include "stih41x-b2020.dtsi"
+ / {
+ 	model = "STiH416 B2020";
+-	compatible = "st,stih416", "st,stih416-b2020";
+-
++	compatible = "st,stih416-b2020", "st,stih416";
+ };
 -- 
 1.9.1
 
