@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750890AbaETRwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:52:13 -0400
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:50558 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750732AbaETRwM convert rfc822-to-8bit (ORCPT
+	id S1751439AbaETRxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:53:13 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:56714 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaETRxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:52:12 -0400
-X-Greylist: delayed 2289 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 May 2014 13:52:12 EDT
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [GIT PULL] at91: DT for 3.16 #2
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <20140520055041.GO18956@quad.lixom.net>
-Date: Wed, 21 May 2014 01:13:17 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas FERRE <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <58381B35-AAB4-4FE5-833D-603052C97E9E@jcrosoft.com>
-References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com> <20140520055041.GO18956@quad.lixom.net>
-To: Olof Johansson <olof@lixom.net>
-X-Mailer: Apple Mail (2.1874)
-X-Ovh-Tracer-Id: 10174194508596161327
-X-Ovh-Remote: 193.138.230.145 (145.230.138.193.client.dyn.strong-ba6.blackoakcomputers.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 20 May 2014 13:53:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140520174759.GK2185@moon>
+References: <cover.1400538962.git.luto@amacapital.net> <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
+ <20140520172134.GJ2185@moon> <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com>
+ <20140520174759.GK2185@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 May 2014 10:52:51 -0700
+Message-ID: <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix x86
+ vdso naming
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: X86 ML <x86@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 20, 2014 at 10:47 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Tue, May 20, 2014 at 10:24:49AM -0700, Andy Lutomirski wrote:
+>> On Tue, May 20, 2014 at 10:21 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> > On Mon, May 19, 2014 at 03:58:33PM -0700, Andy Lutomirski wrote:
+>> >> Using arch_vma_name to give special mappings a name is awkward.  x86
+>> >> currently implements it by comparing the start address of the vma to
+>> >> the expected address of the vdso.  This requires tracking the start
+>> >> address of special mappings and is probably buggy if a special vma
+>> >> is split or moved.
+>> >>
+>> >> Improve _install_special_mapping to just name the vma directly.  Use
+>> >> it to give the x86 vvar area a name, which should make CRIU's life
+>> >> easier.
+>> >>
+>> >> As a side effect, the vvar area will show up in core dumps.  This
+>> >> could be considered weird and is fixable.  Thoughts?
+>> >>
+>> >> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+>> >> Cc: Pavel Emelyanov <xemul@parallels.com>
+>> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> >
+>> > Hi Andy, thanks a lot for this! I must confess I don't yet know how
+>> > would we deal with compat tasks but this is 'must have' mark which
+>> > allow us to detect vvar area!
+>>
+>> Out of curiosity, how does CRIU currently handle checkpointing a
+>> restored task?  In current kernels, the "[vdso]" name in maps goes
+>> away after mremapping the vdso.
+>
+>   We use not only [vdso] mark to detect vdso area but also page frame
+> number of the living vdso. If mark is not present in procfs output
+> we examinate executable areas and check if pfn == vdso_pfn, it's
+> a slow path because there migh be a bunch of executable areas and
+> touching every of it is not that fast thing, but we simply have no
+> choise.
 
-On May 20, 2014, at 1:50 PM, Olof Johansson <olof@lixom.net> wrote:
+This patch should fix this issue, at least.  If there's still a way to
+get a native vdso that doesn't say "[vdso]", please let me know/
 
-> 
-> On Wed, May 14, 2014 at 11:19:22AM +0200, Nicolas Ferre wrote:
->> Arnd, Olof, Kevin,
->> 
->> More DT material for AT91. Some fixes that apply on what was merged for 3.15
->> but that are not very critical.
->> The other patches are feature additions to old or very recent product/board:
->> at91sam9261 or sama5d3 Xplained.
->> 
->> Thanks, best regards,
->> 
->> The following changes since commit 27a96a0364787d2b41d2a72d08143d95263e1b07:
->> 
->>  ARM: at91: sama5d3: clock for ssc from rk pin (2014-04-18 22:43:44 +0200)
->> 
->> are available in the git repository at:
->> 
->>  git://github.com/at91linux/linux-at91.git tags/at91-dt2
->> 
->> for you to fetch changes up to a93f9c88b7701d1c4c3b22d39d64a408f000a6ef:
->> 
->>  ARM: at91/dt: at91-sama5d3_xplained: add the regulator device node (2014-05-12 16:48:54 +0200)
-> 
-> Merged, but:
-> 
->> arch/arm/boot/dts/at91-sama5d3_xplained.dts |  62 +++++++++++++++
->> arch/arm/boot/dts/at91sam9261.dtsi          | 114 ++++++++++++++++++++++++++--
->> arch/arm/boot/dts/at91sam9rl.dtsi           |   7 +-
->> arch/arm/boot/dts/sama5d3.dtsi              |  78 +++++++++++++++++++
-> 
-> Grmbl. I remember being somewhat annoyed that you didn't use at91 prefix
-> when you introduced the sama5d3 dtsi files, but please don't start using
-> it on a random board like this, especially when other boards just use
-> the sama5d3_<board>.dts format.
-> 
-> Care to fix this up in time for 3.16 merge window?
+>
+>   The situation get worse when task was dumped on one kernel and
+> then restored on another kernel where vdso content is different
+> from one save in image -- is such case as I mentioned we need
+> that named vdso proxy which redirect calls to vdso of the system
+> where task is restoring. And when such "restored" task get checkpointed
+> second time we don't dump new living vdso but save only old vdso
+> proxy on disk (detecting it is a different story, in short we
+> inject a unique mark into elf header).
 
-there is a small issue here Atmel drop the at91 in the soc name
+Yuck.  But I don't know whether the kernel can help much here.
 
-Best Regards,
-J.
-> 
-> 
-> Thanks,
-> 
-> -Olof
+>
+>>
+>> I suspect that you'll need kernel changes for compat tasks, since I
+>> think that mremapping the vdso on any reasonably modern hardware in a
+>> 32-bit task will cause sigreturn to blow up.  This could be fixed by
+>> making mremap magical, although adding a new prctl or arch_prctl to
+>> reliably move the vdso might be a better bet.
+>
+> Well, as far as I understand compat code uses abs addressing for
+> vvar data and if vvar data position doesn't change we're safe,
+> but same time because vvar addresses are not abi I fear one day
+> we indeed hit the problems and the only solution would be
+> to use kernel's help. But again, Andy, I didn't think much
+> about implementing compat mode in criu yet so i might be
+> missing some details.
 
+Prior to 3.15, the compat code didn't have vvar data at all.  In 3.15
+and up, the vvar data is accessed using PC-relative addressing, even
+in compat mode (using the usual call; mov trick to read EIP).
+
+--Andy
