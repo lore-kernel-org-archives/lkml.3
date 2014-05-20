@@ -1,95 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaETR1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:27:23 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:57905 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbaETR1U (ORCPT
+	id S1754023AbaETR31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:29:27 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:47014 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaETR30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:27:20 -0400
+	Tue, 20 May 2014 13:29:26 -0400
+Date: Tue, 20 May 2014 18:29:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, ckeepax@opensource.wolfsonmicro.com,
+        broonie@linaro.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] mfd: arizona: correct addresses of always-on trigger
+ registers
+Message-ID: <20140520172920.GC32538@lee--X1>
+References: <20140520124851.GB13900@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1400532162-29483-1-git-send-email-alexandre.belloni@free-electrons.com>
-Date: Tue, 20 May 2014 19:27:18 +0200
-Message-ID: <CA+gwMccr8N+oZA4A5DY168Vis0Q6OaVDJuJaWzRVTQ389ixjjQ@mail.gmail.com>
-Subject: Re: [PATCHv2 resend 00/11] improve PWM lookup support without device tree
-From: Philipp Zabel <philipp.zabel@gmail.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140520124851.GB13900@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+> Update the addresses and names to match current silicon.
+> The WM8997 regmap tables have been adjusted to match the new
+> names.
+> Missing registers have been added to WM5110 default value table.
+> 
+> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/wm5102-tables.c           |    2 ++
+>  drivers/mfd/wm5110-tables.c           |   12 ++++++++----
+>  drivers/mfd/wm8997-tables.c           |   12 ++++++------
+>  include/linux/mfd/arizona/registers.h |   14 ++++++++------
+>  4 files changed, 24 insertions(+), 16 deletions(-)
 
-On Mon, May 19, 2014 at 10:42 PM, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
-> Hi,
->
-> Originally sent on Apr 14th, note that this series is blocking another 16
-> patches series, I would like it to be taken in 3.16 if we can agree on this
-> implementation.
->
-> A patch set as suggested by Thierry to make lookup with the lookup table
-> instead of device tree behave more like when using device tree.
->
-> The first patch adds a period and a polarity member to the lookup table and use
-> those to set period and polarity.
->
-> Patch 2, 4 and 5 are making use of those new members from the board files.
-> Patch 3 removes useless code since setting the polarity is now handled by the
-> PWM core.
->
-> I couldn't decide on a good name for the extended PWM_LOOKUP macro and I believe
-> we won't have to add members to that structure soon so:
-> Patch 6 modifies the PWM_LOOKUP macro to also initialize period and polarity
-> and
-> Patch 7-9 are making use of the new PWM_LOOKUP macro in the board files
->
-> Patch 10 and 11 are making the leds-pwm and pwm_bl drivers get the period from
-> the PWM before using pwm_period_ns if it is not already set.
->
-> Patch 10 will obviously conflict with the series of Russell reworking the
-> leds-pwm probing. I can rebase if necessary
->
-> The final goal would be to get rid of .pwm_period_ns in leds-pwm and pwm_bl
-> after moving all the remaining users (still around 25) to pwm_lookup.
->
-> Changes in v2:
->  - correctly unlock the pwm_lookup_lock mutex before returning.
->  - don't change PWM_LOOKUP atomically
->  - remove tpu_pwm_platform_data and the associated header file
->  - make the leds-pwm and pwm_bl drivers get the period from the PWM
->
-> Alexandre Belloni (11):
->   pwm: add period and polarity to struct pwm_lookup
->   ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup
->     members
->   pwm: renesas-tpu: remove useless struct tpu_pwm_platform_data
->   ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
->   ARM: pxa: hx4700: initialize all the struct pwm_lookup members
->   pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
->   ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize struct pwm_lookup
->   ARM: shmobile: Armadillo 800 EVA: use PWM_LOOKUP to initialize struct
->     pwm_lookup
->   ARM: pxa: hx4700: use PWM_LOOKUP to initialize struct pwm_lookup
->   leds: leds-pwm: retrieve configured pwm period
->   backlight: pwm_bl: retrieve configured pwm period
+Applied, thanks.
 
-For the hx4700 patches (5 an 9),
-Acked-by: Philipp Zabel <philipp.zabel@gmail.com>
+> diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+> index 9b9923c..641aed7 100644
+> --- a/drivers/mfd/wm5102-tables.c
+> +++ b/drivers/mfd/wm5102-tables.c
+> @@ -1037,6 +1037,8 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_7:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_8:
+>  	case ARIZONA_COMFORT_NOISE_GENERATOR:
+>  	case ARIZONA_HAPTICS_CONTROL_1:
+>  	case ARIZONA_HAPTICS_CONTROL_2:
+> diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+> index d10fc44..9b98ee5 100644
+> --- a/drivers/mfd/wm5110-tables.c
+> +++ b/drivers/mfd/wm5110-tables.c
+> @@ -683,10 +683,12 @@ static const struct reg_default wm5110_reg_default[] = {
+>  	{ 0x00000062, 0x01FF },    /* R98    - Sample Rate Sequence Select 2 */
+>  	{ 0x00000063, 0x01FF },    /* R99    - Sample Rate Sequence Select 3 */
+>  	{ 0x00000064, 0x01FF },    /* R100   - Sample Rate Sequence Select 4 */
+> -	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 1 */
+> -	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 2 */
+> -	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 3 */
+> -	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 4 */
+> +	{ 0x00000066, 0x01FF },    /* R102   - Always On Triggers Sequence Select 1 */
+> +	{ 0x00000067, 0x01FF },    /* R103   - Always On Triggers Sequence Select 2 */
+> +	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 3 */
+> +	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 4 */
+> +	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 5 */
+> +	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 6 */
+>  	{ 0x00000070, 0x0000 },    /* R112   - Comfort Noise Generator */
+>  	{ 0x00000090, 0x0000 },    /* R144   - Haptics Control 1 */
+>  	{ 0x00000091, 0x7FFF },    /* R145   - Haptics Control 2 */
+> @@ -1716,6 +1718,8 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
+>  	case ARIZONA_COMFORT_NOISE_GENERATOR:
+>  	case ARIZONA_HAPTICS_CONTROL_1:
+>  	case ARIZONA_HAPTICS_CONTROL_2:
+> diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
+> index 529adc1..d641474 100644
+> --- a/drivers/mfd/wm8997-tables.c
+> +++ b/drivers/mfd/wm8997-tables.c
+> @@ -174,10 +174,10 @@ static const struct reg_default wm8997_reg_default[] = {
+>  	{ 0x00000062, 0x01FF },    /* R98    - Sample Rate Sequence Select 2 */
+>  	{ 0x00000063, 0x01FF },    /* R99    - Sample Rate Sequence Select 3 */
+>  	{ 0x00000064, 0x01FF },    /* R100   - Sample Rate Sequence Select 4 */
+> -	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 1 */
+> -	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 2 */
+> -	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 3 */
+> -	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 4 */
+> +	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 3 */
+> +	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 4 */
+> +	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 5 */
+> +	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 6 */
+>  	{ 0x00000070, 0x0000 },    /* R112   - Comfort Noise Generator */
+>  	{ 0x00000090, 0x0000 },    /* R144   - Haptics Control 1 */
+>  	{ 0x00000091, 0x7FFF },    /* R145   - Haptics Control 2 */
+> @@ -814,10 +814,10 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
+>  	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_2:
+>  	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_3:
+>  	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_4:
+> -	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1:
+> -	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3:
+>  	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
+> +	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
+>  	case ARIZONA_COMFORT_NOISE_GENERATOR:
+>  	case ARIZONA_HAPTICS_CONTROL_1:
+>  	case ARIZONA_HAPTICS_CONTROL_2:
+> diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+> index c445bf0..dbd23c3 100644
+> --- a/include/linux/mfd/arizona/registers.h
+> +++ b/include/linux/mfd/arizona/registers.h
+> @@ -42,12 +42,14 @@
+>  #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_2    0x62
+>  #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_3    0x63
+>  #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_4    0x64
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1 0x68
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2 0x69
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3 0x6A
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4 0x6B
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5 0x6C
+> -#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6 0x6D
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1 0x66
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2 0x67
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3 0x68
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4 0x69
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5 0x6A
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6 0x6B
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_7 0x6C
+> +#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_8 0x6D
+>  #define ARIZONA_COMFORT_NOISE_GENERATOR          0x70
+>  #define ARIZONA_HAPTICS_CONTROL_1                0x90
+>  #define ARIZONA_HAPTICS_CONTROL_2                0x91
 
-regards
-Philipp
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
