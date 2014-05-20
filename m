@@ -1,60 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaETKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:50:57 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:58893 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092AbaETKu4 (ORCPT
+	id S1752886AbaETKvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:51:18 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:58860 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaETKvP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:50:56 -0400
-Message-ID: <1400583055.4912.28.camel@x220>
-Subject: [PATCH] MIPS: remove check for CONFIG_CAVIUM_REPORT_SINGLE_BIT_ECC
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 May 2014 12:50:55 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 May 2014 10:50:55.0314 (UTC) FILETIME=[6025FB20:01CF7419]
-X-RcptDomain: vger.kernel.org
+	Tue, 20 May 2014 06:51:15 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "Francois.Bedard@synopsys.com" <Francois.Bedard@synopsys.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Thread-Topic: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Thread-Index: AQHPT9jeNnkMkCwR+kyAUJXIQJtz9psBXckAgAQyHoCABtnqgIAABJyAgAnkugCAMx5oAA==
+Date: Tue, 20 May 2014 10:51:03 +0000
+Message-ID: <1400583062.4364.16.camel@abrodkin-8560l>
+References: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
+	 <20140404140933.GA25772@arch.cereza>
+	 <1396851239.4081.10.camel@abrodkin-8560l.internal.synopsys.com>
+	 <1397227889.3284.17.camel@abrodkin-8560l.internal.synopsys.com>
+	 <20140411150759.GA19199@arch.cereza>
+	 <1397772778.5495.1.camel@abrodkin-8560l.internal.synopsys.com>
+In-Reply-To: <1397772778.5495.1.camel@abrodkin-8560l.internal.synopsys.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.225.15.248]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <45FF8DA5DEB05148A0AF65BD60151731@internal.synopsys.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A check for CONFIG_CAVIUM_REPORT_SINGLE_BIT_ECC was added in v2.6.29,
-but without the related Kconfig symbol. Remove this check.
+Dear Brian,
 
-Also remove the test for an "ecc_verbose" kernel parameter. It is
-undocumented and has no effect anyway.
+On Fri, 2014-04-18 at 02:12 +0400, Alexey Brodkin wrote:
+> Dear Brian,
+> 
+> On Fri, 2014-04-11 at 12:07 -0300, ezequiel.garcia@free-electrons.com
+> wrote:
+> > On Apr 11, Alexey Brodkin wrote:
+> > > Hi Ezequiel,
+> > > 
+> > > On Mon, 2014-04-07 at 10:13 +0400, Alexey Brodkin wrote:
+> > > > Hi Ezequiel,
+> > > > 
+> > > > On Fri, 2014-04-04 at 11:09 -0300, Ezequiel Garcia wrote:
+> > > > > On Apr 04, Alexey Brodkin wrote:
+> > > > > > Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> > > > > > 
+> > > > > 
+> > > > > Maybe it would be nice adding some driver description here, so the commit
+> > > > > log actually says something useful about the commit.
+> > > > 
+> > > > Well, I thought about it but frankly I'm not sure if there's anything
+> > > > else to add to commit title "driver for NAND controller used on Synopsys
+> > > > AXS dev boards".
+> > > > 
+> > > > Do you think more info may make sense?
+> > > > 
+> > > > > > +/**
+> > > > > > + * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
+> > > > > > + *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
+> > > > > > + * @host:	Pointer to private data structure.
+> > > > > > + * @flag:	Bit/flag offset in INT_STATUS register
+> > > > > > + */
+> > > > > > +static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
+> > > > > > +{
+> > > > > > +	unsigned int i;
+> > > > > > +
+> > > > > > +	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
+> > > > > > +		unsigned int status = reg_get(host, INT_STATUS);
+> > > > > > +
+> > > > > > +		if (status & (1 << flag)) {
+> > > > > > +			reg_set(host, INT_CLR_STATUS, 1 << flag);
+> > > > > > +			return;
+> > > > > > +		}
+> > > > > > +
+> > > > > > +		udelay(10);
+> > > > > > +	}
+> > > > > > +
+> > > > > > +	/*
+> > > > > > +	 * Since we cannot report this problem any further than
+> > > > > > +	 * axs_nand_{write|read}_buf() letting user know there's a problem.
+> > > > > > +	 */
+> > > > > > +	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
+> > > > > > +		AXS_FLAG_WAIT_DELAY, flag);
+> > > > > > +}
+> > > > > 
+> > > > > Hm... I'm not sure the above is really true.
+> > > > > 
+> > > > > The NAND core uses the replaceable chip->waitfunc callback to check the
+> > > > > status of issued commands. See for instance:
+> > > > > 
+> > > > > static int nand_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
+> > > > >                               int page)
+> > > > > {
+> > > > >         int status = 0;
+> > > > >         const uint8_t *buf = chip->oob_poi;
+> > > > >         int length = mtd->oobsize;
+> > > > > 
+> > > > >         chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
+> > > > >         chip->write_buf(mtd, buf, length);
+> > > > >         /* Send command to program the OOB data */
+> > > > >         chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
+> > > > > 
+> > > > >         status = chip->waitfunc(mtd, chip);
+> > > > > 
+> > > > >         return status & NAND_STATUS_FAIL ? -EIO : 0;
+> > > > > }
+> > > > > 
+> > > > > On the other side, if you are clearing the flags in axs_flag_wait_and_reset()
+> > > > > it might be a bit hard for you to get this right.
+> > > > > 
+> > > > > IOW, I'm not saying you *must* do this, but instead suggesting that you take
+> > > > > a look at waitfunc() and see if it helps report a proper error in the
+> > > > > read/write path.
+> > > > 
+> > > > As I may understand from generic implementation of "waitfunc" in
+> > > > "nand_base.c" it checks status of NAND chip itself - which IMHO makes
+> > > > sense. And this is done via NAND_CMD_STATUS command sent to chip through
+> > > > NAND controller.
+> > > > 
+> > > > In AXS NAND driver you may see 2 types of wait checks:
+> > > > 1. NAND_ISR_CMDDONE - this flag means that NAND controller has just
+> > > > executed provided command (i.e. set proper signal on control lines of
+> > > > NAND chip etc), but it doesn't mean NAND chip itself has completed
+> > > > command execution. That's why "waitfunc" is not direct replacement here.
+> > > > 
+> > > > 2. NAND_ISR_{RX|TX}DMACOMPLETE - this flag indicates completion of DMA
+> > > > transfer to/from NAND chip to RAM. "waitfunc" won't work here as well.
+> > > > 
+> > > > I hope this explanation makes sense.
+> > > 
+> > > Please treat this message as a gentle reminder.
+> > > I'm wondering if my explanation in the previous email makes any sense or
+> > > I still need to fix stuff.
+> > 
+> > Well, I was merely suggesting to look into using waitfunc(), so you definitely
+> > don't need to fix anything (at least from my side).
+> > 
+> > Just as a comment, regarding your explanation above, I think you can override
+> > the waitfunc() and check the NAND_CMD_STATUS, together with the check for your
+> > ISR flags. However, you know more about your hardware than me, so this is
+> > *just* a suggestion.
+> > 
+> > The driver looks fine broadly speaking. I guess it's up to Brian now to provide
+> > further feedback.
+> 
+> I'm wondering if there's a chance for you to look at this patch anytime
+> soon?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Please treat this as another gentle reminder to review this patch and if
+there're no objections please consider to apply this one.
 
-Note that __cvmx_interrupt_ecc_report_single_bit_errors doesn't exist.
-
- arch/mips/cavium-octeon/setup.c | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index 331b837cec57..953ca85f84fa 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -779,12 +779,6 @@ void __init prom_init(void)
- 				MAX_MEMORY = 32ull << 30;
- 			if (*p == '@')
- 				RESERVE_LOW_MEM = memparse(p + 1, &p);
--		} else if (strcmp(arg, "ecc_verbose") == 0) {
--#ifdef CONFIG_CAVIUM_REPORT_SINGLE_BIT_ECC
--			__cvmx_interrupt_ecc_report_single_bit_errors = 1;
--			pr_notice("Reporting of single bit ECC errors is "
--				  "turned on\n");
--#endif
- #ifdef CONFIG_KEXEC
- 		} else if (strncmp(arg, "crashkernel=", 12) == 0) {
- 			crashk_size = memparse(arg+12, &p);
--- 
-1.9.0
-
+Regards,
+Alexey
