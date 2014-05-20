@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaETIKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:10:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45061 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaETIKw (ORCPT
+	id S1752166AbaETIQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:16:20 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:59688 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178AbaETIQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:10:52 -0400
-Message-ID: <537B0E08.50400@linaro.org>
-Date: Tue, 20 May 2014 09:10:48 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 04:16:17 -0400
+Message-ID: <537B0EE0.4080406@linux.vnet.ibm.com>
+Date: Tue, 20 May 2014 13:44:24 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn@kryo.se>
-CC: linux-mmc@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        agross@quicinc.com, linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH RFC 00/12] Add Qualcomm SD Card Controller support.
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org> <CAJAp7Oj5e8_zqNsHUxex8pd1zh4_sSzZMvp+67YSE39JDkoLAQ@mail.gmail.com>
-In-Reply-To: <CAJAp7Oj5e8_zqNsHUxex8pd1zh4_sSzZMvp+67YSE39JDkoLAQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Pedro Alves <palves@redhat.com>
+CC: mikey@neuling.org, avagin@openvz.org, oleg@redhat.com,
+        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
+ memory register sets
+References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com> <53730326.6000400@linux.vnet.ibm.com> <53735044.5030008@redhat.com> <537479FD.2010200@linux.vnet.ibm.com> <5374AE24.1030302@redhat.com> <5379EF0E.6090504@linux.vnet.ibm.com> <537A1889.8030801@redhat.com>
+In-Reply-To: <537A1889.8030801@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052008-2674-0000-0000-00000E61574B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Bjorn for testing this series.
+On 05/19/2014 08:13 PM, Pedro Alves wrote:
+> On 05/19/2014 12:46 PM, Anshuman Khandual wrote:
+> 
+>>>> I couldn't actually find any arch that currently returns -ENODEV in
+>>>> the "active" hook.  I see that binfmt_elf.c doesn't handle
+>>>> regset->active() returning < 0.  Guess that may be why.  Looks like
+>>>> something that could be cleaned up, to me.
+>>>>
+>> Also it does not consider the return value of regset->active(t->task, regset)
+>> (whose objective is to figure out whether we need to request regset->n number
+>> of elements or less than that) in the subsequent call to regset->get function.
+> 
+> Indeed.
+> 
+> TBC, do you plan on fixing this?  Otherwise ...
 
-On 19/05/14 23:08, Bjorn Andersson wrote:
-> On Mon, Apr 21, 2014 at 2:43 PM,<srinivas.kandagatla@linaro.org>  wrote:
->> >From: Srinivas Kandagatla<srinivas.kandagatla@linaro.org>
-> [snip]
->> >
->> >This patches are tested in PIO mode on IFC8064 board with both eMMC and
->> >external SD card. I would appreciate any feedback/suggestions on the overall
->> >approach.
-> Hi Srini,
->
-> I finally got around to give this series a spin on our APQ8064 based
-> devices as well. I had a few reported CRC issues on our msm8960 based
-> devices, but thinks seems functionally "ok".
->
-> On APQ8064, the kernel finds the onboard eMMC and when mounting it I
-> get the following:
->
-> [    1.624118] mmc0: new high speed MMC card at address 0001
-> [    1.627521] mmcblk0: mmc0:0001 MAG2GA 14.5 GiB
-> [    1.632714] mmcblk0boot0: mmc0:0001 MAG2GA partition 1 2.00 MiB
-> [    1.636989] mmcblk0boot1: mmc0:0001 MAG2GA partition 2 2.00 MiB
-> [    1.637393] Freeing unused kernel memory: 332K (c09c6000 - c0a19000)
-> [    1.663379] mmcblk0: response CRC error sending r/w cmd command,
->
-> [    2.292914] mmcblk0: response CRC error sending r/w cmd command,
-> card status 0xb00
-> [    2.300985] mmcblk0: response CRC error sending r/w cmd command,
->
->
-> Any suggestions of what I could do to help you debug this?
->
+Sure, thinking something like this as mentioned below. But still not sure how to use
+the return type of -ENODEV from the function regset->active(). Right now if any
+regset does have the active hook and it returns anything but positive value, it will
+be ignored and the control moves to the next regset in view. This prevents the thread
+core note type being written to the core dump.
 
-There might be couple of reasons why this might happen,
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index aa3cb62..80672fb 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1553,7 +1553,15 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
+                if (regset->core_note_type && regset->get &&
+                    (!regset->active || regset->active(t->task, regset))) {
+                        int ret;
+-                       size_t size = regset->n * regset->size;
++                       size_t size;
++
++                       /* Request only the active elements in the regset */
++                       if (!regset->active)
++                               size = regset->n * regset->size;
++                       else
++                               size = regset->active(t->task, regset)
++                                                               * regset->size;
++
+                        void *data = kmalloc(size, GFP_KERNEL);
+                        if (unlikely(!data))
+                                return 0;
 
-First is the regluators. currently the upstream kernel does not have 
-support for regulators. So, does the eMMC on your board work perfectly 
-fine with the default 2.7v?
+> 
+>> Now coming to the installation of the .active hooks part for all the new regsets, it
+>> should be pretty straight forward as well. Though its optional and used for elf_core_dump
+>> purpose only, its worth adding them here. Example of an active function should be something
+>> like this. The function is inexpensive as required.
+>>
+>> +static int tm_spr_active(struct task_struct *target,
+>> +                               const struct user_regset *regset)
+>> +{
+>> +       if (!cpu_has_feature(CPU_FTR_TM))
+>> +               return -ENODEV;
+> 
+> ... unfortunately this will do the wrong thing.
 
-secondly it could be eMMC vendor specific quirks.
+I am not sure whether I understand this correctly. Are you saying that its wrong to return
+-ENODEV in this case as above ?
 
-I stress tested eMMC on IFC6410 and I did not hit any issues as you 
-mentioned.
-
-Are you aware of any such quirks specific to the eMMC on your board?
-
-thanks,
-srini
-
-> Regards,
-> Bjorn
