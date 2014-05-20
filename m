@@ -1,160 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaETWQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:16:57 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:34447 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaETWQz (ORCPT
+	id S1751458AbaETWSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:18:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34813 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaETWSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:16:55 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Miroslav Lichvar <mlichvar@redhat.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH] [RFC] ia64: Attempt to update of fsyscall gettime to use modern vsyscall_update
-Date: Tue, 20 May 2014 15:16:42 -0700
-Message-Id: <1400624202-3778-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 20 May 2014 18:18:12 -0400
+Date: Tue, 20 May 2014 23:17:58 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Message-ID: <20140520221758.GH12304@sirena.org.uk>
+References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
+ <1398295293-11033-3-git-send-email-mporter@linaro.org>
+ <20140428115627.GY21279@lee--X1>
+ <20140428140910.GB7719@beef>
+ <20140520161131.GB32025@lee--X1>
+ <20140520190055.GQ12304@sirena.org.uk>
+ <20140520202923.GT32082@beef>
+ <20140520214439.GS12304@sirena.org.uk>
+ <20140520215726.GU32082@beef>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Rl31vBGKDBpRqJCj"
+Content-Disposition: inline
+In-Reply-To: <20140520215726.GU32082@beef>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/4] mfd: bcm590xx: add support for secondary I2C
+ slave address
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ia64 hasn't yet moved away from the old vsyscall_update to the newer
-implementation. This is in part due to the vsyscall being implemented
-in asm (via the ia64 fsyscall feature), which makes me want to run away.
 
-The core logic change with the updated vsyscall method is that we
-preserve the base nanosecond value in shifted nanoseconds, which
-allows us to avoid truncating and rounding up to the next nanosecond
-every tick to avoid inconsistencies.
+--Rl31vBGKDBpRqJCj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thus the logic moved from
-nsec = ((cycle_delta * mult)>>shift) + base_nsec;
-to
-nsec = ((cycle_delta * mult) + base_snsec) >> shift;
+On Tue, May 20, 2014 at 05:57:26PM -0400, Matt Porter wrote:
+> On Tue, May 20, 2014 at 10:44:39PM +0100, Mark Brown wrote:
 
-To try to get the discussion going, I've taken a swing at migrating
-the update logic and have naievely tried to change the asm logic,
-but its quite likely wrong.
+> > I looked at that but it seems I already acked the regulator part of the
+> > series and nothing else looked immediately relevant?
 
-NOT BUILD TESTED!
+> The series has cross dependencies (shared header include) and thus needs
+> to have both the mfd and regulator portions merged together. You had
+> mentioned in the v1 version that you'd like to take it through the
+> regulator tree and so Lee's comments earlier were with regard to you
+> taking the mfd portions.
 
-Feedback and thoughts would be appreciated!
+Right, OK - because it depends on the earlier MFD patches (I think?) I
+was expecting it to be applied in MFD and merged over to regulator.
 
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Miroslav Lichvar <mlichvar@redhat.com>
-Cc: linux-ia64@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/ia64/Kconfig                     |  1 -
- arch/ia64/kernel/fsys.S               |  4 ++--
- arch/ia64/kernel/fsyscall_gtod_data.h |  6 ++++--
- arch/ia64/kernel/time.c               | 37 ++++++++++++++++++-----------------
- 4 files changed, 25 insertions(+), 23 deletions(-)
+--Rl31vBGKDBpRqJCj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 12c3afe..35562fb 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -40,7 +40,6 @@ config IA64
- 	select ARCH_TASK_STRUCT_ALLOCATOR
- 	select ARCH_THREAD_INFO_ALLOCATOR
- 	select ARCH_CLOCKSOURCE_DATA
--	select GENERIC_TIME_VSYSCALL_OLD
- 	select SYSCTL_ARCH_UNALIGN_NO_WARN
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_RELA
-diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
-index abc6dee..91ae672 100644
---- a/arch/ia64/kernel/fsys.S
-+++ b/arch/ia64/kernel/fsys.S
-@@ -265,9 +265,9 @@ EX(.fail_efault, probe.w.fault r31, 3)
- 	mf
- 	;;
- 	ld4 r10 = [r20]		// gtod_lock.sequence
--	shr.u r2 = r2,r23	// shift by factor
--	;;
- 	add r8 = r8,r2		// Add xtime.nsecs
-+	;;
-+	shr.u r8 = r8,r23	// shift by factor
- 	cmp4.ne p7,p0 = r28,r10
- (p7)	br.cond.dpnt.few .time_redo	// sequence number changed, redo
- 	// End critical section.
-diff --git a/arch/ia64/kernel/fsyscall_gtod_data.h b/arch/ia64/kernel/fsyscall_gtod_data.h
-index 146b15b..ff292a9 100644
---- a/arch/ia64/kernel/fsyscall_gtod_data.h
-+++ b/arch/ia64/kernel/fsyscall_gtod_data.h
-@@ -7,8 +7,10 @@
- 
- struct fsyscall_gtod_data_t {
- 	seqcount_t	seq;
--	struct timespec	wall_time;
--	struct timespec monotonic_time;
-+	u64 wall_time_sec;
-+	u64 wall_time_snsec;
-+	u64 monotonic_time_sec;
-+	u64 monotonic_time_snsec;
- 	cycle_t		clk_mask;
- 	u32		clk_mult;
- 	u32		clk_shift;
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 71c52bc..6b249c5 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -440,30 +440,31 @@ void update_vsyscall_tz(void)
- {
- }
- 
--void update_vsyscall_old(struct timespec *wall, struct timespec *wtm,
--			struct clocksource *c, u32 mult)
-+void update_vsyscall(struct timekeeper *tk)
- {
- 	write_seqcount_begin(&fsyscall_gtod_data.seq);
--
--        /* copy fsyscall clock data */
--        fsyscall_gtod_data.clk_mask = c->mask;
--        fsyscall_gtod_data.clk_mult = mult;
--        fsyscall_gtod_data.clk_shift = c->shift;
--        fsyscall_gtod_data.clk_fsys_mmio = c->archdata.fsys_mmio;
--        fsyscall_gtod_data.clk_cycle_last = c->cycle_last;
-+	/* copy fsyscall clock data */
-+	fsyscall_gtod_data.clk_mask = tk->clock->mask;
-+	fsyscall_gtod_data.clk_mult = tk->mult;
-+	fsyscall_gtod_data.clk_shift = tk->clock->shift;
-+	fsyscall_gtod_data.clk_fsys_mmio = tk->clock->archdata.fsys_mmio;
-+	fsyscall_gtod_data.clk_cycle_last = tk->cycle_last;
- 
- 	/* copy kernel time structures */
--        fsyscall_gtod_data.wall_time.tv_sec = wall->tv_sec;
--        fsyscall_gtod_data.wall_time.tv_nsec = wall->tv_nsec;
--	fsyscall_gtod_data.monotonic_time.tv_sec = wtm->tv_sec
--							+ wall->tv_sec;
--	fsyscall_gtod_data.monotonic_time.tv_nsec = wtm->tv_nsec
--							+ wall->tv_nsec;
-+	fsyscall_gtod_data.wall_time_sec = tk->xtime_sec;
-+	fsyscall_gtod_data.wall_time_snsec = tk->xtime_nsec;
-+	fsyscall_gtod_data.monotonic_time_sec = tk->wall_to_monotonic->tv_sec
-+							+ tk->xtime_sec;
-+	fsyscall_gtod_data.monotonic_time_snsec =
-+			tk->wall_to_monotonic->tv_nsec << tk->clock->shift,
-+			+ tk->xtime_nsec;
- 
- 	/* normalize */
--	while (fsyscall_gtod_data.monotonic_time.tv_nsec >= NSEC_PER_SEC) {
--		fsyscall_gtod_data.monotonic_time.tv_nsec -= NSEC_PER_SEC;
--		fsyscall_gtod_data.monotonic_time.tv_sec++;
-+	while (fsyscall_gtod_data.monotonic_time_snsec >=
-+					NSEC_PER_SEC << tk->clock->shift) {
-+		fsyscall_gtod_data.monotonic_time_snsec -=
-+						NSEC_PER_SEC << c->shift;
-+		fsyscall_gtod_data.monotonic_time_sec++;
- 	}
- 
- 	write_seqcount_end(&fsyscall_gtod_data.seq);
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTe9SSAAoJELSic+t+oim9QOIP/16xpmlilX1hQbrOrr75vRYK
+SkMn8naEAWOn/gphQvLAatKSiAEbpZa0ITzknU3tjszoMNpCxZmiwzP79acJDmJQ
+tfD55V279M11FrBLGHkkmkBTaahFclPG16dD3GmdOXPjBya1EOCnAmml3XSnEwF5
+i56ZcC+UrCif9dQ64Km86+U95P7DvjVeuh9AaE3ScztzKTroguOmqoIbrVixdcCl
+sS6RmaNnXam0aXjiAoyN6kTuFdTk5tAo0u7Gf1ej4CSalKJnwySr5ejcEAYHACkN
+aTdHVM6tbnTffWp8bL1VwFc3QyLp3+QKnU7nrRtGPnTHItYCNduGK+IEo9cuMITe
+GyEcdfrJ4Z+N7TgHEfbT+H3iC9X59rPgQKz9LBi86gfsnYmeUkGYwDK97HFOXGEv
+B9ITG8rbY4xriYtS6FK0em04ylGfaMRGhEZX9eKT3DCSa0OLUdNBUOX3lDCJgMjB
+EgwNQ2kVtE7/FtNzHQjak5kB933g3YHCWfgNRB6jqjq3astg/JtGX/yzqGW99uK9
+Tumz1a3gBDaDOWpCpxQmjraXdKAAgDsAM2R7DymaFPkE0BDlFaJ2blw6vbNBz90b
+8XLLdukw6zYds01xE+R7yMQDG5EHmz0wvb/O/+xEuRd9zKKnUDG76mW3qGGEVVRO
+8Q+kUiNRm2WRNOvLtuxP
+=Cjmu
+-----END PGP SIGNATURE-----
+
+--Rl31vBGKDBpRqJCj--
