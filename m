@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaETXTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 19:19:46 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:33538 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaETXTo (ORCPT
+	id S1751448AbaETXUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 19:20:21 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:36260 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaETXUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 19:19:44 -0400
-Date: Tue, 20 May 2014 17:19:40 -0600
+	Tue, 20 May 2014 19:20:20 -0400
+Date: Tue, 20 May 2014 17:20:16 -0600
 From: Bjorn Helgaas <bhelgaas@google.com>
-To: "gioh.kim" <gioh.kim@lge.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, gunho.lee@lge.com
-Subject: Re: [PATCH] Documentation/DMA-API-HOWTO.txt: update API descriptions
-Message-ID: <20140520231940.GA24638@google.com>
-References: <1399895153-29451-1-git-send-email-gioh.kim@lge.com>
+Subject: Re: [PATCH] Documentation/dma-buf-sharing.txt: update API
+ descriptions
+Message-ID: <20140520232016.GB24638@google.com>
+References: <1400024983-21891-1-git-send-email-gioh.kim@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399895153-29451-1-git-send-email-gioh.kim@lge.com>
+In-Reply-To: <1400024983-21891-1-git-send-email-gioh.kim@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 08:45:52PM +0900, gioh.kim wrote:
-> From: "gioh.kim" <gioh.kim@lge.com>
-> 
-> update descriptions for dma_pool_create and dma_pool_alloc
+On Wed, May 14, 2014 at 08:49:43AM +0900, Gioh Kim wrote:
+> Update some descriptions for API arguments and descriptions.
 > 
 > Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 
 I applied this to my "dma-api" branch for v3.16, thanks!
 
-(I fixed up the From: line as you did for the other patch.)
-
 > ---
->  Documentation/DMA-API-HOWTO.txt |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  Documentation/dma-buf-sharing.txt |   14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
 > 
-> diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
-> index 5e98303..e4251a3 100644
-> --- a/Documentation/DMA-API-HOWTO.txt
-> +++ b/Documentation/DMA-API-HOWTO.txt
-> @@ -373,13 +373,13 @@ Create a dma_pool like this:
+> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+> index 505e711..aadd901 100644
+> --- a/Documentation/dma-buf-sharing.txt
+> +++ b/Documentation/dma-buf-sharing.txt
+> @@ -56,10 +56,10 @@ The dma_buf buffer sharing API usage contains the following steps:
+>  				     size_t size, int flags,
+>  				     const char *exp_name)
 >  
->  	struct dma_pool *pool;
+> -   If this succeeds, dma_buf_export allocates a dma_buf structure, and returns a
+> -   pointer to the same. It also associates an anonymous file with this buffer,
+> -   so it can be exported. On failure to allocate the dma_buf object, it returns
+> -   NULL.
+> +   If this succeeds, dma_buf_export_named allocates a dma_buf structure, and
+> +   returns a pointer to the same. It also associates an anonymous file with this
+> +   buffer, so it can be exported. On failure to allocate the dma_buf object,
+> +   it returns NULL.
 >  
-> -	pool = dma_pool_create(name, dev, size, align, alloc);
-> +	pool = dma_pool_create(name, dev, size, align, boundary);
+>     'exp_name' is the name of exporter - to facilitate information while
+>     debugging.
+> @@ -76,7 +76,7 @@ The dma_buf buffer sharing API usage contains the following steps:
+>     drivers and/or processes.
 >  
->  The "name" is for diagnostics (like a kmem_cache name); dev and size
->  are as above.  The device's hardware alignment requirement for this
->  type of data is "align" (which is expressed in bytes, and must be a
->  power of two).  If your device has no boundary crossing restrictions,
-> -pass 0 for alloc; passing 4096 says memory allocated from this pool
-> +pass 0 for boundary; passing 4096 says memory allocated from this pool
->  must not cross 4KByte boundaries (but at that time it may be better to
->  go for dma_alloc_coherent directly instead).
+>     Interface:
+> -      int dma_buf_fd(struct dma_buf *dmabuf)
+> +      int dma_buf_fd(struct dma_buf *dmabuf, int flags)
 >  
-> @@ -387,8 +387,8 @@ Allocate memory from a dma pool like this:
+>     This API installs an fd for the anonymous file associated with this buffer;
+>     returns either 'fd', or error.
+> @@ -157,7 +157,9 @@ to request use of buffer for allocation.
+>     "dma_buf->ops->" indirection from the users of this interface.
 >  
->  	cpu_addr = dma_pool_alloc(pool, flags, &dma_handle);
+>     In struct dma_buf_ops, unmap_dma_buf is defined as
+> -      void (*unmap_dma_buf)(struct dma_buf_attachment *, struct sg_table *);
+> +      void (*unmap_dma_buf)(struct dma_buf_attachment *,
+> +                            struct sg_table *,
+> +                            enum dma_data_direction);
 >  
-> -flags are SLAB_KERNEL if blocking is permitted (not in_interrupt nor
-> -holding SMP locks), SLAB_ATOMIC otherwise.  Like dma_alloc_coherent,
-> +flags are GFP_KERNEL if blocking is permitted (not in_interrupt nor
-> +holding SMP locks), GFP_ATOMIC otherwise.  Like dma_alloc_coherent,
->  this returns two values, cpu_addr and dma_handle.
->  
->  Free memory that was allocated from a dma_pool like this:
+>     unmap_dma_buf signifies the end-of-DMA for the attachment provided. Like
+>     map_dma_buf, this API also must be implemented by the exporter.
 > -- 
 > 1.7.9.5
 > 
