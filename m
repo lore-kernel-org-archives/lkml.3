@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaETO2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:28:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50686 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448AbaETO2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:28:09 -0400
-Message-ID: <537B6663.30005@ti.com>
-Date: Tue, 20 May 2014 09:27:47 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>
-CC: <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <arvind.chauhan@arm.com>,
-        <inderpal.s@samsung.com>, <chander.kashyap@linaro.org>, <pavel@ucw.cz>,
-        <len.brown@intel.com>, Chander Kashyap <k.chander@samsung.com>,
-        Viresh Kumar <viresh.kumar@linrao.org>
-Subject: Re: [PATCH V4] PM/OPP: discard duplicate OPPs
-References: <d0200ee9e30de19f69ca1b7e53a8cd7a047fa436.1400595283.git.viresh.kumar@linaro.org>
-In-Reply-To: <d0200ee9e30de19f69ca1b7e53a8cd7a047fa436.1400595283.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753756AbaETO3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:29:03 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:49440 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbaETO3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:29:00 -0400
+Message-ID: <1400596136.5367.125.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Igor Royzis <igorr@swortex.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
+        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
+Date: Tue, 20 May 2014 07:28:56 -0700
+In-Reply-To: <1400585062-13580-1-git-send-email-igorr@swortex.com>
+References: <1400585062-13580-1-git-send-email-igorr@swortex.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 09:17 AM, Viresh Kumar wrote:
-> From: Chander Kashyap <k.chander@samsung.com>
+On Tue, 2014-05-20 at 14:24 +0300, Igor Royzis wrote:
+> Fix accessing GSO fragments memory (and a possible corruption therefore) after
+> reporting completion in a zero copy callback. The previous fix in the commit 1fd819ec
+> orphaned frags which eliminates zero copy advantages. The fix makes the completion
+> called after all the fragments were processed avoiding unnecessary orphaning/copying
+> from userspace.
 > 
-> We don't have any protection against addition of duplicate OPPs currently and
-> in case some code tries to add them it will end up corrupting OPP tables.
+> The GSO fragments corruption issue was observed in a typical QEMU/KVM VM setup that
+> hosts a Windows guest (since QEMU virtio-net Windows driver doesn't support GRO).
+> The fix has been verified by running the HCK OffloadLSO test.
 > 
-> There can be many combinations in which we may end up trying duplicate OPPs:
-> - both freq and volt are same, but earlier OPP may or may not be active.
-> - only freq is same and volt is different.
-> 
-> This patch tries to implement below logic for these cases:
-> 
-> Return 0 if new OPP was duplicate of existing one (i.e. same freq and volt) and
-> return -EEXIST if new OPP had same freq but different volt as of an existing OPP
-> OR if both freq/volt were same but earlier OPP was disabled.
-> 
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linrao.org>
+> Signed-off-by: Igor Royzis <igorr@swortex.com>
+> Signed-off-by: Anton Nayshtut <anton@swortex.com>
 > ---
-> V3->V4:
-> - handle duplicate OPPs more appropriately
-> - update comment over routine and enhance commit log
+>  include/linux/skbuff.h |    1 +
+>  net/core/skbuff.c      |   18 +++++++++++++-----
+>  2 files changed, 14 insertions(+), 5 deletions(-)
 > 
-> @Chander: I have kept your authorship as is, hope you don't mind me sending it
-> on your behalf :)
-> 
->  drivers/base/power/opp.c | 25 +++++++++++++++++++++++--
->  1 file changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 2553867..cd9af42 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -389,6 +389,11 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_find_freq_floor);
->   * The opp is made available by default and it can be controlled using
->   * dev_pm_opp_enable/disable functions.
->   *
-> + * Duplicate OPPs are discarded. Will return 0 if new OPP was duplicate of
-> + * existing one (i.e. same freq and volt) and -EEXIST would be returned if new
-> + * OPP had same freq but different volt as of an existing OPP OR if both were
-> + * same but earlier OPP was disabled.
-How about we use the kernel-doc's "Return:"
-Return: Returns 0 if new OPP was successfully added OR if the new OPP
-was exact duplicate of existing one (i.e. same frequency and volt).
--EEXIST would be returned if new
-OPP had same freq but different volt as of an existing OPP OR if both
-were same but earlier OPP was disabled. -ENOMEM is returned if there
-is no memory available to allocate requisite internal structures.
-
-> + *
->   * Locking: The internal device_opp and opp structures are RCU protected.
->   * Hence this function internally uses RCU updater strategy with mutex locks
->   * to keep the integrity of the internal data structures. Callers should ensure
-> @@ -443,15 +448,31 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->  	new_opp->u_volt = u_volt;
->  	new_opp->available = true;
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 08074a8..8c49edc 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -287,6 +287,7 @@ struct skb_shared_info {
+>  	struct sk_buff	*frag_list;
+>  	struct skb_shared_hwtstamps hwtstamps;
+>  	__be32          ip6_frag_id;
+> +	struct sk_buff  *zcopy_src;
 >  
-> -	/* Insert new OPP in order of increasing frequency */
-> +	/*
-> +	 * Insert new OPP in order of increasing frequency
-> +	 * and discard if already present
-> +	 */
->  	head = &dev_opp->opp_list;
->  	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
-> -		if (new_opp->rate < opp->rate)
-> +		if (new_opp->rate <= opp->rate)
->  			break;
->  		else
->  			head = &opp->node;
->  	}
->  
-> +	/* Duplicate OPPs ? */
-> +	if (new_opp->rate == opp->rate) {
-> +		int ret = (new_opp->u_volt == opp->u_volt) && opp->available ?
-> +			0 : -EEXIST;
-> +
-> +		pr_warn("%s: duplicate OPPs detected. Existing: freq: %lu, volt: %lu, enabled: %d. New: freq: %lu, volt: %lu, enabled: %d\n",
-dev_warn please? we already know the dev pointer. Also can we reduce
-this down to 80 character limit if possible?
 
-> +			__func__, opp->rate, opp->u_volt, opp->available,
-> +			new_opp->rate, new_opp->u_volt, new_opp->available);
-> +		mutex_unlock(&dev_opp_list_lock);
-> +		kfree(new_opp);
-> +		return ret;
-> +	}
-> +
->  	list_add_rcu(&new_opp->node, head);
->  	mutex_unlock(&dev_opp_list_lock);
->  
-> 
+Before your patch :
 
-Otherwise, this looks fine to me.
+sizeof(struct skb_shared_info)=0x140
+offsetof(struct skb_shared_info, frags[1])=0x40
 
--- 
-Regards,
-Nishanth Menon
+SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x140
+
+After your patch :
+
+sizeof(struct skb_shared_info)=0x148
+offsetof(struct skb_shared_info, frags[1])=0x48
+
+SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x180
+
+Thats a serious bump, because it increases all skb truesizes, and
+typical skb with one fragment will use 2 cache lines instead of one in
+struct skb_shared_info, so this adds memory pressure in fast path.
+
+So while this patch might increase performance for some workloads,
+it generally decreases performance on many others.
+
+
+
