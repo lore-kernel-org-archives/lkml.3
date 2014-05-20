@@ -1,142 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaETJdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:33:51 -0400
-Received: from forward20.mail.yandex.net ([95.108.253.145]:52455 "EHLO
-	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaETJdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:33:49 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-In-Reply-To: <20140520101730.ab593e41d5ee5949740de52e@gmail.com>
-References: <20140516213003.10384.7946.stgit@localhost>
-	<20140519151233.5043b749361e1b384f1e5562@gmail.com>
-	<783871400527879@web2j.yandex.ru>
-	<20140520000026.GD11096@twins.programming.kicks-ass.net>
-	<1413311400562533@web30m.yandex.ru>
-	<20140520075315.GQ2485@laptop.programming.kicks-ass.net> <20140520101730.ab593e41d5ee5949740de52e@gmail.com>
-Subject: Re: [PATCH] sched/dl: Fix race between dl_task_timer() and sched_setaffinity()
+	id S1752833AbaETJf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:35:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47648 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706AbaETJf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 05:35:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,873,1392192000"; 
+   d="scan'208";a="534734603"
+Message-ID: <537B24B8.9050303@linux.intel.com>
+Date: Tue, 20 May 2014 12:47:36 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Message-Id: <3056991400578422@web14g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 20 May 2014 13:33:42 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sarah.a.sharp@linux.intel.com, Dan Williams <dan.j.williams@intel.com>,
+        Holger Hans Peter Freyther <holger@moiji-mobile.com>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com> <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com> <20140520010137.GA8146@kroah.com>
+In-Reply-To: <20140520010137.GA8146@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.05.2014, 12:16, "Juri Lelli" <juri.lelli@gmail.com>:
-> Hi,
->
-> On Tue, 20 May 2014 09:53:15 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
->
->> šOn Tue, May 20, 2014 at 09:08:53AM +0400, Kirill Tkhai wrote:
->>> š20.05.2014, 04:00, "Peter Zijlstra" <peterz@infradead.org>:
->>>> šOn Mon, May 19, 2014 at 11:31:19PM +0400, Kirill Tkhai wrote:
->>>>> šš@@ -513,9 +513,17 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
->>>>> ššššššššššššššššššššššššššššššššššššššššššššššššššššššššstruct sched_dl_entity,
->>>>> ššššššššššššššššššššššššššššššššššššššššššššššššššššššššdl_timer);
->>>>> šššššššššššstruct task_struct *p = dl_task_of(dl_se);
->>>>> šš- struct rq *rq = task_rq(p);
->>>>> šš+ struct rq *rq;
->>>>> šš+again:
->>>>> šš+ rq = task_rq(p);
->>>>> šššššššššššraw_spin_lock(&rq->lock);
->>>>>
->>>>> šš+ if (unlikely(rq != task_rq(p))) {
->>>>> šš+ /* Task was moved, retrying. */
->>>>> šš+ raw_spin_unlock(&rq->lock);
->>>>> šš+ goto again;
->>>>> šš+ }
->>>>> šš+
->>>> šThat thing is called: rq = __task_rq_lock(p);
->>> šBut p->pi_lock is not held. The problem is __task_rq_lock() has lockdep assert.
->>> šShould we change it?
->> šOk, so now that I'm awake ;-)
+On 05/20/2014 04:01 AM, Greg KH wrote:
+> On Thu, May 08, 2014 at 07:25:55PM +0300, Mathias Nyman wrote:
+>> From: Dan Williams <dan.j.williams@intel.com>
 >>
->> šSo the trivial problem as described by your initial changelog isn't
->> šright, because we cannot call sched_setaffinity() on deadline tasks, or
->> šrather we can, but we can't actually change the affinity mask.
->
-> Well, if we disable AC we can. And I was able to recreate that race in
-> that case.
->
->> šNow I suppose the problem can still actually happen when you change the
->> šroot domain and trigger a effective affinity change that way.
->
-> Yeah, I think here too.
->
->> šThat said, no leave it as you proposed, adding a *task_rq_lock() variant
->> šwithout lockdep assert in will only confuse things, as normally we
->> šreally should be also taking ->pi_lock.
+>> Add a command line switch for disabling ehci port switchover.  Useful
+>> for working around / debugging xhci incompatibilities where ehci
+>> operation is available.
 >>
->> šThe only reason we don't strictly need ->pi_lock now is because we're
->> šguaranteed to have p->state == TASK_RUNNING here and are thus free of
->> šttwu races.
->
-> Maybe we could add this as part of the comment.
+>> Reference: http://marc.info/?l=linux-usb&m=138920063001509&w=2
+>>
+>> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> Cc: Holger Hans Peter Freyther <holger@moiji-mobile.com>
+>> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+>> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+>> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> ---
+>>  Documentation/kernel-parameters.txt |  3 +++
+>>  drivers/usb/host/pci-quirks.c       | 15 +++++++++++++--
+>>  2 files changed, 16 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 4384217..fc3403114 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -2251,6 +2251,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>  
+>>  	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
+>>  
+>> +	noxhci_port_switch
+>> +			[USB] Use EHCI instead of XHCI where available
+>> +
+> 
+> Ugh, I really don't like new command line options.
+> 
+> Especially one that isn't very well documented.  Why would someone want
+> to enable this?  What problem is it solving?  Can we detect this
+> automatically and do it for the user?  Is this just for prototype
+> hardware that has not shipped?  What hardware needs this?
+> 
+> I need a whole lot more documentation at the very least before I will
+> apply this.
+> 
 
-Peter, Juri, thanks for comment. Hope, I understood you right :)
+On Intel hardware with both ehci and xhci controllers we can select if a usb2 port
+is controlled by ehci or xhci. This capability can be checked from Intel xhci pci
+config space. Xhci driver checks this on boot and switches over the supported ports.
 
-[PATCH] sched/dl: Fix race in dl_task_timer()
+This is a feature in Intel Panther point and later chipsets, in shipped hardware.
+Its working quite well in most cases, but sometimes vendors claim they support
+switchover, but then forget to connect some wires, and the usb2 port ends up dead
+after switching.
 
-Throttled task is still on rq, and it may be moved to other cpu
-if user is playing with sched_setaffinity(). Therefore, unlocked
-task_rq() access makes the race.
+A recently found case is the Sony VAIO T-series. (I'll send you a different patch
+for that shortly)
+http://marc.info/?l=linux-usb&m=139993106029340&w=2
 
-Juri Lelli reports he got this race when dl_bandwidth_enabled()
-was not set.
+This is the extreme case that the usb2 ports appears completely dead.
+Other reasons are that some devices might work better under ehci than xhci,
+and users want to enforce the ehci opton. For powermanagement developers it's nice
+to disable switchover as it turns out some hardware are quirky with port
+switchover and suspend/resume. (might need to turn port back to ehci before
+suspending).
 
-Other thing, pointed by Peter Zijlstra:
+I don't think we can detect this automatically.
 
-   "Now I suppose the problem can still actually happen when
-    you change the root domain and trigger a effective affinity
-    change that way".
+Dan, can you add more documentation to this patch?
 
-To fix that we do the same as made in __task_rq_lock(). We do not
-use __task_rq_lock() itself, because it has a useful lockdep check,
-which is not correct in case of dl_task_timer(). We do not need
-pi_lock locked here. This case is an exception (PeterZ):
-
-   "The only reason we don't strictly need ->pi_lock now is because
-    we're guaranteed to have p->state == TASK_RUNNING here and are
-    thus free of ttwu races".
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Juri Lelli <juri.lelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>
-Cc: <stable@vger.kernel.org> # v3.14
----
- kernel/sched/deadline.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 800e99b..14bc348 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -513,9 +513,17 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 						     struct sched_dl_entity,
- 						     dl_timer);
- 	struct task_struct *p = dl_task_of(dl_se);
--	struct rq *rq = task_rq(p);
-+	struct rq *rq;
-+again:
-+	rq = task_rq(p);
- 	raw_spin_lock(&rq->lock);
- 
-+	if (rq != task_rq(p)) {
-+		/* Task was moved, retrying. */
-+		raw_spin_unlock(&rq->lock);
-+		goto again;
-+	}
-+
- 	/*
- 	 * We need to take care of a possible races here. In fact, the
- 	 * task might have changed its scheduling policy to something
+-Mathias
