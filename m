@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaETQju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:39:50 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52508 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751161AbaETQjs (ORCPT
+	id S1753854AbaETQk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:40:56 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:47858 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753189AbaETQkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:39:48 -0400
-Date: Tue, 20 May 2014 17:39:12 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140520163912.GC5041@e103592.cambridge.arm.com>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
- <5080348.QmhgfQRxZW@wuerfel>
- <20140520130659.GA5041@e103592.cambridge.arm.com>
- <6382280.3uMvoxaUSK@wuerfel>
- <20140520152659.GA30404@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140520152659.GA30404@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 May 2014 12:40:55 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtEWAPOEe1NbsnsG/2dsb2JhbABZgwarCAQBAQEBAQEFAYM6lm4CAoEcF3SCZj8YgQIkE4hFAdQbhVWIeYRHAQOPPIorAYsSiA6DOjs
+Date: Tue, 20 May 2014 18:40:44 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] drivers/video/fbdev/nvidia/nv_hw.c: replace shift loop
+ by ilog2
+Message-Id: <20140520184044.3f637e58aa8d67a062c621d5@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 04:26:59PM +0100, Will Deacon wrote:
-> On Tue, May 20, 2014 at 02:23:47PM +0100, Arnd Bergmann wrote:
-> > 	Bit#   33222222 22221111 11111100 00000000
-> > 	       10987654 32109876 54321098 76543210
-> > phys.hi cell:  npt000ss bbbbbbbb dddddfff rrrrrrrr
-> > phys.mid cell: hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh
-> > phys.lo cell:  llllllll llllllll llllllll llllllll
-> > 
-> > where:
-> > n is 0 if the address is relocatable, 1 otherwise
-> > p is 1 if the addressable region is "prefetchable", 0 otherwise
-> > t is 1 if the address is aliased (for non-relocatable I/O),
-> >  below 1 MB (for Memory), or below 64 KB (for relocatable I/O).
-> > ss is the space code, denoting the address space
-> > bbbbbbbb is the 8-bit Bus Number
-> > ddddd is the 5-bit Device Number
-> > fff is the 3-bit Function Number
-> > rrrrrrrr is the 8-bit Register Number
-> > hh...hh is a 32-bit unsigned number
-> > ll...ll is a 32-bit unsigned number
-> > 
-> > We can ignore n, p, t and r here, and use the same format for a DMA
-> > address, then define an empty "dma-ranges" property. That would
-> > imply that using b/d/f is sufficient to identify each master at the
-> > iommu. Any device outside of the PCI host but connected to the same
-> > iommu can use the same notation to list the logical b/d/f that gets
-> > sent to the IOMMU in bus master transactions.
-> > 
-> > Do you think this is sufficient for the ARM SMMU, or do we need
-> > something beyond that?
-> 
-> I think it can define the common-cases for the existing implementations,
-> yes. I anticipate Stream-IDs becoming > 16-bit in the near future though,
-> so we'd need extra bits if we're describing other devices coming into the
-> SMMU.
-> 
-> Note that we already have a binding for the current SMMU driver, so I'm not
-> really in a position to shift over to a new binding until the next version of
-> the SMMU architecture comes along...
+This patch also fixes function nv30UpdateArbitrationSettings
+which was completely written with spaces at start of lines.
 
-How much code relies on the meaning of the nptsbdf bits?
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/video/fbdev/nvidia/nv_hw.c | 31 ++++++++++++-------------------
+ 1 file changed, 12 insertions(+), 19 deletions(-)
 
-Following the general model of concatenating the master ID with the
-address bits and trasting that as a single input to the IOMMU seems
-reasonable -- maybe we either don't care about the attribute bits and
-can replace them with master ID bits, or instead we could extend with
-more master ID bits at bit 96 and up.
+diff --git a/drivers/video/fbdev/nvidia/nv_hw.c b/drivers/video/fbdev/nvidia/nv_hw.c
+index 81c80ac..2058c52 100644
+--- a/drivers/video/fbdev/nvidia/nv_hw.c
++++ b/drivers/video/fbdev/nvidia/nv_hw.c
+@@ -405,9 +405,7 @@ static void nv4UpdateArbitrationSettings(unsigned VClk,
+ 	nv4CalcArbitration(&fifo_data, &sim_data);
+ 	if (fifo_data.valid) {
+ 		int b = fifo_data.graphics_burst_size >> 4;
+-		*burst = 0;
+-		while (b >>= 1)
+-			(*burst)++;
++		*burst = ilog2(b);
+ 		*lwm = fifo_data.graphics_lwm >> 3;
+ 	}
+ }
+@@ -645,9 +643,7 @@ static void nv10UpdateArbitrationSettings(unsigned VClk,
+ 	nv10CalcArbitration(&fifo_data, &sim_data);
+ 	if (fifo_data.valid) {
+ 		int b = fifo_data.graphics_burst_size >> 4;
+-		*burst = 0;
+-		while (b >>= 1)
+-			(*burst)++;
++		*burst = ilog2(b);
+ 		*lwm = fifo_data.graphics_lwm >> 3;
+ 	}
+ }
+@@ -658,19 +654,18 @@ static void nv30UpdateArbitrationSettings (
+     unsigned int      *lwm
+ )
+ {
+-    unsigned int MClk, NVClk;
+-    unsigned int fifo_size, burst_size, graphics_lwm;
++	unsigned int MClk, NVClk;
++	unsigned int fifo_size, burst_size, graphics_lwm;
+ 
+-    fifo_size = 2048;
+-    burst_size = 512;
+-    graphics_lwm = fifo_size - burst_size;
++	fifo_size = 2048;
++	burst_size = 512;
++	graphics_lwm = fifo_size - burst_size;
+ 
+-    nvGetClocks(par, &MClk, &NVClk);
++	nvGetClocks(par, &MClk, &NVClk);
+ 
+-    *burst = 0;
+-    burst_size >>= 5;
+-    while(burst_size >>= 1) (*burst)++;
+-    *lwm = graphics_lwm >> 3;
++	burst_size >>= 5;
++	*burst = ilog2(burst_size);
++	*lwm = graphics_lwm >> 3;
+ }
+ 
+ static void nForceUpdateArbitrationSettings(unsigned VClk,
+@@ -746,9 +741,7 @@ static void nForceUpdateArbitrationSettings(unsigned VClk,
+ 	nv10CalcArbitration(&fifo_data, &sim_data);
+ 	if (fifo_data.valid) {
+ 		int b = fifo_data.graphics_burst_size >> 4;
+-		*burst = 0;
+-		while (b >>= 1)
+-			(*burst)++;
++		*burst = ilog2(b);
+ 		*lwm = fifo_data.graphics_lwm >> 3;
+ 	}
+ }
+-- 
+1.8.4.5
 
-npts looks like memory type information.  What memory type information
-we need to describe for coherent masters on ARM is a bit of an open
-question.  Perhaps we can come up with a good ARM-specific interpretation
-of these bits, but I wonder whether they are enough.
-
-If there is a real PCI bus in the system of course, then we are fine
-once we reach it.  The only problem is for the stuff on AMBA buses etc.
-
-In theory, we could have to describe memory types, cacheability
-attributes and coherency domains, but we may be able to squeeze the
-possibilities down to a smaller set of sane memory types.
-
-Cheers
----Dave
