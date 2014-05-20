@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaETEcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 00:32:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51589 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbaETEcw (ORCPT
+	id S1751096AbaETE7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 00:59:05 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41393 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaETE7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 00:32:52 -0400
-Message-ID: <537ADAEF.9060105@ti.com>
-Date: Tue, 20 May 2014 10:02:47 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Bin Liu <binmlist@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <zonque@gmail.com>, <b-liu@ti.com>
-Subject: Re: [PATCH v4 1/6] usb: musb: core: Handle Babble condition only
- in HOST mode
-References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>	<1400506776-2816-2-git-send-email-george.cherian@ti.com> <CADYTM3bd8Bq5QTn-HC4jYX-owEw_sF1DOtXsc-cMDqKHGJHXjQ@mail.gmail.com>
-In-Reply-To: <CADYTM3bd8Bq5QTn-HC4jYX-owEw_sF1DOtXsc-cMDqKHGJHXjQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 20 May 2014 00:59:03 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: David Newall <davidn@davidnewall.com>
+Cc: Florian Westphal <fw@strlen.de>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        bridge@lists.linux-foundation.org
+Subject: Re: Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge : Sanitize skb before it enters the IP stack)
+In-Reply-To: Your message of "Mon, 19 May 2014 23:49:22 +0930."
+             <537A12EA.4060604@davidnewall.com>
+From: Valdis.Kletnieks@vt.edu
+References: <537621AC.1060409@davidnewall.com> <5379FFFD.1050705@davidnewall.com> <20140519140119.GA24523@breakpoint.cc>
+            <537A12EA.4060604@davidnewall.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1400561749_1944P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 20 May 2014 00:55:49 -0400
+Message-ID: <14456.1400561749@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bin,
-On 5/19/2014 9:24 PM, Bin Liu wrote:
-> Hi,
->
-> On Mon, May 19, 2014 at 8:39 AM, George Cherian <george.cherian@ti.com> wrote:
->> BABBLE and RESET share the same interrupt. The interrupt
->> is considered to be RESET if MUSB is in peripheral mode and
->> as a BABBLE if MUSB is in HOST mode.
->>
->> Handle babble condition iff MUSB is in HOST mode.
->>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   drivers/usb/musb/musb_core.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
->> index 61da471..eff3c5c 100644
->> --- a/drivers/usb/musb/musb_core.c
->> +++ b/drivers/usb/musb/musb_core.c
->> @@ -849,7 +849,7 @@ b_host:
->>          }
->>
->>          /* handle babble condition */
->> -       if (int_usb & MUSB_INTR_BABBLE)
->> +       if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
->>                  schedule_work(&musb->recover_work);
-> I guess my following comments are for Daniel's patch as while which
-> initially added the babble work.
->
-> Should this if statement be merged into the previous 'if(int_usb &
-> MUSB_INTR_RESET)' one, which handles the same interrupt and already
-> handles host and device mode respectively.
+--==_Exmh_1400561749_1944P
+Content-Type: text/plain; charset=us-ascii
 
-Initially I too had the babble handling as part of  'if(int_usb & 
-MUSB_INTR_RESET)'
-one. But during my tests I hit a corner case where in we hit a BABBLE 
-condition
-on disconnect. In such case the babble interrupt can be handled only if 
-we have a seperate
-check, else its considered as a BUS RESET.
+On Mon, 19 May 2014 23:49:22 +0930, David Newall said:
 
-When all devices are disconnected  MUSB_DEVCTL_HM = 0 and the code 
-always enter the
-else path. In this path it treats the BABBLE as a BUS RESET.
+> How does a packet get fragmented in this case?  Does it only happen when
+> bridging to a device with smaller MTU?  That scenario sounds quite
+> un-bridge-like.  It also sounds like something that can be handled by
+> real routing.
 
-> Regards,
-> -Bin.
->
->>   #if 0
->> --
->> 1.8.3.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Which doesn't change the fact that you *will* get clowns who take a box that
+has a 10G card on a jumbogram-enabled subnet that's running with an MTU of
+9000, and a 1G at MTU 1500 on the other, and try to bridge rather than route.
+(Did you know that you can actually mount an NFS filesystem across that? And
+that ls and cat and friends will work *just fine*? Until you hit a file that's
+more than 1.5 in size, that is. And when you do a traceroute to the wedged
+client, it tells you it's on the 10G network, so you have no idea why you're
+seeing an MTU issue.  Don't ask how I know this - let's just say that
+supporting HPC users is never boring. :)
+
+So yes, we *do* need to do something sensible there - either frag the packet
+on the way out, or something.  It *would* be nice if we could drop the
+packet and send an ICMP Frag Needed back - except it's unclear what IP
+you use as the source address for the ICMP....
 
 
--- 
--George
+--==_Exmh_1400561749_1944P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU3rgVQdmEQWDXROgAQKQfw/9GcqjwTRblsTMBAzRms+9859yNW++iOKG
+N4cYN4Y1eip5ygc7ijvkiUOtTBq4UwwG+9rNkj0UwD1ZWCWiA9glN/n5bGvPY8qX
+brWW9QJAitZwN3yVJDc7+S6KyP62j+0q0f0xlFlfDNvEwNJ17d2v9ZG8PpzTJpfk
+bqxIIuTJzLY5UUjXM5RXGkDiw62eqb4e7aGL+nKOH52C/r8byEjY0yl2AmiqCAQD
+aFM8kLAITz/f2UB/KaTtu3i9b1Kv0Um/sRTHxULqN1jYHW1MqnenuAYw+ushoBTZ
+jRjpN2KdUDW7xGYz5Lx8bVnMxU8kJs5kmMVjnjbRsYmDA5v1jcoac+mGDLiQ8O6K
+6VuJIrZ8e5pnJWFa2kcg1Syi2ca+Mi+pFRJGboMZQYw9KTQzx5lfQtgFdsyme40N
+0A+MUc6eVeSCXITjmwhCmYanxLeEpOw4xlwYANoBWRXlUGCj4knB6zW5s6JwLrsu
+9eGhag+t3mCYbM1cRN/Jru2Y7IB7bApnnKZsUdWkg0RoJJLX2WHF/26/u2Edi9He
+FawVStF76ZWtWNtZElrdFy1FPvg+jBjVPuzZs+tjyH5LW11Qlmt757ISSn/vnbCX
+sL4LNv8SXioBZenMMH4+sYh9Wh/LvyIn7egggzdvAzzYDU7Tm+niWnFJm2HLGETi
+svyoYnJozT4=
+=KX4i
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1400561749_1944P--
