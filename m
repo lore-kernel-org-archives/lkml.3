@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaETAD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:03:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:37546 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaETAD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:03:57 -0400
-Date: Tue, 20 May 2014 10:03:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] scsi patch queue tree
-Message-ID: <20140520100343.31490551@canb.auug.org.au>
-In-Reply-To: <20140519140614.GA12183@infradead.org>
-References: <20140519140614.GA12183@infradead.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752554AbaETAF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:05:57 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45331 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaETAFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 20:05:55 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+References: <20140515040032.GA6702@kroah.com>
+	<1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+	<20140515140856.GA17453@kroah.com> <20140515174254.GM21073@ubuntumail>
+	<20140515221551.GB13306@kroah.com> <20140516014959.GD22591@ubuntumail>
+	<20140516043532.GA14149@kroah.com>
+	<20140516140607.GA23902@ubuntu-hedt> <20140516185749.GA5131@kroah.com>
+	<1400268515.2221.91.camel@dabdike.int.hansenpartnership.com>
+	<20140516201841.GC23902@ubuntu-hedt>
+Date: Mon, 19 May 2014 17:04:55 -0700
+In-Reply-To: <20140516201841.GC23902@ubuntu-hedt> (Seth Forshee's message of
+	"Fri, 16 May 2014 15:18:41 -0500")
+Message-ID: <87mwedfh7c.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/SA1utnxSaG3OjH0zuGrH_th"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1//plrXY38ZdSkMLZ/kDFOjoA+35PBxomg=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4180]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Seth Forshee <seth.forshee@canonical.com>
+X-Spam-Relay-Country: 
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user namespaces
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SA1utnxSaG3OjH0zuGrH_th
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Seth Forshee <seth.forshee@canonical.com> writes:
 
-Hi Christoph,
-
-On Mon, 19 May 2014 07:06:14 -0700 Christoph Hellwig <hch@infradead.org> wr=
-ote:
+> What I set out for was feature parity between loop devices in a secure
+> container and loop devices on the host. Since some operations currently
+> check for system-wide CAP_SYS_ADMIN, the only way I see to accomplish
+> this is to push knowledge of the user namespace farther down into the
+> driver stack so the check can instead be for CAP_SYS_ADMIN in the user
+> namespace associated with the device.
 >
-> I'd like to announce the new scsi patch queue tree, which will pick up
-> any scsi core or driver patches promptly to allow easy integration and
-> feedback that contributors might be used to from other kernel subsystems.
->=20
-> There are two branches, one for the SCSI core and upper level drivers,
-> and one for low-level (hardware) drivers:
->=20
->   git://git.infradead.org/users/hch/scsi-queue.git core-for-3.16
->   git://git.infradead.org/users/hch/scsi-queue.git drivers-for-3.16=20
->=20
-> The rules for the tree are:
->=20
->  - it has at least two positive reviews (non-author signoff, reviewed-by
->    or acked-by tags).   In practice this means it had at least one and
->    I added another one.
->  - no negative review on the mailing list
->  - it applies cleanly
->  - it compiles cleanly (drivers for architectures I can't test excluded)
->  - for core the core branch: survives a full xfstests run
->=20
-> I went through the linux-scsi archives for March, April and May and
-> applied all patches that clearly fit the above criteria, but it's fairly
-> like I missed some.
->=20
-> If I'm missing your patch(es):
->=20
->  - resend it unless it was sent in the last few weeks
->  - make sure all reviews are recorded in the most recent post of the
->    patch(es)
->  - ping the list for additional reviewers
->=20
-> For now the prime intent of the tree is to feed it to James, although
-> I'd welcome everyone interested to pull and test it.  If the scheme
-> proves successful I'd love to invite more core scsi contributors to help
-> with it and move to a shared kernel.org tree.
+> That said, I suspect our current use cases can get by without these
+> capabilities. Really though I suspect this is just deferring the
+> discussion rather than settling it, and what we'll end up with is little
+> more than a fancy way for userspace to ask the kernel to run mknod on
+> its behalf.
 
-Is this a request for inclusion of those branches into linux-next
-separately from the scsi tree itself?
+A fancy way to ask the kernel to run mknod on its behalf is what
+/dev/pts is.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+When I suggested this I did not mean you should forgo making changes to
+allow partitions and the like.  What I itended is that you should find a
+way to make this safe for users who don't have root capabilities.
 
---Sig_/SA1utnxSaG3OjH0zuGrH_th
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Which possibly means that mount needs to learn how to keep a more
+privileged user from using your new loop devices.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+To get to the point where this is really and truly usable I expect to be
+technically daunting.
 
-iQIcBAEBCAAGBQJTepvkAAoJEMDTa8Ir7ZwV3z4P/0lUm5v6aqqR5TFFAGZRXCuW
-PKn/RKorDYW/Fq0uJDM9n2u1xjPG3l8RFEHzTSDQMr8o+/z6aM0mYbvEHyQ98fYu
-qy0ov8qh+XsoCEBhyIUZC5IsyP+rOPGP7LCO2yX3Pf+fGhEFTYjgPH0ByUZGD11s
-SPhniNh8M7j+0DU/AgzSfjfxhLiyWpVDcDckp4HJeZ45gsnI8dy6/87PUmQSOMtH
-AqJDQ/AHjjy1qBqovLuHzn3atxfAXmteTBtb1MvsT5v6uomDV37AGBfXl2iLOcAF
-FSXorAU2cnT/0rFdwKW7ydEON5i0k74hRd/59RpnNPj6Q7LZm9KF9LEWNT4d1Uxx
-2s5Mwjpw5LdfcgRQRmHA+pfFZUOdk3LJlEI5O2aui2c5T6Vef6cgGFBBUhkHtCkq
-O57DIg+/aE7X8ShDPDgE5HecZ5f6whtxVh9avl7DUlXRljsI1orMVJeS9lZqkTEW
-m/TamKUOCULn8CKWrF+l0U71vRzcVUl6Hxenzm13krwIUNbcPp6LGNRtDeitwnvh
-x55qs862kKnMfVjbqGNVs6hbdDVGlakOtBcEUNpnYN3wXB9LcB8ih7/sNl2KT5OD
-YZo2sPJI1FudOfw8DxoZDmE29+S0+wMNOJ2o+zftBKme1XiTE9PWNJDJI1VvKD+R
-kVB99lxnydNWpXhCTpQ/
-=EcVt
------END PGP SIGNATURE-----
+Ultimately the technical challenge is how do we create a block device
+that is safe for a user who does not have any capabilities to use, and
+what can we do with that block device to make it useful.
 
---Sig_/SA1utnxSaG3OjH0zuGrH_th--
+Only when the question is can this kernel functionality which is
+otherwise safe confuse a preexisting setuid application do namespace
+or container bits significantly come into play.
+
+Eric
