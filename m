@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaETG0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 02:26:35 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:54865 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaETG0e (ORCPT
+	id S1751719AbaETGal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 02:30:41 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45199 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750879AbaETGak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 02:26:34 -0400
+	Tue, 20 May 2014 02:30:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsgGAML1elN5LL1s/2dsb2JhbABZgwarBwEBAQaaKQGBFRd0giUBAQQBJxMcIwULCAMOCgklDwUlAyETiDkH0mAXFoU/iHkHhEABA5lfixOIC4NKK4ExJA
+Date: Tue, 20 May 2014 16:30:24 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at
+ shrink_inactive_list().
+Message-ID: <20140520063024.GH18954@dastard>
+References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+ <20140520004449.GE18954@dastard>
+ <20140519225915.3370328d.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <877g5hjl55.fsf@rustcorp.com.au>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<87wqf1oi22.fsf@rustcorp.com.au>
-	<20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
-	<871tw9c6kt.fsf@rustcorp.com.au>
-	<53678ED6.4070502@infradead.org>
-	<87eh07bu60.fsf@rustcorp.com.au>
-	<CA+ToGPFQ0Ku0odkAaU4FKDtGq0TK8hJ+HWvJr8J3wJVwYaO2mg@mail.gmail.com>
-	<CA+ToGPF_GnnNhSUZjmbyu=5Nk=i2cTkoWPiykaO4EKJSfvNh-w@mail.gmail.com>
-	<537A17F8.6050109@infradead.org>
-	<877g5hjl55.fsf@rustcorp.com.au>
-Date: Tue, 20 May 2014 03:26:33 -0300
-Message-ID: <CA+ToGPEsrAdm+5MGcvw_4312bU1GtvbNw_sNH8EaegKgd0vV8Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Diego Viola <diego.viola@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519225915.3370328d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can't you just make a commit to fix it? If you want I can submit a patch.
+On Mon, May 19, 2014 at 10:59:15PM -0700, Andrew Morton wrote:
+> On Tue, 20 May 2014 10:44:49 +1000 Dave Chinner <david@fromorbit.com> wrote:
+> 
+> > @@ -258,14 +258,23 @@ xfs_bmapi_allocate_worker(
+> >  	struct xfs_bmalloca	*args = container_of(work,
+> >  						struct xfs_bmalloca, work);
+> >  	unsigned long		pflags;
+> > +	unsigned long		new_pflags = PF_FSTRANS;
+> >  
+> > -	/* we are in a transaction context here */
+> > -	current_set_flags_nested(&pflags, PF_FSTRANS);
+> > +	/*
+> > +	 * we are in a transaction context here, but may also be doing work
+> > +	 * in kswapd context, and hence we may need to inherit that state
+> > +	 * temporarily to ensure that we don't block waiting for memory reclaim
+> > +	 * in any way.
+> > +	 */
+> > +	if (args->kswapd)
+> > +		new_pflags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+> 
+> So current_is_kswapd() returns true for a thread which is not kswapd. 
+> That's a bit smelly.
+> 
+> Should this thread really be incrementing KSWAPD_INODESTEAL instead of
+> PGINODESTEAL, for example?  current_is_kswapd() does a range of things,
+> only one(?) of which you actually want.
 
-Sorry to be so OCD about this.
+It's doing work on behalf of kswapd under kswapd constraints, so it
+should both behave and be accounted as if kswapd was executing the
+work directly.
 
-On Mon, May 19, 2014 at 10:26 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Randy Dunlap <rdunlap@infradead.org> writes:
->> On 05/19/2014 01:11 AM, Diego Viola wrote:
->>> I mean "e.g.:" is wrong, it should be e.g. or e.g.,
->>
->> I don't see that in the wikipedia page.  Are you basing that on
->> "in this usage it is sometimes followed by a comma, depending on style."?
->>
->> I don't see a problem with the colon, since the quoted phrase has some
->> conditions in it, like "sometimes" and "depending".  Colons are often used
->> to delimit a list or an example, but I'll leave it up to Rusty.
->
-> OH NO, it's already been pushed into my modules-next git tree!!
->
-> Deepest regrets,
-> Rusty.
+> It would be cleaner to create a new PF_ flag to select just that
+> behavior.  That's a better model than telling the world "I am magic and
+> special".
+
+However, it is magic and special because of who the work needs to be
+done for.
+
+> But we're awfully close to running out of PF_ space and I don't know if
+> this ugly justifies consuming a flag.
+
+I don't really care enough argue over what mechanism should be used.
+I'll push this patch through the XFS tree, and when a new flag or
+generic mechanism for pushing task contexts to kworker threads
+is provided, I'll change the XFS code to use that....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
