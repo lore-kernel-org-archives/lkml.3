@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaETO3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:29:03 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49440 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaETO3A (ORCPT
+	id S1753879AbaETObG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:31:06 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:39087 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaETObE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:29:00 -0400
-Message-ID: <1400596136.5367.125.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Igor Royzis <igorr@swortex.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
-        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
-        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
-Date: Tue, 20 May 2014 07:28:56 -0700
-In-Reply-To: <1400585062-13580-1-git-send-email-igorr@swortex.com>
-References: <1400585062-13580-1-git-send-email-igorr@swortex.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 20 May 2014 10:31:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <4223392.yrWc3QAXY9@wuerfel>
+References: <1400422125-2209-1-git-send-email-sthokal@xilinx.com>
+	<4223392.yrWc3QAXY9@wuerfel>
+Date: Tue, 20 May 2014 20:01:01 +0530
+X-Google-Sender-Auth: -qZ5oDMmRpL8UHTkx854Nu0PXWE
+Message-ID: <CA+mB=1KsxjJR0Yswmo2y_Gej64OPZLddXxJ+qn8YOx7=_EsqeA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Generic Configuration Access Mechanism support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Srikanth Thokala <sthokal@xilinx.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        will.deacon@arm.com, michals@xilinx.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 14:24 +0300, Igor Royzis wrote:
-> Fix accessing GSO fragments memory (and a possible corruption therefore) after
-> reporting completion in a zero copy callback. The previous fix in the commit 1fd819ec
-> orphaned frags which eliminates zero copy advantages. The fix makes the completion
-> called after all the fragments were processed avoiding unnecessary orphaning/copying
-> from userspace.
-> 
-> The GSO fragments corruption issue was observed in a typical QEMU/KVM VM setup that
-> hosts a Windows guest (since QEMU virtio-net Windows driver doesn't support GRO).
-> The fix has been verified by running the HCK OffloadLSO test.
-> 
-> Signed-off-by: Igor Royzis <igorr@swortex.com>
-> Signed-off-by: Anton Nayshtut <anton@swortex.com>
-> ---
->  include/linux/skbuff.h |    1 +
->  net/core/skbuff.c      |   18 +++++++++++++-----
->  2 files changed, 14 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 08074a8..8c49edc 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -287,6 +287,7 @@ struct skb_shared_info {
->  	struct sk_buff	*frag_list;
->  	struct skb_shared_hwtstamps hwtstamps;
->  	__be32          ip6_frag_id;
-> +	struct sk_buff  *zcopy_src;
->  
+Hi Arnd,
 
-Before your patch :
+On Mon, May 19, 2014 at 10:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 18 May 2014 19:38:45 Srikanth Thokala wrote:
+>> +
+>> +     if (cfg->ops->is_valid_cfg_access) {
+>> +             if (!cfg->ops->is_valid_cfg_access(bus, devfn)) {
+>> +                     *val = PCI_CFG_INVALID_DEVFN;
+>> +                     return PCIBIOS_DEVICE_NOT_FOUND;
+>> +             }
+>> +     }
+>
+> Can you explain why this callback is needed? If the space for the
+> bus is mapped, any access should just work.
 
-sizeof(struct skb_shared_info)=0x140
-offsetof(struct skb_shared_info, frags[1])=0x40
+As I was explaining to Will, there are some controllers which doesn't
+return FF's
+when a device is not found on the bus (as per the PCI specification) and
+accessing such a device address from the kernel results in an external abort.
+So, I added this additional logic in my driver to bypass this and
+return FF's. Our IP
+and even other controllers like Tegra, Renesas have similar implementation.
+We cant think of a better solution and please let you us know if you
+have any inputs.
 
-SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x140
+Thanks
+Srikanth
 
-After your patch :
-
-sizeof(struct skb_shared_info)=0x148
-offsetof(struct skb_shared_info, frags[1])=0x48
-
-SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x180
-
-Thats a serious bump, because it increases all skb truesizes, and
-typical skb with one fragment will use 2 cache lines instead of one in
-struct skb_shared_info, so this adds memory pressure in fast path.
-
-So while this patch might increase performance for some workloads,
-it generally decreases performance on many others.
-
-
-
+>
+>> +
+>> +/* Generic PCI CAM/ECAM Configuration Bus Operations */
+>> +
+>> +struct pci_cfg_bus_ops pci_cfg_cam_bus_ops = {
+>> +     .bus_shift      = PCI_CFG_CAM_BUS_NUM,
+>> +     .map_bus        = pci_cfg_map_bus_cam,
+>> +};
+>> +EXPORT_SYMBOL_GPL(pci_cfg_cam_bus_ops);
+>> +
+>> +struct pci_cfg_bus_ops pci_cfg_ecam_bus_ops = {
+>> +     .bus_shift      = PCI_CFG_ECAM_BUS_NUM,
+>> +     .map_bus        = pci_cfg_map_bus_ecam,
+>> +};
+>> +EXPORT_SYMBOL_GPL(pci_cfg_ecam_bus_ops);
+>> +
+>> +struct pci_ops pci_cfg_ops = {
+>> +     .read   = pci_cfg_read,
+>> +     .write  = pci_cfg_write,
+>> +};
+>> +EXPORT_SYMBOL_GPL(pci_cfg_ops);
+>
+>
+> If we can find a way to remove the is_valid_cfg_access() check, we're
+> probably better off removing the cfg_bus_ops as well, and exporting
+> two sets of pci_ops. There will be a little more duplication here, but
+> also less complexity in this module, and more importantly in the drivers
+> using it.
+>
+>         Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
