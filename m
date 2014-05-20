@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaETI2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:28:18 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:44922 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaETI2P (ORCPT
+	id S1752957AbaETI3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:29:06 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54008 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaETI3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:28:15 -0400
-Message-ID: <537B11DE.6040000@st.com>
-Date: Tue, 20 May 2014 10:27:10 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 04:29:04 -0400
+Date: Tue, 20 May 2014 09:28:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [STLinux Kernel] [PATCH 3/4] ARM: DT: STi: Add DT node for
+ MiPHY365x
+Message-ID: <20140520082858.GF20874@lee--X1>
+References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org>
+ <1398756095-32542-4-git-send-email-lee.jones@linaro.org>
+ <537A265E.8080407@st.com>
+ <20140519155106.GR4978@lee--X1>
+ <537B01E9.8020507@st.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v4 6/6] ARM: dts: STiH407: Add B2120 board support
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>	<1394614210-15698-7-git-send-email-maxime.coquelin@st.com> <CAOesGMg5Jk_XB3zdfKz8VxRObYbFO8OMuRyo7Ba-kavANbci1w@mail.gmail.com>
-In-Reply-To: <CAOesGMg5Jk_XB3zdfKz8VxRObYbFO8OMuRyo7Ba-kavANbci1w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-19_03:2014-05-19,2014-05-19,1970-01-01 signatures=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537B01E9.8020507@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+> >>>The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> >>>devices. It has 2 ports which it can use for either; both SATA, both
+> >>>PCIe or one of each in any configuration.
+> >>>
+> >>>Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >>>Acked-by: Mark Rutland <mark.rutland@arm.com>
+> >>>Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> >>>Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >>>---
+> >>>  arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
+> >>>  arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
+> >>>  arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
+> >>>  3 files changed, 42 insertions(+)
+> >>>  create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
+> >>>
+> >>>diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> >>>new file mode 100644
+> >>>index 0000000..23fdaf7
+> >>>--- /dev/null
+> >>>+++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> >>>@@ -0,0 +1,22 @@
+> >>>+/*
+> >>>+ * Copyright (C) 2014 STMicroelectronics Limited.
+> >>>+ * Author: Lee Jones <lee.jones@linaro.org>
+> >>>+ *
+> >>>+ * This program is free software; you can redistribute it and/or modify
+> >>>+ * it under the terms of the GNU General Public License version 2 as
+> >>>+ * publishhed by the Free Software Foundation.
+> >>>+ */
+> >>>+/dts-v1/;
+> >>>+#include "stih416.dtsi"
+> >>>+#include "stih41x-b2020.dtsi"
+> >>>+/ {
+> >>>+        model = "STiH416 B2020 REV-E";
+> >>>+	compatible = "st,stih416-b2020", "st,stih416";
+> >>>+
+> >>>+	soc {
+> >>>+		miphy365x_phy: miphy365x@fe382000 {
+> >>>+			st,pcie-tx-pol-inv;
+> >>>+			st,sata-gen = <3>;
+> >>>+		};
+> >>>+	};
+> >>>+};
+> >>Shouldn't this new board being added in a separate patch?
+> >
+> >I certainly can do that, but I don't think that it's necessary?
+> 
+> I think it is, as you introduce a new board.
 
-On 05/20/2014 08:18 AM, Olof Johansson wrote:
-> Hi,
->
-> Just a quick drive-by review since I was looking at these patches in
-> the pull request you sent.
->
->
->
+Introducing an empty dts file just so you can say "this is a new
+board" seems odd to me, but I'll go with whatever you feel it right.
 
-Thanks for the review.
-I will send a new series taking your comments into account, except the 
-one about reference-based syntax.
+> Moreover, the miphy description being the same as in
+> stih416-b2020.dts, so I don't understand why you introduce this
+> board for this feature.
 
-[...]
+It's historical.  There are other differences between rev-E and the
+other reversions, such as; gpio-leds (red, green) and the reset GPIO
+for ethernet.  As these are dts files (rather than dtsi) files, you
+can only use one at a time.
 
->>
->> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
->> index 12455cf..f760a88 100644
->> --- a/arch/arm/boot/dts/Makefile
->> +++ b/arch/arm/boot/dts/Makefile
->> @@ -317,7 +317,8 @@ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
->>   dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
->>          stih416-b2000.dtb \
->>          stih415-b2020.dtb \
->> -       stih416-b2020.dtb
->> +       stih416-b2020.dtb \
->> +       stih407-b2120.dtb
->
-> These should be in alphanumerical order. 407 comes before 415. You've
-> been out of order with others as well.
+> >>>diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+> >>>index 276f28d..172f222 100644
+> >>>--- a/arch/arm/boot/dts/stih416-b2020.dts
+> >>>+++ b/arch/arm/boot/dts/stih416-b2020.dts
+> >>>@@ -13,4 +13,10 @@
+> >>>  	model = "STiH416 B2020";
+> >>>  	compatible = "st,stih416", "st,stih416-b2020";
+> >>>
+> >>>+	soc {
+> >>>+		miphy365x_phy: miphy365x@fe382000 {
+> >>>+			st,pcie-tx-pol-inv;
+> >>>+			st,sata-gen = <3>;
+> >>>+		};
+> >>>+	};
+> >>>  };
+> >>...
+> >
 
-Ok, it will be re-ordered in the next series.
-
->
->>   dtb-$(CONFIG_ARCH_SUNXI) += \
->>          sun4i-a10-a1000.dtb \
->>          sun4i-a10-cubieboard.dtb \
->> diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
->> new file mode 100644
->> index 0000000..9c97da4
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/stih407-b2120.dts
->> @@ -0,0 +1,78 @@
->> +/*
->> + * Copyright (C) 2014 STMicroelectronics (R&D) Limited.
->> + * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +/dts-v1/;
->> +#include "stih407.dtsi"
->> +/ {
->> +       model = "STiH407 B2120";
->> +       compatible = "st,stih407", "st,stih407-b2120";
->
-> This should go from specific to generic, so the order needs to be the other way.
->
-> Please check other dts files for the same (I didn't).
->
-
-Ok, I will change that for this dts and also the other ones.
-Thanks,
-Maxime
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
