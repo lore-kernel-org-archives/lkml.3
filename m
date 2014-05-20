@@ -1,159 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751069AbaETUcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:32:13 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:63264 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaETUcK (ORCPT
+	id S1751182AbaETUeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:34:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34551 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaETUem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:32:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Tue, 20 May 2014 22:31:29 +0200
-Message-ID: <5123714.0MpMQfsmcr@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140520135956.GA23140@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <4161434.ylGuoPKcfs@wuerfel> <20140520135956.GA23140@ulmo>
+	Tue, 20 May 2014 16:34:42 -0400
+Date: Wed, 21 May 2014 05:34:32 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Holger Hans Peter Freyther <holger@moiji-mobile.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+Message-ID: <20140520203432.GB30178@kroah.com>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
+ <20140520010137.GA8146@kroah.com>
+ <537B24B8.9050303@linux.intel.com>
+ <s5ha9acbwwo.wl%tiwai@suse.de>
+ <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:BKdRC9nLSIt3VSR6Sbdl0nx1J+SeZTE1w0wbmtlovR9
- qs2decDUgdXEw1eiYm2BpGHDLhMUJCWijHN2qzLzEYNNjlzHMQ
- U0U+aqeff9IlSfKRACqZeXftjEXPXxyujhF1snE/HAuajZo3bb
- moFrl0AJ2VfFPl5DwzosH8NSJDzb0nVIgEN+TJcZj+0S7VeIbg
- pvrznc4hV5csxAR2akn+Oj5HTWW+PG9lum9B3ZJGl6P9w5OKfd
- 6fqUsforglTcMVRiuCQJ9ggL59ktRAzHslm4SWWPJDTfHYU/5+
- lKqrd2/NiWfYCSDXkoqmJhM8uwljImJPUEBdIOYHbZCZnQCs23
- mobszKTm2ROu9R4gRpO0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 May 2014 16:00:02 Thierry Reding wrote:
-> On Tue, May 20, 2014 at 03:34:46PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 20 May 2014 15:17:43 Thierry Reding wrote:
-> > > On Tue, May 20, 2014 at 02:41:18PM +0200, Arnd Bergmann wrote:
-> > > > On Tuesday 20 May 2014 14:02:43 Thierry Reding wrote:
-> > > [...]
-> > > > > Couldn't a single-master IOMMU be windowed?
-> > > > 
-> > > > Ah, yes. That would actually be like an IBM pSeries, which has a windowed
-> > > > IOMMU but uses one window per virtual machine. In that case, the window could
-> > > > be a property of the iommu node though, rather than part of the address
-> > > > in the link.
-> > > 
-> > > Does that mean that the IOMMU has one statically configured window which
-> > > is the same for each virtual machine? That would require some other
-> > > mechanism to assign separate address spaces to each virtual machine,
-> > > wouldn't it? But I suspect that if the IOMMU allows that it could be
-> > > allocated dynamically at runtime.
-> > 
-> > The way it works on pSeries is that upon VM creation, the guest is assigned
-> > one 256MB window for use by assigned DMA capable devices. When the guest
-> > creates a mapping, it uses a hypercall to associate a bus address in that
-> > range with a guest physical address. The hypervisor checks that the bus
-> > address is within the allowed range, and translates the guest physical
-> > address into a host physical address, then enters both into the I/O page
-> > table or I/O TLB.
+On Tue, May 20, 2014 at 11:25:37AM -0700, Dan Williams wrote:
+> On Tue, May 20, 2014 at 2:51 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> > At Tue, 20 May 2014 12:47:36 +0300,
+> > Mathias Nyman wrote:
+> >>
+> >> On 05/20/2014 04:01 AM, Greg KH wrote:
+> >> > On Thu, May 08, 2014 at 07:25:55PM +0300, Mathias Nyman wrote:
+> >> >> From: Dan Williams <dan.j.williams@intel.com>
+> >> >>
+> >> >> Add a command line switch for disabling ehci port switchover.  Useful
+> >> >> for working around / debugging xhci incompatibilities where ehci
+> >> >> operation is available.
+> >> >>
+> >> >> Reference: http://marc.info/?l=linux-usb&m=138920063001509&w=2
+> >> >>
+> >> >> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> >> >> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+> >> >> Cc: Holger Hans Peter Freyther <holger@moiji-mobile.com>
+> >> >> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+> >> >> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> >> >> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> >> >> ---
+> >> >>  Documentation/kernel-parameters.txt |  3 +++
+> >> >>  drivers/usb/host/pci-quirks.c       | 15 +++++++++++++--
+> >> >>  2 files changed, 16 insertions(+), 2 deletions(-)
+> >> >>
+> >> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> >> >> index 4384217..fc3403114 100644
+> >> >> --- a/Documentation/kernel-parameters.txt
+> >> >> +++ b/Documentation/kernel-parameters.txt
+> >> >> @@ -2251,6 +2251,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >> >>
+> >> >>    nox2apic        [X86-64,APIC] Do not enable x2APIC mode.
+> >> >>
+> >> >> +  noxhci_port_switch
+> >> >> +                  [USB] Use EHCI instead of XHCI where available
+> >> >> +
+> >> >
+> >> > Ugh, I really don't like new command line options.
+> >> >
+> >> > Especially one that isn't very well documented.  Why would someone want
+> >> > to enable this?  What problem is it solving?  Can we detect this
+> >> > automatically and do it for the user?  Is this just for prototype
+> >> > hardware that has not shipped?  What hardware needs this?
+> >> >
+> >> > I need a whole lot more documentation at the very least before I will
+> >> > apply this.
+> >> >
+> >>
+> >> On Intel hardware with both ehci and xhci controllers we can select if a usb2 port
+> >> is controlled by ehci or xhci. This capability can be checked from Intel xhci pci
+> >> config space. Xhci driver checks this on boot and switches over the supported ports.
+> >>
+> >> This is a feature in Intel Panther point and later chipsets, in shipped hardware.
+> >> Its working quite well in most cases, but sometimes vendors claim they support
+> >> switchover, but then forget to connect some wires, and the usb2 port ends up dead
+> >> after switching.
+> >>
+> >> A recently found case is the Sony VAIO T-series. (I'll send you a different patch
+> >> for that shortly)
+> >> http://marc.info/?l=linux-usb&m=139993106029340&w=2
+> >>
+> >> This is the extreme case that the usb2 ports appears completely dead.
+> >> Other reasons are that some devices might work better under ehci than xhci,
+> >> and users want to enforce the ehci opton. For powermanagement developers it's nice
+> >> to disable switchover as it turns out some hardware are quirky with port
+> >> switchover and suspend/resume. (might need to turn port back to ehci before
+> >> suspending).
+> >>
+> >> I don't think we can detect this automatically.
+> >>
+> >> Dan, can you add more documentation to this patch?
+> >
+> > While we're at it: can we implement a bitmask instead?
+> >
+> > We've seen lots of HP laptops having Webcams or BT devices that don't
+> > work XHCI but only with EHCI.  For making them working properly, the
+> > specific xhci ports have to be disabled.  But, we don't want to kill
+> > the whole XHCI at all.  The single boolean option doesn't work for
+> > such a case.
+> >
 > 
-> So when a VM is booted it is passed a device tree with that DMA window?
+> I'm not sure we want to make this more complex.  Ideally this is just
+> a stop-gap measure for users to workaround incompatibilities in xhci
+> while the xhci fix is identified.
 
-Correct.
+We can't use a kernel command line option as a "stop-gap", sorry.  Let's
+just fix the real problem here.
 
-> Given what you describe above this seems to be more of a configuration
-> option to restrict the IOMMU to a subset of the physical memory for
-> purposes of virtualization. So I agree that this wouldn't be a good fit
-> for what we're trying to achieve with iommus or dma-ranges in this
-> binding.
+thanks,
 
-Thinking about it again now, I wonder if there are any other use cases
-for windowed IOMMUs. If this is the only one, there might be no use
-in the #address-cells model I suggested instead of your original
-#iommu-cells.
-
-> > > > I would like to add an explanation about dma-ranges to the binding:
-> > > > 
-> > > > 8<--------
-> > > > The parent bus of the iommu must have a valid "dma-ranges" property
-> > > > describing how the physical address space of the IOMMU maps into
-> > > > memory.
-> > > 
-> > > With physical address space you mean the addresses after translation,
-> > > not the I/O virtual addresses, right? But even so, how will this work
-> > > when there are multiple IOMMU devices? What determines which IOMMU is
-> > > mapped via which entry?
-> > > 
-> > > Perhaps having multiple IOMMUs implies that there will have to be some
-> > > partitioning of the parent address space to make sure two IOMMUs don't
-> > > translate to the same ranges?
-> > 
-> > These dma-ranges properties would almost always be for the entire RAM,
-> > and we can treat anything else as a bug.
-> 
-> Would it typically be a 1:1 mapping? In that case could we define an
-> empty dma-ranges property to mean exactly that? That would make it
-> consistent with the ranges property.
-
-Yes, I believe that is how it's already defined.
-
-> > > > A device with an "iommus" property will ignore the "dma-ranges" property
-> > > > of the parent node and rely on the IOMMU for translation instead.
-> > > 
-> > > Do we need to consider the case where an IOMMU listed in iommus isn't
-> > > enabled (status = "disabled")? In that case presumably the device would
-> > > either not function or may optionally continue to master onto the parent
-> > > untranslated.
-> > 
-> > My reasoning was that the DT should specify whether we use the IOMMU
-> > or not. Being able to just switch on or off the IOMMU sounds nice as
-> > well, so we could change the text above to do that.
-> > 
-> > Another option would be to do this in the IOMMU code, basically
-> > falling back to the IOMMU parent's dma-ranges property and using
-> > linear dma_map_ops when that is disabled.
-> 
-> Yes, it should be trivial for the IOMMU core code to take care of this
-> special case. Still I think it's worth mentioning it in the binding so
-> that it's clearly specified.
-
-Agreed.
-
-> > > > Using an "iommus" property in bus device nodes with "dma-ranges"
-> > > > specifying how child devices relate to the IOMMU is a possible extension
-> > > > but is not recommended until this binding gets extended.
-> > > 
-> > > Just for my understanding, bus device nodes with iommus and dma-ranges
-> > > properties could be equivalently written by explicitly moving the iommus
-> > > properties into the child device nodes, right? In which case they should
-> > > be the same as the other examples. So that concept is a convenience
-> > > notation to reduce duplication, but doesn't fundamentally introduce any
-> > > new concept.
-> > 
-> > The one case  where that doesn't work is PCI, because we don't list the
-> > PCI devices in DT normally, and the iommus property would only exist
-> > at the PCI host controller node.
-> 
-> But it could work in classic OpenFirmware where the device tree can be
-> populated with the tree of PCI devices enumerated by OF. There are also
-> devices that have a fixed configuration and where technically the PCI
-> devices can be listed in the device tree. This is somewhat important if
-> for example one PCI device is a GPIO controller and needs to be
-> referenced by phandle from some other device.
-
-Correct. The flaw of classic Open Firmware here was that it cannot
-handle PCIe hotplug though, so we can never rely on the DT to
-describe all devices.
-
-	Arnd
+greg k-h
