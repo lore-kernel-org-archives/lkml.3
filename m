@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaETJnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:43:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:63309 "EHLO
+	id S1752976AbaETJnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:43:07 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:39921 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752936AbaETJnE (ORCPT
+	with ESMTP id S1752930AbaETJnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 05:43:04 -0400
 X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762587"
+   d="scan'208";a="30762586"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH V3 07/10] workqueue: narrow the protection range of manager_mutex
-Date: Tue, 20 May 2014 17:46:33 +0800
-Message-ID: <1400579204-3647-8-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH V3 06/10] workqueue: convert worker_idr to worker_ida
+Date: Tue, 20 May 2014 17:46:32 +0800
+Message-ID: <1400579204-3647-7-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
@@ -26,129 +26,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In create_worker(), pool->worker_ida is protected by idr subsystem via
-using ida_simple_get()/ida_simple_put(), it doesn't need manager_mutex
+We don't need to iterate workers via worker_idr, worker_idr is
+used for allocating/freeing ID only, so we convert it to worker_ida.
 
-struct worker allocation and kthread allocation are not visible by any one,
-before attached, they don't need manager_mutex either.
+By using ida_simple_get/remove(), worker_ida can be protected by itself,
+so we don't need manager_mutex to protect it and the ID-removal code
+is allowed to be moved out from worker_detach_from_pool().
 
-The above operations are before the attaching operation which attach
-the worker to the pool. And between attached and starting the worker,
-the worker is already attached to the pool, the cpuhotplug will handle the
-cpu-binding for the worker correctly since it is attached to the pool.
-So we don't need the manager_mutex after attached.
-
-The conclusion is that only the attaching operation needs manager_mutex,
-so we narrow the protection section of manager_mutex in create_worker().
-
-Some comments about manager_mutex are removed, due to we will rename it to
-attach_mutex and add worker_attach_to_pool() later which is self-comments.
+And in later patch, worker_detach_from_pool() will be used in rescuers
+which doesn't have IDs, so we directly move the ID-removal code out
+from worker_detach_from_pool().
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   35 +++++------------------------------
- 1 files changed, 5 insertions(+), 30 deletions(-)
+ kernel/workqueue.c |   20 ++++++++------------
+ 1 files changed, 8 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 637c244..4ae6a3c 100644
+index fd2f265..637c244 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1725,8 +1725,6 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	int id = -1;
- 	char id_buf[16];
+@@ -161,10 +161,11 @@ struct worker_pool {
+ 	/* see manage_workers() for details on the two manager mutexes */
+ 	struct mutex		manager_arb;	/* manager arbitration */
+ 	struct mutex		manager_mutex;	/* manager exclusion */
+-	struct idr		worker_idr;	/* M: worker IDs */
+ 	struct list_head	workers;	/* M: attached workers */
+ 	struct completion	*detach_completion; /* all workers detached */
  
--	lockdep_assert_held(&pool->manager_mutex);
--
- 	/* ID is needed to determine kthread name. */
- 	id = ida_simple_get(&pool->worker_ida, 0, 0, GFP_KERNEL);
- 	if (id < 0)
-@@ -1755,6 +1753,8 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	/* prevent userland from meddling with cpumask of workqueue workers */
- 	worker->task->flags |= PF_NO_SETAFFINITY;
- 
-+	mutex_lock(&pool->manager_mutex);
++	struct ida		worker_ida;	/* worker IDs for task name */
 +
- 	/*
- 	 * set_cpus_allowed_ptr() will fail if the cpumask doesn't have any
- 	 * online CPUs.  It'll be re-applied when any of the CPUs come up.
-@@ -1762,7 +1762,7 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	set_cpus_allowed_ptr(worker->task, pool->attrs->cpumask);
+ 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+ 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
+ 	int			refcnt;		/* PL: refcnt for unbound pools */
+@@ -1696,7 +1697,6 @@ static void worker_detach_from_pool(struct worker *worker,
+ 	struct completion *detach_completion = NULL;
  
- 	/*
--	 * The caller is responsible for ensuring %POOL_DISASSOCIATED
-+	 * The pool->manager_mutex ensures %POOL_DISASSOCIATED
- 	 * remains stable across this function.  See the comments above the
- 	 * flag definition for details.
- 	 */
-@@ -1772,6 +1772,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	mutex_lock(&pool->manager_mutex);
+-	idr_remove(&pool->worker_idr, worker->id);
+ 	list_del(&worker->node);
+ 	if (list_empty(&pool->workers))
+ 		detach_completion = pool->detach_completion;
+@@ -1727,11 +1727,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 
+ 	lockdep_assert_held(&pool->manager_mutex);
+ 
+-	/*
+-	 * ID is needed to determine kthread name.  Allocate ID first
+-	 * without installing the pointer.
+-	 */
+-	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_KERNEL);
++	/* ID is needed to determine kthread name. */
++	id = ida_simple_get(&pool->worker_ida, 0, 0, GFP_KERNEL);
+ 	if (id < 0)
+ 		goto fail;
+ 
+@@ -1772,8 +1769,6 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	if (pool->flags & POOL_DISASSOCIATED)
+ 		worker->flags |= WORKER_UNBOUND;
+ 
+-	/* successful, commit the pointer to idr */
+-	idr_replace(&pool->worker_idr, worker, worker->id);
  	/* successful, attach the worker to the pool */
  	list_add_tail(&worker->node, &pool->workers);
  
-+	mutex_unlock(&pool->manager_mutex);
-+
- 	return worker;
+@@ -1781,7 +1776,7 @@ static struct worker *create_worker(struct worker_pool *pool)
  
  fail:
-@@ -1809,8 +1811,6 @@ static int create_and_start_worker(struct worker_pool *pool)
- {
- 	struct worker *worker;
- 
--	mutex_lock(&pool->manager_mutex);
--
- 	worker = create_worker(pool);
- 	if (worker) {
- 		spin_lock_irq(&pool->lock);
-@@ -1818,8 +1818,6 @@ static int create_and_start_worker(struct worker_pool *pool)
- 		spin_unlock_irq(&pool->lock);
- 	}
- 
--	mutex_unlock(&pool->manager_mutex);
--
- 	return worker ? 0 : -ENOMEM;
+ 	if (id >= 0)
+-		idr_remove(&pool->worker_idr, id);
++		ida_simple_remove(&pool->worker_ida, id);
+ 	kfree(worker);
+ 	return NULL;
  }
+@@ -2250,6 +2245,7 @@ woke_up:
+ 		worker->task->flags &= ~PF_WQ_WORKER;
  
-@@ -2019,8 +2017,6 @@ static bool manage_workers(struct worker *worker)
- 	bool ret = false;
+ 		set_task_comm(worker->task, "kworker/dying");
++		ida_simple_remove(&pool->worker_ida, worker->id);
+ 		worker_detach_from_pool(worker, pool);
+ 		kfree(worker);
+ 		return 0;
+@@ -3486,9 +3482,9 @@ static int init_worker_pool(struct worker_pool *pool)
  
- 	/*
--	 * Managership is governed by two mutexes - manager_arb and
--	 * manager_mutex.  manager_arb handles arbitration of manager role.
- 	 * Anyone who successfully grabs manager_arb wins the arbitration
- 	 * and becomes the manager.  mutex_trylock() on pool->manager_arb
- 	 * failure while holding pool->lock reliably indicates that someone
-@@ -2029,33 +2025,12 @@ static bool manage_workers(struct worker *worker)
- 	 * grabbing manager_arb is responsible for actually performing
- 	 * manager duties.  If manager_arb is grabbed and released without
- 	 * actual management, the pool may stall indefinitely.
--	 *
--	 * manager_mutex is used for exclusion of actual management
--	 * operations.  The holder of manager_mutex can be sure that none
--	 * of management operations, including creation and destruction of
--	 * workers, won't take place until the mutex is released.  Because
--	 * manager_mutex doesn't interfere with manager role arbitration,
--	 * it is guaranteed that the pool's management, while may be
--	 * delayed, won't be disturbed by someone else grabbing
--	 * manager_mutex.
- 	 */
- 	if (!mutex_trylock(&pool->manager_arb))
- 		return ret;
+ 	mutex_init(&pool->manager_arb);
+ 	mutex_init(&pool->manager_mutex);
+-	idr_init(&pool->worker_idr);
+ 	INIT_LIST_HEAD(&pool->workers);
  
--	/*
--	 * With manager arbitration won, manager_mutex would be free in
--	 * most cases.  trylock first without dropping @pool->lock.
--	 */
--	if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
--		spin_unlock_irq(&pool->lock);
--		mutex_lock(&pool->manager_mutex);
--		spin_lock_irq(&pool->lock);
--		ret = true;
--	}
--
- 	ret |= maybe_create_worker(pool);
++	ida_init(&pool->worker_ida);
+ 	INIT_HLIST_NODE(&pool->hash_node);
+ 	pool->refcnt = 1;
  
--	mutex_unlock(&pool->manager_mutex);
- 	mutex_unlock(&pool->manager_arb);
- 	return ret;
+@@ -3503,7 +3499,7 @@ static void rcu_free_pool(struct rcu_head *rcu)
+ {
+ 	struct worker_pool *pool = container_of(rcu, struct worker_pool, rcu);
+ 
+-	idr_destroy(&pool->worker_idr);
++	ida_destroy(&pool->worker_ida);
+ 	free_workqueue_attrs(pool->attrs);
+ 	kfree(pool);
  }
 -- 
 1.7.4.4
