@@ -1,90 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879AbaETObG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:31:06 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39087 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaETObE (ORCPT
+	id S1754079AbaETObL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:31:11 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:32884 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaETObH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:31:04 -0400
+	Tue, 20 May 2014 10:31:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <4223392.yrWc3QAXY9@wuerfel>
-References: <1400422125-2209-1-git-send-email-sthokal@xilinx.com>
-	<4223392.yrWc3QAXY9@wuerfel>
-Date: Tue, 20 May 2014 20:01:01 +0530
-X-Google-Sender-Auth: -qZ5oDMmRpL8UHTkx854Nu0PXWE
-Message-ID: <CA+mB=1KsxjJR0Yswmo2y_Gej64OPZLddXxJ+qn8YOx7=_EsqeA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Generic Configuration Access Mechanism support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Srikanth Thokala <sthokal@xilinx.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        will.deacon@arm.com, michals@xilinx.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+In-Reply-To: <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+	<1400169891-29546-2-git-send-email-tthayer@altera.com>
+	<20140516075344.GF949@pengutronix.de>
+	<CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+	<20140519191206.GH949@pengutronix.de>
+	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+Date: Tue, 20 May 2014 09:31:06 -0500
+Message-ID: <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: Thor Thayer <tthayer.linux@gmail.com>
+Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
+        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
+        Grant Likely <grant.likely@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
 
-On Mon, May 19, 2014 at 10:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 18 May 2014 19:38:45 Srikanth Thokala wrote:
->> +
->> +     if (cfg->ops->is_valid_cfg_access) {
->> +             if (!cfg->ops->is_valid_cfg_access(bus, devfn)) {
->> +                     *val = PCI_CFG_INVALID_DEVFN;
->> +                     return PCIBIOS_DEVICE_NOT_FOUND;
->> +             }
->> +     }
->
-> Can you explain why this callback is needed? If the space for the
-> bus is mapped, any access should just work.
+>>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>>> >> new file mode 100644
+>>> >> index 0000000..8f8746b
+>>> >> --- /dev/null
+>>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>>> >> @@ -0,0 +1,11 @@
+>>> >> +Altera SOCFPGA SDRAM Controller
+>>> >> +
+>>> >> +Required properties:
+>>> >> +- compatible : "altr,sdr-ctl";
+>>> >> +- reg : Should contain 1 register ranges(address and length)
+>>> >> +
+>>> >> +Example:
+>>> >> +     sdrctl@ffc25000 {
+>>> >> +             compatible = "altr,sdr-ctl";
+>>> >> +             reg = <0xffc25000 0x1000>;
+>>> >> +     };
+>>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>>> >> index df43702..6ce912e 100644
+>>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+>>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>>> >> @@ -676,6 +676,11 @@
+>>> >>                       clocks = <&l4_sp_clk>;
+>>> >>               };
+>>> >>
+>>> >> +             sdrctl@ffc25000 {
+>>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+>>> >                                                    ^^^^^^^^^^
+>>> >
+>>> > Get rid of that, too, please.
+>>>
+>>> Hi Steffan,
+>>>
+>>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+>>> that has the ECC enable bitfield also includes the DRAM configuration
+>>> bitfields that other drivers will want to access (specifically the
+>>> FPGA bridge needs this information). Since this register will be
+>>> shared between drivers,  syscon seems like the best solution.
+>>>
+>>
+>> Hm, from looking at the documentation of the ctrlcfg I can't really
+>> understand which bits you would need for the FPGA brigde and why.
 
-As I was explaining to Will, there are some controllers which doesn't
-return FF's
-when a device is not found on the bus (as per the PCI specification) and
-accessing such a device address from the kernel results in an external abort.
-So, I added this additional logic in my driver to bypass this and
-return FF's. Our IP
-and even other controllers like Tegra, Renesas have similar implementation.
-We cant think of a better solution and please let you us know if you
-have any inputs.
+Hi Steffen,
 
-Thanks
-Srikanth
+Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+allows an FPGA port to come out of reset (enables that port).  Has no
+other effect on SDRAM configuration.
+
+>> That all sounds like stuff you would want to set for the specific
+>> RAM you are dealing with on a specific board.
+>> What bridge are you talking about? The SDRAM bridge?
+
+Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+register the only register in the sdr that the bridge driver needs.
+
+>>
+>> I can see the problem with the ECC enable, though.
+>>
+>> Regards,
+>> Steffen
+>>
+>
+> Hi Steffen,
+>
+> I'll get more details from the guy working on the FPGA bridge when he
+> gets back in the office. When I started working on EDAC, that register
+> had been allocated by the FPGA bridge driver so we decided to use the
+> syscon to allow sharing of the register.
+>
+> My understanding was that the FPGA bridge as an SDRAM master would
+> allow FPGA devices to access the SDRAM.  As part of that process, they
+> may want to read the SDRAM configuration.
+
+The FPGA bridge driver doesn't look at the SDRAM configuration.  It
+just wants access to this one register so it can enable or disable the
+FPGA path to SDRAM.  The only function of this bridge driver is to
+enable/disable the bridge.
+
+~Alan
 
 >
->> +
->> +/* Generic PCI CAM/ECAM Configuration Bus Operations */
->> +
->> +struct pci_cfg_bus_ops pci_cfg_cam_bus_ops = {
->> +     .bus_shift      = PCI_CFG_CAM_BUS_NUM,
->> +     .map_bus        = pci_cfg_map_bus_cam,
->> +};
->> +EXPORT_SYMBOL_GPL(pci_cfg_cam_bus_ops);
->> +
->> +struct pci_cfg_bus_ops pci_cfg_ecam_bus_ops = {
->> +     .bus_shift      = PCI_CFG_ECAM_BUS_NUM,
->> +     .map_bus        = pci_cfg_map_bus_ecam,
->> +};
->> +EXPORT_SYMBOL_GPL(pci_cfg_ecam_bus_ops);
->> +
->> +struct pci_ops pci_cfg_ops = {
->> +     .read   = pci_cfg_read,
->> +     .write  = pci_cfg_write,
->> +};
->> +EXPORT_SYMBOL_GPL(pci_cfg_ops);
+> I'll need to get more details from the driver developer because the
+> FPGA driver is in flux while the appropriate driver architecture is
+> being discussed.
+>
+> Thor
 >
 >
-> If we can find a way to remove the is_valid_cfg_access() check, we're
-> probably better off removing the cfg_bus_ops as well, and exporting
-> two sets of pci_ops. There will be a little more duplication here, but
-> also less complexity in this module, and more importantly in the drivers
-> using it.
->
->         Arnd
+>>> >                 sdrctl@ffc25000 {
+>>> >                         compatible = "altr,sdr-ctl";
+>>> >                         reg = <0xffc25000 0x1000>;
+>>> >                         ranges;
+>>> >
+>>> >                         edac@ffc2502c {
+>>> >                                 compatible = "altr,sdram-edac";
+>>> >                                 reg = <0xffc2502c 0x50>;
+>>> >                                 interrupts = <0 39 4>;
+>>> >                         };
+>>> >                 };
+>>> >
+>>> > Then we can later add:
+>>> >
+>>> >                         sdr-ports: ports@ffc2507c {
+>>> >                                 #reset-cells = <1>;
+>>> >                                 compatible = "altr,sdr-ports";
+>>> >                                 reg = <0xffc2507c 0x10>;
+>>> >                                 clocks = <&ddr_dqs_clk>;
+>>> >                                 ...
+>>> >                         };
+>>
+>> --
+>> Pengutronix e.K.                           |                             |
+>> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+>> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
