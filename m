@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaETMkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:40:09 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:2488 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217AbaETMkH (ORCPT
+	id S1753501AbaETMlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:41:09 -0400
+Received: from yotta.elopez.com.ar ([31.220.24.173]:50290 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaETMlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:40:07 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 2/6] iommu/vt-d: move up no_iommu and dmar_disabled check
-Date: Tue, 20 May 2014 20:37:48 +0800
-Message-ID: <1400589472-8544-3-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-In-Reply-To: <1400589472-8544-1-git-send-email-wangyijing@huawei.com>
-References: <1400589472-8544-1-git-send-email-wangyijing@huawei.com>
+	Tue, 20 May 2014 08:41:07 -0400
+Message-ID: <537B4D55.5040804@elopez.com.ar>
+Date: Tue, 20 May 2014 09:40:53 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: linux-sunxi@googlegroups.com, Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        andriy.shevchenko@intel.com, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [linux-sunxi] [PATCH v7] DMA: sun6i: Add driver for the Allwinner
+ A31 DMA controller
+References: <1398349364-10726-1-git-send-email-maxime.ripard@free-electrons.com> <1398349364-10726-2-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1398349364-10726-2-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move up the no_iommu and dmar_disabled check, avoid the
-useless initialization for dmar.
+Hi Maxime,
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/iommu/intel-iommu.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+El 24/04/14 11:22, Maxime Ripard escribió:
+> The Allwinner A31 has a 16 channels DMA controller that it shares with the
+> newer A23. Although sharing some similarities with the DMA controller of the
+> older Allwinner SoCs, it's significantly different, I don't expect it to be
+> possible to share the driver for these two.
+>
+> The A31 Controller is able to memory-to-memory or memory-to-device transfers on
+> the 16 channels in parallel.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+(snip)
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 5c5863842de9..360a10c71388 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -361,6 +361,14 @@ config FSL_EDMA
+>   	  multiplexing capability for DMA request sources(slot).
+>   	  This module can be found on Freescale Vybrid and LS-1 SoCs.
+>
+> +config DMA_SUN6I
+> +	tristate "Allwinner A31 SoCs DMA support"
+> +	depends on ARCH_SUNXI
+> +	select DMA_ENGINE
+> +	select DMA_VIRTUAL_CHANNELS
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index e020dcf..6b71608 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3948,6 +3948,9 @@ int __init intel_iommu_init(void)
- 	/* VT-d is required for a TXT/tboot launch, so enforce that */
- 	force_on = tboot_force_iommu();
- 
-+	if (no_iommu || dmar_disabled)
-+		return ret;
-+
- 	if (iommu_init_mempool()) {
- 		if (force_on)
- 			panic("tboot: Failed to initialize iommu memory\n");
-@@ -3974,9 +3977,6 @@ int __init intel_iommu_init(void)
- 		goto out_free_dmar;
- 	}
- 
--	if (no_iommu || dmar_disabled)
--		goto out_free_dmar;
--
- 	if (list_empty(&dmar_rmrr_units))
- 		printk(KERN_INFO "DMAR: No RMRR found\n");
- 
--- 
-1.7.1
+I think you also need to select DMA_OF here as you are using 
+of_dma_controller_register
 
+> +	help
+> +	  Support for the DMA engine for Allwinner A31 SoCs.
+> +
+>   config DMA_ENGINE
+>   	bool
+
+Cheers,
+
+Emilio
 
