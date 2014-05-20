@@ -1,78 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaETCGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:06:08 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41350 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaETCGG (ORCPT
+	id S1752891AbaETCGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:06:24 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:29815 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750870AbaETCGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:06:06 -0400
-Message-ID: <537AB86B.4020901@oracle.com>
-Date: Mon, 19 May 2014 22:05:31 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: spinlock recursion in migrate_swap_stop
-References: <5371122D.6020605@oracle.com>
-In-Reply-To: <5371122D.6020605@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 19 May 2014 22:06:22 -0400
+Message-ID: <1400551571.10728.31.camel@pippen.local.home>
+Subject: Re: [PATCH 2/4] tools lib traceevent: Add options to plugins
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 19 May 2014 22:06:11 -0400
+In-Reply-To: <1400509775.1742.15.camel@leonhard>
+References: <20140516140215.149535442@goodmis.org>
+	 <20140516140502.340008258@goodmis.org> <1400509775.1742.15.camel@leonhard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? It seems to be easy enough to reproduce on -next, I'd be happy to try
-debug patches/fixes.
+On Mon, 2014-05-19 at 23:29 +0900, Namhyung Kim wrote:
+> Hi Steve,
+> 
+> 2014-05-16 (금), 10:02 -0400, Steven Rostedt:
+> 
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > The traceevent plugins allows developers to have their events print out
+> > information that is more advanced than what can be achieved by the
+> > trace event format files.
+> > 
+> > As these plugins are used on the userspace side of the tracing tools, it
+> > is only logical that the tools should be able to produce different types
+> > of output for the events. The types of events still need to be defined by
+> > the plugins thus we need a way to pass information from the tool to the
+> > plugin to specify what type of information to be shown.
+> > 
+> > Not only does the information need to be passed by the tool to plugin, but
+> > the plugin also requires a way to notify the tool of what options it can
+> > provide.
+> > 
+> > This builds the plugin option infrastructure that is taken from trace-cmd
+> > that is used to allow plugins to produce different output based on the
+> > options specified by the tool.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  tools/lib/traceevent/event-parse.h  |  16 ++-
+> >  tools/lib/traceevent/event-plugin.c | 197 ++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 209 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+> > index a68ec3d8289f..d6c610a66006 100644
+> > --- a/tools/lib/traceevent/event-parse.h
+> > +++ b/tools/lib/traceevent/event-parse.h
+> > @@ -107,8 +107,8 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
+> >  typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
+> >  typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
+> >  
+> > -struct plugin_option {
+> > -	struct plugin_option		*next;
+> > +struct pevent_plugin_option {
+> > +	struct pevent_plugin_option	*next;
+> 
+> Hmm.. this name change reminds me that it might be better if this plugin
+> and option list belong to a pevent..
+
+Yeah, eventually, but for now I want to try to sync what I have in
+trace-cmd with what is here in libtraceevent. At least to save history.
+Then we can modify it to be per pevent. For now, there's no users that
+need it per pevent. But that should definitely be changed before we push
+this out to distros.
 
 
-Thanks,
-Sasha
 
-On 05/12/2014 02:25 PM, Sasha Levin wrote:
-> Hi all,
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel I've stumbled on the following spew:
 > 
-> [ 1738.758667] BUG: spinlock recursion on CPU#23, migration/23/328
-> [ 1738.761291]  lock: 0xffff8801f93b0c30, .magic: dead4ead, .owner: migration/23/328, .owner_cpu: 23
-> [ 1738.762733] CPU: 23 PID: 328 Comm: migration/23 Not tainted 3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
-> [ 1738.764081]  ffff8801f93b0c30 ffff8805505efbc8 ffffffff9453e1ec 0000000000000004
-> [ 1738.764914]  ffff8805505cb000 ffff8805505efbe8 ffffffff94531095 ffff8801f93b0c30
-> [ 1738.765120]  ffffffff9583485e ffff8805505efc08 ffffffff945310c0 ffff8801f93b0c30
-> [ 1738.765120] Call Trace:
-> [ 1738.768386] dump_stack (lib/dump_stack.c:52)
-> [ 1738.768386] spin_dump (kernel/locking/spinlock_debug.c:68 (discriminator 6))
-> [ 1738.768386] spin_bug (kernel/locking/spinlock_debug.c:76)
-> [ 1738.768386] do_raw_spin_lock (kernel/locking/spinlock_debug.c:84 kernel/locking/spinlock_debug.c:135)
-> [ 1738.768386] _raw_spin_lock_nested (kernel/locking/spinlock.c:362 (discriminator 2))
-> [ 1738.768386] ? migrate_swap_stop (arch/x86/include/asm/paravirt.h:804 kernel/sched/sched.h:1406 kernel/sched/core.c:1099)
-> [ 1738.768386] ? _raw_spin_lock (kernel/locking/spinlock.c:152)
-> [ 1738.768386] ? migrate_swap_stop (kernel/sched/sched.h:1393 kernel/sched/core.c:1097)
-> [ 1738.768386] migrate_swap_stop (arch/x86/include/asm/paravirt.h:804 kernel/sched/sched.h:1406 kernel/sched/core.c:1099)
-> [ 1738.768386] ? queue_stop_cpus_work (include/linux/cpumask.h:108 include/linux/cpumask.h:174 kernel/stop_machine.c:375)
-> [ 1738.768386] multi_cpu_stop (kernel/stop_machine.c:225)
-> [ 1738.768386] ? queue_stop_cpus_work (kernel/stop_machine.c:171)
-> [ 1738.768386] cpu_stopper_thread (kernel/stop_machine.c:498)
-> [ 1738.768386] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> [ 1738.768386] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
-> [ 1738.768386] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> [ 1738.768386] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-> [ 1738.768386] smpboot_thread_fn (kernel/smpboot.c:160)
-> [ 1738.768386] ? __smpboot_create_thread (kernel/smpboot.c:105)
-> [ 1738.768386] kthread (kernel/kthread.c:210)
-> [ 1738.768386] ? complete (kernel/sched/completion.c:35)
-> [ 1738.768386] ? kthread_create_on_node (kernel/kthread.c:176)
-> [ 1738.768386] ret_from_fork (arch/x86/kernel/entry_64.S:553)
-> [ 1738.768386] ? kthread_create_on_node (kernel/kthread.c:176)
+> >  	void				*handle;
+> >  	char				*file;
+> >  	char				*name;
+> > @@ -135,7 +135,7 @@ struct plugin_option {
+> >   * PEVENT_PLUGIN_OPTIONS:  (optional)
+> >   *   Plugin options that can be set before loading
+> >   *
+> > - *   struct plugin_option PEVENT_PLUGIN_OPTIONS[] = {
+> > + *   struct pevent_plugin_option PEVENT_PLUGIN_OPTIONS[] = {
+> >   *	{
+> >   *		.name = "option-name",
+> >   *		.plugin_alias = "overide-file-name", (optional)
+> > @@ -355,7 +355,7 @@ enum pevent_func_arg_type {
+> >  enum pevent_flag {
+> >  	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
+> >  	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
+> > -	PEVENT_DISABLE_PLUGINS		= 1 << 2,
+> > +	PEVENT_DISABLE_PLUGINS		= 1 << 2
 > 
+> Unnecessary change?
+
+Heh, probably from my ediff (in emacs) making this file more like what I
+had in trace-cmd. I can nuke it.
+
+> 
+> 
+> >  };
+> >  
+> >  #define PEVENT_ERRORS 							      \
+> > @@ -415,6 +415,14 @@ struct plugin_list;
+> >  struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
+> >  void traceevent_unload_plugins(struct plugin_list *plugin_list,
+> >  			       struct pevent *pevent);
+> > +char **traceevent_plugin_list_options(void);
+> > +void traceevent_plugin_free_options_list(char **list);
+> > +int traceevent_plugin_add_options(const char *name,
+> > +				  struct pevent_plugin_option *options);
+> > +void traceevent_plugin_remove_options(struct pevent_plugin_option *options);
+> > +void traceevent_print_plugins(struct trace_seq *s,
+> > +			      const char *prefix, const char *suffix,
+> > +			      const struct plugin_list *list);
+> >  
+> >  struct cmdline;
+> >  struct cmdline_list;
+> > diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+> > index 317466bd1a37..a24479426d58 100644
+> > --- a/tools/lib/traceevent/event-plugin.c
+> > +++ b/tools/lib/traceevent/event-plugin.c
+> > @@ -18,6 +18,7 @@
+> >   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >   */
+> >  
+> > +#include <stdio.h>
+> >  #include <string.h>
+> >  #include <dlfcn.h>
+> >  #include <stdlib.h>
+> > @@ -30,12 +31,208 @@
+> >  
+> >  #define LOCAL_PLUGIN_DIR ".traceevent/plugins"
+> >  
+> > +static struct registered_plugin_options {
+> > +	struct registered_plugin_options	*next;
+> > +	struct pevent_plugin_option		*options;
+> > +} *registered_options;
+> > +
+> > +static struct trace_plugin_options {
+> > +	struct trace_plugin_options	*next;
+> > +	char				*plugin;
+> > +	char				*option;
+> > +	char				*value;
+> > +} *trace_plugin_options;
+> > +
+> >  struct plugin_list {
+> >  	struct plugin_list	*next;
+> >  	char			*name;
+> >  	void			*handle;
+> >  };
+> >  
+> > +/**
+> > + * traceevent_plugin_list_options - get list of plugin options
+> > + *
+> > + * Returns an array of char strings that list the currently registered
+> > + * plugin options in the format of <plugin>:<option>. This list can be
+> > + * used by toggling the option.
+> > + *
+> > + * Returns NULL if there's no options registered. On error it returns
+> > + * an (char **)-1 (must check for that)
+> 
+> What about making it a macro like INVALID_OPTION_LIST?
+
+Sure.
+
+> 
+> > + *
+> > + * Must be freed with traceevent_plugin_free_options_list().
+> > + */
+> > +char **traceevent_plugin_list_options(void)
+> > +{
+> > +	struct registered_plugin_options *reg;
+> > +	struct pevent_plugin_option *op;
+> > +	char **list = NULL;
+> > +	char *name;
+> > +	int count = 0;
+> > +
+> > +	for (reg = registered_options; reg; reg = reg->next) {
+> > +		for (op = reg->options; op->name; op++) {
+> > +			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
+> > +
+> > +			name = malloc(strlen(op->name) + strlen(alias) + 2);
+> > +			if (!name)
+> > +				goto err;
+> > +
+> > +			sprintf(name, "%s:%s", alias, op->name);
+> > +			list = realloc(list, count + 2);
+> > +			if (!list) {
+> 
+> This will lost the original list pointer.  Please use a temp variable.
+
+Thanks, will do.
+
+
+> 
+> 
+> > +				free(name);
+> > +				goto err;
+> > +			}
+> > +			list[count++] = name;
+> > +			list[count] = NULL;
+> > +		}
+> > +	}
+> > +	if (!count)
+> > +		return NULL;
+> > +	return list;
+> 
+> Isn't it enough to simply return the list?
+
+Confused. Do you mean "Is it enough to simply return the list?"
+
+
+> 
+> > +
+> > + err:
+> > +	while (--count > 0)
+> 
+> Shouldn't it be >= instead of > ?
+
+Yes! Nice catch.
+
+
 > 
 > Thanks,
-> Sasha
+> Namhyung
+
+BTW, Are you at LinuxCon Japan?
+
+-- Steve
+
 > 
+> 
+> > +		free(list[count]);
+> > +	free(list);
+> > +
+> > +	return (char **)((unsigned long)-1);
+> > +}
+> 
+
 
