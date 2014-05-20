@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaETA6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:58:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51127 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaETA6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:58:33 -0400
-Date: Tue, 20 May 2014 09:58:31 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 03/10] usb: catch attempts to submit urbs with a
- vmalloc'd transfer buffer
-Message-ID: <20140520005831.GA7933@kroah.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
- <1399566363-25837-4-git-send-email-mathias.nyman@linux.intel.com>
- <CAPcyv4hzw4wQ2ju3uaaHNfO+pemgWhgVdkE1Faiu3nRk3q276A@mail.gmail.com>
- <5370E22E.8000304@linux.intel.com>
+	id S1752543AbaETBAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 21:00:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:51655 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074AbaETBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 21:00:00 -0400
+Date: Tue, 20 May 2014 10:59:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-ID: <20140520105952.73f6adab@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5370E22E.8000304@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/KnBHmZDs9tZ6Gey/dRoMe6q"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 12, 2014 at 06:01:02PM +0300, Mathias Nyman wrote:
-> On 05/08/2014 07:21 PM, Dan Williams wrote:
-> > On Thu, May 8, 2014 at 9:25 AM, Mathias Nyman
-> > <mathias.nyman@linux.intel.com> wrote:
-> >> From: Dan Williams <dan.j.williams@intel.com>
-> >>
-> >> Save someone else the debug cycles of figuring out why a driver's
-> >> transfer request is failing or causing undefined system behavior.
-> >> Buffers submitted for dma must come from GFP allocated / DMA-able
-> >> memory.
-> >>
-> >> Return -EAGAIN matching the return value for dma_mapping_error() cases.
-> >>
-> >> Cc: Alan Stern <stern@rowland.harvard.edu>
-> >> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> >> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-> >> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> >> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> >
-> > Thanks Mathias.
-> >
-> > One note, this was acked-by Alan here:
-> >
-> > http://marc.info/?l=linux-usb&m=139327920501989&w=2
-> >
-> 
-> Ah, Right
-> 
-> Greg, Alan, Should I resubmit this series with the added ACK for this patch?
+--Sig_/KnBHmZDs9tZ6Gey/dRoMe6q
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-No need, I can add it.
+Hi all,
+
+After merging the net tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+
+In file included from arch/powerpc/net/bpf_jit_comp.c:16:0:
+include/linux/if_vlan.h: In function 'vlan_get_encap_level':
+include/linux/if_vlan.h:491:2: error: implicit declaration of function 'vla=
+n_dev_priv' [-Werror=3Dimplicit-function-declaration]
+  return vlan_dev_priv(dev)->nest_level;
+  ^
+include/linux/if_vlan.h:491:27: error: invalid type argument of '->' (have =
+'int')
+  return vlan_dev_priv(dev)->nest_level;
+                           ^
+
+Caused by commit 44a4085538c8 ("bonding: Fix stacked device detection
+in arp monitoring").
+
+vlan_dev_priv() is protected by:
+
+#if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+
+but the newly added call in vlan_get_encap_level() is not.
+
+I have used the net tree from next-20140519 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/KnBHmZDs9tZ6Gey/dRoMe6q
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTeqkNAAoJEMDTa8Ir7ZwVO4oP/3oXziwWreT3K+Tf7FiZ9HaH
+Kfj3b1sJYFkyn5eRNoBs5I0YncwYyufq3LfBP/LNrlWum7ZfaXw2cjdjSkRKt/vZ
+hZizhlGPix5AmfJCIGvxyHej1ib4lwpG/Kmrrqzn4AaweMflLD8Aq2aIQ+X02LaH
+7Tpy+xAvdsUoBXgjIBt+mFKk+DCeOb3NyZa2q7lgv3k4JmVREYOaG/x6t65yBhea
+4GFeobaHiTBAAyBhuilrQWV7pHFndUKkKTr9eZqKtAecrOueSR44x8AJlKO36E7V
+hYOYc9GrtYq87DzT+v+IFqNNER40Ua1VwvTXh8UTHNUpKoHp0CEwYkUsv3esJfCO
+1kEmnAHFTTy9e+esO7rJEV627u/RIN9hik+LAGdD35vOZKr8nzeuVIDQdW8GyQY9
+Npuzo5WNOqCISOWXULeKVDjiQdsqsjzFjGhffbX1M/piKxNwgC2M68xthFwfX9En
+MQs9gCrhlI0+aQSzeIedMWZzyDTm8ZW4ELzgI0ocHVNA+I0y7c5kwzBsbjWerVmo
+fKZxSPv/ovx1FKskpq2wQcneH8Jd67ZcxIu+kVvh/dxfmSx4VnNDAVHp+nI6GV4p
+fUHVElRkFGTTcmYTa0gN8vrbh5dAfTkgUux3Ykea3FwKFUjs90Keur/YX8McgMWX
+kCc9LgwIlXtRipx+43dy
+=upfj
+-----END PGP SIGNATURE-----
+
+--Sig_/KnBHmZDs9tZ6Gey/dRoMe6q--
