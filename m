@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaETQ3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:29:22 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:10703 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751266AbaETQ3V (ORCPT
+	id S1754104AbaETQaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:30:21 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:35457 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555AbaETQaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:29:21 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtEWAHGBe1NbsnsG/2dsb2JhbABZgwarBQQBAQEBAQEFAYM6lm4CAoEcF3SCUxM/GIECJBOIRQHUIYVViHmERwEDjzyKKwGLEogOgzo7
-Date: Tue, 20 May 2014 18:29:18 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 1/1]  drivers/gpu/drm/radeon/ci_dpm.c: replace shift loop by
- ilog2
-Message-Id: <20140520182918.0259b9804a1b01693cb2b287@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 12:30:19 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, joe@perches.com,
+        auttamchandani@logicube.com, stern@rowland.harvard.edu
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 00/10] net2280: Support for PLX USB338x and cleanout code
+Date: Tue, 20 May 2014 18:30:02 +0200
+Message-Id: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
+Controller. It shares a lot functionatily with the net228x family.
 
-Cc: Alex Deucher <alexander.deucher@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/radeon/ci_dpm.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+This series of patches includes some resend of previous patches.
 
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index 10dae41..e4abf9e 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -3725,10 +3725,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
- 	if (level == RADEON_DPM_FORCED_LEVEL_HIGH) {
- 		if ((!pi->sclk_dpm_key_disabled) &&
- 		    pi->dpm_level_enable_mask.sclk_dpm_enable_mask) {
--			levels = 0;
- 			tmp = pi->dpm_level_enable_mask.sclk_dpm_enable_mask;
--			while (tmp >>= 1)
--				levels++;
-+			levels = ilog2(tmp);
- 			if (levels) {
- 				ret = ci_dpm_force_state_sclk(rdev, levels);
- 				if (ret)
-@@ -3744,10 +3742,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
- 		}
- 		if ((!pi->mclk_dpm_key_disabled) &&
- 		    pi->dpm_level_enable_mask.mclk_dpm_enable_mask) {
--			levels = 0;
- 			tmp = pi->dpm_level_enable_mask.mclk_dpm_enable_mask;
--			while (tmp >>= 1)
--				levels++;
-+			levels = ilog2(tmp);
- 			if (levels) {
- 				ret = ci_dpm_force_state_mclk(rdev, levels);
- 				if (ret)
-@@ -3763,10 +3759,8 @@ int ci_dpm_force_performance_level(struct radeon_device *rdev,
- 		}
- 		if ((!pi->pcie_dpm_key_disabled) &&
- 		    pi->dpm_level_enable_mask.pcie_dpm_enable_mask) {
--			levels = 0;
- 			tmp = pi->dpm_level_enable_mask.pcie_dpm_enable_mask;
--			while (tmp >>= 1)
--				levels++;
-+			levels = ilog2(tmp);
- 			if (levels) {
- 				ret = ci_dpm_force_state_pcie(rdev, level);
- 				if (ret)
+Please check the changelog for every patch. This time it has been placed
+under the tear line
+
+
+
+Ricardo Ribalda Delgado (10):
+  usb: gadget: net2280: Add support for PLX USB338X
+  usb: gadget: net2280: Dont use magic numbers
+  usb: gadget: net2280: Use BIT() macro
+  usb: gadget: net2280: Use true/false instead of 1/0
+  usb: gadget: net2280: Use module_pci_driver macro
+  usb: gadget: net2280: Refactor queues_show
+  usb: gadget: net2280: Pass checkpacth.pl test
+  usb: gadget: net2280: Code Cleanup
+  usb: gadget: net2280: Use pr_* function
+  usb: gadget: net2280: Use quirks instead of pci id
+
+ drivers/usb/gadget/Kconfig   |   10 +-
+ drivers/usb/gadget/net2280.c | 2752 ++++++++++++++++++++++++++++--------------
+ drivers/usb/gadget/net2280.h |  285 +++--
+ include/linux/usb/usb338x.h  |  199 +++
+ 4 files changed, 2235 insertions(+), 1011 deletions(-)
+ create mode 100644 include/linux/usb/usb338x.h
+
 -- 
-1.8.4.5
+2.0.0.rc2
 
