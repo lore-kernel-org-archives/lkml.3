@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaETBEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 21:04:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51163 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaETBEf (ORCPT
+	id S1752509AbaETBEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 21:04:33 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:36524 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751106AbaETBEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 21:04:35 -0400
-Date: Tue, 20 May 2014 10:04:15 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sarah.a.sharp@linux.intel.com
-Subject: Re: [PATCH 00/10] xhci: features for usb-next
-Message-ID: <20140520010414.GA20035@kroah.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+	Mon, 19 May 2014 21:04:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAJZOPZJVxF6A-3s16feqoWCb5gOLTjyUmB3F+st1+1QWp+bJnQ@mail.gmail.com>
+References: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com>
+ <alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz> <CAJZOPZJVxF6A-3s16feqoWCb5gOLTjyUmB3F+st1+1QWp+bJnQ@mail.gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Mon, 19 May 2014 18:04:10 -0700
+X-Google-Sender-Auth: ysst3Dfxg35_JWDbZDlXPqyIfGA
+Message-ID: <CAL1RGDUoEFF=fR-e-fc1v0yHp8sxaidBnO_2iiAFThgZNvCcfQ@mail.gmail.com>
+Subject: Re: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected
+ mode TX path
+To: Or Gerlitz <or.gerlitz@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Amir Vadai <amirv@mellanox.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 07:25:53PM +0300, Mathias Nyman wrote:
-> Hi Greg
-> 
-> These following xhci patches are for usb-next and hopefully for 3.16
-> 
-> This patcheseries includes a bigger change in xhci command queue code,
-> (last four patches), a task that I've been working on for a longer time.
-> Sarah gave green light for v5 before she went on her sabbatical.
-> 
-> http://marc.info/?l=linux-usb&m=139889908701592&w=2
+On Sat, May 17, 2014 at 1:52 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
+> Roland, we're soon on -rc6 and there's no reason for this to miss
+> 3.16, could you please comment whether you want it to go through your
+> tree or net-next?
 
-I've applied 9 of these.
-
-thanks,
-
-greg k-h
+I will pick it up.
