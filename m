@@ -1,675 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaETOMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:12:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38976 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbaETOMF (ORCPT
+	id S1753586AbaETOPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:15:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48694 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaETOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:12:05 -0400
-From: Javi Merino <javi.merino@arm.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Punit.Agrawal@arm.com, Javi Merino <javi.merino@arm.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Punit Agrawal <punit.agrawal@arm.com>
-Subject: [RFC PATCH v2 6/7] thermal: introduce the Power Allocator governor
-Date: Tue, 20 May 2014 15:10:56 +0100
-Message-Id: <1400595057-8585-7-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
-References: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
-X-OriginalArrivalTime: 20 May 2014 14:12:04.0036 (UTC) FILETIME=[79AAD040:01CF7435]
-X-MC-Unique: 114052015120305501
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 20 May 2014 10:15:37 -0400
+Message-ID: <537B6376.2050000@ti.com>
+Date: Tue, 20 May 2014 09:15:18 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>
+CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
+        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <broonie@linaro.org>, <swarren@nvidia.com>, <lee.jones@linaro.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
+References: <1400577099-8743-1-git-send-email-j-keerthy@ti.com> <1400577099-8743-4-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1400577099-8743-4-git-send-email-j-keerthy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4KECovo012798
 
-The power allocator governor is a thermal governor that controls system
-and device power allocation to control temperature.  Conceptually, the
-implementation takes a system view of heat dissipation by managing
-multiple heat sources.
+On 05/20/2014 04:11 AM, Keerthy wrote:
+[...]
+> +config MFD_TPS65917
+> +	bool "TI TPS65917 series chips"
+> +	select MFD_CORE
+> +	select REGMAP_I2C
+> +	select REGMAP_IRQ
+> +	depends on I2C=y
+^^ why =y?
 
-This governor relies on power-aware cooling devices (power actors) to
-operate.  That is, cooling devices whose thermal_cooling_device_ops
-accept THERMAL_UNIT_POWER.
+> +	help
+> +	  If you say yes here you get support for the TPS65917
+> +	  PMIC chips from Texas Instruments. The device provides
+> +	  5 confgurable SPMSs and 5 LDOs, thermal protection module,
+> +	  GPADC.
+> +
+>  config MFD_TPS80031
+>  	bool "TI TPS80031/TPS80032 Power Management chips"
+>  	depends on I2C=y
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 2851275..248a60b 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -69,6 +69,7 @@ tps65912-objs                   := tps65912-core.o tps65912-irq.o
+>  obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
+>  obj-$(CONFIG_MFD_TPS65912_I2C)	+= tps65912-i2c.o
+>  obj-$(CONFIG_MFD_TPS65912_SPI)  += tps65912-spi.o
+> +obj-$(CONFIG_MFD_TPS65917)	+= tps65917.o
+>  obj-$(CONFIG_MFD_TPS80031)	+= tps80031.o
+>  obj-$(CONFIG_MENELAUS)		+= menelaus.o
+>  
+> diff --git a/drivers/mfd/tps65917.c b/drivers/mfd/tps65917.c
+> new file mode 100644
+> index 0000000..dbd67c5
+> --- /dev/null
+> +++ b/drivers/mfd/tps65917.c
+> @@ -0,0 +1,573 @@
+> +/*
+> + * TI TPS65917 Integrated power management chipsets
+> + *
+> + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether expressed or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License version 2 for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/i2c.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/regmap.h>
+> +#include <linux/err.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/tps65917.h>
+> +#include <linux/of_device.h>
+<snip>
+> +
+> +static int tps65917_voltaile_regs[] = {
+> +	TPS65917_SMPS1_CTRL,
+> +	TPS65917_SMPS2_CTRL,
+> +	TPS65917_SMPS3_CTRL,
+> +	TPS65917_SMPS4_CTRL,
+> +	TPS65917_SMPS5_CTRL,
+> +	TPS65917_LDO1_CTRL,
+> +	TPS65917_LDO2_CTRL,
+> +	TPS65917_LDO3_CTRL,
+> +	TPS65917_LDO4_CTRL,
+> +	TPS65917_LDO5_CTRL,
+> +};
+> +
+> +static bool is_volatile_reg(struct device *dev, unsigned int reg)
+> +{
+> +	int i;
+> +
+> +	/*
+> +	 * Caching all the required regulator registers.
+> +	 */
+> +
+> +	for (i = 0; i < 11; i++)
+> +		if (reg == tps65917_voltaile_regs[i])
+> +			return true;
+> +
+> +	return false;
+> +}
+> +
+> +static const struct regmap_config tps65917_regmap_config[TPS65917_NUM_CLIENTS] = {
+> +	{
+> +		.reg_bits = 8,
+> +		.val_bits = 8,
+> +		.volatile_reg = is_volatile_reg,
+> +		.cache_type = REGCACHE_NONE,
+Assume you wanted cached here, since you are marking certain registers
+as volatile?
+[...]
+> 
+> +};
+> +
+> +int tps65917_ext_control_req_config(struct tps65917 *tps65917,
+> +				    enum tps65917_external_requestor_id id,
+> +				    int ext_ctrl, bool enable)
+> +{
 
-It uses a Proportional Integral (PI) controller driven by the
-temperature of the thermal zone.  This budget is then allocated to
-each cooling device that can have bearing on the temperature we are
-trying to control.  It decides how much power to give each cooling
-device based on the performance they are requesting.  The PI
-controller ensures that the total power budget does not exceed the
-control temperature.
+kernel doc style documentation
+[...]
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
----
- Documentation/thermal/power_allocator.txt |   42 +++
- drivers/thermal/Kconfig                   |   15 +
- drivers/thermal/Makefile                  |    1 +
- drivers/thermal/power_allocator.c         |  442 +++++++++++++++++++++++++++++
- drivers/thermal/thermal_core.c            |    7 +-
- drivers/thermal/thermal_core.h            |    8 +
- include/linux/thermal.h                   |    5 +
- 7 files changed, 519 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/thermal/power_allocator.txt
- create mode 100644 drivers/thermal/power_allocator.c
+> +static struct tps65917 *tps65917_dev;
+> +
+> +static const struct of_device_id of_tps65917_match_tbl[] = {
+> +	{
+> +		.compatible = "ti,tps65917",
+> +	},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_tps65917_match_tbl);
+> +
+> +static int tps65917_i2c_probe(struct i2c_client *i2c,
+> +			      const struct i2c_device_id *id)
+> +{
 
-diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
-new file mode 100644
-index 000000000000..daedf117611a
---- /dev/null
-+++ b/Documentation/thermal/power_allocator.txt
-@@ -0,0 +1,42 @@
-+
-+Integration of the power_allocator governor in a platform
-+=========================================================
-+
-+Registering thermal_zone_device
-+-------------------------------
-+
-+An estimate of the sustainable dissipatable power (in mW) should be
-+provided while registering the thermal zone.  This is the maximum
-+sustained power for allocation at the desired maximum temperature.
-+This number can vary for different conditions, but the closed-loop of
-+the controller should take care of those variations, the
-+`max_dissipatable_power` should be an estimation of it.  Register your
-+thermal zone with `thermal_zone_params` that have a
-+`max_dissipatable_power`.  If you weren't passing any
-+`thermal_zone_params`, then something like this will do:
-+
-+	static const struct thermal_zone_params tz_params = {
-+		.max_dissipatable_power = 3500,
-+	};
-+
-+and then pass `tz_params` as the 5th parameter to
-+`thermal_zone_device_register()`
-+
-+Trip points
-+-----------
-+
-+The governor requires the following two trip points:
-+
-+1.  "switch on" trip point: temperature above which the governor
-+    control loop starts operating
-+2.  "desired temperature" trip point: it should be higher than the
-+    "switch on" trip point. It is the target temperature the governor
-+    is controlling for.
-+
-+The trip points can be either active or passive.
-+
-+Power actors
-+------------
-+
-+Devices controlled by this governor must be registered with the power
-+actor API.  Read `power_actor.txt` for more information about them.
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 1818c4fa60b8..e5b338a7cab9 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -71,6 +71,14 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
- 	  Select this if you want to let the user space manage the
- 	  platform thermals.
- 
-+config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
-+	bool "power_allocator"
-+	select THERMAL_GOV_POWER_ALLOCATOR
-+	help
-+	  Select this if you want to control temperature based on
-+	  system and device power allocation. This governor relies on
-+	  power actors to operate.
-+
- endchoice
- 
- config THERMAL_GOV_FAIR_SHARE
-@@ -89,6 +97,13 @@ config THERMAL_GOV_USER_SPACE
- 	help
- 	  Enable this to let the user space manage the platform thermals.
- 
-+config THERMAL_GOV_POWER_ALLOCATOR
-+	bool "Power allocator thermal governor"
-+	select THERMAL_POWER_ACTOR
-+	help
-+	  Enable this to manage platform thermals by dynamically
-+	  allocating and limiting power to devices.
-+
- config THERMAL_POWER_ACTOR
- 	bool
- 
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 878a02cab7d1..c5b47f058675 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -13,6 +13,7 @@ thermal_sys-$(CONFIG_THERMAL_OF)		+= of-thermal.o
- thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
- thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
- thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
-+thermal_sys-$(CONFIG_THERMAL_GOV_POWER_ALLOCATOR)	+= power_allocator.o
- 
- obj-$(CONFIG_THERMAL_POWER_ACTOR) += power_actor/
- 
-diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-new file mode 100644
-index 000000000000..836c834a898c
---- /dev/null
-+++ b/drivers/thermal/power_allocator.c
-@@ -0,0 +1,442 @@
-+/*
-+ * A power allocator to manage temperature
-+ *
-+ * Copyright (C) 2014 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#define pr_fmt(fmt) "Power allocator: " fmt
-+
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/thermal.h>
-+
-+#include "power_actor/power_actor.h"
-+#include "thermal_core.h"
-+
-+#define FRAC_BITS 8
-+#define int_to_frac(x) ((x) << FRAC_BITS)
-+#define frac_to_int(x) ((x) >> FRAC_BITS)
-+
-+/**
-+ * mul_frac - multiply two fixed-point numbers
-+ * @x:	first multiplicand
-+ * @y:	second multiplicand
-+ *
-+ * Returns the result of multiplying two fixed-point numbers.  The
-+ * result is also a fixed-point number.
-+ */
-+static inline s64 mul_frac(s64 x, s64 y)
-+{
-+	return (x * y) >> FRAC_BITS;
-+}
-+
-+enum power_allocator_trip_levels {
-+	TRIP_SWITCH_ON = 0,	/* Switch on PI controller */
-+	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
-+};
-+
-+/**
-+ * struct power_allocator_params - parameters for the power allocator governor
-+ * @k_po:	P parameter of the PI controller when overshooting (i.e., when
-+ *		temperature is below the target)
-+ * @k_pi:	P parameter of the PI controller when undershooting
-+ * @k_i:	I parameter of the PI controller
-+ * @integral_cutoff:	threshold below which the error is no longer accumulated
-+			in the PI controller
-+ * @err_integral:	Accumulated error in the PI controller.
-+ */
-+struct power_allocator_params {
-+	s32 k_po;
-+	s32 k_pu;
-+	s32 k_i;
-+	s32 integral_cutoff;
-+	s32 err_integral;
-+};
-+
-+/**
-+ * pi_controller() - PI controller
-+ * @tz:	thermal zone we are operating in
-+ * @control_temp:	The target temperature
-+ * @max_allocatable_power:	maximum allocatable power for this thermal zone
-+ *
-+ * This PI controller increases the available power budget so that the
-+ * temperature of the thermal zone gets as close as possible to
-+ * @control_temp and limits the power if it exceeds it.  k_po is the
-+ * proportional term when we are overshooting, k_pu is the
-+ * proportional term when we are undershooting.  integral_cutoff is a
-+ * threshold below which we stop accumulating the error.  The
-+ * accumulated error is only valid if the requested power will make
-+ * the system warmer.  If the system is mostly idle, there's no point
-+ * in accumulating positive error.
-+ *
-+ * It returns the power budget for the next period.
-+ */
-+static u32 pi_controller(struct thermal_zone_device *tz,
-+			unsigned long current_temp, unsigned long control_temp,
-+			unsigned long max_allocatable_power)
-+{
-+	s64 p, i, power_range;
-+	s32 err;
-+	struct power_allocator_params *params = tz->governor_data;
-+
-+	err = ((s32)control_temp - (s32)current_temp) / 1000;
-+	err = int_to_frac(err);
-+
-+	/* Calculate the proportional term */
-+	p = mul_frac(err < 0 ? params->k_po : params->k_pu, err);
-+
-+	/*
-+	 * Calculate the integral term
-+	 *
-+	 * if the error s less than cut off allow integration (but
-+	 * the integral is limited to max power)
-+	 */
-+	i = mul_frac(params->k_i, params->err_integral);
-+
-+	if (err < int_to_frac(params->integral_cutoff)) {
-+		s64 tmpi = mul_frac(params->k_i, err);
-+		tmpi += i;
-+		if (tmpi <= int_to_frac(max_allocatable_power)) {
-+			i = tmpi;
-+			params->err_integral += err;
-+		}
-+	}
-+
-+	power_range = p + i;
-+
-+	/* feed-forward the known maximum dissipatable power */
-+	power_range = tz->tzp->max_dissipatable_power +
-+		frac_to_int(power_range);
-+
-+	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-+}
-+
-+/**
-+ * divvy_up_power - divvy the allocated power between the actors
-+ * @req_power:	each actor's requested power
-+ * @max_power:	each actor's maximum available power
-+ * @num_actors:	size of the @req_power, @max_power and @granted_power's array
-+ * @total_req_power: sum of @req_power
-+ * @power_range:	total allocated power
-+ * @granted_power:	ouput array: each actor's granted power
-+ *
-+ * This function divides the total allocated power (@power_range)
-+ * fairly between the actors. It first tries to give each actor a
-+ * share of the @power_range according to how much power it requested
-+ * compared to the rest of the actors.  For example, if only one actor
-+ * requests power, then it receives all the @power_range.  If
-+ * three actors each requests 1mW, each receives a third of the
-+ * @power_range.
-+ *
-+ * If any actor received more than their maximum power, then that
-+ * surplus is re-divvied among the actors based on how far they are
-+ * from their respective maximums.
-+ *
-+ * Granted power for each actor is written to @granted_power, which
-+ * should've been allocated by the calling function.
-+ */
-+static void divvy_up_power(unsigned long *req_power,
-+			unsigned long *max_power,
-+			int num_actors, unsigned long total_req_power,
-+			u32 power_range,
-+			unsigned long *granted_power)
-+{
-+	unsigned long extra_power, capped_extra_power;
-+	unsigned long extra_actor_power[num_actors];
-+	int i;
-+
-+	if (!total_req_power) {
-+		/*
-+		 * Nobody requested anything, so just give everybody
-+		 * the maximum power
-+		 */
-+		for (i = 0; i < num_actors; i++)
-+			granted_power[i] = max_power[i];
-+
-+		return;
-+	}
-+
-+	capped_extra_power = 0;
-+	extra_power = 0;
-+	for (i = 0; i < num_actors; i++) {
-+		u64 req_range = req_power[i] * power_range;
-+
-+		granted_power[i] = div_u64(req_range, total_req_power);
-+
-+		if (granted_power[i] > max_power[i]) {
-+			extra_power += granted_power[i] - max_power[i];
-+			granted_power[i] = max_power[i];
-+		}
-+
-+		extra_actor_power[i] = max_power[i] - granted_power[i];
-+		capped_extra_power += extra_actor_power[i];
-+	}
-+
-+	if (!extra_power)
-+		return;
-+
-+	/*
-+	 * Re-divvy the reclaimed extra among actors based on
-+	 * how far they are from the max
-+	 */
-+	extra_power = min(extra_power, capped_extra_power);
-+	if (capped_extra_power > 0)
-+		for (i = 0; i < num_actors; i++)
-+			granted_power[i] += (extra_actor_power[i] *
-+					extra_power) / capped_extra_power;
-+}
-+
-+static int allocate_power(struct thermal_zone_device *tz,
-+			unsigned long current_temp, unsigned long control_temp)
-+{
-+	struct power_actor *actor;
-+	unsigned long *req_power, *max_power, *granted_power;
-+	unsigned long total_req_power, max_allocatable_power;
-+	u32 power_range;
-+	int i, num_actors, ret = 0;
-+
-+	mutex_lock(&tz->lock);
-+
-+	num_actors = 0;
-+	list_for_each_entry(actor, &actor_list, actor_node)
-+		num_actors++;
-+
-+	req_power = devm_kcalloc(&tz->device, num_actors, sizeof(*req_power),
-+				GFP_KERNEL);
-+	if (!req_power) {
-+		ret = -ENOMEM;
-+		goto unlock;
-+	}
-+
-+	max_power = devm_kcalloc(&tz->device, num_actors, sizeof(*max_power),
-+				GFP_KERNEL);
-+	if (!max_power) {
-+		ret = -ENOMEM;
-+		goto free_req_power;
-+	}
-+
-+	granted_power = devm_kcalloc(&tz->device, num_actors,
-+				sizeof(*granted_power), GFP_KERNEL);
-+	if (!granted_power) {
-+		ret = -ENOMEM;
-+		goto free_max_power;
-+	}
-+
-+	i = 0;
-+	total_req_power = 0;
-+	max_allocatable_power = 0;
-+
-+	list_for_each_entry(actor, &actor_list, actor_node) {
-+		req_power[i] = actor->ops->get_req_power(actor);
-+		total_req_power += req_power[i];
-+
-+		max_power[i] = actor->max_power;
-+		max_allocatable_power += max_power[i];
-+
-+		i++;
-+	}
-+
-+	power_range = pi_controller(tz, current_temp, control_temp,
-+				max_allocatable_power);
-+
-+	divvy_up_power(req_power, max_power, num_actors, total_req_power,
-+		power_range, granted_power);
-+
-+	i = 0;
-+	list_for_each_entry(actor, &actor_list, actor_node) {
-+		BUG_ON(granted_power[i] > actor->max_power);
-+
-+		actor->ops->set_power(actor, granted_power[i]);
-+		i++;
-+	}
-+
-+	devm_kfree(&tz->device, granted_power);
-+free_max_power:
-+	devm_kfree(&tz->device, max_power);
-+free_req_power:
-+	devm_kfree(&tz->device, req_power);
-+unlock:
-+	mutex_unlock(&tz->lock);
-+
-+	return ret;
-+}
-+
-+static int check_trips(struct thermal_zone_device *tz)
-+{
-+	int ret;
-+	enum thermal_trip_type type;
-+
-+	if (tz->trips < 2)
-+		return -EINVAL;
-+
-+	ret = tz->ops->get_trip_type(tz, TRIP_SWITCH_ON, &type);
-+	if (ret)
-+		return ret;
-+
-+	if ((type != THERMAL_TRIP_PASSIVE) && (type != THERMAL_TRIP_ACTIVE))
-+		return -EINVAL;
-+
-+	ret = tz->ops->get_trip_type(tz, TRIP_MAX_DESIRED_TEMPERATURE, &type);
-+	if (ret)
-+		return ret;
-+
-+	if ((type != THERMAL_TRIP_PASSIVE) && (type != THERMAL_TRIP_ACTIVE))
-+		return -EINVAL;
-+
-+	return ret;
-+}
-+
-+static void reset_pi_controller(struct power_allocator_params *params)
-+{
-+	params->err_integral = 0;
-+}
-+
-+static void allow_maximum_power(void)
-+{
-+	struct power_actor *actor;
-+
-+	list_for_each_entry(actor, &actor_list, actor_node)
-+		actor->ops->set_power(actor, actor->max_power);
-+}
-+
-+/**
-+ * power_allocator_bind - bind the power_allocator governor to a thermal zone
-+ * @tz:	thermal zone to bind it to
-+ *
-+ * Check that the thermal zone is valid for this governor: has two
-+ * thermal trips.  If so, initialize the PI controller parameters and
-+ * bind it to the thermal zone.
-+ *
-+ * Returns 0 on success, -EINVAL if the trips were invalid or -ENOMEM
-+ * if we ran out of memory.
-+ */
-+static int power_allocator_bind(struct thermal_zone_device *tz)
-+{
-+	int ret;
-+	struct power_allocator_params *params;
-+	unsigned long switch_on_temp, control_temp;
-+	u32 temperature_threshold;
-+
-+	ret = check_trips(tz);
-+	if (ret) {
-+		dev_err(&tz->device,
-+			"thermal zone %s has the wrong number of trips for this governor\n",
-+			tz->type);
-+		return ret;
-+	}
-+
-+	if (!tz->tzp || !tz->tzp->max_dissipatable_power) {
-+		dev_err(&tz->device,
-+			"Failed to bind the power_allocator governor: no max_dissipatable_power parameter\n");
-+		return -EINVAL;
-+	}
-+
-+	params = devm_kzalloc(&tz->device, sizeof(*params), GFP_KERNEL);
-+	if (!params)
-+		return -ENOMEM;
-+
-+	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
-+	if (ret)
-+		goto free;
-+
-+	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
-+				&control_temp);
-+	if (ret)
-+		goto free;
-+
-+	temperature_threshold = (control_temp - switch_on_temp) / 1000;
-+
-+	params->k_po = int_to_frac(tz->tzp->max_dissipatable_power) /
-+		temperature_threshold;
-+	params->k_pu = int_to_frac(2 * tz->tzp->max_dissipatable_power) /
-+		temperature_threshold;
-+	params->k_i = int_to_frac(10);
-+	params->integral_cutoff = 0;
-+
-+	reset_pi_controller(params);
-+
-+	tz->governor_data = params;
-+
-+	return 0;
-+
-+free:
-+	devm_kfree(&tz->device, params);
-+	return ret;
-+}
-+
-+static void power_allocator_unbind(struct thermal_zone_device *tz)
-+{
-+	dev_dbg(&tz->device, "Unbinding from thermal zone %d\n", tz->id);
-+	devm_kfree(&tz->device, tz->governor_data);
-+	tz->governor_data = NULL;
-+}
-+
-+static int power_allocator_throttle(struct thermal_zone_device *tz, int trip)
-+{
-+	int ret;
-+	unsigned long switch_on_temp, control_temp, current_temp;
-+	struct power_allocator_params *params = tz->governor_data;
-+
-+	/*
-+	 * We get called for every trip point but we only need to do
-+	 * our calculations once
-+	 */
-+	if (trip != TRIP_MAX_DESIRED_TEMPERATURE)
-+		return 0;
-+
-+	ret = thermal_zone_get_temp(tz, &current_temp);
-+	if (ret) {
-+		dev_warn(&tz->device, "Failed to get temperature: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
-+	if (ret) {
-+		dev_warn(&tz->device,
-+			"Failed to get switch on temperature: %d\n", ret);
-+		return ret;
-+	}
-+
-+	if (current_temp < switch_on_temp) {
-+		reset_pi_controller(params);
-+		allow_maximum_power();
-+		return 0;
-+	}
-+
-+	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
-+				&control_temp);
-+	if (ret) {
-+		dev_warn(&tz->device,
-+			"Failed to get the maximum desired temperature: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	return allocate_power(tz, current_temp, control_temp);
-+}
-+
-+static struct thermal_governor thermal_gov_power_allocator = {
-+	.name		= "power_allocator",
-+	.bind_to_tz	= power_allocator_bind,
-+	.unbind_from_tz	= power_allocator_unbind,
-+	.throttle	= power_allocator_throttle,
-+};
-+
-+int thermal_gov_power_allocator_register(void)
-+{
-+	return thermal_register_governor(&thermal_gov_power_allocator);
-+}
-+
-+void thermal_gov_power_allocator_unregister(void)
-+{
-+	thermal_unregister_governor(&thermal_gov_power_allocator);
-+}
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 1b13d8e0cfd1..17257376396b 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -1857,7 +1857,11 @@ static int __init thermal_register_governors(void)
- 	if (result)
- 		return result;
- 
--	return thermal_gov_user_space_register();
-+	result = thermal_gov_user_space_register();
-+	if (result)
-+		return result;
-+
-+	return thermal_gov_power_allocator_register();
- }
- 
- static void thermal_unregister_governors(void)
-@@ -1865,6 +1869,7 @@ static void thermal_unregister_governors(void)
- 	thermal_gov_step_wise_unregister();
- 	thermal_gov_fair_share_unregister();
- 	thermal_gov_user_space_unregister();
-+	thermal_gov_power_allocator_unregister();
- }
- 
- static int __init thermal_init(void)
-diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-index 3db339fb636f..b24cde2c71cc 100644
---- a/drivers/thermal/thermal_core.h
-+++ b/drivers/thermal/thermal_core.h
-@@ -77,6 +77,14 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
- static inline void thermal_gov_user_space_unregister(void) {}
- #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
- 
-+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
-+int thermal_gov_power_allocator_register(void);
-+void thermal_gov_power_allocator_unregister(void);
-+#else
-+static inline int thermal_gov_power_allocator_register(void) { return 0; }
-+static inline void thermal_gov_power_allocator_unregister(void) {}
-+#endif /* CONFIG_THERMAL_GOV_POWER_ALLOCATOR */
-+
- /* device tree support */
- #ifdef CONFIG_THERMAL_OF
- int of_parse_thermal_zones(void);
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 06971c4779a8..1d8810e44190 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -57,6 +57,8 @@
- #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
- #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
- #define DEFAULT_THERMAL_GOVERNOR       "user_space"
-+#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
-+#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
- #endif
- 
- struct thermal_zone_device;
-@@ -285,6 +287,9 @@ struct thermal_zone_params {
- 
- 	int num_tbps;	/* Number of tbp entries */
- 	struct thermal_bind_params *tbp;
-+
-+	/* Maximum power (heat) that this thermal zone can dissipate in mW */
-+	u32 max_dissipatable_power;
- };
- 
- struct thermal_genl_event {
+[...]
+> +	/*
+> +	 * If we are probing with DT do this the DT way and return here
+> +	 * otherwise continue and add devices using mfd helpers.
+> +	 */
+> +	if (node) {
+> +		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+> +		if (ret < 0)
+> +			goto err_irq;
+> +		else if (pdata->pm_off && !pm_power_off)
+> +			tps65917_dev = tps65917;
+
+and where is the actual power off function?
+
+> +	}
+> +
+> +	return ret;
+> +
+> +err_irq:
+> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
+> +err_i2c:
+> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
+> +		if (tps65917->i2c_clients[i])
+> +			i2c_unregister_device(tps65917->i2c_clients[i]);
+> +	}
+> +	return ret;
+> +}
+> +
+> +static int tps65917_i2c_remove(struct i2c_client *i2c)
+> +{
+> +	struct tps65917 *tps65917 = i2c_get_clientdata(i2c);
+> +	int i;
+> +
+> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
+> +
+> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
+> +		if (tps65917->i2c_clients[i])
+> +			i2c_unregister_device(tps65917->i2c_clients[i]);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id tps65917_i2c_id[] = {
+> +	{ "tps65917", },
+> +};
+> +MODULE_DEVICE_TABLE(i2c, tps65917_i2c_id);
+> +
+> +static struct i2c_driver tps65917_i2c_driver = {
+> +	.driver = {
+> +		   .name = "tps65917",
+> +		   .of_match_table = of_tps65917_match_tbl,
+> +		   .owner = THIS_MODULE,
+> +	},
+> +	.probe = tps65917_i2c_probe,
+> +	.remove = tps65917_i2c_remove,
+> +	.id_table = tps65917_i2c_id,
+> +};
+> +
+> +static int __init tps65917_i2c_init(void)
+> +{
+> +	return i2c_add_driver(&tps65917_i2c_driver);
+> +}
+> +/* init early so consumer devices can complete system boot */
+> +subsys_initcall(tps65917_i2c_init);
+Should we let them just defer?
+
+[...]
+
+> diff --git a/include/linux/mfd/tps65917.h b/include/linux/mfd/tps65917.h
+> new file mode 100644
+> index 0000000..8232e22
+> --- /dev/null
+> +++ b/include/linux/mfd/tps65917.h
+
+> +
+> +struct tps65917 {
+> +	struct device *dev;
+> +
+> +	struct i2c_client *i2c_clients[TPS65917_NUM_CLIENTS];
+> +	struct regmap *regmap[TPS65917_NUM_CLIENTS];
+> +
+> +	/* Stored chip id */
+> +	int id;
+> +
+> +	struct tps65917_pmic *pmic;
+> +
+> +	/* IRQ Data */
+> +	int irq;
+> +	u32 irq_mask;
+> +	/* mutext for irq */
+> +	struct mutex irq_lock;
+> +	struct regmap_irq_chip_data *irq_data;
+> +};
+
+For all structures, could you use kerneldoc style documentation?
+See: Documentation/kernel-doc-nano-HOWTO.txt +273
+
+
+> +static inline int tps65917_read(struct tps65917 *tps65917, unsigned int base,
+> +				unsigned int reg, unsigned int *val)
+
+Again for all functions expected to be called by other driver(such as
+regulator) to mfd, kernel-doc style documentation?
+
+[...]
+
 -- 
-1.7.9.5
-
-
+Regards,
+Nishanth Menon
