@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaETWW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:22:29 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:62363 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaETWW1 (ORCPT
+	id S1751374AbaETWYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:24:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34849 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaETWYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:22:27 -0400
-Date: Wed, 21 May 2014 00:22:24 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Joe Perches <joe@perches.com>
-cc: Kurt Garloff <kurt@garloff.de>, Fabian Frederick <fabf@skynet.be>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Fwd: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop
- by ilog2]
-In-Reply-To: <1400605982.26709.15.camel@joe-AO725>
-Message-ID: <Pine.LNX.4.64.1405210018540.8218@axis700.grange>
-References: <1400605982.26709.15.camel@joe-AO725>
+	Tue, 20 May 2014 18:24:43 -0400
+Date: Tue, 20 May 2014 23:24:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Qipan Li <swingboard@gmail.com>
+Cc: baohua@kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Qipan Li <Qipan.Li@csr.com>,
+        Barry Song <Baohua.Song@csr.com>
+Message-ID: <20140520222431.GL12304@sirena.org.uk>
+References: <1399185156-521-1-git-send-email-swingboard@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:6xcJu9DytfcscJyzXBoaNnMVb5fUBxiR8d2Vsq83CDp
- l9olXw4XVEugseqEg0QbNz/zSsT6LH6QHUqIEl4WmfzZwT8bDl
- oDnLsUQbULZUXTqlv85aJD9Ql0wOx/Uk0h1rvUWWitunUXbyqj
- vA1puQ52Cdh0tEWpUlYS4qfaIdHh4QAjIDPUiRkvJWQ7grTNuz
- ZNnYFJa//Ale0K4ySN8UTurWi3mq182w674LWHVlI75MSzozye
- 6gLSpIuSRKq7Xb02qTbgkatc91xZ/mCxbcehiajeN/+OwlTpKN
- 7zkVl9t9oHusYlWoRts4t7BSIti4DhjxUxGqTs+BtWeqfJ+U7S
- pPsRXifDR/1OTscD/ugAFPZe6Xh9rXr0M69eqHd5vnbPebEveH
- wGmmtEZFMoLPg==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7ucHyEj4p8g/TNcY"
+Content-Disposition: inline
+In-Reply-To: <1399185156-521-1-git-send-email-swingboard@gmail.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] spi: sirf: decrease the interrupt count and
+ latency of PIO mode
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-On Tue, 20 May 2014, Joe Perches wrote:
+--7ucHyEj4p8g/TNcY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hello Kurt.
-> 
-> If you're still interested in tmscim.
-> 
-> Your garloff@suse.de address bounces....
-> 
-> btw:  Your MAINTAINERS entry is out of date.
-> 
-> MAINTAINERS-DC390/AM53C974 SCSI driver
-> MAINTAINERS:M:  Kurt Garloff <garloff@suse.de>
-> MAINTAINERS:W:  http://www.garloff.de/kurt/linux/dc390/
-> MAINTAINERS-M:  Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> MAINTAINERS-S:  Maintained
-> MAINTAINERS-F:  drivers/scsi/tmscsim.*
-> 
-> -------- Forwarded Message --------
-> From: Joe Perches <joe@perches.com>
-> To: Fabian Frederick <fabf@skynet.be>
-> Cc: linux-kernel <linux-kernel@vger.kernel.org>, Kurt Garloff
-> <garloff@suse.de>, akpm <akpm@linux-foundation.org>
-> Subject: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop by
-> ilog2
-> 
-> On Tue, 2014-05-20 at 18:48 +0200, Fabian Frederick wrote:
-> > Cc: Kurt Garloff <garloff@suse.de>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > ---
-> >  drivers/scsi/tmscsim.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
-> []
-> > @@ -1611,7 +1611,7 @@ dc390_Reselect( struct dc390_acb* pACB )
-> >        printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
-> >      else
-> >        lun ^= 1 << pACB->pScsiHost->this_id; /* Mask AdapterID */
-> > -    id = 0; while (lun >>= 1) id++;
-> > +    id = ilog2(lun);
-> >      /* Get LUN */
-> >      lun = DC390_read8 (ScsiFifo);
-> >      if (!(lun & IDENTIFY_BASE)) printk (KERN_ERR "DC390: Resel: Expect identify message!\n");
-> 
-> Hey Fabian.
-> 
-> You've submitted several of these now.
-> 
-> Have you gone through all of these to make sure
-> that the ilog2(<foo>) uses are always using a
-> non-zero <foo>?
+On Sun, May 04, 2014 at 02:32:36PM +0800, Qipan Li wrote:
+> From: Qipan Li <Qipan.Li@csr.com>
+>=20
+> current PIO tranfer method be described as follows:
 
-I think here at least, lun indeed can be 0, at least there's a test there:
+Applied, thanks.
 
-    if (!(lun & (1 << pACB->pScsiHost->this_id)))
-      printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
+--7ucHyEj4p8g/TNcY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So, it is possible, that the "1 << this_id" bit is not set, then possibly 
-it can be 0 too... Although from the hardware / SCSI PoV I'm not sure TBH. 
-To be on the safe side we could at least add a check for 0 and only use 
-ilog2, for != 0.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Thanks
-Guennadi
+iQIcBAEBAgAGBQJTe9YcAAoJELSic+t+oim9rHQP+wZWXbyCeEpwjhZUq98LGlOK
+FzccE5IAeJUfyhGI6PnqfrKict6iEHw6jkhTQb98DKJvrkKnu+veF1QwThvtgE+k
+/+dY0jXexarqWbUaKi4pNrBxFKi58Am7skpkY9YoqmkFQNi4IVOxevLIM3mwTrQZ
+AiBT0kBOOXax/SVC5w1k5DGEBqvsp5KBV+aKLUxjEAHbEzKyBLo+1LyTS5yJAFZz
+TG10AVLkRVjD1eXo4QS/3HvwCCGHR1fsFI5RqfZMsszNXRtF8xyc98uiMnfL1tsC
+/Mc5d3wodO2Q0l/tTzpJLz2q9Qzen38w3pFcGPgL7nb7rNnj2+fPtMZ6OD855vlx
+IaJ57WT4Zqh3vV1WKsCMErOmNkEV64gU0aU1iEVOQd+wgDIkyIDuMUt0DXaZImmw
+Y52YqYi5bMwRkYLu2yR/3YtQS1evgEJZkNso1yPpp8jwTSQNNiW5fbGFEXTfhMNP
+0KgPtQ34yK82L69y4jxUAWrMTUOk00wFv8NAGvB98Pad+YD4rlxwOI99+aiX9UEL
+HXTHA/23FHx6mEQYyR7gUcw8L9koogKlwPiB+4maItfq1MKwXFofhekyXGk5OOBt
+wwcKr8W8LUp0zS0HWNOBOsKUicClagQAv3/j7fmh9ahvJ1PhPHSPL42elIE4ShNA
+s6+aCQQEyGbQeWQhLK40
+=EWWs
+-----END PGP SIGNATURE-----
 
-> If so, that should be mentioned in the changelog.
-> 
-> These should probably add #include <linux/log2.h>
-> 
-> It would have been nicer to use a patch series
-> and a cover letter so I could make this reply to
-> to cover letter.
-> 
-> Please take the time to setup and use git send-email
-> instead of sylpheed.
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+--7ucHyEj4p8g/TNcY--
