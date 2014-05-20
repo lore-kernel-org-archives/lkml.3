@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaETRyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:54:20 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:37949 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaETRyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:54:19 -0400
-Date: Wed, 21 May 2014 01:52:17 +0400
-From: Anton Saraev <antonysaraev@gmail.com>
-To: Jake Edge <jake@lwn.net>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH 0/3] staging/skein: more cleanup
-Message-ID: <20140520215217.GB1692@Ruffial>
-References: <20140520075612.220a13ae@chukar.edge2.net>
- <20140520144757.GA8664@titan.lakedaemon.net>
- <20140520102411.413d565d@chukar.edge2.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140520102411.413d565d@chukar.edge2.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752492AbaETRzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:55:04 -0400
+Received: from mga14.intel.com ([192.55.52.115]:48973 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104AbaETRzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:55:02 -0400
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 May 2014 13:55:02 EDT
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="534986081"
+Message-Id: <cover.1400607328.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 20 May 2014 10:35:28 -0700
+Subject: [PATCH 0/2] Fix some machine check application recovery cases
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 10:24:11AM -0600, Jake Edge wrote:
-> On Tue, 20 May 2014 10:47:57 -0400 Jason Cooper wrote:
->
-> but some kind of tests are needed to ensure nothing breaks before
-> digging into that ...
+Tesing recovery in mult-threaded applications showed a couple
+of issues in our code.
 
-I have some test: slightly modified version of tests from
-https://github.com/wernerd/Skein3Fish. It works as debugfs entry
-and require some modification needed for module support
-("public" function must be extern). As I can understand Jason
-has his own tests. That would be logical to share them but
-I don't know where.
+Tony Luck (2):
+  memory-failure: Send right signal code to correct thread
+  memory-failure: Don't let collect_procs() skip over processes for
+    MF_ACTION_REQUIRED
+
+ mm/memory-failure.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+-- 
+1.8.4.1
+
