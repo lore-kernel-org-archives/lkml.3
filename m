@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaETQNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:13:37 -0400
-Received: from fujitsu25.fnanic.fujitsu.com ([192.240.6.15]:33511 "EHLO
-	fujitsu25.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300AbaETQNg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:13:36 -0400
-From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "riel@redhat.com" <riel@redhat.com>
-CC: Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
-Date: Tue, 20 May 2014 09:12:07 -0700
-Subject: RE: [PATCH] mm/vmscan: Do not block forever at
- shrink_inactive_list().
-Thread-Topic: [PATCH] mm/vmscan: Do not block forever at
- shrink_inactive_list().
-Thread-Index: Ac90PBjBis44RDgCTnaBUDFH5AOokQACcNNg
-Message-ID: <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
-References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
-	<20140520004449.GE18954@dastard>
-	<20140519225915.3370328d.akpm@linux-foundation.org>
-	<20140520063024.GH18954@dastard>
- <201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754133AbaETQOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:14:19 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:35615 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754002AbaETQOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 12:14:18 -0400
+Date: Tue, 20 May 2014 17:14:04 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: remove ARM710 specific assembler code
+Message-ID: <20140520161403.GA28293@arm.com>
+References: <1364507176.1345.45.camel@x61.thuisdomein>
+ <8309592.drxAj71PnZ@wuerfel>
+ <1400059550.31197.12.camel@x220>
+ <4305975.PvMXZQ020k@wuerfel>
+ <1400232598.20342.16.camel@x220>
+ <20140516125545.GO3693@n2100.arm.linux.org.uk>
+ <20140517092337.GA67711@MacBook-Pro.local>
+ <20140520164819.63357114@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-20_04:2014-05-20,2014-05-20,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520164819.63357114@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Tetsuo Handa [mailto:penguin-kernel@I-love.SAKURA.ne.jp]
-> Sent: Tuesday, May 20, 2014 11:58 PM
-> To: david@fromorbit.com; riel@redhat.com
-> Cc: Motohiro Kosaki JP; fengguang.wu@intel.com; kamezawa.hiroyu@jp.fujitsu.com; akpm@linux-foundation.org;
-> hch@infradead.org; linux-kernel@vger.kernel.org; xfs@oss.sgi.com
-> Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+On Tue, May 20, 2014 at 04:48:19PM +0100, One Thousand Gnomes wrote:
+> > old features. Let's say in 10 years time we remove everything ARMv4,
+> > another 10 years ARMv5 and so on. We could make these milestones shorter
+> > but it really depends on what people use, we should not force them out
+> > of the kernel if still in use.
 > 
-> Today I discussed with Kosaki-san at LinuxCon Japan 2014 about this issue.
-> He does not like the idea of adding timeout to throttle loop. As Dave posted a patch that fixes a bug in XFS delayed allocation, I
-> updated my patch accordingly.
-> 
-> Although the bug in XFS was fixed by Dave's patch, other kernel code would have bugs which would fall into this infinite throttle loop.
-> But to keep the possibility of triggering OOM killer minimum, can we agree with this updated patch (and in the future adding some
-> warning mechanism like /proc/sys/kernel/hung_task_timeout_secs for detecting memory allocation stall)?
-> 
-> Dave, if you are OK with this updated patch, please let me know commit ID of your patch.
-> 
-> Regards.
-> ----------
-> >From 408e65d9025e8e24838e7bf6ac9066ba8a9391a6 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Tue, 20 May 2014 23:34:34 +0900
-> Subject: [PATCH] mm/vmscan: Do not throttle kswapd at shrink_inactive_list().
-> 
-> I can observe that commit 35cd7815 "vmscan: throttle direct reclaim when too many pages are isolated already" causes RHEL7
-> environment to stall with 0% CPU usage when a certain type of memory pressure is given.
-> This is because nobody can reclaim memory due to rules listed below.
-> 
->   (a) XFS uses a kernel worker thread for delayed allocation
->   (b) kswapd wakes up the kernel worker thread for delayed allocation
->   (c) the kernel worker thread is throttled due to commit 35cd7815
-> 
-> This patch and commit XXXXXXXX "xfs: block allocation work needs to be kswapd aware" will solve rule (c).
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
->  mm/vmscan.c |   20 +++++++++++++++-----
->  1 files changed, 15 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 32c661d..5c6960e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1460,12 +1460,22 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	struct zone *zone = lruvec_zone(lruvec);
->  	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
-> 
-> -	while (unlikely(too_many_isolated(zone, file, sc))) {
-> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +	/*
-> +	 * Throttle only direct reclaimers. Allocations by kswapd (and
-> +	 * allocation workqueue on behalf of kswapd) should not be
-> +	 * throttled here; otherwise memory allocation will deadlock.
-> +	 */
-> +	if (!sc->hibernation_mode && !current_is_kswapd()) {
-> +		while (unlikely(too_many_isolated(zone, file, sc))) {
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
-> 
-> -		/* We are about to die and free our memory. Return now. */
-> -		if (fatal_signal_pending(current))
-> -			return SWAP_CLUSTER_MAX;
-> +			/*
-> +			 * We are about to die and free our memory.
-> +			 * Return now.
-> +			 */
-> +			if (fatal_signal_pending(current))
-> +				return SWAP_CLUSTER_MAX;
-> +		}
->  	}
+> Why do you care ?
 
+For now, just some negative diffstats in the arm tree ;). Longer term,
+supporting only ARMv6+ could bring further core arm code clean-up but
+that's not planned for another ~20 years.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Worry about it at the point nobody can remember needing
+> the support, or when it creates some horrible situation that is painful
+> to keep supporting and nobody seems to care. We've only recently dropped
+> 80386 support, and we still support MC68000.
 
+It's not necessarily how far back we go but rather the wide variation in
+ARM processors implementation, especially for the older architecture
+versions, and not knowing whether the code still works since no-one
+seems to remember having such hardware.
 
-Dave, I don't like Tetsuo's first patch because this too_many_isolated exist to prevent false oom-kill. So, simple timeout
-resurrect it. Please let me know if you need further MM enhancement to solve XFS issue. I'd like join and assist this.
+> Or just wait until 2038 approaches and the 32bit panic stations begins,
+> then clean out 8)
 
-Thanks.
+This kind of matches my proposal to remove ARMv5 support in 20 years
+(though we still keep ARMv6 and ARMv7 with 32-bit).
 
+Anyway, the feedback seems to be that we keep them around until they can
+no longer be supported (which probably means compiled).
 
-
-
-
-
+-- 
+Catalin
