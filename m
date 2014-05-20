@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676AbaETTRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:17:10 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:55267 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaETTRI (ORCPT
+	id S1754280AbaETTSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:18:01 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:49349 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaETTR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:17:08 -0400
-Message-ID: <537BAA2B.9090906@gmail.com>
-Date: Tue, 20 May 2014 21:16:59 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 15:17:58 -0400
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Mark Brown <broonie@kernel.org>
-CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix for possible null pointer dereference in dma.c
-References: <1400191076-28279-1-git-send-email-rickard_strandqvist@spectrumdigital.se>	<5379E284.7030700@gmail.com> <CAFo99gZ3kVGn04we5OtRtbkceYRs6SiHXRyoX1Gb-SknJH=z=w@mail.gmail.com>
-In-Reply-To: <CAFo99gZ3kVGn04we5OtRtbkceYRs6SiHXRyoX1Gb-SknJH=z=w@mail.gmail.com>
-X-Enigmail-Version: 1.6
+Date: Tue, 20 May 2014 12:17:57 -0700
+Message-ID: <CA+HUmGjvHgWB3vcPnXAEVFdFuy9sOaB1BjaDW1-7ai933XEGWQ@mail.gmail.com>
+Subject: pci: kernel crash in bus_find_device
+From: Francesco Ruggeri <fruggeri@arista.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Francesco Ruggeri <fruggeri@aristanetworks.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rickard,
+I posted this about a week ago but I did not get any replies.
+Re-trying.
 
-On 20.05.2014 21:12, Rickard Strandqvist wrote:
-> Hi Tomasz
-> 
-> What I based my patch on is really because of this line:
-> if (substream)
->          snd_pcm_period_elapsed(substream);
-> 
-> Boojin Kim thought that this was needed, if this is true anymore..? I
-> have not been able to immerse myself so much in all patches.
-> I'm working on about 100 similar patches.
+While traversing devices on pci_bus_type I ran into the crash below.
+The immediate cause of the crash is that bus_find_device is trying to resume
+a scan starting from a device that has been unregistered (and whose knode_bus
+has already been klist_del' ed).
+The main issue seems to be that when resuming a scan the caller should
+be holding a
+reference to the klist_node, but instead it relies on holding a
+reference to the device.
+I played with a couple of narrow fixes, but a clean solution would
+affect quite a bit of code.
 
-To me having NULL as either data argument of buffer done callback or
-private_data would be a serious driver bug and IMHO it's better to let
-it crash with a NULL pointer dereference to let someone notice than mask
-it by adding a condition.
+Has anybody run into this before?
 
-Still, I'm not too experienced with ALSA and ASoC, so I might be wrong.
-Mark, what do you think about this?
+Thanks,
+Francesco Ruggeri
 
-Best regards,
-Tomasz
 
-> 
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 123)              prtd->dma_pos += prtd->dma_period;
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 124)              if (prtd->dma_pos >= prtd->dma_end)
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 125)                      prtd->dma_pos =
-> prtd->dma_start;
-> 5111c075 sound/soc/s3c24xx/s3c24xx-pcm.c (Mark Brown        2008-04-30
-> 17:19:32 +0200 126)
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 127)              if (substream)
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 128)
-> snd_pcm_period_elapsed(substream);
-> c0f41bb1 sound/soc/s3c24xx/s3c24xx-pcm.c (Ben Dooks         2007-02-14
-> 13:20:03 +0100 129)
-> 344b4c48 sound/soc/samsung/dma.c         (Boojin Kim        2011-09-02
-> 09:44:43 +0900 130)              spin_lock(&prtd->lock);
-> 
-> 
-> Best regards
-> Rickard Strandqvist
-> 
-> 
-> 2014-05-19 12:52 GMT+02:00 Tomasz Figa <tomasz.figa@gmail.com>:
->> Hi Rickard,
->>
->> On 15.05.2014 23:57, Rickard Strandqvist wrote:
->>> There is otherwise a risk of a possible null pointer dereference.
->>>
->>> Was largely found by using a static code analysis program called cppcheck.
->>>
->>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->>> ---
->>>  sound/soc/samsung/dma.c |   10 ++++++----
->>>  1 fil ändrad, 6 tillägg(+), 4 borttagningar(-)
->>>
->>> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
->>> index dc09b71..b1f6757 100644
->>> --- a/sound/soc/samsung/dma.c
->>> +++ b/sound/soc/samsung/dma.c
->>> @@ -115,17 +115,19 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
->>>  static void audio_buffdone(void *data)
->>>  {
->>>       struct snd_pcm_substream *substream = data;
->>> -     struct runtime_data *prtd = substream->runtime->private_data;
->>> +     struct runtime_data *prtd = NULL;
->>>
->>>       pr_debug("Entered %s\n", __func__);
->>>
->>> -     if (prtd->state & ST_RUNNING) {
->>> +     if(substream)
->>> +             prtd = substream->runtime->private_data;
->>> +
->>> +     if (prtd && prtd->state & ST_RUNNING) {
->>>               prtd->dma_pos += prtd->dma_period;
->>>               if (prtd->dma_pos >= prtd->dma_end)
->>>                       prtd->dma_pos = prtd->dma_start;
->>>
->>> -             if (substream)
->>> -                     snd_pcm_period_elapsed(substream);
->>> +             snd_pcm_period_elapsed(substream);
->>>
->>>               spin_lock(&prtd->lock);
->>>               if (!samsung_dma_has_circular()) {
->>>
->>
->> Can you find a path (or use case, if possible) on which any of affected
->> pointers will be NULL?
->>
->> Best regards,
->> Tomasz
+------------[ cut here ]------------
+WARNING: at /bld/EosKernel/Artools-rpmbuild/linux-3.4/include/linux/kref.h:41
+klist_iter_init_node+0x30/0x38()
+Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
+macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
+nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
+xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
+8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
+iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
+ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
+kvm_amd kvm
+Pid: 6861, comm: pci_scan_0 Tainted: P           O
+3.4.43.Ar-1797671.flbocafruggeri #1
+Call Trace:
+ [<ffffffff81029dc4>] warn_slowpath_common+0x80/0x98
+ [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
+ [<ffffffff81029df1>] warn_slowpath_null+0x15/0x17
+ [<ffffffff813a43ce>] klist_iter_init_node+0x30/0x38
+ [<ffffffff8120e57e>] bus_find_device+0x48/0x90
+ [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
+ [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
+ [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
+ [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
+ [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
+ [<ffffffff81040e6e>] kthread+0x84/0x8c
+ [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
+ [<ffffffff813c8b10>] ? gs_change+0xb/0xb
+---[ end trace 79cea1ec476672fe ]---
+------------[ cut here ]------------
+WARNING: at /bld/EosKernel/Artools-rpmbuild/linux-3.4/lib/klist.c:189
+klist_release+0x2b/0xeb()
+Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
+macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
+nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
+xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
+8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
+iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
+ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
+kvm_amd kvm
+Pid: 6861, comm: pci_scan_0 Tainted: P        W  O
+3.4.43.Ar-1797671.flbocafruggeri #1
+Call Trace:
+ [<ffffffff81029dc4>] warn_slowpath_common+0x80/0x98
+ [<ffffffff8120de13>] ? bus_get_device_klist+0x10/0x10
+ [<ffffffff81029df1>] warn_slowpath_null+0x15/0x17
+ [<ffffffff813a440e>] klist_release+0x2b/0xeb
+ [<ffffffff813a44ec>] klist_dec_and_del+0x1e/0x25
+ [<ffffffff813a4528>] klist_next+0x35/0xc9
+ [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
+ [<ffffffff8120deb3>] next_device+0x9/0x19
+ [<ffffffff8120e5a2>] bus_find_device+0x6c/0x90
+ [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
+ [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
+ [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
+ [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
+ [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
+ [<ffffffff81040e6e>] kthread+0x84/0x8c
+ [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
+ [<ffffffff813c8b10>] ? gs_change+0xb/0xb
+---[ end trace 79cea1ec476672ff ]---
+general protection fault: 0000 [#1] PREEMPT SMP
+CPU 1
+Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
+macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
+nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
+xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
+8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
+iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
+ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
+kvm_amd kvm
+
+Pid: 6861, comm: pci_scan_0 Tainted: P        W  O
+3.4.43.Ar-1797671.flbocafruggeri #1
+RIP: 0010:[<ffffffff813a442c>]  [<ffffffff813a442c>] klist_release+0x49/0xeb
+RSP: 0018:ffff88001c55bd50  EFLAGS: 00010293
+RAX: dead000000200200 RBX: ffff880030949e78 RCX: ffff880000000010
+RDX: dead000000100100 RSI: 0000000000000000 RDI: dead000000200200
+RBP: ffff88001c55bd70 R08: dead000000100100 R09: 000000000000000a
+R10: 0000000000000000 R11: ffffffff81619920 R12: ffff880030949e90
+R13: ffff880030949e78 R14: ffffffff8120de13 R15: ffff880027e717e0
+FS:  0000000000000000(0000) GS:ffff88013fb00000(0000) knlGS:00000000f73bc6d0
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000009012644 CR3: 0000000069f9e000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process pci_scan_0 (pid: 6861, threadinfo ffff88001c55a000, task
+ffff880032ffd340)
+Stack:
+ ffff880030949e78 ffff88001c55bde0 dead000000100100 ffff880030949e78
+ ffff88001c55bd80 ffffffff813a44ec ffff88001c55bdc0 ffffffff813a4528
+ ffff88001c55bde0 ffff880027e717e0 ffffffff811b57f1 ffff88001c55bde0
+Call Trace:
+ [<ffffffff813a44ec>] klist_dec_and_del+0x1e/0x25
+ [<ffffffff813a4528>] klist_next+0x35/0xc9
+ [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
+ [<ffffffff8120deb3>] next_device+0x9/0x19
+ [<ffffffff8120e5a2>] bus_find_device+0x6c/0x90
+ [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
+ [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
+ [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
+ [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
+ [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
+ [<ffffffff81040e6e>] kthread+0x84/0x8c
+ [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
+ [<ffffffff813c8b10>] ? gs_change+0xb/0xb
+Code: 00 48 c7 c7 a1 01 51 81 e8 ce 59 c8 ff 49 8b 54 24 f0 49 8b 44
+24 f8 49 b8 00 01 10 00 00 00 ad de 48 bf 00 02 20 00 00 00 ad de <48>
+89 42 08 48 89 10 49 89 7c 24 f8 4d 89 44 24 f0 48 c7 c7 30
+RIP  [<ffffffff813a442c>] klist_release+0x49/0xeb
+ RSP <ffff88001c55bd50>
