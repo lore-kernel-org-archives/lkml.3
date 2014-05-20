@@ -1,164 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaETOpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:45:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40662 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaETOpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:45:34 -0400
-Date: Tue, 20 May 2014 16:44:47 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Alan Tull <delicious.quinoa@gmail.com>
-Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
-        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-Message-ID: <20140520144446.GJ949@pengutronix.de>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
- <1400169891-29546-2-git-send-email-tthayer@altera.com>
- <20140516075344.GF949@pengutronix.de>
- <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
- <20140519191206.GH949@pengutronix.de>
- <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
- <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+	id S1753536AbaETOrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:47:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55497 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaETOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:47:07 -0400
+Date: Tue, 20 May 2014 16:47:05 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jamie Lentin <jm@lentin.co.uk>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: Add custom driver for Lenovo ThinkPad Compact
+ Bluetooth Keyboard
+In-Reply-To: <1395786407-11273-1-git-send-email-jm@lentin.co.uk>
+Message-ID: <alpine.LNX.2.00.1405201644230.1615@pobox.suse.cz>
+References: <1395786407-11273-1-git-send-email-jm@lentin.co.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:39:02 up 27 days,  8:10, 51 users,  load average: 0,18, 0,24,
- 0,14
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, 25 Mar 2014, Jamie Lentin wrote:
 
-On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
-> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+> This keyboard requires some custom mappings for all keys to be
+> available, and the Fn-lock toggle needs to be controlled in software.
 > 
-> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >>> >> new file mode 100644
-> >>> >> index 0000000..8f8746b
-> >>> >> --- /dev/null
-> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >>> >> @@ -0,0 +1,11 @@
-> >>> >> +Altera SOCFPGA SDRAM Controller
-> >>> >> +
-> >>> >> +Required properties:
-> >>> >> +- compatible : "altr,sdr-ctl";
-> >>> >> +- reg : Should contain 1 register ranges(address and length)
-> >>> >> +
-> >>> >> +Example:
-> >>> >> +     sdrctl@ffc25000 {
-> >>> >> +             compatible = "altr,sdr-ctl";
-> >>> >> +             reg = <0xffc25000 0x1000>;
-> >>> >> +     };
-> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> >>> >> index df43702..6ce912e 100644
-> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
-> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> >>> >> @@ -676,6 +676,11 @@
-> >>> >>                       clocks = <&l4_sp_clk>;
-> >>> >>               };
-> >>> >>
-> >>> >> +             sdrctl@ffc25000 {
-> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
-> >>> >                                                    ^^^^^^^^^^
-> >>> >
-> >>> > Get rid of that, too, please.
-> >>>
-> >>> Hi Steffan,
-> >>>
-> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
-> >>> that has the ECC enable bitfield also includes the DRAM configuration
-> >>> bitfields that other drivers will want to access (specifically the
-> >>> FPGA bridge needs this information). Since this register will be
-> >>> shared between drivers,  syscon seems like the best solution.
-> >>>
-> >>
-> >> Hm, from looking at the documentation of the ctrlcfg I can't really
-> >> understand which bits you would need for the FPGA brigde and why.
+> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+> ---
+> I assume that Linux users want Fn-Lock enabled by default, so they can
+> get at the function keys. If this is an incorrect assumption then can
+> change it---so long as there's some way of me leaving it enabled :)
 > 
-> Hi Steffen,
+> Tested with and applies cleanly to 3.13.6.
 > 
-> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
-> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
-> allows an FPGA port to come out of reset (enables that port).  Has no
-> other effect on SDRAM configuration.
-> 
-> >> That all sounds like stuff you would want to set for the specific
-> >> RAM you are dealing with on a specific board.
-> >> What bridge are you talking about? The SDRAM bridge?
-> 
-> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
-> register the only register in the sdr that the bridge driver needs.
-> 
+>  drivers/hid/Kconfig                   |  10 ++
+>  drivers/hid/Makefile                  |   1 +
+>  drivers/hid/hid-core.c                |   3 +
+>  drivers/hid/hid-ids.h                 |   1 +
+>  drivers/hid/hid-lenovo-tpcompactkbd.c | 191 ++++++++++++++++++++++++++++++++++
+>  5 files changed, 206 insertions(+)
 
-So, what I suggested down ...
+Jamie,
 
-> >>
-> >> I can see the problem with the ECC enable, though.
-> >>
-> >> Regards,
-> >> Steffen
-> >>
-> >
-> >>> >                 sdrctl@ffc25000 {
-> >>> >                         compatible = "altr,sdr-ctl";
-> >>> >                         reg = <0xffc25000 0x1000>;
-> >>> >                         ranges;
-> >>> >
-> >>> >                         edac@ffc2502c {
-> >>> >                                 compatible = "altr,sdram-edac";
-> >>> >                                 reg = <0xffc2502c 0x50>;
-> >>> >                                 interrupts = <0 39 4>;
-> >>> >                         };
-> >>> >                 };
-> >>> >
-> >>> > Then we can later add:
-> >>> >
-> >>> >                         sdr-ports: ports@ffc2507c {
-> >>> >                                 #reset-cells = <1>;
-> >>> >                                 compatible = "altr,sdr-ports";
-> >>> >                                 reg = <0xffc2507c 0x10>;
-> >>> >                                 clocks = <&ddr_dqs_clk>;
-> >>> >                                 ...
-> >>> >                         };
->
+thanks for the driver.
 
-... here should work. No?! Just a simple driver that registers with the
-reset-framework. I would add 0x7c to that driver and than that driver could
-"configure" the port and let it out of reset.
-
-I have done the same thing for the other 3 bridges, but am not finished yet.
-Especially the GPV-stuff needs to at least be able to be added later if not now.
-
-Regard,
-Steffen
+I think it'd make more sense if this could be folded into hid-lenovo-tpkbd 
+driver. Could you please do that and resubmit?
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jiri Kosina
+SUSE Labs
