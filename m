@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaETTe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:34:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34140 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaETTez (ORCPT
+	id S1754221AbaETThH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:37:07 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:65110 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaETThE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:34:55 -0400
-Date: Tue, 20 May 2014 12:34:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] mm: non-atomically mark page accessed during page cache
- allocation where possible -fix
-Message-Id: <20140520123453.09a76dd0c8fad40082a16289@linux-foundation.org>
-In-Reply-To: <20140520154900.GO23991@suse.de>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
-	<1399974350-11089-19-git-send-email-mgorman@suse.de>
-	<20140520154900.GO23991@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 20 May 2014 15:37:04 -0400
+Message-ID: <537BAEDB.7020605@gmail.com>
+Date: Tue, 20 May 2014 21:36:59 +0200
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robherring2@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 5/9] mtd: nand: add sunxi NAND flash controller support
+References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com> <1394647664-8258-6-git-send-email-b.brezillon.dev@gmail.com> <20140509160341.GA6984@arch.cereza> <536D069A.40401@gmail.com> <20140520184942.GT28907@ld-irv-0074> <20140520192134.GU28907@ld-irv-0074>
+In-Reply-To: <20140520192134.GU28907@ld-irv-0074>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 16:49:00 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-> Prabhakar Lad reported the following problem
-> 
->   I see following issue on DA850 evm,
->   git bisect points me to
->   commit id: 975c3a671f11279441006a29a19f55ccc15fb320
->   ( mm: non-atomically mark page accessed during page cache allocation
->   where possible)
-> 
->   Unable to handle kernel paging request at virtual address 30e03501
->   pgd = c68cc000
->   [30e03501] *pgd=00000000
->   Internal error: Oops: 1 [#1] PREEMPT ARM
->   Modules linked in:
->   CPU: 0 PID: 1015 Comm: network.sh Not tainted 3.15.0-rc5-00323-g975c3a6 #9
->   task: c70c4e00 ti: c73d0000 task.ti: c73d0000
->   PC is at init_page_accessed+0xc/0x24
->   LR is at shmem_write_begin+0x54/0x60
->   pc : [<c0088aa0>]    lr : [<c00923e8>]    psr: 20000013
->   sp : c73d1d90  ip : c73d1da0  fp : c73d1d9c
->   r10: c73d1dec  r9 : 00000000  r8 : 00000000
->   r7 : c73d1e6c  r6 : c694d7bc  r5 : ffffffe4  r4 : c73d1dec
->   r3 : c73d0000  r2 : 00000001  r1 : 00000000  r0 : 30e03501
->   Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
->   Control: 0005317f  Table: c68cc000  DAC: 00000015
->   Process network.sh (pid: 1015, stack limit = 0xc73d01c0)
-> 
-> pagep is set but not pointing to anywhere valid as it's an uninitialised
-> stack variable. This patch is a fix to
-> mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possible.patch
-> 
-> ...
+On 20/05/2014 21:21, Brian Norris wrote:
+> On Tue, May 20, 2014 at 11:49:42AM -0700, Brian Norris wrote:
+>> On Fri, May 09, 2014 at 06:47:22PM +0200, Boris BREZILLON wrote:
+>>> On 09/05/2014 18:03, Ezequiel Garcia wrote:
+>>>> On 12 Mar 07:07 PM, Boris BREZILLON wrote:
+>>>>> --- /dev/null
+>>>>> +++ b/drivers/mtd/nand/sunxi_nand.c
+>>>>> @@ -0,0 +1,1276 @@
+>> ...
+>>>>> +static int sunxi_nand_ecc_init(struct mtd_info *mtd, struct nand_ecc_ctrl *ecc,
+>>>>> +			       struct device_node *np)
+>>>>> +{
+>>>>> +	struct nand_chip *nand = mtd->priv;
+>>>>> +	int ecc_step_size, ecc_strength;
+>>>>> +	int ret;
+>>>>> +
+>>>>> +	ecc_step_size = of_get_nand_ecc_step_size(np);
+>>>>> +	ecc_strength = of_get_nand_ecc_strength(np);
+>>>>> +	if (ecc_step_size > 0 && ecc_strength > 0) {
+>>>>> +		ecc->size = ecc_step_size;
+>>>>> +		ecc->strength = ecc_strength;
+>>>>> +	} else {
+>>>>> +		ecc->size = nand->ecc_step_ds;
+>>>>> +		ecc->strength = nand->ecc_strength_ds;
+>>>>> +	}
+>>>>> +
+>>>> Shouldn't you check the devicetree value is not weaker than the ONFI-obtained?
+>>> I can definitely do that.
+>> You can do that here, but take a look at the discussion Ezequiel and I
+>> had about this:
+>>
+>>   http://thread.gmane.org/gmane.linux.drivers.devicetree/67462
+>>
+>> We probably don't want to be doing anything drastic like overriding the
+>> device tree configuration. Instead, we might want to stick a warning
+>> into the core nand_base code that does the proper comparison of the
+>> '*_ds' values with the actual values chosen in
+>> chip->ecc->{size,strength}. The comparison is kind of subtle, actually,
+>> so it'd be good to do it exactly once for everyone.
+
+Fair enough, I'll follow your suggestions on this specific point ;)
+
+> I forgot, Ezequiel already submitted this. I'll look at it soon:
 >
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2459,7 +2459,7 @@ ssize_t generic_perform_write(struct file *file,
->  		flags |= AOP_FLAG_UNINTERRUPTIBLE;
->  
->  	do {
-> -		struct page *page;
-> +		struct page *page = NULL;
->  		unsigned long offset;	/* Offset into pagecache page */
->  		unsigned long bytes;	/* Bytes to write to page */
->  		size_t copied;		/* Bytes copied from user */
+>   http://patchwork.ozlabs.org/patch/348901/
 
-Well not really.  generic_perform_write() only touches *page if
-->write_begin() returned "success", which is reasonable behavior.
+Thanks for pointing this out.
 
-I'd say you mucked up shmem_write_begin() - it runs
-init_page_accessed() even if shmem_getpage() returned an error.  It
-shouldn't be doing that.
 
-This?
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/shmem.c: don't run init_page_accessed() against an uninitialised pointer
-
-If shmem_getpage() returned an error then it didn't necessarily initialise
-*pagep.  So shmem_write_begin() shouldn't be playing with *pagep in this
-situation.
-
-Fixes an oops when "mm: non-atomically mark page accessed during page
-cache allocation where possible" (quite reasonably) left *pagep
-uninitialized.
-
-Reported-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/shmem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN mm/shmem.c~mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possiblefix-2 mm/shmem.c
---- a/mm/shmem.c~mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possiblefix-2
-+++ a/mm/shmem.c
-@@ -1376,7 +1376,7 @@ shmem_write_begin(struct file *file, str
- 	struct inode *inode = mapping->host;
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
- 	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
--	if (*pagep)
-+	if (ret == 0 && *pagep)
- 		init_page_accessed(*pagep);
- 	return ret;
- }
-_
+>
+> Brian
 
