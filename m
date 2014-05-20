@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970AbaETPZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:25:56 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:61852 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaETPZz (ORCPT
+	id S1753931AbaETP1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:27:07 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50963 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751662AbaETP1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:25:55 -0400
-Date: Tue, 20 May 2014 08:25:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Dudley Du <dudl@cypress.com>, Benson Leung <bleung@google.com>,
-        Daniel Kurtz <djkurtz@google.com>, David Solda <dso@cypress.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] input: cyapa: enable/disable trackpad device based
- on LID state
-Message-ID: <20140520152551.GB9444@core.coreip.homeip.net>
-References: <77BC725C9062764F874D79F51E1F1A8F40C14099@S04-MBX01-01.s04.local>
- <20140520034302.GB986@core.coreip.homeip.net>
- <1507406.BNOsJcxmP9@vostro.rjw.lan>
+	Tue, 20 May 2014 11:27:04 -0400
+Date: Tue, 20 May 2014 16:26:59 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Dave P Martin <Dave.Martin@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140520152659.GA30404@arm.com>
+References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
+ <5080348.QmhgfQRxZW@wuerfel>
+ <20140520130659.GA5041@e103592.cambridge.arm.com>
+ <6382280.3uMvoxaUSK@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1507406.BNOsJcxmP9@vostro.rjw.lan>
+In-Reply-To: <6382280.3uMvoxaUSK@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 02:40:12PM +0200, Rafael J. Wysocki wrote:
-> On Monday, May 19, 2014 08:43:02 PM Dmitry Torokhov wrote:
-> > Hi Dudley,
-> > 
-> > On Wed, Apr 16, 2014 at 08:39:34AM +0000, Dudley Du wrote:
-> > > Rely on EV_SW and SW_LID bits to identify a LID device, and hook
-> > > up our filter to listen for SW_LID events to enable/disable touchpad when
-> > > LID is open/closed.
-> > > TEST=test on Chomebooks.
-> > 
-> > This is a policy and it does not belong in the kernel. Please work with
-> > Rafael to establish generic interface to put devices into low power mode
-> > (like accelerating runtime PM idle timeout)
+On Tue, May 20, 2014 at 02:23:47PM +0100, Arnd Bergmann wrote:
+> 	Bit#   33222222 22221111 11111100 00000000
+> 	       10987654 32109876 54321098 76543210
+> phys.hi cell:  npt000ss bbbbbbbb dddddfff rrrrrrrr
+> phys.mid cell: hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh
+> phys.lo cell:  llllllll llllllll llllllll llllllll
 > 
-> I'm not really sure what you mean here, care to be more specific?
-
-I think we chatted about this before - we need a uniform interface for
-userspace to put devices into low power mode on demand. As
-implementation detail I thought we could require runtime PM for that and
-simply pretend that the PM timeout expired early when userspace invokes
-that API.
-
+> where:
+> n is 0 if the address is relocatable, 1 otherwise
+> p is 1 if the addressable region is "prefetchable", 0 otherwise
+> t is 1 if the address is aliased (for non-relocatable I/O),
+>  below 1 MB (for Memory), or below 64 KB (for relocatable I/O).
+> ss is the space code, denoting the address space
+> bbbbbbbb is the 8-bit Bus Number
+> ddddd is the 5-bit Device Number
+> fff is the 3-bit Function Number
+> rrrrrrrr is the 8-bit Register Number
+> hh...hh is a 32-bit unsigned number
+> ll...ll is a 32-bit unsigned number
 > 
-> > and use it when userspace detects that lid is closed.
+> We can ignore n, p, t and r here, and use the same format for a DMA
+> address, then define an empty "dma-ranges" property. That would
+> imply that using b/d/f is sufficient to identify each master at the
+> iommu. Any device outside of the PCI host but connected to the same
+> iommu can use the same notation to list the logical b/d/f that gets
+> sent to the IOMMU in bus master transactions.
 > 
-> I guess we get an event then, don't we?
+> Do you think this is sufficient for the ARM SMMU, or do we need
+> something beyond that?
 
-Right, userspace gets EV_SW/SW_LID input event and needs to react. In
-this particular case the desire is to power down touchpad (since it is
-unaccessible). I am not sure why system suspend (which I expect happen
-in reaction to lid closing) is not enough, but that's question for
-Dudley.
+I think it can define the common-cases for the existing implementations,
+yes. I anticipate Stream-IDs becoming > 16-bit in the near future though,
+so we'd need extra bits if we're describing other devices coming into the
+SMMU.
 
-Thanks.
+Note that we already have a binding for the current SMMU driver, so I'm not
+really in a position to shift over to a new binding until the next version of
+the SMMU architecture comes along...
 
--- 
-Dmitry
+Will
