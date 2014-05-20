@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaETMMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:12:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2109 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaETMM3 convert rfc822-to-8bit (ORCPT
+	id S1753168AbaETMOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:14:45 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:54362 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaETMOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:12:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,874,1392192000"; 
-   d="scan'208";a="434467287"
-From: Andi Kleen <andi@firstfloor.org>
-To: =?utf-8?Q?J=C3=B6rn?= Engel <joern@logfs.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: mix all saved registers into entropy pool
-References: <20140519211719.GA14563@logfs.org>
-Date: Tue, 20 May 2014 05:12:07 -0700
-In-Reply-To: <20140519211719.GA14563@logfs.org> (=?utf-8?Q?=22J=C3=B6rn?=
- Engel"'s message of
-	"Mon, 19 May 2014 17:17:19 -0400")
-Message-ID: <8761l0r6nc.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 20 May 2014 08:14:44 -0400
+Date: Tue, 20 May 2014 13:14:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v2 2/2] regulator: tps6586x: Add support for the TPS658640
+Message-ID: <20140520121439.GK24991@lee--X1>
+References: <1400580843-29484-1-git-send-email-alban.bedel@avionic-design.de>
+ <1400580843-29484-2-git-send-email-alban.bedel@avionic-design.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400580843-29484-2-git-send-email-alban.bedel@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jörn Engel <joern@logfs.org> writes:
->
-> An alternate high-resolution timer is the register content at the time
-> of an interrupt. 
+> The TPS658640 has a different set of output voltage for most LDO and
+> the RTC LDO isn't settable. This chip also report 2 different version
+> ID, as the datasheet doesn't list the possible values the second ID
+> has simply been named TPS658640v2.
+> 
+> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+> ---
+> v2: Fixed the number of bits for the voltage selection of LDO_RTC
+>     Removed superflous whitspace after the tps658640_regulator array
+> ---
+>  drivers/mfd/tps6586x.c                 |  4 ++++
+>  drivers/regulator/tps6586x-regulator.c | 36 ++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/tps6586x.h           |  2 ++
+>  3 files changed, 42 insertions(+)
 
-So if you interrupt a cryptographic function you may hash in parts
-of the key?
+MFD parts look okay to me.
 
--Andi
+Mark can you tag the branch and ping it over to me please?
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
