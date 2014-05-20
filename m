@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaETOV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:21:26 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:44865 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753533AbaETOVY (ORCPT
+	id S1754005AbaETOVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:21:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42514 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753651AbaETOVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:21:24 -0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Peter Zijlstra <peterz@infradead.org>,
-        "bsegall@google.com" <bsegall@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "chris.j.arges@canonical.com" <chris.j.arges@canonical.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20140520131526.GE11096@twins.programming.kicks-ass.net>
-References: <87mwej0yja.wl%klamm@yandex-team.ru>
-	 <xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	 <87lhu215ky.wl%klamm@yandex-team.ru>
-	 <20140519103247.GX30445@twins.programming.kicks-ass.net>
-	 <xm26wqdh3cde.fsf@sword-of-the-dawn.mtv.corp.google.com> <20140520131526.GE11096@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
+	Tue, 20 May 2014 10:21:35 -0400
+Date: Tue, 20 May 2014 10:21:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <joe@perches.com>,
+        <auttamchandani@logicube.com>
+Subject: Re: [PATCH 2/9] usb: gadget: net2280: Dont use magic numbers
+In-Reply-To: <1400534436-10913-3-git-send-email-ricardo.ribalda@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1405201020060.1176-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Message-Id: <99801400595675@webcorp1f.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 20 May 2014 18:21:15 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.05.2014, 17:15, "Peter Zijlstra" <peterz@infradead.org>:
-> Completely untested... does anybody have a 'useful' test case for this
-> bw stuff?
+On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
 
-I can test it for stability.
-I'll start tomorrow, now I'm testing Ben's + my patches together.
+> Instead of using magic numbers use #defines
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/usb/gadget/net2280.c | 68 +++++++++++++++++++++++---------------------
+>  drivers/usb/gadget/net2280.h |  1 +
+>  2 files changed, 36 insertions(+), 33 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+> index 8112d91..ba1fdd8 100644
+> --- a/drivers/usb/gadget/net2280.c
+> +++ b/drivers/usb/gadget/net2280.c
+> @@ -152,7 +152,7 @@ static inline void enable_pciirqenb(struct net2280_ep *ep)
+>  {
+>  	u32 tmp = readl(&ep->dev->regs->pciirqenb0);
+>  
+> -	if (ep->dev->pdev->vendor == 0x17cc)
+> +	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
 
-Thanks,
-Roman
+You ought to be able to make this considerably smaller by using a 
+quirk flag in ep->dev.  The flag can indicate whether or not the 
+controller uses the LEGACY interface.
+
+Alan Stern
+
