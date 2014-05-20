@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070AbaETPJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:09:27 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:42805 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaETPJZ (ORCPT
+	id S1753534AbaETPNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:13:43 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:40230 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753125AbaETPNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:09:25 -0400
-Date: Tue, 20 May 2014 20:39:18 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Input: misc : Introduce the use of the managed version of
- kzalloc
-Message-ID: <20140520150918.GA6269@himangi-Dell>
+	Tue, 20 May 2014 11:13:42 -0400
+Message-ID: <537B7122.3000508@vmware.com>
+Date: Tue, 20 May 2014 16:13:38 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        ccross@google.com, linux-media@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2 with seqcount v3] reservation: add suppport for
+ read-only access using rcu
+References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com> <534843EA.6060602@vmware.com> <534B9165.4000101@canonical.com> <534B921B.4080504@vmware.com> <5357A0DE.7030305@canonical.com> <537A0A5D.6090909@vmware.com> <537A1180.2010109@canonical.com>
+In-Reply-To: <537A1180.2010109@canonical.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions.
+On 05/19/2014 03:13 PM, Maarten Lankhorst wrote:
+> op 19-05-14 15:42, Thomas Hellstrom schreef:
+>> Hi, Maarten!
+>>
+>> Some nitpicks, and that krealloc within rcu lock still worries me.
+>> Otherwise looks good.
+>>
+>> /Thomas
+>>
+>>
+>>
+>> On 04/23/2014 12:15 PM, Maarten Lankhorst wrote:
+>>> @@ -55,8 +60,8 @@ int reservation_object_reserve_shared(struct
+>>> reservation_object *obj)
+>>>               kfree(obj->staged);
+>>>               obj->staged = NULL;
+>>>               return 0;
+>>> -        }
+>>> -        max = old->shared_max * 2;
+>>> +        } else
+>>> +            max = old->shared_max * 2;
+>> Perhaps as a separate reformatting patch?
+> I'll fold it in to the patch that added
+> reservation_object_reserve_shared.
+>>> +
+>>> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
+>>> +                      struct fence **pfence_excl,
+>>> +                      unsigned *pshared_count,
+>>> +                      struct fence ***pshared)
+>>> +{
+>>> +    unsigned shared_count = 0;
+>>> +    unsigned retry = 1;
+>>> +    struct fence **shared = NULL, *fence_excl = NULL;
+>>> +    int ret = 0;
+>>> +
+>>> +    while (retry) {
+>>> +        struct reservation_object_list *fobj;
+>>> +        unsigned seq;
+>>> +
+>>> +        seq = read_seqcount_begin(&obj->seq);
+>>> +
+>>> +        rcu_read_lock();
+>>> +
+>>> +        fobj = rcu_dereference(obj->fence);
+>>> +        if (fobj) {
+>>> +            struct fence **nshared;
+>>> +
+>>> +            shared_count = ACCESS_ONCE(fobj->shared_count);
+>> ACCESS_ONCE() shouldn't be needed inside the seqlock?
+> Yes it is, shared_count may be increased, leading to potential
+> different sizes for krealloc and memcpy
+> if the ACCESS_ONCE is removed. I could use shared_max here instead,
+> which stays the same,
+> but it would waste more memory.
 
-The following Coccinelle semantic patch was used for making the change:
+Maarten, Another perhaps ignorant question WRT this,
+Does ACCESS_ONCE() guarantee that the value accessed is read atomically?
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
-
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-Would be better to add the definition of a
-devm_input_allocate_polled_device, like there is a
-devm_input_allocate_device defined?
-
- drivers/input/misc/sgi_btns.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/input/misc/sgi_btns.c b/drivers/input/misc/sgi_btns.c
-index f104749..e2dea37 100644
---- a/drivers/input/misc/sgi_btns.c
-+++ b/drivers/input/misc/sgi_btns.c
-@@ -97,7 +97,8 @@ static int sgi_buttons_probe(struct platform_device *pdev)
- 	struct input_dev *input;
- 	int error, i;
- 
--	bdev = kzalloc(sizeof(struct buttons_dev), GFP_KERNEL);
-+	bdev = devm_kzalloc(&pdev->dev, sizeof(struct buttons_dev),
-+			    GFP_KERNEL);
- 	poll_dev = input_allocate_polled_device();
- 	if (!bdev || !poll_dev) {
- 		error = -ENOMEM;
-@@ -137,7 +138,6 @@ static int sgi_buttons_probe(struct platform_device *pdev)
- 
-  err_free_mem:
- 	input_free_polled_device(poll_dev);
--	kfree(bdev);
- 	return error;
- }
- 
-@@ -147,7 +147,6 @@ static int sgi_buttons_remove(struct platform_device *pdev)
- 
- 	input_unregister_polled_device(bdev->poll_dev);
- 	input_free_polled_device(bdev->poll_dev);
--	kfree(bdev);
- 
- 	return 0;
- }
--- 
-1.9.1
-
+/Thomas
