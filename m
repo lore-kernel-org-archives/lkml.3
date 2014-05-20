@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333AbaETVSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:18:38 -0400
-Received: from 8bytes.org ([85.214.48.195]:56082 "EHLO mail.8bytes.org"
+	id S1751203AbaETVSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:18:36 -0400
+Received: from 8bytes.org ([85.214.48.195]:56072 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837AbaETVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:18:34 -0400
+	id S1750828AbaETVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 17:18:33 -0400
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Jay.Cornwall@amd.com,
         Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 5/5] iommu/amd: Handle parallel invalidate_range_start/end calls correctly
-Date: Tue, 20 May 2014 23:18:26 +0200
-Message-Id: <1400620706-21031-6-git-send-email-joro@8bytes.org>
+Subject: [PATCH 4/5] iommu/amd: Remove IOMMUv2 pasid_state_list
+Date: Tue, 20 May 2014 23:18:25 +0200
+Message-Id: <1400620706-21031-5-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400620706-21031-1-git-send-email-joro@8bytes.org>
 References: <1400620706-21031-1-git-send-email-joro@8bytes.org>
 X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue May 20 23:18:32 2014
-X-DSPAM-Confidence: 0.9994
+X-DSPAM-Processed: Tue May 20 23:18:31 2014
+X-DSPAM-Confidence: 0.9995
 X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 537bc6a820862095366291
+X-DSPAM-Signature: 537bc6a720861733518498
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <jroedel@suse.de>
 
-Add a counter to the pasid_state so that we do not restore
-the original page-table before all invalidate_range_start
-to invalidate_range_end sections have finished.
+This list was only used for the task_exit notifier function.
+Now that it is gone we can remove it.
 
 Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Tested-by: Jay Cornwall <Jay.Cornwall@amd.com>
 ---
- drivers/iommu/amd_iommu_v2.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/iommu/amd_iommu_v2.c |   26 --------------------------
+ 1 file changed, 26 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index d9309a0..9ed9da2 100644
+index c06a29a..d9309a0 100644
 --- a/drivers/iommu/amd_iommu_v2.c
 +++ b/drivers/iommu/amd_iommu_v2.c
-@@ -45,6 +45,8 @@ struct pri_queue {
- struct pasid_state {
- 	struct list_head list;			/* For global state-list */
- 	atomic_t count;				/* Reference count */
-+	atomic_t mmu_notifier_count;		/* Counting nested mmu_notifier
-+						   calls */
- 	struct task_struct *task;		/* Task bound to this PASID */
- 	struct mm_struct *mm;			/* mm_struct for the faults */
- 	struct mmu_notifier mn;                 /* mmu_otifier handle */
-@@ -433,8 +435,11 @@ static void mn_invalidate_range_start(struct mmu_notifier *mn,
- 	pasid_state = mn_to_state(mn);
- 	dev_state   = pasid_state->device_state;
+@@ -86,10 +86,6 @@ struct fault {
+ static LIST_HEAD(state_list);
+ static spinlock_t state_lock;
  
--	amd_iommu_domain_set_gcr3(dev_state->domain, pasid_state->pasid,
--				  __pa(empty_page_table));
-+	if (atomic_add_return(1, &pasid_state->mmu_notifier_count) == 1) {
-+		amd_iommu_domain_set_gcr3(dev_state->domain,
-+					  pasid_state->pasid,
-+					  __pa(empty_page_table));
-+	}
+-/* List and lock for all pasid_states */
+-static LIST_HEAD(pasid_state_list);
+-static DEFINE_SPINLOCK(ps_lock);
+-
+ static struct workqueue_struct *iommu_wq;
+ 
+ /*
+@@ -171,25 +167,6 @@ static void put_device_state_wait(struct device_state *dev_state)
+ 	free_device_state(dev_state);
  }
  
- static void mn_invalidate_range_end(struct mmu_notifier *mn,
-@@ -447,8 +452,11 @@ static void mn_invalidate_range_end(struct mmu_notifier *mn,
- 	pasid_state = mn_to_state(mn);
- 	dev_state   = pasid_state->device_state;
+-static void link_pasid_state(struct pasid_state *pasid_state)
+-{
+-	spin_lock(&ps_lock);
+-	list_add_tail(&pasid_state->list, &pasid_state_list);
+-	spin_unlock(&ps_lock);
+-}
+-
+-static void __unlink_pasid_state(struct pasid_state *pasid_state)
+-{
+-	list_del(&pasid_state->list);
+-}
+-
+-static void unlink_pasid_state(struct pasid_state *pasid_state)
+-{
+-	spin_lock(&ps_lock);
+-	__unlink_pasid_state(pasid_state);
+-	spin_unlock(&ps_lock);
+-}
+-
+ /* Must be called under dev_state->lock */
+ static struct pasid_state **__get_pasid_state_ptr(struct device_state *dev_state,
+ 						  int pasid, bool alloc)
+@@ -346,7 +323,6 @@ static void unbind_pasid(struct device_state *dev_state, int pasid)
+ 	if (pasid_state == NULL)
+ 		return;
  
--	amd_iommu_domain_set_gcr3(dev_state->domain, pasid_state->pasid,
--				  __pa(pasid_state->mm->pgd));
-+	if (atomic_dec_and_test(&pasid_state->mmu_notifier_count)) {
-+		amd_iommu_domain_set_gcr3(dev_state->domain,
-+					  pasid_state->pasid,
-+					  __pa(pasid_state->mm->pgd));
-+	}
+-	unlink_pasid_state(pasid_state);
+ 	__unbind_pasid(pasid_state);
+ 	put_pasid_state_wait(pasid_state); /* Reference taken in this function */
  }
+@@ -687,8 +663,6 @@ int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
+ 	if (ret)
+ 		goto out_clear_state;
  
- static void mn_release(struct mmu_notifier *mn, struct mm_struct *mm)
-@@ -640,6 +648,7 @@ int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
- 		goto out;
+-	link_pasid_state(pasid_state);
+-
+ 	return 0;
  
- 	atomic_set(&pasid_state->count, 1);
-+	atomic_set(&pasid_state->mmu_notifier_count, 0);
- 	init_waitqueue_head(&pasid_state->wq);
- 	spin_lock_init(&pasid_state->lock);
- 
+ out_clear_state:
 -- 
 1.7.9.5
 
