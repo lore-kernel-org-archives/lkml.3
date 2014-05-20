@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaETKgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:36:17 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37308 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbaETKeB (ORCPT
+	id S1752626AbaETKjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:39:36 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49850 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaETKjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:34:01 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Henk de Groot <pe1dnn@amsat.org>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] staging: wlags49_h2: wl_priv: Remove useless return variables
-Date: Tue, 20 May 2014 12:33:42 +0200
-Message-Id: <1400582028-24990-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 20 May 2014 06:39:35 -0400
+Message-ID: <537B309C.7000100@linux.vnet.ibm.com>
+Date: Tue, 20 May 2014 16:08:20 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@kernel.org,
+        rusty@rustcorp.com.au, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 UPDATEDv3 3/3] CPU hotplug, smp: Flush any pending
+ IPI callbacks before CPU offline
+References: <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com> <5379F6BD.1090809@linux.vnet.ibm.com> <20140519161836.GA30387@redhat.com> <537A6060.7070406@linux.vnet.ibm.com> <537A6811.50808@linux.vnet.ibm.com> <20140520094203.GU2485@laptop.programming.kicks-ass.net> <537B29F7.6060104@linux.vnet.ibm.com> <20140520102542.GW2485@laptop.programming.kicks-ass.net> <537B2F09.5020306@linux.vnet.ibm.com>
+In-Reply-To: <537B2F09.5020306@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052010-1618-0000-0000-00000045121D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove variables that are initialized with a constant,
-are never updated, and are only used as parameter of return.
-Return the constant instead of using a variable.
+On 05/20/2014 04:01 PM, Srivatsa S. Bhat wrote:
+> On 05/20/2014 03:55 PM, Peter Zijlstra wrote:
+>> On Tue, May 20, 2014 at 03:39:59PM +0530, Srivatsa S. Bhat wrote:
+>>>> The multi_cpu_stop() path isn't exclusive to hotplug, so your changelog
+>>>> is wrong or the patch is.
+>>>>
+>>>
+>>> Yes, I know that multi_cpu_stop() isn't exclusive to hotplug. That's why
+>>> I have explicitly referred to CPU hotplug in the comment as well as the
+>>> changelog.
+>>>
+>>> But I totally agree that code-wise this is not the best way to do it since
+>>> this affects (although harmlessly) usecases other than hotplug as well.
+>>>
+>>> Do you have any other suggestions?
+>>
+>> How about making a kernel/smp.c hotplug notifier and stuffing it in the
+>> CPU_DYING list? That's typically after we've already torn down the
+>> interrupts for that cpu, so no chance of any new ones coming in.
+>>
+>> Or is that too late?
+>>
+> 
+> No, that should work just fine. Thank you for the suggestion! I'll give
+> it a shot.
+> 
 
-Verified by compilation only.
+The only problem will be that CPU_DYING notifiers are run after marking
+the CPU offline, and hence the warning will trigger. We can avoid that by
+defining a __generic_smp_call_function_single_interrupt() that doesn't
+check for cpu_online(smp_processor_id) and call this function from the
+hotplug notifier.
 
-The coccinelle script that find and fixes this issue is:
-// <smpl>
-@@
-type T;
-constant C;
-identifier ret;
-@@
-- T ret = C;
-... when != ret
-- return ret;
-+ return C;
-// </smpl>
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
----
- drivers/staging/wlags49_h2/wl_priv.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/staging/wlags49_h2/wl_priv.c b/drivers/staging/wlags49_h2/wl_priv.c
-index 41f3324..aff9273 100644
---- a/drivers/staging/wlags49_h2/wl_priv.c
-+++ b/drivers/staging/wlags49_h2/wl_priv.c
-@@ -179,8 +179,6 @@ int wvlan_uil(struct uilreq *urq, struct wl_private *lp)
-  ******************************************************************************/
- int wvlan_uil_connect(struct uilreq *urq, struct wl_private *lp)
- {
--	int result = 0;
--
- 	if (!(lp->flags & WVLAN2_UIL_CONNECTED)) {
- 		lp->flags |= WVLAN2_UIL_CONNECTED;
- 		urq->hcfCtx = &(lp->hcfCtx);
-@@ -190,7 +188,7 @@ int wvlan_uil_connect(struct uilreq *urq, struct wl_private *lp)
- 		urq->result = UIL_ERR_IN_USE;
- 	}
- 
--	return result;
-+	return 0;
- } /* wvlan_uil_connect */
- /*============================================================================*/
- 
-@@ -218,8 +216,6 @@ int wvlan_uil_connect(struct uilreq *urq, struct wl_private *lp)
-  ******************************************************************************/
- int wvlan_uil_disconnect(struct uilreq *urq, struct wl_private *lp)
- {
--	int result = 0;
--
- 	if (urq->hcfCtx == &(lp->hcfCtx)) {
- 		if (lp->flags & WVLAN2_UIL_CONNECTED) {
- 			lp->flags &= ~WVLAN2_UIL_CONNECTED;
-@@ -238,7 +234,7 @@ int wvlan_uil_disconnect(struct uilreq *urq, struct wl_private *lp)
- 		urq->result = UIL_ERR_WRONG_IFB;
- 	}
- 
--	return result;
-+	return 0;
- } /* wvlan_uil_disconnect */
- /*============================================================================*/
- 
-@@ -1580,7 +1576,6 @@ int wvlan_set_netname(struct net_device *dev,
- {
- 	struct wl_private *lp = wl_priv(dev);
- 	unsigned long flags;
--	int ret = 0;
- 
- 	wl_lock(lp, &flags);
- 
-@@ -1591,7 +1586,7 @@ int wvlan_set_netname(struct net_device *dev,
- 	wl_apply(lp);
- 	wl_unlock(lp, &flags);
- 
--	return ret;
-+	return 0;
- } /* wvlan_set_netname */
- /*============================================================================*/
- 
-@@ -1683,7 +1678,6 @@ int wvlan_set_station_nickname(struct net_device *dev,
- 	struct wl_private *lp = wl_priv(dev);
- 	unsigned long flags;
- 	size_t len;
--	int         ret = 0;
- 
- 	wl_lock(lp, &flags);
- 
-@@ -1695,7 +1689,7 @@ int wvlan_set_station_nickname(struct net_device *dev,
- 	wl_apply(lp);
- 	wl_unlock(lp, &flags);
- 
--	return ret;
-+	return 0;
- } /* wvlan_set_station_nickname */
- /*============================================================================*/
- 
+Regards,
+Srivatsa S. Bhat
 
