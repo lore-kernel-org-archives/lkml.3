@@ -1,113 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaETLRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 07:17:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14809 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173AbaETLRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 07:17:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,873,1392192000"; 
-   d="scan'208";a="514723126"
-Message-ID: <537B39B2.80206@linux.intel.com>
-Date: Tue, 20 May 2014 19:17:06 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752194AbaETLTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 07:19:09 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:40466 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaETLTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 07:19:08 -0400
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 May 2014 07:19:07 EDT
+Date: Tue, 20 May 2014 12:08:46 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] staging: et131x: Remove useless return variables
+Message-ID: <20140520110845.GA4672@leicester.auvation.com>
+References: <1400582028-24990-5-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Jin Yao <yao.jin@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/4] ACPI / LPSS: Solution for two issues seen on Asus
- T100
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>	 <5374D0A8.2090407@linux.intel.com>	 <1400165610.3703.41.camel@smile.fi.intel.com>	 <5374E472.9030001@linux.intel.com>	 <20140515161148.GM1674@lahna.fi.intel.com> <53754DF4.10302@linux.intel.com>	 <1400223856.3703.44.camel@smile.fi.intel.com>	 <537614A0.1050908@linux.intel.com> <1400251512.3703.55.camel@smile.fi.intel.com>
-In-Reply-To: <1400251512.3703.55.camel@smile.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400582028-24990-5-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/16 22:45, Andy Shevchenko wrote:
-> On Fri, 2014-05-16 at 21:37 +0800, Li, Aubrey wrote:
->> On 2014/5/16 15:04, Andy Shevchenko wrote:
->>> On Fri, 2014-05-16 at 07:29 +0800, Li, Aubrey wrote:
->>>> On 2014/5/16 0:11, Mika Westerberg wrote:
->>>>> On Thu, May 15, 2014 at 11:59:46PM +0800, Li, Aubrey wrote:
->>>>>> On 2014/5/15 22:53, Andy Shevchenko wrote:
->>>>>>> On Thu, 2014-05-15 at 22:35 +0800, Li, Aubrey wrote:
->>>>>>>> On 2014/5/15 21:40, Heikki Krogerus wrote:
->>>>>>>>> Changes since v1:
->>>>>>>>> - now using do_div() in clk_fd_recalc_rate() as suggested by Andy
->>>>>>>>> - NULL checks for clk_name allocation in acpi_lpss.c
->>>>>>>>>
->>>>>>>>> This combines two patch sets for LPSS that I had already send for
->>>>>>>>> review separately. They conflicted with each other.
->>>>>>>>>
->>>>>>>>> The first two patches will fix a problem were the context of the
->>>>>>>>> private LPSS registers is lost when entering D3. The last two will add
->>>>>>>>> support for the M/N dividers on LPSS by adding a new basic clock type
->>>>>>>>> for fractional dividers. The UART driver needs support for it in order
->>>>>>>>> to get clock rates that suit the requested baud rates.
->>>>>>>>
->>>>>>>> The major issue in my mind is, this proposal makes a couple between I2C
->>>>>>>> designware, HSUART, or probably DMA driver as well with LPSS driver.
->>>>>>>
->>>>>>> acpi_lpss driver creates platform devices for each found and enumerated
->>>>>>> device.
->>>>>>
->>>>>>> If there no acpi_lpss enabled the drivers work as supposed without it.
->>>>>>
->>>>>> This is not true.
->>>>>
->>>>> The drivers work fine on non-LPSS platform. If you make them depend on
->>>>> acpi_lpss, you break that.
->>>>>
->>>>
->>>> People don't know the relationship between LPSS driver and I2C/HSUART,
->>>> there is nowhere to describe that. If LPSS driver is unchecked, they
->>>> will encounter a weird issue which is very hard to figure out what's
->>>> going on.
->>>
->>> Besides this discussion is off the topic, I could say that LPSS drivers
->>> are kinda optional (we won't enforce user to use them) even on some
->>> systems where they are present. Relationship is provided by the proper
->>> kernel configuration.
->>>
->> It is optional previously but definitely not optional after this patch.
+On Tue, May 20, 2014 at 12:33:45PM +0200, Peter Senna Tschudin wrote:
+> This patch remove variables that are initialized with a constant,
+> are never updated, and are only used as parameter of return.
+> Return the constant instead of using a variable.
 > 
-> I'm sorry, I didn't clearly see what part in this patchset prevents
-> this.
+> Verified by compilation only.
+> 
+> The coccinelle script that find and fixes this issue is:
+> // <smpl>
+> @@
+> type T;
+> constant C;
+> identifier ret;
+> @@
+> - T ret = C;
+> ... when != ret
+> - return ret;
+> + return C;
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-That's exactly what I worry about. It's very hard to figure it out.
-
-> 
->> The user who uses I2C designeware driver without LPSS now, I2C won't
->> work properly on Asus T100.
-> 
-> In that case you specifically enable this driver in the kernel
-> configuration. T100 may require that driver to be fully functional.
-
-Is it better to rephrase the help information to give some hints to the
-user?
-
-Thanks,
--Aubrey
-
-> 
->>
->> The proper configuration leads to a question, why a completed I2C
->> controller driver doesn't work properly without another LPSS driver. I
->> worry about this is hard to maintain in future.
->>
->> Do we have a platform configuration to specify LPSS is needed?
->>
->> BTW, do we have a system with I2C and HSUART but without LPSS?
-> 
-> I believe we have.
-> 
-> 
+Acked-by: Mark Einon <mark.einon@gmail.com>
 
