@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764AbaETPHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:07:48 -0400
-Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:62475 "EHLO
-	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753641AbaETPHp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:07:45 -0400
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
-CC: Dept-Eng QLA2xxx Upstream <qla2xxx-upstream@qlogic.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/13 v2] [SCSI] qla2xxx: make return of 0 explicit
-Thread-Topic: [PATCH 2/13 v2] [SCSI] qla2xxx: make return of 0 explicit
-Thread-Index: AQHPc56YejEU5j1TE0y1VAc+6onFnZtJBIIAgAACroCAAV2EgA==
-Date: Tue, 20 May 2014 15:07:30 +0000
-Message-ID: <F5D084D6342F9B479C34599BB0A03E4D01284E79BF@AVMB1.qlogic.org>
-References: <1400474832-22422-1-git-send-email-Julia.Lawall@lip6.fr>
- <F5D084D6342F9B479C34599BB0A03E4D01284E742E@AVMB1.qlogic.org>
- <20140519201202.GA15585@mwanda> <alpine.DEB.2.10.1405200735210.3003@hadrien>
- <20140519234623.GA17724@mwanda>
-In-Reply-To: <20140519234623.GA17724@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-x-originating-ip: [10.35.7.47]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <5055ED6B374C224EA997EA14D9DF3913@qlogic.com>
-Content-Transfer-Encoding: 8BIT
+	id S1753886AbaETPIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:08:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38947 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149AbaETPIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 11:08:47 -0400
+Date: Tue, 20 May 2014 17:08:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
+ workqueues
+Message-ID: <20140520150842.GD17741@localhost.localdomain>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+ <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+ <20140516201225.GL5379@htj.dyndns.org>
+ <20140517134151.GA32371@localhost.localdomain>
+ <20140519201531.GC27506@mtj.dyndns.org>
+ <20140520143229.GB17741@localhost.localdomain>
+ <20140520143534.GD2804@htj.dyndns.org>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7443 signatures=670450
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1405200182
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520143534.GD2804@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+On Tue, May 20, 2014 at 10:35:34AM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, May 20, 2014 at 04:32:31PM +0200, Frederic Weisbecker wrote:
+> > > But that's the same for other pwqs too.  Back-to-back requeueing will
+> > > hold back pwq switching on any workqueue.
+> > 
+> > I don't think so, because non ordered pwqs aren't created with 0 max_active,
+> > so they can run before the old pwq is released. It's not holding back the new
+> > one and creating a starvation there.
+> > 
+> > But maybe I forget other details.
+> 
+> Ah, I was thinking about old pwq not being allowed to be released
+> while one or more work items are requeueing themselves back-to-back.
 
->On Tue, May 20, 2014 at 07:36:48AM +0800, Julia Lawall wrote:
->> 
->> 
->> On Mon, 19 May 2014, Dan Carpenter wrote:
->> 
->> > On Mon, May 19, 2014 at 04:07:52PM +0000, Saurav Kashyap wrote:
->> > > Hi Julia,
->> > >
->> > > Status is already set to 0 at the beginning of the function, I think
->> > > we should just "return status" here to be consistent with the rest
->>of
->> > > the function.
->> >
->> > "return 0;" is more clear than "return status;".
->> >
->> > Consistency is great so long as it makes the code easier to read.
->>Don't
->> > lose track of the real goal.
->> 
->> If status were an informative word, there might be a reason for it.  But
->> integer typed functions almost always return their status, so there is
->>no
->> real information.
->
->Just to be clear, I'm agreeing with you...  "return 0;" is better.
->
->regards,
->dan carpenter
->
+Right. OTOH, if you have non-deffered work items requeuing themselves
+back to back for ever, you may have a much bigger problem than just a few
+unreleased bytes :)
 
+> Yeap, the new ones can still be used for other work items.
+> 
+> > > Maybe I'm confused but I don't think it'd be.  Let's say there was an
+> > > attribute change with one work item, A, which is performing
+> > > back-to-back requeueing and another one, B, which queues itself
+> > > intermittently.  If B is queued while A is executing, followed by A
+> > > requeueing itself, the expected execution order is A - B - A; however,
+> > > without the above exception for ordered workqueues, it'd end up A - A
+> > > - B because B will end up on the new pwq while A on the older one and
+> > > max_active won't be transferred to the new pwq before it becomes
+> > > empty.
+> > 
+> > Ah right AAB instead of ABA is possible indeed. I don't know if some workqueue
+> > rely on such guarantee but it's possible.
+> 
+> That's part of the ordering guarantee of ordered workqueues so we
+> better not break it.
+
+Ok.
+
+> 
+> > In which case we have one more reason to make an exception on ordered workqueues
+> > previous pwq reuse.
+> 
+> Yeah, I agree the special treatment is necessary but the current
+> comment is misleading.
+
+Ok got it, I'll try to improve the comment.
+
+Thanks.
