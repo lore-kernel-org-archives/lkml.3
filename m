@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaETQaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:30:46 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:43846 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbaETQaj (ORCPT
+	id S1754421AbaETQbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:31:04 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:47827 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294AbaETQal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:30:39 -0400
+	Tue, 20 May 2014 12:30:41 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org, joe@perches.com,
         auttamchandani@logicube.com, stern@rowland.harvard.edu
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 09/10 v2.1] usb: gadget: net2280: Use pr_* function
-Date: Tue, 20 May 2014 18:30:11 +0200
-Message-Id: <1400603412-19406-10-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 10/10] usb: gadget: net2280: Use quirks instead of pci id
+Date: Tue, 20 May 2014 18:30:12 +0200
+Message-Id: <1400603412-19406-11-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -22,572 +22,417 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver was using custom functions WARNING, ERROR, DEBUG, instead of
- pr_err, pr_dgb...
+Use of quirks improve readability and will be easier to add new devices
+to this driver.
 
-New ep_* macros have been created that use standard pr_* functions.
-
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
-v2: Comment by Joe Perches and Alan Stern
-  -Use ep_* instead of custom DETDEV macro
-
- drivers/usb/gadget/net2280.c | 121 +++++++++++++++++++++----------------------
- drivers/usb/gadget/net2280.h |  36 +++++--------
- 2 files changed, 71 insertions(+), 86 deletions(-)
+ drivers/usb/gadget/net2280.c | 83 +++++++++++++++++++++++---------------------
+ drivers/usb/gadget/net2280.h |  6 ++++
+ 2 files changed, 49 insertions(+), 40 deletions(-)
 
 diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-index d506c83..9ced9ff 100644
+index 9ced9ff..ce8bc86 100644
 --- a/drivers/usb/gadget/net2280.c
 +++ b/drivers/usb/gadget/net2280.c
-@@ -42,9 +42,6 @@
-  * (at your option) any later version.
-  */
+@@ -147,7 +147,7 @@ static inline void enable_pciirqenb(struct net2280_ep *ep)
+ {
+ 	u32 tmp = readl(&ep->dev->regs->pciirqenb0);
  
--#undef	DEBUG		/* messages on error and most fault paths */
--#undef	VERBOSE		/* extra debug messages (success too) */
--
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/dma-mapping.h>
-@@ -210,7 +207,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 	 * use it instead of troublesome (non-bulk) multi-packet DMA.
+-	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (ep->dev->quirks & PLX_LEGACY)
+ 		tmp |= BIT(ep->num);
+ 	else
+ 		tmp |= BIT(ep_bit[ep->num]);
+@@ -177,7 +177,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 	if ((desc->bEndpointAddress & 0x0f) == EP_DONTUSE)
+ 		return -EDOM;
+ 
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX) {
++	if (dev->quirks & PLX_SUPERSPEED) {
+ 		if ((desc->bEndpointAddress & 0x0f) >= 0x0c)
+ 			return -EDOM;
+ 		ep->is_in = !!usb_endpoint_dir_in(desc);
+@@ -187,8 +187,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 
+ 	/* sanity check ep-e/ep-f since their fifos are small */
+ 	max = usb_endpoint_maxp(desc) & 0x1fff;
+-	if (ep->num > 4 && max > 64 &&
+-			(dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY))
++	if (ep->num > 4 && max > 64 && (dev->quirks & PLX_LEGACY))
+ 		return -ERANGE;
+ 
+ 	spin_lock_irqsave(&dev->lock, flags);
+@@ -233,7 +232,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 	}
+ 	ep->is_iso = (tmp == USB_ENDPOINT_XFER_ISOC);
+ 	/* Enable this endpoint */
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY) {
++	if (dev->quirks & PLX_LEGACY) {
+ 		tmp <<= ENDPOINT_TYPE;
+ 		tmp |= desc->bEndpointAddress;
+ 		/* default full fifo lines */
+@@ -263,7 +262,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 	/* for OUT transfers, block the rx fifo until a read is posted */
+ 	if (!ep->is_in)
+ 		writel(BIT(SET_NAK_OUT_PACKETS), &ep->regs->ep_rsp);
+-	else if (dev->pdev->device != 0x2280) {
++	else if (!(dev->quirks & PLX_2280)) {
+ 		/* Added for 2282, Don't use nak packets on an in endpoint,
+ 		 * this was ignored on 2280
+ 		 */
+@@ -279,7 +278,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 
+ 		tmp = BIT(DATA_PACKET_RECEIVED_INTERRUPT_ENABLE) |
+ 			BIT(DATA_PACKET_TRANSMITTED_INTERRUPT_ENABLE);
+-		if (dev->pdev->device == 0x2280)
++		if (dev->quirks & PLX_2280)
+ 			tmp |= readl(&ep->regs->ep_irqenb);
+ 		writel(tmp, &ep->regs->ep_irqenb);
+ 	} else {				/* dma, per-request */
+@@ -361,7 +360,7 @@ static void ep_reset_228x(struct net2280_regs __iomem *regs,
+ 	/* init to our chosen defaults, notably so that we NAK OUT
+ 	 * packets until the driver queues a read (+note erratum 0112)
  	 */
- 	if (ep->dma && (max % 4) != 0 && use_dma_chaining) {
--		DEBUG(ep->dev, "%s, no dma for maxpacket %d\n",
-+		ep_dbg(ep->dev, "%s, no dma for maxpacket %d\n",
- 			ep->ep.name, ep->ep.maxpacket);
- 		ep->dma = NULL;
- 	}
-@@ -303,7 +300,7 @@ net2280_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 	}
+-	if (!ep->is_in || ep->dev->pdev->device == 0x2280) {
++	if (!ep->is_in || (ep->dev->quirks & PLX_2280)) {
+ 		tmp = BIT(SET_NAK_OUT_PACKETS_MODE) |
+ 		BIT(SET_NAK_OUT_PACKETS) |
+ 		BIT(CLEAR_EP_HIDE_STATUS_PHASE) |
+@@ -381,7 +380,7 @@ static void ep_reset_228x(struct net2280_regs __iomem *regs,
+ 	writel(tmp, &ep->regs->ep_rsp);
  
- 	tmp = desc->bEndpointAddress;
--	DEBUG(dev, "enabled %s (ep%d%s-%s) %s max %04x\n",
-+	ep_dbg(dev, "enabled %s (ep%d%s-%s) %s max %04x\n",
- 		_ep->name, tmp & 0x0f, DIR_STRING(tmp),
- 		type_string(desc->bmAttributes),
- 		ep->dma ? "dma" : "pio", max);
-@@ -431,7 +428,7 @@ static void ep_reset_338x(struct net2280_regs __iomem *regs,
+ 	/* scrub most status bits, and flush any fifo state */
+-	if (ep->dev->pdev->device == 0x2280)
++	if (ep->dev->quirks & PLX_2280)
+ 		tmp = BIT(FIFO_OVERFLOW) |
+ 			BIT(FIFO_UNDERFLOW);
+ 	else
+@@ -468,7 +467,7 @@ static int net2280_disable(struct usb_ep *_ep)
+ 	spin_lock_irqsave(&ep->dev->lock, flags);
+ 	nuke(ep);
  
- 		dmastat = readl(&ep->dma->dmastat);
- 		if (dmastat == 0x5002) {
--			WARNING(ep->dev, "The dmastat return = %x!!\n",
-+			ep_warn(ep->dev, "The dmastat return = %x!!\n",
- 			       dmastat);
- 			writel(0x5a, &ep->dma->dmastat);
- 		}
-@@ -476,7 +473,7 @@ static int net2280_disable(struct usb_ep *_ep)
+-	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++	if (ep->dev->quirks & PLX_SUPERSPEED)
+ 		ep_reset_338x(ep->dev->regs, ep);
  	else
  		ep_reset_228x(ep->dev->regs, ep);
+@@ -742,7 +741,7 @@ static void fill_dma_desc(struct net2280_ep *ep,
+ 	if (ep->is_in)
+ 		dmacount |= BIT(DMA_DIRECTION);
+ 	if ((!ep->is_in && (dmacount % ep->ep.maxpacket) != 0) ||
+-					ep->dev->pdev->device != 0x2280)
++					!(ep->dev->quirks & PLX_2280))
+ 		dmacount |= BIT(END_OF_CHAIN);
  
--	VDEBUG(ep->dev, "disabled %s %s\n",
-+	ep_vdbg(ep->dev, "disabled %s %s\n",
- 			ep->dma ? "dma" : "pio", _ep->name);
+ 	req->valid = valid;
+@@ -786,14 +785,14 @@ static void start_queue(struct net2280_ep *ep, u32 dmactl, u32 td_dma)
+ 	struct net2280_dma_regs	__iomem *dma = ep->dma;
+ 	unsigned int tmp = BIT(VALID_BIT) | (ep->is_in << DMA_DIRECTION);
  
- 	/* synch memory views with the device */
-@@ -572,7 +569,7 @@ static void write_fifo(struct net2280_ep *ep, struct usb_request *req)
- 	if (count > total)	/* min() cannot be used on a bitfield */
- 		count = total;
+-	if (ep->dev->pdev->device != 0x2280)
++	if (!(ep->dev->quirks & PLX_2280))
+ 		tmp |= BIT(END_OF_CHAIN);
  
--	VDEBUG(ep->dev, "write %s fifo (IN) %d bytes%s req %p\n",
-+	ep_vdbg(ep->dev, "write %s fifo (IN) %d bytes%s req %p\n",
- 			ep->ep.name, count,
- 			(count != ep->ep.maxpacket) ? " (short)" : "",
- 			req);
-@@ -684,7 +681,7 @@ static int read_fifo(struct net2280_ep *ep, struct net2280_request *req)
- 	if (count > tmp) {
- 		/* as with DMA, data overflow gets flushed */
- 		if ((tmp % ep->ep.maxpacket) != 0) {
--			ERROR(ep->dev,
-+			ep_err(ep->dev,
- 				"%s out fifo %d bytes, expected %d\n",
- 				ep->ep.name, count, tmp);
- 			req->req.status = -EOVERFLOW;
-@@ -699,7 +696,7 @@ static int read_fifo(struct net2280_ep *ep, struct net2280_request *req)
+ 	writel(tmp, &dma->dmacount);
+ 	writel(readl(&dma->dmastat), &dma->dmastat);
  
- 	is_short = (count == 0) || ((count % ep->ep.maxpacket) != 0);
+ 	writel(td_dma, &dma->dmadesc);
+-	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++	if (ep->dev->quirks & PLX_SUPERSPEED)
+ 		dmactl |= BIT(DMA_REQUEST_OUTSTANDING);
+ 	writel(dmactl, &dma->dmactl);
  
--	VDEBUG(ep->dev, "read %s fifo (OUT) %d bytes%s%s%s req %p %d/%d\n",
-+	ep_vdbg(ep->dev, "read %s fifo (OUT) %d bytes%s%s%s req %p %d/%d\n",
- 			ep->ep.name, count, is_short ? " (short)" : "",
- 			cleanup ? " flush" : "", prevent ? " nak" : "",
- 			req, req->req.actual, req->req.length);
-@@ -925,7 +922,7 @@ done(struct net2280_ep *ep, struct net2280_request *req, int status)
- 		usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
+@@ -989,7 +988,7 @@ net2280_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
+ 		/* DMA request while EP halted */
+ 		if (ep->dma &&
+ 		    (readl(&ep->regs->ep_rsp) & BIT(CLEAR_ENDPOINT_HALT)) &&
+-			(dev->pdev->vendor == PCI_VENDOR_ID_PLX)) {
++			(dev->quirks & PLX_SUPERSPEED)) {
+ 			int valid = 1;
+ 			if (ep->is_in) {
+ 				int expect;
+@@ -1120,7 +1119,7 @@ static void scan_dma_completions(struct net2280_ep *ep)
+ 		} else if (!ep->is_in &&
+ 				(req->req.length % ep->ep.maxpacket) != 0) {
+ 			tmp = readl(&ep->regs->ep_stat);
+-			if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++			if (ep->dev->quirks & PLX_SUPERSPEED)
+ 				return dma_done(ep, req, tmp, 0);
  
- 	if (status && status != -ESHUTDOWN)
--		VDEBUG(dev, "complete %s req %p stat %d len %u/%u\n",
-+		ep_vdbg(dev, "complete %s req %p stat %d len %u/%u\n",
- 			ep->ep.name, &req->req, status,
- 			req->req.actual, req->req.length);
+ 			/* AVOID TROUBLE HERE by not issuing short reads from
+@@ -1231,7 +1230,7 @@ static void abort_dma_338x(struct net2280_ep *ep)
  
-@@ -978,7 +975,7 @@ net2280_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
- 	}
- 
- #if 0
--	VDEBUG(dev, "%s queue req %p, len %d buf %p\n",
-+	ep_vdbg(dev, "%s queue req %p, len %d buf %p\n",
- 			_ep->name, _req, _req->length, _req->buf);
- #endif
- 
-@@ -1012,7 +1009,7 @@ net2280_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
- 			if (ep->num == 0 && _req->length == 0) {
- 				allow_status(ep);
- 				done(ep, req, 0);
--				VDEBUG(dev, "%s status ack\n", ep->ep.name);
-+				ep_vdbg(dev, "%s status ack\n", ep->ep.name);
- 				goto done;
- 			}
- 
-@@ -1131,7 +1128,7 @@ static void scan_dma_completions(struct net2280_ep *ep)
- 			 * 0122, and 0124; not all cases trigger the warning.
- 			 */
- 			if ((tmp & BIT(NAK_OUT_PACKETS)) == 0) {
--				WARNING(ep->dev, "%s lost packet sync!\n",
-+				ep_warn(ep->dev, "%s lost packet sync!\n",
- 						ep->ep.name);
- 				req->req.status = -EOVERFLOW;
- 			} else {
-@@ -1139,7 +1136,7 @@ static void scan_dma_completions(struct net2280_ep *ep)
- 				if (tmp) {
- 					/* fifo gets flushed later */
- 					ep->out_overflow = 1;
--					DEBUG(ep->dev,
-+					ep_dbg(ep->dev,
- 						"%s dma, discard %d len %d\n",
- 						ep->ep.name, tmp,
- 						req->req.length);
-@@ -1175,7 +1172,7 @@ static void restart_dma(struct net2280_ep *ep)
- 		struct net2280_request	*entry, *prev = NULL;
- 		int			reqmode, done = 0;
- 
--		DEBUG(ep->dev, "%s dma hiccup td %p\n", ep->ep.name, req->td);
-+		ep_dbg(ep->dev, "%s dma hiccup td %p\n", ep->ep.name, req->td);
- 		ep->in_fifo_validate = likely(req->req.zero ||
- 				(req->req.length % ep->ep.maxpacket) != 0);
- 		if (ep->in_fifo_validate)
-@@ -1295,7 +1292,7 @@ static int net2280_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 	/* queue head may be partially complete. */
- 	if (ep->queue.next == &req->queue) {
- 		if (ep->dma) {
--			DEBUG(ep->dev, "unlink (%s) dma\n", _ep->name);
-+			ep_dbg(ep->dev, "unlink (%s) dma\n", _ep->name);
- 			_req->status = -ECONNRESET;
- 			abort_dma(ep);
- 			if (likely(ep->queue.next == &req->queue)) {
-@@ -1306,7 +1303,7 @@ static int net2280_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 					-ECONNRESET);
- 			}
- 		} else {
--			DEBUG(ep->dev, "unlink (%s) pio\n", _ep->name);
-+			ep_dbg(ep->dev, "unlink (%s) pio\n", _ep->name);
- 			done(ep, req, -ECONNRESET);
- 		}
- 		req = NULL;
-@@ -1379,7 +1376,7 @@ net2280_set_halt_and_wedge(struct usb_ep *_ep, int value, int wedged)
- 	else if (ep->is_in && value && net2280_fifo_status(_ep) != 0)
- 		retval = -EAGAIN;
- 	else {
--		VDEBUG(ep->dev, "%s %s %s\n", _ep->name,
-+		ep_vdbg(ep->dev, "%s %s %s\n", _ep->name,
- 				value ? "set" : "clear",
- 				wedged ? "wedge" : "halt");
- 		/* set/clear, then synch memory views with the device */
-@@ -1566,7 +1563,7 @@ static const struct usb_gadget_ops net2280_ops = {
- 
- /*-------------------------------------------------------------------------*/
- 
--#ifdef	CONFIG_USB_GADGET_DEBUG_FILES
-+#ifdef	CONFIG_USB_GADGET_PDEBUG_FILES
- 
- /* FIXME move these into procfs, and use seq_file.
-  * Sysfs _still_ doesn't behave for arbitrarily sized files,
-@@ -1928,8 +1925,8 @@ static void defect7374_enable_data_eps_zero(struct net2280 *dev)
- 
- 	/*See if firmware needs to set up for workaround*/
- 	if (fsmvalue != DEFECT7374_FSM_SS_CONTROL_READ) {
--		WARNING(dev, "Operate Defect 7374 workaround soft this time");
--		WARNING(dev, "It will operate on cold-reboot and SS connect");
-+		ep_warn(dev, "Operate Defect 7374 workaround soft this time");
-+		ep_warn(dev, "It will operate on cold-reboot and SS connect");
- 
- 		/*GPEPs:*/
- 		tmp = ((0 << ENDPOINT_NUMBER) | BIT(ENDPOINT_DIRECTION) |
-@@ -1985,8 +1982,8 @@ static void defect7374_enable_data_eps_zero(struct net2280 *dev)
- 		set_idx_reg(dev->regs, SCRATCH, scratch);
- 
- 	} else{
--		WARNING(dev, "Defect 7374 workaround soft will NOT operate");
--		WARNING(dev, "It will operate on cold-reboot and SS connect");
-+		ep_warn(dev, "Defect 7374 workaround soft will NOT operate");
-+		ep_warn(dev, "It will operate on cold-reboot and SS connect");
- 	}
+ static void abort_dma(struct net2280_ep *ep)
+ {
+-	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (ep->dev->quirks & PLX_LEGACY)
+ 		return abort_dma_228x(ep);
+ 	return abort_dma_338x(ep);
  }
+@@ -1389,7 +1388,7 @@ net2280_set_halt_and_wedge(struct usb_ep *_ep, int value, int wedged)
+ 				ep->wedged = 1;
+ 		} else {
+ 			clear_halt(ep);
+-			if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX &&
++			if (ep->dev->quirks & PLX_SUPERSPEED &&
+ 				!list_empty(&ep->queue) && ep->td_dma)
+ 					restart_dma(ep);
+ 			ep->wedged = 0;
+@@ -2087,7 +2086,7 @@ static void usb_reset_338x(struct net2280 *dev)
  
-@@ -2050,7 +2047,7 @@ static void usb_reset_338x(struct net2280 *dev)
+ static void usb_reset(struct net2280 *dev)
+ {
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		return usb_reset_228x(dev);
+ 	return usb_reset_338x(dev);
+ }
+@@ -2243,7 +2242,7 @@ static void usb_reinit_338x(struct net2280 *dev)
  
- 	/* See if firmware needs to set up for workaround: */
- 	if (fsmvalue != DEFECT7374_FSM_SS_CONTROL_READ) {
--		INFO(dev, "%s: Defect 7374 FsmValue 0x%08x\n", __func__,
-+		ep_info(dev, "%s: Defect 7374 FsmValue 0x%08x\n", __func__,
- 		     fsmvalue);
- 	} else {
- 		/* disable automatic responses, and irqs */
-@@ -2187,7 +2184,7 @@ static void usb_reinit_338x(struct net2280 *dev)
+ static void usb_reinit(struct net2280 *dev)
+ {
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		return usb_reinit_228x(dev);
+ 	return usb_reinit_338x(dev);
+ }
+@@ -2341,7 +2340,7 @@ static void ep0_start_338x(struct net2280 *dev)
  
- 	/* See if driver needs to set up for workaround: */
- 	if (fsmvalue != DEFECT7374_FSM_SS_CONTROL_READ)
--		INFO(dev, "%s: Defect 7374 FsmValue %08x\n",
-+		ep_info(dev, "%s: Defect 7374 FsmValue %08x\n",
- 						__func__, fsmvalue);
- 	else {
- 		tmp = readl(&dev->usb_ext->usbctl2) &
-@@ -2302,7 +2299,7 @@ static void ep0_start_338x(struct net2280 *dev)
- 			(0xf << DEFECT7374_FSM_FIELD);
+ static void ep0_start(struct net2280 *dev)
+ {
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		return ep0_start_228x(dev);
+ 	return ep0_start_338x(dev);
+ }
+@@ -2385,7 +2384,7 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 		goto err_func;
  
- 	if (fsmvalue != DEFECT7374_FSM_SS_CONTROL_READ)
--		INFO(dev, "%s: Defect 7374 FsmValue %08x\n", __func__,
-+		ep_info(dev, "%s: Defect 7374 FsmValue %08x\n", __func__,
- 		     fsmvalue);
- 	else
- 		writel(BIT(CLEAR_NAK_OUT_PACKETS_MODE) |
-@@ -2401,7 +2398,7 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 	/* Enable force-full-speed testing mode, if desired */
+-	if (full_speed && dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (full_speed && (dev->quirks & PLX_LEGACY))
+ 		writel(BIT(FORCE_FULL_SPEED_MODE), &dev->usb->xcvrdiag);
+ 
+ 	/* ... then enable host detection and ep0; and we're ready
+@@ -2393,7 +2392,7 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 	 */
+ 	net2280_led_active(dev, 1);
+ 
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++	if (dev->quirks & PLX_SUPERSPEED)
+ 		defect7374_enable_data_eps_zero(dev);
  
  	ep0_start(dev);
+@@ -2455,7 +2454,7 @@ static int net2280_stop(struct usb_gadget *_gadget,
+ 	net2280_led_active(dev, 0);
  
--	DEBUG(dev, "%s ready, usbctl %08x stdrsp %08x\n",
-+	ep_dbg(dev, "%s ready, usbctl %08x stdrsp %08x\n",
- 			driver->driver.name,
- 			readl(&dev->usb->usbctl),
- 			readl(&dev->usb->stdrsp));
-@@ -2464,7 +2461,7 @@ static int net2280_stop(struct usb_gadget *_gadget,
+ 	/* Disable full-speed test mode */
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		writel(0, &dev->usb->xcvrdiag);
+ 
  	device_remove_file(&dev->pdev->dev, &dev_attr_function);
- 	device_remove_file(&dev->pdev->dev, &dev_attr_queues);
- 
--	DEBUG(dev, "unregistered driver '%s'\n",
-+	ep_dbg(dev, "unregistered driver '%s'\n",
- 			driver ? driver->driver.name : "");
- 
- 	return 0;
-@@ -2493,7 +2490,7 @@ static void handle_ep_small(struct net2280_ep *ep)
- 	t = readl(&ep->regs->ep_stat);
- 	ep->irqs++;
- #if 0
--	VDEBUG(ep->dev, "%s ack ep_stat %08x, req %p\n",
-+	ep_vdbg(ep->dev, "%s ack ep_stat %08x, req %p\n",
+@@ -2493,7 +2492,7 @@ static void handle_ep_small(struct net2280_ep *ep)
+ 	ep_vdbg(ep->dev, "%s ack ep_stat %08x, req %p\n",
  			ep->ep.name, t, req ? &req->req : 0);
  #endif
- 	if (!ep->is_in || ep->dev->pdev->device == 0x2280)
-@@ -2624,7 +2621,7 @@ static void handle_ep_small(struct net2280_ep *ep)
- 			if (!list_empty(&ep->queue))
- 				restart_dma(ep);
- 		} else
--			DEBUG(ep->dev, "%s dma ep_stat %08x ??\n",
-+			ep_dbg(ep->dev, "%s dma ep_stat %08x ??\n",
- 					ep->ep.name, t);
- 		return;
- 
-@@ -2758,12 +2755,12 @@ static void defect7374_workaround(struct net2280 *dev, struct usb_ctrlrequest r)
- 
- 
- 	if (ack_wait_timeout >= DEFECT_7374_NUMBEROF_MAX_WAIT_LOOPS) {
--		ERROR(dev, "FAIL: Defect 7374 workaround waited but failed "
-+		ep_err(dev, "FAIL: Defect 7374 workaround waited but failed "
- 		"to detect SS host's data phase ACK.");
--		ERROR(dev, "PL_EP_STATUS_1(23:16):.Expected from 0x11 to 0x16"
-+		ep_err(dev, "PL_EP_STATUS_1(23:16):.Expected from 0x11 to 0x16"
- 		"got 0x%2.2x.\n", state >> STATE);
- 	} else {
--		WARNING(dev, "INFO: Defect 7374 workaround waited about\n"
-+		ep_warn(dev, "INFO: Defect 7374 workaround waited about\n"
- 		"%duSec for Control Read Data Phase ACK\n",
- 			DEFECT_7374_PROCESSOR_WAIT_TIME * ack_wait_timeout);
- 	}
-@@ -2953,7 +2950,7 @@ static void handle_stat0_irqs_superspeed(struct net2280 *dev,
- 				goto do_stall3;
- 			if (w_value != USB_ENDPOINT_HALT)
- 				goto do_stall3;
--			VDEBUG(dev, "%s clear halt\n", e->ep.name);
-+			ep_vdbg(dev, "%s clear halt\n", e->ep.name);
- 			ep_stall(e, false);
- 			if (!list_empty(&e->queue) && e->td_dma)
- 				restart_dma(e);
-@@ -3024,7 +3021,7 @@ static void handle_stat0_irqs_superspeed(struct net2280 *dev,
- 	default:
- 
- usb3_delegate:
--		VDEBUG(dev, "setup %02x.%02x v%04x i%04x l%04x ep_cfg %08x\n",
-+		ep_vdbg(dev, "setup %02x.%02x v%04x i%04x l%04x ep_cfg %08x\n",
- 				r.bRequestType, r.bRequest,
- 				w_value, w_index, w_length,
- 				readl(&ep->cfg->ep_cfg));
-@@ -3036,7 +3033,7 @@ usb3_delegate:
- 	}
- do_stall3:
- 	if (tmp < 0) {
--		VDEBUG(dev, "req %02x.%02x protocol STALL; stat %d\n",
-+		ep_vdbg(dev, "req %02x.%02x protocol STALL; stat %d\n",
- 				r.bRequestType, r.bRequest, tmp);
- 		dev->protocol_stall = 1;
- 		/* TD 9.9 Halt Endpoint test. TD 9.22 Set feature test */
-@@ -3061,7 +3058,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
- 	stat &= ~BIT(INTA_ASSERTED);
- 	if (!stat)
- 		return;
--	/* DEBUG(dev, "irqstat0 %04x\n", stat); */
-+	/* ep_dbg(dev, "irqstat0 %04x\n", stat); */
- 
- 	/* starting a control request? */
- 	if (unlikely(stat & BIT(SETUP_PACKET_INTERRUPT))) {
-@@ -3088,7 +3085,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
- 						EP0_HS_MAX_PACKET_SIZE);
- 			}
- 			net2280_led_speed(dev, dev->gadget.speed);
--			DEBUG(dev, "%s\n",
-+			ep_dbg(dev, "%s\n",
- 					usb_speed_string(dev->gadget.speed));
+-	if (!ep->is_in || ep->dev->pdev->device == 0x2280)
++	if (!ep->is_in || (ep->dev->quirks & PLX_2280))
+ 		writel(t & ~BIT(NAK_OUT_PACKETS), &ep->regs->ep_stat);
+ 	else
+ 		/* Added for 2282 */
+@@ -3102,10 +3101,10 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
  		}
+ 		ep->stopped = 0;
+ 		dev->protocol_stall = 0;
+-		if (dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++		if (dev->quirks & PLX_SUPERSPEED)
+ 			ep->is_halt = 0;
+ 		else{
+-			if (ep->dev->pdev->device == 0x2280)
++			if (ep->dev->quirks & PLX_2280)
+ 				tmp = BIT(FIFO_OVERFLOW) |
+ 				    BIT(FIFO_UNDERFLOW);
+ 			else
+@@ -3131,7 +3130,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
+ 		cpu_to_le32s(&u.raw[0]);
+ 		cpu_to_le32s(&u.raw[1]);
  
-@@ -3196,7 +3193,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
- 			set_fifo_bytecount(ep, w_length);
- 			writel((__force u32)status, &dev->epregs[0].ep_data);
- 			allow_status(ep);
--			VDEBUG(dev, "%s stat %02x\n", ep->ep.name, status);
-+			ep_vdbg(dev, "%s stat %02x\n", ep->ep.name, status);
- 			goto next_endpoints;
- 			}
- 			break;
-@@ -3212,10 +3209,10 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
- 			if (!e)
- 				goto do_stall;
- 			if (e->wedged) {
--				VDEBUG(dev, "%s wedged, halt not cleared\n",
-+				ep_vdbg(dev, "%s wedged, halt not cleared\n",
- 						ep->ep.name);
+-		if (dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++		if (dev->quirks & PLX_SUPERSPEED)
+ 			defect7374_workaround(dev, u.r);
+ 
+ 		tmp = 0;
+@@ -3214,8 +3213,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
  			} else {
--				VDEBUG(dev, "%s clear halt\n", e->ep.name);
-+				ep_vdbg(dev, "%s clear halt\n", e->ep.name);
+ 				ep_vdbg(dev, "%s clear halt\n", e->ep.name);
  				clear_halt(e);
- 				if (ep->dev->pdev->vendor ==
- 						PCI_VENDOR_ID_PLX &&
-@@ -3243,13 +3240,13 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
- 			if (dev->pdev->vendor == PCI_VENDOR_ID_PLX && e->dma)
+-				if (ep->dev->pdev->vendor ==
+-						PCI_VENDOR_ID_PLX &&
++				if ((ep->dev->quirks & PLX_SUPERSPEED) &&
+ 					!list_empty(&e->queue) && e->td_dma)
+ 						restart_dma(e);
+ 			}
+@@ -3237,7 +3235,7 @@ static void handle_stat0_irqs(struct net2280 *dev, u32 stat)
+ 			if (e->ep.name == ep0name)
+ 				goto do_stall;
+ 			set_halt(e);
+-			if (dev->pdev->vendor == PCI_VENDOR_ID_PLX && e->dma)
++			if ((dev->quirks & PLX_SUPERSPEED) && e->dma)
  				abort_dma(e);
  			allow_status(ep);
--			VDEBUG(dev, "%s set halt\n", ep->ep.name);
-+			ep_vdbg(dev, "%s set halt\n", ep->ep.name);
- 			goto next_endpoints;
- 			}
- 			break;
- 		default:
- delegate:
--			VDEBUG(dev, "setup %02x.%02x v%04x i%04x l%04x "
-+			ep_vdbg(dev, "setup %02x.%02x v%04x i%04x l%04x "
- 				"ep_cfg %08x\n",
- 				u.r.bRequestType, u.r.bRequest,
- 				w_value, w_index, w_length,
-@@ -3263,7 +3260,7 @@ delegate:
- 		/* stall ep0 on error */
- 		if (tmp < 0) {
- do_stall:
--			VDEBUG(dev, "req %02x.%02x protocol STALL; stat %d\n",
-+			ep_vdbg(dev, "req %02x.%02x protocol STALL; stat %d\n",
- 					u.r.bRequestType, u.r.bRequest, tmp);
- 			dev->protocol_stall = 1;
- 		}
-@@ -3296,7 +3293,7 @@ next_endpoints:
+ 			ep_vdbg(dev, "%s set halt\n", ep->ep.name);
+@@ -3365,7 +3363,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
+ 		writel(stat, &dev->regs->irqstat1);
+ 
+ 	/* some status we can just ignore */
+-	if (dev->pdev->device == 0x2280)
++	if (dev->quirks & PLX_2280)
+ 		stat &= ~(BIT(CONTROL_STATUS_INTERRUPT) |
+ 			  BIT(SUSPEND_REQUEST_INTERRUPT) |
+ 			  BIT(RESUME_INTERRUPT) |
+@@ -3403,7 +3401,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
+ 		writel(tmp, &dma->dmastat);
+ 
+ 		/* dma sync*/
+-		if (dev->pdev->vendor == PCI_VENDOR_ID_PLX) {
++		if (dev->quirks & PLX_SUPERSPEED) {
+ 			u32 r_dmacount = readl(&dma->dmacount);
+ 			if (!ep->is_in &&  (r_dmacount & 0x00FFFFFF) &&
+ 			    (tmp & BIT(DMA_TRANSACTION_DONE_INTERRUPT)))
+@@ -3486,7 +3484,7 @@ static irqreturn_t net2280_irq(int irq, void *_dev)
+ 	struct net2280		*dev = _dev;
+ 
+ 	/* shared interrupt, not ours */
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY &&
++	if ((dev->quirks & PLX_LEGACY) &&
+ 		(!(readl(&dev->regs->irqstat0) & BIT(INTA_ASSERTED))))
+ 		return IRQ_NONE;
+ 
+@@ -3498,7 +3496,7 @@ static irqreturn_t net2280_irq(int irq, void *_dev)
+ 	/* control requests and PIO */
+ 	handle_stat0_irqs(dev, readl(&dev->regs->irqstat0));
+ 
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX) {
++	if (dev->quirks & PLX_SUPERSPEED) {
+ 		/* re-enable interrupt to trigger any possible new interrupt */
+ 		u32 pciirqenb1 = readl(&dev->regs->pciirqenb1);
+ 		writel(pciirqenb1 & 0x7FFFFFFF, &dev->regs->pciirqenb1);
+@@ -3543,7 +3541,7 @@ static void net2280_remove(struct pci_dev *pdev)
  	}
+ 	if (dev->got_irq)
+ 		free_irq(pdev->irq, dev);
+-	if (use_msi && dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++	if (use_msi && dev->quirks & PLX_SUPERSPEED)
+ 		pci_disable_msi(pdev);
+ 	if (dev->regs)
+ 		iounmap(dev->regs);
+@@ -3580,9 +3578,10 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
  
- 	if (stat)
--		DEBUG(dev, "unhandled irqstat0 %08x\n", stat);
-+		ep_dbg(dev, "unhandled irqstat0 %08x\n", stat);
- }
+ 	pci_set_drvdata(pdev, dev);
+ 	spin_lock_init(&dev->lock);
++	dev->quirks = id->driver_data;
+ 	dev->pdev = pdev;
+ 	dev->gadget.ops = &net2280_ops;
+-	dev->gadget.max_speed = (dev->pdev->vendor == PCI_VENDOR_ID_PLX) ?
++	dev->gadget.max_speed = (dev->quirks & PLX_SUPERSPEED) ?
+ 				USB_SPEED_SUPER : USB_SPEED_HIGH;
  
- #define DMA_INTERRUPTS (BIT(DMA_D_INTERRUPT) | \
-@@ -3329,7 +3326,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
- 				((readl(&dev->usb->usbctl) &
- 					BIT(VBUS_PIN)) == 0)) &&
- 				(dev->gadget.speed != USB_SPEED_UNKNOWN)) {
--			DEBUG(dev, "disconnect %s\n",
-+			ep_dbg(dev, "disconnect %s\n",
- 					dev->driver->driver.name);
- 			stop_activity(dev, dev->driver);
- 			ep0_start(dev);
-@@ -3381,7 +3378,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
+ 	/* the "gadget" abstracts/virtualizes the controller */
+@@ -3625,7 +3624,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	dev->dep = (struct net2280_dep_regs __iomem *) (base + 0x0200);
+ 	dev->epregs = (struct net2280_ep_regs __iomem *) (base + 0x0300);
  
- 	if (!stat)
- 		return;
--	/* DEBUG(dev, "irqstat1 %08x\n", stat);*/
-+	/* ep_dbg(dev, "irqstat1 %08x\n", stat);*/
- 
- 	/* DMA status, for ep-{a,b,c,d} */
- 	scratch = stat & DMA_INTERRUPTS;
-@@ -3418,7 +3415,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
- 		 */
- 		if (!use_dma_chaining) {
- 			if (!(tmp & BIT(DMA_TRANSACTION_DONE_INTERRUPT))) {
--				DEBUG(ep->dev, "%s no xact done? %08x\n",
-+				ep_dbg(ep->dev, "%s no xact done? %08x\n",
- 					ep->ep.name, tmp);
- 				continue;
- 			}
-@@ -3470,7 +3467,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
- 	 * if they appear very often, here's where to try recovering.
- 	 */
- 	if (stat & PCI_ERROR_INTERRUPTS) {
--		ERROR(dev, "pci dma error; stat %08x\n", stat);
-+		ep_err(dev, "pci dma error; stat %08x\n", stat);
- 		stat &= ~PCI_ERROR_INTERRUPTS;
- 		/* these are fatal errors, but "maybe" they won't
- 		 * happen again ...
-@@ -3481,7 +3478,7 @@ static void handle_stat1_irqs(struct net2280 *dev, u32 stat)
- 	}
- 
- 	if (stat)
--		DEBUG(dev, "unhandled irqstat1 %08x\n", stat);
-+		ep_dbg(dev, "unhandled irqstat1 %08x\n", stat);
- }
- 
- static irqreturn_t net2280_irq(int irq, void *_dev)
-@@ -3557,7 +3554,7 @@ static void net2280_remove(struct pci_dev *pdev)
- 		pci_disable_device(pdev);
- 	device_remove_file(&pdev->dev, &dev_attr_registers);
- 
--	INFO(dev, "unbind\n");
-+	ep_info(dev, "unbind\n");
- }
- 
- /* wrap this driver around the specified device, but
-@@ -3605,7 +3602,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	resource = pci_resource_start(pdev, 0);
- 	len = pci_resource_len(pdev, 0);
- 	if (!request_mem_region(resource, len, driver_name)) {
--		DEBUG(dev, "controller already in use\n");
-+		ep_dbg(dev, "controller already in use\n");
- 		retval = -EBUSY;
- 		goto done;
- 	}
-@@ -3617,7 +3614,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 
- 	base = ioremap_nocache(resource, len);
- 	if (base == NULL) {
--		DEBUG(dev, "can't map memory\n");
-+		ep_dbg(dev, "can't map memory\n");
- 		retval = -EFAULT;
- 		goto done;
- 	}
-@@ -3666,18 +3663,18 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 
- 	/* irq setup after old hardware is cleaned up */
- 	if (!pdev->irq) {
--		ERROR(dev, "No IRQ.  Check PCI setup!\n");
-+		ep_err(dev, "No IRQ.  Check PCI setup!\n");
- 		retval = -ENODEV;
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX) {
++	if (dev->quirks & PLX_SUPERSPEED) {
+ 		u32 fsmvalue;
+ 		u32 usbstat;
+ 		dev->usb_ext = (struct usb338x_usb_ext_regs __iomem *)
+@@ -3668,7 +3667,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
  		goto done;
  	}
  
- 	if (use_msi && dev->pdev->vendor == PCI_VENDOR_ID_PLX)
+-	if (use_msi && dev->pdev->vendor == PCI_VENDOR_ID_PLX)
++	if (use_msi && (dev->quirks & PLX_SUPERSPEED))
  		if (pci_enable_msi(pdev))
--			ERROR(dev, "Failed to enable MSI mode\n");
-+			ep_err(dev, "Failed to enable MSI mode\n");
+ 			ep_err(dev, "Failed to enable MSI mode\n");
  
- 	if (request_irq(pdev->irq, net2280_irq, IRQF_SHARED,
- 							driver_name, dev)) {
--		ERROR(dev, "request interrupt %d failed\n", pdev->irq);
-+		ep_err(dev, "request interrupt %d failed\n", pdev->irq);
- 		retval = -EBUSY;
- 		goto done;
+@@ -3707,7 +3706,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
  	}
-@@ -3690,7 +3687,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		0 /* no alignment requirements */,
- 		0 /* or page-crossing issues */);
- 	if (!dev->requests) {
--		DEBUG(dev, "can't get request pool\n");
-+		ep_dbg(dev, "can't get request pool\n");
- 		retval = -ENOMEM;
- 		goto done;
- 	}
-@@ -3700,7 +3697,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		td = pci_pool_alloc(dev->requests, GFP_KERNEL,
- 				&dev->ep[i].td_dma);
- 		if (!td) {
--			DEBUG(dev, "can't get dummy %d\n", i);
-+			ep_dbg(dev, "can't get dummy %d\n", i);
- 			retval = -ENOMEM;
- 			goto done;
- 		}
-@@ -3727,10 +3724,10 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	dev->chiprev = get_idx_reg(dev->regs, REG_CHIPREV) & 0xffff;
  
- 	/* done */
--	INFO(dev, "%s\n", driver_desc);
--	INFO(dev, "irq %d, pci mem %p, chip rev %04x\n",
-+	ep_info(dev, "%s\n", driver_desc);
-+	ep_info(dev, "irq %d, pci mem %p, chip rev %04x\n",
- 			pdev->irq, base, dev->chiprev);
--	INFO(dev, "version: " DRIVER_VERSION "; dma %s %s\n",
-+	ep_info(dev, "version: " DRIVER_VERSION "; dma %s %s\n",
- 		use_dma	? (use_dma_chaining ? "chaining" : "enabled")
- 			: "disabled",
- 		dev->enhanced_mode ? "enhanced mode" : "legacy mode");
+ 	/* enable lower-overhead pci memory bursts during DMA */
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		writel(BIT(DMA_MEMORY_WRITE_AND_INVALIDATE_ENABLE) |
+ 			/*
+ 			 * 256 write retries may not be enough...
+@@ -3763,7 +3762,7 @@ static void net2280_shutdown(struct pci_dev *pdev)
+ 	writel(0, &dev->usb->usbctl);
+ 
+ 	/* Disable full-speed test mode */
+-	if (dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
++	if (dev->quirks & PLX_LEGACY)
+ 		writel(0, &dev->usb->xcvrdiag);
+ }
+ 
+@@ -3777,6 +3776,7 @@ static const struct pci_device_id pci_ids[] = { {
+ 	.device =	0x2280,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
++	.driver_data =	PLX_LEGACY | PLX_2280,
+ 	}, {
+ 	.class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+ 	.class_mask =	~0,
+@@ -3784,6 +3784,7 @@ static const struct pci_device_id pci_ids[] = { {
+ 	.device =	0x2282,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
++	.driver_data =	PLX_LEGACY,
+ 	},
+ 	{
+ 	.class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+@@ -3792,6 +3793,7 @@ static const struct pci_device_id pci_ids[] = { {
+ 	.device =	0x3380,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
++	.driver_data =	PLX_SUPERSPEED,
+ 	 },
+ 	{
+ 	.class =	((PCI_CLASS_SERIAL_USB << 8) | 0xfe),
+@@ -3800,6 +3802,7 @@ static const struct pci_device_id pci_ids[] = { {
+ 	.device =	0x3382,
+ 	.subvendor =	PCI_ANY_ID,
+ 	.subdevice =	PCI_ANY_ID,
++	.driver_data =	PLX_SUPERSPEED,
+ 	 },
+ { /* end: all zeroes */ }
+ };
 diff --git a/drivers/usb/gadget/net2280.h b/drivers/usb/gadget/net2280.h
-index 77c39d9..dc9ca1d 100644
+index dc9ca1d..03f1524 100644
 --- a/drivers/usb/gadget/net2280.h
 +++ b/drivers/usb/gadget/net2280.h
-@@ -314,32 +314,20 @@ static inline void net2280_led_shutdown(struct net2280 *dev)
+@@ -44,6 +44,10 @@ set_idx_reg(struct net2280_regs __iomem *regs, u32 index, u32 value)
  
- /*-------------------------------------------------------------------------*/
+ #define PCI_VENDOR_ID_PLX_LEGACY 0x17cc
  
--#define xprintk(dev, level, fmt, args...) \
--	printk(level "%s %s: " fmt, driver_name, \
--			pci_name(dev->pdev), ## args)
-+#define ep_dbg(ndev, fmt, args...) \
-+	dev_dbg((&((ndev)->pdev->dev)), fmt, ##args)
- 
--#ifdef DEBUG
--#undef DEBUG
--#define DEBUG(dev, fmt, args...) \
--	xprintk(dev, KERN_DEBUG, fmt, ## args)
--#else
--#define DEBUG(dev, fmt, args...) \
--	do { } while (0)
--#endif /* DEBUG*/
-+#define ep_vdbg(ndev, fmt, args...) \
-+	dev_vdbg((&((ndev)->pdev->dev)), fmt, ##args)
- 
--#ifdef VERBOSE
--#define VDEBUG DEBUG
--#else
--#define VDEBUG(dev, fmt, args...) \
--	do { } while (0)
--#endif	/* VERBOSE */
-+#define ep_info(ndev, fmt, args...) \
-+	dev_info((&((ndev)->pdev->dev)), fmt, ##args)
++#define PLX_LEGACY		BIT(0)
++#define PLX_2280		BIT(1)
++#define PLX_SUPERSPEED		BIT(2)
 +
-+#define ep_warn(ndev, fmt, args...) \
-+	dev_warn((&((ndev)->pdev->dev)), fmt, ##args)
+ #define REG_DIAG		0x0
+ #define     RETRY_COUNTER                                       16
+ #define     FORCE_PCI_SERR                                      11
+@@ -166,6 +170,8 @@ struct net2280 {
+ 	u16				chiprev;
+ 	int enhanced_mode;
+ 	int n_ep;
++	kernel_ulong_t			quirks;
++
  
--#define ERROR(dev, fmt, args...) \
--	xprintk(dev, KERN_ERR, fmt, ## args)
--#define WARNING(dev, fmt, args...) \
--	xprintk(dev, KERN_WARNING, fmt, ## args)
--#define INFO(dev, fmt, args...) \
--	xprintk(dev, KERN_INFO, fmt, ## args)
-+#define ep_err(ndev, fmt, args...) \
-+	dev_err((&((ndev)->pdev->dev)), fmt, ##args)
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -368,7 +356,7 @@ static inline void assert_out_naking(struct net2280_ep *ep, const char *where)
- 	u32	tmp = readl(&ep->regs->ep_stat);
- 
- 	if ((tmp & BIT(NAK_OUT_PACKETS)) == 0) {
--		DEBUG(ep->dev, "%s %s %08x !NAK\n",
-+		ep_dbg(ep->dev, "%s %s %08x !NAK\n",
- 				ep->ep.name, where, tmp);
- 		writel(BIT(SET_NAK_OUT_PACKETS),
- 			&ep->regs->ep_rsp);
+ 	/* pci state used to access those endpoints */
+ 	struct pci_dev			*pdev;
 -- 
 2.0.0.rc2
 
