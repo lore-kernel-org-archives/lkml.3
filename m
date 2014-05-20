@@ -1,274 +1,621 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaETRmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:42:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54632 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937AbaETRmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:42:43 -0400
-Message-ID: <537B93A6.9030205@ti.com>
-Date: Tue, 20 May 2014 23:10:54 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754677AbaETRnB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:43:01 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37333 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaETRm6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:42:58 -0400
+Date: Tue, 20 May 2014 10:42:54 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: linux-mtd@lists.infradead.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Message-ID: <20140520174254.GQ28907@ld-irv-0074>
+References: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
-        <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
-        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <broonie@linaro.org>, <swarren@nvidia.com>, <lee.jones@linaro.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
-References: <1400577099-8743-1-git-send-email-j-keerthy@ti.com> <1400577099-8743-4-git-send-email-j-keerthy@ti.com> <537B6376.2050000@ti.com>
-In-Reply-To: <537B6376.2050000@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth,
+Hi Alexey,
 
-On Tuesday 20 May 2014 07:45 PM, Nishanth Menon wrote:
-> On 05/20/2014 04:11 AM, Keerthy wrote:
-> [...]
->> +config MFD_TPS65917
->> +	bool "TI TPS65917 series chips"
->> +	select MFD_CORE
->> +	select REGMAP_I2C
->> +	select REGMAP_IRQ
->> +	depends on I2C=y
-> ^^ why =y?
-Palmas derived. I will knock off the 'y'
+On Fri, Apr 04, 2014 at 11:38:09AM +0400, Alexey Brodkin wrote:
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> 
+> Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> 
+> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> cc: Brian Norris <computersforpeace@gmail.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Francois Bedard <fbedard@synopsys.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
+> ---
+> 
+> In this re-spin I addressed Ezequiel comments.
+> 
+> Changes compared to v1:
+>  * Minor code clean-up
+>  * Fixed typos
+>  * axs_flag_is_set() replaced with axs_flag_wait_and_reset()
+>  * axs_flag_wait_and_reset() has built-in check for timeout instead of endless
+>  while() loop initially used
+> 
+>  Documentation/devicetree/bindings/mtd/axs-nand.txt |  17 +
+>  drivers/mtd/nand/Kconfig                           |   6 +
+>  drivers/mtd/nand/Makefile                          |   1 +
+>  drivers/mtd/nand/axs_nand.c                        | 411 +++++++++++++++++++++
+>  4 files changed, 435 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mtd/axs-nand.txt
+>  create mode 100644 drivers/mtd/nand/axs_nand.c
+> 
+> diff --git a/Documentation/devicetree/bindings/mtd/axs-nand.txt b/Documentation/devicetree/bindings/mtd/axs-nand.txt
+> new file mode 100644
+> index 0000000..c522b7f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mtd/axs-nand.txt
+> @@ -0,0 +1,17 @@
+> +* Synopsys AXS NAND controller
+> +
+> +Required properties:
+> +  - compatible: must be "snps,axs-nand"
+> +  - reg: physical base address and size of the registers map
+> +
+> +The device tree may optionally contain sub-nodes describing partitions of the
+> +address space. See partition.txt for more detail.
+> +
+> +Examples:
+> +
+> +flash@0x16000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+> +	compatible = "snps,axs-nand";
+> +	reg = < 0x16000 0x200 >;
+> +};
+> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+> index 93ae6a6..3661822 100644
+> --- a/drivers/mtd/nand/Kconfig
+> +++ b/drivers/mtd/nand/Kconfig
+> @@ -510,4 +510,10 @@ config MTD_NAND_XWAY
+>  	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
+>  	  to the External Bus Unit (EBU).
+>  
+> +config MTD_NAND_AXS
+> +	tristate "Support for NAND on Synopsys AXS development board"
+> +	help
+> +	  Enables support for NAND Flash chips on Synopsys AXS development
+> +	  boards.
+> +
+>  endif # MTD_NAND
+> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+> index 542b568..635a918 100644
+> --- a/drivers/mtd/nand/Makefile
+> +++ b/drivers/mtd/nand/Makefile
+> @@ -49,5 +49,6 @@ obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
+>  obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
+>  obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
+>  obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)	+= bcm47xxnflash/
+> +obj-$(CONFIG_MTD_NAND_AXS)		+= axs_nand.o
+>  
+>  nand-objs := nand_base.o nand_bbt.o
+> diff --git a/drivers/mtd/nand/axs_nand.c b/drivers/mtd/nand/axs_nand.c
+> new file mode 100644
+> index 0000000..9ee21b6
+> --- /dev/null
+> +++ b/drivers/mtd/nand/axs_nand.c
+> @@ -0,0 +1,411 @@
+> +/*
+> + * Copyright (C) 2014 Synopsys, Inc. (www.synopsys.com)
+> + *
+> + * Driver for NAND controller on Synopsys AXS development board.
+> + *
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License v2. See the file COPYING in the main directory of this archive for
+> + * more details.
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/mtd/mtd.h>
+> +#include <linux/mtd/nand.h>
+> +#include <linux/mtd/partitions.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/io.h>
+> +
+> +/*
+> + * There's an issue with DMA'd data if data buffer is cached.
+> + * So to make NAND storage available for now we'll map data buffer in
+> + * uncached memory.
 
->> +	help
->> +	  If you say yes here you get support for the TPS65917
->> +	  PMIC chips from Texas Instruments. The device provides
->> +	  5 confgurable SPMSs and 5 LDOs, thermal protection module,
->> +	  GPADC.
->> +
->>   config MFD_TPS80031
->>   	bool "TI TPS80031/TPS80032 Power Management chips"
->>   	depends on I2C=y
->> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
->> index 2851275..248a60b 100644
->> --- a/drivers/mfd/Makefile
->> +++ b/drivers/mfd/Makefile
->> @@ -69,6 +69,7 @@ tps65912-objs                   := tps65912-core.o tps65912-irq.o
->>   obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
->>   obj-$(CONFIG_MFD_TPS65912_I2C)	+= tps65912-i2c.o
->>   obj-$(CONFIG_MFD_TPS65912_SPI)  += tps65912-spi.o
->> +obj-$(CONFIG_MFD_TPS65917)	+= tps65917.o
->>   obj-$(CONFIG_MFD_TPS80031)	+= tps80031.o
->>   obj-$(CONFIG_MENELAUS)		+= menelaus.o
->>   
->> diff --git a/drivers/mfd/tps65917.c b/drivers/mfd/tps65917.c
->> new file mode 100644
->> index 0000000..dbd67c5
->> --- /dev/null
->> +++ b/drivers/mfd/tps65917.c
->> @@ -0,0 +1,573 @@
->> +/*
->> + * TI TPS65917 Integrated power management chipsets
->> + *
->> + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether expressed or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License version 2 for more details.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/moduleparam.h>
->> +#include <linux/init.h>
->> +#include <linux/slab.h>
->> +#include <linux/i2c.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/irq.h>
->> +#include <linux/regmap.h>
->> +#include <linux/err.h>
->> +#include <linux/mfd/core.h>
->> +#include <linux/mfd/tps65917.h>
->> +#include <linux/of_device.h>
-> <snip>
->> +
->> +static int tps65917_voltaile_regs[] = {
->> +	TPS65917_SMPS1_CTRL,
->> +	TPS65917_SMPS2_CTRL,
->> +	TPS65917_SMPS3_CTRL,
->> +	TPS65917_SMPS4_CTRL,
->> +	TPS65917_SMPS5_CTRL,
->> +	TPS65917_LDO1_CTRL,
->> +	TPS65917_LDO2_CTRL,
->> +	TPS65917_LDO3_CTRL,
->> +	TPS65917_LDO4_CTRL,
->> +	TPS65917_LDO5_CTRL,
->> +};
->> +
->> +static bool is_volatile_reg(struct device *dev, unsigned int reg)
->> +{
->> +	int i;
->> +
->> +	/*
->> +	 * Caching all the required regulator registers.
->> +	 */
->> +
->> +	for (i = 0; i < 11; i++)
->> +		if (reg == tps65917_voltaile_regs[i])
->> +			return true;
->> +
->> +	return false;
->> +}
->> +
->> +static const struct regmap_config tps65917_regmap_config[TPS65917_NUM_CLIENTS] = {
->> +	{
->> +		.reg_bits = 8,
->> +		.val_bits = 8,
->> +		.volatile_reg = is_volatile_reg,
->> +		.cache_type = REGCACHE_NONE,
-> Assume you wanted cached here, since you are marking certain registers
-> as volatile?
-> [...]
+What sort of issue? A hardware bug? I'd prefer to have a single
+implementation here if possible.
 
-Yes. I will correct this.
+> + *
+> + * As soon as issue with cached buffer is resolved following define to be
+> + * removed as well as sources it enables.
+> + */
+> +#define DATA_BUFFER_UNCACHED
+> +
+> +#define BUS_WIDTH	8		/* AXI data bus width in bytes	*/
+> +
+> +/* DMA buffer descriptor masks */
+> +#define BD_STAT_OWN			(1 << 31)
+> +#define BD_STAT_BD_FIRST		(1 << 3)
+> +#define BD_STAT_BD_LAST			(1 << 2)
+> +#define BD_SIZES_BUFFER1_MASK		0xfff
+> +
+> +#define BD_STAT_BD_COMPLETE	(BD_STAT_BD_FIRST | BD_STAT_BD_LAST)
+> +
+> +/* Controller command types */
+> +#define B_CT_ADDRESS	(0x0 << 16)	/* Address operation		*/
+> +#define B_CT_COMMAND	(0x1 << 16)	/* Command operation		*/
+> +#define B_CT_WRITE	(0x2 << 16)	/* Write operation		*/
+> +#define B_CT_READ	(0x3 << 16)	/* Read operation		*/
+> +
+> +/* Controller command options */
+> +#define B_WFR		(1 << 19)	/* 1b - Wait for ready		*/
+> +#define B_LC		(1 << 18)	/* 1b - Last cycle		*/
+> +#define B_IWC		(1 << 13)	/* 1b - Interrupt when complete	*/
+> +
+> +enum {
+> +	NAND_ISR_DATAREQUIRED = 0,
+> +	NAND_ISR_TXUNDERFLOW,
+> +	NAND_ISR_TXOVERFLOW,
+> +	NAND_ISR_DATAAVAILABLE,
+> +	NAND_ISR_RXUNDERFLOW,
+> +	NAND_ISR_RXOVERFLOW,
+> +	NAND_ISR_TXDMACOMPLETE,
+> +	NAND_ISR_RXDMACOMPLETE,
+> +	NAND_ISR_DESCRIPTORUNAVAILABLE,
+> +	NAND_ISR_CMDDONE,
+> +	NAND_ISR_CMDAVAILABLE,
+> +	NAND_ISR_CMDERROR,
+> +	NAND_ISR_DATATRANSFEROVER,
+> +	NAND_ISR_NONE
+> +};
+> +
+> +enum {
+> +	AC_FIFO = 0,		/* Address and command fifo */
+> +	IDMAC_BDADDR = 0x18,	/* IDMAC descriptor list base address */
+> +	INT_STATUS = 0x118,	/* Interrupt status register */
+> +	INT_CLR_STATUS = 0x120	/* Interrupt clear status register */
+> +};
+> +
+> +#define AXS_BUF_SIZE	(PAGE_ALIGN(NAND_MAX_PAGESIZE + NAND_MAX_OOBSIZE))
 
->> +};
->> +
->> +int tps65917_ext_control_req_config(struct tps65917 *tps65917,
->> +				    enum tps65917_external_requestor_id id,
->> +				    int ext_ctrl, bool enable)
->> +{
-> kernel doc style documentation
-> [...]
->
->> +static struct tps65917 *tps65917_dev;
->> +
->> +static const struct of_device_id of_tps65917_match_tbl[] = {
->> +	{
->> +		.compatible = "ti,tps65917",
->> +	},
->> +	{ },
->> +};
->> +MODULE_DEVICE_TABLE(of, of_tps65917_match_tbl);
->> +
->> +static int tps65917_i2c_probe(struct i2c_client *i2c,
->> +			      const struct i2c_device_id *id)
->> +{
-> [...]
->> +	/*
->> +	 * If we are probing with DT do this the DT way and return here
->> +	 * otherwise continue and add devices using mfd helpers.
->> +	 */
->> +	if (node) {
->> +		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
->> +		if (ret < 0)
->> +			goto err_irq;
->> +		else if (pdata->pm_off && !pm_power_off)
->> +			tps65917_dev = tps65917;
-> and where is the actual power off function?
+NAND_MAX_PAGESIZE and NAND_MAX_OOBSIZE have been removed. Please rebase
+on l2-mtd.git for testing.
 
-I will add that.
+> +
+> +struct asx_nand_bd {
+> +	__le32 status;		/* DES0 */
+> +	__le32 sizes;		/* DES1 */
+> +	dma_addr_t buffer_ptr0;	/* DES2 */
+> +	dma_addr_t buffer_ptr1;	/* DES3 */
+> +};
+> +
+> +struct axs_nand_host {
+> +	struct nand_chip	nand_chip;
+> +	struct mtd_info		mtd;
+> +	void __iomem		*io_base;
+> +	struct device		*dev;
+> +	struct asx_nand_bd	*bd;	/* Buffer descriptor */
+> +	dma_addr_t		bd_dma;	/* DMA handle for buffer descriptor */
+> +	uint8_t			*db;	/* Data buffer */
+> +	dma_addr_t		db_dma;	/* DMA handle for data buffer */
+> +};
+> +
+> +/**
+> + * reg_set - Sets register with provided value.
+> + * @host:	Pointer to private data structure.
+> + * @reg:	Register offset from base address.
+> + * @value:	Value to set in register.
+> + */
+> +static inline void reg_set(struct axs_nand_host *host, int reg, int value)
+> +{
+> +	iowrite32(value, host->io_base + reg);
+> +}
+> +
+> +/**
+> + * reg_get - Gets value of specified register.
+> + * @host:	Pointer to private data structure.
+> + * @reg:	Register offset from base address.
+> + *
+> + * returns:	Value of requested register.
+> + */
+> +static inline unsigned int reg_get(struct axs_nand_host *host, int reg)
+> +{
+> +	return ioread32(host->io_base + reg);
+> +}
+> +
+> +/* Maximum number of milliseconds we wait for flag to appear */
+> +#define AXS_FLAG_WAIT_DELAY	1000
+> +
+> +/**
+> + * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
+> + *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
+> + * @host:	Pointer to private data structure.
+> + * @flag:	Bit/flag offset in INT_STATUS register
+> + */
+> +static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
+> +{
+> +	unsigned int i;
+> +
+> +	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
+> +		unsigned int status = reg_get(host, INT_STATUS);
+> +
+> +		if (status & (1 << flag)) {
+> +			reg_set(host, INT_CLR_STATUS, 1 << flag);
+> +			return;
+> +		}
+> +
+> +		udelay(10);
+> +	}
+> +
+> +	/*
+> +	 * Since we cannot report this problem any further than
+> +	 * axs_nand_{write|read}_buf() letting user know there's a problem.
+> +	 */
+> +	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
+> +		AXS_FLAG_WAIT_DELAY, flag);
+> +}
 
->
->> +	}
->> +
->> +	return ret;
->> +
->> +err_irq:
->> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
->> +err_i2c:
->> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
->> +		if (tps65917->i2c_clients[i])
->> +			i2c_unregister_device(tps65917->i2c_clients[i]);
->> +	}
->> +	return ret;
->> +}
->> +
->> +static int tps65917_i2c_remove(struct i2c_client *i2c)
->> +{
->> +	struct tps65917 *tps65917 = i2c_get_clientdata(i2c);
->> +	int i;
->> +
->> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
->> +
->> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
->> +		if (tps65917->i2c_clients[i])
->> +			i2c_unregister_device(tps65917->i2c_clients[i]);
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static const struct i2c_device_id tps65917_i2c_id[] = {
->> +	{ "tps65917", },
->> +};
->> +MODULE_DEVICE_TABLE(i2c, tps65917_i2c_id);
->> +
->> +static struct i2c_driver tps65917_i2c_driver = {
->> +	.driver = {
->> +		   .name = "tps65917",
->> +		   .of_match_table = of_tps65917_match_tbl,
->> +		   .owner = THIS_MODULE,
->> +	},
->> +	.probe = tps65917_i2c_probe,
->> +	.remove = tps65917_i2c_remove,
->> +	.id_table = tps65917_i2c_id,
->> +};
->> +
->> +static int __init tps65917_i2c_init(void)
->> +{
->> +	return i2c_add_driver(&tps65917_i2c_driver);
->> +}
->> +/* init early so consumer devices can complete system boot */
->> +subsys_initcall(tps65917_i2c_init);
-> Should we let them just defer?
->
-> [...]
+I see Ezequiel commented about using this vs. waitfunc. I think your
+usage is OK here.
 
-Guess most drivers in the mfd folder use subsys_initcall
+But do you really need a polling loop here? Does your hardware have any
+kind of interrupt mechanism for this sort of thing? It is not really
+good practice to do I/O this way, as it keeps your CPU busy doing
+pointless work. At a minimum, maybe you can use cond_resched()?
 
->
->> diff --git a/include/linux/mfd/tps65917.h b/include/linux/mfd/tps65917.h
->> new file mode 100644
->> index 0000000..8232e22
->> --- /dev/null
->> +++ b/include/linux/mfd/tps65917.h
->> +
->> +struct tps65917 {
->> +	struct device *dev;
->> +
->> +	struct i2c_client *i2c_clients[TPS65917_NUM_CLIENTS];
->> +	struct regmap *regmap[TPS65917_NUM_CLIENTS];
->> +
->> +	/* Stored chip id */
->> +	int id;
->> +
->> +	struct tps65917_pmic *pmic;
->> +
->> +	/* IRQ Data */
->> +	int irq;
->> +	u32 irq_mask;
->> +	/* mutext for irq */
->> +	struct mutex irq_lock;
->> +	struct regmap_irq_chip_data *irq_data;
->> +};
-> For all structures, could you use kerneldoc style documentation?
-> See: Documentation/kernel-doc-nano-HOWTO.txt +273
->
->
->> +static inline int tps65917_read(struct tps65917 *tps65917, unsigned int base,
->> +				unsigned int reg, unsigned int *val)
-> Again for all functions expected to be called by other driver(such as
-> regulator) to mfd, kernel-doc style documentation?
->
-> [...]
->
-Ok.
+> +
+> +/**
+> + * axs_nand_write_buf - write buffer to chip
+> + * @mtd:	MTD device structure
+> + * @buf:	Data buffer
+> + * @len:	Number of bytes to write
+> + */
+> +static void axs_nand_write_buf(struct mtd_info *mtd,
+> +		const uint8_t *buf, int len)
+> +{
+> +	struct nand_chip *this = mtd->priv;
+> +	struct axs_nand_host *host = this->priv;
+> +
+> +	memcpy(host->db, buf, len);
+> +#ifndef DATA_BUFFER_UNCACHED
+> +	dma_sync_single_for_device(host->dev, host->db_dma, len, DMA_TO_DEVICE);
+> +#endif
+> +
+> +	/* Setup buffer descriptor */
+> +	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
+> +	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
+> +				      BD_SIZES_BUFFER1_MASK);
+> +	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
+> +	host->bd->buffer_ptr1 = 0;
+> +
+> +	/* Issue "write" command */
+> +	reg_set(host, AC_FIFO, B_CT_WRITE | B_WFR | B_IWC | B_LC | (len - 1));
+> +
+> +	/* Wait for NAND command and DMA to complete */
+> +	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
+> +	axs_flag_wait_and_reset(host, NAND_ISR_TXDMACOMPLETE);
+> +}
+> +
+> +/**
+> + * axs_nand_read_buf -  read chip data into buffer
+> + * @mtd:	MTD device structure
+> + * @buf:	Buffer to store data
+> + * @len:	Number of bytes to read
+> + */
+> +static void axs_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+> +{
+> +	struct nand_chip *this = mtd->priv;
+> +	struct axs_nand_host *host = this->priv;
+> +
+> +	/* Setup buffer descriptor */
+> +	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
+> +	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
+> +				      BD_SIZES_BUFFER1_MASK);
+> +	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
+> +	host->bd->buffer_ptr1 = 0;
+> +
+> +	/* Issue "read" command */
+> +	reg_set(host, AC_FIFO, B_CT_READ | B_WFR | B_IWC | B_LC | (len - 1));
+> +
+> +	/* Wait for NAND command and DMA to complete */
+> +	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
+> +	axs_flag_wait_and_reset(host, NAND_ISR_RXDMACOMPLETE);
+> +
+> +#ifndef DATA_BUFFER_UNCACHED
+> +	dma_sync_single_for_cpu(host->dev, host->db_dma, len, DMA_FROM_DEVICE);
+> +#endif
+> +	if (buf != host->db)
+> +		memcpy(buf, host->db, len);
+> +}
+> +
+> +/**
+> + * axs_nand_read_byte - read one byte from the chip
+> + * @mtd:	MTD device structure
+> + *
+> + * returns:	read data byte
+> + */
+> +static uint8_t axs_nand_read_byte(struct mtd_info *mtd)
+> +{
+> +	struct nand_chip *this = mtd->priv;
+> +	struct axs_nand_host *host = this->priv;
+> +
+> +	axs_nand_read_buf(mtd, host->db, sizeof(uint8_t));
+> +	return (uint8_t)host->db[0];
+> +}
+> +
+> +/**
+> + * axs_nand_read_word - read one word from the chip
+> + * @mtd:	MTD device structure
+> + *
+> + * returns:	read data word
+> + */
+> +static uint16_t axs_nand_read_word(struct mtd_info *mtd)
+> +{
+> +	struct nand_chip *this = mtd->priv;
+> +	struct axs_nand_host *host = this->priv;
+> +
+> +	axs_nand_read_buf(mtd, host->db, sizeof(uint16_t));
+> +	return (uint16_t)host->db[0];
 
-Thanks,
-Keerthy
+This doesn't look right. You don't get a "word" access simply by casting
+your uint8_t into uint16_t. It's possible you're looking for something
+more like this:
+
+	return ((uint16_t *)host->db)[0];
+
+But then, you'd need to worry about endianness, and how your controller
+handles x16 buswidth devices. Have you tested anything with word access,
+or is this just an untested implementation?
+
+> +}
+> +
+> +/**
+> + * axs_nand_cmd_ctrl - hardware specific access to control-lines
+> + * @mtd:	MTD device structure
+> + * @cmd:	NAND command
+> + * @ctrl:	NAND control options
+> + */
+> +static void axs_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,
+> +		unsigned int ctrl)
+> +{
+> +	struct nand_chip *nand_chip = mtd->priv;
+> +	struct axs_nand_host *host = nand_chip->priv;
+> +
+> +	if (cmd == NAND_CMD_NONE)
+> +		return;
+> +
+> +	cmd = cmd & 0xff;
+> +
+> +	switch (ctrl & (NAND_ALE | NAND_CLE)) {
+> +	/* Address */
+> +	case NAND_ALE:
+> +		cmd |= B_CT_ADDRESS;
+> +		break;
+> +
+> +	/* Command */
+> +	case NAND_CLE:
+> +		cmd |= B_CT_COMMAND | B_WFR;
+> +
+> +		break;
+> +
+> +	default:
+> +		dev_err(host->dev, "Unknown ctrl %#x\n", ctrl);
+> +		return;
+> +	}
+> +
+> +	reg_set(host, AC_FIFO, cmd | B_LC);
+> +	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
+> +}
+> +
+> +static int axs_nand_probe(struct platform_device *pdev)
+> +{
+> +	struct mtd_part_parser_data ppdata;
+> +	struct nand_chip *nand_chip;
+> +	struct axs_nand_host *host;
+> +	struct resource res_regs;
+> +	struct mtd_info *mtd;
+> +	int err;
+> +
+> +	if (!pdev->dev.of_node)
+> +		return -ENODEV;
+
+If you follow my suggestions below, then this driver won't technically
+be dependent on device tree (you could potentially instantiate a
+platform_device through some other means), so maybe the above check will
+no longer be useful? I'm not saying you would *want* to be writing board
+files, but at least I don't think this driver really needs the check, if
+it's only handling generic device driver tasks.
+
+> +
+> +	/* Get registers base address from device tree */
+> +	err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
+
+Can you just use platform_get_resource()? I believe the OF core
+automagically converts register resources from device tree into platform
+resources for you.
+
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Failed to retrieve registers base from device tree\n");
+
+You won't need this error handling if you keep it close to
+devm_ioremap_resource(), which does error checks on the resource for
+you. See the comments above devm_ioremap_resource().
+
+> +		return -ENODEV;
+> +	}
+> +
+> +	/* Allocate memory for the device structure (and zero it) */
+> +	host = kzalloc(sizeof(struct axs_nand_host), GFP_KERNEL);
+
+Try devm_kzalloc()? That will save you some error handling. Also, you
+might try the 'sizeof' style from Chapter 14 of
+Documentation/CodingStyle:
+
+	host = dev_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
+
+The same 'sizeof' pattern can be used elsewhere.
+
+> +	if (!host)
+> +		return -ENOMEM;
+> +
+> +	host->io_base = devm_ioremap_resource(&pdev->dev, &res_regs);
+> +	if (IS_ERR(host->io_base)) {
+> +		err = PTR_ERR(host->io_base);
+> +		goto out;
+> +	}
+> +	dev_dbg(&pdev->dev, "Registers base address is 0x%p\n", host->io_base);
+
+I don't think you need the '0x' prefix to %p, as it's done automatically
+for you (did you test the print?). You could also look at using the
+custom %pR or %pr format for struct resource. See
+Documentation/printk-formats.txt.
+
+> +
+> +	host->bd = dmam_alloc_coherent(&pdev->dev, sizeof(struct asx_nand_bd),
+> +				       &host->bd_dma, GFP_KERNEL);
+
+Ditto about sizeof.
+
+> +	if (!host->bd) {
+> +		dev_err(&pdev->dev, "Failed to allocate buffer descriptor\n");
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	memset(host->bd, 0, sizeof(struct asx_nand_bd));
+
+Ditto about sizeof.
+
+> +
+> +#ifdef DATA_BUFFER_UNCACHED
+> +	host->db = dmam_alloc_coherent(&pdev->dev, AXS_BUF_SIZE,
+> +#else
+> +	host->db = dmam_alloc_noncoherent(&pdev->dev, AXS_BUF_SIZE,
+> +#endif
+> +				       &host->db_dma, GFP_KERNEL);
+> +	if (!host->db) {
+> +		dev_err(&pdev->dev, "Failed to allocate data buffer\n");
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +	dev_dbg(&pdev->dev, "Data buffer mapped @ %p, DMA @ %x\n", host->db,
+> +		host->db_dma);
+
+For the 'dma_addr_t', you can try %pad. Again, see
+Documentation/printk-formats.txt
+
+> +
+> +	mtd = &host->mtd;
+> +	nand_chip = &host->nand_chip;
+> +	host->dev = &pdev->dev;
+> +
+> +	nand_chip->priv = host;
+> +	mtd->priv = nand_chip;
+> +	mtd->name = "axs_nand";
+
+Are you sure there will only be a single 'axs_nand' on a single system?
+Or do you want to consider a unique naming system? Some drivers use:
+
+	mtd->name = dev_name(&pdev->dev);
+
+But this could be less friendly if you have long device names based on
+Device Tree addresses.
+
+> +	mtd->owner = THIS_MODULE;
+> +	mtd->dev.parent = &pdev->dev;
+> +	ppdata.of_node = pdev->dev.of_node;
+> +
+> +	nand_chip->cmd_ctrl = axs_nand_cmd_ctrl;
+> +	nand_chip->read_byte = axs_nand_read_byte;
+> +	nand_chip->read_word = axs_nand_read_word;
+> +	nand_chip->write_buf = axs_nand_write_buf;
+> +	nand_chip->read_buf = axs_nand_read_buf;
+> +	nand_chip->ecc.mode = NAND_ECC_SOFT;
+> +
+> +	dev_set_drvdata(&pdev->dev, host);
+> +
+> +	reg_set(host, IDMAC_BDADDR, host->bd_dma);
+> +
+> +	err = nand_scan(mtd, 1);
+> +	if (err)
+> +		goto out1;
+> +
+> +	err = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
+> +	if (!err)
+> +		return err;
+> +
+> +	nand_release(mtd);
+> +
+> +out1:
+> +	dev_set_drvdata(&pdev->dev, NULL);
+
+^^ I believe this step is unnecessary now, as it's done by the driver
+core.
+
+> +out:
+> +	kfree(host);
+> +	return err;
+> +}
+> +
+> +static int axs_nand_remove(struct platform_device *ofdev)
+> +{
+> +	struct axs_nand_host *host = dev_get_drvdata(&ofdev->dev);
+> +	struct mtd_info *mtd = &host->mtd;
+> +
+> +	nand_release(mtd);
+> +	dev_set_drvdata(&ofdev->dev, NULL);
+
+^^ Same here
+
+> +	kfree(host);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id axs_nand_dt_ids[] = {
+> +	{ .compatible = "snps,axs-nand", },
+> +	{ /* Sentinel */ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, axs_nand_match);
+> +
+> +static struct platform_driver axs_nand_driver = {
+> +	.probe		= axs_nand_probe,
+> +	.remove		= axs_nand_remove,
+> +	.driver = {
+> +		.name = "asx-nand",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = axs_nand_dt_ids,
+> +	},
+> +};
+> +
+> +module_platform_driver(axs_nand_driver);
+> +
+> +MODULE_AUTHOR("Alexey Brodkin <abrodkin@synopsys.com>");
+> +MODULE_DESCRIPTION("NAND driver for Synopsys AXS development board");
+> +MODULE_LICENSE("GPL");
+
+Brian
