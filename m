@@ -1,78 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaETNtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:49:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750841AbaETNtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:49:19 -0400
-Message-ID: <1400593754.15733.4.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, arozansk@redhat.com,
-        serge@hallyn.com, ebiederm@xmission.com, sgrubb@redhat.com
-Date: Tue, 20 May 2014 09:49:14 -0400
-In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
-References: <cover.1400271129.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753395AbaETNtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:49:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19751 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaETNtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:49:23 -0400
+Date: Tue, 20 May 2014 09:48:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, dchinner@redhat.com,
+        glommer@openvz.org, mgorman@suse.de, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+Message-ID: <20140520134849.GC3045@localhost.localdomain>
+References: <201405192337.CJG57825.FMOFLSJQOHtFOV@I-love.SAKURA.ne.jp>
+ <alpine.DEB.2.00.1405200140230.20503@skynet.skynet.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1405200140230.20503@skynet.skynet.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 09:12 -0400, Richard Guy Briggs wrote:
-> The purpose is to track namespaces in use by logged processes from the
-> perspective of init_*_ns.
+On Tue, May 20, 2014 at 01:40:40AM +0100, Dave Airlie wrote:
 > 
-> 1/6 defines a function to generate them and assigns them.
-> 
-> Use a serial number per namespace (unique across one boot of one kernel)
-> instead of the inode number (which is claimed to have had the right to change
-> reserved and is not necessarily unique if there is more than one proc fs).  It
-> could be argued that the inode numbers have now become a defacto interface and
-> can't change now, but I'm proposing this approach to see if this helps address
-> some of the objections to the earlier patchset.
-> 
-> 2/6 adds access functions to get to the serial numbers in a similar way to
-> inode access for namespace proc operations.
-> 
-> 3/6 implements, as suggested by Serge Hallyn, making these serial numbers
-> available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose "snum"
-> instead of "seq" for consistency with inum and there are a number of other uses
-> of "seq" in the namespace code.
-> 
-> 4/6 exposes proc's ns entries structure which lists a number of useful
-> operations per namespace type for other subsystems to use.
-> 
-> 5/6 provides an example of usage for audit_log_task_info() which is used by
-> syscall audits, among others.  audit_log_task() and audit_common_recv_message()
-> would be other potential use cases.
-> 
-> Proposed output format:
-> This differs slightly from Aristeu's patch because of the label conflict with
-> "pid=" due to including it in existing records rather than it being a seperate
-> record.  The serial numbers are printed in hex.
-> 	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+> cc'ing dri-devel.
 
-I'm undecided if I'd rather see this as a separate NS_INFO record type.
-It would mean we could filter them out of the logs...
-
-Do we print out lots of pidns=0 for tasks not in a newly created NS?  Do
-we want to?
-
-> 6/6 tracks the creation and deletion of of namespaces, listing the type of
-> namespace instance, related namespace id if there is one and the newly minted
-> serial number.
+It looks pretty simple and correct . I can test it tomorrow and make sure it works
+right.
 > 
-> Proposed output format:
-> 	type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
-
-I'd love to be able to grep for netns=20 and find both the NS_INIT and
-the SYSCALL/NS_INFO records, instead of having them named different
-things.  So basically I think you want to translate the type= into a
-string for the old_X= and X=...
-
-
+> > >From d0d57745ba23faf605b0f249b57d283fe1a8ee60 Mon Sep 17 00:00:00 2001
+> > From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > Date: Mon, 19 May 2014 17:59:03 +0900
+> > Subject: [PATCH] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+> > 
+> > Commit 7dc19d5a "drivers: convert shrinkers to new count/scan API" added
+> > deadlock warnings that ttm_page_pool_free() and ttm_dma_page_pool_free()
+> > are currently doing GFP_KERNEL allocation.
+> > 
+> > But these functions did not get updated to receive gfp_t argument.
+> > This patch explicitly passes sc->gfp_mask or GFP_KERNEL to these functions,
+> > and removes the deadlock warning.
+> > 
+> > Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > ---
+> >  drivers/gpu/drm/ttm/ttm_page_alloc.c     | 19 ++++++++++---------
+> >  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 19 +++++++++----------
+> >  2 files changed, 19 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> > index 863bef9..ba8f78e 100644
+> > --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> > +++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> > @@ -297,8 +297,10 @@ static void ttm_pool_update_free_locked(struct ttm_page_pool *pool,
+> >   *
+> >   * @pool: to free the pages from
+> >   * @free_all: If set to true will free all pages in pool
+> > + * @gfp: GFP flags.
+> >   **/
+> > -static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
+> > +static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
+> > +			      gfp_t gfp)
+> >  {
+> >  	unsigned long irq_flags;
+> >  	struct page *p;
+> > @@ -309,8 +311,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
+> >  	if (NUM_PAGES_TO_ALLOC < nr_free)
+> >  		npages_to_free = NUM_PAGES_TO_ALLOC;
+> >  
+> > -	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
+> > -			GFP_KERNEL);
+> > +	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
+> >  	if (!pages_to_free) {
+> >  		pr_err("Failed to allocate memory for pool free operation\n");
+> >  		return 0;
+> > @@ -382,9 +383,7 @@ out:
+> >   *
+> >   * XXX: (dchinner) Deadlock warning!
+> >   *
+> > - * ttm_page_pool_free() does memory allocation using GFP_KERNEL.  that means
+> > - * this can deadlock when called a sc->gfp_mask that is not equal to
+> > - * GFP_KERNEL.
+> > + * We need to pass sc->gfp_mask to ttm_page_pool_free().
+> >   *
+> >   * This code is crying out for a shrinker per pool....
+> >   */
+> > @@ -405,7 +404,8 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+> >  		if (shrink_pages == 0)
+> >  			break;
+> >  		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
+> > -		shrink_pages = ttm_page_pool_free(pool, nr_free);
+> > +		shrink_pages = ttm_page_pool_free(pool, nr_free,
+> > +						  sc->gfp_mask);
+> >  		freed += nr_free - shrink_pages;
+> >  	}
+> >  	return freed;
+> > @@ -706,7 +706,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
+> >  	}
+> >  	spin_unlock_irqrestore(&pool->lock, irq_flags);
+> >  	if (npages)
+> > -		ttm_page_pool_free(pool, npages);
+> > +		ttm_page_pool_free(pool, npages, GFP_KERNEL);
+> >  }
+> >  
+> >  /*
+> > @@ -846,7 +846,8 @@ void ttm_page_alloc_fini(void)
+> >  	ttm_pool_mm_shrink_fini(_manager);
+> >  
+> >  	for (i = 0; i < NUM_POOLS; ++i)
+> > -		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES);
+> > +		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
+> > +				   GFP_KERNEL);
+> >  
+> >  	kobject_put(&_manager->kobj);
+> >  	_manager = NULL;
+> > diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > index fb8259f..1b79bf0 100644
+> > --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > @@ -411,8 +411,10 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
+> >   *
+> >   * @pool: to free the pages from
+> >   * @nr_free: If set to true will free all pages in pool
+> > + * @gfp: GFP flags.
+> >   **/
+> > -static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
+> > +static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
+> > +				       gfp_t gfp)
+> >  {
+> >  	unsigned long irq_flags;
+> >  	struct dma_page *dma_p, *tmp;
+> > @@ -430,8 +432,7 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
+> >  			 npages_to_free, nr_free);
+> >  	}
+> >  #endif
+> > -	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
+> > -			GFP_KERNEL);
+> > +	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
+> >  
+> >  	if (!pages_to_free) {
+> >  		pr_err("%s: Failed to allocate memory for pool free operation\n",
+> > @@ -530,7 +531,7 @@ static void ttm_dma_free_pool(struct device *dev, enum pool_type type)
+> >  		if (pool->type != type)
+> >  			continue;
+> >  		/* Takes a spinlock.. */
+> > -		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES);
+> > +		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
+> >  		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
+> >  		/* This code path is called after _all_ references to the
+> >  		 * struct device has been dropped - so nobody should be
+> > @@ -983,7 +984,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+> >  
+> >  	/* shrink pool if necessary (only on !is_cached pools)*/
+> >  	if (npages)
+> > -		ttm_dma_page_pool_free(pool, npages);
+> > +		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
+> >  	ttm->state = tt_unpopulated;
+> >  }
+> >  EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+> > @@ -993,10 +994,7 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+> >   *
+> >   * XXX: (dchinner) Deadlock warning!
+> >   *
+> > - * ttm_dma_page_pool_free() does GFP_KERNEL memory allocation, and so attention
+> > - * needs to be paid to sc->gfp_mask to determine if this can be done or not.
+> > - * GFP_KERNEL memory allocation in a GFP_ATOMIC reclaim context woul dbe really
+> > - * bad.
+> > + * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
+> >   *
+> >   * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
+> >   * shrinkers
+> > @@ -1027,7 +1025,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+> >  		if (++idx < pool_offset)
+> >  			continue;
+> >  		nr_free = shrink_pages;
+> > -		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
+> > +		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
+> > +						      sc->gfp_mask);
+> >  		freed += nr_free - shrink_pages;
+> >  
+> >  		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
