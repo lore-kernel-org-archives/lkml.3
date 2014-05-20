@@ -1,141 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaETMtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:49:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45235 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750841AbaETMtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:49:02 -0400
-Date: Tue, 20 May 2014 13:48:51 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: ckeepax@opensource.wolfsonmicro.com, broonie@linaro.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] mfd: arizona: correct addresses of always-on trigger
-	registers
-Message-ID: <20140520124851.GB13900@opensource.wolfsonmicro.com>
+	id S1752707AbaETMwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:52:16 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:38854 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266AbaETMwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 08:52:15 -0400
+Message-ID: <537B4FF2.4010502@bfs.de>
+Date: Tue, 20 May 2014 14:52:02 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Peter Senna Tschudin <peter.senna@gmail.com>, devel@driverdev.osuosl.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH 1/8] staging: r8712u: Remove useless return variables
+References: <1400582028-24990-1-git-send-email-peter.senna@gmail.com> <537B38FF.4050106@bfs.de> <20140520114113.GG15585@mwanda>
+In-Reply-To: <20140520114113.GG15585@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the addresses and names to match current silicon.
-The WM8997 regmap tables have been adjusted to match the new
-names.
-Missing registers have been added to WM5110 default value table.
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c           |    2 ++
- drivers/mfd/wm5110-tables.c           |   12 ++++++++----
- drivers/mfd/wm8997-tables.c           |   12 ++++++------
- include/linux/mfd/arizona/registers.h |   14 ++++++++------
- 4 files changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 9b9923c..641aed7 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1037,6 +1037,8 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_7:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_8:
- 	case ARIZONA_COMFORT_NOISE_GENERATOR:
- 	case ARIZONA_HAPTICS_CONTROL_1:
- 	case ARIZONA_HAPTICS_CONTROL_2:
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index d10fc44..9b98ee5 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -683,10 +683,12 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x00000062, 0x01FF },    /* R98    - Sample Rate Sequence Select 2 */
- 	{ 0x00000063, 0x01FF },    /* R99    - Sample Rate Sequence Select 3 */
- 	{ 0x00000064, 0x01FF },    /* R100   - Sample Rate Sequence Select 4 */
--	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 1 */
--	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 2 */
--	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 3 */
--	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 4 */
-+	{ 0x00000066, 0x01FF },    /* R102   - Always On Triggers Sequence Select 1 */
-+	{ 0x00000067, 0x01FF },    /* R103   - Always On Triggers Sequence Select 2 */
-+	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 3 */
-+	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 4 */
-+	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 5 */
-+	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 6 */
- 	{ 0x00000070, 0x0000 },    /* R112   - Comfort Noise Generator */
- 	{ 0x00000090, 0x0000 },    /* R144   - Haptics Control 1 */
- 	{ 0x00000091, 0x7FFF },    /* R145   - Haptics Control 2 */
-@@ -1716,6 +1718,8 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
- 	case ARIZONA_COMFORT_NOISE_GENERATOR:
- 	case ARIZONA_HAPTICS_CONTROL_1:
- 	case ARIZONA_HAPTICS_CONTROL_2:
-diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
-index 529adc1..d641474 100644
---- a/drivers/mfd/wm8997-tables.c
-+++ b/drivers/mfd/wm8997-tables.c
-@@ -174,10 +174,10 @@ static const struct reg_default wm8997_reg_default[] = {
- 	{ 0x00000062, 0x01FF },    /* R98    - Sample Rate Sequence Select 2 */
- 	{ 0x00000063, 0x01FF },    /* R99    - Sample Rate Sequence Select 3 */
- 	{ 0x00000064, 0x01FF },    /* R100   - Sample Rate Sequence Select 4 */
--	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 1 */
--	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 2 */
--	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 3 */
--	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 4 */
-+	{ 0x00000068, 0x01FF },    /* R104   - Always On Triggers Sequence Select 3 */
-+	{ 0x00000069, 0x01FF },    /* R105   - Always On Triggers Sequence Select 4 */
-+	{ 0x0000006A, 0x01FF },    /* R106   - Always On Triggers Sequence Select 5 */
-+	{ 0x0000006B, 0x01FF },    /* R107   - Always On Triggers Sequence Select 6 */
- 	{ 0x00000070, 0x0000 },    /* R112   - Comfort Noise Generator */
- 	{ 0x00000090, 0x0000 },    /* R144   - Haptics Control 1 */
- 	{ 0x00000091, 0x7FFF },    /* R145   - Haptics Control 2 */
-@@ -814,10 +814,10 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_2:
- 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_3:
- 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_4:
--	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1:
--	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3:
- 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
-+	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
- 	case ARIZONA_COMFORT_NOISE_GENERATOR:
- 	case ARIZONA_HAPTICS_CONTROL_1:
- 	case ARIZONA_HAPTICS_CONTROL_2:
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index c445bf0..dbd23c3 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -42,12 +42,14 @@
- #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_2    0x62
- #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_3    0x63
- #define ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_4    0x64
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1 0x68
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2 0x69
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3 0x6A
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4 0x6B
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5 0x6C
--#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6 0x6D
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_1 0x66
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_2 0x67
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_3 0x68
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_4 0x69
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5 0x6A
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6 0x6B
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_7 0x6C
-+#define ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_8 0x6D
- #define ARIZONA_COMFORT_NOISE_GENERATOR          0x70
- #define ARIZONA_HAPTICS_CONTROL_1                0x90
- #define ARIZONA_HAPTICS_CONTROL_2                0x91
--- 
-1.7.2.5
+Am 20.05.2014 13:41, schrieb Dan Carpenter:
+> Those concerns are valid but the code was like that in the original so
+> we should merge this patch as is and hope some volunteer will fix things
+> up in a follow on patch.
+> 
+> Fixing them in this patch would be a mistake anyway because of the one
+> thing per patch rule.
+> 
 
+I see this as a bordercase, the patch from Peter is correct in the context of
+removing useless return variables. I question the whole function in the hope
+that the maintainer will decide that the function can go completely.
+
+re,
+ wh
