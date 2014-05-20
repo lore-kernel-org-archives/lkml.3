@@ -1,120 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaETIlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:41:18 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:60779 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbaETIlQ (ORCPT
+	id S1752742AbaETIll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:41:41 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:37323 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752623AbaETIlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:41:16 -0400
+	Tue, 20 May 2014 04:41:37 -0400
+Message-ID: <537B1523.1010503@st.com>
+Date: Tue, 20 May 2014 10:41:07 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140520082116.GB618@waldemar-brodkorb.de>
-References: <20140516134904.GW618@waldemar-brodkorb.de>
-	<CAMuHMdVPSzYkUumqMY78zxVcoQ6=W9Vfm_tyM_T3W8DFzCztVw@mail.gmail.com>
-	<20140520082116.GB618@waldemar-brodkorb.de>
-Date: Tue, 20 May 2014 10:41:15 +0200
-X-Google-Sender-Auth: d9NwF-Wx_9h4m8lx1FU62BKKX9U
-Message-ID: <CAMuHMdUZuwA45-m8HL8PXDMXrrhp2DA71P5-jLwke0i5TLFSYw@mail.gmail.com>
-Subject: Re: serial console on rb532 disabled on boot (linux 3.15rc5)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Waldemar Brodkorb <wbx@openadk.org>
-Cc: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [STLinux Kernel] [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
+References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org> <1398756095-32542-4-git-send-email-lee.jones@linaro.org> <537A265E.8080407@st.com> <20140519155106.GR4978@lee--X1> <537B01E9.8020507@st.com> <20140520082858.GF20874@lee--X1>
+In-Reply-To: <20140520082858.GF20874@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-19_03:2014-05-19,2014-05-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Waldemar,
 
-On Tue, May 20, 2014 at 10:21 AM, Waldemar Brodkorb <wbx@openadk.org> wrote:
-> Geert Uytterhoeven wrote,
->> On Fri, May 16, 2014 at 3:49 PM, Waldemar Brodkorb <wbx@openadk.org> wrote:
->> > I am trying to bootup my Mikrotik RB532 board with the latest
->> > kernel, but my serial console is disabled after boot:
->> > ..
->> > Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
->> > serial8250: ttyS0 at MMIO 0x0 (irq = 104, base_baud = 12499875) is a
->> > 16550A
->> > console [ttyS0] enabled
->> > console [ttyS0] disabled
->> >
->> > I used git bisect to find the problematic commit:
->> > commit 5f5c9ae56c38942623f69c3e6dc6ec78e4da2076
->> > Author: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->> > Date:   Fri Feb 28 14:21:32 2014 +0100
->> >
->> >     serial_core: Unregister console in uart_remove_one_port()
->> >
->> >     If the serial port being removed is used as a console, it must
->> > also be
->> >     unregistered from the console subsystem using
->> > unregister_console().
->> >
->> >     uart_ops.release_port() will release resources (e.g. iounmap()
->> > the serial
->> >     port registers), causing a crash on subsequent kernel output if
->> > the console
->> >     is still registered.
->> >
->> >     Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->> >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >
->> > After reverting the change, everything is fine.
+
+On 05/20/2014 10:28 AM, Lee Jones wrote:
+>>>>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+>>>>> devices. It has 2 ports which it can use for either; both SATA, both
+>>>>> PCIe or one of each in any configuration.
+>>>>>
+>>>>> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>>>>> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+>>>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>>>> ---
+>>>>>   arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
+>>>>>   arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
+>>>>>   arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
+>>>>>   3 files changed, 42 insertions(+)
+>>>>>   create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
+>>>>>
+>>>>> diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+>>>>> new file mode 100644
+>>>>> index 0000000..23fdaf7
+>>>>> --- /dev/null
+>>>>> +++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+>>>>> @@ -0,0 +1,22 @@
+>>>>> +/*
+>>>>> + * Copyright (C) 2014 STMicroelectronics Limited.
+>>>>> + * Author: Lee Jones <lee.jones@linaro.org>
+>>>>> + *
+>>>>> + * This program is free software; you can redistribute it and/or modify
+>>>>> + * it under the terms of the GNU General Public License version 2 as
+>>>>> + * publishhed by the Free Software Foundation.
+>>>>> + */
+>>>>> +/dts-v1/;
+>>>>> +#include "stih416.dtsi"
+>>>>> +#include "stih41x-b2020.dtsi"
+>>>>> +/ {
+>>>>> +        model = "STiH416 B2020 REV-E";
+>>>>> +	compatible = "st,stih416-b2020", "st,stih416";
+>>>>> +
+>>>>> +	soc {
+>>>>> +		miphy365x_phy: miphy365x@fe382000 {
+>>>>> +			st,pcie-tx-pol-inv;
+>>>>> +			st,sata-gen = <3>;
+>>>>> +		};
+>>>>> +	};
+>>>>> +};
+>>>> Shouldn't this new board being added in a separate patch?
+>>>
+>>> I certainly can do that, but I don't think that it's necessary?
 >>
->> Does this patch help? https://lkml.org/lkml/2014/5/10/9
+>> I think it is, as you introduce a new board.
 >
-> The second change in printk.c didn't help.
-
->> Your serial driver may need to set port.type too, if it doesn't already do so
->> and the type is PORT_UNKNOWN on re-registration.
+> Introducing an empty dts file just so you can say "this is a new
+> board" seems odd to me, but I'll go with whatever you feel it right.
 >
-> Tried following patch, but it didn't work:
+>> Moreover, the miphy description being the same as in
+>> stih416-b2020.dts, so I don't understand why you introduce this
+>> board for this feature.
 >
-> diff -Nur linux-3.15-rc5.orig/arch/mips/rb532/serial.c
-> linux-3.15-rc5/arch/mips/rb532/serial.c
-> --- linux-3.15-rc5.orig/arch/mips/rb532/serial.c        2014-05-09
-> 22:10:52.000000000 +0200
-> +++ linux-3.15-rc5/arch/mips/rb532/serial.c     2014-05-19
-> 20:35:08.000000000 +0200
-> @@ -37,7 +37,7 @@
->  extern unsigned int idt_cpu_freq;
+> It's historical.  There are other differences between rev-E and the
+> other reversions, such as; gpio-leds (red, green) and the reset GPIO
+> for ethernet.  As these are dts files (rather than dtsi) files, you
+> can only use one at a time.
+
+My point was to create a new patch that would also introduce the 
+differences (Ethernet, leds...). The commit message would explain the 
+differences versus stih416-b2020.
+
+ From your patch, if I didn't know the differences, I would ask why you 
+don't use stih416-b2020.dts.
+
+If you have another pending patch that make Ethernet to work on revE 
+board, you can keep this one as it is.
+
 >
->  static struct uart_port rb532_uart = {
-> -       .flags = UPF_BOOT_AUTOCONF,
-> +       .type = PORT_16550A,
-
-I'm afraid this is not gonna help. When the port is unregistered, its
-type will be reset to PORT_UNKNOWN.
-So before registering it again, its type must be set againin the actual
-serial driver, cfr. the change to of_serial.c.
-
->         .line = 0,
->         .irq = UART0_IRQ,
->         .iotype = UPIO_MEM,
-> diff -Nur linux-3.15-rc5.orig/kernel/printk/printk.c
-> linux-3.15-rc5/kernel/printk/printk.c
-> --- linux-3.15-rc5.orig/kernel/printk/printk.c  2014-05-09
-> 22:10:52.000000000 +0200
-> +++ linux-3.15-rc5/kernel/printk/printk.c       2014-05-20
-> 09:39:54.000000000 +0200
-> @@ -2413,6 +2413,7 @@
->         if (console_drivers != NULL && console->flags & CON_CONSDEV)
->                 console_drivers->flags |= CON_CONSDEV;
+>>>>> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+>>>>> index 276f28d..172f222 100644
+>>>>> --- a/arch/arm/boot/dts/stih416-b2020.dts
+>>>>> +++ b/arch/arm/boot/dts/stih416-b2020.dts
+>>>>> @@ -13,4 +13,10 @@
+>>>>>   	model = "STiH416 B2020";
+>>>>>   	compatible = "st,stih416", "st,stih416-b2020";
+>>>>>
+>>>>> +	soc {
+>>>>> +		miphy365x_phy: miphy365x@fe382000 {
+>>>>> +			st,pcie-tx-pol-inv;
+>>>>> +			st,sata-gen = <3>;
+>>>>> +		};
+>>>>> +	};
+>>>>>   };
+>>>> ...
+>>>
 >
-> +       console->flags &= ~CON_ENABLED;
->         console_unlock();
->         console_sysfs_notify();
->         return res;
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
