@@ -1,88 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaETPNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:13:43 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:40230 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753125AbaETPNm (ORCPT
+	id S1753300AbaETPTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:19:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52544 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaETPTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:13:42 -0400
-Message-ID: <537B7122.3000508@vmware.com>
-Date: Tue, 20 May 2014 16:13:38 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 20 May 2014 11:19:23 -0400
+Message-ID: <537B7266.1050301@ti.com>
+Date: Tue, 20 May 2014 10:19:02 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        ccross@google.com, linux-media@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2 with seqcount v3] reservation: add suppport for
- read-only access using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com> <534843EA.6060602@vmware.com> <534B9165.4000101@canonical.com> <534B921B.4080504@vmware.com> <5357A0DE.7030305@canonical.com> <537A0A5D.6090909@vmware.com> <537A1180.2010109@canonical.com>
-In-Reply-To: <537A1180.2010109@canonical.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>
+CC: <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <arvind.chauhan@arm.com>,
+        <inderpal.s@samsung.com>, <chander.kashyap@linaro.org>, <pavel@ucw.cz>,
+        <len.brown@intel.com>, Chander Kashyap <k.chander@samsung.com>
+Subject: Re: [PATCH V5] PM/OPP: discard duplicate OPPs
+References: <7cb6e0e039e0935e37c81d0f23d26b0b81ad8cda.1400597170.git.viresh.kumar@linaro.org>
+In-Reply-To: <7cb6e0e039e0935e37c81d0f23d26b0b81ad8cda.1400597170.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2014 03:13 PM, Maarten Lankhorst wrote:
-> op 19-05-14 15:42, Thomas Hellstrom schreef:
->> Hi, Maarten!
->>
->> Some nitpicks, and that krealloc within rcu lock still worries me.
->> Otherwise looks good.
->>
->> /Thomas
->>
->>
->>
->> On 04/23/2014 12:15 PM, Maarten Lankhorst wrote:
->>> @@ -55,8 +60,8 @@ int reservation_object_reserve_shared(struct
->>> reservation_object *obj)
->>>               kfree(obj->staged);
->>>               obj->staged = NULL;
->>>               return 0;
->>> -        }
->>> -        max = old->shared_max * 2;
->>> +        } else
->>> +            max = old->shared_max * 2;
->> Perhaps as a separate reformatting patch?
-> I'll fold it in to the patch that added
-> reservation_object_reserve_shared.
->>> +
->>> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
->>> +                      struct fence **pfence_excl,
->>> +                      unsigned *pshared_count,
->>> +                      struct fence ***pshared)
->>> +{
->>> +    unsigned shared_count = 0;
->>> +    unsigned retry = 1;
->>> +    struct fence **shared = NULL, *fence_excl = NULL;
->>> +    int ret = 0;
->>> +
->>> +    while (retry) {
->>> +        struct reservation_object_list *fobj;
->>> +        unsigned seq;
->>> +
->>> +        seq = read_seqcount_begin(&obj->seq);
->>> +
->>> +        rcu_read_lock();
->>> +
->>> +        fobj = rcu_dereference(obj->fence);
->>> +        if (fobj) {
->>> +            struct fence **nshared;
->>> +
->>> +            shared_count = ACCESS_ONCE(fobj->shared_count);
->> ACCESS_ONCE() shouldn't be needed inside the seqlock?
-> Yes it is, shared_count may be increased, leading to potential
-> different sizes for krealloc and memcpy
-> if the ACCESS_ONCE is removed. I could use shared_max here instead,
-> which stays the same,
-> but it would waste more memory.
+On 05/20/2014 09:53 AM, Viresh Kumar wrote:
+> From: Chander Kashyap <k.chander@samsung.com>
+> 
+> We don't have any protection against addition of duplicate OPPs currently and
+> in case some code tries to add them it will end up corrupting OPP tables.
+> 
+> There can be many combinations in which we may end up trying duplicate OPPs:
+> - both freq and volt are same, but earlier OPP may or may not be active.
+> - only freq is same and volt is different.
+> 
+> This patch tries to implement below logic for these cases:
+> 
+> Return 0 if new OPP was duplicate of existing one (i.e. same freq and volt) and
+> return -EEXIST if new OPP had same freq but different volt as of an existing OPP
+> OR if both freq/volt were same but earlier OPP was disabled.
+> 
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V4->V5:
+> - Mention Return values under 'Return:' clause of doc style comment.
+> - s/pr_warn/dev_warn
+> - s/linrao/linaro in my email id :(
+> 
+>  drivers/base/power/opp.c | 27 +++++++++++++++++++++++++--
+>  1 file changed, 25 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index 2553867..6a06d43 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -394,6 +394,13 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_find_freq_floor);
+>   * to keep the integrity of the internal data structures. Callers should ensure
+>   * that this function is *NOT* called under RCU protection or in contexts where
+>   * mutex cannot be locked.
+> + *
+> + * Returns:
 
-Maarten, Another perhaps ignorant question WRT this,
-Does ACCESS_ONCE() guarantee that the value accessed is read atomically?
+s/Returns:/Return:/ -> sorry for being a nitpick.. scripts/kernel-doc
+uses "Return:" in $section_return
 
-/Thomas
+> + * 0:		On success OR
+> + *		Duplicate OPPs (both freq and volt are same) and opp->available
+> + * -EEXIST:	Freq are same and volt are different OR
+> + *		Duplicate OPPs (both freq and volt are same) and !opp->available
+> + * -ENOMEM:	Memory allocation failure
+>   */
+>  int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+>  {
+> @@ -443,15 +450,31 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+>  	new_opp->u_volt = u_volt;
+>  	new_opp->available = true;
+>  
+> -	/* Insert new OPP in order of increasing frequency */
+> +	/*
+> +	 * Insert new OPP in order of increasing frequency
+> +	 * and discard if already present
+> +	 */
+>  	head = &dev_opp->opp_list;
+>  	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
+> -		if (new_opp->rate < opp->rate)
+> +		if (new_opp->rate <= opp->rate)
+>  			break;
+>  		else
+>  			head = &opp->node;
+>  	}
+>  
+> +	/* Duplicate OPPs ? */
+> +	if (new_opp->rate == opp->rate) {
+> +		int ret = (new_opp->u_volt == opp->u_volt) && opp->available ?
+> +			0 : -EEXIST;
+> +
+> +		dev_warn(dev, "%s: duplicate OPPs detected. Existing: freq: %lu, volt: %lu, enabled: %d. New: freq: %lu, volt: %lu, enabled: %d\n",
+> +			__func__, opp->rate, opp->u_volt, opp->available,
+> +			new_opp->rate, new_opp->u_volt, new_opp->available);
+
+checkpatch --strict showed:
+--- /tmp/kernel-patch-verify.22670/ptest_check-start    2014-05-20
+10:07:15.736147182 -0500
++++ /tmp/kernel-patch-verify.22670/ptest_check-end      2014-05-20
+10:07:15.960149013 -0500
+@@ -0,0 +1,6 @@
++CHECK: Alignment should match open parenthesis
++#68: FILE: drivers/base/power/opp.c:471:
+++              dev_warn(dev, "%s: duplicate OPPs detected. Existing:
+freq: %lu, volt: %lu, enabled: %d. New: freq: %lu, volt: %lu, enabled:
+%d\n",
+++                      __func__, opp->rate, opp->u_volt,
+opp->available,
+
++If any of these errors are false positives, please report
++them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+
+> +		mutex_unlock(&dev_opp_list_lock);
+> +		kfree(new_opp);
+> +		return ret;
+> +	}
+> +
+>  	list_add_rcu(&new_opp->node, head);
+>  	mutex_unlock(&dev_opp_list_lock);
+>  
+> 
+
+Other than these minor fixes,
+Acked-by: Nishanth Menon <nm@ti.com>
+
+-- 
+Regards,
+Nishanth Menon
