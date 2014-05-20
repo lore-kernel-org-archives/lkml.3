@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaETMwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:52:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14349 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936AbaETMwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:52:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,874,1392192000"; 
-   d="scan'208";a="514761842"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: "emilio@elopez.com.ar" <emilio@elopez.com.ar>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [linux-sunxi] [PATCH v7] DMA: sun6i: Add driver for the
- Allwinner A31 DMA controller
-Thread-Topic: [linux-sunxi] [PATCH v7] DMA: sun6i: Add driver for the
- Allwinner A31 DMA controller
-Thread-Index: AQHPdCjkVstB+kS5gUWDjVzoNLiqD5tJW6cA
-Date: Tue, 20 May 2014 12:52:34 +0000
-Message-ID: <1400590354.28000.14.camel@smile.fi.intel.com>
-References: <1398349364-10726-1-git-send-email-maxime.ripard@free-electrons.com>
-	 <1398349364-10726-2-git-send-email-maxime.ripard@free-electrons.com>
-	 <537B4D55.5040804@elopez.com.ar>
-In-Reply-To: <537B4D55.5040804@elopez.com.ar>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.73]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6952EE4279C1E44D9E09E91732966148@intel.com>
-MIME-Version: 1.0
+	id S1753339AbaETMxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:53:17 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:48507 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149AbaETMwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 08:52:45 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/5] clk: bcm281xx: define a bus clock
+Date: Tue, 20 May 2014 07:52:41 -0500
+Message-Id: <1400590362-11177-5-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400590362-11177-1-git-send-email-elder@linaro.org>
+References: <1400590362-11177-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4KCr8ed011903
 
-On Tue, 2014-05-20 at 09:40 -0300, Emilio L√≥pez wrote:
-> El 24/04/14 11:22, Maxime Ripard escribi√≥:
-> > The Allwinner A31 has a 16 channels DMA controller that it shares with the
-> > newer A23. Although sharing some similarities with the DMA controller of the
-> > older Allwinner SoCs, it's significantly different, I don't expect it to be
-> > possible to share the driver for these two.
-> >
-> > The A31 Controller is able to memory-to-memory or memory-to-device transfers on
-> > the 16 channels in parallel.
+Define the bus clock "bsc3_apb".  This bus clock has to be managed
+using the CCU policy mechanism, so add the definitions required for
+that to the clock and its CCU.
 
-...
+This one bus clock in particular is defined because it is needed
+by peripheral clock "bsc3".  Our boot loader does not properly
+activate "bsc3_apb", and as a result, "bsc3" isn't able to function
+properly.  With "bsc3_apb" specified as a prerequisite clock for
+"bsc3", the latter works correctly.
 
-> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> > index 5c5863842de9..360a10c71388 100644
-> > --- a/drivers/dma/Kconfig
-> > +++ b/drivers/dma/Kconfig
-> > @@ -361,6 +361,14 @@ config FSL_EDMA
-> >   	  multiplexing capability for DMA request sources(slot).
-> >   	  This module can be found on Freescale Vybrid and LS-1 SoCs.
-> >
-> > +config DMA_SUN6I
-> > +	tristate "Allwinner A31 SoCs DMA support"
-> > +	depends on ARCH_SUNXI
-> > +	select DMA_ENGINE
-> > +	select DMA_VIRTUAL_CHANNELS
-> 
-> I think you also need to select DMA_OF here as you are using 
-> of_dma_controller_register
+For now only this one bus clock is defined, because it allows
+correct operation of "bsc3".  Others can be added later as needed
+(and this patch serves to show how that's done).
 
-of_dma_controller_register should have a stub (which it does).
-No need to have such a dependency.
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-bcm281xx.c       | 13 ++++++++++++-
+ include/dt-bindings/clock/bcm281xx.h |  3 ++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 502a487..b937fc9 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -309,8 +309,17 @@ static struct peri_clk_data pwm_data = {
+ 	.trig		= TRIGGER(0x0afc, 15),
+ };
+ 
++static struct bus_clk_data bsc3_apb_data = {
++	.policy		= POLICY(0x0048, 4),
++	.gate		= HW_SW_GATE(0x0484, 16, 0, 1),
++};
++
+ static struct ccu_data slave_ccu_data = {
+ 	BCM281XX_CCU_COMMON(slave, SLAVE),
++	.policy		= {
++		.enable		= CCU_LVM_EN(0x0034, 0),
++		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
++	},
+ 	.kona_clks	= {
+ 		[BCM281XX_SLAVE_CCU_UARTB] =
+ 			KONA_CLK(slave, uartb, peri),
+@@ -329,9 +338,11 @@ static struct ccu_data slave_ccu_data = {
+ 		[BCM281XX_SLAVE_CCU_BSC2] =
+ 			KONA_CLK(slave, bsc2, peri),
+ 		[BCM281XX_SLAVE_CCU_BSC3] =
+-			KONA_CLK(slave, bsc3, peri),
++			KONA_CLK_PREREQ(slave, bsc3, peri, bsc3_apb),
+ 		[BCM281XX_SLAVE_CCU_PWM] =
+ 			KONA_CLK(slave, pwm, peri),
++		[BCM281XX_SLAVE_CCU_BSC3_APB] =
++			KONA_CLK(slave, bsc3_apb, bus),
+ 		[BCM281XX_SLAVE_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
+ 	},
+ };
+diff --git a/include/dt-bindings/clock/bcm281xx.h b/include/dt-bindings/clock/bcm281xx.h
+index a763460..99f4aad 100644
+--- a/include/dt-bindings/clock/bcm281xx.h
++++ b/include/dt-bindings/clock/bcm281xx.h
+@@ -72,6 +72,7 @@
+ #define BCM281XX_SLAVE_CCU_BSC2			7
+ #define BCM281XX_SLAVE_CCU_BSC3			8
+ #define BCM281XX_SLAVE_CCU_PWM			9
+-#define BCM281XX_SLAVE_CCU_CLOCK_COUNT		10
++#define BCM281XX_SLAVE_CCU_BSC3_APB		10
++#define BCM281XX_SLAVE_CCU_CLOCK_COUNT		11
+ 
+ #endif /* _CLOCK_BCM281XX_H */
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
+1.9.1
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
