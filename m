@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056AbaETXps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 19:45:48 -0400
-Received: from host171.canaca.com ([67.55.55.225]:50939 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaETXpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 19:45:46 -0400
-Message-ID: <7e57db42a261a54d38a3a7bb068c3ce2.squirrel@mungewell.org>
-In-Reply-To: <6970969.ej8OFzkVkO@sigyn>
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
-    <2965006.XKYHWj9YzJ@sigyn>
-    <865ad8dbc7ae0d13c045bd2a85cff2e2.squirrel@mungewell.org>
-    <6970969.ej8OFzkVkO@sigyn>
-Date: Tue, 20 May 2014 19:45:44 -0400
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-From: simon@mungewell.org
-To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>
-Cc: simon@mungewell.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
-User-Agent: SquirrelMail/1.4.22
+	id S1751268AbaETXqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 19:46:46 -0400
+Received: from ozlabs.org ([103.22.144.67]:36024 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763AbaETXqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 19:46:45 -0400
+Date: Wed, 21 May 2014 09:46:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] scsi patch queue tree
+Message-ID: <20140521094636.515289e8@canb.auug.org.au>
+In-Reply-To: <20140520053928.GA1751@infradead.org>
+References: <20140519140614.GA12183@infradead.org>
+	<20140520100343.31490551@canb.auug.org.au>
+	<20140520053928.GA1751@infradead.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/BLXwGnY2=g.BoJG1vfX9+Rw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/BLXwGnY2=g.BoJG1vfX9+Rw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> Regarding the question of emulated vs. real effects, can we extend the
->> API
->> so that applications can know which effects are really supported, and
->> enable/disable emulation somehow?
+Hi Christoph,
+
+On Mon, 19 May 2014 22:39:28 -0700 Christoph Hellwig <hch@infradead.org> wr=
+ote:
 >
-> I suppose that a few extra flags (FF_PERIODIC_EMULATED etc.) defined in
-> "uapi/linux/input.h" should suffice.
+> On Tue, May 20, 2014 at 10:03:43AM +1000, Stephen Rothwell wrote:
+> > Is this a request for inclusion of those branches into linux-next
+> > separately from the scsi tree itself?
+>=20
+> James said he wants to include it in the scsi tree, but given how late
+> we are in the cycle I'd love to see separate exposure until that happens
+> on a temporary basis.
 
-The only problem is that we probably want to maintain backward
-compatibility so that older apps still see 'PERIODIC' (even though it is
-emulated).
---
-#define FF_RUMBLE	0x50
-#define FF_PERIODIC	0x51
-#define FF_CONSTANT	0x52
-#define FF_SPRING	0x53
-#define FF_FRICTION	0x54
-#define FF_DAMPER	0x55
-#define FF_INERTIA	0x56
-#define FF_RAMP		0x57
---
+OK, I have added them from today (called scsi-core and scsi-drivers).
+James, feel free to yell if that is not OK.  If these are to stay
+longer term (and I have no objections given your list of requirements),
+then you should rename the branches (maybe to -next instead of -3.16).
 
-Do we therefore have to list extra items in our capabilities?
---
-static const signed short lg4ff_wheel_effects[] = {
-	FF_CONSTANT,
-	FF_PERIODIC,
-	FF_PERIODIC_NOT_EMULATED,
-	FF_AUTOCENTER,
-	-1
-};
---
+These will be merged after the scsi tree so that they effectively
+disappear from my radar when they have been merged into James' tree.
 
-Simon
+Currently you are the only contact for problems - let me know if I
+should add someone else (or a list).
 
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your branches have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to James (or ask him
+to fetch).  They are allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+--Sig_/BLXwGnY2=g.BoJG1vfX9+Rw
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTe+liAAoJEMDTa8Ir7ZwVWPkP+gNQnvMEJzbzemODiQBIudOd
+uqfWlZlaf1jYWuaoMPj9kXTL16At/1IjDlqSDzKIJKpOwc4MrfdKB/4Qcregskxi
++u1AvgV+oVAqDcg+DeelfOXH+pCiGGN2g6nR7Q+fYo+QXkQxSZIAhxfFaQ/AX+fV
+wt1Xz4PB6Nqq/UGGeWn3KMJdYJmnHDv5+txvzB/E4amZ4WhzpyccMlPMXhxYZ/Fd
+V+l08Yr5wOEtqUwd6kjnTthm0+tw+P7FgM+mzxZWLgGcDV08KeYgTj3kPBGMh4e8
+HyaSuuozRarG//uAz6Fq3LZ+eSaZiOu5yfTumPCIKdH+SVypuDk47DHwNYkfvIgq
+Hmtepv6dhnEOVvkvbCN8e8VGQ8L74SN8UYpSi+J1T6GdjZzIbqFL2WzpJooq7P4w
+0D/Wodc5zHX8pTAIdeCW7eymZW5HJMxWFu5VaLFO1dhV249onFq2RW4Pazmj+Xha
+t3IgTSZ+28eyT6/Oddjcu8+YNknC2hlQmElgTBxArgjEvvVL38yvIrFsjIeSMdrt
+NGlBgT4brfV/L33Z9v+ru2P09+s8isrhdF5G49oHIfbPbBaDvz0SSGkqmc0sm1Yr
+UMkrCeJydfRjbbVdwdGZtz8v7i1sAgUFl6R6KArG7uptWKrrDz1N3aCro8L4Uw3a
+GmFJIKvZsmdFHy9Tsdli
+=YPMm
+-----END PGP SIGNATURE-----
+
+--Sig_/BLXwGnY2=g.BoJG1vfX9+Rw--
