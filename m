@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbaETPbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:31:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56295 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534AbaETPbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:31:11 -0400
-Date: Tue, 20 May 2014 17:31:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jamie Lentin <jm@lentin.co.uk>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: Add custom driver for Lenovo ThinkPad Compact
- Bluetooth Keyboard
-In-Reply-To: <alpine.DEB.2.02.1405201555110.4059@marmot.wormnet.eu>
-Message-ID: <alpine.LNX.2.00.1405201726040.1615@pobox.suse.cz>
-References: <1395786407-11273-1-git-send-email-jm@lentin.co.uk> <alpine.LNX.2.00.1405201644230.1615@pobox.suse.cz> <alpine.DEB.2.02.1405201555110.4059@marmot.wormnet.eu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753828AbaETPc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:32:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41945 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaETPc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 11:32:57 -0400
+Message-ID: <537B75A6.2060701@canonical.com>
+Date: Tue, 20 May 2014 17:32:54 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thomas Hellstrom <thellstrom@vmware.com>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        ccross@google.com, linux-media@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2 with seqcount v3] reservation: add suppport for
+ read-only access using rcu
+References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com> <534843EA.6060602@vmware.com> <534B9165.4000101@canonical.com> <534B921B.4080504@vmware.com> <5357A0DE.7030305@canonical.com> <537A0A5D.6090909@vmware.com> <537A1180.2010109@canonical.com> <537B7122.3000508@vmware.com>
+In-Reply-To: <537B7122.3000508@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014, Jamie Lentin wrote:
+op 20-05-14 17:13, Thomas Hellstrom schreef:
+> On 05/19/2014 03:13 PM, Maarten Lankhorst wrote:
+>> op 19-05-14 15:42, Thomas Hellstrom schreef:
+>>> Hi, Maarten!
+>>>
+>>> Some nitpicks, and that krealloc within rcu lock still worries me.
+>>> Otherwise looks good.
+>>>
+>>> /Thomas
+>>>
+>>>
+>>>
+>>> On 04/23/2014 12:15 PM, Maarten Lankhorst wrote:
+>>>> @@ -55,8 +60,8 @@ int reservation_object_reserve_shared(struct
+>>>> reservation_object *obj)
+>>>>                kfree(obj->staged);
+>>>>                obj->staged = NULL;
+>>>>                return 0;
+>>>> -        }
+>>>> -        max = old->shared_max * 2;
+>>>> +        } else
+>>>> +            max = old->shared_max * 2;
+>>> Perhaps as a separate reformatting patch?
+>> I'll fold it in to the patch that added
+>> reservation_object_reserve_shared.
+>>>> +
+>>>> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
+>>>> +                      struct fence **pfence_excl,
+>>>> +                      unsigned *pshared_count,
+>>>> +                      struct fence ***pshared)
+>>>> +{
+>>>> +    unsigned shared_count = 0;
+>>>> +    unsigned retry = 1;
+>>>> +    struct fence **shared = NULL, *fence_excl = NULL;
+>>>> +    int ret = 0;
+>>>> +
+>>>> +    while (retry) {
+>>>> +        struct reservation_object_list *fobj;
+>>>> +        unsigned seq;
+>>>> +
+>>>> +        seq = read_seqcount_begin(&obj->seq);
+>>>> +
+>>>> +        rcu_read_lock();
+>>>> +
+>>>> +        fobj = rcu_dereference(obj->fence);
+>>>> +        if (fobj) {
+>>>> +            struct fence **nshared;
+>>>> +
+>>>> +            shared_count = ACCESS_ONCE(fobj->shared_count);
+>>> ACCESS_ONCE() shouldn't be needed inside the seqlock?
+>> Yes it is, shared_count may be increased, leading to potential
+>> different sizes for krealloc and memcpy
+>> if the ACCESS_ONCE is removed. I could use shared_max here instead,
+>> which stays the same,
+>> but it would waste more memory.
+> Maarten, Another perhaps ignorant question WRT this,
+> Does ACCESS_ONCE() guarantee that the value accessed is read atomically?
+Well I've reworked the code to use shared_max, so this point is moot. :-)
 
-> > I think it'd make more sense if this could be folded into 
-> > hid-lenovo-tpkbd driver. Could you please do that and resubmit?
-> 
-> I can do if required, although I didn't originally since there would be no
-> common code whatsoever between the keyboards. 
+On any archs I'm aware of it would work, either the old or new value would be visible, as long as natural alignment is used.
+rcu uses the same trick in the rcu_dereference macro, so if this didn't work rcu wouldn't work either.
 
-That's not a problem really. I am trying to have the functionality mostly 
-grouped together by vendor, and not pollute the tree by gazillion of tiny 
-single-function driver.
-
-> I have both the USB and the Bluetooth versions of this keyboard now, once I
-> have finished support for both[0] I will resubmit support for both.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+~Maarten
