@@ -1,224 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549AbaETX0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 19:26:54 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:65533 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaETX0x (ORCPT
+	id S1751182AbaETXaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 19:30:10 -0400
+Received: from host171.canaca.com ([67.55.55.225]:52193 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaETXaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 19:26:53 -0400
-Message-ID: <537BE4BB.4010308@lwfinger.net>
-Date: Tue, 20 May 2014 18:26:51 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 20 May 2014 19:30:08 -0400
+Message-ID: <1c6140633925b0838b7627e071e80761.squirrel@mungewell.org>
+In-Reply-To: <537BD184.9090608@logitech.com>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+    <1818063.tFLKhAd1oy@sigyn>
+    <20140514180558.GB30089@core.coreip.homeip.net>
+    <2965006.XKYHWj9YzJ@sigyn> <537B9FAE.9070602@logitech.com>
+    <8c45868c3cd4333d1098bdbc0fa83a2e.squirrel@mungewell.org>
+    <537BD184.9090608@logitech.com>
+Date: Tue, 20 May 2014 19:30:02 -0400
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: simon@mungewell.org
+To: "Roland Bosa" <rbosa@logitech.com>
+Cc: simon@mungewell.org,
+        =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Manu Gupta <manugupt1@gmail.com>, Josh Triplett <josh@joshtriplett.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c:  Fix for possible
- null pointer dereference
-References: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 04:31 PM, Rickard Strandqvist wrote:
-> There is otherwise a risk of a possible null pointer dereference.
->
-> Was largely found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/staging/rtl8188eu/os_dep/usb_intf.c |  127 ++++++++++++++-------------
->   1 file changed, 66 insertions(+), 61 deletions(-)
 
-Although cppcheck's analysis is correct, pointer padapter can never be null in 
-any of these routines. In routine rtw_drv_init(), rtw_usb_if1_init() is called 
-to allocate memory for struct adapter for the driver. If that fails, none of 
-these other routines will ever be called as the driver will not be loaded.
+> IMO, there are two types of games. The "arcade" ones, which have a set
+> of 'canned' force effects, which play whenever an event happens in game.
+> And the "simulation" ones, which base the game on a physics engine. The
+> latter can redirect some variables of their engine to the input layer
+> and typically drive a constant force and maybe a spring/damper too.
+>
+> For the first type, you might want to keep a centering spring active all
+> the time. Maybe you want to tweak the gain in the game settings. Maybe
+> there's a gain for the centering and one for the special effects. The
+> canned effects are mostly periodics with varying waveform, duration,
+> amplitude and envelope. That's about it.
 
-If it is deemed better to fill the code with needless tests because some static 
-checker points out a place like this, that is OK with me, but I do not see the 
-point.
+Sounds like these are the effect files produced by FEdit tool (from MS
+DirectX SDK), and/or played back by pressing buttons when configuring the
+Logitech driver on Windows ('wooden bridge', etc)...
 
-Larry
+Do you know if there is a mechanism for playing these under Linux?
 
+Under Windows do games just send a 'file' the DirectX driver, or do they
+parse them into individual effects to send?
+
+If format is known/public it shouldn't be hard to write a userland client
+to play them back. If this needs to be supported in the kernel that would
+be more problematic.
+
+> For the second type, you don't want a centering spring. You typically
+> will drive a constant force effect with the engine, with some sprinkled
+> damping and maybe a slight spring here and there.
 >
-> diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> index 2e49cd5..425b955 100644
-> --- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> +++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> @@ -384,9 +384,16 @@ static void process_spec_devid(const struct usb_device_id *pdid)
->
->   int rtw_hw_suspend(struct adapter *padapter)
->   {
-> -	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
-> -	struct net_device *pnetdev = padapter->pnetdev;
-> +	struct pwrctrl_priv *pwrpriv;
-> +	struct net_device *pnetdev;
->
-> +	if (!padapter)  {
-> +		goto error_exit;
-> +	}
-> +
-> +	/* system suspend */
-> +	pwrpriv = &padapter->pwrctrlpriv;
-> +	pnetdev = padapter->pnetdev;
->
->   	if ((!padapter->bup) || (padapter->bDriverStopped) ||
->   	    (padapter->bSurpriseRemoved)) {
-> @@ -396,49 +403,46 @@ int rtw_hw_suspend(struct adapter *padapter)
->   		goto error_exit;
->   	}
->
-> -	if (padapter) { /* system suspend */
-> -		LeaveAllPowerSaveMode(padapter);
-> +	LeaveAllPowerSaveMode(padapter);
->
-> -		DBG_88E("==> rtw_hw_suspend\n");
-> -		_enter_pwrlock(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		/* s1. */
-> -		if (pnetdev) {
-> -			netif_carrier_off(pnetdev);
-> -			rtw_netif_stop_queue(pnetdev);
-> -		}
-> +	DBG_88E("==> rtw_hw_suspend\n");
-> +	_enter_pwrlock(&pwrpriv->lock);
-> +	pwrpriv->bips_processing = true;
-> +	/* s1. */
-> +	if (pnetdev) {
-> +		netif_carrier_off(pnetdev);
-> +		rtw_netif_stop_queue(pnetdev);
-> +	}
->
-> -		/* s2. */
-> -		rtw_disassoc_cmd(padapter, 500, false);
-> +	/* s2. */
-> +	rtw_disassoc_cmd(padapter, 500, false);
->
-> -		/* s2-2.  indicate disconnect to os */
-> -		{
-> -			struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
-> +	/* s2-2.  indicate disconnect to os */
-> +	{
-> +		struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
->
-> -			if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-> -				_clr_fwstate_(pmlmepriv, _FW_LINKED);
-> +		if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-> +			_clr_fwstate_(pmlmepriv, _FW_LINKED);
->
-> -				rtw_led_control(padapter, LED_CTL_NO_LINK);
-> +			rtw_led_control(padapter, LED_CTL_NO_LINK);
->
-> -				rtw_os_indicate_disconnect(padapter);
-> +			rtw_os_indicate_disconnect(padapter);
->
-> -				/* donnot enqueue cmd */
-> -				rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
-> -			}
-> +			/* donnot enqueue cmd */
-> +			rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
->   		}
-> -		/* s2-3. */
-> -		rtw_free_assoc_resources(padapter, 1);
-> +	}
-> +	/* s2-3. */
-> +	rtw_free_assoc_resources(padapter, 1);
->
-> -		/* s2-4. */
-> -		rtw_free_network_queue(padapter, true);
-> -		rtw_ips_dev_unload(padapter);
-> -		pwrpriv->rf_pwrstate = rf_off;
-> -		pwrpriv->bips_processing = false;
-> +	/* s2-4. */
-> +	rtw_free_network_queue(padapter, true);
-> +	rtw_ips_dev_unload(padapter);
-> +	pwrpriv->rf_pwrstate = rf_off;
-> +	pwrpriv->bips_processing = false;
-> +
-> +	_exit_pwrlock(&pwrpriv->lock);
->
-> -		_exit_pwrlock(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
->   	return 0;
->
->   error_exit:
-> @@ -448,40 +452,41 @@ error_exit:
->
->   int rtw_hw_resume(struct adapter *padapter)
->   {
-> -	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
-> -	struct net_device *pnetdev = padapter->pnetdev;
-> -
-> +	struct pwrctrl_priv *pwrpriv;
-> +	struct net_device *pnetdev;
->
-> -	if (padapter) { /* system resume */
-> -		DBG_88E("==> rtw_hw_resume\n");
-> -		_enter_pwrlock(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		rtw_reset_drv_sw(padapter);
-> +	if (!padapter) {
-> +		goto error_exit;
-> +	}
-> +	/* system resume */
-> +	pwrpriv = &padapter->pwrctrlpriv;
-> +	pnetdev = padapter->pnetdev;
->
-> -		if (pm_netdev_open(pnetdev, false) != 0) {
-> -			_exit_pwrlock(&pwrpriv->lock);
-> -			goto error_exit;
-> -		}
-> +	DBG_88E("==> rtw_hw_resume\n");
-> +	_enter_pwrlock(&pwrpriv->lock);
-> +	pwrpriv->bips_processing = true;
-> +	rtw_reset_drv_sw(padapter);
->
-> -		netif_device_attach(pnetdev);
-> -		netif_carrier_on(pnetdev);
-> +	if (pm_netdev_open(pnetdev, false) != 0) {
-> +		_exit_pwrlock(&pwrpriv->lock);
-> +		goto error_exit;
-> +	}
->
-> -		if (!netif_queue_stopped(pnetdev))
-> -			netif_start_queue(pnetdev);
-> -		else
-> -			netif_wake_queue(pnetdev);
-> +	netif_device_attach(pnetdev);
-> +	netif_carrier_on(pnetdev);
->
-> -		pwrpriv->bkeepfwalive = false;
-> -		pwrpriv->brfoffbyhw = false;
-> +	if (!netif_queue_stopped(pnetdev))
-> +		netif_start_queue(pnetdev);
-> +	else
-> +		netif_wake_queue(pnetdev);
->
-> -		pwrpriv->rf_pwrstate = rf_on;
-> -		pwrpriv->bips_processing = false;
-> +	pwrpriv->bkeepfwalive = false;
-> +	pwrpriv->brfoffbyhw = false;
->
-> -		_exit_pwrlock(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
-> +	pwrpriv->rf_pwrstate = rf_on;
-> +	pwrpriv->bips_processing = false;
->
-> +	_exit_pwrlock(&pwrpriv->lock);
->
->   	return 0;
->   error_exit:
->
+> I would personally put more weight and effort to get the second type
+> properly implemented. The players of those games demand more realism and
+> they need the subtle force changes to drive better than the competition.
+
+I would agree, these are probably more higher 'priority' but I think that
+the work Elias and Michal have done already implements these fairly well.
+
+I assume that most AAA games, would implement these through some middle
+layer. I think that is probably via Steam using SDL2 haptic API, we have
+been testing against SDL2's 'testhaptic'.
+
+Do you see another path (which we should be supporting/testing)?
+
+> That means having a FF driver that can deal with many force updates per
+> second without choking and a consistent, reproducible force output at
+> the device, maybe even similar across varying devices. This translates
+> into a decoupled design for accepting force updates and sending USB
+> updates, as well as a device-specific layer to "calibrate" and "unify"
+> the force responses across different models.
+
+There was some discussion about rate limiting the USB packets to the
+wheel, and how to deal if app updates too quickly. Is there an upper limit
+for the wheel itself, or is it just the USB 'pipe' which is the limiting
+factor?
+
+Simon
 
