@@ -1,288 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750963AbaETVQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:16:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56908 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750699AbaETVQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:16:13 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/4] ACPI / LPSS: custom power domain for LPSS
-Date: Tue, 20 May 2014 23:33:09 +0200
-Message-ID: <3202918.AHHS8JP9gx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400161226-24067-3-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com> <1400161226-24067-3-git-send-email-heikki.krogerus@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751292AbaETVSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:18:37 -0400
+Received: from 8bytes.org ([85.214.48.195]:56068 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763AbaETVSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 17:18:33 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Jay.Cornwall@amd.com,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 2/5] iommu/amd: Convert IOMMUv2 state_table into state_list
+Date: Tue, 20 May 2014 23:18:23 +0200
+Message-Id: <1400620706-21031-3-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400620706-21031-1-git-send-email-joro@8bytes.org>
+References: <1400620706-21031-1-git-send-email-joro@8bytes.org>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue May 20 23:18:31 2014
+X-DSPAM-Confidence: 0.9996
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 537bc6a720862106019004
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 15, 2014 04:40:24 PM Heikki Krogerus wrote:
-> A power domain where we save the context of the additional
-> LPSS registers. We need to do this or all LPSS devices are
-> left in reset state when resuming from D3 on some Baytrails.
-> The devices with the fractional clock divider also have
-> zeros for N and M values after resuming unless they are
-> reset.
-> 
-> Li Aubrey found the root cause for the issue. The idea of
-> using power domain for LPSS came from Mika Westerberg.
-> 
-> Reported-by: Jin Yao <yao.jin@linux.intel.com>
-> Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
-> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  drivers/acpi/acpi_lpss.c | 133 ++++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 126 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 69e29f4..24e49a5 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -19,6 +19,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/platform_data/clk-lpss.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/delay.h>
->  
->  #include "internal.h"
->  
-> @@ -43,6 +44,8 @@ ACPI_MODULE_NAME("acpi_lpss");
->  #define LPSS_TX_INT			0x20
->  #define LPSS_TX_INT_MASK		BIT(1)
->  
-> +#define LPSS_PRV_REG_COUNT		9
-> +
->  struct lpss_shared_clock {
->  	const char *name;
->  	unsigned long rate;
-> @@ -58,6 +61,7 @@ struct lpss_device_desc {
->  	unsigned int prv_offset;
->  	size_t prv_size_override;
->  	bool clk_gate;
-> +	bool save_ctx;
->  	struct lpss_shared_clock *shared_clock;
->  	void (*setup)(struct lpss_private_data *pdata);
->  };
-> @@ -72,6 +76,7 @@ struct lpss_private_data {
->  	resource_size_t mmio_size;
->  	struct clk *clk;
->  	const struct lpss_device_desc *dev_desc;
-> +	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
->  };
->  
->  static void lpss_uart_setup(struct lpss_private_data *pdata)
-> @@ -116,6 +121,7 @@ static struct lpss_shared_clock pwm_clock = {
->  
->  static struct lpss_device_desc byt_pwm_dev_desc = {
->  	.clk_required = true,
-> +	.save_ctx = true,
->  	.shared_clock = &pwm_clock,
->  };
->  
-> @@ -128,6 +134,7 @@ static struct lpss_device_desc byt_uart_dev_desc = {
->  	.clk_required = true,
->  	.prv_offset = 0x800,
->  	.clk_gate = true,
-> +	.save_ctx = true,
->  	.shared_clock = &uart_clock,
->  	.setup = lpss_uart_setup,
->  };
-> @@ -141,6 +148,7 @@ static struct lpss_device_desc byt_spi_dev_desc = {
->  	.clk_required = true,
->  	.prv_offset = 0x400,
->  	.clk_gate = true,
-> +	.save_ctx = true,
->  	.shared_clock = &spi_clock,
->  };
->  
-> @@ -156,6 +164,7 @@ static struct lpss_shared_clock i2c_clock = {
->  static struct lpss_device_desc byt_i2c_dev_desc = {
->  	.clk_required = true,
->  	.prv_offset = 0x800,
-> +	.save_ctx = true,
->  	.shared_clock = &i2c_clock,
->  };
->  
-> @@ -449,6 +458,102 @@ static void acpi_lpss_set_ltr(struct device *dev, s32 val)
->  	}
->  }
->  
-> +#ifdef CONFIG_PM
+From: Joerg Roedel <jroedel@suse.de>
 
-It would be good to add a kerneldoc explaining what's being saved here and why.
+The state_table consumes 512kb of memory and is only sparsly
+populated. Convert it into a list to save memory. There
+should be no measurable performance impact.
 
-> +static void acpi_lpss_save_ctx(struct device *dev)
-> +{
-> +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> +	int i;
-> +
-> +	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-> +		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
-> +		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02x\n",
-> +			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-> +	}
-> +}
-> +
-> +static void acpi_lpss_restore_ctx(struct device *dev)
-> +{
-> +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> +	int i;
-> +
-> +	/* PCI spec expects 10ms delay when resuming from D3 to D0 */
-> +	msleep(10);
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Tested-by: Jay Cornwall <Jay.Cornwall@amd.com>
+---
+ drivers/iommu/amd_iommu_v2.c |   39 ++++++++++++++++++---------------------
+ 1 file changed, 18 insertions(+), 21 deletions(-)
 
-Two questions here.
-
-First, is the 10 ms sleep really necessary?  I'd expect the AML to take care of
-such delays (this is not a PCI device formally).
-
-And because this is not a PCI device formally, why is the comment talking about
-the PCI spec?  Why is PCI relevant in any way here?
-
-> +
-> +	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-> +		__lpss_reg_write(pdata->prv_reg_ctx[i], pdata, i * sizeof(u32));
-> +		dev_dbg(dev, "restoring 0x%08x to LPSS reg at offset 0x%02x\n",
-> +			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-> +	}
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int acpi_lpss_suspend_late(struct device *dev)
-> +{
-> +	int ret = pm_generic_suspend_late(dev);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	acpi_lpss_save_ctx(dev);
-> +	return acpi_dev_suspend_late(dev);
-> +}
-> +
-> +static int acpi_lpss_restore_early(struct device *dev)
-> +{
-> +	int ret = acpi_dev_resume_early(dev);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	acpi_lpss_restore_ctx(dev);
-> +	return pm_generic_resume_early(dev);
-> +}
-> +#endif /* CONFIG_PM_SLEEP */
-> +
-> +#ifdef CONFIG_PM_RUNTIME
-> +static int acpi_lpss_runtime_suspend(struct device *dev)
-> +{
-> +	int ret = pm_generic_runtime_suspend(dev);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	acpi_lpss_save_ctx(dev);
-> +	return acpi_dev_runtime_suspend(dev);
-> +}
-> +
-> +static int acpi_lpss_runtime_resume(struct device *dev)
-> +{
-> +	int ret = acpi_dev_runtime_resume(dev);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	acpi_lpss_restore_ctx(dev);
-> +	return pm_generic_runtime_resume(dev);
-> +}
-> +#endif /* CONFIG_PM_RUNTIME */
-> +#endif /* CONFIG_PM */
-> +
-> +static struct dev_pm_domain acpi_lpss_pm_domain = {
-> +	.ops = {
-> +#ifdef CONFIG_PM_SLEEP
-> +		.suspend_late = acpi_lpss_suspend_late,
-> +		.restore_early = acpi_lpss_restore_early,
-> +		.prepare = acpi_subsys_prepare,
-> +		.suspend = acpi_subsys_suspend,
-> +		.resume_early = acpi_subsys_resume_early,
-> +		.freeze = acpi_subsys_freeze,
-> +		.poweroff = acpi_subsys_suspend,
-> +		.poweroff_late = acpi_subsys_suspend_late,
-> +#endif
-> +#ifdef CONFIG_PM_RUNTIME
-> +		.runtime_suspend = acpi_lpss_runtime_suspend,
-> +		.runtime_resume = acpi_lpss_runtime_resume,
-> +#endif
-> +	},
-> +};
-> +
->  static int acpi_lpss_platform_notify(struct notifier_block *nb,
->  				     unsigned long action, void *data)
->  {
-> @@ -456,7 +561,6 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
->  	struct lpss_private_data *pdata;
->  	struct acpi_device *adev;
->  	const struct acpi_device_id *id;
-> -	int ret = 0;
->  
->  	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
->  	if (!id || !id->driver_data)
-> @@ -466,7 +570,7 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
->  		return 0;
->  
->  	pdata = acpi_driver_data(adev);
-> -	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
-> +	if (!pdata || !pdata->mmio_base)
->  		return 0;
->  
->  	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
-> @@ -474,12 +578,27 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
->  		return 0;
->  	}
->  
-> -	if (action == BUS_NOTIFY_ADD_DEVICE)
-> -		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
-> -	else if (action == BUS_NOTIFY_DEL_DEVICE)
-> -		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-> +	switch (action) {
-> +	case BUS_NOTIFY_BOUND_DRIVER:
-> +		if (pdata->dev_desc->save_ctx)
-> +			pdev->dev.pm_domain = &acpi_lpss_pm_domain;
-> +		break;
-> +	case BUS_NOTIFY_UNBOUND_DRIVER:
-> +		if (pdata->dev_desc->save_ctx)
-> +			pdev->dev.pm_domain = NULL;
-> +		break;
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		if (pdata->dev_desc->ltr_required)
-> +			return sysfs_create_group(&pdev->dev.kobj,
-> +						  &lpss_attr_group);
-> +	case BUS_NOTIFY_DEL_DEVICE:
-> +		if (pdata->dev_desc->ltr_required)
-> +			sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
-> +	default:
-> +		break;
-> +	}
->  
-> -	return ret;
-> +	return 0;
->  }
->  
->  static struct notifier_block acpi_lpss_nb = {
-> 
-
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 8c3086a..05e93f1 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -56,6 +56,8 @@ struct pasid_state {
+ };
+ 
+ struct device_state {
++	struct list_head list;
++	u16 devid;
+ 	atomic_t count;
+ 	struct pci_dev *pdev;
+ 	struct pasid_state **states;
+@@ -81,7 +83,7 @@ struct fault {
+ 	u16 flags;
+ };
+ 
+-static struct device_state **state_table;
++static LIST_HEAD(state_list);
+ static spinlock_t state_lock;
+ 
+ /* List and lock for all pasid_states */
+@@ -113,7 +115,14 @@ static u16 device_id(struct pci_dev *pdev)
+ 
+ static struct device_state *__get_device_state(u16 devid)
+ {
+-	return state_table[devid];
++	struct device_state *dev_state;
++
++	list_for_each_entry(dev_state, &state_list, list) {
++		if (dev_state->devid == devid)
++			return dev_state;
++	}
++
++	return NULL;
+ }
+ 
+ static struct device_state *get_device_state(u16 devid)
+@@ -776,7 +785,8 @@ int amd_iommu_init_device(struct pci_dev *pdev, int pasids)
+ 
+ 	spin_lock_init(&dev_state->lock);
+ 	init_waitqueue_head(&dev_state->wq);
+-	dev_state->pdev = pdev;
++	dev_state->pdev  = pdev;
++	dev_state->devid = devid;
+ 
+ 	tmp = pasids;
+ 	for (dev_state->pasid_levels = 0; (tmp - 1) & ~0x1ff; tmp >>= 9)
+@@ -806,13 +816,13 @@ int amd_iommu_init_device(struct pci_dev *pdev, int pasids)
+ 
+ 	spin_lock_irqsave(&state_lock, flags);
+ 
+-	if (state_table[devid] != NULL) {
++	if (__get_device_state(devid) != NULL) {
+ 		spin_unlock_irqrestore(&state_lock, flags);
+ 		ret = -EBUSY;
+ 		goto out_free_domain;
+ 	}
+ 
+-	state_table[devid] = dev_state;
++	list_add_tail(&dev_state->list, &state_list);
+ 
+ 	spin_unlock_irqrestore(&state_lock, flags);
+ 
+@@ -850,7 +860,7 @@ void amd_iommu_free_device(struct pci_dev *pdev)
+ 		return;
+ 	}
+ 
+-	state_table[devid] = NULL;
++	list_del(&dev_state->list);
+ 
+ 	spin_unlock_irqrestore(&state_lock, flags);
+ 
+@@ -925,7 +935,6 @@ EXPORT_SYMBOL(amd_iommu_set_invalidate_ctx_cb);
+ 
+ static int __init amd_iommu_v2_init(void)
+ {
+-	size_t state_table_size;
+ 	int ret;
+ 
+ 	pr_info("AMD IOMMUv2 driver by Joerg Roedel <joerg.roedel@amd.com>\n");
+@@ -941,16 +950,10 @@ static int __init amd_iommu_v2_init(void)
+ 
+ 	spin_lock_init(&state_lock);
+ 
+-	state_table_size = MAX_DEVICES * sizeof(struct device_state *);
+-	state_table = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO,
+-					       get_order(state_table_size));
+-	if (state_table == NULL)
+-		return -ENOMEM;
+-
+ 	ret = -ENOMEM;
+ 	iommu_wq = create_workqueue("amd_iommu_v2");
+ 	if (iommu_wq == NULL)
+-		goto out_free;
++		goto out;
+ 
+ 	ret = -ENOMEM;
+ 	empty_page_table = (u64 *)get_zeroed_page(GFP_KERNEL);
+@@ -965,16 +968,13 @@ static int __init amd_iommu_v2_init(void)
+ out_destroy_wq:
+ 	destroy_workqueue(iommu_wq);
+ 
+-out_free:
+-	free_pages((unsigned long)state_table, get_order(state_table_size));
+-
++out:
+ 	return ret;
+ }
+ 
+ static void __exit amd_iommu_v2_exit(void)
+ {
+ 	struct device_state *dev_state;
+-	size_t state_table_size;
+ 	int i;
+ 
+ 	if (!amd_iommu_v2_supported())
+@@ -1003,9 +1003,6 @@ static void __exit amd_iommu_v2_exit(void)
+ 
+ 	destroy_workqueue(iommu_wq);
+ 
+-	state_table_size = MAX_DEVICES * sizeof(struct device_state *);
+-	free_pages((unsigned long)state_table, get_order(state_table_size));
+-
+ 	free_page((unsigned long)empty_page_table);
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
+
