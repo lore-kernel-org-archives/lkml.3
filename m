@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaETVaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:30:30 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:48204 "EHLO
+	id S1751196AbaETVcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:32:06 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:54482 "EHLO
 	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaETVa2 (ORCPT
+	with ESMTP id S1750826AbaETVcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:30:28 -0400
+	Tue, 20 May 2014 17:32:04 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
+        Xenia Ragiadakou <burzalodowa@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Manu Gupta <manugupt1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c:  Fix for possible null pointer dereference
-Date: Tue, 20 May 2014 23:31:16 +0200
-Message-Id: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Ana Rey <anarey@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192u: r8192U_core.c:  Fix for possible null pointer dereference
+Date: Tue, 20 May 2014 23:32:53 +0200
+Message-Id: <1400621573-7672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,180 +28,37 @@ Was largely found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |  127 ++++++++++++++-------------
- 1 file changed, 66 insertions(+), 61 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 2e49cd5..425b955 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -384,9 +384,16 @@ static void process_spec_devid(const struct usb_device_id *pdid)
- 
- int rtw_hw_suspend(struct adapter *padapter)
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 1bb6143..7bd58ee 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -2038,9 +2038,9 @@ static int WDCAPARA_ADD[] = {EDCAPARA_BE, EDCAPARA_BK, EDCAPARA_VI, EDCAPARA_VO}
+ static void rtl8192_qos_activate(struct work_struct *work)
  {
--	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
--	struct net_device *pnetdev = padapter->pnetdev;
-+	struct pwrctrl_priv *pwrpriv;
-+	struct net_device *pnetdev;
+ 	struct r8192_priv *priv = container_of(work, struct r8192_priv, qos_activate);
+-	struct net_device *dev = priv->ieee80211->dev;
+-	struct ieee80211_qos_parameters *qos_parameters = &priv->ieee80211->current_network.qos_data.parameters;
+-	u8 mode = priv->ieee80211->current_network.mode;
++	struct net_device *dev;
++	struct ieee80211_qos_parameters *qos_parameters;
++	u8 mode;
+ 	u8  u1bAIFS;
+ 	u32 u4bAcParam;
+ 	int i;
+@@ -2048,6 +2048,10 @@ static void rtl8192_qos_activate(struct work_struct *work)
+ 	if (priv == NULL)
+ 		return;
  
-+	if (!padapter)  {
-+		goto error_exit;
-+	}
++	dev = priv->ieee80211->dev;
++	qos_parameters = &priv->ieee80211->current_network.qos_data.parameters;
++	mode = priv->ieee80211->current_network.mode;
 +
-+	/* system suspend */
-+	pwrpriv = &padapter->pwrctrlpriv;
-+	pnetdev = padapter->pnetdev;
- 
- 	if ((!padapter->bup) || (padapter->bDriverStopped) ||
- 	    (padapter->bSurpriseRemoved)) {
-@@ -396,49 +403,46 @@ int rtw_hw_suspend(struct adapter *padapter)
- 		goto error_exit;
- 	}
- 
--	if (padapter) { /* system suspend */
--		LeaveAllPowerSaveMode(padapter);
-+	LeaveAllPowerSaveMode(padapter);
- 
--		DBG_88E("==> rtw_hw_suspend\n");
--		_enter_pwrlock(&pwrpriv->lock);
--		pwrpriv->bips_processing = true;
--		/* s1. */
--		if (pnetdev) {
--			netif_carrier_off(pnetdev);
--			rtw_netif_stop_queue(pnetdev);
--		}
-+	DBG_88E("==> rtw_hw_suspend\n");
-+	_enter_pwrlock(&pwrpriv->lock);
-+	pwrpriv->bips_processing = true;
-+	/* s1. */
-+	if (pnetdev) {
-+		netif_carrier_off(pnetdev);
-+		rtw_netif_stop_queue(pnetdev);
-+	}
- 
--		/* s2. */
--		rtw_disassoc_cmd(padapter, 500, false);
-+	/* s2. */
-+	rtw_disassoc_cmd(padapter, 500, false);
- 
--		/* s2-2.  indicate disconnect to os */
--		{
--			struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
-+	/* s2-2.  indicate disconnect to os */
-+	{
-+		struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 
--			if (check_fwstate(pmlmepriv, _FW_LINKED)) {
--				_clr_fwstate_(pmlmepriv, _FW_LINKED);
-+		if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-+			_clr_fwstate_(pmlmepriv, _FW_LINKED);
- 
--				rtw_led_control(padapter, LED_CTL_NO_LINK);
-+			rtw_led_control(padapter, LED_CTL_NO_LINK);
- 
--				rtw_os_indicate_disconnect(padapter);
-+			rtw_os_indicate_disconnect(padapter);
- 
--				/* donnot enqueue cmd */
--				rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
--			}
-+			/* donnot enqueue cmd */
-+			rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
- 		}
--		/* s2-3. */
--		rtw_free_assoc_resources(padapter, 1);
-+	}
-+	/* s2-3. */
-+	rtw_free_assoc_resources(padapter, 1);
- 
--		/* s2-4. */
--		rtw_free_network_queue(padapter, true);
--		rtw_ips_dev_unload(padapter);
--		pwrpriv->rf_pwrstate = rf_off;
--		pwrpriv->bips_processing = false;
-+	/* s2-4. */
-+	rtw_free_network_queue(padapter, true);
-+	rtw_ips_dev_unload(padapter);
-+	pwrpriv->rf_pwrstate = rf_off;
-+	pwrpriv->bips_processing = false;
-+
-+	_exit_pwrlock(&pwrpriv->lock);
- 
--		_exit_pwrlock(&pwrpriv->lock);
--	} else {
--		goto error_exit;
--	}
- 	return 0;
- 
- error_exit:
-@@ -448,40 +452,41 @@ error_exit:
- 
- int rtw_hw_resume(struct adapter *padapter)
- {
--	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
--	struct net_device *pnetdev = padapter->pnetdev;
--
-+	struct pwrctrl_priv *pwrpriv;
-+	struct net_device *pnetdev;
- 
--	if (padapter) { /* system resume */
--		DBG_88E("==> rtw_hw_resume\n");
--		_enter_pwrlock(&pwrpriv->lock);
--		pwrpriv->bips_processing = true;
--		rtw_reset_drv_sw(padapter);
-+	if (!padapter) {
-+		goto error_exit;
-+	}
-+	/* system resume */
-+	pwrpriv = &padapter->pwrctrlpriv;
-+	pnetdev = padapter->pnetdev;
- 
--		if (pm_netdev_open(pnetdev, false) != 0) {
--			_exit_pwrlock(&pwrpriv->lock);
--			goto error_exit;
--		}
-+	DBG_88E("==> rtw_hw_resume\n");
-+	_enter_pwrlock(&pwrpriv->lock);
-+	pwrpriv->bips_processing = true;
-+	rtw_reset_drv_sw(padapter);
- 
--		netif_device_attach(pnetdev);
--		netif_carrier_on(pnetdev);
-+	if (pm_netdev_open(pnetdev, false) != 0) {
-+		_exit_pwrlock(&pwrpriv->lock);
-+		goto error_exit;
-+	}
- 
--		if (!netif_queue_stopped(pnetdev))
--			netif_start_queue(pnetdev);
--		else
--			netif_wake_queue(pnetdev);
-+	netif_device_attach(pnetdev);
-+	netif_carrier_on(pnetdev);
- 
--		pwrpriv->bkeepfwalive = false;
--		pwrpriv->brfoffbyhw = false;
-+	if (!netif_queue_stopped(pnetdev))
-+		netif_start_queue(pnetdev);
-+	else
-+		netif_wake_queue(pnetdev);
- 
--		pwrpriv->rf_pwrstate = rf_on;
--		pwrpriv->bips_processing = false;
-+	pwrpriv->bkeepfwalive = false;
-+	pwrpriv->brfoffbyhw = false;
- 
--		_exit_pwrlock(&pwrpriv->lock);
--	} else {
--		goto error_exit;
--	}
-+	pwrpriv->rf_pwrstate = rf_on;
-+	pwrpriv->bips_processing = false;
- 
-+	_exit_pwrlock(&pwrpriv->lock);
- 
- 	return 0;
- error_exit:
+ 	mutex_lock(&priv->mutex);
+ 	if (priv->ieee80211->state != IEEE80211_LINKED)
+ 		goto success;
 -- 
 1.7.10.4
 
