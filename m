@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070AbaETJSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:18:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43357 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752985AbaETJSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:18:33 -0400
+	id S1753144AbaETJSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:18:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35314 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaETJSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 05:18:37 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <devicetree@vger.kernel.org>
 CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
@@ -13,55 +14,99 @@ CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <broonie@linaro.org>, <swarren@nvidia.com>, <lee.jones@linaro.org>,
         <linux-omap@vger.kernel.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v2 0/4]  tps65917: Drivers for TPS65917 PMIC
-Date: Tue, 20 May 2014 14:41:35 +0530
-Message-ID: <1400577099-8743-1-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH v2 2/4] regulator: Add TPS65917 Bindings
+Date: Tue, 20 May 2014 14:41:37 +0530
+Message-ID: <1400577099-8743-3-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400577099-8743-1-git-send-email-j-keerthy@ti.com>
+References: <1400577099-8743-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS65917 chip is a power management IC for Portable Navigation Systems
-and Tablet Computing devices. It contains the following components:
+Add TPS65917 Regulator Bindings.
 
- - Regulators.
- - GPADC.
- - Over Temperature warning and Shut down.
-
-This patch series adds support for TPS65917 mfd device. At this time only
-the regulator functionality is made available.
-
-The closest drivers are PALMAS series drivers.
-The register set is changed. Bit-field defenitions are changed.
-Hence based on the PALMAS drivers and created a new set of drivers
-with code changes as required.
-
-The patches are boot tested on DRA72-EVM.
-
-Keerthy (4):
-  MFD: DT bindings for the TPS65917 family MFD
-  Regulators: Add TPS65917 Bindings
-  mfd: tps65917: Add driver for the TPS65917 PMIC
-  regulator: tps65917: Add Regulator driver for TPS65917 PMIC
-
- Documentation/devicetree/bindings/mfd/tps65917.txt |   35 +
- .../bindings/regulator/tps65917-pmic.txt           |   67 +
- drivers/mfd/Kconfig                                |   12 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/tps65917.c                             |  573 ++++++++
- drivers/regulator/Kconfig                          |   12 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/tps65917-regulator.c             |  810 +++++++++++
- include/linux/mfd/tps65917.h                       | 1509 ++++++++++++++++++++
- 9 files changed, 3020 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/tps65917.txt
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+ .../bindings/regulator/tps65917-pmic.txt           |   67 ++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
- create mode 100644 drivers/mfd/tps65917.c
- create mode 100644 drivers/regulator/tps65917-regulator.c
- create mode 100644 include/linux/mfd/tps65917.h
 
+diff --git a/Documentation/devicetree/bindings/regulator/tps65917-pmic.txt b/Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
+new file mode 100644
+index 0000000..96d1fb7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
+@@ -0,0 +1,67 @@
++* tps65917 regulator IP block devicetree bindings
++
++Required properties:
++- compatible : Should be
++  ti,tps65917-pmic
++
++- interrupt-parent : The parent interrupt controller which is tps65917.
++- interrupts : The interrupt number and the type which can be looked up here:
++	       arch/arm/boot/dts/include/dt-bindings/interrupt-controller/irq.h
++- interrupts-name: The names of the individual interrupts.
++
++Optional nodes:
++- regulators : Must contain a sub-node per regulator from the list below.
++	       Each sub-node should contain the constraints and initialization
++	       information for that regulator. See regulator.txt for a
++	       description of standard properties for these sub-nodes.
++	       Additional custom properties  are listed below.
++
++	       Optional sub-node properties:
++	       ti,warm-reset - maintain voltage during warm reset(boolean)
++	       ti,roof-floor - This takes as optional argument on platform supporting
++	       the rail from desired external control. If there is no argument then
++	       it will be assume that it is controlled by NSLEEP pin.
++	       The valid value for external pins are:
++			ENABLE1 then 1,
++			ENABLE2 then 2 or
++			NSLEEP then 3.
++	       ti,mode-sleep - mode to adopt in pmic sleep 0 - off, 1 - auto,
++	       2 - eco, 3 - forced pwm
++	       ti,smps-range - OTP has the wrong range set for the hardware so override
++	       0 - low range, 1 - high range.
++
++- ti,system-power-controller: Telling whether or not this pmic is controlling
++			      the system power.
++
++Example:
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++pmic {
++	compatible = "ti,tps65917-pmic";
++	interrupt-parent = <&tps65917>;
++	interrupts = <14 IRQ_TYPE_NONE>;
++	interrupts-name = "short-irq";
++
++	ti,system-power-controller;
++
++	regulators {
++		smps1_reg : smps1 {
++			regulator-name = "smps1";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1500000>;
++			regulator-always-on;
++			regulator-boot-on;
++			ti,warm-reset;
++			ti,roof-floor = <1>; /* ENABLE1 control */
++			ti,mode-sleep = <0>;
++			ti,smps-range = <1>;
++		};
++
++		ldo1_reg: ldo1 {
++			regulator-name = "ldo1";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++		};
++	};
++};
 -- 
 1.7.9.5
 
