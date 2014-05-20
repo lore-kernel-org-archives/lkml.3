@@ -1,131 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaETJoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:44:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:32565 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751483AbaETJmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:42:40 -0400
-X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762555"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH V3 01/10] workqueue: use manager lock only to protect worker_idr
-Date: Tue, 20 May 2014 17:46:27 +0800
-Message-ID: <1400579204-3647-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
- <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
+	id S1752691AbaETJrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:47:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:27450 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008AbaETJrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 05:47:05 -0400
+X-IronPort-AV: E=Sophos;i="4.98,873,1392163200"; 
+   d="scan'208";a="133544494"
+Message-ID: <537B2494.2080702@citrix.com>
+Date: Tue, 20 May 2014 10:47:00 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+To: Daniel Kiper <daniel.kiper@oracle.com>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>
+CC: <boris.ostrovsky@oracle.com>, <eshelton@pobox.com>, <hpa@zytor.com>,
+        <ian.campbell@citrix.com>, <jbeulich@suse.com>, <jeremy@goop.org>,
+        <konrad.wilk@oracle.com>, <matt.fleming@intel.com>, <mingo@redhat.com>,
+        <mjg59@srcf.ucam.org>, <stefano.stabellini@eu.citrix.com>,
+        <tglx@linutronix.de>
+Subject: Re: [PATCH v4 3/5] xen: Put EFI machinery in place
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com> <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1400272904-31121-4-git-send-email-daniel.kiper@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker_idr is highly bound to managers and is always/only accessed in manager
-lock context. So we don't need pool->lock for it.
+On 16/05/14 21:41, Daniel Kiper wrote:
+> Put EFI machinery for Xen in place.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   34 ++++++----------------------------
- 1 files changed, 6 insertions(+), 28 deletions(-)
+Put what machinery to do what?
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index c841108..910d963 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -124,8 +124,7 @@ enum {
-  *    cpu or grabbing pool->lock is enough for read access.  If
-  *    POOL_DISASSOCIATED is set, it's identical to L.
-  *
-- * MG: pool->manager_mutex and pool->lock protected.  Writes require both
-- *     locks.  Reads can happen under either lock.
-+ * M: pool->manager_mutex protected.
-  *
-  * PL: wq_pool_mutex protected.
-  *
-@@ -164,7 +163,7 @@ struct worker_pool {
- 	/* see manage_workers() for details on the two manager mutexes */
- 	struct mutex		manager_arb;	/* manager arbitration */
- 	struct mutex		manager_mutex;	/* manager exclusion */
--	struct idr		worker_idr;	/* MG: worker IDs and iteration */
-+	struct idr		worker_idr;	/* M: worker IDs and iteration */
- 
- 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
- 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
-@@ -340,16 +339,6 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- 			   lockdep_is_held(&wq->mutex),			\
- 			   "sched RCU or wq->mutex should be held")
- 
--#ifdef CONFIG_LOCKDEP
--#define assert_manager_or_pool_lock(pool)				\
--	WARN_ONCE(debug_locks &&					\
--		  !lockdep_is_held(&(pool)->manager_mutex) &&		\
--		  !lockdep_is_held(&(pool)->lock),			\
--		  "pool->manager_mutex or ->lock should be held")
--#else
--#define assert_manager_or_pool_lock(pool)	do { } while (0)
--#endif
--
- #define for_each_cpu_worker_pool(pool, cpu)				\
- 	for ((pool) = &per_cpu(cpu_worker_pools, cpu)[0];		\
- 	     (pool) < &per_cpu(cpu_worker_pools, cpu)[NR_STD_WORKER_POOLS]; \
-@@ -378,14 +367,14 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
-  * @wi: integer used for iteration
-  * @pool: worker_pool to iterate workers of
-  *
-- * This must be called with either @pool->manager_mutex or ->lock held.
-+ * This must be called with @pool->manager_mutex.
-  *
-  * The if/else clause exists only for the lockdep assertion and can be
-  * ignored.
-  */
- #define for_each_pool_worker(worker, wi, pool)				\
- 	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
--		if (({ assert_manager_or_pool_lock((pool)); false; })) { } \
-+		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
- 		else
- 
- /**
-@@ -1725,13 +1714,7 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	 * ID is needed to determine kthread name.  Allocate ID first
- 	 * without installing the pointer.
- 	 */
--	idr_preload(GFP_KERNEL);
--	spin_lock_irq(&pool->lock);
--
--	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_NOWAIT);
--
--	spin_unlock_irq(&pool->lock);
--	idr_preload_end();
-+	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_KERNEL);
- 	if (id < 0)
- 		goto fail;
- 
-@@ -1773,18 +1756,13 @@ static struct worker *create_worker(struct worker_pool *pool)
- 		worker->flags |= WORKER_UNBOUND;
- 
- 	/* successful, commit the pointer to idr */
--	spin_lock_irq(&pool->lock);
- 	idr_replace(&pool->worker_idr, worker, worker->id);
--	spin_unlock_irq(&pool->lock);
- 
- 	return worker;
- 
- fail:
--	if (id >= 0) {
--		spin_lock_irq(&pool->lock);
-+	if (id >= 0)
- 		idr_remove(&pool->worker_idr, id);
--		spin_unlock_irq(&pool->lock);
--	}
- 	kfree(worker);
- 	return NULL;
- }
--- 
-1.7.4.4
+> @@ -1714,6 +1725,21 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>  
+>  	xen_setup_runstate_info(0);
+>  
+> +	efi_systab_xen = xen_efi_probe();
+> +
+> +	if (efi_systab_xen) {
+> +		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> +				sizeof(boot_params.efi_info.efi_loader_signature));
+> +		boot_params.efi_info.efi_systab = (__u32)((__u64)efi_systab_xen);
+> +		boot_params.efi_info.efi_systab_hi = (__u32)((__u64)efi_systab_xen >> 32);
+> +
+> +		x86_platform.get_wallclock = efi_get_time;
 
+x86_platform.get_wallclock should always be xen_get_wallclock().
+
+> +		x86_platform.set_wallclock = efi_set_rtc_mmss;
+> +
+> +		set_bit(EFI_BOOT, &efi.flags);
+> +		set_bit(EFI_64BIT, &efi.flags);
+> +	}
+> +
+>  	/* Start the world */
+>  #ifdef CONFIG_X86_32
+>  	i386_start_kernel();
+> --- /dev/null
+> +++ b/drivers/xen/efi.c
+> @@ -0,0 +1,374 @@
+> + * Copyright (c) 2014 Daniel Kiper, Oracle Corporation
+
+Is this really copyright by you personally and not Oracle?
+
+
+> +#define call (op.u.efi_runtime_call)
+> +#define DECLARE_CALL(what) \
+> +	struct xen_platform_op op; \
+> +	op.cmd = XENPF_efi_runtime_call; \
+> +	call.function = XEN_EFI_##what; \
+> +	call.misc = 0
+
+Macros that declare local variables are awful.
+
+Use what Andrew suggested and something like
+
+struct xen_blah *call = &op.u.efi_runtime_call;
+
+
+> +static const struct efi efi_xen __initconst = {
+> +	.systab                   = NULL, /* Initialized later. */
+> +	.runtime_version	  = 0,    /* Initialized later. */
+> +	.mps                      = EFI_INVALID_TABLE_ADDR,
+> +	.acpi                     = EFI_INVALID_TABLE_ADDR,
+> +	.acpi20                   = EFI_INVALID_TABLE_ADDR,
+> +	.smbios                   = EFI_INVALID_TABLE_ADDR,
+> +	.sal_systab               = EFI_INVALID_TABLE_ADDR,
+> +	.boot_info                = EFI_INVALID_TABLE_ADDR,
+> +	.hcdp                     = EFI_INVALID_TABLE_ADDR,
+> +	.uga                      = EFI_INVALID_TABLE_ADDR,
+> +	.uv_systab                = EFI_INVALID_TABLE_ADDR,
+> +	.fw_vendor                = EFI_INVALID_TABLE_ADDR,
+> +	.runtime                  = EFI_INVALID_TABLE_ADDR,
+> +	.config_table             = EFI_INVALID_TABLE_ADDR,
+> +	.get_time                 = xen_efi_get_time,
+> +	.set_time                 = xen_efi_set_time,
+> +	.get_wakeup_time          = xen_efi_get_wakeup_time,
+> +	.set_wakeup_time          = xen_efi_set_wakeup_time,
+> +	.get_variable             = xen_efi_get_variable,
+> +	.get_next_variable        = xen_efi_get_next_variable,
+> +	.set_variable             = xen_efi_set_variable,
+> +	.query_variable_info      = xen_efi_query_variable_info,
+> +	.update_capsule           = xen_efi_update_capsule,
+> +	.query_capsule_caps       = xen_efi_query_capsule_caps,
+> +	.get_next_high_mono_count = xen_efi_get_next_high_mono_count,
+> +	.reset_system             = NULL, /* Functionality provided by Xen. */
+
+Xen provides functionality to reset (just maybe not via an EFI call).
+Should an implementation be provided that does this?
+
+> +	.set_virtual_address_map  = NULL, /* Not used under Xen. */
+> +	.memmap                   = NULL, /* Not used under Xen. */
+> +	.flags			  = 0     /* Initialized later. */
+> +};
+> +
+> +efi_system_table_t __init *xen_efi_probe(void)
+> +{
+> +	struct xen_platform_op op = {
+> +		.cmd = XENPF_firmware_info,
+> +		.u.firmware_info = {
+> +			.type = XEN_FW_EFI_INFO,
+> +			.index = XEN_FW_EFI_CONFIG_TABLE
+> +		}
+> +	};
+> +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
+> +
+> +	if (!xen_initial_domain() || HYPERVISOR_dom0_op(&op))
+> +		return NULL;
+
+	if (!xen_initial_domain())
+		return NULL;
+
+	if (HYPERVISOR_dom0_op(&op) < 0)
+		return NULL;
+
+> +
+> +	/* Here we know that Xen runs on EFI platform. */
+> +
+> +	efi = efi_xen;
+> +
+> +	op.cmd = XENPF_firmware_info;
+> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
+> +	op.u.firmware_info.index = XEN_FW_EFI_VENDOR;
+> +	info->vendor.bufsz = sizeof(vendor);
+> +	set_xen_guest_handle(info->vendor.name, vendor);
+> +
+> +	if (!HYPERVISOR_dom0_op(&op)) {
+
+if (HYPERVISOR_dom0_op(&op) == 0)
+
+David
