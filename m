@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaETNgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:36:33 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:34280 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480AbaETNga (ORCPT
+	id S1753129AbaETNpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:45:08 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:51851 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaETNpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:36:30 -0400
+	Tue, 20 May 2014 09:45:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com, galak@codeaurora.org,
+        grant.likely@linaro.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        grygorii.strashko@ti.com, olof@lixom.net, w-kwok2@ti.com,
+        sboyd@codeaurora.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch v3 0/5] Introduce keystone reset driver
+Date: Tue, 20 May 2014 15:44:15 +0200
+Message-ID: <5272855.vIyLIadgKe@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <537B5598.8070603@ti.com>
+References: <1400495155-11136-1-git-send-email-ivan.khoronzhuk@ti.com> <5095812.b6DgWAxYzH@wuerfel> <537B5598.8070603@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGo_u6pJ0n5Z1-aXdGfh6RNgoe=Pp_9Xaf3sDK6zss1t=qU57Q@mail.gmail.com>
-References: <1400230809-11401-1-git-send-email-chander.kashyap@linaro.org>
-	<537A0247.1030503@ti.com>
-	<CAKohpoknoFuz8qnDpunA7oxr5E_18=+EQsFEy0P39fcU=4Ps9w@mail.gmail.com>
-	<CAGo_u6o+Vysq0LkdFTrP82WOpS1TT-=MD+zgP+Q_L=3RV8x5hA@mail.gmail.com>
-	<CAKohponAx=Hi_Ywgg4hXxrpmmaqy5=pYnb3nSBNUP3KtADTEeA@mail.gmail.com>
-	<CAKohpomKvPcioNmfzvx7vqJHqs_TrhnHH6yYb5w_0f+YvA5hvA@mail.gmail.com>
-	<CAGo_u6pJ0n5Z1-aXdGfh6RNgoe=Pp_9Xaf3sDK6zss1t=qU57Q@mail.gmail.com>
-Date: Tue, 20 May 2014 19:06:29 +0530
-Message-ID: <CAKohpokwBK5gMU30CrN8KymyoMsDY-XtWU1vH6x927qqn9YCkQ@mail.gmail.com>
-Subject: Re: [PATCH v3] PM / OPP: discard duplicate OPPs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:mGfXc7uR6mCed4dfYfN2pIJ9fsy9l7ZJasXAOSlg8u7
+ dFBt9QRkW3lPNAF3up8ghWbjBVzg3tzAA2krpqHv37H2qwlSk8
+ ELp9/cdWskDujaw+QTu/d2RqREyuplyr9sPavjrfY7IT7zTKnR
+ I2aHmZ7hulMuYfHDX0B/TRdRPhgel30blJ96jBAqdf+BwW6S8T
+ AhP03TEiEcr6L4Sbrc7yaJucksth50IYFgNZkTx1XogoznSDIG
+ zUhJ9tIviq3V+X4fXbOY6IGLCP7RhVNGn9hug1BEccnxLTW8v6
+ S/N7PMbIMZRMbmamhvBmZyST0MkyCeYTkvBe3WlMkfdsO39AvX
+ QIdY56BlN58+clKCLaVc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 May 2014 18:02, Nishanth Menon <nm@ti.com> wrote:
->> +               if (new_opp->u_volt == opp->u_volt)
->> +                       ret = -EEXIST;
+On Tuesday 20 May 2014 16:16:08 Ivan Khoronzhuk wrote:
+> Thank for the reply
+> 
+> The reset driver uses two ranges:
+> - RSTYPE, RSTCTRL,RSTCFG, RSISO  (Reset Main PLL Controller)
+> - RESETMUX8-10 registers
+> 
+> The content of these register ranges are completely used by the reset 
+> driver.
+> Currently no one on the SoC can access them instead of the reset driver.
+> Also we don't use syscon/regmap at all - so adding this will be some 
+> overhead.
+> 
+> As I posted previously:
+> "...configuring Reset multiplexer & PLL. And it tunes not only watchdog 
+> usage..."
+> 
+> Yes, it tunes not only watchdog usage and uses part of registers from 
+> PLL controller,
+> but all it works with are connected with reset functionality. These 
+> ranges are used only
+> by reset driver and their purpose is reset functionality.
+> 
+> Maybe in the future some soft can use ranges in question for own tasks, 
+> but it should be
+> done via reset driver. So as I see there is no reasons to use regmap for 
+> reset driver.
 
-As I mentioned in the other mail in same thread, I screwed up
-again. I meant a s/==/!= here..
+You should not look at these registers in isolation, they are part of
+some register area that has other functions as well and that you should
+at least represent correctly in DT.
 
-In words:
-- If we are adding duplicate OPPs (both freq/volt same), return 0 as
-we already have that.
-- if we are adding OPPs with same key (same freq, diff volt), return
--EEXIST and also print both old and new values of both freq and volt.
+When I see something like
 
-> Else -> we now have two OPPs with the same key (same frequency, but
-> different voltage) -> That does not make sense.
-> Example: why would you add:
-> If you already had {1GHz, 1.2V}
-> and you attempted:
-> {1GHz, 1.1V} (if you could do that, then you should added {1GHz, 1.1V}
-> in the first place)
-> OR
-> {1GHz, 1.3V} (if you could do that, then you should add {1GHz, 1.3V}
-> and the {1GHz, 1.2V} is wrong)
++                       reg = <0x23100e4 0x10>,
++                             <0x2620328 0x10>;
 
-Exactly, this is why I wanted to return -EEXIST here with some prints.
+I am certain that there are other things between 0x2310000 and 0x23100e3, and
+probably after 0x23100f4 as well. There must be some data sheet that
+gives this register range a proper name, so put that into DT rather than
+making up some arbitrary stuff that happens to match how today's kernel
+driver needs it.
+
+	Arnd
