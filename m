@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaETOiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:38:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39151 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaETOiW (ORCPT
+	id S1753868AbaETOkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:40:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:32839 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753580AbaETOkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:38:22 -0400
+	Tue, 20 May 2014 10:40:08 -0400
+Date: Tue, 20 May 2014 16:40:03 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        tj@kernel.org, linux-arm-kernel@lists.infradead.org,
+        sebastian.hesselbarth@gmail.com
+Subject: Re: [PATCH v4 1/7] phy: add a driver for the Berlin SATA PHY
+Message-ID: <20140520144003.GD21579@kwain>
+References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
+ <1821771.zFvTDGF2Ae@amdc1032>
+ <20140520134942.GC9873@lunn.ch>
+ <20140520140325.GA21579@kwain>
+ <20140520140631.GF9873@lunn.ch>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1405201020060.1176-100000@iolanthe.rowland.org>
-References: <1400534436-10913-3-git-send-email-ricardo.ribalda@gmail.com> <Pine.LNX.4.44L0.1405201020060.1176-100000@iolanthe.rowland.org>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 20 May 2014 16:38:01 +0200
-Message-ID: <CAPybu_2KztdWmExKXO8uEebpQPouN7wqQww5ZzknmC5-hXvDJA@mail.gmail.com>
-Subject: Re: [PATCH 2/9] usb: gadget: net2280: Dont use magic numbers
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Amit Uttamchandani <auttamchandani@logicube.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140520140631.GF9873@lunn.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
+On Tue, May 20, 2014 at 04:06:31PM +0200, Andrew Lunn wrote:
+> > > > > +config PHY_BERLIN_SATA
+> > > > > +	bool
+> > > > 
+> > > > Is there any real reason why this cannot be tristate?
+> > > 
+> > > What we have seen with SATA drivers and phys, is there is link time
+> > > breakage if the SATA driver is built in and the phy is modular.
+> > > 
+> > > Maybe this has been fixed now? 
+> > 
+> > Using tristate shouldn't be a problem. I compiled without the PHY
+> > driver, no link issue.
+> 
+> The problem i think was when the PHY core and driver was a module and
+> SATA built in. Please give that configuration a go.
 
-In this case, there are only two family of devices supported by the
-driver. Maybe quirks are too much.
+I tested, it went fine.
 
-At the end:
+This was actually fixed by:
+b51fbf9fb0c3 phy-core: Don't allow building phy-core as a module
 
-ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY
-
-is not much bigger than
-
-ep->dev->quirk_flag & PLX_NET2280_QUIRK
-
-But if you prefer the quirk I dont mind implementing it, but please as
-a follow-up patch, since there are 8 patches depending on this :)
-
-Regards!
-
-
-On Tue, May 20, 2014 at 4:21 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
->
->> Instead of using magic numbers use #defines
->>
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->> ---
->>  drivers/usb/gadget/net2280.c | 68 +++++++++++++++++++++++---------------------
->>  drivers/usb/gadget/net2280.h |  1 +
->>  2 files changed, 36 insertions(+), 33 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
->> index 8112d91..ba1fdd8 100644
->> --- a/drivers/usb/gadget/net2280.c
->> +++ b/drivers/usb/gadget/net2280.c
->> @@ -152,7 +152,7 @@ static inline void enable_pciirqenb(struct net2280_ep *ep)
->>  {
->>       u32 tmp = readl(&ep->dev->regs->pciirqenb0);
->>
->> -     if (ep->dev->pdev->vendor == 0x17cc)
->> +     if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
->
-> You ought to be able to make this considerably smaller by using a
-> quirk flag in ep->dev.  The flag can indicate whether or not the
-> controller uses the LEGACY interface.
->
-> Alan Stern
->
-
-
+Antoine
 
 -- 
-Ricardo Ribalda
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
