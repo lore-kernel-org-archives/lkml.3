@@ -1,154 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280AbaETTSB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:18:01 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:49349 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaETTR6 (ORCPT
+	id S1753673AbaETTUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:20:53 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47305 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaETTUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:17:58 -0400
-MIME-Version: 1.0
-Date: Tue, 20 May 2014 12:17:57 -0700
-Message-ID: <CA+HUmGjvHgWB3vcPnXAEVFdFuy9sOaB1BjaDW1-7ai933XEGWQ@mail.gmail.com>
-Subject: pci: kernel crash in bus_find_device
-From: Francesco Ruggeri <fruggeri@arista.com>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Francesco Ruggeri <fruggeri@aristanetworks.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 May 2014 15:20:50 -0400
+From: Alex Elder <elder@linaro.org>
+To: devicetree@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, lorenzo.pieralisi@arm.com,
+        gregory.clement@free-electrons.com, rvaswani@codeaurora.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] devicetree: bindings: separate CPU enable method descriptions
+Date: Tue, 20 May 2014 14:20:49 -0500
+Message-Id: <1400613649-13099-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I posted this about a week ago but I did not get any replies.
-Re-trying.
+The bindings for CPU enable methods are defined in ".../arm/cpus.txt".  As
+additional 32-bit ARM CPUS are converted to use the "enable-method" CPU
+property to imply a particular set of SMP operations to use, the list of these
+methods is likely to become unwieldy.  The current documentation already
+contains several property descriptions that are meaningful only for certain
+enable methods.
 
-While traversing devices on pci_bus_type I ran into the crash below.
-The immediate cause of the crash is that bus_find_device is trying to resume
-a scan starting from a device that has been unregistered (and whose knode_bus
-has already been klist_del' ed).
-The main issue seems to be that when resuming a scan the caller should
-be holding a
-reference to the klist_node, but instead it relies on holding a
-reference to the device.
-I played with a couple of narrow fixes, but a clean solution would
-affect quite a bit of code.
+This patch defines a new Documentation subdirectory whose purpose is to give
+each CPU enable method its own place to define how and when it's used, as
+well as what other properties (optional or required) are associated with
+the method.  The existing enable method documentation is expanded and moved
+from ".../arm/cpus.txt" into new files accordingly.
 
-Has anybody run into this before?
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+v2:  Rename "arm,psci.txt" to be "psci.txt" and fix its content
 
-Thanks,
-Francesco Ruggeri
+ .../bindings/arm/cpu-enable-method/README          | 20 +++++
+ .../bindings/arm/cpu-enable-method/psci.txt        | 45 ++++++++++
+ .../arm/cpu-enable-method/qcom,gcc-msm8660         | 30 +++++++
+ .../arm/cpu-enable-method/qcom,kpss-acc-v1         | 56 +++++++++++++
+ .../arm/cpu-enable-method/qcom,kpss-acc-v2         | 56 +++++++++++++
+ .../bindings/arm/cpu-enable-method/spin-table.txt  | 95 ++++++++++++++++++++++
+ Documentation/devicetree/bindings/arm/cpus.txt     | 29 +------
+ 7 files changed, 305 insertions(+), 26 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/README
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v1
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v2
+ create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
 
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/README b/Documentation/devicetree/bindings/arm/cpu-enable-method/README
+new file mode 100644
+index 0000000..cc9431e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/README
+@@ -0,0 +1,20 @@
++==========================
++CPU enable-method bindings
++==========================
++
++The device tree describes the layout of CPUs in a machine in a single "cpus"
++node, which in turn contains a number of "cpu" sub-nodes defining properties
++for each cpu.
++
++For multiprocessing configurations, CPU cores can be individually enabled
++and disabled.  The enabling capability is used for SMP startup as well as
++CPU hotplug.  A CPU enable method--normally specified in the device tree
++using an "enable-method" property--defines how cores are enabled.  If all
++CPUs in a machine use the same enable method and related property values,
++these properties should be defined in the "cpus" node, which associates the
++property values with all CPUs.  Alternatively, every "cpu" node can define
++its "enable-method" separately.
++
++Documents in this directory define how each of the CPU enable methods are to
++be used, as well the names and possible values of related properties that
++are required by or affect each enable method.
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt b/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+new file mode 100644
+index 0000000..68b26c2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+@@ -0,0 +1,45 @@
++================================
++CPU enable-method "psci" binding
++================================
++
++This document describes the "psci" method for enabling secondary CPUs.  A
++"psci" enable method is supported only in individual "cpu" nodes (even if
++	all CPU cores use the "psci" enable method).
++
++Enable method name:	"psci"
++Compatible cpus:	"arm,cortex-a57" (?)
++Related properties:	(none)
++
++Note:
++This enable method is only available if a valid PSCI node[1] (compatible
++with "arm,psci") is present in the device tree, and it defines a "cpu_on"
++property.
++
++Example (contrived 2-core ARM Cortex-A57 64-bit system):
++
++	psci {
++		compatible = "arm,psci";
++		method = "smc";
++		cpu_on = 0x1;
++	};
++	cpus {
++		#size-cells = <0>;
++		#address-cells = <2>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x0>;
++			enable-method = "psci";
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x1>;
++			enable-method = "psci";
++		};
++	};
++
++--
++[1] arm/psci.txt
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660 b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+new file mode 100644
+index 0000000..b19f51c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+@@ -0,0 +1,30 @@
++======================================================
++Secondary CPU enable-method "qcom,gcc-msm8660" binding
++======================================================
++
++This document describes the "qcom,gcc-msm8660" method for enabling secondary
++CPUs.  A "qcom,gcc-msm8660" enable method should only be used in the "cpus"
++node, to apply to all CPUs.
++
++Enable method name:	"qcom,gcc-msm8660"
++Compatible cpu:		"qcom,scorpion"
++Related properties:	(none)
++
++Example:
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "qcom,scorpion";
++		enable-method = "qcom,gcc-msm8660";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v1 b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v1
+new file mode 100644
+index 0000000..3f6ce56
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v1
+@@ -0,0 +1,56 @@
++======================================================
++Secondary CPU enable-method "qcom,kpss-acc-v1" binding
++======================================================
++
++This document describes the "qcom,kpss-acc-v1" method for enabling CPUs.
++This enable method can be used in either the "cpus" node or in individual
++"cpu" nodes.  Note that each "cpu" node must have both "qcom,saw" and
++"qcom,acc" properties defined (even if the "enable-method" property was
++defined only in the "cpus" node).
++
++Enable method name:	"qcom,kpss-acc-v1"
++Compatible machine:	"qcom,msm8960"
++Compatible cpu:		"qcom,krait"
++Related properties:
++	- qcom,saw
++		Usage:		required (in each "cpu" node")
++		Value type:	<phandle>
++		Definition:
++			Specifies the SAW[1] node associated with this CPU.
++
++	- qcom,acc
++		Usage:		required (in each "cpu" node")
++		Value type:	<phandle>
++		Definition:
++			Specifies the ACC[2] node associated with this CPU.
++
++Example:
++
++/ {
++	compatible = "qcom,msm8960";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "qcom,krait";
++		enable-method = "qcom,kpss-acc-v1";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++			qcom,acc = <&acc0>;
++			qcom,saw = <&saw0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++			qcom,acc = <&acc1>;
++			qcom,saw = <&saw1>;
++		};
++	};
++};
++
++--
++[1] arm/msm/qcom,saw2.txt
++[2] arm/msm/qcom,kpss-acc.txt
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v2 b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v2
+new file mode 100644
+index 0000000..4368d904
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v2
+@@ -0,0 +1,56 @@
++======================================================
++Secondary CPU enable-method "qcom,kpss-acc-v2" binding
++======================================================
++
++This document describes the "qcom,kpss-acc-v2" method for enabling CPUs.
++This enable method can be used in either the "cpus" node or in individual
++"cpu" nodes.  Note that each "cpu" node must have both "qcom,saw" and
++"qcom,acc" properties defined (even if the "enable-method" property was
++defined only in the "cpus" node).
++
++Enable method name:	"qcom,kpss-acc-v2"
++Compatible machine:	"qcom,msm8974"
++Compatible cpu:		"qcom,krait"
++Related properties:
++	- qcom,saw
++		Usage:		required (in each "cpu" node")
++		Value type:	<phandle>
++		Definition:
++			Specifies the SAW[1] node associated with this CPU.
++
++	- qcom,acc
++		Usage:		required (in each "cpu" node")
++		Value type:	<phandle>
++		Definition:
++			Specifies the ACC[2] node associated with this CPU.
++
++Example:
++
++/ {
++	compatible = "qcom,msm8974";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "qcom,krait";
++		enable-method = "qcom,kpss-acc-v2";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++			qcom,acc = <&acc0>;
++			qcom,saw = <&saw0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++			qcom,acc = <&acc1>;
++			qcom,saw = <&saw1>;
++		};
++	};
++};
++
++--
++[1] arm/msm/qcom,saw2.txt
++[2] arm/msm/qcom,kpss-acc.txt
+diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt b/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
+new file mode 100644
+index 0000000..aee3617
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
+@@ -0,0 +1,95 @@
++================================================
++Secondary CPU enable-method "spin-table" binding
++================================================
++
++This document describes the "spin-table" method for enabling secondary CPUs.
++A "spin-table" enable method can be used in either the "cpus" node or in
++individual "cpu" nodes.
++
++Enable method name:	"spin-table"
++Compatible cpus:	"arm,cortex-a57" (?)
++Related properties:
++	- cpu-release-addr
++		Usage:		required
++		Value type:	<prop-encoded-array>
++		Definition:
++			A two cell value identifying a 64-bit memory location
++			used by the boot CPU to inform a secondary CPU it
++			should begin its kernel bootstrap.  Memory at this
++			location must initially be zeroed.
++
++Examples (contrived 4-core ARM Cortex-A57 64-bit systems):
++
++The first example uses the same enable method for all cores.
++
++	cpus {
++		#size-cells = <0>;
++		#address-cells = <2>;
++		enable-method = "spin-table";
++		cpu-release-addr = <0 0x20000000>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x1>;
++		};
++
++		cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x100>;
++		};
++
++		cpu@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x101>;
++		};
++	};
++
++
++The second example uses specifies distinct enable method properties for each
++CPU core.
++
++	cpus {
++		#size-cells = <0>;
++		#address-cells = <2>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x0>;
++			enable-method = "spin-table";
++			cpu-release-addr = <0 0x20000000>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x1>;
++			enable-method = "spin-table";
++			cpu-release-addr = <0 0x20000008>;
++		};
++
++		cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x100>;
++			enable-method = "spin-table";
++			cpu-release-addr = <0 0x20000010>;
++		};
++
++		cpu@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a57";
++			reg = <0x0 0x101>;
++			enable-method = "spin-table";
++			cpu-release-addr = <0 0x20000018>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+index 333f4ae..2bb2a3e 100644
+--- a/Documentation/devicetree/bindings/arm/cpus.txt
++++ b/Documentation/devicetree/bindings/arm/cpus.txt
+@@ -185,30 +185,8 @@ nodes to be present and contain the properties described below.
+ 			    "qcom,gcc-msm8660"
+ 			    "qcom,kpss-acc-v1"
+ 			    "qcom,kpss-acc-v2"
+-
+-	- cpu-release-addr
+-		Usage: required for systems that have an "enable-method"
+-		       property value of "spin-table".
+-		Value type: <prop-encoded-array>
+-		Definition:
+-			# On ARM v8 64-bit systems must be a two cell
+-			  property identifying a 64-bit zero-initialised
+-			  memory location.
+-
+-	- qcom,saw
+-		Usage: required for systems that have an "enable-method"
+-		       property value of "qcom,kpss-acc-v1" or
+-		       "qcom,kpss-acc-v2"
+-		Value type: <phandle>
+-		Definition: Specifies the SAW[1] node associated with this CPU.
+-
+-	- qcom,acc
+-		Usage: required for systems that have an "enable-method"
+-		       property value of "qcom,kpss-acc-v1" or
+-		       "qcom,kpss-acc-v2"
+-		Value type: <phandle>
+-		Definition: Specifies the ACC[2] node associated with this CPU.
+-
++		Details about use of these CPU enable methods is documented
++		elsewhere[1].
+ 
+ Example 1 (dual-cluster big.LITTLE system 32-bit):
+ 
+@@ -403,5 +381,4 @@ cpus {
+ };
+ 
+ --
+-[1] arm/msm/qcom,saw2.txt
+-[2] arm/msm/qcom,kpss-acc.txt
++[1] arm/cpu-enable-method/
+-- 
+1.9.1
 
-------------[ cut here ]------------
-WARNING: at /bld/EosKernel/Artools-rpmbuild/linux-3.4/include/linux/kref.h:41
-klist_iter_init_node+0x30/0x38()
-Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
-macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
-nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
-xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
-8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
-iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
-ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
-kvm_amd kvm
-Pid: 6861, comm: pci_scan_0 Tainted: P           O
-3.4.43.Ar-1797671.flbocafruggeri #1
-Call Trace:
- [<ffffffff81029dc4>] warn_slowpath_common+0x80/0x98
- [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
- [<ffffffff81029df1>] warn_slowpath_null+0x15/0x17
- [<ffffffff813a43ce>] klist_iter_init_node+0x30/0x38
- [<ffffffff8120e57e>] bus_find_device+0x48/0x90
- [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
- [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
- [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
- [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
- [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
- [<ffffffff81040e6e>] kthread+0x84/0x8c
- [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
- [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
- [<ffffffff813c8b10>] ? gs_change+0xb/0xb
----[ end trace 79cea1ec476672fe ]---
-------------[ cut here ]------------
-WARNING: at /bld/EosKernel/Artools-rpmbuild/linux-3.4/lib/klist.c:189
-klist_release+0x2b/0xeb()
-Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
-macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
-nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
-xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
-8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
-iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
-ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
-kvm_amd kvm
-Pid: 6861, comm: pci_scan_0 Tainted: P        W  O
-3.4.43.Ar-1797671.flbocafruggeri #1
-Call Trace:
- [<ffffffff81029dc4>] warn_slowpath_common+0x80/0x98
- [<ffffffff8120de13>] ? bus_get_device_klist+0x10/0x10
- [<ffffffff81029df1>] warn_slowpath_null+0x15/0x17
- [<ffffffff813a440e>] klist_release+0x2b/0xeb
- [<ffffffff813a44ec>] klist_dec_and_del+0x1e/0x25
- [<ffffffff813a4528>] klist_next+0x35/0xc9
- [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
- [<ffffffff8120deb3>] next_device+0x9/0x19
- [<ffffffff8120e5a2>] bus_find_device+0x6c/0x90
- [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
- [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
- [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
- [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
- [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
- [<ffffffff81040e6e>] kthread+0x84/0x8c
- [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
- [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
- [<ffffffff813c8b10>] ? gs_change+0xb/0xb
----[ end trace 79cea1ec476672ff ]---
-general protection fault: 0000 [#1] PREEMPT SMP
-CPU 1
-Modules linked in: pci_scan(O) sch_prio sand_dma(PO) arista_bde(PO)
-macvlan ip6table_mangle iptable_mangle msr nf_conntrack_ipv6
-nf_defrag_ipv6 ip6t_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_LOG
-xt_limit ipt_REJECT xt_hl xt_state xt_multiport xt_tcpudp kbfd(O)
-8021q garp stp llc tun scd_em_driver(O) nf_conntrack_tftp iptable_raw
-iptable_filter ip_tables xt_NOTRACK nf_conntrack xt_mark ip6table_raw
-ip6table_filter ip6_tables x_tables scd(O) k8temp amd64_edac_mod hwmon
-kvm_amd kvm
-
-Pid: 6861, comm: pci_scan_0 Tainted: P        W  O
-3.4.43.Ar-1797671.flbocafruggeri #1
-RIP: 0010:[<ffffffff813a442c>]  [<ffffffff813a442c>] klist_release+0x49/0xeb
-RSP: 0018:ffff88001c55bd50  EFLAGS: 00010293
-RAX: dead000000200200 RBX: ffff880030949e78 RCX: ffff880000000010
-RDX: dead000000100100 RSI: 0000000000000000 RDI: dead000000200200
-RBP: ffff88001c55bd70 R08: dead000000100100 R09: 000000000000000a
-R10: 0000000000000000 R11: ffffffff81619920 R12: ffff880030949e90
-R13: ffff880030949e78 R14: ffffffff8120de13 R15: ffff880027e717e0
-FS:  0000000000000000(0000) GS:ffff88013fb00000(0000) knlGS:00000000f73bc6d0
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000009012644 CR3: 0000000069f9e000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process pci_scan_0 (pid: 6861, threadinfo ffff88001c55a000, task
-ffff880032ffd340)
-Stack:
- ffff880030949e78 ffff88001c55bde0 dead000000100100 ffff880030949e78
- ffff88001c55bd80 ffffffff813a44ec ffff88001c55bdc0 ffffffff813a4528
- ffff88001c55bde0 ffff880027e717e0 ffffffff811b57f1 ffff88001c55bde0
-Call Trace:
- [<ffffffff813a44ec>] klist_dec_and_del+0x1e/0x25
- [<ffffffff813a4528>] klist_next+0x35/0xc9
- [<ffffffff811b57f1>] ? pci_do_find_bus+0x49/0x49
- [<ffffffff8120deb3>] next_device+0x9/0x19
- [<ffffffff8120e5a2>] bus_find_device+0x6c/0x90
- [<ffffffff811b5908>] pci_get_dev_by_id+0x5e/0x81
- [<ffffffff811b5a6a>] pci_get_subsys+0x5c/0x7f
- [<ffffffff811b5a9e>] pci_get_device+0x11/0x13
- [<ffffffffa00b2087>] pci_scan+0x39/0x8a [pci_scan]
- [<ffffffffa00b204e>] ? init_module+0x3c/0x3c [pci_scan]
- [<ffffffff81040e6e>] kthread+0x84/0x8c
- [<ffffffff813c8b14>] kernel_thread_helper+0x4/0x10
- [<ffffffff81040dea>] ? __init_kthread_worker+0x37/0x37
- [<ffffffff813c8b10>] ? gs_change+0xb/0xb
-Code: 00 48 c7 c7 a1 01 51 81 e8 ce 59 c8 ff 49 8b 54 24 f0 49 8b 44
-24 f8 49 b8 00 01 10 00 00 00 ad de 48 bf 00 02 20 00 00 00 ad de <48>
-89 42 08 48 89 10 49 89 7c 24 f8 4d 89 44 24 f0 48 c7 c7 30
-RIP  [<ffffffff813a442c>] klist_release+0x49/0xeb
- RSP <ffff88001c55bd50>
