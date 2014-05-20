@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaETC1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:27:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35545 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaETC07 (ORCPT
+	id S1753231AbaETC3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:29:53 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:44253 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaETC3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:26:59 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <537ABD6F.9090608@lge.com>
-Date: Tue, 20 May 2014 11:26:55 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 19 May 2014 22:29:52 -0400
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Minchan Kim <minchan.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Laura Abbott <lauraa@codeaurora.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Heesub Shin <heesub.shin@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, gurugio@gmail.com
-Subject: Re: [RFC][PATCH] CMA: drivers/base/Kconfig: restrict CMA size to
- non-zero value
-References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <20140513030057.GC32092@bbox> <20140515015301.GA10116@js1304-P5Q-DELUXE> <5375C619.8010501@lge.com> <xa1tppjdfwif.fsf@mina86.com> <537962A0.4090600@lge.com> <20140519055527.GA24099@js1304-P5Q-DELUXE> <xa1td2f91qw5.fsf@mina86.com> <537AA6C7.1040506@lge.com> <xa1tzjiddyrr.fsf@mina86.com>
-In-Reply-To: <xa1tzjiddyrr.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140519151120.GE24333@sdfg.com.ar>
+References: <1395293806-25847-1-git-send-email-namhyung@kernel.org> <20140519151120.GE24333@sdfg.com.ar>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 20 May 2014 02:29:31 +0000
+X-Google-Sender-Auth: lDJ5zahD05yMyRzzbLvOAQL5Hnw
+Message-ID: <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
+Subject: Re: [PATCHSET 00/21] perf tools: Add support to accumulate hist
+ periods (v9)
+To: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Rodrigo,
 
-2014-05-20 오전 10:28, Michal Nazarewicz 쓴 글:
-> On Mon, May 19 2014, Gioh Kim wrote:
->> If CMA option is not selected, __alloc_from_contiguous would not be
->> called.  We don't need to the fallback allocation.
->>
->> And if CMA option is selected and initialized correctly,
->> the cma allocation can fail in case of no-CMA-memory situation.
->> I thinks in that case we don't need to the fallback allocation also,
->> because it is normal case.
->>
->> Therefore I think the restriction of CMA size option and make CMA work
->> can cover every cases.
->
-> Wait, you just wrote that if CMA is not initialised correctly, it's fine
-> for atomic pool initialisation to fail, but if CMA size is initialised
-> correctly but too small, this is somehow worse situation?  I'm a bit
-> confused to be honest.
+On Mon, May 19, 2014 at 3:11 PM, Rodrigo Campos <rodrigo@sdfg.com.ar> wrote:
+> Is there something I can help to have this merged ? As far as I tested, this
+> works fine here. Or is this ok, just waiting on the "perf report: Add -F option for
+> specifying output fields" patchset ?
 
-I'm sorry to confuse you.
-Please forgive my poor English.
-My point is atomic_pool should be able to work with/without CMA.
+Thanks for testing!!  As I never got (negative) feedbacks or reviews
+so far, I'd assume it's ok. :)  But as you said, it should wait for
+the output field option merged which I hope to be done soon.  I'll
+update and report this once it's done.
 
-
->
-> IMO, cma=0 command line argument should be supported, as should having
-> the default CMA size zero.  If CMA size is set to zero, kernel should
-> behave as if CMA was not enabled at compile time.
-
-It's also good if atomic_pool can work well with zero CMA size.
-
-I can give up my patch.
-But Joonsoo's patch should be applied.
-
-Joonsoo, can you please send the full patch to maintainers?
-
->
->
->
+Thanks,
+Namhyung
