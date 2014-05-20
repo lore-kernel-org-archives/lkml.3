@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaETIno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:43:44 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42171 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaETInk (ORCPT
+	id S1752835AbaETIoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:44:08 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57241 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaETIoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:43:40 -0400
-Date: Tue, 20 May 2014 09:43:30 +0100
+	Tue, 20 May 2014 04:44:04 -0400
+Date: Tue, 20 May 2014 09:43:58 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Doug Anderson <dianders@chromium.org>, swarren@nvidia.com,
-        abrestic@chromium.org, dgreid@chromium.org, olof@lixom.net,
-        sjg@chromium.org, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sameo@linux.intel.com, jdelvare@suse.de,
-        shane.huang@amd.com, maxime.ripard@free-electrons.com,
-        laurent.pinchart+renesas@ideasonboard.com,
-        u.kleine-koenig@pengutronix.de, bjorn.andersson@sonymobile.com,
-        kevin.strasser@linux.intel.com, linux@prisktech.co.nz, andrew@lunn.ch,
-        andriy.shevchenko@linux.intel.com, schwidefsky@de.ibm.com,
-        matt.porter@linaro.org, ch.naveen@samsung.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 6/7] i2c: ChromeOS EC tunnel driver
-Message-ID: <20140520084330.GA24991@lee--X1>
+To: Doug Anderson <dianders@chromium.org>
+Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        David Hendricks <dhendrix@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/7] mfd: cros_ec: spi: calculate delay between
+ transfers correctly
+Message-ID: <20140520084358.GB24991@lee--X1>
 References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
- <1398879850-9111-7-git-send-email-dianders@chromium.org>
- <20140519105055.GA2612@katana>
- <20140519172258.GD20435@lee--X1>
- <20140519221902.GA2871@katana>
+ <1398879850-9111-2-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140519221902.GA2871@katana>
+In-Reply-To: <1398879850-9111-2-git-send-email-dianders@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Code looks good, so
-> > > 
-> > > Reviewed-by: Wolfram Sang <wsa@the-dreams.de>
-> > > 
-> > > I don't mind how it gets upstream. I can take it, but you can also keep
-> > > it in this series.
-> > 
-> > Let's keep the series together.  Are you happy with me just merging it
-> > through MFD, or would you like a pull-request, so you can take it in
-> > too?
+> From: David Hendricks <dhendrix@chromium.org>
 > 
-> Just merge it...
+> To avoid spamming the EC we calculate the time between the previous
+> transfer and the current transfer and force a delay if the time delta
+> is too small.
+> 
+> However, a small miscalculation causes the delay period to be
+> far too short. Most noticably this impacts commands with a long
+> turnaround time such as EC firmware reads and writes.
+> 
+> Signed-off-by: David Hendricks <dhendrix@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes in v3: None
+> Changes in v2: None
+> 
+>  drivers/mfd/cros_ec_spi.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks dude.
+Applied, thanks.
+
+> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+> index 84af8d7..c185eb6 100644
+> --- a/drivers/mfd/cros_ec_spi.c
+> +++ b/drivers/mfd/cros_ec_spi.c
+> @@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+>  		ktime_get_ts(&ts);
+>  		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
+>  		if (delay < EC_SPI_RECOVERY_TIME_NS)
+> -			ndelay(delay);
+> +			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
+>  	}
+>  
+>  	/* Transmit phase - send our message */
 
 -- 
 Lee Jones
