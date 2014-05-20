@@ -1,163 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaETObL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:31:11 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:32884 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaETObH (ORCPT
+	id S1753694AbaETOcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:32:36 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:63550 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaETOcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:31:07 -0400
+	Tue, 20 May 2014 10:32:35 -0400
+Date: Tue, 20 May 2014 16:32:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
+ workqueues
+Message-ID: <20140520143229.GB17741@localhost.localdomain>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+ <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+ <20140516201225.GL5379@htj.dyndns.org>
+ <20140517134151.GA32371@localhost.localdomain>
+ <20140519201531.GC27506@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
-	<1400169891-29546-2-git-send-email-tthayer@altera.com>
-	<20140516075344.GF949@pengutronix.de>
-	<CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
-	<20140519191206.GH949@pengutronix.de>
-	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
-Date: Tue, 20 May 2014 09:31:06 -0500
-Message-ID: <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: Thor Thayer <tthayer.linux@gmail.com>
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
-        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
-        Grant Likely <grant.likely@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140519201531.GC27506@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+On Mon, May 19, 2014 at 04:15:31PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Sat, May 17, 2014 at 03:41:55PM +0200, Frederic Weisbecker wrote:
+> > > > -	last_pool = get_work_pool(work);
+> > > > +	last_pool = wq->flags & __WQ_ORDERED ? NULL : get_work_pool(work);
+> > > >  	if (last_pool && last_pool != pwq->pool) {
+> > > >  		struct worker *worker;
+> > > 
+> > > I'm not a big fan of the fact that ordered queues need to be handled
+> > > differently when queueing, but as the code is currently written, this
+> > > is pretty much necessary to maintain execution order, right?
+> > >
+> > > Otherwise, you end up with requeueing work items targeting the pwq it
+> > > was executing on and new ones targeting the newest one screwing up the
+> > > ordering.  I think that'd be a lot more important to note in the
+> > > comment.  This is a correctness measure.  Back-to-back requeueing
+> > > being affected by this is just a side-effect.
+> > 
+> > In the case of ordered workqueues it actually doesn't matter much in
+> > term of ordering. But it's needed when pwqs are replaced (as it happens
+> > in apply_workqueue_attrs(). We must make sure works requeueing themselves
+> > don't always requeue to the old pwq otherwise it will never be able to
+> > switch and be released. Also the next work items will be queued on the next
+> 
+> But that's the same for other pwqs too.  Back-to-back requeueing will
+> hold back pwq switching on any workqueue.
 
->>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->>> >> new file mode 100644
->>> >> index 0000000..8f8746b
->>> >> --- /dev/null
->>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->>> >> @@ -0,0 +1,11 @@
->>> >> +Altera SOCFPGA SDRAM Controller
->>> >> +
->>> >> +Required properties:
->>> >> +- compatible : "altr,sdr-ctl";
->>> >> +- reg : Should contain 1 register ranges(address and length)
->>> >> +
->>> >> +Example:
->>> >> +     sdrctl@ffc25000 {
->>> >> +             compatible = "altr,sdr-ctl";
->>> >> +             reg = <0xffc25000 0x1000>;
->>> >> +     };
->>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->>> >> index df43702..6ce912e 100644
->>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
->>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
->>> >> @@ -676,6 +676,11 @@
->>> >>                       clocks = <&l4_sp_clk>;
->>> >>               };
->>> >>
->>> >> +             sdrctl@ffc25000 {
->>> >> +                     compatible = "altr,sdr-ctl", "syscon";
->>> >                                                    ^^^^^^^^^^
->>> >
->>> > Get rid of that, too, please.
->>>
->>> Hi Steffan,
->>>
->>> I believe I need to keep the "syscon". The same register (ctrlcfg)
->>> that has the ECC enable bitfield also includes the DRAM configuration
->>> bitfields that other drivers will want to access (specifically the
->>> FPGA bridge needs this information). Since this register will be
->>> shared between drivers,  syscon seems like the best solution.
->>>
->>
->> Hm, from looking at the documentation of the ctrlcfg I can't really
->> understand which bits you would need for the FPGA brigde and why.
+I don't think so, because non ordered pwqs aren't created with 0 max_active,
+so they can run before the old pwq is released. It's not holding back the new
+one and creating a starvation there.
 
-Hi Steffen,
+But maybe I forget other details.
 
-Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
-wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
-allows an FPGA port to come out of reset (enables that port).  Has no
-other effect on SDRAM configuration.
+> 
+> > pwq but this one will never be able to run due to the old workqueue still
+> > being used by the item requeing itself. So we also risk starvation on the
+> > new workqueue.
+> > 
+> > But the ordering itself is actually fine for ordered workqueue. It's actually
+> > enforced by the fact that only one pwq can run at a time for a given workqueue.
+> 
+> Maybe I'm confused but I don't think it'd be.  Let's say there was an
+> attribute change with one work item, A, which is performing
+> back-to-back requeueing and another one, B, which queues itself
+> intermittently.  If B is queued while A is executing, followed by A
+> requeueing itself, the expected execution order is A - B - A; however,
+> without the above exception for ordered workqueues, it'd end up A - A
+> - B because B will end up on the new pwq while A on the older one and
+> max_active won't be transferred to the new pwq before it becomes
+> empty.
 
->> That all sounds like stuff you would want to set for the specific
->> RAM you are dealing with on a specific board.
->> What bridge are you talking about? The SDRAM bridge?
+Ah right AAB instead of ABA is possible indeed. I don't know if some workqueue
+rely on such guarantee but it's possible.
 
-Yes, the port allows the FPGA a direct path to the SDRAM.  This one
-register the only register in the sdr that the bridge driver needs.
+In which case we have one more reason to make an exception on ordered workqueues
+previous pwq reuse.
 
->>
->> I can see the problem with the ECC enable, though.
->>
->> Regards,
->> Steffen
->>
->
-> Hi Steffen,
->
-> I'll get more details from the guy working on the FPGA bridge when he
-> gets back in the office. When I started working on EDAC, that register
-> had been allocated by the FPGA bridge driver so we decided to use the
-> syscon to allow sharing of the register.
->
-> My understanding was that the FPGA bridge as an SDRAM master would
-> allow FPGA devices to access the SDRAM.  As part of that process, they
-> may want to read the SDRAM configuration.
+> 
+> > > Just collapse it into the calling function.  This obfuscates more than
+> > > helps.
+> > 
+> > Yeah but the condition is already big. Lets hope the result won't be too ugly.
+> 
+> I didn't mean that the condition should be encoded in the if
+> conditional.  It's fine to break it out using a separate variable or
+> whatever.  I just don't think breaking it out to a separate function
+> is helping anything.
 
-The FPGA bridge driver doesn't look at the SDRAM configuration.  It
-just wants access to this one register so it can enable or disable the
-FPGA path to SDRAM.  The only function of this bridge driver is to
-enable/disable the bridge.
+Alright.
 
-~Alan
-
->
-> I'll need to get more details from the driver developer because the
-> FPGA driver is in flux while the appropriate driver architecture is
-> being discussed.
->
-> Thor
->
->
->>> >                 sdrctl@ffc25000 {
->>> >                         compatible = "altr,sdr-ctl";
->>> >                         reg = <0xffc25000 0x1000>;
->>> >                         ranges;
->>> >
->>> >                         edac@ffc2502c {
->>> >                                 compatible = "altr,sdram-edac";
->>> >                                 reg = <0xffc2502c 0x50>;
->>> >                                 interrupts = <0 39 4>;
->>> >                         };
->>> >                 };
->>> >
->>> > Then we can later add:
->>> >
->>> >                         sdr-ports: ports@ffc2507c {
->>> >                                 #reset-cells = <1>;
->>> >                                 compatible = "altr,sdr-ports";
->>> >                                 reg = <0xffc2507c 0x10>;
->>> >                                 clocks = <&ddr_dqs_clk>;
->>> >                                 ...
->>> >                         };
->>
->> --
->> Pengutronix e.K.                           |                             |
->> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
->> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
