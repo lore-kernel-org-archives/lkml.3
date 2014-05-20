@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaETOVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:21:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42514 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753651AbaETOVf (ORCPT
+	id S1753618AbaETOXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:23:01 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:42135 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbaETOXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:21:35 -0400
-Date: Tue, 20 May 2014 10:21:34 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <joe@perches.com>,
-        <auttamchandani@logicube.com>
-Subject: Re: [PATCH 2/9] usb: gadget: net2280: Dont use magic numbers
-In-Reply-To: <1400534436-10913-3-git-send-email-ricardo.ribalda@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1405201020060.1176-100000@iolanthe.rowland.org>
+	Tue, 20 May 2014 10:23:00 -0400
+Date: Tue, 20 May 2014 10:22:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 03/10] workqueue: async worker destruction
+Message-ID: <20140520142256.GA2804@htj.dyndns.org>
+References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
+ <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
+ <1400579204-3647-4-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400579204-3647-4-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Ricardo Ribalda Delgado wrote:
+On Tue, May 20, 2014 at 05:46:29PM +0800, Lai Jiangshan wrote:
+>  /**
+> + * worker_detach_from_pool() - detach the worker from the pool
+> + * @worker: worker which is attached to its pool
+> + * @pool: attached pool
+> + *
+> + * Undo the attaching which had been done in create_worker().
+> + * The caller worker shouldn't access to the pool after detached
+> + * except it has other reference to the pool.
+> + */
+> +static void worker_detach_from_pool(struct worker *worker,
+> +				    struct worker_pool *pool)
+> +{
+> +	struct completion *detach_completion = NULL;
+> +
+> +	mutex_lock(&pool->manager_mutex);
+> +	idr_remove(&pool->worker_idr, worker->id);
+> +	if (idr_is_empty(&pool->worker_idr))
+> +		detach_completion = pool->detach_completion;
+> +	mutex_unlock(&pool->manager_mutex);
+> +
+> +	if (detach_completion)
+> +		complete(detach_completion);
+> +}
 
-> Instead of using magic numbers use #defines
-> 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
->  drivers/usb/gadget/net2280.c | 68 +++++++++++++++++++++++---------------------
->  drivers/usb/gadget/net2280.h |  1 +
->  2 files changed, 36 insertions(+), 33 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-> index 8112d91..ba1fdd8 100644
-> --- a/drivers/usb/gadget/net2280.c
-> +++ b/drivers/usb/gadget/net2280.c
-> @@ -152,7 +152,7 @@ static inline void enable_pciirqenb(struct net2280_ep *ep)
->  {
->  	u32 tmp = readl(&ep->dev->regs->pciirqenb0);
->  
-> -	if (ep->dev->pdev->vendor == 0x17cc)
-> +	if (ep->dev->pdev->vendor == PCI_VENDOR_ID_PLX_LEGACY)
+As a separate clean up, please submit a patch to remove @pool from the
+above function.  @worker is attached to @pool, so the argument is
+redundant.
 
-You ought to be able to make this considerably smaller by using a 
-quirk flag in ep->dev.  The flag can indicate whether or not the 
-controller uses the LEGACY interface.
+Thanks.
 
-Alan Stern
-
+-- 
+tejun
