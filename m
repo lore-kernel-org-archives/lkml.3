@@ -1,88 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaETMcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 08:32:51 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:65178 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaETMct (ORCPT
+	id S1753497AbaETMen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 08:34:43 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18382 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaETMej convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 08:32:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpomKvPcioNmfzvx7vqJHqs_TrhnHH6yYb5w_0f+YvA5hvA@mail.gmail.com>
-References: <1400230809-11401-1-git-send-email-chander.kashyap@linaro.org>
-	<537A0247.1030503@ti.com>
-	<CAKohpoknoFuz8qnDpunA7oxr5E_18=+EQsFEy0P39fcU=4Ps9w@mail.gmail.com>
-	<CAGo_u6o+Vysq0LkdFTrP82WOpS1TT-=MD+zgP+Q_L=3RV8x5hA@mail.gmail.com>
-	<CAKohponAx=Hi_Ywgg4hXxrpmmaqy5=pYnb3nSBNUP3KtADTEeA@mail.gmail.com>
-	<CAKohpomKvPcioNmfzvx7vqJHqs_TrhnHH6yYb5w_0f+YvA5hvA@mail.gmail.com>
-Date: Tue, 20 May 2014 07:32:48 -0500
-X-Google-Sender-Auth: 1OQb9a3cvo6KciWVwiQtJDE2BQg
-Message-ID: <CAGo_u6pJ0n5Z1-aXdGfh6RNgoe=Pp_9Xaf3sDK6zss1t=qU57Q@mail.gmail.com>
-Subject: Re: [PATCH v3] PM / OPP: discard duplicate OPPs
-From: Nishanth Menon <nm@ti.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Inderpal Singh <inderpal.s@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 May 2014 08:34:39 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-ee-537b4bdb1671
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/7] phy: add a driver for the Berlin SATA PHY
+Date: Tue, 20 May 2014 14:34:20 +0200
+Message-id: <1821771.zFvTDGF2Ae@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
+References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jAd3b3tXBBitOWlh0XFvMZLFjxX9W
+	i/lHzrFavDu+m8XiwtMeNotNj6+xWhzb8YjJ4vKuOWwW7386Wjx90MRk8Wv5UUaL7x9nsjrw
+	eDzZdJHRY+esu+wem1Z1snlsXlLvMXnhRWaP4ze2M3l83iQXwB7FZZOSmpNZllqkb5fAlfHk
+	/jeWgne+FVsfrmJuYJzs0MXIySEhYCLx/MshJghbTOLCvfVsXYxcHEICixglVrVdZ4VwWpgk
+	VtxcxgxSxSZgJTGxfRUjiC0i4CmxYH4bE0gRs8A2JokfH7rBRgkLuErMb7sKVsQioCpx/skq
+	FhCbV0BT4vax72wgtihQ847tK8FsToEQiVufWpkgts1mlFjecwmqQVDix+R7YDazgLbEk3cX
+	WCFsdYlJ8xYxT2AUmIWkbBaSsllIyhYwMq9iFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6W
+	Z1I7GFc2WBxiFOBgVOLhPSBeFSzEmlhWXJl7iFGCg1lJhPeCU3WwEG9KYmVValF+fFFpTmrx
+	IUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBsa2F5m/E6/embMtxuTjnsxpZsZC2fyv
+	lks5ryxXn6TKmHixKNv16j2PwI2GX4trAtw4Fj+/tNhpTm1cg6eDw8fJq4ME8vgFSrN1OE9L
+	SDf1zctWWOc2Yx030zUOhwT5hph6m/bT83d7ngzVvavzbnn4t+8FNoYrWIN2Say+e3V/0c/Y
+	1T27jiuxFGckGmoxFxUnAgDwIVsMkgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 7:05 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 May 2014 16:56, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> But we aren't talking about failure here. Its not failure. The operation
->> we are trying to do is already done and nothing should break if the
->> OPP was already there or its added now. Its all the same.
->
-> Though after more thought into this I feel this must also be done:
->
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index bdf09f5..3f540d8 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -453,9 +453,13 @@ int dev_pm_opp_add(struct device *dev, unsigned
-> long freq, unsigned long u_volt)
->         }
->
->         if (new_opp->rate == opp->rate) {
-> +               int ret = 0;
+
+Hi,
+
+Few minor issues below..
+
+On Tuesday, May 20, 2014 11:04:29 AM Antoine Ténart wrote:
+> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
+> 
+> The mode selection can let us think this PHY can be configured to fit
+> other purposes. But there are reasons to think the SATA mode will be
+> the only one usable: the PHY registers are only accessible indirectly
+> through two registers in the SATA range, the PHY seems to be integrated
+> and no information tells us the contrary. For these reasons, make the
+> driver a SATA PHY driver.
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/phy/Kconfig           |   5 +
+>  drivers/phy/Makefile          |   1 +
+>  drivers/phy/phy-berlin-sata.c | 230 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 236 insertions(+)
+>  create mode 100644 drivers/phy/phy-berlin-sata.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 4906c27fa3bd..b31b1986fda4 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -15,6 +15,11 @@ config GENERIC_PHY
+>  	  phy users can obtain reference to the PHY. All the users of this
+>  	  framework should select this config.
+>  
+> +config PHY_BERLIN_SATA
+> +	bool
+
+Is there any real reason why this cannot be tristate?
+
+> +	depends on ARCH_BERLIN && OF
+> +	select GENERIC_PHY
 > +
-> +               if (new_opp->u_volt == opp->u_volt)
-> +                       ret = -EEXIST;
-Else -> we now have two OPPs with the same key (same frequency, but
-different voltage) -> That does not make sense.
-Example: why would you add:
-If you already had {1GHz, 1.2V}
-and you attempted:
-{1GHz, 1.1V} (if you could do that, then you should added {1GHz, 1.1V}
-in the first place)
-OR
-{1GHz, 1.3V} (if you could do that, then you should add {1GHz, 1.3V}
-and the {1GHz, 1.2V} is wrong)
+>  config PHY_EXYNOS_MIPI_VIDEO
+>  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
+>  	depends on HAS_IOMEM
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index 7728518572a4..40278706ac1b 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -3,6 +3,7 @@
+>  #
+>  
+>  obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
+> +obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
+>  obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
+> new file mode 100644
+> index 000000000000..597f008cae32
+> --- /dev/null
+> +++ b/drivers/phy/phy-berlin-sata.c
+> @@ -0,0 +1,230 @@
+> +/*
+> + * Marvell Berlin SATA PHY driver
+> + *
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/io.h>
+> +#include <linux/platform_device.h>
+> +
+> +#define HOST_VSA_ADDR		0x0
+> +#define HOST_VSA_DATA		0x4
+> +#define PORT_VSR_ADDR           0x78
+> +#define PORT_VSR_DATA           0x7c
+> +#define PORT_SCR_CTL		0x2c
+> +
+> +#define CONTROL_REGISTER	0x0
+> +#define MBUS_SIZE_CONTROL	0x4
+> +
+> +#define POWER_DOWN_PHY0			BIT(6)
+> +#define POWER_DOWN_PHY1			BIT(14)
+> +#define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
+> +#define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+> +
+> +#define PHY_BASE                0x200
+> +
+> +/* register 0x01 */
+> +#define REF_FREF_SEL_25         BIT(0)
+> +#define PHY_MODE_SATA           (0x0 << 5)
+> +
+> +/* register 0x02 */
+> +#define USE_MAX_PLL_RATE        BIT(12)
+> +
+> +/* register 0x23 */
+> +#define DATA_BIT_WIDTH_10       (0x0 << 10)
+> +#define DATA_BIT_WIDTH_20       (0x1 << 10)
+> +#define DATA_BIT_WIDTH_40       (0x2 << 10)
+> +
+> +/* register 0x25 */
+> +#define PHY_GEN_MAX_1_5         (0x0 << 10)
+> +#define PHY_GEN_MAX_3_0         (0x1 << 10)
+> +#define PHY_GEN_MAX_6_0         (0x2 << 10)
+> +
+> +#define BERLIN_SATA_PHY_NB	2
+> +
+> +#define to_berlin_sata_phy_priv(desc)	\
+> +	container_of((desc), struct phy_berlin_priv, phys[(desc)->index])
+> +
+> +struct phy_berlin_desc {
+> +	struct phy	*phy;
+> +	u32		val;
+> +	unsigned	index;
+> +};
+> +
+> +struct phy_berlin_priv {
+> +	void __iomem		*base;
+> +	spinlock_t		lock;
+> +	struct phy_berlin_desc	phys[BERLIN_SATA_PHY_NB];
+> +};
+> +
+> +static inline void phy_berlin_sata_reg_setbits(void __iomem *ctrl_reg, u32 reg,
+> +					       u32 mask, u32 val)
+> +{
+> +	u32 regval;
+> +
+> +	/* select register */
+> +	writel(PHY_BASE + reg, ctrl_reg + PORT_VSR_ADDR);
+> +
+> +	/* set bits */
+> +	regval = readl(ctrl_reg + PORT_VSR_DATA);
+> +	regval &= ~mask;
+> +	regval |= val;
+> +	writel(regval, ctrl_reg + PORT_VSR_DATA);
+> +}
+> +
+> +static int phy_berlin_sata_power_on(struct phy *phy)
+> +{
+> +	struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> +	struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
+> +	void __iomem *ctrl_reg = priv->base + 0x60 + (desc->index * 0x80);
+> +	int ret = 0;
+> +	u32 regval;
+> +
+> +	spin_lock(&priv->lock);
+> +
+> +	/* Power on PHY */
+> +	writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval &= ~(desc->val);
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	/* Configure MBus */
+> +	writel(MBUS_SIZE_CONTROL, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval |= MBUS_WRITE_REQUEST_SIZE_128 | MBUS_READ_REQUEST_SIZE_128;
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	/* set PHY mode and ref freq to 25 MHz */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x1, 0xff,
+> +				    REF_FREF_SEL_25 | PHY_MODE_SATA);
+> +
+> +	/* set PHY up to 6 Gbps */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x25, 0xc00, PHY_GEN_MAX_6_0);
+> +
+> +	/* set 40 bits width */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x23,  0xc00, DATA_BIT_WIDTH_40);
+> +
+> +	/* use max pll rate */
+> +	phy_berlin_sata_reg_setbits(ctrl_reg, 0x2, 0x0, USE_MAX_PLL_RATE);
+> +
+> +	/* set the controller speed */
+> +	writel(0x31, ctrl_reg + PORT_SCR_CTL);
+> +
+> +	spin_unlock(&priv->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static int phy_berlin_sata_power_off(struct phy *phy)
+> +{
+> +	struct phy_berlin_desc *desc = phy_get_drvdata(phy);
+> +	struct phy_berlin_priv *priv = to_berlin_sata_phy_priv(desc);
+> +	u32 regval;
+> +
+> +	spin_lock(&priv->lock);
+> +
+> +	/* Power down PHY */
+> +	writel(CONTROL_REGISTER, priv->base + HOST_VSA_ADDR);
+> +	regval = readl(priv->base + HOST_VSA_DATA);
+> +	regval |= desc->val;
+> +	writel(regval, priv->base + HOST_VSA_DATA);
+> +
+> +	spin_unlock(&priv->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy *phy_berlin_sata_phy_xlate(struct device *dev,
+> +					     struct of_phandle_args *args)
+> +{
+> +	struct phy_berlin_priv *priv = dev_get_drvdata(dev);
+> +
+> +	if (WARN_ON(args->args[0] >= BERLIN_SATA_PHY_NB))
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	return priv->phys[args->args[0]].phy;
+> +}
+> +
+> +static struct phy_ops phy_berlin_sata_ops = {
+> +	.power_on	= phy_berlin_sata_power_on,
+> +	.power_off	= phy_berlin_sata_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static struct phy_berlin_desc desc[] = {
+> +	{ .val = POWER_DOWN_PHY0 },
+> +	{ .val = POWER_DOWN_PHY1 },
 
+Only .val entry of struct phy_berlin_desc is initialized and needed,
+it seems that u32 vals[] should be used instead of desc[].
 
-In addition, if old OPP was disabled, that new OPP would be in enabled
-state -> which also does not make sense either - since we disabled
-that frequency for some reason.
+> +	{ },
+> +};
+> +
+> +static int phy_berlin_sata_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct phy *phy;
+> +	struct phy_provider *phy_provider;
+> +	struct phy_berlin_priv *priv;
+> +	struct resource *res;
+> +	int i;
+> +
+> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	priv->base = devm_ioremap(dev, res->start, resource_size(res));
+> +	if (IS_ERR(priv->base))
+> +		return PTR_ERR(priv->base);
 
->                 mutex_unlock(&dev_opp_list_lock);
->                 kfree(new_opp);
-> -               return 0;
-> +               return ret;
->         }
->
->         list_add_rcu(&new_opp->node, head);
+devm_ioremap() (contrary to devm_ioremap_resource()) returns a valid
+pointer or NULL so return value checking should be fixed.
 
-The reason I ask to return error is because if we attempt to add two
-OPPs with the same key (frequency), then it breaks the logic in
-remaining search logic.
+> +	dev_set_drvdata(dev, priv);
+> +	spin_lock_init(&priv->lock);
+> +
+> +	for (i = 0; i < BERLIN_SATA_PHY_NB; i++) {
+> +		phy = devm_phy_create(dev, &phy_berlin_sata_ops, NULL);
+> +		if (IS_ERR(phy)) {
+> +			dev_err(dev, "failed to create PHY %d\n", i);
+> +			return PTR_ERR(phy);
+> +		}
+> +
+> +		priv->phys[i].phy = phy;
+> +		priv->phys[i].val = desc[i].val;
+> +		priv->phys[i].index = i;
+> +		phy_set_drvdata(phy, &priv->phys[i]);
+> +
+> +		/* Make sure the PHY is off */
+> +		phy_berlin_sata_power_off(phy);
+> +	}
+> +
+> +	phy_provider =
+> +		devm_of_phy_provider_register(dev, phy_berlin_sata_phy_xlate);
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> +	{ .compatible = "marvell,berlin-sata-phy" },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver phy_berlin_sata_driver = {
+> +	.probe	= phy_berlin_sata_probe,
+> +	.driver	= {
+> +		.name		= "phy-berlin-sata",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= phy_berlin_sata_of_match,
+> +	},
+> +};
+> +module_platform_driver(phy_berlin_sata_driver);
+> +
+> +MODULE_DESCRIPTION("Marvell Berlin SATA PHY driver");
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_LICENSE("GPL v2");
 
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Regards,
-Nishanth Menon
