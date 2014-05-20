@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaETO0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:26:49 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:33725 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaETO0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753763AbaETO0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:26:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41616 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaETO0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 10:26:47 -0400
-Date: Tue, 20 May 2014 10:26:46 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: hanging aio process
-Message-ID: <20140520142646.GG2915@kvack.org>
-References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett>
-Mime-Version: 1.0
+Date: Tue, 20 May 2014 14:26:29 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Michael H. Warfield" <mhw@WittsEnd.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Arnd Bergmann <arnd@arndb.de>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140520142629.GI26600@ubuntumail>
+References: <20140515140856.GA17453@kroah.com>
+ <20140515174254.GM21073@ubuntumail>
+ <20140515221551.GB13306@kroah.com>
+ <20140516014959.GD22591@ubuntumail>
+ <20140516043532.GA14149@kroah.com>
+ <87mwehgh5i.fsf@x220.int.ebiederm.org>
+ <20140517160145.GA44802@ubuntu-hedt>
+ <20140518024458.GB25613@mail.hallyn.com>
+ <20140519132703.GA49509@ubuntu-hedt>
+ <20140520141539.GF26600@ubuntumail>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1405201508450.1606@denkbrett>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20140520141539.GF26600@ubuntumail>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 03:16:47PM +0200, Sebastian Ott wrote:
-> On Tue, 20 May 2014, Sebastian Ott wrote:
-> > On Mon, 19 May 2014, Benjamin LaHaise wrote:
-> > > It is entirely possible the bug isn't 
-> > > caused by the referenced commit, as the commit you're pointing to merely 
-> > > makes io_destroy() syscall wait for all aio outstanding to complete 
-> > > before returning.
+Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+> Quoting Seth Forshee (seth.forshee@canonical.com):
+> > On Sun, May 18, 2014 at 04:44:58AM +0200, Serge E. Hallyn wrote:
+> > > Quoting Seth Forshee (seth.forshee@canonical.com):
+> > > > On Fri, May 16, 2014 at 09:31:37PM -0700, Eric W. Biederman wrote:
+> > > > > Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> > > > > 
+> > > > > > On Fri, May 16, 2014 at 01:49:59AM +0000, Serge Hallyn wrote:
+> > > > > >> > I think having to pick and choose what device nodes you want in a
+> > > > > >> > container is a good thing.  Becides, you would have to do the same thing
+> > > > > >> > in the kernel anyway, what's wrong with userspace making the decision
+> > > > > >> > here, especially as it knows exactly what it wants to do much more so
+> > > > > >> > than the kernel ever can.
+> > > > > >> 
+> > > > > >> For 'real' devices that sounds sensible.  The thing about loop devices
+> > > > > >> is that we simply want to allow a container to say "give me a loop
+> > > > > >> device to use" and have it receive a unique loop device (or 3), without
+> > > > > >> having to pre-assign them.  I think that would be cleaner to do using
+> > > > > >> a pseudofs and loop-control device, rather than having to have a
+> > > > > >> daemon in userspace on the host farming those out in response to
+> > > > > >> some, I don't know, dbus request?
+> > > > > >
+> > > > > > I agree that loop devices would be nice to have in a container, and that
+> > > > > > the existing loop interface doesn't really lend itself to that.  So
+> > > > > > create a new type of thing that acts like a loop device in a container.
+> > > > > > But don't try to mess with the whole driver core just for a single type
+> > > > > > of device.
+> > > > > 
+> > > > > Yes. Something like devpts (without the newinstance option).  Built to
+> > > > > allow unprivileged users to create loopback devices.
+> > > > 
+> > > > That's where I started, and I've got code, so I guess I'll clean it up
+> > > > and send patches. If the stance is that only system-wide CAP_SYS_ADMIN
+> > > > gets to do privileged block device ioctls, including reading partitions
+> > > 
+> > > Sorry, where did that come from?  What Eric was referring to below is
+> > > the fs superblock readers not being trusted.  Maybe I glossed over another
+> > > email where it was mentioned?
 > > 
-> > I cannot reproduce this when I revert said commit (on top of 14186fe). If
-> > that matters - the arch is s390.
-
-> Hm, ok - maybe that commit is really just highlighting a refcounting bug.
-> I just compared traces for a good and a few bad cases. The good case:
-...
-
-> (4 fio workers, free_ioctx_reqs is called 4 times)
-
-
-> One of the bad cases:
-....
-> (1 fio worker in D state, free_ioctx_reqs is called 3 times)
-
-This would seem to indicate that the problem is not with Anatol's change, 
-and the hang is a consequence of the AIO not completing.  Can you trace 
-calls to aio_complete() in addition to free_ioctx_reqs() to see if a 
-completion is happening in the failed case?  If aio_complete() is only 
-getting called 3 times, the problem is not in the aio layer.
-
-		-ben
-
-
-> Regards,
-> Sebastian
+> > You must have. Take a look at [1].
+> > 
+> > To repeat the point: the ioctl to reread partitions (along with several
+> > other block device ioctls) has a capable(CAP_SYS_ADMIN) check. We can't
+> > change this to an ns_capable check without at minimum the block layer
+> > knowing about the namespace associated with the block device. Ergo we
 > 
-> > > 
-> > > > git bisect points to:
-> > > > 	commit e02ba72aabfade4c9cd6e3263e9b57bf890ad25c
-> > > > 	Author: Anatol Pomozov <anatol.pomozov@gmail.com>
-> > > > 	Date:   Tue Apr 15 11:31:33 2014 -0700
-> > > > 
-> > > > 	    aio: block io_destroy() until all context requests are completed
-> > > > 
-> > > > 
-> > > > The fio workers are on the wait_for_completion in sys_io_destroy.
-> > > > 
-> > > > Regards,
-> > > > Sebastian
-> > > > [global]
-> > > > blocksize=4K
-> > > > size=256M
-> > > > rw=randrw
-> > > > verify=md5
-> > > > iodepth=32
-> > > > ioengine=libaio
-> > > > direct=1
-> > > > end_fsync=1
-> > > > 
-> > > > [file1]
-> > > > filename=/dev/scma
-> > > > 
-> > > > [file2]
-> > > > filename=/dev/scmbw
-> > > > 
-> > > > [file3]
-> > > > filename=/dev/scmc
-> > > > 
-> > > > [file4]
-> > > > filename=/dev/scmx
-> > > 
-> > > 
-> > > -- 
-> > > "Thought is the essence of where you are now."
-> > > 
-> > > 
+> Which only means those changes are necessary :)
+> 
+> So far as I understand, a namespaced devtmpfs is nacked, but a loopfs
+> is interesting (and, depending on the implementation, acceptable).  That
+> necessarily includes the minimal blockdev changes to support it.
+> 
+> > can't reread paritions if this is done entirely within the loop driver
+> > via a psuedo fs.
 > > 
+> > [1] http://article.gmane.org/gmane.linux.kernel.containers.lxc.devel/8191
 
--- 
-"Thought is the essence of where you are now."
+Hm, yeah, I was confuddling two issues.  Nevertheless, for real block devices I
+absolutely agree.  For loop devices I don't.  My answer to
+
+> I don't think unpriviliged containers should be able to do partitioning.
+> An unpriviliged user can't do that, so why should a container be any
+> different?
+
+would be that the loop device is a convenience built atop the backing image,
+and if the user had the rights to loop-attach the backing image, he can
+just as will partition using write(2), so why artificially plac this limit?
+
+Nevertheless this is not really a debate worth having until we have a
+blockdev fs mountable in a userns.
+
+My main interest currently is with privileged containers.  I think we can
+learn plenty from that for now.
