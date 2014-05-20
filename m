@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaETHN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 03:13:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:57307 "EHLO ozlabs.org"
+	id S1751917AbaETHRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 03:17:11 -0400
+Received: from ozlabs.org ([103.22.144.67]:42378 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771AbaETHN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 03:13:58 -0400
-Date: Tue, 20 May 2014 17:13:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sumit Semwal <sumit.semwal@linaro.org>,
-        Thierry Reding <treding@nvidia.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: linux-next: build failure after merge of the dma-buf tree
-Message-ID: <20140520171351.736fb238@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1750969AbaETHRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 03:17:09 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
+        mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
+In-Reply-To: <20140520004429.E660AE009B@blue.fi.intel.com>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils> <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org> <20140520004429.E660AE009B@blue.fi.intel.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 20 May 2014 15:52:07 +0930
+Message-ID: <87oaythsvk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/J0fndYs2/RSBcvfXwq2mqU4"; protocol="application/pgp-signature"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/J0fndYs2/RSBcvfXwq2mqU4
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
+> Andrew Morton wrote:
+>> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+>> 
+>> > Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
+>> > the order of the fault-around size in bytes, and fault_around_pages()
+>> > use 1UL << (fault_around_order - PAGE_SHIFT)
+>> 
+>> Yes.  And shame on me for missing it (this time!) at review.
+>> 
+>> There's still time to fix this.  Patches, please.
+>
+> Here it is. Made at 3.30 AM, build tested only.
 
-Hi Sumit,
+Prefer on top of Maddy's patch which makes it always a variable, rather
+than CONFIG_DEBUG_FS.  It's got enough hair as it is.
 
-After merging the dma-buf tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/gpu/drm/tegra/gem.c: In function 'tegra_gem_prime_export':
-drivers/gpu/drm/tegra/gem.c:423:15: error: macro "dma_buf_export" requires =
-5 arguments, but only 4 given
-drivers/gpu/drm/tegra/gem.c:422:9: error: 'dma_buf_export' undeclared (firs=
-t use in this function)
-
-Caused by commit 8dfb1f0f8103 ("dma-buf: use reservation objects").
-Grep is your friend ...
-
-I have use the dma-buf tree from next-20140519 for today.
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/J0fndYs2/RSBcvfXwq2mqU4
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTewC0AAoJEMDTa8Ir7ZwVj+oP/0iOZ9sXcZOUoMkkvXFqrVPj
-7syGnb6v5acqlJ9g3y/8Kcsu5tgUkRK6YvPMZbL6NKly5+IllSCDWlIht77HvI96
-Je6ezJv7tFOG7myX0Ff037b/sXsodjiOXGd9Jx7ib9ljbqFlyHaqCfsFaeociDA8
-lnO+x/DqKneTpmOwFhbLFQLa9rhehnSi+J/gIjPpJTkNh42yW4kBLEubKmn5J8+W
-6912c87VE7A3t8pzZZoSuXpencGveEgqEcn6PeHU03Wme1H7J646vzKHqqNFuoTH
-JRDE0JuubtF5UTKiJLWakhjEwH1zrdiDuA5uUSeveksV2KskyB+kViIsXItsJ3HT
-xLGYbTnbjINECwEuIEScmPw/AsZu6zMrJBMqUNi+0z+qoK+IFM6GqbhuKzh1gvzt
-b7uQJ7YUW570zyl3isAPsj3tTtwM1g2t6GUD3gCQiM9JDrT6f0P+cOyWnk0TgnxD
-SUXi3lgF8btRz0EmOMyFqY6okmnvu7lf/w3lgDwbmV9a/t+eLdnJRW5UA1I3qtgs
-1AZkuZjdQRi7nRiVJTY9aGU9Ol3kPtnB6/mWKLmxO2NcqmSpra0R/WDmAGwsAiM0
-nS0O1qGmlFFd5TnxyKJ1AWxAnxLKJasNp/lBAU58+l0nozVrDvRs4/qlKf/X6SeB
-UgCTNN9v1PewM6ul1M3l
-=Epdz
------END PGP SIGNATURE-----
-
---Sig_/J0fndYs2/RSBcvfXwq2mqU4--
+Rusty.
