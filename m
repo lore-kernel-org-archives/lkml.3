@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014AbaETVC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 17:02:59 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61930 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750699AbaETVC6 (ORCPT
+	id S1751158AbaETVD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 17:03:59 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:65294 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaETVD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 17:02:58 -0400
-Message-ID: <1400619776.4912.71.camel@x220>
-Subject: [PATCH] powerpc: remove check for CONFIG_SERIAL_TEXT_DEBUG
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 May 2014 23:02:56 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 May 2014 21:02:57.0169 (UTC) FILETIME=[E0146010:01CF746E]
-X-RcptDomain: vger.kernel.org
+	Tue, 20 May 2014 17:03:57 -0400
+Date: Tue, 20 May 2014 15:03:53 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, nic_swsd@realtek.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: quirk RTL8110SC INTx masking
+Message-ID: <20140520210353.GB22821@google.com>
+References: <20140501203525.27822.98248.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501203525.27822.98248.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol SERIAL_TEXT_DEBUG was removed from
-arch/powerpc/Kconfig.debug in v2.6.22. (In v2.6.27 it was also removed
-from arch/ppc/Kconfig.debug.) So the check for its macro has evaluated
-to false for over five years now. Remove that check and the few lines
-of code hidden behind it.
+On Thu, May 01, 2014 at 02:36:31PM -0600, Alex Williamson wrote:
+> INTx masking does not work on this device.  To see this, configure
+> the network device UP on an active network, note that the interrupt
+> count continues to increment for the device in /proc/interrupts.  Use
+> setpci to set the PCI_COMMAND_INTX_DISABLE bit in the PCI_COMMAND
+> register.  As expected, the interrupt count ceases to increment.
+> However, reading the PCI_STATUS_INTERRUPT bit of the PCI_STATUS
+> register does not indicate that interrupts are pending and clearing
+> PCI_COMMAND_INTX_DISABLE in the PCI_COMMAND register does not allow
+> the device to continue operation.
+> 
+> This does not affect operation of the host r8169 driver, but it does
+> prevent the device from being functional when assigned to a VM, such
+> as with QEMU and VFIO.  The guest driver successfully probes the
+> device, but there is no traffic.  Mark INTx masking as broken,
+> allowing the more restrictive APIC masking to be used instead.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Applied to pci/virtualization for v3.16, thanks.
 
- arch/powerpc/kernel/head_40x.S | 19 -------------------
- 1 file changed, 19 deletions(-)
-
-diff --git a/arch/powerpc/kernel/head_40x.S b/arch/powerpc/kernel/head_40x.S
-index 67ee0d6c1070..7d7d8635227a 100644
---- a/arch/powerpc/kernel/head_40x.S
-+++ b/arch/powerpc/kernel/head_40x.S
-@@ -930,25 +930,6 @@ initial_mmu:
- 	tlbwe	r4,r0,TLB_DATA		/* Load the data portion of the entry */
- 	tlbwe	r3,r0,TLB_TAG		/* Load the tag portion of the entry */
- 
--#if defined(CONFIG_SERIAL_TEXT_DEBUG) && defined(SERIAL_DEBUG_IO_BASE)
--
--	/* Load a TLB entry for the UART, so that ppc4xx_progress() can use
--	 * the UARTs nice and early.  We use a 4k real==virtual mapping. */
--
--	lis	r3,SERIAL_DEBUG_IO_BASE@h
--	ori	r3,r3,SERIAL_DEBUG_IO_BASE@l
--	mr	r4,r3
--	clrrwi	r4,r4,12
--	ori	r4,r4,(TLB_WR|TLB_I|TLB_M|TLB_G)
--
--	clrrwi	r3,r3,12
--	ori	r3,r3,(TLB_VALID | TLB_PAGESZ(PAGESZ_4K))
--
--	li	r0,0			/* TLB slot 0 */
--	tlbwe	r4,r0,TLB_DATA
--	tlbwe	r3,r0,TLB_TAG
--#endif /* CONFIG_SERIAL_DEBUG_TEXT && SERIAL_DEBUG_IO_BASE */
--
- 	isync
- 
- 	/* Establish the exception vector base
--- 
-1.9.0
-
+> ---
+>  drivers/pci/quirks.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index ea55b0f..e15a5da 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -2991,6 +2991,14 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_CHELSIO, 0x0030,
+>  			 quirk_broken_intx_masking);
+>  DECLARE_PCI_FIXUP_HEADER(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
+>  			 quirk_broken_intx_masking);
+> +/*
+> + * Realtek RTL8169 PCI Gigabit Ethernet Controller (rev 10)
+> + * Subsystem: Realtek RTL8169/8110 Family PCI Gigabit Ethernet NIC
+> + *
+> + * RTL8110SC - Fails under PCI device assignment using DisINTx masking.
+> + */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_REALTEK, 0x8169,
+> +			 quirk_broken_intx_masking);
+>  
+>  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+>  			  struct pci_fixup *end)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
