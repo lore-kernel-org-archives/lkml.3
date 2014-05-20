@@ -1,137 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaETE1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 00:27:49 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37296 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaETE1r (ORCPT
+	id S1752397AbaETE2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 00:28:41 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:59769 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872AbaETE2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 00:27:47 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: lgirdwood@gmail.com, robh+dt@kernel.org, sbkim73@samsung.com,
-        rdunlap@infradead.org, broonie@kernel.org, dianders@chromium.org,
-        t.figa@samsung.com
-Subject: [PATCH] ASoC: samsung: Add 'mclk' handling for Snow sound-card driver
-Date: Tue, 20 May 2014 09:55:42 +0530
-Message-Id: <1400559942-5666-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 20 May 2014 00:28:40 -0400
+Date: Mon, 19 May 2014 21:28:49 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: alexandre.belloni@free-electrons.com, boris.brezillon@free-electrons.com,
+        Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linus.walleij@linaro.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: cleanup for 3.16 #1
+Message-ID: <20140520042849.GB18956@quad.lixom.net>
+References: <1399484042-27432-1-git-send-email-nicolas.ferre@atmel.com>
+ <536A6FD7.40402@atmel.com>
+ <20140516232635.GB6423@quad.lixom.net>
+ <20140516233141.GC6423@quad.lixom.net>
+ <537A1EE8.6030303@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537A1EE8.6030303@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For audio to work on Snow board, we need the codec master clock 'mclk'
-to be properly configured.
+On Mon, May 19, 2014 at 05:10:32PM +0200, Nicolas Ferre wrote:
+> On 17/05/2014 01:31, Olof Johansson :
+> > On Fri, May 16, 2014 at 04:26:35PM -0700, Olof Johansson wrote:
+> >> On Wed, May 07, 2014 at 07:39:35PM +0200, Nicolas Ferre wrote:
+> >>> On 07/05/2014 19:34, Nicolas Ferre :
+> >>>> Arnd, Olof, Kevin,
+> >>>>
+> >>>> This is the first cleanup pull-request for 3.16. It is pretty big because it
+> >>>> integrates the work from Boris about CCF and Alexandre about IIO/ADC. I
+> >>>> integrated them in this cleanup topic because they both touch the core at91
+> >>>> code, the clk and IIO drivers as well as the DT. The concerned maintainers
+> >>>> added their tags.
+> >>>>
+> >>>> The patch by Linus is a move of at91 specific GPIO definitions out of the
+> >>>> include/mach directory which is an step towards single zImage.
+> >>>>
+> >>>> Thanks, best regards,
+> >>>>
+> >>>> The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+> >>>>
+> >>>>   Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+> >>>>
+> >>>> are available in the git repository at:
+> >>>>
+> >>>>   git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+> >>>
+> >>> There is a little conflict with at91-3.16-dt that you already pulled in
+> >>> arm-soc: here is the branch that resolves it:
+> >>>
+> >>> https://github.com/at91linux/linux-at91/commits/at91-3.16-resolved
+> >>
+> >> That resolution looks odd. Why is one clock under clocks { } and two of them
+> >> are at the top level? Shouldn't they all be under the clocks subnode?
+> >>
+> >> I've merged in now with your resolution, but I think this needs revisiting.
+> 
+> With information from Alexandre, I have the feeling that we should
+> remove the "clocks" container altogether. I propose to clean completely
+> this part in 3.17 as it will not change the system but only its
+> representation in DT...
+> Still, we will fix the ugliest parts like this one:
+> http://code.bulix.org/by22lb-86239
 
-Currently XCLKOUT is configured as 'mclk' for codec chip and it is
-required to be clocked at 24MHz for the codec to work properly.
+Right, that should be changed in one direction or another -- as mentioned in
+my other reply just now I care more about consistency than the option you end
+up choosing even though it does make some sense to me to group the clocks.
 
-Add appropriate clock handling within Snow sound-card driver to set
-'mclk' to operate at 24MHz.
+Either way, please follow up with patches instead of a pull request,
+please, since there's no good way for you to base a pull request on top
+of the merge-conflict-resolved resulting branch in our tree.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- Documentation/devicetree/bindings/sound/snow.txt |    7 ++++++
- sound/soc/samsung/snow.c                         |   26 +++++++++++++++++++++-
- 2 files changed, 32 insertions(+), 1 deletion(-)
+> > Oh, and also: The branch was named cleanup, but it really contains mostly new
+> > driver and new contents, so I merged it under next/soc instead. In the future,
+> > for releases when you have more contents, please split it up a bit more (dt
+> > updates separately, driver updates separately) if it can be done without too
+> > much hassle. For now it's not a huge deal to do it this way though.
+> 
+> Yes. The issue with these series that switch from one description to
+> another is that if we split the driver and dt parts it would add extra
+> steps which are not very easy to keep in sync, implement and are kind of
+> useless.
+> 
+> I have more series to come for 3.16 that I named "cleanup" as well. I
+> will double check to see if I can split them up more...
 
-diff --git a/Documentation/devicetree/bindings/sound/snow.txt b/Documentation/devicetree/bindings/sound/snow.txt
-index 678b191..94dd29c 100644
---- a/Documentation/devicetree/bindings/sound/snow.txt
-+++ b/Documentation/devicetree/bindings/sound/snow.txt
-@@ -7,6 +7,10 @@ Required properties:
- - samsung,i2s-controller: The phandle of the Samsung I2S controller
- - samsung,audio-codec: The phandle of the audio codec
- 
-+Optional properties:
-+- clocks: The phandle of the master clock to audio codec
-+- clock-names: Should be "mclk"
-+
- Example:
- 
- sound {
-@@ -14,4 +18,7 @@ sound {
- 
- 		samsung,i2s-controller = <&i2s0>;
- 		samsung,audio-codec = <&max98095>;
-+
-+		clocks = <&pmu_system_controller>;
-+		clock-names = "mclk";
- };
-diff --git a/sound/soc/samsung/snow.c b/sound/soc/samsung/snow.c
-index 014c177..c910739 100644
---- a/sound/soc/samsung/snow.c
-+++ b/sound/soc/samsung/snow.c
-@@ -15,13 +15,18 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/clk.h>
- 
- #include <sound/soc.h>
- 
- #include "i2s.h"
- 
-+/* Desired clock rate for codec mclk */
- #define FIN_PLL_RATE		24000000
- 
-+static struct clk *mclk;
-+static unsigned long mclk_rate;
-+
- static struct snd_soc_dai_link snow_dai[] = {
- 	{
- 		.name = "Primary",
-@@ -41,7 +46,7 @@ static int snow_late_probe(struct snd_soc_card *card)
- 
- 	/* Set the MCLK rate for the codec */
- 	ret = snd_soc_dai_set_sysclk(codec_dai, 0,
--					FIN_PLL_RATE, SND_SOC_CLOCK_IN);
-+					mclk_rate, SND_SOC_CLOCK_IN);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -68,6 +73,16 @@ static int snow_probe(struct platform_device *pdev)
- 	struct device_node *i2s_node, *codec_node;
- 	int i, ret;
- 
-+	/* The codec MCLK should be clocked at 24MHz */
-+	mclk = devm_clk_get(&pdev->dev, "mclk");
-+	if (!IS_ERR(mclk)) {
-+		clk_prepare_enable(mclk);
-+		clk_set_rate(mclk, FIN_PLL_RATE);
-+		mclk_rate = clk_get_rate(mclk);
-+	} else {
-+		mclk_rate = FIN_PLL_RATE;
-+	}
-+
- 	i2s_node = of_parse_phandle(pdev->dev.of_node,
- 				    "samsung,i2s-controller", 0);
- 	if (!i2s_node) {
-@@ -101,6 +116,14 @@ static int snow_probe(struct platform_device *pdev)
- 	return ret;
- }
- 
-+static int snow_remove(struct platform_device *pdev)
-+{
-+	if (!IS_ERR(mclk))
-+		clk_disable_unprepare(mclk);
-+
-+	return 0;
-+}
-+
- static const struct of_device_id snow_of_match[] = {
- 	{ .compatible = "google,snow-audio-max98090", },
- 	{ .compatible = "google,snow-audio-max98095", },
-@@ -115,6 +138,7 @@ static struct platform_driver snow_driver = {
- 		.of_match_table = snow_of_match,
- 	},
- 	.probe = snow_probe,
-+	.remove = snow_remove,
- };
- 
- module_platform_driver(snow_driver);
--- 
-1.7.9.5
+Ok. :) No worries. Getting used to splitting up takes a little while and it's
+usually not a big deal -- you can still base the branches on top of each other
+just cut them into separate pull requests. I can elaborate if you want.
 
+
+-Olof
