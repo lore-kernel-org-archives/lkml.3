@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaETJnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:43:00 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:32565 "EHLO
+	id S1753132AbaETJnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:43:15 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:63309 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751461AbaETJmn (ORCPT
+	with ESMTP id S1753046AbaETJnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:42:43 -0400
+	Tue, 20 May 2014 05:43:11 -0400
 X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762563"
+   d="scan'208";a="30762593"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH V3 03/10] workqueue: async worker destruction
-Date: Tue, 20 May 2014 17:46:29 +0800
-Message-ID: <1400579204-3647-4-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH V3 10/10] workqueue: use generic attach/detach routine for rescuers
+Date: Tue, 20 May 2014 17:46:36 +0800
+Message-ID: <1400579204-3647-11-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
@@ -26,182 +26,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker destruction includes these parts of code:
-	adjust pool's stats
-	remove the worker from idle list
-	detach the worker from the pool
-	kthread_stop() to wait for the worker's task exit
-	free the worker struct
+There are several problems with the code that rescuers bind itself to the pool'
+cpumask
+  1) It uses a way different from the normal workers to bind to the cpumask
+     So we can't maintain the normal/rescuer workers under the same framework.
+  2) The the code of cpu-binding for rescuer is complicated
+  3) If one or more cpuhotplugs happen while the rescuer processes the
+     scheduled works, the rescuer may not be correctly bound to the cpumask of
+     the pool. This is allowed behavior, but is not good. It will be better
+     if the cpumask of the rescuer is always kept coordination with the pool
+     across any cpuhotplugs.
 
-We can find out that there is no essential work to do after
-kthread_stop(). Which means destroy_worker() doesn't need
-to wait for the worker's task exit. So we can remove kthread_stop()
-and free the worker struct in the worker exiting path.
-
-But put_unbound_pool() still needs to sync the all the workers'
-destruction before to destroy the pool. Otherwise the workers
-may access to the invalid pool when they are exiting.
-
-So we also move the code of "detach the worker" to the exiting
-path and let put_unbound_pool() to sync with this code via
-detach_completion.
-
-The code of "detach the worker" is wrapped in a new function
-"worker_detach_from_pool()". Although worker_detach_from_pool() is only
-called once (in worker_thread()) after this patch, but we need to
-wrap it for these reasons:
-  1) The code of "detach the worker" is not short enough to unfold them
-     in worker_thread().
-  2) the name of "worker_detach_from_pool()" is self-comment, and we add
-     some comments above the function.
-  3) it will be shared by rescuer in later patch which allows rescuer
-     and normal thread use the same attach/detach frameworks.
-
-And the worker id is freed when detaching which happens
-before the worker is fully dead. But this id of the dying worker
-may be re-used for a new worker. So the dying worker's task name
-is changed to "worker/dying" to avoid two or several workers
-having the same name.
-
-Since "detach the worker" is moved out from destroy_worker(),
-destroy_worker() doesn't require manager_mutex.
-So the "lockdep_assert_held(&pool->manager_mutex)" in destroy_worker()
-is removed, and destroy_worker() is not protected by manager_mutex
-in put_unbound_pool().
+Using generic attach/detach routine will solve the above problems,
+and result much more simple code.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   62 ++++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 41 insertions(+), 21 deletions(-)
+ kernel/workqueue.c |   74 +++++----------------------------------------------
+ 1 files changed, 8 insertions(+), 66 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 862b7ba..98d04a4 100644
+index 4d021e0..2245dc7 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -163,6 +163,7 @@ struct worker_pool {
- 	struct mutex		manager_arb;	/* manager arbitration */
- 	struct mutex		manager_mutex;	/* manager exclusion */
- 	struct idr		worker_idr;	/* M: worker IDs and iteration */
-+	struct completion	*detach_completion; /* all workers detached */
- 
- 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
- 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
-@@ -1688,6 +1689,30 @@ static struct worker *alloc_worker(void)
- }
- 
- /**
-+ * worker_detach_from_pool() - detach the worker from the pool
-+ * @worker: worker which is attached to its pool
-+ * @pool: attached pool
-+ *
-+ * Undo the attaching which had been done in create_worker().
-+ * The caller worker shouldn't access to the pool after detached
-+ * except it has other reference to the pool.
-+ */
-+static void worker_detach_from_pool(struct worker *worker,
-+				    struct worker_pool *pool)
-+{
-+	struct completion *detach_completion = NULL;
-+
-+	mutex_lock(&pool->manager_mutex);
-+	idr_remove(&pool->worker_idr, worker->id);
-+	if (idr_is_empty(&pool->worker_idr))
-+		detach_completion = pool->detach_completion;
-+	mutex_unlock(&pool->manager_mutex);
-+
-+	if (detach_completion)
-+		complete(detach_completion);
-+}
-+
-+/**
-  * create_worker - create a new workqueue worker
-  * @pool: pool the new worker will belong to
-  *
-@@ -1815,13 +1840,12 @@ static int create_and_start_worker(struct worker_pool *pool)
-  * be idle.
-  *
-  * CONTEXT:
-- * spin_lock_irq(pool->lock) which is released and regrabbed.
-+ * spin_lock_irq(pool->lock).
-  */
- static void destroy_worker(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
- 
--	lockdep_assert_held(&pool->manager_mutex);
- 	lockdep_assert_held(&pool->lock);
- 
- 	/* sanity check frenzy */
-@@ -1833,24 +1857,9 @@ static void destroy_worker(struct worker *worker)
- 	pool->nr_workers--;
- 	pool->nr_idle--;
- 
--	/*
--	 * Once WORKER_DIE is set, the kworker may destroy itself at any
--	 * point.  Pin to ensure the task stays until we're done with it.
--	 */
--	get_task_struct(worker->task);
--
+@@ -1603,70 +1603,6 @@ static void worker_leave_idle(struct worker *worker)
  	list_del_init(&worker->entry);
- 	worker->flags |= WORKER_DIE;
--
--	idr_remove(&pool->worker_idr, worker->id);
--
--	spin_unlock_irq(&pool->lock);
--
--	kthread_stop(worker->task);
--	put_task_struct(worker->task);
--	kfree(worker);
--
--	spin_lock_irq(&pool->lock);
-+	wake_up_process(worker->task);
  }
  
- static void idle_worker_timeout(unsigned long __pool)
-@@ -2289,6 +2298,10 @@ woke_up:
- 		spin_unlock_irq(&pool->lock);
- 		WARN_ON_ONCE(!list_empty(&worker->entry));
- 		worker->task->flags &= ~PF_WQ_WORKER;
-+
-+		set_task_comm(worker->task, "kworker/dying");
-+		worker_detach_from_pool(worker, pool);
-+		kfree(worker);
- 		return 0;
- 	}
- 
-@@ -3560,6 +3573,7 @@ static void rcu_free_pool(struct rcu_head *rcu)
-  */
- static void put_unbound_pool(struct worker_pool *pool)
- {
-+	DECLARE_COMPLETION_ONSTACK(detach_completion);
- 	struct worker *worker;
- 
- 	lockdep_assert_held(&wq_pool_mutex);
-@@ -3583,15 +3597,21 @@ static void put_unbound_pool(struct worker_pool *pool)
- 	 * manager_mutex.
- 	 */
- 	mutex_lock(&pool->manager_arb);
--	mutex_lock(&pool->manager_mutex);
--	spin_lock_irq(&pool->lock);
- 
-+	spin_lock_irq(&pool->lock);
- 	while ((worker = first_worker(pool)))
- 		destroy_worker(worker);
- 	WARN_ON(pool->nr_workers || pool->nr_idle);
+-/**
+- * worker_maybe_bind_and_lock - try to bind %current to worker_pool and lock it
+- * @pool: target worker_pool
+- *
+- * Bind %current to the cpu of @pool if it is associated and lock @pool.
+- *
+- * Works which are scheduled while the cpu is online must at least be
+- * scheduled to a worker which is bound to the cpu so that if they are
+- * flushed from cpu callbacks while cpu is going down, they are
+- * guaranteed to execute on the cpu.
+- *
+- * This function is to be used by unbound workers and rescuers to bind
+- * themselves to the target cpu and may race with cpu going down or
+- * coming online.  kthread_bind() can't be used because it may put the
+- * worker to already dead cpu and set_cpus_allowed_ptr() can't be used
+- * verbatim as it's best effort and blocking and pool may be
+- * [dis]associated in the meantime.
+- *
+- * This function tries set_cpus_allowed() and locks pool and verifies the
+- * binding against %POOL_DISASSOCIATED which is set during
+- * %CPU_DOWN_PREPARE and cleared during %CPU_ONLINE, so if the worker
+- * enters idle state or fetches works without dropping lock, it can
+- * guarantee the scheduling requirement described in the first paragraph.
+- *
+- * CONTEXT:
+- * Might sleep.  Called without any lock but returns with pool->lock
+- * held.
+- *
+- * Return:
+- * %true if the associated pool is online (@worker is successfully
+- * bound), %false if offline.
+- */
+-static bool worker_maybe_bind_and_lock(struct worker_pool *pool)
+-__acquires(&pool->lock)
+-{
+-	while (true) {
+-		/*
+-		 * The following call may fail, succeed or succeed
+-		 * without actually migrating the task to the cpu if
+-		 * it races with cpu hotunplug operation.  Verify
+-		 * against POOL_DISASSOCIATED.
+-		 */
+-		if (!(pool->flags & POOL_DISASSOCIATED))
+-			set_cpus_allowed_ptr(current, pool->attrs->cpumask);
 -
- 	spin_unlock_irq(&pool->lock);
-+
-+	mutex_lock(&pool->manager_mutex);
-+	if (!idr_is_empty(&pool->worker_idr))
-+		pool->detach_completion = &detach_completion;
- 	mutex_unlock(&pool->manager_mutex);
-+
-+	if (pool->detach_completion)
-+		wait_for_completion(pool->detach_completion);
-+
- 	mutex_unlock(&pool->manager_arb);
+-		spin_lock_irq(&pool->lock);
+-		if (pool->flags & POOL_DISASSOCIATED)
+-			return false;
+-		if (task_cpu(current) == pool->cpu &&
+-		    cpumask_equal(&current->cpus_allowed, pool->attrs->cpumask))
+-			return true;
+-		spin_unlock_irq(&pool->lock);
+-
+-		/*
+-		 * We've raced with CPU hot[un]plug.  Give it a breather
+-		 * and retry migration.  cond_resched() is required here;
+-		 * otherwise, we might deadlock against cpu_stop trying to
+-		 * bring down the CPU on non-preemptive kernel.
+-		 */
+-		cpu_relax();
+-		cond_resched();
+-	}
+-}
+-
+ static struct worker *alloc_worker(void)
+ {
+ 	struct worker *worker;
+@@ -2361,8 +2297,9 @@ repeat:
  
- 	/* shut down the timers */
+ 		spin_unlock_irq(&wq_mayday_lock);
+ 
+-		/* migrate to the target cpu if possible */
+-		worker_maybe_bind_and_lock(pool);
++		worker_attach_to_pool(rescuer, pool);
++
++		spin_lock_irq(&pool->lock);
+ 		rescuer->pool = pool;
+ 
+ 		/*
+@@ -2375,6 +2312,11 @@ repeat:
+ 				move_linked_works(work, scheduled, &n);
+ 
+ 		process_scheduled_works(rescuer);
++		spin_unlock_irq(&pool->lock);
++
++		worker_detach_from_pool(rescuer, pool);
++
++		spin_lock_irq(&pool->lock);
+ 
+ 		/*
+ 		 * Put the reference grabbed by send_mayday().  @pool won't
 -- 
 1.7.4.4
 
