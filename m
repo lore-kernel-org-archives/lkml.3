@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaETF5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 01:57:51 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55072 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaETF5u (ORCPT
+	id S1750955AbaETF7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 01:59:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52857 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaETF7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 01:57:50 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <537AEEDB.2000001@lge.com>
-Date: Tue, 20 May 2014 14:57:47 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>
-CC: =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Subject: [RFC PATCH] arm: dma-mapping: fallback allocation for cma failure
-Content-Type: text/plain; charset=EUC-KR
+	Tue, 20 May 2014 01:59:37 -0400
+Date: Mon, 19 May 2014 22:59:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at
+ shrink_inactive_list().
+Message-Id: <20140519225915.3370328d.akpm@linux-foundation.org>
+In-Reply-To: <20140520004449.GE18954@dastard>
+References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+	<20140520004449.GE18954@dastard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 20 May 2014 10:44:49 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-Thanks for your advise, Michal Nazarewicz.
+> @@ -258,14 +258,23 @@ xfs_bmapi_allocate_worker(
+>  	struct xfs_bmalloca	*args = container_of(work,
+>  						struct xfs_bmalloca, work);
+>  	unsigned long		pflags;
+> +	unsigned long		new_pflags = PF_FSTRANS;
+>  
+> -	/* we are in a transaction context here */
+> -	current_set_flags_nested(&pflags, PF_FSTRANS);
+> +	/*
+> +	 * we are in a transaction context here, but may also be doing work
+> +	 * in kswapd context, and hence we may need to inherit that state
+> +	 * temporarily to ensure that we don't block waiting for memory reclaim
+> +	 * in any way.
+> +	 */
+> +	if (args->kswapd)
+> +		new_pflags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
 
-Having discuss with Joonsoo, I'm adding fallback allocation after __alloc_from_contiguous().
-The fallback allocation works if CMA kernel options is turned on but CMA size is zero.
+So current_is_kswapd() returns true for a thread which is not kswapd. 
+That's a bit smelly.
 
---------------------- 8< ------------------------
+Should this thread really be incrementing KSWAPD_INODESTEAL instead of
+PGINODESTEAL, for example?  current_is_kswapd() does a range of things,
+only one(?) of which you actually want.
 
->From 05e389683ddd07027e8acb61c25f3284f762300e Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Tue, 20 May 2014 14:16:20 +0900
-Subject: [PATCH] arm: dma-mapping: fallback allocation for cma failure
+It would be cleaner to create a new PF_ flag to select just that
+behavior.  That's a better model than telling the world "I am magic and
+special".
 
-If CMA is turned on and CMA size is set to zero, kernel should
-behave as if CMA was not enabled at compile time.
-Fallback allocation is added for CMA allocation failure.
+But we're awfully close to running out of PF_ space and I don't know if
+this ugly justifies consuming a flag.
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- arch/arm/mm/dma-mapping.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 18e98df..2a6c883 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
-        unsigned long *bitmap;
-        struct page *page;
-        struct page **pages;
--       void *ptr;
-+       void *ptr = NULL;
-        int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
-
-        bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-@@ -393,9 +393,10 @@ static int __init atomic_pool_init(void)
-        if (IS_ENABLED(CONFIG_DMA_CMA))
-                ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
-                                              atomic_pool_init);
--       else
-+       if (!ptr)
-                ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
-                                           atomic_pool_init);
-+
-        if (ptr) {
-                int i;
-
-@@ -703,8 +704,12 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-                addr = __alloc_from_pool(size, &page);
-        else if (!IS_ENABLED(CONFIG_DMA_CMA))
-                addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
--       else
-+       else {
-                addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
-+               if (!addr)
-+                       addr = __alloc_remap_buffer(dev, size, gfp, prot,
-+                                                   &page, caller);
-+       }
-
-        if (addr)
-                *handle = pfn_to_dma(dev, page_to_pfn(page));
---
-1.7.9.5
