@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083AbaETJnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:43:11 -0400
+	id S1753204AbaETJnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:43:43 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:63309 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751461AbaETJnC (ORCPT
+	with ESMTP id S1752979AbaETJnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:43:02 -0400
+	Tue, 20 May 2014 05:43:09 -0400
 X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762584"
+   d="scan'208";a="30762590"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Viresh Kumar <viresh.kumar@linaro.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V3 05/10] workqueue: separate iteration role from worker_idr
-Date: Tue, 20 May 2014 17:46:31 +0800
-Message-ID: <1400579204-3647-6-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH V3 08/10] workqueue: rename manager_mutex to attach_mutex
+Date: Tue, 20 May 2014 17:46:34 +0800
+Message-ID: <1400579204-3647-9-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
@@ -28,170 +28,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker_idr has the iteration (iterating for attached workers) and worker ID
-duties. These two duties are not necessarily tied together. We can separate
-them and use a list for tracking attached workers and iteration.
+manager_mutex is only used to protect the attaching for the pool
+and the pool->workers list. It protects the pool->workers and operations
+based on this list, such as:
+	cpu-binding for the workers in the pool->workers
+	the operations to set/clear WORKER_UNBOUND
 
-Before this separation, it is not possible to add rescuer workers
-to worker_idr due to rescuer workers can't allocate ID in run-time. (Because
-ID-allocation depends on memory-allocation. Rescuer rescues the world
-when memory is insufficient, so it must avoid to allocate memory.)
-
-After separation, we can easily add the rescuer workers to the list for
-iteration without any memory-allocation. It is required when we attach
-the rescuer worker to the pool in later patch.
+So we can simply rename manager_mutex to attach_mutex without any
+functionality changed.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c          |   28 +++++++++++++++-------------
- kernel/workqueue_internal.h |    2 ++
- 2 files changed, 17 insertions(+), 13 deletions(-)
+ kernel/workqueue.c          |   44 +++++++++++++++++++++---------------------
+ kernel/workqueue_internal.h |    4 +-
+ 2 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1236544..fd2f265 100644
+index 4ae6a3c..728b515 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -161,7 +161,8 @@ struct worker_pool {
+@@ -65,7 +65,7 @@ enum {
+ 	 * be executing on any CPU.  The pool behaves as an unbound one.
+ 	 *
+ 	 * Note that DISASSOCIATED should be flipped only while holding
+-	 * manager_mutex to avoid changing binding state while
++	 * attach_mutex to avoid changing binding state while
+ 	 * create_worker() is in progress.
+ 	 */
+ 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
+@@ -122,7 +122,7 @@ enum {
+  *    cpu or grabbing pool->lock is enough for read access.  If
+  *    POOL_DISASSOCIATED is set, it's identical to L.
+  *
+- * M: pool->manager_mutex protected.
++ * A: pool->attach_mutex protected.
+  *
+  * PL: wq_pool_mutex protected.
+  *
+@@ -160,8 +160,8 @@ struct worker_pool {
+ 
  	/* see manage_workers() for details on the two manager mutexes */
  	struct mutex		manager_arb;	/* manager arbitration */
- 	struct mutex		manager_mutex;	/* manager exclusion */
--	struct idr		worker_idr;	/* M: worker IDs and iteration */
-+	struct idr		worker_idr;	/* M: worker IDs */
-+	struct list_head	workers;	/* M: attached workers */
+-	struct mutex		manager_mutex;	/* manager exclusion */
+-	struct list_head	workers;	/* M: attached workers */
++	struct mutex		attach_mutex;	/* attach/detach exclusion */
++	struct list_head	workers;	/* A: attached workers */
  	struct completion	*detach_completion; /* all workers detached */
  
- 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
-@@ -363,7 +364,6 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- /**
-  * for_each_pool_worker - iterate through all workers of a worker_pool
+ 	struct ida		worker_ida;	/* worker IDs for task name */
+@@ -367,14 +367,14 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
   * @worker: iteration cursor
-- * @wi: integer used for iteration
   * @pool: worker_pool to iterate workers of
   *
-  * This must be called with @pool->manager_mutex.
-@@ -371,8 +371,8 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+- * This must be called with @pool->manager_mutex.
++ * This must be called with @pool->attach_mutex.
+  *
   * The if/else clause exists only for the lockdep assertion and can be
   * ignored.
   */
--#define for_each_pool_worker(worker, wi, pool)				\
--	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
-+#define for_each_pool_worker(worker, pool)				\
-+	list_for_each_entry((worker), &(pool)->workers, node)		\
- 		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
+ #define for_each_pool_worker(worker, pool)				\
+ 	list_for_each_entry((worker), &(pool)->workers, node)		\
+-		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
++		if (({ lockdep_assert_held(&pool->attach_mutex); false; })) { } \
  		else
  
-@@ -1674,6 +1674,7 @@ static struct worker *alloc_worker(void)
- 	if (worker) {
- 		INIT_LIST_HEAD(&worker->entry);
- 		INIT_LIST_HEAD(&worker->scheduled);
-+		INIT_LIST_HEAD(&worker->node);
- 		/* on creation a worker is in !idle && prep state */
- 		worker->flags = WORKER_PREP;
- 	}
-@@ -1696,7 +1697,8 @@ static void worker_detach_from_pool(struct worker *worker,
+ /**
+@@ -1696,11 +1696,11 @@ static void worker_detach_from_pool(struct worker *worker,
+ {
+ 	struct completion *detach_completion = NULL;
  
- 	mutex_lock(&pool->manager_mutex);
- 	idr_remove(&pool->worker_idr, worker->id);
--	if (idr_is_empty(&pool->worker_idr))
-+	list_del(&worker->node);
-+	if (list_empty(&pool->workers))
+-	mutex_lock(&pool->manager_mutex);
++	mutex_lock(&pool->attach_mutex);
+ 	list_del(&worker->node);
+ 	if (list_empty(&pool->workers))
  		detach_completion = pool->detach_completion;
- 	mutex_unlock(&pool->manager_mutex);
+-	mutex_unlock(&pool->manager_mutex);
++	mutex_unlock(&pool->attach_mutex);
  
-@@ -1772,6 +1774,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	if (detach_completion)
+ 		complete(detach_completion);
+@@ -1753,7 +1753,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	/* prevent userland from meddling with cpumask of workqueue workers */
+ 	worker->task->flags |= PF_NO_SETAFFINITY;
  
- 	/* successful, commit the pointer to idr */
- 	idr_replace(&pool->worker_idr, worker, worker->id);
-+	/* successful, attach the worker to the pool */
-+	list_add_tail(&worker->node, &pool->workers);
+-	mutex_lock(&pool->manager_mutex);
++	mutex_lock(&pool->attach_mutex);
+ 
+ 	/*
+ 	 * set_cpus_allowed_ptr() will fail if the cpumask doesn't have any
+@@ -1762,7 +1762,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	set_cpus_allowed_ptr(worker->task, pool->attrs->cpumask);
+ 
+ 	/*
+-	 * The pool->manager_mutex ensures %POOL_DISASSOCIATED
++	 * The pool->attach_mutex ensures %POOL_DISASSOCIATED
+ 	 * remains stable across this function.  See the comments above the
+ 	 * flag definition for details.
+ 	 */
+@@ -1772,7 +1772,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	/* successful, attach the worker to the pool */
+ 	list_add_tail(&worker->node, &pool->workers);
+ 
+-	mutex_unlock(&pool->manager_mutex);
++	mutex_unlock(&pool->attach_mutex);
  
  	return worker;
  
-@@ -3483,6 +3487,7 @@ static int init_worker_pool(struct worker_pool *pool)
- 	mutex_init(&pool->manager_arb);
- 	mutex_init(&pool->manager_mutex);
- 	idr_init(&pool->worker_idr);
-+	INIT_LIST_HEAD(&pool->workers);
+@@ -3456,7 +3456,7 @@ static int init_worker_pool(struct worker_pool *pool)
+ 		    (unsigned long)pool);
  
- 	INIT_HLIST_NODE(&pool->hash_node);
- 	pool->refcnt = 1;
-@@ -3548,7 +3553,7 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	mutex_init(&pool->manager_arb);
+-	mutex_init(&pool->manager_mutex);
++	mutex_init(&pool->attach_mutex);
+ 	INIT_LIST_HEAD(&pool->workers);
+ 
+ 	ida_init(&pool->worker_ida);
+@@ -3513,7 +3513,7 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	/*
+ 	 * Become the manager and destroy all workers.  Grabbing
+ 	 * manager_arb prevents @pool's workers from blocking on
+-	 * manager_mutex.
++	 * attach_mutex.
+ 	 */
+ 	mutex_lock(&pool->manager_arb);
+ 
+@@ -3523,10 +3523,10 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	WARN_ON(pool->nr_workers || pool->nr_idle);
  	spin_unlock_irq(&pool->lock);
  
- 	mutex_lock(&pool->manager_mutex);
--	if (!idr_is_empty(&pool->worker_idr))
-+	if (!list_empty(&pool->workers))
+-	mutex_lock(&pool->manager_mutex);
++	mutex_lock(&pool->attach_mutex);
+ 	if (!list_empty(&pool->workers))
  		pool->detach_completion = &detach_completion;
- 	mutex_unlock(&pool->manager_mutex);
+-	mutex_unlock(&pool->manager_mutex);
++	mutex_unlock(&pool->attach_mutex);
  
-@@ -4533,7 +4538,6 @@ static void wq_unbind_fn(struct work_struct *work)
- 	int cpu = smp_processor_id();
- 	struct worker_pool *pool;
- 	struct worker *worker;
--	int wi;
- 
+ 	if (pool->detach_completion)
+ 		wait_for_completion(pool->detach_completion);
+@@ -4513,11 +4513,11 @@ static void wq_unbind_fn(struct work_struct *work)
  	for_each_cpu_worker_pool(pool, cpu) {
  		WARN_ON_ONCE(cpu != smp_processor_id());
-@@ -4548,7 +4552,7 @@ static void wq_unbind_fn(struct work_struct *work)
- 		 * before the last CPU down must be on the cpu.  After
- 		 * this, they may become diasporas.
- 		 */
--		for_each_pool_worker(worker, wi, pool)
-+		for_each_pool_worker(worker, pool)
- 			worker->flags |= WORKER_UNBOUND;
  
- 		pool->flags |= POOL_DISASSOCIATED;
-@@ -4594,7 +4598,6 @@ static void wq_unbind_fn(struct work_struct *work)
- static void rebind_workers(struct worker_pool *pool)
- {
- 	struct worker *worker;
--	int wi;
- 
- 	lockdep_assert_held(&pool->manager_mutex);
- 
-@@ -4605,13 +4608,13 @@ static void rebind_workers(struct worker_pool *pool)
- 	 * of all workers first and then clear UNBOUND.  As we're called
- 	 * from CPU_ONLINE, the following shouldn't fail.
- 	 */
--	for_each_pool_worker(worker, wi, pool)
-+	for_each_pool_worker(worker, pool)
- 		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
- 						  pool->attrs->cpumask) < 0);
- 
- 	spin_lock_irq(&pool->lock);
- 
--	for_each_pool_worker(worker, wi, pool) {
-+	for_each_pool_worker(worker, pool) {
- 		unsigned int worker_flags = worker->flags;
+-		mutex_lock(&pool->manager_mutex);
++		mutex_lock(&pool->attach_mutex);
+ 		spin_lock_irq(&pool->lock);
  
  		/*
-@@ -4663,7 +4666,6 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
+-		 * We've blocked all manager operations.  Make all workers
++		 * We've blocked all attach/detach operations. Make all workers
+ 		 * unbound and set DISASSOCIATED.  Before this, all workers
+ 		 * except for the ones which are still executing works from
+ 		 * before the last CPU down must be on the cpu.  After
+@@ -4529,7 +4529,7 @@ static void wq_unbind_fn(struct work_struct *work)
+ 		pool->flags |= POOL_DISASSOCIATED;
+ 
+ 		spin_unlock_irq(&pool->lock);
+-		mutex_unlock(&pool->manager_mutex);
++		mutex_unlock(&pool->attach_mutex);
+ 
+ 		/*
+ 		 * Call schedule() so that we cross rq->lock and thus can
+@@ -4570,7 +4570,7 @@ static void rebind_workers(struct worker_pool *pool)
  {
+ 	struct worker *worker;
+ 
+-	lockdep_assert_held(&pool->manager_mutex);
++	lockdep_assert_held(&pool->attach_mutex);
+ 
+ 	/*
+ 	 * Restore CPU affinity of all workers.  As all idle workers should
+@@ -4638,7 +4638,7 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
  	static cpumask_t cpumask;
  	struct worker *worker;
--	int wi;
  
- 	lockdep_assert_held(&pool->manager_mutex);
+-	lockdep_assert_held(&pool->manager_mutex);
++	lockdep_assert_held(&pool->attach_mutex);
  
-@@ -4677,7 +4679,7 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
- 		return;
+ 	/* is @cpu allowed for @pool? */
+ 	if (!cpumask_test_cpu(cpu, pool->attrs->cpumask))
+@@ -4683,7 +4683,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 		mutex_lock(&wq_pool_mutex);
  
- 	/* as we're called from CPU_ONLINE, the following shouldn't fail */
--	for_each_pool_worker(worker, wi, pool)
-+	for_each_pool_worker(worker, pool)
- 		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
- 						  pool->attrs->cpumask) < 0);
- }
+ 		for_each_pool(pool, pi) {
+-			mutex_lock(&pool->manager_mutex);
++			mutex_lock(&pool->attach_mutex);
+ 
+ 			if (pool->cpu == cpu) {
+ 				spin_lock_irq(&pool->lock);
+@@ -4695,7 +4695,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 				restore_unbound_workers_cpumask(pool, cpu);
+ 			}
+ 
+-			mutex_unlock(&pool->manager_mutex);
++			mutex_unlock(&pool->attach_mutex);
+ 		}
+ 
+ 		/* update NUMA affinity of unbound workqueues */
 diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-index 7e2204d..8888e06 100644
+index 8888e06..4521587 100644
 --- a/kernel/workqueue_internal.h
 +++ b/kernel/workqueue_internal.h
-@@ -37,6 +37,8 @@ struct worker {
+@@ -37,8 +37,8 @@ struct worker {
  	struct task_struct	*task;		/* I: worker task */
  	struct worker_pool	*pool;		/* I: the associated pool */
  						/* L: for rescuers */
-+	struct list_head	node;		/* M: anchored at pool->workers */
-+						/* M: runs through worker->node */
+-	struct list_head	node;		/* M: anchored at pool->workers */
+-						/* M: runs through worker->node */
++	struct list_head	node;		/* A: anchored at pool->workers */
++						/* A: runs through worker->node */
  
  	unsigned long		last_active;	/* L: last active timestamp */
  	unsigned int		flags;		/* X: flags */
