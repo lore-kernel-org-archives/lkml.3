@@ -1,79 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaETRmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:42:42 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:46884 "EHLO quartz.orcorp.ca"
+	id S1754652AbaETRmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:42:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54632 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937AbaETRmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:42:39 -0400
-Date: Tue, 20 May 2014 11:42:26 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>
-Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on
- designware core driver
-Message-ID: <20140520174226.GC5130@obsidianresearch.com>
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
- <6048322.x3M3sdDEWO@wuerfel>
- <5374FD24.8000806@ti.com>
- <22200719.Jb5jnJylJH@wuerfel>
- <20140515183919.GC11650@obsidianresearch.com>
- <53751DDF.40304@ti.com>
- <20140515205210.GB14722@obsidianresearch.com>
- <3E54258959B69E4282D79E01AB1F32B704742133@DFLE11.ent.ti.com>
- <20140520170221.GA5130@obsidianresearch.com>
- <CAErSpo667uWybiHOh4tVQDh_JFpF0EbvxKwo_GQm+B1-wMtT1Q@mail.gmail.com>
+	id S1752937AbaETRmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:42:43 -0400
+Message-ID: <537B93A6.9030205@ti.com>
+Date: Tue, 20 May 2014 23:10:54 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo667uWybiHOh4tVQDh_JFpF0EbvxKwo_GQm+B1-wMtT1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+To: Nishanth Menon <nm@ti.com>
+CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
+        <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
+        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <broonie@linaro.org>, <swarren@nvidia.com>, <lee.jones@linaro.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
+References: <1400577099-8743-1-git-send-email-j-keerthy@ti.com> <1400577099-8743-4-git-send-email-j-keerthy@ti.com> <537B6376.2050000@ti.com>
+In-Reply-To: <537B6376.2050000@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:22:22AM -0600, Bjorn Helgaas wrote:
-> On Tue, May 20, 2014 at 11:02 AM, Jason Gunthorpe
-> <jgunthorpe@obsidianresearch.com> wrote:
-> > On Fri, May 16, 2014 at 08:29:56PM +0000, Karicheri, Muralidharan wrote:
-> >
-> >> But pcie_bus_configure_settings just make sure the mrrs for a device
-> >> is not greater than the max payload size.
-> >
-> > Not quite, it first scans the network checking the Maximum Payload Size
-> > Supported (MPSS) for each device, and chooses the highest supported by
-> > all as the MPS for all.
-> 
-> The "performance" setting, e.g., "pci=pcie_bus_perf", adds a few
-> wrinkles by setting MRRS in ways that allow some devices to have
-> larger MPS than others.  I don't think this is exactly what was
-> envisioned in the spec, and it is not guaranteed to work if there is
-> peer-to-peer DMA.  This isn't documented very well; the best I know of
-> is the changelogs for:
-> 
->   a1c473aa11e6 pci: Clamp pcie_set_readrq() when using "performance" settings
->   b03e7495a862 PCI: Set PCI-E Max Payload Size on fabric
+Hi Nishanth,
 
-Neat, and does pretty much confirm that setting the host bridge MPSS
-properly is necessary to support all drivers, particularly the ones
-that call pcie_set_readrq with any old value.
+On Tuesday 20 May 2014 07:45 PM, Nishanth Menon wrote:
+> On 05/20/2014 04:11 AM, Keerthy wrote:
+> [...]
+>> +config MFD_TPS65917
+>> +	bool "TI TPS65917 series chips"
+>> +	select MFD_CORE
+>> +	select REGMAP_I2C
+>> +	select REGMAP_IRQ
+>> +	depends on I2C=y
+> ^^ why =y?
+Palmas derived. I will knock off the 'y'
 
-The 'performance' setting is a bit scary, it isn't just peer-to-peer
-DMA that would be impacted but also CPU initiated burst writes. Eg
-InfiniBand drivers burst a WQE to the NIC via the CPU. The MPS on the
-root port bridge is used to segment the write. Probably not a problem
-in practice because I think this is rare, and even rarer that a burst
-would be > 128 bytes - but as you say, not really what the spec
-intended..
+>> +	help
+>> +	  If you say yes here you get support for the TPS65917
+>> +	  PMIC chips from Texas Instruments. The device provides
+>> +	  5 confgurable SPMSs and 5 LDOs, thermal protection module,
+>> +	  GPADC.
+>> +
+>>   config MFD_TPS80031
+>>   	bool "TI TPS80031/TPS80032 Power Management chips"
+>>   	depends on I2C=y
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 2851275..248a60b 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -69,6 +69,7 @@ tps65912-objs                   := tps65912-core.o tps65912-irq.o
+>>   obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
+>>   obj-$(CONFIG_MFD_TPS65912_I2C)	+= tps65912-i2c.o
+>>   obj-$(CONFIG_MFD_TPS65912_SPI)  += tps65912-spi.o
+>> +obj-$(CONFIG_MFD_TPS65917)	+= tps65917.o
+>>   obj-$(CONFIG_MFD_TPS80031)	+= tps80031.o
+>>   obj-$(CONFIG_MENELAUS)		+= menelaus.o
+>>   
+>> diff --git a/drivers/mfd/tps65917.c b/drivers/mfd/tps65917.c
+>> new file mode 100644
+>> index 0000000..dbd67c5
+>> --- /dev/null
+>> +++ b/drivers/mfd/tps65917.c
+>> @@ -0,0 +1,573 @@
+>> +/*
+>> + * TI TPS65917 Integrated power management chipsets
+>> + *
+>> + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+>> + * kind, whether expressed or implied; without even the implied warranty
+>> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License version 2 for more details.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/moduleparam.h>
+>> +#include <linux/init.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/err.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/mfd/tps65917.h>
+>> +#include <linux/of_device.h>
+> <snip>
+>> +
+>> +static int tps65917_voltaile_regs[] = {
+>> +	TPS65917_SMPS1_CTRL,
+>> +	TPS65917_SMPS2_CTRL,
+>> +	TPS65917_SMPS3_CTRL,
+>> +	TPS65917_SMPS4_CTRL,
+>> +	TPS65917_SMPS5_CTRL,
+>> +	TPS65917_LDO1_CTRL,
+>> +	TPS65917_LDO2_CTRL,
+>> +	TPS65917_LDO3_CTRL,
+>> +	TPS65917_LDO4_CTRL,
+>> +	TPS65917_LDO5_CTRL,
+>> +};
+>> +
+>> +static bool is_volatile_reg(struct device *dev, unsigned int reg)
+>> +{
+>> +	int i;
+>> +
+>> +	/*
+>> +	 * Caching all the required regulator registers.
+>> +	 */
+>> +
+>> +	for (i = 0; i < 11; i++)
+>> +		if (reg == tps65917_voltaile_regs[i])
+>> +			return true;
+>> +
+>> +	return false;
+>> +}
+>> +
+>> +static const struct regmap_config tps65917_regmap_config[TPS65917_NUM_CLIENTS] = {
+>> +	{
+>> +		.reg_bits = 8,
+>> +		.val_bits = 8,
+>> +		.volatile_reg = is_volatile_reg,
+>> +		.cache_type = REGCACHE_NONE,
+> Assume you wanted cached here, since you are marking certain registers
+> as volatile?
+> [...]
 
-Jason
+Yes. I will correct this.
+
+>> +};
+>> +
+>> +int tps65917_ext_control_req_config(struct tps65917 *tps65917,
+>> +				    enum tps65917_external_requestor_id id,
+>> +				    int ext_ctrl, bool enable)
+>> +{
+> kernel doc style documentation
+> [...]
+>
+>> +static struct tps65917 *tps65917_dev;
+>> +
+>> +static const struct of_device_id of_tps65917_match_tbl[] = {
+>> +	{
+>> +		.compatible = "ti,tps65917",
+>> +	},
+>> +	{ },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, of_tps65917_match_tbl);
+>> +
+>> +static int tps65917_i2c_probe(struct i2c_client *i2c,
+>> +			      const struct i2c_device_id *id)
+>> +{
+> [...]
+>> +	/*
+>> +	 * If we are probing with DT do this the DT way and return here
+>> +	 * otherwise continue and add devices using mfd helpers.
+>> +	 */
+>> +	if (node) {
+>> +		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+>> +		if (ret < 0)
+>> +			goto err_irq;
+>> +		else if (pdata->pm_off && !pm_power_off)
+>> +			tps65917_dev = tps65917;
+> and where is the actual power off function?
+
+I will add that.
+
+>
+>> +	}
+>> +
+>> +	return ret;
+>> +
+>> +err_irq:
+>> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
+>> +err_i2c:
+>> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
+>> +		if (tps65917->i2c_clients[i])
+>> +			i2c_unregister_device(tps65917->i2c_clients[i]);
+>> +	}
+>> +	return ret;
+>> +}
+>> +
+>> +static int tps65917_i2c_remove(struct i2c_client *i2c)
+>> +{
+>> +	struct tps65917 *tps65917 = i2c_get_clientdata(i2c);
+>> +	int i;
+>> +
+>> +	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
+>> +
+>> +	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
+>> +		if (tps65917->i2c_clients[i])
+>> +			i2c_unregister_device(tps65917->i2c_clients[i]);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct i2c_device_id tps65917_i2c_id[] = {
+>> +	{ "tps65917", },
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, tps65917_i2c_id);
+>> +
+>> +static struct i2c_driver tps65917_i2c_driver = {
+>> +	.driver = {
+>> +		   .name = "tps65917",
+>> +		   .of_match_table = of_tps65917_match_tbl,
+>> +		   .owner = THIS_MODULE,
+>> +	},
+>> +	.probe = tps65917_i2c_probe,
+>> +	.remove = tps65917_i2c_remove,
+>> +	.id_table = tps65917_i2c_id,
+>> +};
+>> +
+>> +static int __init tps65917_i2c_init(void)
+>> +{
+>> +	return i2c_add_driver(&tps65917_i2c_driver);
+>> +}
+>> +/* init early so consumer devices can complete system boot */
+>> +subsys_initcall(tps65917_i2c_init);
+> Should we let them just defer?
+>
+> [...]
+
+Guess most drivers in the mfd folder use subsys_initcall
+
+>
+>> diff --git a/include/linux/mfd/tps65917.h b/include/linux/mfd/tps65917.h
+>> new file mode 100644
+>> index 0000000..8232e22
+>> --- /dev/null
+>> +++ b/include/linux/mfd/tps65917.h
+>> +
+>> +struct tps65917 {
+>> +	struct device *dev;
+>> +
+>> +	struct i2c_client *i2c_clients[TPS65917_NUM_CLIENTS];
+>> +	struct regmap *regmap[TPS65917_NUM_CLIENTS];
+>> +
+>> +	/* Stored chip id */
+>> +	int id;
+>> +
+>> +	struct tps65917_pmic *pmic;
+>> +
+>> +	/* IRQ Data */
+>> +	int irq;
+>> +	u32 irq_mask;
+>> +	/* mutext for irq */
+>> +	struct mutex irq_lock;
+>> +	struct regmap_irq_chip_data *irq_data;
+>> +};
+> For all structures, could you use kerneldoc style documentation?
+> See: Documentation/kernel-doc-nano-HOWTO.txt +273
+>
+>
+>> +static inline int tps65917_read(struct tps65917 *tps65917, unsigned int base,
+>> +				unsigned int reg, unsigned int *val)
+> Again for all functions expected to be called by other driver(such as
+> regulator) to mfd, kernel-doc style documentation?
+>
+> [...]
+>
+Ok.
+
+Thanks,
+Keerthy
