@@ -1,140 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaETCB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:01:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16733 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354AbaETCB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:01:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,870,1392192000"; 
-   d="scan'208";a="543246754"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH v3 1/2] ACPI: Cleanup to convert acpi.no_static_ssdt
- into a compile-time configurable.
-Thread-Topic: [PATCH v3 1/2] ACPI: Cleanup to convert acpi.no_static_ssdt
- into a compile-time configurable.
-Thread-Index: AQHPc7I6UBG4YbIGO0WHUKMAgazcdJtH/H4AgAC6rpA=
-Date: Tue, 20 May 2014 02:01:11 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880256A2FF@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1396925060.git.lv.zheng@intel.com>
- <5a2b1a503fbc65f63a18ca28727e023e5f48efcd.1399880919.git.lv.zheng@intel.com>
- <3194723.o46ouvvENe@vostro.rjw.lan> <7128235.yLzY3DMMj5@vostro.rjw.lan>
-In-Reply-To: <7128235.yLzY3DMMj5@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752845AbaETCGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:06:08 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41350 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaETCGG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 22:06:06 -0400
+Message-ID: <537AB86B.4020901@oracle.com>
+Date: Mon, 19 May 2014 22:05:31 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: spinlock recursion in migrate_swap_stop
+References: <5371122D.6020605@oracle.com>
+In-Reply-To: <5371122D.6020605@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4K21d57008240
 
-Hi, Rafael
+ping? It seems to be easy enough to reproduce on -next, I'd be happy to try
+debug patches/fixes.
 
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Tuesday, May 20, 2014 6:52 AM
-> Subject: Re: [PATCH v3 1/2] ACPI: Cleanup to convert acpi.no_static_ssdt into a compile-time configurable.
+
+Thanks,
+Sasha
+
+On 05/12/2014 02:25 PM, Sasha Levin wrote:
+> Hi all,
 > 
-> On Tuesday, May 20, 2014 12:49:04 AM Rafael J. Wysocki wrote:
-> > On Monday, May 12, 2014 03:49:59 PM Lv Zheng wrote:
-> > > User can specify a DSDT with SSDT embedded, in which case, no_static_ssdt
-> > > must be enforced during compile-time.  If we don't do that and forget to
-> > > specify acpi.no_static_ssdt as a boot parameter, then:
-> > > 1. The AML executable will be executed twice, the second execution is
-> > >    running under a changed environment.
-> > > 2. The namespace object conflicts will result in an AE_ALREADY_EXISTS
-> > >    exception;
-> > > 3. The namespace objects that are deleted from the original SSDT will be
-> > >    restored by the auto loading of the original SSDT.
-> > >
-> > > Note that:
-> > > 1. The DSDT customization is a compile-time feature, thus the SSDT
-> > >    inclusion indication of the DSDT customization should also be
-> > >    implemented as a compile-time configurable.
-> > > 2. According to the commit log:
-> > >     Commit: 67effe8fff32f60bdf51cba484766ba6003005bb
-> > >     Subject: ACPI: add "acpi_no_auto_ssdt" bootparam
-> > >    The acpi.no_static_ssdt (originally acpi.no_auto_ssdt) was introduced to
-> > >    be used for this use case.  And over a long time, there is no other
-> > >    situation than this requires this boot parameter.
-> > > This patch thus converts the runtime kernel parameter into the compile-time
-> > > configuration item.
-> > >
-> > > References: https://bugzilla.kernel.org/show_bug.cgi?id=3774
-> > > Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=69711
-> > > Original-by: Enrico Etxe Arte <goitizena.generoa@gmail.com>
-> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > > ---
-> > >  Documentation/kernel-parameters.txt |   10 ----------
-> > >  drivers/acpi/Kconfig                |   32 ++++++++++++++++++++++++++------
-> > >  drivers/acpi/internal.h             |    5 +++++
-> > >  drivers/acpi/osl.c                  |    8 +++-----
-> > >  drivers/acpi/tables.c               |    2 ++
-> > >  5 files changed, 36 insertions(+), 21 deletions(-)
-> > >
-> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > > index 831fb1e..ceba0d6 100644
-> > > --- a/Documentation/kernel-parameters.txt
-> > > +++ b/Documentation/kernel-parameters.txt
-> > > @@ -237,16 +237,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> > >  			This feature is enabled by default.
-> > >  			This option allows to turn off the feature.
-> > >
-> > > -	acpi_no_static_ssdt	[HW,ACPI]
-> > > -			Disable installation of static SSDTs at early boot time
-> > > -			By default, SSDTs contained in the RSDT/XSDT will be
-> > > -			installed automatically and they will appear under
-> > > -			/sys/firmware/acpi/tables.
-> > > -			This option turns off this feature.
-> > > -			Note that specifying this option does not affect
-> > > -			dynamic table installation which will install SSDT
-> > > -			tables to /sys/firmware/acpi/tables/dynamic.
-> > > -
-> > >  	acpica_no_return_repair [HW, ACPI]
-> > >  			Disable AML predefined validation mechanism
-> > >  			This mechanism can repair the evaluation result to make
-> > > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> > > index c0160bb..51dc3b8 100644
-> > > --- a/drivers/acpi/Kconfig
-> > > +++ b/drivers/acpi/Kconfig
-> > > @@ -216,22 +216,40 @@ config ACPI_NUMA
-> > >  	depends on (X86 || IA64)
-> > >  	default y if IA64_GENERIC || IA64_SGI_SN2
-> > >
-> > > -config ACPI_CUSTOM_DSDT_FILE
-> > > -	string "Custom DSDT Table file to include"
-> > > -	default ""
-> > > +menu "Table override"
-> > > +
-> > > +menuconfig ACPI_CUSTOM_DSDT
-> >
-> > I would make this a choice, like the "Kernel compression mode" (in init/Kconfig).
-> >
-> > Then ACPI_CUSTOM_DSDT_ONLY and ACPI_CUSTOM_DSDT_WITH_SSDT may be the options
-> > and they both would select ACPI_CUSTOM_DSDT (otherwise invisible to the user),
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
 > 
-> With the third (and default) option NO_ACPI_CUSTOM_DSDT that would not
-> select ACPI_CUSTOM_DSDT.
-
-OK.
-
-Thanks
--Lv
-
+> [ 1738.758667] BUG: spinlock recursion on CPU#23, migration/23/328
+> [ 1738.761291]  lock: 0xffff8801f93b0c30, .magic: dead4ead, .owner: migration/23/328, .owner_cpu: 23
+> [ 1738.762733] CPU: 23 PID: 328 Comm: migration/23 Not tainted 3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+> [ 1738.764081]  ffff8801f93b0c30 ffff8805505efbc8 ffffffff9453e1ec 0000000000000004
+> [ 1738.764914]  ffff8805505cb000 ffff8805505efbe8 ffffffff94531095 ffff8801f93b0c30
+> [ 1738.765120]  ffffffff9583485e ffff8805505efc08 ffffffff945310c0 ffff8801f93b0c30
+> [ 1738.765120] Call Trace:
+> [ 1738.768386] dump_stack (lib/dump_stack.c:52)
+> [ 1738.768386] spin_dump (kernel/locking/spinlock_debug.c:68 (discriminator 6))
+> [ 1738.768386] spin_bug (kernel/locking/spinlock_debug.c:76)
+> [ 1738.768386] do_raw_spin_lock (kernel/locking/spinlock_debug.c:84 kernel/locking/spinlock_debug.c:135)
+> [ 1738.768386] _raw_spin_lock_nested (kernel/locking/spinlock.c:362 (discriminator 2))
+> [ 1738.768386] ? migrate_swap_stop (arch/x86/include/asm/paravirt.h:804 kernel/sched/sched.h:1406 kernel/sched/core.c:1099)
+> [ 1738.768386] ? _raw_spin_lock (kernel/locking/spinlock.c:152)
+> [ 1738.768386] ? migrate_swap_stop (kernel/sched/sched.h:1393 kernel/sched/core.c:1097)
+> [ 1738.768386] migrate_swap_stop (arch/x86/include/asm/paravirt.h:804 kernel/sched/sched.h:1406 kernel/sched/core.c:1099)
+> [ 1738.768386] ? queue_stop_cpus_work (include/linux/cpumask.h:108 include/linux/cpumask.h:174 kernel/stop_machine.c:375)
+> [ 1738.768386] multi_cpu_stop (kernel/stop_machine.c:225)
+> [ 1738.768386] ? queue_stop_cpus_work (kernel/stop_machine.c:171)
+> [ 1738.768386] cpu_stopper_thread (kernel/stop_machine.c:498)
+> [ 1738.768386] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 1738.768386] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+> [ 1738.768386] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 1738.768386] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 1738.768386] smpboot_thread_fn (kernel/smpboot.c:160)
+> [ 1738.768386] ? __smpboot_create_thread (kernel/smpboot.c:105)
+> [ 1738.768386] kthread (kernel/kthread.c:210)
+> [ 1738.768386] ? complete (kernel/sched/completion.c:35)
+> [ 1738.768386] ? kthread_create_on_node (kernel/kthread.c:176)
+> [ 1738.768386] ret_from_fork (arch/x86/kernel/entry_64.S:553)
+> [ 1738.768386] ? kthread_create_on_node (kernel/kthread.c:176)
 > 
-> Thanks!
 > 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Thanks,
+> Sasha
+> 
+
