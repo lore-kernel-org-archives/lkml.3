@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaETICM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:02:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:40872 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbaETICJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:02:09 -0400
-Date: Tue, 20 May 2014 18:01:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: build failure after merge of the mfd-lj tree
-Message-ID: <20140520180159.3a70193c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/QmC0ADOs9cbiX_WkMI1Op=f"; protocol="application/pgp-signature"
+	id S1752149AbaETIDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:03:53 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62626 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751008AbaETIDv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 04:03:51 -0400
+Message-ID: <1400573029.4912.9.camel@x220>
+Subject: [PATCH] m32r: remove check for CONFIG_IDC_AK4524
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 20 May 2014 10:03:49 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 May 2014 08:03:50.0313 (UTC) FILETIME=[08C83990:01CF7402]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/QmC0ADOs9cbiX_WkMI1Op=f
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+There's been a check for CONFIG_IDC_AK4524 and its MODULE variant in
+m32r's code ever since it was added in v2.6.9. But there has never been
+a Kconfig symbol IDC_AK4524. Remove this check.
 
-Hi Lee,
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-After merging the mfd-lj tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+ arch/m32r/platforms/usrv/setup.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-drivers/mfd/stmpe.c: In function 'stmpe_irq_init':
-drivers/mfd/stmpe.c:1000:15: error: 'struct stmpe' has no member named 'irq=
-_base'
-   base =3D stmpe->irq_base;
-               ^
+diff --git a/arch/m32r/platforms/usrv/setup.c b/arch/m32r/platforms/usrv/setup.c
+index dcde0ec777f6..04af9c2a83d9 100644
+--- a/arch/m32r/platforms/usrv/setup.c
++++ b/arch/m32r/platforms/usrv/setup.c
+@@ -194,15 +194,6 @@ void __init init_IRQ(void)
+ 	disable_m32700ut_pld_irq(PLD_IRQ_UART1);
+ #endif	/* CONFIG_SERIAL_8250 || CONFIG_SERIAL_8250_MODULE */
+ 
+-#if defined(CONFIG_IDC_AK4524) || defined(CONFIG_IDC_AK4524_MODULE)
+-	/* INT#80: AK4524 IREQ on PLD */
+-	irq_set_chip_and_handler(PLD_IRQ_SNDINT, &m32700ut_pld_irq_type,
+-				 handle_level_irq);
+-	pld_icu_data[irq2pldirq(PLD_IRQ_SNDINT)].icucr
+-		= PLD_ICUCR_ISMOD01;	/* 'L' level sense */
+-	disable_m32700ut_pld_irq(PLD_IRQ_SNDINT);
+-#endif	/* CONFIG_IDC_AK4524 || CONFIG_IDC_AK4524_MODULE */
+-
+ 	/*
+ 	 * INT1# is used for UART, MMC, CF Controller in FPGA.
+ 	 * We enable it here.
+-- 
+1.9.0
 
-Caused by commit 3ba1d516d5fe ("mfd: stmpe: root out static GPIO and
-IRQ assignments").
-
-This is exactly the same error and commit I reported against the gpio
-tree on Friday.  Why has it come back?
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/QmC0ADOs9cbiX_WkMI1Op=f
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTewv8AAoJEMDTa8Ir7ZwVU3AP/31qWp2yRS8I91hIXlX1iZK7
-HTaztR0Z9dyLMUP5rArDWi3Z+ce3um3PcfrquzwZuQcw5A6GZ6wrvnkrBCwoGjjl
-kUUbrgIb+mFpGcdp4nFPwyR4vFLUi20p4TJsCrEn6P2Lnadc7BBft1F0DQeHy/4v
-mFsburQx2tB3UcHfRP2VpPxAP0/u/JfYFx21rgWG4jsSCPU4+Y/5xW5nmcImze56
-SEYqT0fYDPmGv9XlqNZM4D8SKbFJ+dqMKydw39aHqt5qhJ1AIb1GbjGMgHjRrivW
-y2UpDNKJNcQYy2QscPQPxsO8pnoYYk0U9vqDyK7CRDNqFmuJxH7WQxVBOWZKmRwd
-UO+Gy5h/QMNPhXqCjv+R//feNhbDgfeoGUTaPjzSX5lZiehXPR+bS+aCXsEPFbEc
-wVWeM2+JXqFX7F54RN7oeAcOqD+gM80tlrryDWfRYc7i3pHvj1kLJfoPfYuctjme
-xaodpJ0IxpibvcaCaJ8c2A5YDhi4YSUIMcVxFNXI/Dk8Xp5gNbtyQv+fb6a49sI7
-HLafx8Do1NKgDRj0Yce1G+4GTZF6sV0TBqsVfhrV4l/UQ/BGfmJT723q/CKUYPZU
-i42YHgbCmnyClEEMuZj4B6qtGJqD46xZhwfEGO2yTio4sl/Ug43b8G36/saHvwCP
-i6+XjHqMwpX1dBLw6vGi
-=jLW3
------END PGP SIGNATURE-----
-
---Sig_/QmC0ADOs9cbiX_WkMI1Op=f--
