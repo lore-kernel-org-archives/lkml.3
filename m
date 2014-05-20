@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaETRGu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:06:50 -0400
-Received: from smtprelay0206.hostedemail.com ([216.40.44.206]:43476 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753534AbaETRGr (ORCPT
+	id S1753854AbaETRGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:06:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32768 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506AbaETRGr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 13:06:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2689:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4321:4605:5007:6248:7652:7901:8957:9040:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bone53_57e7aff746d11
-X-Filterd-Recvd-Size: 2160
-Message-ID: <1400605602.26709.11.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop by ilog2
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kurt Garloff <garloff@suse.de>, akpm <akpm@linux-foundation.org>
-Date: Tue, 20 May 2014 10:06:42 -0700
-In-Reply-To: <20140520184809.56d3707440f64e2d9656e3c7@skynet.be>
-References: <20140520184809.56d3707440f64e2d9656e3c7@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="542223732"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Andi Kleen <ak@linux.intel.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/8] ixgbe: Out of line ixgbe_read/write_reg
+Thread-Topic: [PATCH 1/8] ixgbe: Out of line ixgbe_read/write_reg
+Thread-Index: AQHPcVAZKKq1T2MZKk2zTQ/UkJwTz5tI7lIAgAAXpoCAAShegA==
+Date: Tue, 20 May 2014 17:06:17 +0000
+Message-ID: <14DF3A68-94EE-499E-9B67-635CAF0AD6C7@intel.com>
+References: <1400276595-6965-1-git-send-email-andi@firstfloor.org>
+ <1400276595-6965-2-git-send-email-andi@firstfloor.org>
+ <7477F573-2AED-4D26-8D5F-DB80DFA7EDEF@intel.com>
+ <20140519232531.GJ19657@tassilo.jf.intel.com>
+In-Reply-To: <20140519232531.GJ19657@tassilo.jf.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.24.26.130]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <8023E5A59B8A704F82EC141D71755564@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 18:48 +0200, Fabian Frederick wrote:
-> Cc: Kurt Garloff <garloff@suse.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/scsi/tmscsim.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On May 19, 2014, at 4:25 PM, Andi Kleen <ak@linux.intel.com> wrote:
+
+> On Mon, May 19, 2014 at 10:00:52PM +0000, Rustad, Mark D wrote:
+>> On May 16, 2014, at 2:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> 
+>>> From: Andi Kleen <ak@linux.intel.com>
+>>> 
+>>> ixgbe_read_reg and ixgbe_write_reg are frequently called and are very big
+>>> because they have complex error handling code.
+>> 
+>> Actually, this patch doesn't do anything to ixgbe_write_reg, which would almost certainly be very bad for performance, but instead changes ixgbe_write_reg64.
 > 
-> diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
-[]
-> @@ -1611,7 +1611,7 @@ dc390_Reselect( struct dc390_acb* pACB )
->        printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
->      else
->        lun ^= 1 << pACB->pScsiHost->this_id; /* Mask AdapterID */
-> -    id = 0; while (lun >>= 1) id++;
-> +    id = ilog2(lun);
->      /* Get LUN */
->      lun = DC390_read8 (ScsiFifo);
->      if (!(lun & IDENTIFY_BASE)) printk (KERN_ERR "DC390: Resel: Expect identify message!\n");
+> I doubt a few cycles around the write make a lot of difference for MMIO. MMIO is dominated
+> by other things.
+> 
+>> The latter is not in a performance-sensitive path, but is only called from one site, so there is little reason to take it out-of-line.
+> 
+> True I moved the wrong one.
+> 
+> ixgbe_write_reg                                    3305  (0.00%)  8     409  
+> 
+> 
+>> I already have a patch in queue to make ixgbe_read_reg out-of-line, because it does have a very costly memory footprint inline, as you have found.
+> 
+> Please move write_reg too.
 
-Hey Fabian.
+I will take a look at moving most of them out-of-line. There are just a few in very hot paths that should remain inline.
 
-You've submitted several of these now.
-
-Have you gone through all of these to make sure
-that the ilog2(<foo>) uses are always using a
-non-zero <foo>?
-
-If so, that should be mentioned in the changelog.
-
-These should probably add #include <linux/log2.h>
-
-It would have been nicer to use a patch series
-and a cover letter so I could make this reply to
-to cover letter.
-
-Please take the time to setup and use git send-email
-instead of sylpheed.
-
+-- 
+Mark Rustad, Networking Division, Intel Corporation
 
