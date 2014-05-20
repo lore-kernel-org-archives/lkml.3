@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaETOlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:41:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:32857 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753158AbaETOlD (ORCPT
+	id S1754139AbaETOlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:41:21 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:54254 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582AbaETOlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:41:03 -0400
-Date: Tue, 20 May 2014 16:40:58 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/7] phy: add a driver for the Berlin SATA PHY
-Message-ID: <20140520144058.GE21579@kwain>
-References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
- <1400576675-25265-2-git-send-email-antoine.tenart@free-electrons.com>
- <1821771.zFvTDGF2Ae@amdc1032>
- <20140520140652.GB21579@kwain>
+	Tue, 20 May 2014 10:41:18 -0400
+Date: Tue, 20 May 2014 15:41:13 +0100
+From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] ext4: remove unused local variable "store" from
+ ext4_readdir(...)
+Message-ID: <20140520144113.GB13333@vaio>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140520140652.GB21579@kwain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 04:06:52PM +0200, Antoine Ténart wrote:
-> Hi,
-> 
-> On Tue, May 20, 2014 at 02:34:20PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> > On Tuesday, May 20, 2014 11:04:29 AM Antoine Ténart wrote:
-> > > +
-> > > +static struct phy_berlin_desc desc[] = {
-> > > +	{ .val = POWER_DOWN_PHY0 },
-> > > +	{ .val = POWER_DOWN_PHY1 },
-> > 
-> > Only .val entry of struct phy_berlin_desc is initialized and needed,
-> > it seems that u32 vals[] should be used instead of desc[].
-> 
-> Sure.
-> 
-> > > +
-> > > +static int phy_berlin_sata_probe(struct platform_device *pdev)
-> > > +{
-> > > +	struct device *dev = &pdev->dev;
-> > > +	struct phy *phy;
-> > > +	struct phy_provider *phy_provider;
-> > > +	struct phy_berlin_priv *priv;
-> > > +	struct resource *res;
-> > > +	int i;
-> > > +
-> > > +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> > > +	if (!priv)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
 
-We also need to check res isn't NULL here.
+Remove unused local variable "store" from ext4_readdir(...)
 
-> > > +	priv->base = devm_ioremap(dev, res->start, resource_size(res));
-> > > +	if (IS_ERR(priv->base))
-> > > +		return PTR_ERR(priv->base);
-> > 
-> > devm_ioremap() (contrary to devm_ioremap_resource()) returns a valid
-> > pointer or NULL so return value checking should be fixed.
-> 
-> I'll fix this.
+Local variable "stored" is initialized however never used inside the function.
 
-Antoine
+Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+---
+ fs/ext4/dir.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+index d638c57..ef1bed6 100644
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -105,7 +105,7 @@ int __ext4_check_dir_entry(const char *function, u
+ static int ext4_readdir(struct file *file, struct dir_context *ctx)
+ {
+        unsigned int offset;
+-       int i, stored;
++       int i;
+        struct ext4_dir_entry_2 *de;
+        int err;
+        struct inode *inode = file_inode(file);
+@@ -133,7 +133,6 @@ static int ext4_readdir(struct file *file, struct
+                        return ret;
+        }
+
+-       stored = 0;
+        offset = ctx->pos & (sb->s_blocksize - 1);
+
+        while (ctx->pos < inode->i_size) {
+
