@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaETWfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:35:18 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:39332 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaETWfQ (ORCPT
+	id S1751417AbaETWkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:40:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35566 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaETWkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:35:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140520195041.GA28913@roeck-us.net>
-References: <CA+HUmGjvHgWB3vcPnXAEVFdFuy9sOaB1BjaDW1-7ai933XEGWQ@mail.gmail.com>
-	<20140520195041.GA28913@roeck-us.net>
-Date: Tue, 20 May 2014 15:35:15 -0700
-Message-ID: <CA+HUmGg4mE5RDxShNCK78yLi9gdX_FnHtWPKfGD4LaEqrCdj2Q@mail.gmail.com>
-Subject: Re: pci: kernel crash in bus_find_device
-From: Francesco Ruggeri <fruggeri@arista.com>
-To: Guenter Roeck <linux@roeck-us.net>, linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 May 2014 18:40:06 -0400
+Date: Tue, 20 May 2014 15:40:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: <gregkh@linuxfoundation.org>, <tj@kernel.org>, <hpa@zytor.com>,
+        <toshi.kani@hp.com>, <mingo@elte.hu>, <hutao@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/1] mem-hotplug: Avoid illegal state prefixed with
+ legal state when changing state of memory_block.
+Message-Id: <20140520154004.cc8599e59bc8ea3e1e9d82e5@linux-foundation.org>
+In-Reply-To: <1400208149-9041-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1400208149-9041-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-thank you for your reply. I will check out the changes that you pointed to.
-The problem we are seeing is a race condition between for_each_pci_dev
-(or similar) and device_unregisters. I am not sure if use of the new
-lock should be extended to all code using for_each_pci_dev as well.
+On Fri, 16 May 2014 10:42:29 +0800 Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-pci_scan is a kernel thread that I used for testing purposes, to
-mimick the dynamics that we saw in our crashes in
-edac_pci_clear_parity_errors:
+> We use the following command to online a memory_block:
+> 
+> echo online|online_kernel|online_movable > /sys/devices/system/memory/memoryXXX/state
+> 
+> But, if we typed "online_movbale" by mistake (typo, not "online_movable"), it will be 
+> recognized as "online", and it will online the memory block successfully. "online" command
+> will put the memory block into the same zone as it was in before last offlined, which may 
+> be ZONE_NORMAL, not ZONE_MOVABLE. Since it succeeds without any warning, it may confuse 
+> users.
+> 
+> ...
+>
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -319,19 +319,27 @@ store_mem_state(struct device *dev,
+>  		struct device_attribute *attr, const char *buf, size_t count)
+>  {
+>  	struct memory_block *mem = to_memory_block(dev);
+> -	int ret, online_type;
+> +	int ret, online_type, len;
+>  
+>  	ret = lock_device_hotplug_sysfs();
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (!strncmp(buf, "online_kernel", min_t(int, count, 13)))
+> +	/*
+> +	 * count passed from user space includes \0, so the real length
+> +	 * is count-1.
+> +	 */
+> +	len = count - 1;
+> +
+> +	if (len == strlen("online_kernel") &&
+> +	    !strncmp(buf, "online_kernel", len))
+>  		online_type = ONLINE_KERNEL;
+> -	else if (!strncmp(buf, "online_movable", min_t(int, count, 14)))
+> +	else if (len == strlen("online_movable") &&
+> +		 !strncmp(buf, "online_movable", len))
+>  		online_type = ONLINE_MOVABLE;
+> -	else if (!strncmp(buf, "online", min_t(int, count, 6)))
+> +	else if (len == strlen("online") && !strncmp(buf, "online", len))
+>  		online_type = ONLINE_KEEP;
+> -	else if (!strncmp(buf, "offline", min_t(int, count, 7)))
+> +	else if (len == strlen("offline") && !strncmp(buf, "offline", len))
+>  		online_type = -1;
+>  	else {
+>  		ret = -EINVAL;
 
-        for (;;) {
-                pci_dev = NULL;
-                while ((pci_dev = pci_get_device(PCI_ANY_ID,
-PCI_ANY_ID, pci_dev)) != NULL)
-                        ;
-        }
-
-It keeps traversing klist_devices in pci_bus_type using
-bus_find_device, costantly resuming its search for the next element
-starting from the one it got in the previous round.
-There are several loops of this kind in linux. In case of this thread
-no action is taken on the elements as they are "found".
-
-The race condition occurs when bus_find_device resumes its search from
-a device that has been unregistered. Because device_unregister resets
-klist_bus in the device, bus_find device cannot resume from where it
-left off in the klist.
-The sequence is device_unregister, device_del, bus_remove_device,
-klist_del(&dev->p->knode_bus.).
-
-Francesco
+hm, why is this code so complicated?  Is it because it is trying not to
+trip over possibly-absent trailing newline?  If so, please take a look
+at sysfs_streq().
