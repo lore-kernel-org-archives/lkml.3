@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaETKcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:32:17 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:28487 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaETKcP (ORCPT
+	id S1752704AbaETKc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:32:58 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41255 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbaETKc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:32:15 -0400
-X-IronPort-AV: E=Sophos;i="4.98,873,1392163200"; 
-   d="scan'208";a="132841324"
-Message-ID: <537B2F2C.4080905@citrix.com>
-Date: Tue, 20 May 2014 12:32:12 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 06:32:56 -0400
+Message-ID: <537B2F09.5020306@linux.vnet.ibm.com>
+Date: Tue, 20 May 2014 16:01:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <felipe.franciosi@citrix.com>, <jerry.snitselaar@oracle.com>,
-        <axboe@kernel.dk>
-Subject: Re: [Xen-devel] Backport request to stable of two performance related
- fixes for xen-blkfront (3.13 fixes to earlier trees)
-References: <20140514191122.GA7659@phenom.dumpdata.com>	<8738g44wxp.fsf@vitty.brq.redhat.com> <87ppj8zsfb.fsf@vitty.brq.redhat.com>
-In-Reply-To: <87ppj8zsfb.fsf@vitty.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@kernel.org,
+        rusty@rustcorp.com.au, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 UPDATEDv3 3/3] CPU hotplug, smp: Flush any pending
+ IPI callbacks before CPU offline
+References: <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com> <5379F6BD.1090809@linux.vnet.ibm.com> <20140519161836.GA30387@redhat.com> <537A6060.7070406@linux.vnet.ibm.com> <537A6811.50808@linux.vnet.ibm.com> <20140520094203.GU2485@laptop.programming.kicks-ass.net> <537B29F7.6060104@linux.vnet.ibm.com> <20140520102542.GW2485@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140520102542.GW2485@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052010-0260-0000-0000-000004FB5A66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/05/14 11:54, Vitaly Kuznetsov wrote:
-> Vitaly Kuznetsov <vkuznets@redhat.com> writes:
+On 05/20/2014 03:55 PM, Peter Zijlstra wrote:
+> On Tue, May 20, 2014 at 03:39:59PM +0530, Srivatsa S. Bhat wrote:
+>>> The multi_cpu_stop() path isn't exclusive to hotplug, so your changelog
+>>> is wrong or the patch is.
+>>>
+>>
+>> Yes, I know that multi_cpu_stop() isn't exclusive to hotplug. That's why
+>> I have explicitly referred to CPU hotplug in the comment as well as the
+>> changelog.
+>>
+>> But I totally agree that code-wise this is not the best way to do it since
+>> this affects (although harmlessly) usecases other than hotplug as well.
+>>
+>> Do you have any other suggestions?
 > 
->> 1) ramdisks (/dev/ram*) (persistent grants and indirect descriptors
->> disabled)
+> How about making a kernel/smp.c hotplug notifier and stuffing it in the
+> CPU_DYING list? That's typically after we've already torn down the
+> interrupts for that cpu, so no chance of any new ones coming in.
 > 
-> sorry, there was a typo. persistent grants and indirect descriptors are
-> enabled with ramdisks, otherwise such testing won't make any sense.
+> Or is that too late?
+> 
 
-I'm not sure how is that possible, from your description I get that you
-are using 3.11 on the Dom0, which means blkback has support for
-persistent grants and indirect descriptors, but the guest is RHEL7,
-that's using the 3.10 kernel AFAICT, and this kernel only has persistent
-grants implemented.
+No, that should work just fine. Thank you for the suggestion! I'll give
+it a shot.
 
-Roger.
+Regards,
+Srivatsa S. Bhat
+
