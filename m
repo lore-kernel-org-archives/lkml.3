@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaETThH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:37:07 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:65110 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaETThE (ORCPT
+	id S1753987AbaETTj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:39:26 -0400
+Received: from host171.canaca.com ([67.55.55.225]:38673 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaETTjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:37:04 -0400
-Message-ID: <537BAEDB.7020605@gmail.com>
-Date: Tue, 20 May 2014 21:36:59 +0200
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 15:39:25 -0400
+Message-ID: <8c45868c3cd4333d1098bdbc0fa83a2e.squirrel@mungewell.org>
+In-Reply-To: <537B9FAE.9070602@logitech.com>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+    <1818063.tFLKhAd1oy@sigyn>
+    <20140514180558.GB30089@core.coreip.homeip.net>
+    <2965006.XKYHWj9YzJ@sigyn> <537B9FAE.9070602@logitech.com>
+Date: Tue, 20 May 2014 15:39:19 -0400
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: simon@mungewell.org
+To: "Roland Bosa" <rbosa@logitech.com>
+Cc: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi,
+        simon@mungewell.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 5/9] mtd: nand: add sunxi NAND flash controller support
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com> <1394647664-8258-6-git-send-email-b.brezillon.dev@gmail.com> <20140509160341.GA6984@arch.cereza> <536D069A.40401@gmail.com> <20140520184942.GT28907@ld-irv-0074> <20140520192134.GU28907@ld-irv-0074>
-In-Reply-To: <20140520192134.GU28907@ld-irv-0074>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Allow me to introduce myself. I'm Roland Bosa and I work for Logitech,
+> more specifically the gaming group. I have been tasked to look into
+> gaming device support for Linux and I just started following this list
+> and studying the kernel code related to the Logitech Force Feedback
+> devices. The 'ff-memless-next' module sounds tailor-made for our
+> devices. Please let me know how I can help with its development.
 
-On 20/05/2014 21:21, Brian Norris wrote:
-> On Tue, May 20, 2014 at 11:49:42AM -0700, Brian Norris wrote:
->> On Fri, May 09, 2014 at 06:47:22PM +0200, Boris BREZILLON wrote:
->>> On 09/05/2014 18:03, Ezequiel Garcia wrote:
->>>> On 12 Mar 07:07 PM, Boris BREZILLON wrote:
->>>>> --- /dev/null
->>>>> +++ b/drivers/mtd/nand/sunxi_nand.c
->>>>> @@ -0,0 +1,1276 @@
->> ...
->>>>> +static int sunxi_nand_ecc_init(struct mtd_info *mtd, struct nand_ecc_ctrl *ecc,
->>>>> +			       struct device_node *np)
->>>>> +{
->>>>> +	struct nand_chip *nand = mtd->priv;
->>>>> +	int ecc_step_size, ecc_strength;
->>>>> +	int ret;
->>>>> +
->>>>> +	ecc_step_size = of_get_nand_ecc_step_size(np);
->>>>> +	ecc_strength = of_get_nand_ecc_strength(np);
->>>>> +	if (ecc_step_size > 0 && ecc_strength > 0) {
->>>>> +		ecc->size = ecc_step_size;
->>>>> +		ecc->strength = ecc_strength;
->>>>> +	} else {
->>>>> +		ecc->size = nand->ecc_step_ds;
->>>>> +		ecc->strength = nand->ecc_strength_ds;
->>>>> +	}
->>>>> +
->>>> Shouldn't you check the devicetree value is not weaker than the ONFI-obtained?
->>> I can definitely do that.
->> You can do that here, but take a look at the discussion Ezequiel and I
->> had about this:
->>
->>   http://thread.gmane.org/gmane.linux.drivers.devicetree/67462
->>
->> We probably don't want to be doing anything drastic like overriding the
->> device tree configuration. Instead, we might want to stick a warning
->> into the core nand_base code that does the proper comparison of the
->> '*_ds' values with the actual values chosen in
->> chip->ecc->{size,strength}. The comparison is kind of subtle, actually,
->> so it'd be good to do it exactly once for everyone.
+Hello Roland,
+Let me echo Michal's welcome.
 
-Fair enough, I'll follow your suggestions on this specific point ;)
+As you will see from the 'ff-memless-next' driver we are looking to extend
+force-feedback support to cover more than just ConstantForce support, and
+hopefully bring Linux into scope for force-feedback of AAA game quality.
 
-> I forgot, Ezequiel already submitted this. I'll look at it soon:
->
->   http://patchwork.ozlabs.org/patch/348901/
+Mostly this has come from a small group of people reverse engineering the
+Logitech wheels, which leads to the 'tailor-made' situation. But we'd like
+the systems/interfaces to be device agnostic.
 
-Thanks for pointing this out.
+As you how you can help...? As Michal said having a contact at Logitech to
+whom we can ask technical questions (off list) would probably be the
+greatest help. This would clear up any assumptions we have made, and help
+with decisions going forward.
 
+It may also be the case that Logitech is working with studios/game
+designers to improve controller performance. If any information can be
+feed 'forward' to improve the Linux driver, that would be useful too.
 
->
-> Brian
+Many thanks,
+Simon Wood.
 
