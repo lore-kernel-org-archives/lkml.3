@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751067AbaETUIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:08:34 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:53273 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaETUId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:08:33 -0400
-Date: Tue, 20 May 2014 22:08:30 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 5/5] workqueue: Allow modifying low level unbound
- workqueue cpumask
-Message-ID: <20140520200828.GG17741@localhost.localdomain>
-References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
- <1400257015-28222-6-git-send-email-fweisbec@gmail.com>
- <20140516205050.GM5379@htj.dyndns.org>
- <20140520193253.GF17741@localhost.localdomain>
- <20140520195656.GA5586@htj.dyndns.org>
+	id S1751103AbaETUIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:08:55 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46290 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138AbaETUIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 16:08:53 -0400
+Date: Tue, 20 May 2014 15:08:44 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Prabhakar Lad <prabhakar.csengg@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: ffs-test.c Compilation failure
+Message-ID: <20140520200844.GB22996@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <CA+V-a8v-y_=zjPKG2ui0y1eBhk-Ri3SKuv=X2sMReit2UOY=4A@mail.gmail.com>
+ <xa1tfvk4z05m.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
 Content-Disposition: inline
-In-Reply-To: <20140520195656.GA5586@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <xa1tfvk4z05m.fsf@mina86.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 03:56:56PM -0400, Tejun Heo wrote:
-> > > Hmmm... but there's nothing which makes rolling back more likely to
-> > > succeed compared to the original applications.  It's gonna allocate
-> > > more pwqs.  Triggering WARN_ON_ONCE() seems weird.
-> > 
-> > Yeah but that's the least we can do. If we fail to even recover the old cpumask,
-> > the user should know about the half state fail.
-> 
-> I'm failing to see how it'd be better than just going through applying
-> the new mask if we're likely to end up with half-updated states
-> anyway.  What's the point of another layer of best effort logic which
-> is more likely to fail?
+--A6N2fC+uXW/VQSAv
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If the error is -ENOMEM then yeah, but any other error wants rollback.
+Hi,
 
-> > But it's going to imply fun with double linked list of struct pwq_allocation_object
-> > and stuff. Or maybe an array. This reminds be a bit generate_sched_domains(). It's
-> > not going to be _that_ simple nor pretty :)
-> 
-> Is it tho?  Don't we just need to keep a separate staging copy of
-> prepared pwq_tbl?  The commit stage can be pwq_tbl installation.
-> Looks like it shouldn't be too much of problem.  Am I missing
-> something?
+On Tue, May 20, 2014 at 10:05:09AM -1000, Michal Nazarewicz wrote:
+> Commit [ac8dde11: =E2=80=9Cusb: gadget: f_fs: Add flags to descriptors bl=
+ock=E2=80=9D]
+> which introduced a new descriptor format for FunctionFS removed the
+> usb_functionfs_descs_head structure, which is still used by ffs-test.
+> tool.
+>=20
+> Convert ffs-test by converting it to use the new header format.  For
+> testing kernels prior to 3.14 (when the new format was introduced) and
+> parsing of the legacy headers in the new kernels, provide a compilation
+> flag to make the tool use the old format.
+>=20
+> Finally, include information as to when the legacy FunctionFS headers
+> format has been deprecated (which is also when the new one has been
+> introduced).
+>=20
+> Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-Sure, that still need an iteration array/list of pre-allocated objects.
-Expect at least one more hundred lines.
+can you send as a proper patch with proper subject ?
 
-> 
-> > > 2. Proper error handling is hard.  Just do pr_warn() on each failure
-> > >    and continue to try to apply and always return 0.
-> > > 
-> > > If #1 isn't too complicated (would it be?), it'd be the better option;
-> > > otherwise, well, #2 should work most of the time, eh?
-> > 
-> > Yeah I think #2 should be way enough 99% of the time :)
-> 
-> Yeah, if #1 gets too hairy, #2 can be a reluctant option but if #1 is
-> doable without too much complication, I'd much prefer proper error
-> handling.
+--=20
+balbi
 
-I can try yeah.
+--A6N2fC+uXW/VQSAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTe7ZMAAoJEIaOsuA1yqREz1UP/2DjgdzwsFFXOmCU7v02jSRT
+RnBeVZQEnDa43t0GmqGrmC9TXLaBW9EhCfw4YWFSvuLAtNTwVuLtjZxu6V4qoDCn
+xGFe21e37C3IYsL5mnZtjAb2a1+jWtfCz7RhcvuGL8O5UM+ZmG8uI9zEwRh4wDdL
+Nl5nLMXbmzc+V3J6jwn1r+g8alUWCjoCW1kSmsE5UAmbgm5CmdpZCxC61LrZ8Spu
+VGDaiNmxRy7tpQufT+MvxIy5MNowvfhURsjjzTM75JANCFcAslpYX1QMLk0m3Epe
+9Hdwwl99SI6Qvv93ri2Oy/IJwpClYxx/dVq2WGkxFGjyc2TDKLy+p/OgY8cA7X/9
+GuFVZIxylb6zHMEl9r77OXOt/xg+xtl0S6OiBO9hjOxYWwOsy89ICCcexdOLZHC2
+FosR0KWDksFWwRmTpGBjWR8Pp9C378ZJ4zOMOGRw08+QEnGu8lZigPkN1MDUKysE
+w5VrfQI23oo5hQM3JiIzg2a1K7SlGxQR0TEqQewd82noI+i6W88a6FWnR1jvEMLT
+NJ7kOTGCtNC71BAduhAFFenTSwPQQDC/G8qOjq4E3X0z5OSwJfa0w9dQlXPKYCGN
+D5h31D73gyxFR2fCypY5o6ptCNqvz9lx7tJdCqq65IzOpvwB80wLrg5GqWEwpDLu
+ko/vCdpgNRg97fA2rsbu
+=yo6P
+-----END PGP SIGNATURE-----
+
+--A6N2fC+uXW/VQSAv--
