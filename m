@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaETNYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:24:11 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:35187 "EHLO
+	id S1753555AbaETNYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:24:06 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:35186 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752343AbaETNYC (ORCPT
+	by vger.kernel.org with ESMTP id S1752045AbaETNYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 09:24:02 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Lee Jones <lee.jones@linaro.org>,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v3 09/11] ARM: STi: DT: STiH415: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
-Date: Tue, 20 May 2014 15:22:53 +0200
-Message-Id: <1400592175-13176-10-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v3 04/11] ARM: STi: DT: STiH416: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
+Date: Tue, 20 May 2014 15:22:48 +0200
+Message-Id: <1400592175-13176-5-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400592175-13176-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1400592175-13176-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -36,33 +36,33 @@ CLK_S_GMAC0_PHY &  CLK_S_ETH1_PH clocks are no longer used.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih415-clock.dtsi | 14 --------------
+ arch/arm/boot/dts/stih416-clock.dtsi | 14 --------------
  1 file changed, 14 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
-index b36a92c..637caa8 100644
---- a/arch/arm/boot/dts/stih415-clock.dtsi
-+++ b/arch/arm/boot/dts/stih415-clock.dtsi
-@@ -32,20 +32,6 @@
- 			clock-frequency = <500000000>;
+diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+index 600aeef..072c587 100644
+--- a/arch/arm/boot/dts/stih416-clock.dtsi
++++ b/arch/arm/boot/dts/stih416-clock.dtsi
+@@ -33,20 +33,6 @@
+ 			clock-frequency = <600000000>;
  		};
  
--		CLKS_GMAC0_PHY: clockgenA1@7 {
+-		CLK_S_GMAC0_PHY: clockgenA1@7 {
 -			#clock-cells = <0>;
 -			compatible = "fixed-clock";
 -			clock-frequency = <25000000>;
--			clock-output-names = "CLKS_GMAC0_PHY";
+-			clock-output-names = "CLK_S_GMAC0_PHY";
 -		};
 -
--		CLKS_ETH1_PHY: clockgenA0@7 {
+-		CLK_S_ETH1_PHY: clockgenA0@7 {
 -			#clock-cells = <0>;
 -			compatible = "fixed-clock";
 -			clock-frequency = <25000000>;
--			clock-output-names = "CLKS_ETH1_PHY";
+-			clock-output-names = "CLK_S_ETH1_PHY";
 -		};
 -
  		/*
- 		 * ClockGenAs on SASG1
+ 		 * ClockGenAs on SASG2
  		 */
 -- 
 1.9.1
