@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaETQRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:17:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56001 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319AbaETQRa (ORCPT
+	id S1753676AbaETQTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:19:10 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:54054 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaETQTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:17:30 -0400
+	Tue, 20 May 2014 12:19:09 -0400
+Date: Tue, 20 May 2014 17:19:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com
+Subject: Re: [PATCH v4 1/3] mfd: max8997: use regmap to access registers
+Message-ID: <20140520161902.GD32025@lee--X1>
+References: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
+ <1398693358-28336-2-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1400276595-6965-8-git-send-email-andi@firstfloor.org>
-References: <1400276595-6965-1-git-send-email-andi@firstfloor.org> <1400276595-6965-8-git-send-email-andi@firstfloor.org>
-From: =?UTF-8?B?TWFyZWsgT2zFocOhaw==?= <maraeo@gmail.com>
-Date: Tue, 20 May 2014 18:16:48 +0200
-Message-ID: <CAAxE2A4YvKRNMu6ogYOX2zE2=N1Q6hd1c0niB3jf9f3P8rwoRw@mail.gmail.com>
-Subject: Re: [PATCH 7/8] radeon: Out of line radeon_get_ib_value
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Deucher, Alexander" <alexander.deucher@amd.com>,
-        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398693358-28336-2-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the function should stay in the header file. It's used in
-performance-critical code, so we want it to be inlined.
-
-Marek
-
-On Fri, May 16, 2014 at 11:43 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Saves about 5k of text
->
->    text    data     bss     dec     hex filename
-> 14080360        2008168 1507328 17595856        10c7dd0 vmlinux-before-radeon
-> 14074978        2008168 1507328 17590474        10c68ca vmlinux-radeon
->
-> Cc: alexander.deucher@amd.com
-> Cc: dri-devel@lists.freedesktop.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> This patch modifies max8997 driver and each associated function driver,
+> to use regmap instead of operating directly on i2c bus. It will allow to
+> simplify IRQ handling using regmap-irq.
+> 
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> [For extcon part]
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> 
+> [For leds part]
+> Acked-by: Bryan Wu <cooloney@gmail.com>
 > ---
->  drivers/gpu/drm/radeon/radeon.h        | 10 +---------
->  drivers/gpu/drm/radeon/radeon_device.c |  9 +++++++++
->  2 files changed, 10 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-> index 6852861..8cae409 100644
-> --- a/drivers/gpu/drm/radeon/radeon.h
-> +++ b/drivers/gpu/drm/radeon/radeon.h
-> @@ -1032,15 +1032,7 @@ struct radeon_cs_parser {
->         struct ww_acquire_ctx   ticket;
->  };
->
-> -static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
-> -{
-> -       struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
-> -
-> -       if (ibc->kdata)
-> -               return ibc->kdata[idx];
-> -       return p->ib.ptr[idx];
-> -}
-> -
-> +u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
->
->  struct radeon_cs_packet {
->         unsigned        idx;
-> diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-> index 0e770bb..1cbd171 100644
-> --- a/drivers/gpu/drm/radeon/radeon_device.c
-> +++ b/drivers/gpu/drm/radeon/radeon_device.c
-> @@ -112,6 +112,15 @@ bool radeon_is_px(struct drm_device *dev)
->         return false;
->  }
->
-> +u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
-> +{
-> +       struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
-> +
-> +       if (ibc->kdata)
-> +               return ibc->kdata[idx];
-> +       return p->ib.ptr[idx];
-> +}
-> +
->  /**
->   * radeon_program_register_sequence - program an array of registers.
->   *
-> --
-> 1.9.0
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>  drivers/extcon/extcon-max8997.c     |  31 ++++----
+>  drivers/input/misc/max8997_haptic.c |  34 +++++----
+>  drivers/leds/leds-max8997.c         |  13 ++--
+>  drivers/mfd/Kconfig                 |   1 +
+>  drivers/mfd/max8997-irq.c           |  64 +++++++---------
+>  drivers/mfd/max8997.c               | 141 ++++++++++++++++-------------------
+
+Looks to be doing the right things and the diff looks good.
+
+For the MFD part:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+>  drivers/power/max8997_charger.c     |  33 +++++----
+>  drivers/regulator/max8997.c         |  87 +++++++++++-----------
+>  drivers/rtc/rtc-max8997.c           |  56 +++++++-------
+>  include/linux/mfd/max8997-private.h |  17 ++---
+>  10 files changed, 228 insertions(+), 249 deletions(-)
+
+--
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
