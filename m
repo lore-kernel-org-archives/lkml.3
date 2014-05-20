@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaETGVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 02:21:42 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:44684 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948AbaETGVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 02:21:41 -0400
+	id S1751266AbaETGYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 02:24:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56256 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789AbaETGYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 02:24:17 -0400
+Message-ID: <537AF4ED.9070106@ti.com>
+Date: Tue, 20 May 2014 11:53:41 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1400073858-28912-10-git-send-email-gabriel.fernandez@linaro.org>
-References: <1400073858-28912-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1400073858-28912-10-git-send-email-gabriel.fernandez@linaro.org>
-Date: Mon, 19 May 2014 23:21:40 -0700
-Message-ID: <CAOesGMhH0B80mjH3w9nVa1CWxST2HVpyDZjjfX4koYgDaPYK2w@mail.gmail.com>
-Subject: Re: [PATCH v2 09/10] ARM: STi: DT: STiH415: 415 DT Entry for clockgen A9
-From: Olof Johansson <olof@lixom.net>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Pankaj Dev <pankaj.dev@st.com>
-Content-Type: text/plain; charset=UTF-8
+To: Olof Johansson <olof@lixom.net>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <joelf@ti.com>,
+        <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <arm@kernel.org>
+Subject: Re: [PATCH] ARM: edma: Clean up and simplify the code around irq
+ request
+References: <1399965961-23739-1-git-send-email-peter.ujfalusi@ti.com> <5374AD6D.8090002@ti.com> <20140520055741.GR18956@quad.lixom.net>
+In-Reply-To: <20140520055741.GR18956@quad.lixom.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 6:24 AM, Gabriel FERNANDEZ
-<gabriel.fernandez@st.com> wrote:
-> Patch adds DT entries for clockgen A9
->
-> Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> ---
->  arch/arm/boot/dts/stih415-clock.dtsi | 48 +++++++++++++++++++++++++++++-------
->  1 file changed, 39 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
-> index 8618851..5d161ee 100644
-> --- a/arch/arm/boot/dts/stih415-clock.dtsi
-> +++ b/arch/arm/boot/dts/stih415-clock.dtsi
-> @@ -24,15 +24,6 @@
->                 };
->
->                 /*
-> -                * ARM Peripheral clock for timers
-> -                */
-> -               arm_periph_clk: arm_periph_clk {
-> -                       #clock-cells = <0>;
-> -                       compatible = "fixed-clock";
-> -                       clock-frequency = <500000000>;
-> -               };
-> -
-> -               /*
->                  * ClockGenAs on SASG1
->                  */
->                 clockgenA@fee62000 {
-> @@ -499,5 +490,44 @@
->                                                 /* Remaining outputs unused */
->                         };
->                 };
-> +
-> +               /*
-> +                * A9 PLL
-> +                */
-> +               clockgenA9 {
+On Tuesday 20 May 2014 11:27 AM, Olof Johansson wrote:
+> On Thu, May 15, 2014 at 05:35:01PM +0530, Sekhar Nori wrote:
+>> + ARM SoC team
+>>
+>> On Tuesday 13 May 2014 12:56 PM, Peter Ujfalusi wrote:
+>>> Get the two interrupt line number at the same time by merging the two
+>>> instance of if(node){}else{} places.
+>>> replace the &pdev->dev with the already existing dev which makes it possible
+>>> to collapse lines with devm_request_irq()
+>>>
+>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>
+>> Acked-by: Sekhar Nori <nsekhar@ti.com>
+>>
+>> Arnd, Olof, Kevin,
+>>
+>> Do you mind applying this directly for v3.16? I do not have anything
+>> else queued ATM so not sending a pull request.
+> 
+> I see it was reposted today as part of a larger patch set with some
+> question as to what it applies to.
 
-This is a somewhat odd node name. We usually don't use caps mixed like
-this. Also, the node should have a unit address (same as the address
-portion of the reg value).
+That 13 patch set from Peter does not include this patch. If you have
+not applied this directly, I will send everything together as a pull
+request.
 
-clockgen-a9 would be a more natural one.
+> Sekhar, if you just have one patch for us to apply, then feel free to
+> resend it to use (git send-email --to=arm@kernel.org) and make it clear
+> (below the --- separator) that you want us to apply it directly, and
+> we'll be happy to do so.
 
-> +                       reg = <0xfdde00d8 0x70>;
-> +
-> +                       CLOCKGEN_A9_PLL: CLOCKGEN_A9_PLL {
+Okay, will do so in future.
 
-I'm really not a fan of the all-caps node names you guys are using.
-Please switch to lower case like most other platforms. Just as in C,
-we tend to keep all-caps to be used for constants and preprocessor
-stuff.
-
-
--Olof
+Thanks,
+Sekhar
