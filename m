@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaETPUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:20:48 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:49991 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaETPUr (ORCPT
+	id S1753837AbaETPVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:21:02 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:57597 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763AbaETPU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:20:47 -0400
-Date: Tue, 20 May 2014 08:20:43 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr
-Subject: Re: [PATCH] Input: misc : Introduce the use of the managed version
- of kzalloc
-Message-ID: <20140520152042.GA9444@core.coreip.homeip.net>
-References: <20140520150918.GA6269@himangi-Dell>
+	Tue, 20 May 2014 11:20:59 -0400
+Date: Tue, 20 May 2014 16:20:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jay Aurabind <mail@aurabindo.in>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Trivial Monkey <trivial@rustcorp.com.au>
+Subject: Re: [PATCH] mfd: abx500-core: Fix compiler warning larger stack frame
+Message-ID: <20140520152054.GB24991@lee--X1>
+References: <536E1543.3090107@aurabindo.in>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140520150918.GA6269@himangi-Dell>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <536E1543.3090107@aurabindo.in>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi,
+> From 95f6ac368dbe352af0dfa2097b7d58b416447be5 Mon Sep 17 00:00:00 2001
+> From: Aurabindo J <mail@aurabindo.in>
+> Date: Sat, 10 May 2014 15:16:58 +0530
+> Subject: [PATCH] mfd: abx500-core: Fix compiler warning larger stack frame
+> 
+> On systems with CONFIG_FRAME_WARN=1024, compiler warns the allocation of
+> an object of struct device on stack. Make the allocation dynamically to
+> fix the warning.
+> 
+> drivers/mfd/abx500-core.c: In function ‘abx500_dump_all_banks’:
+> drivers/mfd/abx500-core.c:167:1: warning: the frame size of 1032 bytes
+> is larger than 1024 bytes [-Wframe-larger-than=]
+> 
+> Signed-off-by: Aurabindo J <mail@aurabindo.in>
+> ---
+>  drivers/mfd/abx500-core.c | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
 
-On Tue, May 20, 2014 at 08:39:18PM +0530, Himangi Saraogi wrote:
-> Would be better to add the definition of a
-> devm_input_allocate_polled_device, like there is a
-> devm_input_allocate_device defined?
-
-There is one, queued for 3.16. You should see it in linux-next.
-
-Thanks.
+Looks good to me.  I'll apply it until Linus complains.
 
 -- 
-Dmitry
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
