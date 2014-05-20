@@ -1,182 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaETKLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:11:17 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59695 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648AbaETKLQ (ORCPT
+	id S1752862AbaETKMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:12:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:49606 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196AbaETKM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:11:16 -0400
-Message-ID: <537B29F7.6060104@linux.vnet.ibm.com>
-Date: Tue, 20 May 2014 15:39:59 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@kernel.org,
-        rusty@rustcorp.com.au, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 UPDATEDv3 3/3] CPU hotplug, smp: Flush any pending
- IPI callbacks before CPU offline
-References: <20140515191218.19811.25887.stgit@srivatsabhat.in.ibm.com> <20140515191358.19811.70381.stgit@srivatsabhat.in.ibm.com> <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com> <5379F6BD.1090809@linux.vnet.ibm.com> <20140519161836.GA30387@redhat.com> <537A6060.7070406@linux.vnet.ibm.com> <537A6811.50808@linux.vnet.ibm.com> <20140520094203.GU2485@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140520094203.GU2485@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052010-3864-0000-0000-00000E4E5CAE
+	Tue, 20 May 2014 06:12:29 -0400
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH v2] regulator: core: Fix the init of DT defined fixed regulators
+Date: Tue, 20 May 2014 12:12:16 +0200
+Message-Id: <1400580736-29410-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 1.9.3
+X-Provags-ID: V02:K0:9IJXdcVKG2gsrxBooUCm2DBQ9kLJF0ldQeWmFaGPvf+
+ nieQBYxO7B/vnaXGadf/cHZQGzFs+8dL6SHUStY2M6Q35a2p0l
+ jTGMvXpwdrJE8TL3s1+Q2ZD4LQ1MJ2q/fSIobr7RQl1ll5UqpF
+ fX+dYmW9C8Vkf+iQpBI7hNWIHdcTpJUzU6JIdukBjp61gSYX7G
+ VAjsOLODtEN5HMWRUz2yIJBfLmidQwHpZzIz8y3tdA1rxeV6/+
+ QyWS/jWFk/6BB0AIUtYd4pgRnem5l6vQPHw0axtpcPXHRAJSS7
+ cM9Jr4zfL/nM8UTVPugEG/DZsJ4rOgQKZW0tqliq/QfLKWufT0
+ 4tTeWWIpezKB30us7BckiVwEvwjKpWRw6nnzCSnj4hSysvxYnU
+ I5SBrgZKlsPnUeMwEvlQAJLswu5UU3TLHmaLWbtOxFaEGd5zVd
+ FtIAU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 03:12 PM, Peter Zijlstra wrote:
-> On Tue, May 20, 2014 at 01:52:41AM +0530, Srivatsa S. Bhat wrote:
->> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> [PATCH v5 UPDATEDv3 3/3] CPU hotplug, smp: Flush any pending IPI callbacks before CPU offline
->>
->> During CPU offline, in the stop-machine loop, we use 2 separate stages to
->> disable interrupts, to ensure that the CPU going offline doesn't get any new
->> IPIs from the other CPUs after it has gone offline.
->>
->> However, an IPI sent much earlier might arrive late on the target CPU
->> (possibly _after_ the CPU has gone offline) due to hardware latencies,
->> and due to this, the smp-call-function callbacks queued on the outgoing
->> CPU might not get noticed (and hence not executed) at all.
->>
->> This is somewhat theoretical, but in any case, it makes sense to explicitly
->> loop through the call_single_queue and flush any pending callbacks before the
->> CPU goes completely offline. So, flush the queued smp-call-function callbacks
->> in the MULTI_STOP_DISABLE_IRQ_ACTIVE stage, after disabling interrupts on the
->> active CPU. This can be trivially achieved by invoking the
->> generic_smp_call_function_single_interrupt() function itself (and since the
->> outgoing CPU is still online at this point, we won't trigger the "IPI to offline
->> CPU" warning in this function; so we are safe to call it here).
->>
->> This way, we would have handled all the queued callbacks before going offline,
->> and also, no new IPIs can be sent by the other CPUs to the outgoing CPU at that
->> point, because they will all be executing the stop-machine code with interrupts
->> disabled.
->>
->> Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
->> Reviewed-by: Tejun Heo <tj@kernel.org>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  include/linux/smp.h   |    2 ++
->>  kernel/smp.c          |   17 ++++++++++++++---
->>  kernel/stop_machine.c |   11 +++++++++++
->>  3 files changed, 27 insertions(+), 3 deletions(-)
->>
->> diff --git a/include/linux/smp.h b/include/linux/smp.h
->> index 633f5ed..e6b090d 100644
->> --- a/include/linux/smp.h
->> +++ b/include/linux/smp.h
->> @@ -151,6 +151,8 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
->>  
->>  static inline void kick_all_cpus_sync(void) {  }
->>  
->> +static inline void generic_smp_call_function_single_interrupt(void) { }
->> +
->>  #endif /* !SMP */
->>  
->>  /*
->> diff --git a/kernel/smp.c b/kernel/smp.c
->> index 306f818..b765167 100644
->> --- a/kernel/smp.c
->> +++ b/kernel/smp.c
->> @@ -177,9 +177,18 @@ static int generic_exec_single(int cpu, struct call_single_data *csd,
->>  	return 0;
->>  }
->>  
->> -/*
->> - * Invoked by arch to handle an IPI for call function single. Must be
->> - * called from the arch with interrupts disabled.
->> +/**
->> + * generic_smp_call_function_single_interrupt - Execute SMP IPI callbacks
->> + *
->> + * Invoked by arch to handle an IPI for call function single.
->> + *
->> + * This is also invoked by a CPU about to go offline, to flush any pending
->> + * smp-call-function callbacks queued on this CPU (including those for which
->> + * the source CPU's IPIs might not have been received on this CPU yet).
->> + * This ensures that all pending IPI callbacks are run before the CPU goes
->> + * completely offline.
->> + *
->> + * Must be called with interrupts disabled.
->>   */
->>  void generic_smp_call_function_single_interrupt(void)
->>  {
->> @@ -187,6 +196,8 @@ void generic_smp_call_function_single_interrupt(void)
->>  	struct call_single_data *csd, *csd_next;
->>  	static bool warned;
->>  
->> +	WARN_ON(!irqs_disabled());
->> +
->>  	entry = llist_del_all(&__get_cpu_var(call_single_queue));
->>  	entry = llist_reverse_order(entry);
->>  
->> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
->> index 288f7fe..4069c13 100644
->> --- a/kernel/stop_machine.c
->> +++ b/kernel/stop_machine.c
->> @@ -21,6 +21,7 @@
->>  #include <linux/smpboot.h>
->>  #include <linux/atomic.h>
->>  #include <linux/lglock.h>
->> +#include <linux/smp.h>
->>  
->>  /*
->>   * Structure to determine completion condition and record errors.  May
->> @@ -223,6 +224,16 @@ static int multi_cpu_stop(void *data)
->>  				if (is_active) {
->>  					local_irq_disable();
->>  					hard_irq_disable();
->> +
->> +					/*
->> +					 * IPIs (from the inactive CPUs) might
->> +					 * arrive late due to hardware latencies.
->> +					 * So flush out any pending IPI callbacks
->> +					 * explicitly, to ensure that the outgoing
->> +					 * CPU doesn't go offline with work still
->> +					 * pending (during CPU hotplug).
->> +					 */
->> +					generic_smp_call_function_single_interrupt();
->>  				}
->>  				break;
->>  			case MULTI_STOP_RUN:
-> 
-> The multi_cpu_stop() path isn't exclusive to hotplug, so your changelog
-> is wrong or the patch is.
-> 
+When a regulator is defined using DT and it has a single voltage the
+regulator init always tries to apply this voltage. However it fails if
+the regulator isn't settable because it is using an internal low level
+function. To overcome this we now first query the regulator and only
+set it if needed.
 
-Yes, I know that multi_cpu_stop() isn't exclusive to hotplug. That's why
-I have explicitly referred to CPU hotplug in the comment as well as the
-changelog.
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ drivers/regulator/core.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-But I totally agree that code-wise this is not the best way to do it since
-this affects (although harmlessly) usecases other than hotplug as well.
-
-Do you have any other suggestions?
-
-> Furthermore, you yourself have worked on trying to remove stop machine
-> from hotplug, that too should've been a big hint this is the wrong place
-> for this.
-> 
-
-I know :-( But for lack of any other solution (other than getting rid of
-stop-machine from the hotplug path), I went with this rather poor fix, as
-a stop-gap arrangement until we implement the long-term solution (stop-
-machine-free CPU hotplug).
-
-While we are on the topic of stop-machine removal, I'll try to revive that
-patchset again and hope that this time it will get more reviews and probably
-get a chance to go upstream. That should solve a _lot_ of problems with
-hotplug!
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9a09f3c..7375997 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -844,13 +844,22 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 	/* do we need to apply the constraint voltage */
+ 	if (rdev->constraints->apply_uV &&
+ 	    rdev->constraints->min_uV == rdev->constraints->max_uV) {
+-		ret = _regulator_do_set_voltage(rdev,
+-						rdev->constraints->min_uV,
+-						rdev->constraints->max_uV);
+-		if (ret < 0) {
+-			rdev_err(rdev, "failed to apply %duV constraint\n",
+-				 rdev->constraints->min_uV);
+-			return ret;
++		int current_uV = _regulator_get_voltage(rdev);
++		if (current_uV < 0) {
++			rdev_err(rdev, "failed to get the current voltage\n");
++			return current_uV;
++		}
++		if (current_uV < rdev->constraints->min_uV ||
++		    current_uV > rdev->constraints->max_uV) {
++			ret = _regulator_do_set_voltage(
++				rdev, rdev->constraints->min_uV,
++				rdev->constraints->max_uV);
++			if (ret < 0) {
++				rdev_err(rdev,
++					"failed to apply %duV constraint\n",
++					rdev->constraints->min_uV);
++				return ret;
++			}
+ 		}
+ 	}
+ 
+-- 
+1.9.3
 
