@@ -1,36 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaETJHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:07:38 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58418 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752788AbaETJHg (ORCPT
+	id S1752730AbaETJHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:07:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58317 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750747AbaETJEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:07:36 -0400
-Date: Tue, 20 May 2014 10:07:20 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] mm/kmemleak-test.c: use pr_fmt for logging
-Message-ID: <20140520090719.GE4822@arm.com>
-References: <20140519212513.d1a073065c000cde2394f8cd@skynet.be>
+	Tue, 20 May 2014 05:04:39 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 2/7] Documentation: bindings: add the Berlin SATA PHY
+Date: Tue, 20 May 2014 11:04:30 +0200
+Message-Id: <1400576675-25265-3-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1400576675-25265-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519212513.d1a073065c000cde2394f8cd@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 08:25:13PM +0100, Fabian Frederick wrote:
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  mm/kmemleak-test.c | 36 +++++++++++++++++++-----------------
->  1 file changed, 19 insertions(+), 17 deletions(-)
+The Berlin SATA PHY drives the PHY related to the SATA interface. Add
+the corresponding documentation.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ Documentation/devicetree/bindings/phy/berlin-sata-phy.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+
+diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+new file mode 100644
+index 000000000000..72646db2f5fc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+@@ -0,0 +1,14 @@
++Berlin SATA PHY
++---------------
++
++Required properties:
++- compatible: "marvell,berlin-sata-phy"
++- phy-cells: from the generic PHY bindings, must be 1
++- reg: address and length of the register
++
++Example:
++	sata_phy: phy@f7e900a0 {
++		compatible = "marvell,berlin-sata-phy";
++		reg = <0xf7e900a0 0x200>;
++		#phy-cells = <1>;
++	};
+-- 
+1.9.1
+
