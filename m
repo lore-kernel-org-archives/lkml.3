@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaETRc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:32:58 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60755 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaETRc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:32:57 -0400
-Date: Tue, 20 May 2014 18:32:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: [RESEND PATCH v2] mfd: max77686: handle IRQs using regmap
-Message-ID: <20140520173250.GD32538@lee--X1>
-References: <1398692462-25757-1-git-send-email-r.baldyga@samsung.com>
- <20140520161543.GC32025@lee--X1>
+	id S1754145AbaETRdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:33:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37528 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704AbaETRda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:33:30 -0400
+Date: Tue, 20 May 2014 19:33:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: tony.luck@intel.com, ak@linux.intel.com, ying.huang@intel.com,
+        seto.hidetoshi@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
+ to Per-CPU rather than only monarch CPU
+Message-ID: <20140520173308.GE16428@pd.tnic>
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140520161543.GC32025@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This patch modifies mfd driver to use regmap for handling interrupts.
-> > It allows to simplify irq handling process. This modifications needed
-> > to make small changes in function drivers, which use interrupts.
-> > 
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> > Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/mfd/Kconfig                  |   2 +-
-> >  drivers/mfd/Makefile                 |   2 +-
-> >  drivers/mfd/max77686-irq.c           | 319 -----------------------------------
-> >  drivers/mfd/max77686.c               |  54 +++++-
-> >  drivers/rtc/rtc-max77686.c           |  43 ++++-
-> >  include/linux/mfd/max77686-private.h |  32 +++-
-> >  6 files changed, 119 insertions(+), 333 deletions(-)
-> >  delete mode 100644 drivers/mfd/max77686-irq.c
-> 
-> I'm not going to complain at that diffstat.
-> 
-> So long as it works, patch applied.
+On Tue, May 20, 2014 at 10:11:25AM +0800, Chen Yucong wrote:
+> mces_seen is a Per-CPU variable which should only be accessed by
+> Per-CPU as possible. So the clear operation of mces_seen should also
+> be lcoal to Per-CPU rather than monarch CPU.
+>
+> Meanwhile, there is also a potential risk that mces_seen will not
+> be be cleared if a timeout occors in mce_end for monarch CPU. As a
+> reuslt, the stale value of mces_seen will reappear on the next mce.
 
-Slight change of plan, as it no longer applies.  Can you rebase the
-patch, apply my Acked-by and resubmit please?
+I don't know how many times I have to tell you this already: if we reach
+the timeout, we have a much bigger friggin' problem!
+
+What you could do instead is make the machine panic in the tolerant==1,
+i.e., the default case, in mce_timed_out().
+
+Basically, in the case any core is stuck and we reach a timeout, we want
+to panic the whole box immediately. There's a very little chance we can
+recover so panic is the only sane thing left to do.
+
+Ok?
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
