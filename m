@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaETO52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:57:28 -0400
-Received: from mailp.voltaire.com ([193.47.165.129]:48338 "EHLO mellanox.co.il"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752201AbaETO50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:57:26 -0400
-From: Amir Vadai <amirv@mellanox.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Amir Vadai <amirv@mellanox.com>,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Eyal Perry <eyalpe@mellanox.com>
-Subject: [PATCH net-next] genirq: Eliminate explicit dependency between IRQ affinity notifiers and CONFIG_SMP
-Date: Tue, 20 May 2014 17:57:00 +0300
-Message-Id: <1400597820-30685-1-git-send-email-amirv@mellanox.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1753902AbaETO6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:58:33 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:55149 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaETO6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:58:32 -0400
+Date: Tue, 20 May 2014 15:58:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, bin.yang@intel.com
+Subject: Re: [PATCH 1/4] mfd: intel_soc_pmic: Core driver
+Message-ID: <20140520145827.GV24991@lee--X1>
+References: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
+ <1400079578-32329-2-git-send-email-lejun.zhu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400079578-32329-2-git-send-email-lejun.zhu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eyal Perry <eyalpe@mellanox.com>
+> This patch provides the common code for the intel_soc_pmic MFD driver,
+> such as read/write register and set up IRQ.
+> 
+> Signed-off-by: Yang, Bin <bin.yang@intel.com>
+> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> ---
+>  drivers/mfd/intel_soc_pmic_core.c  | 543 +++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_core.h  |  83 ++++++
+>  include/linux/mfd/intel_soc_pmic.h |  29 ++
+>  3 files changed, 655 insertions(+)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+>  create mode 100644 include/linux/mfd/intel_soc_pmic.h
 
-Instead of requiring each consumer of the IRQ affinity notifier to have
-themselves be explicitly dependent on CONFIG_SMP, make the definition of
-struct irq_affinity_notify to exist independently of that config option
-and introduce a stub for irq_set_affinity_notifier() under non SMP
-configuration.
+This whole driver needs converting over to regmap.
 
-Fixes: 2eacc23 ("net/mlx4_core: Enforce irq affinity changes
-immediatly")
-
-Signed-off-by: Eyal Perry <eyalpe@mellanox.com>
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
----
- include/linux/interrupt.h | 46 ++++++++++++++++++++++++++--------------------
- 1 file changed, 26 insertions(+), 20 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 97ac926..3f74c059 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -199,6 +199,26 @@ extern int check_wakeup_irqs(void);
- static inline int check_wakeup_irqs(void) { return 0; }
- #endif
- 
-+/**
-+ * struct irq_affinity_notify - context for notification of IRQ affinity changes
-+ * @irq:		Interrupt to which notification applies
-+ * @kref:		Reference count, for internal use
-+ * @work:		Work item, for internal use
-+ * @notify:		Function to be called on change.  This will be
-+ *			called in process context.
-+ * @release:		Function to be called on release.  This will be
-+ *			called in process context.  Once registered, the
-+ *			structure must only be freed when this function is
-+ *			called or later.
-+ */
-+struct irq_affinity_notify {
-+	unsigned int irq;
-+	struct kref kref;
-+	struct work_struct work;
-+	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
-+	void (*release)(struct kref *ref);
-+};
-+
- #if defined(CONFIG_SMP)
- 
- extern cpumask_var_t irq_default_affinity;
-@@ -242,26 +262,6 @@ extern int irq_select_affinity(unsigned int irq);
- 
- extern int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m);
- 
--/**
-- * struct irq_affinity_notify - context for notification of IRQ affinity changes
-- * @irq:		Interrupt to which notification applies
-- * @kref:		Reference count, for internal use
-- * @work:		Work item, for internal use
-- * @notify:		Function to be called on change.  This will be
-- *			called in process context.
-- * @release:		Function to be called on release.  This will be
-- *			called in process context.  Once registered, the
-- *			structure must only be freed when this function is
-- *			called or later.
-- */
--struct irq_affinity_notify {
--	unsigned int irq;
--	struct kref kref;
--	struct work_struct work;
--	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
--	void (*release)(struct kref *ref);
--};
--
- extern int
- irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
- 
-@@ -284,6 +284,12 @@ static inline int irq_set_affinity_hint(unsigned int irq,
- {
- 	return -EINVAL;
- }
-+
-+static inline int
-+irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_SMP */
- 
- /*
 -- 
-1.8.3.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
