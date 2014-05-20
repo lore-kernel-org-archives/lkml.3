@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaESXvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 19:51:48 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:56453
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751074AbaESXvr convert rfc822-to-8bit (ORCPT
+	id S1751457AbaETAAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:00:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59291 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaETAAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 19:51:47 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
- dereferencing error.
-Thread-Topic: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
- dereferencing error.
-Thread-Index: AQHPczh2O7W9mxz9mEKdCDMbGttfZ5tIFL8AgAB+ptA=
-Date: Mon, 19 May 2014 23:51:26 +0000
-Message-ID: <a9148f4a1b3e4bab928365e455edf1cc@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1400483625-29312-1-git-send-email-Li.Xiubo@freescale.com>
- <20140519161548.GZ12304@sirena.org.uk>
-In-Reply-To: <20140519161548.GZ12304@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 021670B4D2
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(24454002)(51704005)(199002)(189002)(164054003)(79102001)(81542001)(83072002)(85852003)(81342001)(46102001)(66066001)(74502001)(80022001)(31966008)(74662001)(64706001)(20776003)(77982001)(4396001)(83322001)(33646001)(99396002)(86362001)(99286001)(92566001)(21056001)(76576001)(76482001)(74316001)(77096999)(54356999)(101416001)(76176999)(50986999)(2656002)(87936001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 May 2014 20:00:33 -0400
+Date: Tue, 20 May 2014 02:00:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Juri Lelli <juri.lelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] sched/dl: Fix race between dl_task_timer() and
+ sched_setaffinity()
+Message-ID: <20140520000026.GD11096@twins.programming.kicks-ass.net>
+References: <20140516213003.10384.7946.stgit@localhost>
+ <20140519151233.5043b749361e1b384f1e5562@gmail.com>
+ <783871400527879@web2j.yandex.ru>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IJmQ7d57n2fskpx3"
+Content-Disposition: inline
+In-Reply-To: <783871400527879@web2j.yandex.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH] regmap: irq: Fix possible ZERO_SIZE_PTR pointer
-> dereferencing error.
-> 
-> On Mon, May 19, 2014 at 03:13:45PM +0800, Xiubo Li wrote:
-> > Since we cannot make sure the 'chip->num_regs' will always be none zero
-> > from the users, and then if 'chip->num_regs' equals to zero by mistake
-> > or other reasons, the kzalloc() will return ZERO_SIZE_PTR, which equals
-> > to ((void *)16).
-> >
-> > So this patch fix this with just checking the 'chip->num_regs' before
-> > calling kzalloc().
-> 
-> Where is the actual dereference that's being protected against here?
-> 
 
-Such as:
-        d->mask_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
-                              GFP_KERNEL);
-        if (!d->mask_buf)
-                goto err_alloc;
+--IJmQ7d57n2fskpx3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And then:
-        d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
+On Mon, May 19, 2014 at 11:31:19PM +0400, Kirill Tkhai wrote:
+> @@ -513,9 +513,17 @@ static enum hrtimer_restart dl_task_timer(struct hrt=
+imer *timer)
+>  						     struct sched_dl_entity,
+>  						     dl_timer);
+>  	struct task_struct *p =3D dl_task_of(dl_se);
+> -	struct rq *rq =3D task_rq(p);
+> +	struct rq *rq;
+> +again:
+> +	rq =3D task_rq(p);
+>  	raw_spin_lock(&rq->lock);
+> =20
+> +	if (unlikely(rq !=3D task_rq(p))) {
+> +		/* Task was moved, retrying. */
+> +		raw_spin_unlock(&rq->lock);
+> +		goto again;
+> +	}
+> +
 
+That thing is called: rq =3D __task_rq_lock(p);
 
+--IJmQ7d57n2fskpx3
+Content-Type: application/pgp-signature
 
-> > This also sorts the header files in alphabetical order at the same time.
-> 
-> No, don't do things like this.  It just makes things harder to review.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Okay, I'll follow your advice.
+iQIcBAEBAgAGBQJTepsVAAoJEHZH4aRLwOS6Nw8QAI/+wt1Vo66IoVvLg4BXkkdp
+/qZO5ZcAopKW0AFFXj2l4kTB2zrz+s/bK+2g6Sn9RVvf5YfzbRY9uVwTGh48es4b
+qTNBTZ07Mww/HategKt+mJctiIsvB3zcwu8cP5GGfgwo4wXKJk3jner61wjsz1NT
+wZ/SRqn0uWN/Jy0lhBztdkRW/F9f1kOG5K/KDa5+WYTLUoX9y43crS/OBBweM2MT
+WgJFnFm45dfgq5VBsm3/KuOdSIXyHIZmhvDy7AE3yGItLhu1qKLTjjbIo15ERqQv
+H0ySmWMfgmygpLSSJ/fjmMPSXpeQKZcPu7We/mCJjuuodTVlga0wb6mLgy4r1lmP
+LnU9bbULjtQsF20mMI2P8nD1AfsAAs2Be9KaEPEkqOLt/Jm6gWnq8hllJVVmV0Oq
+NQxQyXkRAc6qMbBkNepKMEni9JEA6Tum0LJwXuFK6eKl+F7LAy2YaMIFgodbFrbi
+vXKOAXrumfUC/OlqBnfa8ytQfDEOf3rh713J1Tontfq0faUGvy9pBJqzW1lQI5x4
+iY9vLhqwaqLsEUnz3tev7dJJil9vYN83eIYAKsl8rIvdPYfeP6wX4mN+IIdE5Oi6
+cuuX8SWI+oBuZzuPrIIOtsXql6zl8fFWWsojQbXFmIElgUMxUphbcjGPlvv/aiFI
+xM4dnrxd5i8ZF30jB8h+
+=UgSc
+-----END PGP SIGNATURE-----
 
-Thanks,
-
-BRs
-Xiubo
-
+--IJmQ7d57n2fskpx3--
