@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaETOXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:23:01 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:42135 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbaETOXA (ORCPT
+	id S932071AbaETOXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:23:50 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:55652 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491AbaETOXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:23:00 -0400
-Date: Tue, 20 May 2014 10:22:56 -0400
+	Tue, 20 May 2014 10:23:49 -0400
+Date: Tue, 20 May 2014 10:23:45 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Lai Jiangshan <laijs@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org
 Subject: Re: [PATCH V3 03/10] workqueue: async worker destruction
-Message-ID: <20140520142256.GA2804@htj.dyndns.org>
+Message-ID: <20140520142345.GB2804@htj.dyndns.org>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
  <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
  <1400579204-3647-4-git-send-email-laijs@cn.fujitsu.com>
@@ -26,15 +26,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, May 20, 2014 at 05:46:29PM +0800, Lai Jiangshan wrote:
->  /**
-> + * worker_detach_from_pool() - detach the worker from the pool
-> + * @worker: worker which is attached to its pool
-> + * @pool: attached pool
-> + *
-> + * Undo the attaching which had been done in create_worker().
-> + * The caller worker shouldn't access to the pool after detached
-> + * except it has other reference to the pool.
-> + */
+...
 > +static void worker_detach_from_pool(struct worker *worker,
 > +				    struct worker_pool *pool)
 > +{
@@ -48,13 +40,8 @@ On Tue, May 20, 2014 at 05:46:29PM +0800, Lai Jiangshan wrote:
 > +
 > +	if (detach_completion)
 > +		complete(detach_completion);
-> +}
 
-As a separate clean up, please submit a patch to remove @pool from the
-above function.  @worker is attached to @pool, so the argument is
-redundant.
-
-Thanks.
+Also, please add comment explaining what's going on here.
 
 -- 
 tejun
