@@ -1,98 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaETGtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 02:49:51 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:59410 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbaETGtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 02:49:50 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 20 May 2014 15:52:22 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [RFC PATCH] arm: dma-mapping: fallback allocation for cma failure
-Message-ID: <20140520065222.GB8315@js1304-P5Q-DELUXE>
-References: <537AEEDB.2000001@lge.com>
+	id S1751295AbaETGyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 02:54:17 -0400
+Received: from relay-s04-hub005.domainlocalhost.com ([74.115.207.216]:37834
+	"EHLO relay-S04-HUB005.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750731AbaETGyP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 02:54:15 -0400
+From: Dudley Du <dudl@cypress.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
+        "David Solda" <dso@cypress.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 4/6] input: cyapa: enable/disable trackpad device based
+ on LID state
+Thread-Topic: [PATCH 4/6] input: cyapa: enable/disable trackpad device based
+ on LID state
+Thread-Index: Ac9Xtrung2rcRTzSQqSjaCWaMF8SMwBmHYhABqv7vAAAAgOL4A==
+Date: Tue, 20 May 2014 06:54:07 +0000
+Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C326DE@S04-MBX01-01.s04.local>
+References: <77BC725C9062764F874D79F51E1F1A8F40C14099@S04-MBX01-01.s04.local>
+ <20140520034302.GB986@core.coreip.homeip.net>
+In-Reply-To: <20140520034302.GB986@core.coreip.homeip.net>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.30.12.154]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537AEEDB.2000001@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 02:57:47PM +0900, Gioh Kim wrote:
-> 
-> Thanks for your advise, Michal Nazarewicz.
-> 
-> Having discuss with Joonsoo, I'm adding fallback allocation after __alloc_from_contiguous().
-> The fallback allocation works if CMA kernel options is turned on but CMA size is zero.
+Hi Rafael,
 
-Hello, Gioh.
+Could you help give some advice on how to apply the function to put the trackpad device into low power mode with LID in current kernel?
+or it's just a policy and should not be submitted to kernel right now?
 
-I also mentioned the case where devices have their specific cma_area.
-It means that this device needs memory with some contraint.
-Although I'm not familiar with DMA infrastructure, I think that
-we should handle this case.
+Thanks,
+Dudley
 
-How about below patch?
-
------------->8----------------
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 6b00be1..4023434 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
- 	unsigned long *bitmap;
- 	struct page *page;
- 	struct page **pages;
--	void *ptr;
-+	void *ptr = NULL;
- 	int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
- 
- 	bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-@@ -393,7 +393,8 @@ static int __init atomic_pool_init(void)
- 	if (IS_ENABLED(CONFIG_DMA_CMA))
- 		ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
- 					      atomic_pool_init);
--	else
-+
-+	if (!ptr)
- 		ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
- 					   atomic_pool_init);
- 	if (ptr) {
-@@ -701,10 +702,22 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
- 		addr = __alloc_simple_buffer(dev, size, gfp, &page);
- 	else if (!(gfp & __GFP_WAIT))
- 		addr = __alloc_from_pool(size, &page);
--	else if (!IS_ENABLED(CONFIG_DMA_CMA))
--		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
--	else
--		addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
-+	else {
-+		if (IS_ENABLED(CONFIG_DMA_CMA)) {
-+			addr = __alloc_from_contiguous(dev, size, prot,
-+							&page, caller);
-+			/*
-+			 * Device specific cma_area means that
-+			 * this device needs memory with some contraint.
-+			 * So, we can't fall through general remap allocation.
-+			 */
-+			if (!addr && dev && dev->cma_area)
-+				return NULL;
-+		}
-+
-+		addr = __alloc_remap_buffer(dev, size, gfp, prot,
-+							&page, caller);
-+	}
- 
- 	if (addr)
- 		*handle = pfn_to_dma(dev, page_to_pfn(page));
+>
+> -----Original Message-----
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: Tuesday, May 20, 2014 11:43 AM
+> To: Dudley Du
+> Cc: Benson Leung; Daniel Kurtz; David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 4/6] input: cyapa: enable/disable trackpad device based on LID state
+>
+> Hi Dudley,
+>
+> On Wed, Apr 16, 2014 at 08:39:34AM +0000, Dudley Du wrote:
+> > Rely on EV_SW and SW_LID bits to identify a LID device, and hook up
+> > our filter to listen for SW_LID events to enable/disable touchpad when
+> > LID is open/closed.
+> > TEST=test on Chomebooks.
+>
+> This is a policy and it does not belong in the kernel. Please work with Rafael to establish generic interface to put devices into low power mode (like accelerating runtime PM idle timeout) and use it when userspace detects that lid is closed.
+>
+> Thanks.
+>
+> >
+> > Signed-off-by: Du, Dudley <dudl@cypress.com>
+> > ---
+> > diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+> > index 6820b3f..da03427 100644
+> > --- a/drivers/input/mouse/cyapa.c
+> > +++ b/drivers/input/mouse/cyapa.c
+> > @@ -523,6 +523,9 @@ struct cyapa {
+> >         int physical_size_x;
+> >         int physical_size_y;
+> >
+> > +       bool lid_handler_registered;
+> > +       struct input_handler lid_handler;
+> > +
+> >         /* used in ttsp and truetouch based trackpad devices. */
+> >         u8 x_origin;  /* X Axis Origin: 0 = left side; 1 = rigth side. */
+> >         u8 y_origin;  /* Y Axis Origin: 0 = top; 1 = bottom. */ @@
+> > -3107,6 +3110,125 @@ static void cyapa_start_runtime(struct cyapa
+> > *cyapa)  static void cyapa_start_runtime(struct cyapa *cyapa) {}
+> > #endif /* CONFIG_PM_RUNTIME */
+> >
+> > +
+> > +/*
+> > + * We rely on EV_SW and SW_LID bits to identify a LID device, and
+> > +hook
+> > + * up our filter to listen for SW_LID events to enable/disable
+> > +touchpad when
+> > + * LID is open/closed.
+> > + */
+> > +static const struct input_device_id lid_device_ids[] = {
+> > +       {
+> > +               .flags = INPUT_DEVICE_ID_MATCH_EVBIT |
+> > +                        INPUT_DEVICE_ID_MATCH_SWBIT,
+> > +               .evbit = { BIT_MASK(EV_SW) },
+> > +               .swbit = { BIT_MASK(SW_LID) },
+> > +       },
+> > +       { },
+> > +};
+> > +
+> > +static int lid_device_connect(struct input_handler *handler,
+> > +                             struct input_dev *dev,
+> > +                             const struct input_device_id *id) {
+> > +       struct input_handle *lid_handle;
+> > +       int error;
+> > +
+> > +       lid_handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
+> > +       if (!lid_handle)
+> > +               return -ENOMEM;
+> > +
+> > +       lid_handle->dev = dev;
+> > +       lid_handle->handler = handler;
+> > +       lid_handle->name = "lid_event_handler";
+> > +       lid_handle->private = handler->private;
+> > +
+> > +       error = input_register_handle(lid_handle);
+> > +       if (error)
+> > +               goto err_free;
+> > +
+> > +       error = input_open_device(lid_handle);
+> > +       if (error)
+> > +               goto err_unregister;
+> > +
+> > +       return 0;
+> > +err_unregister:
+> > +       input_unregister_handle(lid_handle);
+> > +err_free:
+> > +       kfree(lid_handle);
+> > +       return error;
+> > +}
+> > +
+> > +static void lid_device_disconnect(struct input_handle *handle) {
+> > +       input_close_device(handle);
+> > +       input_unregister_handle(handle);
+> > +       kfree(handle);
+> > +}
+> > +
+> > +static bool lid_event_filter(struct input_handle *handle,
+> > +                            unsigned int type, unsigned int code, int
+> > +value) {
+> > +       struct cyapa *cyapa = handle->private;
+> > +       struct device *dev = &cyapa->client->dev;
+> > +
+> > +       if (type == EV_SW && code == SW_LID) {
+> > +               if (cyapa->suspended) {
+> > +                       /*
+> > +                        * If the lid event filter is called while suspended,
+> > +                        * there is no guarantee that the underlying i2cs are
+> > +                        * resumed at this point, so it is not safe to issue
+> > +                        * the command to change power modes.
+> > +                        * Instead, rely on cyapa_resume to set us back to
+> > +                        * PWR_MODE_FULL_ACTIVE.
+> > +                        */
+> > +                       return false;
+> > +               }
+> > +               if (value == 0) {
+> > +                       if (cyapa->cyapa_set_power_mode)
+> > +                               cyapa->cyapa_set_power_mode(cyapa,
+> > +                                               PWR_MODE_FULL_ACTIVE, 0);
+> > +                       pm_runtime_set_active(dev);
+> > +                       pm_runtime_enable(dev);
+> > +               } else {
+> > +                       pm_runtime_disable(dev);
+> > +                       if (cyapa->cyapa_set_power_mode)
+> > +                               cyapa->cyapa_set_power_mode(cyapa,
+> > +                                               PWR_MODE_OFF, 0);
+> > +               }
+> > +       }
+> > +
+> > +       return false;
+> > +}
+> > +
+> > +static void lid_event_register_handler(struct cyapa *cyapa) {
+> > +       int error;
+> > +       struct input_handler *lid_handler = &cyapa->lid_handler;
+> > +
+> > +       if (cyapa->lid_handler_registered)
+> > +               return;
+> > +
+> > +       lid_handler->filter     = lid_event_filter;
+> > +       lid_handler->connect    = lid_device_connect;
+> > +       lid_handler->disconnect = lid_device_disconnect;
+> > +       lid_handler->name       = "cyapa_lid_event_handler";
+> > +       lid_handler->id_table   = lid_device_ids;
+> > +       lid_handler->private    = cyapa;
+> > +
+> > +       error = input_register_handler(lid_handler);
+> > +       if (error)
+> > +               return;
+> > +       cyapa->lid_handler_registered = true; }
+> > +
+> > +static void lid_event_unregister_handler(struct cyapa *cyapa) {
+> > +       if (cyapa->lid_handler_registered) {
+> > +               input_unregister_handler(&cyapa->lid_handler);
+> > +               cyapa->lid_handler_registered = false;
+> > +       }
+> > +}
+> > +
+> >  static void cyapa_detect_async(void *data, async_cookie_t cookie)  {
+> >         struct cyapa *cyapa = (struct cyapa *)data; @@ -3126,6 +3248,7
+> > @@ static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
+> >         cyapa_detect_async(data, cookie);
+> >
+> >         cyapa_start_runtime(cyapa);
+> > +       lid_event_register_handler(cyapa);
+> >  }
+> >
+> >  static int cyapa_probe(struct i2c_client *client, @@ -3221,7 +3344,7
+> > @@ static int cyapa_remove(struct i2c_client *client)
+> >
+> >         free_irq(cyapa->irq, cyapa);
+> >         input_unregister_device(cyapa->input);
+> > -
+> > +       lid_event_unregister_handler(cyapa);
+> >         if (cyapa->cyapa_set_power_mode)
+> >                 cyapa->cyapa_set_power_mode(cyapa, PWR_MODE_OFF, 0);
+> >         i2c_set_clientdata(client, NULL); This message and any
+> > attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+>
+> --
+> Dmitry
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
