@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaETB33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 21:29:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:43113 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751146AbaETB31 (ORCPT
+	id S1752911AbaETB3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 21:29:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51267 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaETB3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 21:29:27 -0400
-Message-ID: <1400549356.10728.22.camel@pippen.local.home>
-Subject: Re: [patch 2/2] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Date: Mon, 19 May 2014 21:29:16 -0400
-In-Reply-To: <alpine.DEB.2.02.1405200936320.7325@ionos.tec.linutronix.de>
-References: <20140514195705.618583609@linutronix.de>
-	 <20140514200104.670614672@linutronix.de>
-	 <20140515130435.24132d1b@gandalf.local.home>
-	 <alpine.DEB.2.02.1405200936320.7325@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 19 May 2014 21:29:50 -0400
+Date: Tue, 20 May 2014 10:29:46 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shigekatsu.tateno@atmel.com
+Subject: Re: [PATCH] staging: ozwpan: Change Maintainer
+Message-ID: <20140520012946.GA12333@kroah.com>
+References: <1400509050-6300-1-git-send-email-rupesh.gujare@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400509050-6300-1-git-send-email-rupesh.gujare@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 09:43 +0900, Thomas Gleixner wrote:
->  In kernel/locking/rtmutex.h:
-> > 
-> > static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
-> >                                                  int detect)
-> > {
-> >         return (waiter != NULL);
-> > }
-> > 
-> > Shouldn't that be: return detect || waiter != NULL;
-> > 
+On Mon, May 19, 2014 at 03:17:30PM +0100, Rupesh Gujare wrote:
+> I will be not able to work on ozwpan driver anymore.
+> Remove my name & add Tateno as maintainer.
 > 
-> No. We do not care about whether the caller handed in detect or not.
-
-Bah, you're right. I was getting confused between try_to_take_rt_mutex()
-and task_blocks_on_rt_mutex(). The former passes in a NULL waiter when
-taking the first time, but it's the task_blocks_on_rt_mutex() that does
-the test, and yes, the waiter is never NULL when boosting.
-
-I may send you a patch to add comments to these little idiosyncrasies.
-
+> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+> ---
+>  MAINTAINERS                 |    2 +-
+>  drivers/staging/ozwpan/TODO |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> > 
-> > I know this a separate issue from this patch series, but it's
-> > something that I just noticed.
-> 
-> It's not really intuitive. We might make the call sites hand in
-> constants. RTMUTEX_DETECT_DEADLOCK, RTMUTEX_IGNORE_DEADLOCK or
-> something like that and switch it depending on
-> CONFIG_DEBUG_RT_MUTEXES.
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0de64a5..3a9e4d83 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -8466,7 +8466,7 @@ S:	Maintained
+>  F:	drivers/staging/olpc_dcon/
+>  
+>  STAGING - OZMO DEVICES USB OVER WIFI DRIVER
+> -M:	Rupesh Gujare <rupesh.gujare@atmel.com>
+> +M:	Shigekatsu Tateno <shigekatsu.tateno@atmel.com>
 
-Yes it is confusing. I use to know this code really well, and now over
-the years, it's not something to look at quickly and produce a
-comprehensive response. The sad part is, I looked at it quite a bit
-before sending my response and I still got confused :-p
+Can I get an "ack" from Shigekatsu?  I don't like adding someone as a
+maintainer if they don't know about it...
 
--- Steve
+thanks,
 
-
-
+greg k-h
