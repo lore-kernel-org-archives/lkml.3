@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaETJnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:43:15 -0400
+	id S1753083AbaETJnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:43:11 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:63309 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753046AbaETJnL (ORCPT
+	with ESMTP id S1751461AbaETJnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:43:11 -0400
+	Tue, 20 May 2014 05:43:02 -0400
 X-IronPort-AV: E=Sophos;i="4.98,873,1392134400"; 
-   d="scan'208";a="30762593"
+   d="scan'208";a="30762584"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH V3 10/10] workqueue: use generic attach/detach routine for rescuers
-Date: Tue, 20 May 2014 17:46:36 +0800
-Message-ID: <1400579204-3647-11-git-send-email-laijs@cn.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V3 05/10] workqueue: separate iteration role from worker_idr
+Date: Tue, 20 May 2014 17:46:31 +0800
+Message-ID: <1400579204-3647-6-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1400579204-3647-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1399877792-13046-1-git-send-email-laijs@cn.fujitsu.com>
@@ -26,124 +28,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several problems with the code that rescuers bind itself to the pool'
-cpumask
-  1) It uses a way different from the normal workers to bind to the cpumask
-     So we can't maintain the normal/rescuer workers under the same framework.
-  2) The the code of cpu-binding for rescuer is complicated
-  3) If one or more cpuhotplugs happen while the rescuer processes the
-     scheduled works, the rescuer may not be correctly bound to the cpumask of
-     the pool. This is allowed behavior, but is not good. It will be better
-     if the cpumask of the rescuer is always kept coordination with the pool
-     across any cpuhotplugs.
+worker_idr has the iteration (iterating for attached workers) and worker ID
+duties. These two duties are not necessarily tied together. We can separate
+them and use a list for tracking attached workers and iteration.
 
-Using generic attach/detach routine will solve the above problems,
-and result much more simple code.
+Before this separation, it is not possible to add rescuer workers
+to worker_idr due to rescuer workers can't allocate ID in run-time. (Because
+ID-allocation depends on memory-allocation. Rescuer rescues the world
+when memory is insufficient, so it must avoid to allocate memory.)
+
+After separation, we can easily add the rescuer workers to the list for
+iteration without any memory-allocation. It is required when we attach
+the rescuer worker to the pool in later patch.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   74 +++++----------------------------------------------
- 1 files changed, 8 insertions(+), 66 deletions(-)
+ kernel/workqueue.c          |   28 +++++++++++++++-------------
+ kernel/workqueue_internal.h |    2 ++
+ 2 files changed, 17 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 4d021e0..2245dc7 100644
+index 1236544..fd2f265 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1603,70 +1603,6 @@ static void worker_leave_idle(struct worker *worker)
- 	list_del_init(&worker->entry);
- }
+@@ -161,7 +161,8 @@ struct worker_pool {
+ 	/* see manage_workers() for details on the two manager mutexes */
+ 	struct mutex		manager_arb;	/* manager arbitration */
+ 	struct mutex		manager_mutex;	/* manager exclusion */
+-	struct idr		worker_idr;	/* M: worker IDs and iteration */
++	struct idr		worker_idr;	/* M: worker IDs */
++	struct list_head	workers;	/* M: attached workers */
+ 	struct completion	*detach_completion; /* all workers detached */
  
--/**
-- * worker_maybe_bind_and_lock - try to bind %current to worker_pool and lock it
-- * @pool: target worker_pool
-- *
-- * Bind %current to the cpu of @pool if it is associated and lock @pool.
-- *
-- * Works which are scheduled while the cpu is online must at least be
-- * scheduled to a worker which is bound to the cpu so that if they are
-- * flushed from cpu callbacks while cpu is going down, they are
-- * guaranteed to execute on the cpu.
-- *
-- * This function is to be used by unbound workers and rescuers to bind
-- * themselves to the target cpu and may race with cpu going down or
-- * coming online.  kthread_bind() can't be used because it may put the
-- * worker to already dead cpu and set_cpus_allowed_ptr() can't be used
-- * verbatim as it's best effort and blocking and pool may be
-- * [dis]associated in the meantime.
-- *
-- * This function tries set_cpus_allowed() and locks pool and verifies the
-- * binding against %POOL_DISASSOCIATED which is set during
-- * %CPU_DOWN_PREPARE and cleared during %CPU_ONLINE, so if the worker
-- * enters idle state or fetches works without dropping lock, it can
-- * guarantee the scheduling requirement described in the first paragraph.
-- *
-- * CONTEXT:
-- * Might sleep.  Called without any lock but returns with pool->lock
-- * held.
-- *
-- * Return:
-- * %true if the associated pool is online (@worker is successfully
-- * bound), %false if offline.
-- */
--static bool worker_maybe_bind_and_lock(struct worker_pool *pool)
--__acquires(&pool->lock)
--{
--	while (true) {
--		/*
--		 * The following call may fail, succeed or succeed
--		 * without actually migrating the task to the cpu if
--		 * it races with cpu hotunplug operation.  Verify
--		 * against POOL_DISASSOCIATED.
--		 */
--		if (!(pool->flags & POOL_DISASSOCIATED))
--			set_cpus_allowed_ptr(current, pool->attrs->cpumask);
--
--		spin_lock_irq(&pool->lock);
--		if (pool->flags & POOL_DISASSOCIATED)
--			return false;
--		if (task_cpu(current) == pool->cpu &&
--		    cpumask_equal(&current->cpus_allowed, pool->attrs->cpumask))
--			return true;
--		spin_unlock_irq(&pool->lock);
--
--		/*
--		 * We've raced with CPU hot[un]plug.  Give it a breather
--		 * and retry migration.  cond_resched() is required here;
--		 * otherwise, we might deadlock against cpu_stop trying to
--		 * bring down the CPU on non-preemptive kernel.
--		 */
--		cpu_relax();
--		cond_resched();
--	}
--}
--
- static struct worker *alloc_worker(void)
+ 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+@@ -363,7 +364,6 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+ /**
+  * for_each_pool_worker - iterate through all workers of a worker_pool
+  * @worker: iteration cursor
+- * @wi: integer used for iteration
+  * @pool: worker_pool to iterate workers of
+  *
+  * This must be called with @pool->manager_mutex.
+@@ -371,8 +371,8 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+  * The if/else clause exists only for the lockdep assertion and can be
+  * ignored.
+  */
+-#define for_each_pool_worker(worker, wi, pool)				\
+-	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
++#define for_each_pool_worker(worker, pool)				\
++	list_for_each_entry((worker), &(pool)->workers, node)		\
+ 		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
+ 		else
+ 
+@@ -1674,6 +1674,7 @@ static struct worker *alloc_worker(void)
+ 	if (worker) {
+ 		INIT_LIST_HEAD(&worker->entry);
+ 		INIT_LIST_HEAD(&worker->scheduled);
++		INIT_LIST_HEAD(&worker->node);
+ 		/* on creation a worker is in !idle && prep state */
+ 		worker->flags = WORKER_PREP;
+ 	}
+@@ -1696,7 +1697,8 @@ static void worker_detach_from_pool(struct worker *worker,
+ 
+ 	mutex_lock(&pool->manager_mutex);
+ 	idr_remove(&pool->worker_idr, worker->id);
+-	if (idr_is_empty(&pool->worker_idr))
++	list_del(&worker->node);
++	if (list_empty(&pool->workers))
+ 		detach_completion = pool->detach_completion;
+ 	mutex_unlock(&pool->manager_mutex);
+ 
+@@ -1772,6 +1774,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 
+ 	/* successful, commit the pointer to idr */
+ 	idr_replace(&pool->worker_idr, worker, worker->id);
++	/* successful, attach the worker to the pool */
++	list_add_tail(&worker->node, &pool->workers);
+ 
+ 	return worker;
+ 
+@@ -3483,6 +3487,7 @@ static int init_worker_pool(struct worker_pool *pool)
+ 	mutex_init(&pool->manager_arb);
+ 	mutex_init(&pool->manager_mutex);
+ 	idr_init(&pool->worker_idr);
++	INIT_LIST_HEAD(&pool->workers);
+ 
+ 	INIT_HLIST_NODE(&pool->hash_node);
+ 	pool->refcnt = 1;
+@@ -3548,7 +3553,7 @@ static void put_unbound_pool(struct worker_pool *pool)
+ 	spin_unlock_irq(&pool->lock);
+ 
+ 	mutex_lock(&pool->manager_mutex);
+-	if (!idr_is_empty(&pool->worker_idr))
++	if (!list_empty(&pool->workers))
+ 		pool->detach_completion = &detach_completion;
+ 	mutex_unlock(&pool->manager_mutex);
+ 
+@@ -4533,7 +4538,6 @@ static void wq_unbind_fn(struct work_struct *work)
+ 	int cpu = smp_processor_id();
+ 	struct worker_pool *pool;
+ 	struct worker *worker;
+-	int wi;
+ 
+ 	for_each_cpu_worker_pool(pool, cpu) {
+ 		WARN_ON_ONCE(cpu != smp_processor_id());
+@@ -4548,7 +4552,7 @@ static void wq_unbind_fn(struct work_struct *work)
+ 		 * before the last CPU down must be on the cpu.  After
+ 		 * this, they may become diasporas.
+ 		 */
+-		for_each_pool_worker(worker, wi, pool)
++		for_each_pool_worker(worker, pool)
+ 			worker->flags |= WORKER_UNBOUND;
+ 
+ 		pool->flags |= POOL_DISASSOCIATED;
+@@ -4594,7 +4598,6 @@ static void wq_unbind_fn(struct work_struct *work)
+ static void rebind_workers(struct worker_pool *pool)
  {
  	struct worker *worker;
-@@ -2361,8 +2297,9 @@ repeat:
+-	int wi;
  
- 		spin_unlock_irq(&wq_mayday_lock);
+ 	lockdep_assert_held(&pool->manager_mutex);
  
--		/* migrate to the target cpu if possible */
--		worker_maybe_bind_and_lock(pool);
-+		worker_attach_to_pool(rescuer, pool);
-+
-+		spin_lock_irq(&pool->lock);
- 		rescuer->pool = pool;
+@@ -4605,13 +4608,13 @@ static void rebind_workers(struct worker_pool *pool)
+ 	 * of all workers first and then clear UNBOUND.  As we're called
+ 	 * from CPU_ONLINE, the following shouldn't fail.
+ 	 */
+-	for_each_pool_worker(worker, wi, pool)
++	for_each_pool_worker(worker, pool)
+ 		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
+ 						  pool->attrs->cpumask) < 0);
  
- 		/*
-@@ -2375,6 +2312,11 @@ repeat:
- 				move_linked_works(work, scheduled, &n);
+ 	spin_lock_irq(&pool->lock);
  
- 		process_scheduled_works(rescuer);
-+		spin_unlock_irq(&pool->lock);
-+
-+		worker_detach_from_pool(rescuer, pool);
-+
-+		spin_lock_irq(&pool->lock);
+-	for_each_pool_worker(worker, wi, pool) {
++	for_each_pool_worker(worker, pool) {
+ 		unsigned int worker_flags = worker->flags;
  
  		/*
- 		 * Put the reference grabbed by send_mayday().  @pool won't
+@@ -4663,7 +4666,6 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
+ {
+ 	static cpumask_t cpumask;
+ 	struct worker *worker;
+-	int wi;
+ 
+ 	lockdep_assert_held(&pool->manager_mutex);
+ 
+@@ -4677,7 +4679,7 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
+ 		return;
+ 
+ 	/* as we're called from CPU_ONLINE, the following shouldn't fail */
+-	for_each_pool_worker(worker, wi, pool)
++	for_each_pool_worker(worker, pool)
+ 		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
+ 						  pool->attrs->cpumask) < 0);
+ }
+diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
+index 7e2204d..8888e06 100644
+--- a/kernel/workqueue_internal.h
++++ b/kernel/workqueue_internal.h
+@@ -37,6 +37,8 @@ struct worker {
+ 	struct task_struct	*task;		/* I: worker task */
+ 	struct worker_pool	*pool;		/* I: the associated pool */
+ 						/* L: for rescuers */
++	struct list_head	node;		/* M: anchored at pool->workers */
++						/* M: runs through worker->node */
+ 
+ 	unsigned long		last_active;	/* L: last active timestamp */
+ 	unsigned int		flags;		/* X: flags */
 -- 
 1.7.4.4
 
