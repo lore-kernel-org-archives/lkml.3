@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaETQfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:35:44 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:52088 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750745AbaETQfn (ORCPT
+	id S1753730AbaETQhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:37:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:32946 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045AbaETQhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:35:43 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtEWAP+De1NbsnsG/2dsb2JhbABZgwarCAQBAQEBAQEFAYM6lm4CAoEcF3SCUxM/GIECJBOIRQHUGoVViHmERwEDjzyKKwGTIIF4gUI7
-Date: Tue, 20 May 2014 18:35:41 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Brett Rudley <brudley@broadcom.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] drivers/net/wireless/brcm80211/brcmsmac/dma.c: replace
- shift loop by ilog2
-Message-Id: <20140520183541.c6430e790225b202ede048c9@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 12:37:03 -0400
+Date: Tue, 20 May 2014 18:36:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+Message-ID: <20140520163651.GY2485@laptop.programming.kicks-ass.net>
+References: <1400123931.5175.38.camel@marge.simpson.net>
+ <1400386954.5140.36.camel@marge.simpson.net>
+ <20140518052039.GF4570@linux.vnet.ibm.com>
+ <1400402201.5166.13.camel@marge.simpson.net>
+ <20140518155815.GK4570@linux.vnet.ibm.com>
+ <1400467481.5211.48.camel@marge.simpson.net>
+ <20140519053401.GP4570@linux.vnet.ibm.com>
+ <20140520145350.GC17741@localhost.localdomain>
+ <20140520155324.GD4570@linux.vnet.ibm.com>
+ <20140520162433.GE17741@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520162433.GE17741@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't open code ilog2 -> remove dma_align_sizetobits
+On Tue, May 20, 2014 at 06:24:36PM +0200, Frederic Weisbecker wrote:
+> Of course one can argue that we can find out that the task is resuming in userspace from
+> CPU 0 scheduler entry without the need for previous context tracking, but I couldn't find safe
+> solution for that. This is because probing on user/kernel boundaries can only be done
+> in the soft way, throught explicit function calls. So there is an inevitable shift
+> between soft and hard boundaries, between what we probe and what we can guess.
 
-Cc: Brett Rudley <brudley@broadcom.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/wireless/brcm80211/brcmsmac/dma.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
-
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-index 4fb9635..7128c78 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-@@ -451,15 +451,6 @@ static void *dma_alloc_consistent(struct dma_info *di, uint size,
- 	return dma_alloc_coherent(di->dmadev, size, pap, GFP_ATOMIC);
- }
- 
--static
--u8 dma_align_sizetobits(uint size)
--{
--	u8 bitpos = 0;
--	while (size >>= 1)
--		bitpos++;
--	return bitpos;
--}
--
- /* This function ensures that the DMA descriptor ring will not get allocated
-  * across Page boundary. If the allocation is done across the page boundary
-  * at the first time, then it is freed and the allocation is done at
-@@ -482,7 +473,7 @@ static void *dma_ringalloc(struct dma_info *di, u32 boundary, uint size,
- 	desc_strtaddr = (u32) roundup((unsigned long)va, alignbytes);
- 	if (((desc_strtaddr + size - 1) & boundary) != (desc_strtaddr
- 							& boundary)) {
--		*alignbits = dma_align_sizetobits(size);
-+		*alignbits = ilog2(size);
- 		dma_free_coherent(di->dmadev, size, va, *descpa);
- 		va = dma_alloc_consistent(di, size, *alignbits,
- 			alloced, descpa);
--- 
-1.8.4.5
-
+you can hook into set_task_cpu(), not sure its going to be pretty, but
+that is _the_ place to hook migration related nonsense.
