@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaETSZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:25:20 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:51175 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaETSZS (ORCPT
+	id S1753580AbaETSZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:25:40 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:34109 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314AbaETSZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:25:18 -0400
+	Tue, 20 May 2014 14:25:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <537B9C6D.7010705@zytor.com>
-References: <cover.1400538962.git.luto@amacapital.net> <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
- <20140520172134.GJ2185@moon> <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com>
- <20140520174759.GK2185@moon> <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com>
- <20140520180104.GL2185@moon> <537B9C6D.7010705@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 May 2014 11:24:56 -0700
-Message-ID: <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix x86
- vdso naming
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, X86 ML <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
+In-Reply-To: <s5ha9acbwwo.wl%tiwai@suse.de>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
+	<20140520010137.GA8146@kroah.com>
+	<537B24B8.9050303@linux.intel.com>
+	<s5ha9acbwwo.wl%tiwai@suse.de>
+Date: Tue, 20 May 2014 11:25:37 -0700
+Message-ID: <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+From: Dan Williams <dan.j.williams@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Holger Hans Peter Freyther <holger@moiji-mobile.com>,
+        Oliver Neukum <oneukum@suse.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/20/2014 11:01 AM, Cyrill Gorcunov wrote:
->>>
->>> This patch should fix this issue, at least.  If there's still a way to
->>> get a native vdso that doesn't say "[vdso]", please let me know/
+On Tue, May 20, 2014 at 2:51 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 20 May 2014 12:47:36 +0300,
+> Mathias Nyman wrote:
 >>
->> Yes, having a native procfs way to detect vdso is much preferred!
+>> On 05/20/2014 04:01 AM, Greg KH wrote:
+>> > On Thu, May 08, 2014 at 07:25:55PM +0300, Mathias Nyman wrote:
+>> >> From: Dan Williams <dan.j.williams@intel.com>
+>> >>
+>> >> Add a command line switch for disabling ehci port switchover.  Useful
+>> >> for working around / debugging xhci incompatibilities where ehci
+>> >> operation is available.
+>> >>
+>> >> Reference: http://marc.info/?l=linux-usb&m=138920063001509&w=2
+>> >>
+>> >> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>> >> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> >> Cc: Holger Hans Peter Freyther <holger@moiji-mobile.com>
+>> >> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+>> >> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+>> >> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> >> ---
+>> >>  Documentation/kernel-parameters.txt |  3 +++
+>> >>  drivers/usb/host/pci-quirks.c       | 15 +++++++++++++--
+>> >>  2 files changed, 16 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> >> index 4384217..fc3403114 100644
+>> >> --- a/Documentation/kernel-parameters.txt
+>> >> +++ b/Documentation/kernel-parameters.txt
+>> >> @@ -2251,6 +2251,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>> >>
+>> >>    nox2apic        [X86-64,APIC] Do not enable x2APIC mode.
+>> >>
+>> >> +  noxhci_port_switch
+>> >> +                  [USB] Use EHCI instead of XHCI where available
+>> >> +
+>> >
+>> > Ugh, I really don't like new command line options.
+>> >
+>> > Especially one that isn't very well documented.  Why would someone want
+>> > to enable this?  What problem is it solving?  Can we detect this
+>> > automatically and do it for the user?  Is this just for prototype
+>> > hardware that has not shipped?  What hardware needs this?
+>> >
+>> > I need a whole lot more documentation at the very least before I will
+>> > apply this.
+>> >
 >>
->
-> Is there any path by which we can end up with [vdso] without a leading
-> slash in /proc/self/maps?  Otherwise, why is that not "native"?
-
-Dunno.  But before this patch the reverse was possible: we can end up
-with a vdso that doesn't say [vdso].
-
->
->>>>   The situation get worse when task was dumped on one kernel and
->>>> then restored on another kernel where vdso content is different
->>>> from one save in image -- is such case as I mentioned we need
->>>> that named vdso proxy which redirect calls to vdso of the system
->>>> where task is restoring. And when such "restored" task get checkpointed
->>>> second time we don't dump new living vdso but save only old vdso
->>>> proxy on disk (detecting it is a different story, in short we
->>>> inject a unique mark into elf header).
->>>
->>> Yuck.  But I don't know whether the kernel can help much here.
+>> On Intel hardware with both ehci and xhci controllers we can select if a usb2 port
+>> is controlled by ehci or xhci. This capability can be checked from Intel xhci pci
+>> config space. Xhci driver checks this on boot and switches over the supported ports.
 >>
->> Some prctl which would tell kernel to put vdso at specifed address.
->> We can live without it for now so not a big deal (yet ;)
+>> This is a feature in Intel Panther point and later chipsets, in shipped hardware.
+>> Its working quite well in most cases, but sometimes vendors claim they support
+>> switchover, but then forget to connect some wires, and the usb2 port ends up dead
+>> after switching.
+>>
+>> A recently found case is the Sony VAIO T-series. (I'll send you a different patch
+>> for that shortly)
+>> http://marc.info/?l=linux-usb&m=139993106029340&w=2
+>>
+>> This is the extreme case that the usb2 ports appears completely dead.
+>> Other reasons are that some devices might work better under ehci than xhci,
+>> and users want to enforce the ehci opton. For powermanagement developers it's nice
+>> to disable switchover as it turns out some hardware are quirky with port
+>> switchover and suspend/resume. (might need to turn port back to ehci before
+>> suspending).
+>>
+>> I don't think we can detect this automatically.
+>>
+>> Dan, can you add more documentation to this patch?
 >
-> mremap() will do this for you.
+> While we're at it: can we implement a bitmask instead?
+>
+> We've seen lots of HP laptops having Webcams or BT devices that don't
+> work XHCI but only with EHCI.  For making them working properly, the
+> specific xhci ports have to be disabled.  But, we don't want to kill
+> the whole XHCI at all.  The single boolean option doesn't work for
+> such a case.
+>
 
-Except that it's buggy: it doesn't change mm->context.vdso.  For
-64-bit tasks, the only consumer outside exec was arch_vma_name, and
-this patch removes even that.  For 32-bit tasks, though, it's needed
-for signal delivery.
-
---Andy
+I'm not sure we want to make this more complex.  Ideally this is just
+a stop-gap measure for users to workaround incompatibilities in xhci
+while the xhci fix is identified.  The fact that it is a coarse hammer
+at least, in my mind, keeps more pressure on identifying the necessary
+xhci quirk/fix to make it as functional as ehci.  We need that fix
+anyways for platforms with xhci ports without an ehci companion, so
+what purpose is served by letting users avoid xhci with finer
+granularity?
