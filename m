@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaETKc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:32:58 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41255 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaETKc4 (ORCPT
+	id S1752964AbaETKdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:33:15 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39412 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaETKdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:32:56 -0400
-Message-ID: <537B2F09.5020306@linux.vnet.ibm.com>
-Date: Tue, 20 May 2014 16:01:37 +0530
+	Tue, 20 May 2014 06:33:12 -0400
+Message-ID: <537B2F16.6030504@linux.vnet.ibm.com>
+Date: Tue, 20 May 2014 16:01:50 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, mingo@kernel.org,
-        rusty@rustcorp.com.au, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, rjw@rjwysocki.net,
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 UPDATEDv3 3/3] CPU hotplug, smp: Flush any pending
- IPI callbacks before CPU offline
-References: <20140515191938.GB21306@htj.dyndns.org> <537514D3.4060308@linux.vnet.ibm.com> <20140515193656.GM4570@linux.vnet.ibm.com> <537518D6.6030006@linux.vnet.ibm.com> <5379F6BD.1090809@linux.vnet.ibm.com> <20140519161836.GA30387@redhat.com> <537A6060.7070406@linux.vnet.ibm.com> <537A6811.50808@linux.vnet.ibm.com> <20140520094203.GU2485@laptop.programming.kicks-ass.net> <537B29F7.6060104@linux.vnet.ibm.com> <20140520102542.GW2485@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140520102542.GW2485@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] powerpc/powernv: Fix build error when CONFIG_SMP=n
+References: <1400579726-26206-1-git-send-email-shreyas@linux.vnet.ibm.com>
+In-Reply-To: <1400579726-26206-1-git-send-email-shreyas@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052010-0260-0000-0000-000004FB5A66
+x-cbid: 14052010-3568-0000-0000-00000584A81A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 03:55 PM, Peter Zijlstra wrote:
-> On Tue, May 20, 2014 at 03:39:59PM +0530, Srivatsa S. Bhat wrote:
->>> The multi_cpu_stop() path isn't exclusive to hotplug, so your changelog
->>> is wrong or the patch is.
->>>
->>
->> Yes, I know that multi_cpu_stop() isn't exclusive to hotplug. That's why
->> I have explicitly referred to CPU hotplug in the comment as well as the
->> changelog.
->>
->> But I totally agree that code-wise this is not the best way to do it since
->> this affects (although harmlessly) usecases other than hotplug as well.
->>
->> Do you have any other suggestions?
+On 05/20/2014 03:25 PM, Shreyas B. Prabhu wrote:
+> Fix the following build error when compiled with CONFIG_SMP=n
+> arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
+> arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’ [-Werror=implicit-function-declaration]
+>     rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
 > 
-> How about making a kernel/smp.c hotplug notifier and stuffing it in the
-> CPU_DYING list? That's typically after we've already torn down the
-> interrupts for that cpu, so no chance of any new ones coming in.
+> The usage of get_hard_smp_processor_id() needs the declaration from <asm/smp.h>.
+> The file setup.c includes <linux/sched.h>, which in-turn includes <linux/smp.h>.
+> However, <linux/smp.h> includes <asm/smp.h> only on SMP configs and hence UP
+> builds fail. Fix this by directly including <asm/smp.h> in setup.c
+> unconditionally.
 > 
-> Or is that too late?
-> 
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
 
-No, that should work just fine. Thank you for the suggestion! I'll give
-it a shot.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
 Regards,
 Srivatsa S. Bhat
+
+> ---
+>  arch/powerpc/platforms/powernv/setup.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+> index 8723d32..e6bde98 100644
+> --- a/arch/powerpc/platforms/powernv/setup.c
+> +++ b/arch/powerpc/platforms/powernv/setup.c
+> @@ -34,6 +34,7 @@
+>  #include <asm/rtas.h>
+>  #include <asm/opal.h>
+>  #include <asm/kexec.h>
+> +#include <asm/smp.h>
+> 
+>  #include "powernv.h"
+> 
 
