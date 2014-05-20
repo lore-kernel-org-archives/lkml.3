@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaETOe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:34:28 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:45359 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753933AbaETOe1 (ORCPT
+	id S1753679AbaETOfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:35:39 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:44253 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaETOfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:34:27 -0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "bsegall@google.com" <bsegall@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "chris.j.arges@canonical.com" <chris.j.arges@canonical.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20140520142804.GB30445@twins.programming.kicks-ass.net>
-References: <87mwej0yja.wl%klamm@yandex-team.ru>
-	 <xm26k39n3pl9.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	 <87lhu215ky.wl%klamm@yandex-team.ru>
-	 <20140519103247.GX30445@twins.programming.kicks-ass.net>
-	 <xm26wqdh3cde.fsf@sword-of-the-dawn.mtv.corp.google.com>
-	 <20140520131526.GE11096@twins.programming.kicks-ass.net>
-	 <99801400595675@webcorp1f.yandex-team.ru> <20140520142804.GB30445@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched: tg_set_cfs_bandwidth() causes rq->lock deadlock
+	Tue, 20 May 2014 10:35:38 -0400
+Date: Tue, 20 May 2014 10:35:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
+ workqueues
+Message-ID: <20140520143534.GD2804@htj.dyndns.org>
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
+ <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+ <20140516201225.GL5379@htj.dyndns.org>
+ <20140517134151.GA32371@localhost.localdomain>
+ <20140519201531.GC27506@mtj.dyndns.org>
+ <20140520143229.GB17741@localhost.localdomain>
 MIME-Version: 1.0
-Message-Id: <107621400596463@webcorp2h.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 20 May 2014 18:34:23 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520143229.GB17741@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you have an easy to reproduce setup and workload so I might be able
-> to test as well? Or are you simply dumping it in 'production' to see
-> what happens?
+Hello,
 
-No. I have only a "production" setup, where I can nicely reproduce all these lockups.
-It takes ~1 day. I also tried to reproduce them locally but without any success.
+On Tue, May 20, 2014 at 04:32:31PM +0200, Frederic Weisbecker wrote:
+> > But that's the same for other pwqs too.  Back-to-back requeueing will
+> > hold back pwq switching on any workqueue.
+> 
+> I don't think so, because non ordered pwqs aren't created with 0 max_active,
+> so they can run before the old pwq is released. It's not holding back the new
+> one and creating a starvation there.
+> 
+> But maybe I forget other details.
 
-Thanks,
-Roman
+Ah, I was thinking about old pwq not being allowed to be released
+while one or more work items are requeueing themselves back-to-back.
+Yeap, the new ones can still be used for other work items.
+
+> > Maybe I'm confused but I don't think it'd be.  Let's say there was an
+> > attribute change with one work item, A, which is performing
+> > back-to-back requeueing and another one, B, which queues itself
+> > intermittently.  If B is queued while A is executing, followed by A
+> > requeueing itself, the expected execution order is A - B - A; however,
+> > without the above exception for ordered workqueues, it'd end up A - A
+> > - B because B will end up on the new pwq while A on the older one and
+> > max_active won't be transferred to the new pwq before it becomes
+> > empty.
+> 
+> Ah right AAB instead of ABA is possible indeed. I don't know if some workqueue
+> rely on such guarantee but it's possible.
+
+That's part of the ordering guarantee of ordered workqueues so we
+better not break it.
+
+> In which case we have one more reason to make an exception on ordered workqueues
+> previous pwq reuse.
+
+Yeah, I agree the special treatment is necessary but the current
+comment is misleading.
+
+Thanks.
+
+-- 
+tejun
