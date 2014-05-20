@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaETQuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:50:19 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:24289 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753825AbaETQuS (ORCPT
+	id S1754244AbaETQue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:50:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45717 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825AbaETQud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:50:18 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtEWAEeHe1NbsnsG/2dsb2JhbABZgwarCAQBAQEBAQEFAYM6lm4CAoEcF3SCUxM/GIECJBOIRQHUJoVViHmERwEDjzyKKwGTIIM6O4ExIg
-Date: Tue, 20 May 2014 18:50:16 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: jack <jack@suse.cz>, akpm <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH 1/1] fs/jbd/revoke.c: replace shift loop by ilog2
-Message-Id: <20140520185016.b3f3d5bfe3ad6fc832d8c792@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 12:50:33 -0400
+Date: Tue, 20 May 2014 17:50:28 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "Zhu, Lejun" <lejun.zhu@linux.intel.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, bin.yang@intel.com
+Subject: Re: [PATCH 0/4] mfd: Intel SoC Power Management IC
+Message-ID: <20140520165027.GA32538@lee--X1>
+References: <1400079578-32329-1-git-send-email-lejun.zhu@linux.intel.com>
+ <20140520145507.GU24991@lee--X1>
+ <20140520160708.1382a6ab@alan.etchedpixels.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140520160708.1382a6ab@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-journal_init_revoke_table is only called with positive hash_size
-(JOURNAL_REVOKE_DEFAULT_HASH) so we can replace loop shift by ilog2
+> > I'm missing the build files patch.  Can you ensure I was on the
+> > distribution list please?  Also, what's the reason for splitting the
+> > files out instead of having one single driver?
+> 
+> The same PMIC may be attached multiple ways, and multiple different PMIC
+> types may be attached.
+> 
+> So for example on the Baytrail/T platforms (ASUS T100 etc) you have
+> crystal cove via i2c, but a vendor could use a different PMIC - and there
+> will of course always be new PMIC devices coming along.
+> 
+> Equally on a Z2760 or similar (eg the Lenovo tablet 2) you may well have
+> the same PMIC attached to the system control unit. While there's nobody
+> afaik trying to sync the Android trees for Clovertrail+ with upstream at
+> this point I know there are external to Intel folks working on it for fun
+> and we need to allow for that.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jbd/revoke.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/fs/jbd/revoke.c b/fs/jbd/revoke.c
-index 25c713e..8898bbd 100644
---- a/fs/jbd/revoke.c
-+++ b/fs/jbd/revoke.c
-@@ -231,19 +231,15 @@ record_cache_failure:
- 
- static struct jbd_revoke_table_s *journal_init_revoke_table(int hash_size)
- {
--	int shift = 0;
--	int tmp = hash_size;
-+	int i;
- 	struct jbd_revoke_table_s *table;
- 
- 	table = kmem_cache_alloc(revoke_table_cache, GFP_KERNEL);
- 	if (!table)
- 		goto out;
- 
--	while((tmp >>= 1UL) != 0UL)
--		shift++;
--
- 	table->hash_size = hash_size;
--	table->hash_shift = shift;
-+	table->hash_shift = ilog2(hash_size);
- 	table->hash_table =
- 		kmalloc(hash_size * sizeof(struct list_head), GFP_KERNEL);
- 	if (!table->hash_table) {
-@@ -252,8 +248,8 @@ static struct jbd_revoke_table_s *journal_init_revoke_table(int hash_size)
- 		goto out;
- 	}
- 
--	for (tmp = 0; tmp < hash_size; tmp++)
--		INIT_LIST_HEAD(&table->hash_table[tmp]);
-+	for (i = 0; i < hash_size; i++)
-+		INIT_LIST_HEAD(&table->hash_table[i]);
- 
- out:
- 	return table;
+Fair enough, I'll bow to your knowledge.  I was just looking at the
+current driver and saw the lack of, for instance, intel_soc_pmic_spi.c
+which would have warranted separate core/i2c/spi components.  Also the
+Kconfig configuration doesn't allow for individual compilation of each
+of the source files, which drew me to the conclusion that these could
+in fact be centralised.
 -- 
-1.8.4.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
