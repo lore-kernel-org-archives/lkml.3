@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaETLnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 07:43:12 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:61615 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaETLnK (ORCPT
+	id S1752959AbaETLtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 07:49:46 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:17638 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaETLto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 07:43:10 -0400
-Date: Tue, 20 May 2014 13:43:15 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@freescale.com>, kernel@pengutronix.de,
-        Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH 2/2] ARM: imx: convert camera init to use
- platform_device_register_full()
-Message-ID: <20140520114315.GA4438@lianli>
-References: <1400446261-27085-1-git-send-email-emilgoode@gmail.com>
- <1400446261-27085-3-git-send-email-emilgoode@gmail.com>
- <20140519062722.GE16662@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140519062722.GE16662@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 May 2014 07:49:44 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-f3-537b41558366
+Message-id: <537B4153.8030203@samsung.com>
+Date: Tue, 20 May 2014 13:49:39 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Cc: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
+        pawel.moll@arm.com, kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com, t.figa@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC V6 2/2] clk: Add handling of clk parent and rate
+ assigned from DT
+References: <1400520171-6698-1-git-send-email-s.nawrocki@samsung.com>
+ <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
+In-reply-to: <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xq7qhjtXBBn+uClrMP3KO1aL/zUJW
+	iwN/djBanG16w26x6fE1VovLu+awWdy+zGux9shddoul1y8yWTydcJHNYsL0tSwWrXuPsFvM
+	mPySzWL9jNcsDnwea+atYfRoae5h87jc18vksWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5AI4o
+	LpuU1JzMstQifbsErozjcw4yF5xgqbjRcZC9gfECcxcjJ4eEgInE0tbJjBC2mMSFe+vZuhi5
+	OIQEljJKvD5+Bsr5xCixYv5PsCpeAS2JF5+6wbpZBFQlfl3ZBBZnEzCU6D3aB2RzcIgKREg8
+	viAEUS4o8WPyPRYQW0TARaLzwTowm1lgMZPEgV+RILawQLTErc3PmCB2NTJK3N79mB0kwSng
+	JvFqwkkmiAYdif2t09ggbHmJzWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWppcUJyUnmuoV5yY
+	W1yal66XnJ+7iRESR192MC4+ZnWIUYCDUYmH18G2KliINbGsuDL3EKMEB7OSCK+2bXWwEG9K
+	YmVValF+fFFpTmrxIUYmDk6pBsbZhTe7vl5I1HWpdA3tjHW/V9O4zV5dZun2D68yp8fPOWvT
+	eZMzJdVm14bjLMc/nQps3rbaTf00z7eVU9i2BMiwR3d+2/dnaS1rk0Sx5zTJtmuyHKfzr7yr
+	E2IvzLg//fzNc7+Ez5eETtYqWvDjx4Epjzs6/mkxFvR2RnKYMNRa/H5suyrXa5ESS3FGoqEW
+	c1FxIgAG3dzegQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Uwe,
+On 19/05/14 19:22, Sylwester Nawrocki wrote:
+> @@ -2620,7 +2639,10 @@ void __init of_clk_init(const struct of_device_id *matches)
+>  		list_for_each_entry_safe(clk_provider, next,
+>  					&clk_provider_list, node) {
+>  			if (force || parent_ready(clk_provider->np)) {
+> +
+>  				clk_provider->clk_init_cb(clk_provider->np);
+> +				of_clk_set_defaults(np, true);
 
-Thank you for the review and sorry for the late response.
+There is an error in this patch, this line should read:
 
-On Mon, May 19, 2014 at 08:27:22AM +0200, Uwe Kleine-König wrote:
-> Hello Emil,
-> 
-> thanks for your effort.
-> 
-> On Sun, May 18, 2014 at 10:51:00PM +0200, Emil Goode wrote:
-> > This converts the imx camera allocation and initialization functions
-> > to use platform_device_register_full() thus simplifying the code.
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> > Only build tested, unfortunately I currently don't have the hardware.
-> > 
-> >  arch/arm/mach-imx/devices/platform-ipu-core.c |   43 +++++++++----------------
-> >  arch/arm/mach-imx/mach-mx31_3ds.c             |    5 ++-
-> >  arch/arm/mach-imx/mach-mx31moboard.c          |    6 ++--
-> >  arch/arm/mach-imx/mach-mx35_3ds.c             |    5 ++-
-> >  arch/arm/mach-imx/mach-pcm037.c               |    5 ++-
-> >  5 files changed, 23 insertions(+), 41 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > index 6bd7c3f..13ea542 100644
-> > --- a/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > +++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
-> > @@ -69,42 +69,29 @@ struct platform_device *__init imx_alloc_mx3_camera(
-> IMHO you should better rename the function because now it doesn't only
-> allocate the device, but also registers it.
++				of_clk_set_defaults(clk_provider->np, true);
 
-Agreed.
+>  				list_del(&clk_provider->node);
+>  				kfree(clk_provider);
+>  				is_init_done = true;
 
-> 
-> Also I doubt that it's OK to call dma_declare_coherent_memory after the
-> device is added. In this case maybe extend
-> platform_device_register_full? And also add a warning to
-> dma_declare_coherent_memory if it is called for an already added device?
-> (Added a few people to Cc: that might be able to comment this. I don't
-> even know if there is a reliable way to check if a device is already
-> added.)
-
-Yes I also had doubts about that. However, apart from this patch there are
-three other places in arch/arm/mach-imx/ where dma_declare_coherent_memory()
-is called after calling platform_device_register_full().
-
-Perhaps this is enough reason to extend platform_device_register_full().
-
-It would be great to get some more feedback on this and also if there is a
-reliable way to check if a device is already added.
-
-Best regards,
-
-Emil Goode
