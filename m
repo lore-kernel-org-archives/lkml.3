@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaETNF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:05:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52329 "EHLO mx2.suse.de"
+	id S1753335AbaETNGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:06:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34431 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110AbaETNF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 09:05:58 -0400
-Date: Tue, 20 May 2014 15:05:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Buffer cache not working.
-Message-ID: <20140520130556.GA10945@dhcp22.suse.cz>
-References: <20140514144632.GB7404@bitwizard.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514144632.GB7404@bitwizard.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752448AbaETNGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:06:21 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140508135852.605324173@infradead.org>
+References: <20140508135852.605324173@infradead.org> <20140508135840.956784204@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, mingo@kernel.org, will.deacon@arm.com,
+        paulmck@linux.vnet.ibm.com,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: Re: [PATCH 14/20] arch,mn10300: Fold atomic_ops
+Date: Tue, 20 May 2014 14:05:32 +0100
+Message-ID: <26031.1400591132@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-05-14 16:46:32, Rogier Wolff wrote:
-[...]
-> Kernel: from Ubuntu 14.04, 3.13.0-19-generic
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-The kernel is 64b right?
+> +#define ATOMIC_OPS(op) ATOMIC_OP(op) ATOMIC_OP_RETURN(op)
 
-> 32-bit userspace
-> 16Gb RAM installed. 
-> Disks: 3x 3T in RAID5
-> 
-> ganglia shows the server memory graph as follows: 
-> http://prive.bitwizard.nl/server_mem.png
+Can ATOMIC_OP() just be an alias for ATOMIC_OP_RETURN() where that is
+appropriate?  I suspect several arches (MN10300 included) are going to return
+the value *anyway*.
 
-This shows that the memory usage didn't go over 5G. That is suspicious.
-Is this a NUMA machine? Is it possible that zone_reclaim_mode is enabled
-(cat /proc/sys/vm/zone_reclaim_mode)?
- 
-> All other computers have a "nice" filled graph there.
-> 
-> So, is there a bug in my kernel or am I missing an important tuning
-> parameter?
-> 
-> 
-> 	Roger. 
-> 
-> -- 
-> ** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-> **    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-> *-- BitWizard writes Linux device drivers for any device you may have! --*
-> The plan was simple, like my brother-in-law Phil. But unlike
-> Phil, this plan just might work.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
+David
