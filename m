@@ -1,128 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaETWMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:12:22 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:40618 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbaETWMV (ORCPT
+	id S1751182AbaETWPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:15:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34799 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaETWPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:12:21 -0400
-Subject: [PATCH RESEND 2/2] ftrace: Add funcgraph_tail option to print
-	function name after closing braces
-To: elliott@hp.com, fweisbec@gmail.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org
-From: Robert Elliott <elliott@hp.com>
-Date: Tue, 20 May 2014 17:10:51 -0500
-Message-ID: <20140520221041.8359.6782.stgit@beardog.cce.hp.com>
-In-Reply-To: <20140520220958.8359.42839.stgit@beardog.cce.hp.com>
-References: <20140520220958.8359.42839.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Tue, 20 May 2014 18:15:47 -0400
+Date: Tue, 20 May 2014 23:15:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xia Kaixu <kaixu.xia@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org
+Message-ID: <20140520221535.GG12304@sirena.org.uk>
+References: <1399173921-3766-1-git-send-email-kaixu.xia@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5WcUv4ltjScdJlXE"
+Content-Disposition: inline
+In-Reply-To: <1399173921-3766-1-git-send-email-kaixu.xia@linaro.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 15/15] ASoC: pxa: remove mach header dependency
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the function-graph tracer, add a funcgraph_tail option
-to print the function name on all } lines, not just
-functions whose first line is no longer in the trace
-buffer.
 
-If a function calls other traced functions, its total
-time appears on its } line.  This change allows grep
-to be used to determine the function for which the
-line corresponds.
+--5WcUv4ltjScdJlXE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Update Documentation/trace/ftrace.txt to describe
-this new option.
+On Sun, May 04, 2014 at 11:25:21AM +0800, Xia Kaixu wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>=20
+> As we are moving the mmp platform towards multiplatform support,
+> we have to stop including platform header files.
 
-Signed-off-by: Robert Elliott <elliott@hp.com>
----
- Documentation/trace/ftrace.txt       |   26 ++++++++++++++++++++++++++
- kernel/trace/trace.h                 |    1 +
- kernel/trace/trace_functions_graph.c |    9 ++++++---
- 3 files changed, 33 insertions(+), 3 deletions(-)
+Applied, thanks.
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index bd36598..2479b2a 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -2003,6 +2003,32 @@ want, depending on your needs.
-   360.774530 |   1)   0.594 us    |                                          __phys_addr();
- 
- 
-+The function name is always displayed after the closing bracket
-+for a function if the start of that function is not in the
-+trace buffer.
-+
-+Display of the function name after the closing bracket may be
-+enabled for functions whose start is in the trace buffer,
-+allowing easier searching with grep for function durations.
-+It is default disabled.
-+
-+	hide: echo nofuncgraph-tail > trace_options
-+	show: echo funcgraph-tail > trace_options
-+
-+  Example with nofuncgraph-tail (default):
-+  0)               |      putname() {
-+  0)               |        kmem_cache_free() {
-+  0)   0.518 us    |          __phys_addr();
-+  0)   1.757 us    |        }
-+  0)   2.861 us    |      }
-+
-+  Example with funcgraph-tail:
-+  0)               |      putname() {
-+  0)               |        kmem_cache_free() {
-+  0)   0.518 us    |          __phys_addr();
-+  0)   1.757 us    |        } /* kmem_cache_free() */
-+  0)   2.861 us    |      } /* putname() */
-+
- You can put some comments on specific functions by using
- trace_printk() For example, if you want to put a comment inside
- the __might_sleep() function, you just have to include
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 861668a..5ca365f 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -725,6 +725,7 @@ extern unsigned long trace_flags;
- #define TRACE_GRAPH_PRINT_DURATION      0x10
- #define TRACE_GRAPH_PRINT_ABS_TIME      0x20
- #define TRACE_GRAPH_PRINT_IRQS          0x40
-+#define TRACE_GRAPH_PRINT_TAIL          0x80
- #define TRACE_GRAPH_PRINT_FILL_SHIFT	28
- #define TRACE_GRAPH_PRINT_FILL_MASK	(0x3 << TRACE_GRAPH_PRINT_FILL_SHIFT)
- 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index ab78221..ba10bb0 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -55,11 +55,13 @@ static struct tracer_opt trace_opts[] = {
- 	{ TRACER_OPT(funcgraph-abstime, TRACE_GRAPH_PRINT_ABS_TIME) },
- 	/* Display interrupts */
- 	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
-+	/* Display function name after trailing } */
-+	{ TRACER_OPT(funcgraph-tail, TRACE_GRAPH_PRINT_TAIL) },
- 	{ } /* Empty entry */
- };
- 
- static struct tracer_flags tracer_flags = {
--	/* Don't display overruns and proc by default */
-+	/* Don't display overruns, proc, or tail by default */
- 	.val = TRACE_GRAPH_PRINT_CPU | TRACE_GRAPH_PRINT_OVERHEAD |
- 	       TRACE_GRAPH_PRINT_DURATION | TRACE_GRAPH_PRINT_IRQS,
- 	.opts = trace_opts
-@@ -1167,9 +1169,10 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
- 	 * If the return function does not have a matching entry,
- 	 * then the entry was lost. Instead of just printing
- 	 * the '}' and letting the user guess what function this
--	 * belongs to, write out the function name.
-+	 * belongs to, write out the function name. Always do
-+	 * that if the funcgraph-tail option is enabled.
- 	 */
--	if (func_match) {
-+	if (func_match && !(flags & TRACE_GRAPH_PRINT_TAIL)) {
- 		ret = trace_seq_puts(s, "}\n");
- 		if (!ret)
- 			return TRACE_TYPE_PARTIAL_LINE;
+--5WcUv4ltjScdJlXE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTe9QEAAoJELSic+t+oim9FucP/RbIlxP6LI9oT7BPMjfQCYJE
+wq6slY68VOHwUIFs0SKSeb2Cly7BuX0yXLPtZpWH4HWRP/ddc4+z/3y0oCzVnxNr
+RvKk9PGCNptzYRB4c2IMH9fQ6YFYb+qT7FxGY5NUGK5029DLmfaIDM9E3sCC216F
+xtb/0tXNGbunTwch6rJYA6B681LZBf/CR3b8U68nUROtDlgY+Yzt1XstJOs4A8CU
+tiRoyPLmgbHScqkXz5PPYPVw0eeJgIs4ujf0fWRKsIU8jkhnAb34/7w3lotdF6/N
+tfjiz8rB+/HZ51NgqtF+/+ZkTyeciOo8MnWSxWhaK+M++KwHZqHRvlV/dv2X9/6z
+4v7/3o2z8LdWd0L4g6SBZZTzZqDOBc9qCGDrLVvmGLndbSWVriJd29LDAgSWG/Oz
+HF1MNuB7XSp64ihnEnYE1BNrOq7uY9WjT+nT8XDl/dz9cSXxJ0Y9IkseLvzW2/am
+pg6s4gc2SeRKf3Rx7tsiQN9+PNiZEAaq183G7x2vgfe9dNUpUL8mZy+guzJ0B/GY
+aR2hgSfBh4yebF48cHhxyJdNLhG4g8oxK1QBzqk5Sa9HueOvE5cnouy8G3QNDp6N
+3Y2ZSiA8tE0uw7vYxueURXuE9P3tvsrgcC6CW1kviO9hiox2Ze6GiJv5Nx7ycUW2
+Zs+DbtgnuL7pRamE0xlU
+=QdPf
+-----END PGP SIGNATURE-----
+
+--5WcUv4ltjScdJlXE--
