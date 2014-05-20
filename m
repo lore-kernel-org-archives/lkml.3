@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaETBAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 21:00:01 -0400
-Received: from ozlabs.org ([103.22.144.67]:51655 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074AbaETBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 21:00:00 -0400
-Date: Tue, 20 May 2014 10:59:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-ID: <20140520105952.73f6adab@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752709AbaETBBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 21:01:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51133 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaETBBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 21:01:40 -0400
+Date: Tue, 20 May 2014 10:01:37 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sarah.a.sharp@linux.intel.com, Dan Williams <dan.j.williams@intel.com>,
+        Holger Hans Peter Freyther <holger@moiji-mobile.com>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+Message-ID: <20140520010137.GA8146@kroah.com>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/KnBHmZDs9tZ6Gey/dRoMe6q"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/KnBHmZDs9tZ6Gey/dRoMe6q
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 08, 2014 at 07:25:55PM +0300, Mathias Nyman wrote:
+> From: Dan Williams <dan.j.williams@intel.com>
+> 
+> Add a command line switch for disabling ehci port switchover.  Useful
+> for working around / debugging xhci incompatibilities where ehci
+> operation is available.
+> 
+> Reference: http://marc.info/?l=linux-usb&m=138920063001509&w=2
+> 
+> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+> Cc: Holger Hans Peter Freyther <holger@moiji-mobile.com>
+> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> ---
+>  Documentation/kernel-parameters.txt |  3 +++
+>  drivers/usb/host/pci-quirks.c       | 15 +++++++++++++--
+>  2 files changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4384217..fc3403114 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2251,6 +2251,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
+>  
+> +	noxhci_port_switch
+> +			[USB] Use EHCI instead of XHCI where available
+> +
 
-Hi all,
+Ugh, I really don't like new command line options.
 
-After merging the net tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Especially one that isn't very well documented.  Why would someone want
+to enable this?  What problem is it solving?  Can we detect this
+automatically and do it for the user?  Is this just for prototype
+hardware that has not shipped?  What hardware needs this?
 
+I need a whole lot more documentation at the very least before I will
+apply this.
 
-In file included from arch/powerpc/net/bpf_jit_comp.c:16:0:
-include/linux/if_vlan.h: In function 'vlan_get_encap_level':
-include/linux/if_vlan.h:491:2: error: implicit declaration of function 'vla=
-n_dev_priv' [-Werror=3Dimplicit-function-declaration]
-  return vlan_dev_priv(dev)->nest_level;
-  ^
-include/linux/if_vlan.h:491:27: error: invalid type argument of '->' (have =
-'int')
-  return vlan_dev_priv(dev)->nest_level;
-                           ^
+thanks,
 
-Caused by commit 44a4085538c8 ("bonding: Fix stacked device detection
-in arp monitoring").
-
-vlan_dev_priv() is protected by:
-
-#if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
-
-but the newly added call in vlan_get_encap_level() is not.
-
-I have used the net tree from next-20140519 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/KnBHmZDs9tZ6Gey/dRoMe6q
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTeqkNAAoJEMDTa8Ir7ZwVO4oP/3oXziwWreT3K+Tf7FiZ9HaH
-Kfj3b1sJYFkyn5eRNoBs5I0YncwYyufq3LfBP/LNrlWum7ZfaXw2cjdjSkRKt/vZ
-hZizhlGPix5AmfJCIGvxyHej1ib4lwpG/Kmrrqzn4AaweMflLD8Aq2aIQ+X02LaH
-7Tpy+xAvdsUoBXgjIBt+mFKk+DCeOb3NyZa2q7lgv3k4JmVREYOaG/x6t65yBhea
-4GFeobaHiTBAAyBhuilrQWV7pHFndUKkKTr9eZqKtAecrOueSR44x8AJlKO36E7V
-hYOYc9GrtYq87DzT+v+IFqNNER40Ua1VwvTXh8UTHNUpKoHp0CEwYkUsv3esJfCO
-1kEmnAHFTTy9e+esO7rJEV627u/RIN9hik+LAGdD35vOZKr8nzeuVIDQdW8GyQY9
-Npuzo5WNOqCISOWXULeKVDjiQdsqsjzFjGhffbX1M/piKxNwgC2M68xthFwfX9En
-MQs9gCrhlI0+aQSzeIedMWZzyDTm8ZW4ELzgI0ocHVNA+I0y7c5kwzBsbjWerVmo
-fKZxSPv/ovx1FKskpq2wQcneH8Jd67ZcxIu+kVvh/dxfmSx4VnNDAVHp+nI6GV4p
-fUHVElRkFGTTcmYTa0gN8vrbh5dAfTkgUux3Ykea3FwKFUjs90Keur/YX8McgMWX
-kCc9LgwIlXtRipx+43dy
-=upfj
------END PGP SIGNATURE-----
-
---Sig_/KnBHmZDs9tZ6Gey/dRoMe6q--
+greg k-h
