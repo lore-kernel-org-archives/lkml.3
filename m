@@ -1,105 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaETOAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:00:39 -0400
-Received: from tex.lwn.net ([70.33.254.29]:33372 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444AbaETOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:00:35 -0400
-Date: Tue, 20 May 2014 08:00:33 -0600
-From: Jake Edge <jake@lwn.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Anton Saraev <antonysaraev@gmail.com>
-Subject: [PATCH 2/3] staging/skein: comment typos
-Message-ID: <20140520080033.2e54e6d0@chukar.edge2.net>
-In-Reply-To: <20140520075612.220a13ae@chukar.edge2.net>
-References: <20140520075612.220a13ae@chukar.edge2.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932127AbaETN5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:57:12 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:62160 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096AbaETN5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 09:57:08 -0400
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: dri-devel@lists.freedesktop.org, airlied@linux.ie,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: [PATCH v3 07/16] drm: sti: add sti layer interface definition
+Date: Tue, 20 May 2014 15:56:17 +0200
+Message-Id: <1400594186-8956-8-git-send-email-benjamin.gaignard@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
+References: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix some comment typos
+STI hardware have various input sub-devices before mixing block.
+Each type of sub-device have different capabilities for scaling,
+filtering or accepted pixel format.
+This layer interface abstract those differences and make the interaction
+with compositor more simple.
 
-Signed-off-by: Jake Edge <jake@lwn.net>
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
+ drivers/gpu/drm/sti/sti_layer.h | 104 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
+ create mode 100644 drivers/gpu/drm/sti/sti_layer.h
 
-against staging-next branch of staging tree
-
- drivers/staging/skein/threefish_api.h | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/staging/skein/threefish_api.h b/drivers/staging/skein/threefish_api.h
-index 2fce154..8d5ddf8 100644
---- a/drivers/staging/skein/threefish_api.h
-+++ b/drivers/staging/skein/threefish_api.h
-@@ -12,7 +12,7 @@
-  * follow the openSSL design but at the same time take care of some Threefish
-  * specific behaviour and possibilities.
-  *
-- * These are the low level functions that deal with Threefisch blocks only.
-+ * These are the low level functions that deal with Threefish blocks only.
-  * Implementations for cipher modes such as ECB, CFB, or CBC may use these
-  * functions.
-  *
-@@ -77,9 +77,9 @@ void threefish_set_key(struct threefish_key *key_ctx,
- 		       u64 *key_data, u64 *tweak);
- 
- /**
-- * Encrypt Threefisch block (bytes).
-+ * Encrypt Threefish block (bytes).
-  *
-- * The buffer must have at least the same length (number of bits) aas the
-+ * The buffer must have at least the same length (number of bits) as the
-  * state size for this key. The function uses the first @c state_size bits
-  * of the input buffer, encrypts them and stores the result in the output
-  * buffer.
-@@ -95,9 +95,9 @@ void threefish_encrypt_block_bytes(struct threefish_key *key_ctx, u8 *in,
- 				   u8 *out);
- 
- /**
-- * Encrypt Threefisch block (words).
-+ * Encrypt Threefish block (words).
-  *
-- * The buffer must have at least the same length (number of bits) aas the
-+ * The buffer must have at least the same length (number of bits) as the
-  * state size for this key. The function uses the first @c state_size bits
-  * of the input buffer, encrypts them and stores the result in the output
-  * buffer.
-@@ -115,9 +115,9 @@ void threefish_encrypt_block_words(struct threefish_key *key_ctx, u64 *in,
- 				   u64 *out);
- 
- /**
-- * Decrypt Threefisch block (bytes).
-+ * Decrypt Threefish block (bytes).
-  *
-- * The buffer must have at least the same length (number of bits) aas the
-+ * The buffer must have at least the same length (number of bits) as the
-  * state size for this key. The function uses the first @c state_size bits
-  * of the input buffer, decrypts them and stores the result in the output
-  * buffer
-@@ -133,9 +133,9 @@ void threefish_decrypt_block_bytes(struct threefish_key *key_ctx, u8 *in,
- 				   u8 *out);
- 
- /**
-- * Decrypt Threefisch block (words).
-+ * Decrypt Threefish block (words).
-  *
-- * The buffer must have at least the same length (number of bits) aas the
-+ * The buffer must have at least the same length (number of bits) as the
-  * state size for this key. The function uses the first @c state_size bits
-  * of the input buffer, encrypts them and stores the result in the output
-  * buffer.
+diff --git a/drivers/gpu/drm/sti/sti_layer.h b/drivers/gpu/drm/sti/sti_layer.h
+new file mode 100644
+index 0000000..ed8386a
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_layer.h
+@@ -0,0 +1,104 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2013
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_LAYER_H_
++#define _STI_LAYER_H_
++
++#include <drm/drmP.h>
++
++#define to_sti_layer(x) container_of(x, struct sti_layer, plane)
++
++#define STI_LAYER_TYPE_SHIFT 8
++#define STI_LAYER_TYPE_MASK (~((1<<STI_LAYER_TYPE_SHIFT)-1))
++
++
++enum sti_layer_type {
++	STI_GDP = 1 << STI_LAYER_TYPE_SHIFT,
++	STI_VID = 2 << STI_LAYER_TYPE_SHIFT,
++	STI_CUR = 3 << STI_LAYER_TYPE_SHIFT,
++	STI_BCK = 4 << STI_LAYER_TYPE_SHIFT
++};
++
++enum sti_layer_id_of_type {
++	STI_ID_0 = 0,
++	STI_ID_1 = 1,
++	STI_ID_2 = 2,
++	STI_ID_3 = 3
++};
++
++enum sti_layer_desc {
++	STI_GDP_0	= STI_GDP | STI_ID_0,
++	STI_GDP_1	= STI_GDP | STI_ID_1,
++	STI_GDP_2	= STI_GDP | STI_ID_2,
++	STI_GDP_3	= STI_GDP | STI_ID_3,
++	STI_VID_0	= STI_VID | STI_ID_0,
++	STI_VID_1	= STI_VID | STI_ID_1,
++	STI_CURSOR	= STI_CUR,
++	STI_BACK	= STI_BCK
++};
++
++struct sti_fps_info {
++	bool output;
++	int curr_frame_counter;
++	int last_frame_counter;
++	struct timespec last_timestamp;
++};
++
++/*
++ * STI layer structure
++ *
++ * @plane:		drm plane it is bound to (if any)
++ * @fb:			drm fb it is bound to
++ * @mode:		display mode
++ * @desc:		layer type & id
++ * @zorder:		layer z-order
++ * @enabled:		to know if the layer is active or not
++ * @src_x src_y:	coordinates of the input (fb) area
++ * @src_w src_h:	size of the input (fb) area
++ * @dst_x dst_y:	coordinates of the output (crtc) area
++ * @dst_w dst_h:	size of the output (crtc) area
++ * @format:		format
++ * @pitches:		pitch of 'planes' (eg: Y, U, V)
++ * @offsets:		offset of 'planes'
++ * @paddr:		physical address of the input buffer
++ * @fps_info:		frame per second info
++ */
++struct sti_layer {
++	struct drm_plane plane;
++	struct drm_framebuffer *fb;
++	struct drm_display_mode *mode;
++	enum sti_layer_desc desc;
++	int zorder;
++	bool enabled;
++	int src_x, src_y;
++	int src_w, src_h;
++	int dst_x, dst_y;
++	int dst_w, dst_h;
++	uint32_t format;
++	int pitches[4];
++	int offsets[4];
++	dma_addr_t paddr;
++	struct sti_fps_info fps_info;
++};
++
++struct sti_layer *sti_layer_create(struct device *dev, int desc,
++			void __iomem *baseaddr);
++int sti_layer_prepare(struct sti_layer *layer, struct drm_framebuffer *fb,
++			struct drm_display_mode *mode,
++			int dest_x, int dest_y,
++			int dest_w, int dest_h,
++			int src_x, int src_y,
++			int src_w, int src_h);
++int sti_layer_commit(struct sti_layer *layer);
++int sti_layer_disable(struct sti_layer *layer);
++const uint32_t *sti_layer_get_formats(struct sti_layer *layer);
++int sti_layer_get_nb_formats(struct sti_layer *layer);
++struct sti_layer *sti_layer_find_layer(struct sti_layer *layer[],
++			enum sti_layer_desc desc);
++const char *sti_layer_to_str(struct sti_layer *layer);
++#endif
 -- 
-1.9.0
+1.9.1
 
-
-
--- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
