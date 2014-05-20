@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaETTOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:14:11 -0400
-Received: from smtprelay0075.hostedemail.com ([216.40.44.75]:53106 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751244AbaETTOJ (ORCPT
+	id S1754189AbaETTOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:14:42 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50233 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910AbaETTOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:14:09 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3870:3871:3876:4321:5007:6119:7652:7809:9040:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pen14_239387cbd9606
-X-Filterd-Recvd-Size: 3637
-Message-ID: <1400613243.26709.26.camel@joe-AO725>
-Subject: [PATCH] staging: realtek: Convert /n to \n
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Date: Tue, 20 May 2014 12:14:03 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 15:14:39 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: arm@kernel.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list),
+        linux-arm-kernel@vger.kernel.org, jason@lakedaemon.net
+Subject: [PATCH RESEND 2/2] Documentation: add Broadcom STB Level-2 interrupt controller binding
+Date: Tue, 20 May 2014 12:13:49 -0700
+Message-Id: <1400613229-19049-3-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400613229-19049-1-git-send-email-f.fainelli@gmail.com>
+References: <1400613229-19049-1-git-send-email-f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use proper line terminations.
+This patch adds the Device Tree binding document for the Broadcom
+Set-top-box Level 2 interrupt controller hardware.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/usb_ops_linux.c | 2 +-
- drivers/staging/rtl8188eu/os_dep/usb_intf.c   | 2 +-
- drivers/staging/rtl8723au/hal/usb_ops_linux.c | 4 ++--
- drivers/staging/rtl8723au/os_dep/usb_intf.c   | 2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
+ .../bindings/interrupt-controller/brcm,l2-intc.txt | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
 
-diff --git a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-index d8fc747..d9f60ab 100644
---- a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-+++ b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-@@ -558,7 +558,7 @@ static void usb_read_port_complete(struct urb *purb, struct pt_regs *regs)
- 			rtw_read_port(adapt, precvpriv->ff_hwaddr, 0, (unsigned char *)precvbuf);
- 			break;
- 		case -EINPROGRESS:
--			DBG_88E("ERROR: URB IS IN PROGRESS!/n");
-+			DBG_88E("ERROR: URB IS IN PROGRESS!\n");
- 			break;
- 		default:
- 			break;
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 8ed2ac8..c63e263 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -88,7 +88,7 @@ static u8 rtw_init_intf_priv(struct dvobj_priv *dvobj)
- 
- 	dvobj->usb_alloc_vendor_req_buf = rtw_zmalloc(MAX_USB_IO_CTL_SIZE);
- 	if (dvobj->usb_alloc_vendor_req_buf == NULL) {
--		DBG_88E("alloc usb_vendor_req_buf failed... /n");
-+		DBG_88E("alloc usb_vendor_req_buf failed...\n");
- 		rst = _FAIL;
- 		goto exit;
- 	}
-diff --git a/drivers/staging/rtl8723au/hal/usb_ops_linux.c b/drivers/staging/rtl8723au/hal/usb_ops_linux.c
-index 73b49ac..df2e884 100644
---- a/drivers/staging/rtl8723au/hal/usb_ops_linux.c
-+++ b/drivers/staging/rtl8723au/hal/usb_ops_linux.c
-@@ -439,7 +439,7 @@ urb_submit:
- 		case -EPROTO:
- 			break;
- 		case -EINPROGRESS:
--			DBG_8723A("ERROR: URB IS IN PROGRESS!/n");
-+			DBG_8723A("ERROR: URB IS IN PROGRESS!\n");
- 			break;
- 		default:
- 			break;
-@@ -734,7 +734,7 @@ static void usb_read_port_complete(struct urb *purb)
- 					    precvbuf);
- 			break;
- 		case -EINPROGRESS:
--			DBG_8723A("ERROR: URB IS IN PROGRESS!/n");
-+			DBG_8723A("ERROR: URB IS IN PROGRESS!\n");
- 			break;
- 		default:
- 			break;
-diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-index d00ccdc..f78be19 100644
---- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-@@ -107,7 +107,7 @@ static int rtw_init_intf_priv(struct dvobj_priv *dvobj)
- 	dvobj->usb_alloc_vendor_req_buf = kzalloc(MAX_USB_IO_CTL_SIZE,
- 						  GFP_KERNEL);
- 	if (dvobj->usb_alloc_vendor_req_buf == NULL) {
--		DBG_8723A("alloc usb_vendor_req_buf failed... /n");
-+		DBG_8723A("alloc usb_vendor_req_buf failed...\n");
- 		rst = _FAIL;
- 		goto exit;
- 	}
-
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
+new file mode 100644
+index 000000000000..448273a30a11
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
+@@ -0,0 +1,29 @@
++Broadcom Generic Level 2 Interrupt Controller
++
++Required properties:
++
++- compatible: should be "brcm,l2-intc"
++- reg: specifies the base physical address and size of the registers
++- interrupt-controller: identifies the node as an interrupt controller
++- #interrupt-cells: specifies the number of cells needed to encode an
++  interrupt source. Should be 1.
++- interrupt-parent: specifies the phandle to the parent interrupt controller
++  this controller is cacaded from
++- interrupts: specifies the interrupt line in the interrupt-parent irq space
++  to be used for cascading
++
++Optional properties:
++
++- brcm,irq-can-wake: If present, this means the L2 controller can be used as a
++  wakeup source for system suspend/resume.
++
++Example:
++
++hif_intr2_intc: interrupt-controller@f0441000 {
++	compatible = "brcm,l2-intc";
++	reg = <0xf0441000 0x30>;
++	interrupt-controller;
++	#interrupt-cells = <1>;
++	interrupt-parent = <&intc>;
++	interrupts = <0x0 0x20 0x0>;
++};
+-- 
+1.9.1
 
