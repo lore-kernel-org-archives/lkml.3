@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaETJ41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 05:56:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37204 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbaETJ40 (ORCPT
+	id S1751662AbaETKBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:01:16 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45910 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaETKBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 05:56:26 -0400
-Message-ID: <537B3244.3010808@ti.com>
-Date: Tue, 20 May 2014 13:45:24 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 20 May 2014 06:01:15 -0400
+From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org,
+        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Subject: [PATCH] powerpc/powernv: Fix build error when CONFIG_SMP=n
+Date: Tue, 20 May 2014 15:25:26 +0530
+Message-Id: <1400579726-26206-1-git-send-email-shreyas@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH] of/irq: do irq resolution in platform_get_irq_byname()
-References: <1400506259-18397-1-git-send-email-grygorii.strashko@ti.com>	<20140519125738.GB9466@ulmo> <20140520061700.ED542C41087@trevor.secretlab.ca>
-In-Reply-To: <20140520061700.ED542C41087@trevor.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052010-1618-0000-0000-0000004507B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Fix the following build error when compiled with CONFIG_SMP=n
+arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
+arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’ [-Werror=implicit-function-declaration]
+    rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
 
-On 05/20/2014 09:17 AM, Grant Likely wrote:
-> On Mon, 19 May 2014 14:57:39 +0200, Thierry Reding <thierry.reding@gmail.com> wrote:
->> On Mon, May 19, 2014 at 04:30:59PM +0300, Grygorii Strashko wrote:
->> [...]
->>> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
->> [...]
->>>   /**
->>> + * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
->>> + * @dev: pointer to device tree node
->>> + * @name: zero-based index of the irq
->>
->> This is a name, not an index.
->>
->>> + *
->>> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
->>> + * is not yet created, or errorno in case of failure.
->>
->> s/errorno/error code/? Also EPROBE_DEFER is also an error code, so I'm
->> not sure if it's worth a special case in the description here.
->>
->>> + *
->>> + */
->>> +int of_irq_get_byname(struct device_node *dev, const char *name)
->>> +{
->>> +	const char *name_irq = NULL;
->>> +	int index = 0;
->>> +
->>> +	if (unlikely(!name))
->>> +		return -EINVAL;
->>> +
->>> +	while (!of_property_read_string_index(dev, "interrupt-names",
->>> +					      index, &name_irq))
->>> +		if (!strcmp(name, name_irq))
->>> +			return of_irq_get(dev, index);
->>
->> Isn't this missing an index++ somewhere? Otherwise it seems like this
->> would loop infinitely if there was no match on the first entry.
->
-> Better yet, use of_property_match_string().
+The usage of get_hard_smp_processor_id() needs the declaration from <asm/smp.h>.
+The file setup.c includes <linux/sched.h>, which in-turn includes <linux/smp.h>.
+However, <linux/smp.h> includes <asm/smp.h> only on SMP configs and hence UP
+builds fail. Fix this by directly including <asm/smp.h> in setup.c
+unconditionally.
 
-yep. Thanks. I've just come to the same idea. Patch re-sent.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/powernv/setup.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Regards,
--grygorii
+diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+index 8723d32..e6bde98 100644
+--- a/arch/powerpc/platforms/powernv/setup.c
++++ b/arch/powerpc/platforms/powernv/setup.c
+@@ -34,6 +34,7 @@
+ #include <asm/rtas.h>
+ #include <asm/opal.h>
+ #include <asm/kexec.h>
++#include <asm/smp.h>
+ 
+ #include "powernv.h"
+ 
+-- 
+1.9.0
+
