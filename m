@@ -1,137 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaETRm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 13:42:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12542 "EHLO mga03.intel.com"
+	id S1754620AbaETRmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 13:42:42 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:46884 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540AbaETRmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 13:42:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
-   d="scan'208";a="434624263"
-Message-Id: <d6101e631fb61e9e097207939a93faa799be9a82.1400607328.git.tony.luck@intel.com>
-In-Reply-To: <cover.1400607328.git.tony.luck@intel.com>
-References: <cover.1400607328.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 20 May 2014 09:46:43 -0700
-Subject: [PATCH 2/2] memory-failure: Don't let collect_procs() skip over
- processes for MF_ACTION_REQUIRED
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>
+	id S1752937AbaETRmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 13:42:39 -0400
+Date: Tue, 20 May 2014 11:42:26 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>
+Subject: Re: [PATCH v1 5/5] pci: keystone: add pcie driver based on
+ designware core driver
+Message-ID: <20140520174226.GC5130@obsidianresearch.com>
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com>
+ <6048322.x3M3sdDEWO@wuerfel>
+ <5374FD24.8000806@ti.com>
+ <22200719.Jb5jnJylJH@wuerfel>
+ <20140515183919.GC11650@obsidianresearch.com>
+ <53751DDF.40304@ti.com>
+ <20140515205210.GB14722@obsidianresearch.com>
+ <3E54258959B69E4282D79E01AB1F32B704742133@DFLE11.ent.ti.com>
+ <20140520170221.GA5130@obsidianresearch.com>
+ <CAErSpo667uWybiHOh4tVQDh_JFpF0EbvxKwo_GQm+B1-wMtT1Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo667uWybiHOh4tVQDh_JFpF0EbvxKwo_GQm+B1-wMtT1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When Linux sees an "action optional" machine check (where h/w has
-reported an error that is not in the current execution path) we
-generally do not want to signal a process, since most processes
-do not have a SIGBUS handler - we'd just prematurely terminate the
-process for a problem that they might never actually see.
+On Tue, May 20, 2014 at 11:22:22AM -0600, Bjorn Helgaas wrote:
+> On Tue, May 20, 2014 at 11:02 AM, Jason Gunthorpe
+> <jgunthorpe@obsidianresearch.com> wrote:
+> > On Fri, May 16, 2014 at 08:29:56PM +0000, Karicheri, Muralidharan wrote:
+> >
+> >> But pcie_bus_configure_settings just make sure the mrrs for a device
+> >> is not greater than the max payload size.
+> >
+> > Not quite, it first scans the network checking the Maximum Payload Size
+> > Supported (MPSS) for each device, and chooses the highest supported by
+> > all as the MPS for all.
+> 
+> The "performance" setting, e.g., "pci=pcie_bus_perf", adds a few
+> wrinkles by setting MRRS in ways that allow some devices to have
+> larger MPS than others.  I don't think this is exactly what was
+> envisioned in the spec, and it is not guaranteed to work if there is
+> peer-to-peer DMA.  This isn't documented very well; the best I know of
+> is the changelogs for:
+> 
+>   a1c473aa11e6 pci: Clamp pcie_set_readrq() when using "performance" settings
+>   b03e7495a862 PCI: Set PCI-E Max Payload Size on fabric
 
-task_early_kill() decides whether to consider a process - and it
-checks whether this specific process has been marked for early signals
-with "prctl", or if the system administrator has requested early
-signals for all processes using /proc/sys/vm/memory_failure_early_kill.
+Neat, and does pretty much confirm that setting the host bridge MPSS
+properly is necessary to support all drivers, particularly the ones
+that call pcie_set_readrq with any old value.
 
-But for MF_ACTION_REQUIRED case we must not defer. The error is in
-the execution path of the current thread so we must send the SIGBUS
-immediatley.
+The 'performance' setting is a bit scary, it isn't just peer-to-peer
+DMA that would be impacted but also CPU initiated burst writes. Eg
+InfiniBand drivers burst a WQE to the NIC via the CPU. The MPS on the
+root port bridge is used to segment the write. Probably not a problem
+in practice because I think this is rare, and even rarer that a burst
+would be > 128 bytes - but as you say, not really what the spec
+intended..
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must
-take action.
-
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- mm/memory-failure.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 642c8434b166..f0967f72991c 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -380,10 +380,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -393,7 +395,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -409,7 +411,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -428,7 +430,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -439,7 +441,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -465,7 +467,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -476,9 +479,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -963,7 +966,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
--- 
-1.8.4.1
-
+Jason
