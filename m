@@ -1,146 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaETKdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 06:33:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991AbaETKdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 06:33:16 -0400
-Message-ID: <537B2F5E.4040102@redhat.com>
-Date: Tue, 20 May 2014 11:33:02 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-CC: mikey@neuling.org, avagin@openvz.org, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH V2 2/3] powerpc, ptrace: Enable support for transactional
- memory register sets
-References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com> <1399276469-13541-3-git-send-email-khandual@linux.vnet.ibm.com> <537252C0.6090005@redhat.com> <53730326.6000400@linux.vnet.ibm.com> <53735044.5030008@redhat.com> <537479FD.2010200@linux.vnet.ibm.com> <5374AE24.1030302@redhat.com> <5379EF0E.6090504@linux.vnet.ibm.com> <537A1889.8030801@redhat.com> <537B0EE0.4080406@linux.vnet.ibm.com>
-In-Reply-To: <537B0EE0.4080406@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753189AbaETKeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 06:34:03 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:59836 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaETKeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 06:34:00 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: kernel-janitors@vger.kernel.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] staging: r8712u: Remove useless return variables
+Date: Tue, 20 May 2014 12:33:41 +0200
+Message-Id: <1400582028-24990-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 09:14 AM, Anshuman Khandual wrote:
-> On 05/19/2014 08:13 PM, Pedro Alves wrote:
->> On 05/19/2014 12:46 PM, Anshuman Khandual wrote:
->>
->>>>> I couldn't actually find any arch that currently returns -ENODEV in
->>>>> the "active" hook.  I see that binfmt_elf.c doesn't handle
->>>>> regset->active() returning < 0.  Guess that may be why.  Looks like
->>>>> something that could be cleaned up, to me.
->>>>>
->>> Also it does not consider the return value of regset->active(t->task, regset)
->>> (whose objective is to figure out whether we need to request regset->n number
->>> of elements or less than that) in the subsequent call to regset->get function.
->>
->> Indeed.
->>
->> TBC, do you plan on fixing this?  Otherwise ...
-> 
-> Sure, thinking something like this as mentioned below. But still not sure how to use
-> the return type of -ENODEV from the function regset->active(). Right now if any
-> regset does have the active hook and it returns anything but positive value, it will
-> be ignored and the control moves to the next regset in view. This prevents the thread
-> core note type being written to the core dump.
+This patch remove variables that are initialized with a constant,
+are never updated, and are only used as parameter of return.
+Return the constant instead of using a variable.
 
-Looks to me that that's exactly what should happen for -ENODEV too.  The regset
-should be ignored.  If regset->active() returns -ENODEV, then the machine
-doesn't have the registers at all, so what makes sense to me is to not write the
-corresponding core note in the dump.  IOW, on such a machine, the kernel
-generates a core exactly like if the support for these registers that don't
-make sense for this machine wasn't compiled in at all.  And generates a core
-exactly like an older kernel that didn't know about that regset
-(which is fine for that same machine) yet.
+Verified by compilation only.
 
-> 
-> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-> index aa3cb62..80672fb 100644
-> --- a/fs/binfmt_elf.c
-> +++ b/fs/binfmt_elf.c
-> @@ -1553,7 +1553,15 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
->                 if (regset->core_note_type && regset->get &&
->                     (!regset->active || regset->active(t->task, regset))) {
->                         int ret;
+The coccinelle script that find and fixes this issue is:
+// <smpl>
+@@
+type T;
+constant C;
+identifier ret;
+@@
+- T ret = C;
+... when != ret
+- return ret;
++ return C;
+// </smpl>
 
-So, here, this ?
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-                    (!regset->active || regset->active(t->task, regset) > 0)) {
+---
+ drivers/staging/rtl8712/ieee80211.c        |    8 ++--
+ drivers/staging/rtl8712/rtl8712_cmd.c      |    3 -
+ drivers/staging/rtl8712/rtl8712_recv.c     |    7 +---
+ drivers/staging/rtl8712/rtl871x_mlme.c     |    3 -
+ drivers/staging/rtl8712/rtl871x_mp.c       |    3 -
+ drivers/staging/rtl8712/rtl871x_mp_ioctl.c |   49 +++++++++--------------------
+ drivers/staging/rtl8712/rtl871x_recv.c     |    4 --
+ 7 files changed, 26 insertions(+), 51 deletions(-)
 
+diff --git a/drivers/staging/rtl8712/ieee80211.c b/drivers/staging/rtl8712/ieee80211.c
+index 57fef70..fe9459e 100644
+--- a/drivers/staging/rtl8712/ieee80211.c
++++ b/drivers/staging/rtl8712/ieee80211.c
+@@ -289,7 +289,7 @@ static int r8712_get_wpa2_cipher_suite(u8 *s)
+ int r8712_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher,
+ 		 int *pairwise_cipher)
+ {
+-	int i, ret = _SUCCESS;
++	int i;
+ 	int left, count;
+ 	u8 *pos;
+ 
+@@ -324,13 +324,13 @@ int r8712_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher,
+ 		}
+ 	} else if (left == 1)
+ 		return _FAIL;
+-	return ret;
++	return _SUCCESS;
+ }
+ 
+ int r8712_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
+ 		  int *pairwise_cipher)
+ {
+-	int i, ret = _SUCCESS;
++	int i;
+ 	int left, count;
+ 	u8 *pos;
+ 
+@@ -364,7 +364,7 @@ int r8712_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
+ 		}
+ 	} else if (left == 1)
+ 		return _FAIL;
+-	return ret;
++	return _SUCCESS;
+ }
+ 
+ int r8712_get_sec_ie(u8 *in_ie, uint in_len, u8 *rsn_ie, u16 *rsn_len,
+diff --git a/drivers/staging/rtl8712/rtl8712_cmd.c b/drivers/staging/rtl8712/rtl8712_cmd.c
+index 1a4b7a6..8ca7d7e 100644
+--- a/drivers/staging/rtl8712/rtl8712_cmd.c
++++ b/drivers/staging/rtl8712/rtl8712_cmd.c
+@@ -290,8 +290,7 @@ static struct cmd_obj *cmd_hdl_filter(struct _adapter *padapter,
+ 
+ static u8 check_cmd_fifo(struct _adapter *padapter, uint sz)
+ {
+-	u8 res = _SUCCESS;
+-	return res;
++	return _SUCCESS;
+ }
+ 
+ u8 r8712_fw_cmd(struct _adapter *pAdapter, u32 cmd)
+diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
+index 0723b2f..667398a 100644
+--- a/drivers/staging/rtl8712/rtl8712_recv.c
++++ b/drivers/staging/rtl8712/rtl8712_recv.c
+@@ -123,8 +123,6 @@ void r8712_free_recv_priv(struct recv_priv *precvpriv)
+ 
+ int r8712_init_recvbuf(struct _adapter *padapter, struct recv_buf *precvbuf)
+ {
+-	int res = _SUCCESS;
+-
+ 	precvbuf->transfer_len = 0;
+ 	precvbuf->len = 0;
+ 	precvbuf->ref_cnt = 0;
+@@ -134,7 +132,7 @@ int r8712_init_recvbuf(struct _adapter *padapter, struct recv_buf *precvbuf)
+ 		precvbuf->ptail = precvbuf->pbuf;
+ 		precvbuf->pend = precvbuf->pdata + MAX_RECVBUF_SZ;
+ 	}
+-	return res;
++	return _SUCCESS;
+ }
+ 
+ int r8712_free_recvframe(union recv_frame *precvframe,
+@@ -347,7 +345,6 @@ static int amsdu_to_msdu(struct _adapter *padapter, union recv_frame *prframe)
+ 	_pkt *sub_skb, *subframes[MAX_SUBFRAME_COUNT];
+ 	struct recv_priv *precvpriv = &padapter->recvpriv;
+ 	struct  __queue *pfree_recv_queue = &(precvpriv->free_recv_queue);
+-	int	ret = _SUCCESS;
+ 
+ 	nr_subframes = 0;
+ 	pattrib = &prframe->u.hdr.attrib;
+@@ -435,7 +432,7 @@ static int amsdu_to_msdu(struct _adapter *padapter, union recv_frame *prframe)
+ exit:
+ 	prframe->u.hdr.len = 0;
+ 	r8712_free_recvframe(prframe, pfree_recv_queue);
+-	return ret;
++	return _SUCCESS;
+ }
+ 
+ void r8712_rxcmd_event_hdl(struct _adapter *padapter, void *prxcmdbuf)
+diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
+index 3ea99ae..05d6e65 100644
+--- a/drivers/staging/rtl8712/rtl871x_mlme.c
++++ b/drivers/staging/rtl8712/rtl871x_mlme.c
+@@ -1211,7 +1211,6 @@ sint r8712_set_auth(struct _adapter *adapter,
+ 	struct cmd_priv	*pcmdpriv = &adapter->cmdpriv;
+ 	struct cmd_obj *pcmd;
+ 	struct setauth_parm *psetauthparm;
+-	sint ret = _SUCCESS;
+ 
+ 	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+ 	if (pcmd == NULL)
+@@ -1232,7 +1231,7 @@ sint r8712_set_auth(struct _adapter *adapter,
+ 	pcmd->rspsz = 0;
+ 	_init_listhead(&pcmd->list);
+ 	r8712_enqueue_cmd(pcmdpriv, pcmd);
+-	return ret;
++	return _SUCCESS;
+ }
+ 
+ sint r8712_set_key(struct _adapter *adapter,
+diff --git a/drivers/staging/rtl8712/rtl871x_mp.c b/drivers/staging/rtl8712/rtl871x_mp.c
+index 0563318..5fd60cd 100644
+--- a/drivers/staging/rtl8712/rtl871x_mp.c
++++ b/drivers/staging/rtl8712/rtl871x_mp.c
+@@ -80,9 +80,8 @@ _exit_init_mp_priv:
+ 
+ static int free_mp_priv(struct mp_priv *pmp_priv)
+ {
+-	int res = 0;
+ 	kfree(pmp_priv->pallocated_mp_xmitframe_buf);
+-	return res;
++	return 0;
+ }
+ 
+ void mp871xinit(struct _adapter *padapter)
+diff --git a/drivers/staging/rtl8712/rtl871x_mp_ioctl.c b/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
+index 5bd4296..9827ff8 100644
+--- a/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
++++ b/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
+@@ -66,7 +66,6 @@ uint oid_rt_wireless_mode_hdl(struct oid_par_priv *poid_par_priv)
+ 
+ uint oid_rt_pro_write_bb_reg_hdl(struct oid_par_priv *poid_par_priv)
+ {
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+ 	struct bb_reg_param *pbbreg;
+@@ -83,12 +82,11 @@ uint oid_rt_pro_write_bb_reg_hdl(struct oid_par_priv *poid_par_priv)
+ 		offset |= BB_REG_BASE_ADDR;
+ 	value = pbbreg->value;
+ 	r8712_bb_reg_write(Adapter, offset, value);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_read_bb_reg_hdl(struct oid_par_priv *poid_par_priv)
+ {
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+ 	struct bb_reg_param *pbbreg;
+@@ -106,12 +104,11 @@ uint oid_rt_pro_read_bb_reg_hdl(struct oid_par_priv *poid_par_priv)
+ 	value = r8712_bb_reg_read(Adapter, offset);
+ 	pbbreg->value = value;
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_write_rf_reg_hdl(struct oid_par_priv *poid_par_priv)
+ {
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+ 	struct rf_reg_param *pbbreg;
+@@ -130,14 +127,13 @@ uint oid_rt_pro_write_rf_reg_hdl(struct oid_par_priv *poid_par_priv)
+ 	offset = (u8)pbbreg->offset;
+ 	value = pbbreg->value;
+ 	r8712_rf_reg_write(Adapter, path, offset, value);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_read_rf_reg_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	struct rf_reg_param *pbbreg;
+ 	u8 path;
+ 	u8 offset;
+@@ -155,7 +151,7 @@ uint oid_rt_pro_read_rf_reg_hdl(struct oid_par_priv *poid_par_priv)
+ 	value = r8712_rf_reg_read(Adapter, path, offset);
+ 	pbbreg->value = value;
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ /*This function initializes the DUT to the MP test mode*/
+@@ -266,7 +262,6 @@ uint oid_rt_pro_set_data_rate_hdl(struct oid_par_priv
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32 ratevalue;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -278,7 +273,7 @@ uint oid_rt_pro_set_data_rate_hdl(struct oid_par_priv
+ 		return RNDIS_STATUS_INVALID_DATA;
+ 	Adapter->mppriv.curr_rateidx = ratevalue;
+ 	r8712_SetDataRate(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_start_test_hdl(struct oid_par_priv *poid_par_priv)
+@@ -328,7 +323,6 @@ uint oid_rt_pro_set_channel_direct_call_hdl(struct oid_par_priv
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32		Channel;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -340,14 +334,13 @@ uint oid_rt_pro_set_channel_direct_call_hdl(struct oid_par_priv
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+ 	Adapter->mppriv.curr_ch = Channel;
+ 	r8712_SetChannel(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_set_antenna_bb_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32 antenna;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -358,7 +351,7 @@ uint oid_rt_pro_set_antenna_bb_hdl(struct oid_par_priv *poid_par_priv)
+ 	Adapter->mppriv.antenna_tx = (u16)((antenna & 0xFFFF0000) >> 16);
+ 	Adapter->mppriv.antenna_rx = (u16)(antenna & 0x0000FFFF);
+ 	r8712_SwitchAntenna(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_set_tx_power_control_hdl(
+@@ -366,7 +359,6 @@ uint oid_rt_pro_set_tx_power_control_hdl(
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32 tx_pwr_idx;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -378,7 +370,7 @@ uint oid_rt_pro_set_tx_power_control_hdl(
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+ 	Adapter->mppriv.curr_txpoweridx = (u8)tx_pwr_idx;
+ 	r8712_SetTxPower(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_query_tx_packet_sent_hdl(
+@@ -839,7 +831,6 @@ uint oid_rt_poll_rx_status_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 
+ 	if (poid_par_priv->type_of_oid != QUERY_OID)
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+@@ -847,7 +838,7 @@ uint oid_rt_poll_rx_status_hdl(struct oid_par_priv *poid_par_priv)
+ 		(unsigned char *)&Adapter->mppriv.rxstat,
+ 		sizeof(struct recv_stat));
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_cfg_debug_message_hdl(struct oid_par_priv
+@@ -875,7 +866,6 @@ uint oid_rt_get_thermal_meter_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 
+ 	if (poid_par_priv->type_of_oid != QUERY_OID)
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+@@ -897,7 +887,7 @@ uint oid_rt_get_thermal_meter_hdl(struct oid_par_priv *poid_par_priv)
+ 	*(u32 *)poid_par_priv->information_buf =
+ 				 Adapter->mppriv.workparam.io_value;
+ 	*poid_par_priv->bytes_rw = sizeof(u32);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_set_power_tracking_hdl(struct oid_par_priv
+@@ -1091,7 +1081,6 @@ uint oid_rt_pro_dele_sta_info_hdl(struct oid_par_priv *poid_par_priv)
+ 				   (poid_par_priv->adapter_context);
+ 
+ 	unsigned long			irqL;
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 
+ 	struct sta_info		*psta = NULL;
+ 	u8			*macaddr;
+@@ -1113,7 +1102,7 @@ uint oid_rt_pro_dele_sta_info_hdl(struct oid_par_priv *poid_par_priv)
+ 		spin_unlock_irqrestore(&(Adapter->stapriv.sta_hash_lock), irqL);
+ 	}
+ 
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ /*--------------------------------------------------------------------------*/
+ static u32 mp_query_drv_var(struct _adapter *padapter, u8 offset, u32 var)
+@@ -1126,8 +1115,6 @@ uint oid_rt_pro_query_dr_variable_hdl(struct oid_par_priv *poid_par_priv)
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+ 
+-	uint status = RNDIS_STATUS_SUCCESS;
+-
+ 	struct DR_VARIABLE_STRUCT *pdrv_var;
+ 
+ 	if (poid_par_priv->type_of_oid != QUERY_OID)
+@@ -1139,7 +1126,7 @@ uint oid_rt_pro_query_dr_variable_hdl(struct oid_par_priv *poid_par_priv)
+ 	pdrv_var->variable = mp_query_drv_var(Adapter, pdrv_var->offset,
+ 					      pdrv_var->variable);
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ /*--------------------------------------------------------------------------*/
+@@ -1243,7 +1230,6 @@ uint oid_rt_get_efuse_current_size_hdl(struct oid_par_priv
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 
+ 	if (poid_par_priv->type_of_oid != QUERY_OID)
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+@@ -1254,14 +1240,13 @@ uint oid_rt_get_efuse_current_size_hdl(struct oid_par_priv
+ 				 r8712_efuse_get_current_size(Adapter);
+ 	r8712_efuse_reg_uninit(Adapter);
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_get_efuse_max_size_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 
+ 	if (poid_par_priv->type_of_oid != QUERY_OID)
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+@@ -1270,7 +1255,7 @@ uint oid_rt_get_efuse_max_size_hdl(struct oid_par_priv *poid_par_priv)
+ 	*(int *)poid_par_priv->information_buf =
+ 					 r8712_efuse_get_max_size(Adapter);
+ 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_pro_efuse_hdl(struct oid_par_priv *poid_par_priv)
+@@ -1320,7 +1305,6 @@ uint oid_rt_set_bandwidth_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32		bandwidth;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -1332,14 +1316,13 @@ uint oid_rt_set_bandwidth_hdl(struct oid_par_priv *poid_par_priv)
+ 		bandwidth = HT_CHANNEL_WIDTH_40;
+ 	Adapter->mppriv.curr_bandwidth = (u8)bandwidth;
+ 	r8712_SwitchBandwidth(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_set_crystal_cap_hdl(struct oid_par_priv *poid_par_priv)
+ {
+ 	struct _adapter *Adapter = (struct _adapter *)
+ 				   (poid_par_priv->adapter_context);
+-	uint status = RNDIS_STATUS_SUCCESS;
+ 	u32		crystal_cap = 0;
+ 
+ 	if (poid_par_priv->type_of_oid != SET_OID)
+@@ -1351,7 +1334,7 @@ uint oid_rt_set_crystal_cap_hdl(struct oid_par_priv *poid_par_priv)
+ 		return RNDIS_STATUS_NOT_ACCEPTED;
+ 	Adapter->mppriv.curr_crystalcap = crystal_cap;
+ 	r8712_SetCrystalCap(Adapter);
+-	return status;
++	return RNDIS_STATUS_SUCCESS;
+ }
+ 
+ uint oid_rt_set_rx_packet_type_hdl(struct oid_par_priv
+diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
+index 274c359..4ac4a1b 100644
+--- a/drivers/staging/rtl8712/rtl871x_recv.c
++++ b/drivers/staging/rtl8712/rtl871x_recv.c
+@@ -605,8 +605,6 @@ sint r8712_wlanhdr_to_ethhdr(union recv_frame *precvframe)
+ 	u8	bsnaphdr;
+ 	u8	*psnap_type;
+ 	struct ieee80211_snap_hdr *psnap;
+-
+-	sint ret = _SUCCESS;
+ 	struct _adapter	*adapter = precvframe->u.hdr.adapter;
+ 	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
+ 
+@@ -653,7 +651,7 @@ sint r8712_wlanhdr_to_ethhdr(union recv_frame *precvframe)
+ 		len = htons(len);
+ 		memcpy(ptr + 12, &len, 2);
+ 	}
+-	return ret;
++	return _SUCCESS;
+ }
+ 
+ s32 r8712_recv_entry(union recv_frame *precvframe)
 
-> -                       size_t size = regset->n * regset->size;
-> +                       size_t size;
-> +
-> +                       /* Request only the active elements in the regset */
-> +                       if (!regset->active)
-> +                               size = regset->n * regset->size;
-> +                       else
-> +                               size = regset->active(t->task, regset)
-> +                                                               * regset->size;
-> +
-
-
-I wonder if it wouldn't be cleaner to add a function like:
-
-int
-regset_active (tast *task, regseg *regset)
-{
-   if (!regset->active)
-        return regset->n * regset->size;
-   else
-        return regset->active(task, regset);
-}
-
-And then use it like
-
-               if (regset->core_note_type && regset->get) {
-                   int size = regset_active (t->task, regset);
-
-                   if (size > 0) {
-                          ...
-                   }
-
-Though at this point, we don't actually make use of
-the distinction between -ENODEV vs 0.  Guess that's what
-we should be thinking about.  Seems like there some details that
-need to be sorted out, and some verification that consumers aren't
-broken by outputting smaller notes -- e.g., ia64 makes me
-wonder that.
-
-Maybe we should leave this for another day, and have tm_spr_active
-return 0 instead of -ENODEV when the machine doesn't have the hardware,
-or not install that hook at all.  Seems like the effect will be the same,
-as the note isn't output if ->get fails.
-
->                         void *data = kmalloc(size, GFP_KERNEL);
->                         if (unlikely(!data))
->                                 return 0;
-> 
->>
->>> Now coming to the installation of the .active hooks part for all the new regsets, it
->>> should be pretty straight forward as well. Though its optional and used for elf_core_dump
->>> purpose only, its worth adding them here. Example of an active function should be something
->>> like this. The function is inexpensive as required.
->>>
->>> +static int tm_spr_active(struct task_struct *target,
->>> +                               const struct user_regset *regset)
->>> +{
->>> +       if (!cpu_has_feature(CPU_FTR_TM))
->>> +               return -ENODEV;
->>
->> ... unfortunately this will do the wrong thing.
-> 
-> I am not sure whether I understand this correctly. Are you saying that its wrong to return
-> -ENODEV in this case as above ?
-
-No, sorry for not being clear.  The (...)'s were connected:
-
-   "do you plan on fixing this?  Otherwise ... ... unfortunately
-    this will do the wrong thing."
-
--- 
-Pedro Alves
