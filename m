@@ -1,115 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaETI4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:56:55 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47241 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbaETI4w (ORCPT
+	id S1751562AbaETJDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 05:03:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37562 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaETJDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:56:52 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH 1/2] platform: x86: dell-smo8800: Dell Latitude freefall driver (ACPI SMO8800/SMO8810)
-Date: Tue, 20 May 2014 10:56:47 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-doc@vger.kernel.org,
-        Sonal Santan <sonal.santan@gmail.com>
-References: <1399114077-19314-1-git-send-email-pali.rohar@gmail.com> <1399114077-19314-2-git-send-email-pali.rohar@gmail.com> <20135.1400569205@turing-police.cc.vt.edu>
-In-Reply-To: <20135.1400569205@turing-police.cc.vt.edu>
+	Tue, 20 May 2014 05:03:04 -0400
+Date: Tue, 20 May 2014 11:02:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Fix mux_interval hrtimer wreckage
+Message-ID: <20140520090258.GR2485@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2591801.r1EHKV3grs";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201405201056.47726@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2591801.r1EHKV3grs
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Subject: perf: Fix mux_interval hrtimer wreckage
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue May 20 10:09:32 CEST 2014
 
-On Tuesday 20 May 2014 09:00:05 Valdis.Kletnieks@vt.edu wrote:
-> On Sat, 03 May 2014 12:47:56 +0200, Pali Roh=C3=A1r said:
-> > This acpi driver provide supports for freefall sensors
-> > SMO8800/SMO8810 which can be found on Dell Latitude
-> > laptops. Driver register /dev/freefall misc device which
-> > has same interface as driver hp_accel freefall driver. So
-> > any existing applications for HP freefall sensor
-> > /dev/freefall will work for with this new driver for Dell
-> > Latitude laptops too.
->=20
-> So just for grins, I tossed this patchset on top of
-> next-20140519, and it actually works on my Dell Latitude
-> E6530. Tested with a controlled drop of 3-4 inches, and I get
-> the distinctive sound of a head park, and the following in
-> /var/log/messages:
->=20
-> May 20 02:46:22 turing-police kernel: [18839.158926] smo8800
-> SMO8810:00: detected free fall May 20 02:46:22 turing-police
-> FREE FALL[1337]: Parked /dev/sda disk head May 20 02:46:24
-> turing-police FREE FALL[1337]: Unparked /dev/sda disk head
->=20
-> I did a quick read-through of the code, looks OK.  checkpatch
-> complains about missing blank lines after declarations in 3-4
-> places. Sparse and gcc have no complaints. We've certainly
-> merged much uglier code.  And it certainly makes the world a
-> better place for us Dell users.
->=20
+Thomas stumbled over the hrtimer_forward_now() in
+perf_event_mux_interval_ms_store() and noticed its broken-ness.
 
-Hm? Which errors? Here is output from checkpacth:
+You cannot just change the expiry time of an active timer, it will
+destroy the red-black tree order and cause havoc.
 
-total: 0 errors, 0 warnings, 276 lines checked
+Change it to (re)start the timer instead, (re)starting a timer will
+dequeue and enqueue a timer and therefore preserve rb-tree order.
 
-0001-platform-x86-dell-smo8800-Dell-Latitude-freefall-dri.patch=20
-has no obvious style problems and is ready for submission.
+Since we cannot enqueue remotely, wrap the thing in
+cpu_function_call(), this however mandates that we restrict ourselves
+to online cpus. Also serialize the entire setting so we don't get
+multiple concurrent threads trying to update to different values.
 
-total: 0 errors, 0 warnings, 181 lines checked
+Also fix a problem in perf_mux_hrtimer_restart(), checking against
+hrtimer_active() can actually loose us the timer when timer->state ==
+HRTIMER_STATE_CALLBACK and the callback has already decided NORESTART.
 
-0002-Documentation-Rename-hpfall.c-freefall.c-fixes-for-D.patch=20
-has no obvious style problems and is ready for submission.
+Furthermore it doesn't make any sense to test
+hrtimer_callback_running() when we already tested hrtimer_active(),
+but with the above change, we explicitly must call it when
+callback_running.
 
-> So it's OK by me if Pali adds this to the signoffs after
-> fixing the checkpatch and the one serious nit below....
->=20
-> Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> Acked-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
->=20
-> One nit:
-> > --- a/drivers/platform/x86/Kconfig
-> > +++ b/drivers/platform/x86/Kconfig
-> > @@ -127,6 +127,16 @@ config DELL_WMI_AIO
-> >=20
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called dell-wmi-aio.
-> >=20
-> > +config DELL_SMO8800
-> > +	tristate "Dell Latitude freefall driver (ACPI
-> > SMO8800/SMO8810)" +	depends ON ACPI
->=20
-> Lowercase ON.  Not sure how this escaped, Kbuild barfs on it.
+Lastly, rename a few functions:
 
-I will send new version with some changes from Sonal.
+  s/perf_cpu_hrtimer_/perf_mux_hrtimer_/ -- because I could not find
+                                            the mux timer function
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+  s/\<hr\>/timer/ -- because that's the normal way of calling things.
 
---nextPart2591801.r1EHKV3grs
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Fixes: 62b856397927 ("perf: Add sysfs entry to adjust multiplexing interval per PMU")
+Cc: Stephane Eranian <eranian@google.com>
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-ife5kqgnt7mviatc9fakz8wk@git.kernel.org
+---
+ kernel/events/core.c |   67 ++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 38 insertions(+), 29 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlN7GM8ACgkQi/DJPQPkQ1IZRACfdKA/rTZlOdvyEpzZiLXr3ad5
-fM0AoKAjlWlJTSUuRN5jgOkvXP9zUeyH
-=5n8A
------END PGP SIGNATURE-----
-
---nextPart2591801.r1EHKV3grs--
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -45,9 +45,11 @@
+ 
+ #include <asm/irq_regs.h>
+ 
++typedef int (*remote_function_f)(void *);
++
+ struct remote_function_call {
+ 	struct task_struct	*p;
+-	int			(*func)(void *info);
++	remote_function_f	func;
+ 	void			*info;
+ 	int			ret;
+ };
+@@ -80,7 +82,7 @@ static void remote_function(void *data)
+  *	    -EAGAIN - when the process moved away
+  */
+ static int
+-task_function_call(struct task_struct *p, int (*func) (void *info), void *info)
++task_function_call(struct task_struct *p, remote_function_f func, void *info)
+ {
+ 	struct remote_function_call data = {
+ 		.p	= p,
+@@ -104,7 +106,7 @@ task_function_call(struct task_struct *p
+  *
+  * returns: @func return value or -ENXIO when the cpu is offline
+  */
+-static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
++static int cpu_function_call(int cpu, remote_function_f func, void *info)
+ {
+ 	struct remote_function_call data = {
+ 		.p	= NULL,
+@@ -759,7 +761,7 @@ perf_cgroup_mark_enabled(struct perf_eve
+ /*
+  * function must be called with interrupts disbled
+  */
+-static enum hrtimer_restart perf_cpu_hrtimer_handler(struct hrtimer *hr)
++static enum hrtimer_restart perf_mux_hrtimer_handler(struct hrtimer *hr)
+ {
+ 	struct perf_cpu_context *cpuctx;
+ 	enum hrtimer_restart ret = HRTIMER_NORESTART;
+@@ -783,7 +785,7 @@ static enum hrtimer_restart perf_cpu_hrt
+ }
+ 
+ /* CPU is going down */
+-void perf_cpu_hrtimer_cancel(int cpu)
++void perf_mux_hrtimer_cancel(int cpu)
+ {
+ 	struct perf_cpu_context *cpuctx;
+ 	struct pmu *pmu;
+@@ -810,11 +812,11 @@ void perf_cpu_hrtimer_cancel(int cpu)
+ 	local_irq_restore(flags);
+ }
+ 
+-static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
++static void __perf_mux_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+ {
+-	struct hrtimer *hr = &cpuctx->hrtimer;
++	struct hrtimer *timer = &cpuctx->hrtimer;
+ 	struct pmu *pmu = cpuctx->ctx.pmu;
+-	int timer;
++	u64 interval;
+ 
+ 	/* no multiplexing needed for SW PMU */
+ 	if (pmu->task_ctx_nr == perf_sw_context)
+@@ -824,31 +826,32 @@ static void __perf_cpu_hrtimer_init(stru
+ 	 * check default is sane, if not set then force to
+ 	 * default interval (1/tick)
+ 	 */
+-	timer = pmu->hrtimer_interval_ms;
+-	if (timer < 1)
+-		timer = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
++	interval = pmu->hrtimer_interval_ms;
++	if (interval < 1)
++		interval = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
+ 
+-	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
++	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * interval);
+ 
+-	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
+-	hr->function = perf_cpu_hrtimer_handler;
++	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
++	timer->function = perf_mux_hrtimer_handler;
+ }
+ 
+-static void perf_cpu_hrtimer_restart(struct perf_cpu_context *cpuctx)
++static int perf_mux_hrtimer_restart(struct perf_cpu_context *cpuctx)
+ {
+-	struct hrtimer *hr = &cpuctx->hrtimer;
++	struct hrtimer *timer = &cpuctx->hrtimer;
+ 	struct pmu *pmu = cpuctx->ctx.pmu;
+ 
+ 	/* not for SW PMU */
+ 	if (pmu->task_ctx_nr == perf_sw_context)
+-		return;
++		return 0;
+ 
+-	if (hrtimer_active(hr))
+-		return;
++	if (hrtimer_is_queued(timer))
++		return 0;
+ 
+-	if (!hrtimer_callback_running(hr))
+-		__hrtimer_start_range_ns(hr, cpuctx->hrtimer_interval,
+-					 0, HRTIMER_MODE_REL_PINNED, 0);
++	__hrtimer_start_range_ns(timer, cpuctx->hrtimer_interval,
++			0, HRTIMER_MODE_REL_PINNED, 0);
++
++	return 0;
+ }
+ 
+ void perf_pmu_disable(struct pmu *pmu)
+@@ -1746,7 +1749,7 @@ group_sched_in(struct perf_event *group_
+ 
+ 	if (event_sched_in(group_event, cpuctx, ctx)) {
+ 		pmu->cancel_txn(pmu);
+-		perf_cpu_hrtimer_restart(cpuctx);
++		perf_mux_hrtimer_restart(cpuctx);
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -1793,7 +1796,7 @@ group_sched_in(struct perf_event *group_
+ 
+ 	pmu->cancel_txn(pmu);
+ 
+-	perf_cpu_hrtimer_restart(cpuctx);
++	perf_mux_hrtimer_restart(cpuctx);
+ 
+ 	return -EAGAIN;
+ }
+@@ -2061,7 +2064,7 @@ static int __perf_event_enable(void *inf
+ 		 */
+ 		if (leader != event) {
+ 			group_sched_out(leader, cpuctx, ctx);
+-			perf_cpu_hrtimer_restart(cpuctx);
++			perf_mux_hrtimer_restart(cpuctx);
+ 		}
+ 		if (leader->attr.pinned) {
+ 			update_group_times(leader);
+@@ -6396,6 +6399,8 @@ perf_event_mux_interval_ms_show(struct d
+ 	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->hrtimer_interval_ms);
+ }
+ 
++static DEFINE_MUTEX(mux_interval_mutex);
++
+ static ssize_t
+ perf_event_mux_interval_ms_store(struct device *dev,
+ 				 struct device_attribute *attr,
+@@ -6415,17 +6420,21 @@ perf_event_mux_interval_ms_store(struct
+ 	if (timer == pmu->hrtimer_interval_ms)
+ 		return count;
+ 
++	mutex_lock(&mux_interval_mutex);
+ 	pmu->hrtimer_interval_ms = timer;
+ 
+ 	/* update all cpuctx for this PMU */
+-	for_each_possible_cpu(cpu) {
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
+ 		struct perf_cpu_context *cpuctx;
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+ 		cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
+ 
+-		if (hrtimer_active(&cpuctx->hrtimer))
+-			hrtimer_forward_now(&cpuctx->hrtimer, cpuctx->hrtimer_interval);
++		cpu_function_call(cpu,
++			(remote_function_f)perf_mux_hrtimer_restart, cpuctx);
+ 	}
++	put_online_cpus();
++	mutex_unlock(&mux_interval_mutex);
+ 
+ 	return count;
+ }
+@@ -6531,7 +6540,7 @@ int perf_pmu_register(struct pmu *pmu, c
+ 		cpuctx->ctx.type = cpu_context;
+ 		cpuctx->ctx.pmu = pmu;
+ 
+-		__perf_cpu_hrtimer_init(cpuctx, cpu);
++		__perf_mux_hrtimer_init(cpuctx, cpu);
+ 
+ 		INIT_LIST_HEAD(&cpuctx->rotation_list);
+ 		cpuctx->unique_pmu = pmu;
