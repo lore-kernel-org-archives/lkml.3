@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaETOlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:41:21 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54254 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaETOlS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:41:18 -0400
-Date: Tue, 20 May 2014 15:41:13 +0100
-From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] ext4: remove unused local variable "store" from
- ext4_readdir(...)
-Message-ID: <20140520144113.GB13333@vaio>
+	id S1754133AbaETOmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:42:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890AbaETOmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:42:10 -0400
+Date: Tue, 20 May 2014 16:42:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Harald Brinkmann <hbrinkmann@braincalibration.de>
+cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] HID: quirk for Saitek RAT7 and MMO7 mices' mode
+ button
+In-Reply-To: <53335A6D.6050608@braincalibration.de>
+Message-ID: <alpine.LNX.2.00.1405201642010.1615@pobox.suse.cz>
+References: <53335A6D.6050608@braincalibration.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+On Wed, 26 Mar 2014, Harald Brinkmann wrote:
 
-Remove unused local variable "store" from ext4_readdir(...)
+> Hi all,
+> 
+> and thanks for the pointers, Benjamin. I finally had some time to fix it.
+> - Moved the quirk to hid-saitek
+> - Tracking the mode and setting only one bit on a mode change in .raw_event
+> - Generating instant release events for the button in .event
+> 
+> One question:
+> Is there any way other than loading hid-saitek before hid-generic to ensure
+> the device is claimed by the more specific driver?
 
-Local variable "stored" is initialized however never used inside the function.
+Hi Harald,
 
-Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
----
- fs/ext4/dir.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+you need to add the VID/PIDs you are adding to saitek_devices[] also to 
+hid_have_special_driver[].
 
-diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
-index d638c57..ef1bed6 100644
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -105,7 +105,7 @@ int __ext4_check_dir_entry(const char *function, u
- static int ext4_readdir(struct file *file, struct dir_context *ctx)
- {
-        unsigned int offset;
--       int i, stored;
-+       int i;
-        struct ext4_dir_entry_2 *de;
-        int err;
-        struct inode *inode = file_inode(file);
-@@ -133,7 +133,6 @@ static int ext4_readdir(struct file *file, struct
-                        return ret;
-        }
+Once you do that, the binding will work correctly.
 
--       stored = 0;
-        offset = ctx->pos & (sb->s_blocksize - 1);
+Please respin the patch with this change and resubmit.
 
-        while (ctx->pos < inode->i_size) {
-
+-- 
+Jiri Kosina
+SUSE Labs
