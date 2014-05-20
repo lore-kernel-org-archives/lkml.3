@@ -1,196 +1,674 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbaETOMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:12:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39342 "EHLO
+	id S1753605AbaETOMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:12:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38976 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaETOML (ORCPT
+	with ESMTP id S1754079AbaETOMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:12:11 -0400
+	Tue, 20 May 2014 10:12:05 -0400
 From: Javi Merino <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Punit.Agrawal@arm.com, Javi Merino <javi.merino@arm.com>,
         Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <edubezval@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [RFC PATCH v2 7/7] thermal: add trace events to the power allocator governor
-Date: Tue, 20 May 2014 15:10:57 +0100
-Message-Id: <1400595057-8585-8-git-send-email-javi.merino@arm.com>
+        Punit Agrawal <punit.agrawal@arm.com>
+Subject: [RFC PATCH v2 6/7] thermal: introduce the Power Allocator governor
+Date: Tue, 20 May 2014 15:10:56 +0100
+Message-Id: <1400595057-8585-7-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
 References: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
-X-OriginalArrivalTime: 20 May 2014 14:12:09.0583 (UTC) FILETIME=[7CF937F0:01CF7435]
-X-MC-Unique: 114052015120812401
+X-OriginalArrivalTime: 20 May 2014 14:12:04.0036 (UTC) FILETIME=[79AAD040:01CF7435]
+X-MC-Unique: 114052015120305501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4KECMND012794
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4KECovo012798
 
-Add trace events for the power allocator governor and the power actor
-interface of the cpu cooling device.
+The power allocator governor is a thermal governor that controls system
+and device power allocation to control temperature.  Conceptually, the
+implementation takes a system view of heat dissipation by managing
+multiple heat sources.
+
+This governor relies on power-aware cooling devices (power actors) to
+operate.  That is, cooling devices whose thermal_cooling_device_ops
+accept THERMAL_UNIT_POWER.
+
+It uses a Proportional Integral (PI) controller driven by the
+temperature of the thermal zone.  This budget is then allocated to
+each cooling device that can have bearing on the temperature we are
+trying to control.  It decides how much power to give each cooling
+device based on the performance they are requesting.  The PI
+controller ensures that the total power budget does not exceed the
+control temperature.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
 Signed-off-by: Javi Merino <javi.merino@arm.com>
-
 ---
+ Documentation/thermal/power_allocator.txt |   42 +++
+ drivers/thermal/Kconfig                   |   15 +
+ drivers/thermal/Makefile                  |    1 +
+ drivers/thermal/power_allocator.c         |  442 +++++++++++++++++++++++++++++
+ drivers/thermal/thermal_core.c            |    7 +-
+ drivers/thermal/thermal_core.h            |    8 +
+ include/linux/thermal.h                   |    5 +
+ 7 files changed, 519 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/thermal/power_allocator.txt
+ create mode 100644 drivers/thermal/power_allocator.c
 
-trace-cmd needs the patched attached in
-http://article.gmane.org/gmane.linux.kernel/1704423 for this to work.
-
- drivers/thermal/power_actor/cpu_actor.c |    5 ++++
- drivers/thermal/power_allocator.c       |   12 +++++++++-
- include/trace/events/thermal.h          |   38 +++++++++++++++++++++++++++++++
- include/trace/events/thermal_governor.h |   35 ++++++++++++++++++++++++++++
- 4 files changed, 89 insertions(+), 1 deletion(-)
- create mode 100644 include/trace/events/thermal.h
- create mode 100644 include/trace/events/thermal_governor.h
-
-diff --git a/drivers/thermal/power_actor/cpu_actor.c b/drivers/thermal/power_actor/cpu_actor.c
-index 0d76d52609fa..61f1edc13ec2 100644
---- a/drivers/thermal/power_actor/cpu_actor.c
-+++ b/drivers/thermal/power_actor/cpu_actor.c
-@@ -27,6 +27,9 @@
- #include <linux/printk.h>
- #include <linux/slab.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/thermal.h>
+diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
+new file mode 100644
+index 000000000000..daedf117611a
+--- /dev/null
++++ b/Documentation/thermal/power_allocator.txt
+@@ -0,0 +1,42 @@
 +
- #include "power_actor.h"
- 
- /**
-@@ -188,6 +191,8 @@ static int cpu_set_power(struct power_actor *actor, u32 power)
- 		return -EINVAL;
- 	}
- 
-+	trace_thermal_power_limit(&cpu_actor->cpumask, freq, cdev_state, power);
++Integration of the power_allocator governor in a platform
++=========================================================
 +
- 	return cdev->ops->set_cur_state(cdev, cdev_state);
- }
++Registering thermal_zone_device
++-------------------------------
++
++An estimate of the sustainable dissipatable power (in mW) should be
++provided while registering the thermal zone.  This is the maximum
++sustained power for allocation at the desired maximum temperature.
++This number can vary for different conditions, but the closed-loop of
++the controller should take care of those variations, the
++`max_dissipatable_power` should be an estimation of it.  Register your
++thermal zone with `thermal_zone_params` that have a
++`max_dissipatable_power`.  If you weren't passing any
++`thermal_zone_params`, then something like this will do:
++
++	static const struct thermal_zone_params tz_params = {
++		.max_dissipatable_power = 3500,
++	};
++
++and then pass `tz_params` as the 5th parameter to
++`thermal_zone_device_register()`
++
++Trip points
++-----------
++
++The governor requires the following two trip points:
++
++1.  "switch on" trip point: temperature above which the governor
++    control loop starts operating
++2.  "desired temperature" trip point: it should be higher than the
++    "switch on" trip point. It is the target temperature the governor
++    is controlling for.
++
++The trip points can be either active or passive.
++
++Power actors
++------------
++
++Devices controlled by this governor must be registered with the power
++actor API.  Read `power_actor.txt` for more information about them.
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index 1818c4fa60b8..e5b338a7cab9 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -71,6 +71,14 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
+ 	  Select this if you want to let the user space manage the
+ 	  platform thermals.
+ 
++config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
++	bool "power_allocator"
++	select THERMAL_GOV_POWER_ALLOCATOR
++	help
++	  Select this if you want to control temperature based on
++	  system and device power allocation. This governor relies on
++	  power actors to operate.
++
+ endchoice
+ 
+ config THERMAL_GOV_FAIR_SHARE
+@@ -89,6 +97,13 @@ config THERMAL_GOV_USER_SPACE
+ 	help
+ 	  Enable this to let the user space manage the platform thermals.
+ 
++config THERMAL_GOV_POWER_ALLOCATOR
++	bool "Power allocator thermal governor"
++	select THERMAL_POWER_ACTOR
++	help
++	  Enable this to manage platform thermals by dynamically
++	  allocating and limiting power to devices.
++
+ config THERMAL_POWER_ACTOR
+ 	bool
+ 
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index 878a02cab7d1..c5b47f058675 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -13,6 +13,7 @@ thermal_sys-$(CONFIG_THERMAL_OF)		+= of-thermal.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
++thermal_sys-$(CONFIG_THERMAL_GOV_POWER_ALLOCATOR)	+= power_allocator.o
+ 
+ obj-$(CONFIG_THERMAL_POWER_ACTOR) += power_actor/
  
 diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-index 836c834a898c..b1ebcecb1c15 100644
---- a/drivers/thermal/power_allocator.c
+new file mode 100644
+index 000000000000..836c834a898c
+--- /dev/null
 +++ b/drivers/thermal/power_allocator.c
-@@ -19,6 +19,9 @@
- #include <linux/slab.h>
- #include <linux/thermal.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/thermal_governor.h>
+@@ -0,0 +1,442 @@
++/*
++ * A power allocator to manage temperature
++ *
++ * Copyright (C) 2014 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ */
 +
- #include "power_actor/power_actor.h"
- #include "thermal_core.h"
- 
-@@ -117,7 +120,14 @@ static u32 pi_controller(struct thermal_zone_device *tz,
- 	power_range = tz->tzp->max_dissipatable_power +
- 		frac_to_int(power_range);
- 
--	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-+	power_range = clamp(power_range, (s64)0, (s64)max_allocatable_power);
++#define pr_fmt(fmt) "Power allocator: " fmt
 +
-+	trace_thermal_power_allocator_pi(frac_to_int(err),
-+					frac_to_int(params->err_integral),
-+					frac_to_int(p), frac_to_int(i),
-+					power_range);
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/thermal.h>
 +
-+	return power_range;
++#include "power_actor/power_actor.h"
++#include "thermal_core.h"
++
++#define FRAC_BITS 8
++#define int_to_frac(x) ((x) << FRAC_BITS)
++#define frac_to_int(x) ((x) >> FRAC_BITS)
++
++/**
++ * mul_frac - multiply two fixed-point numbers
++ * @x:	first multiplicand
++ * @y:	second multiplicand
++ *
++ * Returns the result of multiplying two fixed-point numbers.  The
++ * result is also a fixed-point number.
++ */
++static inline s64 mul_frac(s64 x, s64 y)
++{
++	return (x * y) >> FRAC_BITS;
++}
++
++enum power_allocator_trip_levels {
++	TRIP_SWITCH_ON = 0,	/* Switch on PI controller */
++	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
++};
++
++/**
++ * struct power_allocator_params - parameters for the power allocator governor
++ * @k_po:	P parameter of the PI controller when overshooting (i.e., when
++ *		temperature is below the target)
++ * @k_pi:	P parameter of the PI controller when undershooting
++ * @k_i:	I parameter of the PI controller
++ * @integral_cutoff:	threshold below which the error is no longer accumulated
++			in the PI controller
++ * @err_integral:	Accumulated error in the PI controller.
++ */
++struct power_allocator_params {
++	s32 k_po;
++	s32 k_pu;
++	s32 k_i;
++	s32 integral_cutoff;
++	s32 err_integral;
++};
++
++/**
++ * pi_controller() - PI controller
++ * @tz:	thermal zone we are operating in
++ * @control_temp:	The target temperature
++ * @max_allocatable_power:	maximum allocatable power for this thermal zone
++ *
++ * This PI controller increases the available power budget so that the
++ * temperature of the thermal zone gets as close as possible to
++ * @control_temp and limits the power if it exceeds it.  k_po is the
++ * proportional term when we are overshooting, k_pu is the
++ * proportional term when we are undershooting.  integral_cutoff is a
++ * threshold below which we stop accumulating the error.  The
++ * accumulated error is only valid if the requested power will make
++ * the system warmer.  If the system is mostly idle, there's no point
++ * in accumulating positive error.
++ *
++ * It returns the power budget for the next period.
++ */
++static u32 pi_controller(struct thermal_zone_device *tz,
++			unsigned long current_temp, unsigned long control_temp,
++			unsigned long max_allocatable_power)
++{
++	s64 p, i, power_range;
++	s32 err;
++	struct power_allocator_params *params = tz->governor_data;
++
++	err = ((s32)control_temp - (s32)current_temp) / 1000;
++	err = int_to_frac(err);
++
++	/* Calculate the proportional term */
++	p = mul_frac(err < 0 ? params->k_po : params->k_pu, err);
++
++	/*
++	 * Calculate the integral term
++	 *
++	 * if the error s less than cut off allow integration (but
++	 * the integral is limited to max power)
++	 */
++	i = mul_frac(params->k_i, params->err_integral);
++
++	if (err < int_to_frac(params->integral_cutoff)) {
++		s64 tmpi = mul_frac(params->k_i, err);
++		tmpi += i;
++		if (tmpi <= int_to_frac(max_allocatable_power)) {
++			i = tmpi;
++			params->err_integral += err;
++		}
++	}
++
++	power_range = p + i;
++
++	/* feed-forward the known maximum dissipatable power */
++	power_range = tz->tzp->max_dissipatable_power +
++		frac_to_int(power_range);
++
++	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
++}
++
++/**
++ * divvy_up_power - divvy the allocated power between the actors
++ * @req_power:	each actor's requested power
++ * @max_power:	each actor's maximum available power
++ * @num_actors:	size of the @req_power, @max_power and @granted_power's array
++ * @total_req_power: sum of @req_power
++ * @power_range:	total allocated power
++ * @granted_power:	ouput array: each actor's granted power
++ *
++ * This function divides the total allocated power (@power_range)
++ * fairly between the actors. It first tries to give each actor a
++ * share of the @power_range according to how much power it requested
++ * compared to the rest of the actors.  For example, if only one actor
++ * requests power, then it receives all the @power_range.  If
++ * three actors each requests 1mW, each receives a third of the
++ * @power_range.
++ *
++ * If any actor received more than their maximum power, then that
++ * surplus is re-divvied among the actors based on how far they are
++ * from their respective maximums.
++ *
++ * Granted power for each actor is written to @granted_power, which
++ * should've been allocated by the calling function.
++ */
++static void divvy_up_power(unsigned long *req_power,
++			unsigned long *max_power,
++			int num_actors, unsigned long total_req_power,
++			u32 power_range,
++			unsigned long *granted_power)
++{
++	unsigned long extra_power, capped_extra_power;
++	unsigned long extra_actor_power[num_actors];
++	int i;
++
++	if (!total_req_power) {
++		/*
++		 * Nobody requested anything, so just give everybody
++		 * the maximum power
++		 */
++		for (i = 0; i < num_actors; i++)
++			granted_power[i] = max_power[i];
++
++		return;
++	}
++
++	capped_extra_power = 0;
++	extra_power = 0;
++	for (i = 0; i < num_actors; i++) {
++		u64 req_range = req_power[i] * power_range;
++
++		granted_power[i] = div_u64(req_range, total_req_power);
++
++		if (granted_power[i] > max_power[i]) {
++			extra_power += granted_power[i] - max_power[i];
++			granted_power[i] = max_power[i];
++		}
++
++		extra_actor_power[i] = max_power[i] - granted_power[i];
++		capped_extra_power += extra_actor_power[i];
++	}
++
++	if (!extra_power)
++		return;
++
++	/*
++	 * Re-divvy the reclaimed extra among actors based on
++	 * how far they are from the max
++	 */
++	extra_power = min(extra_power, capped_extra_power);
++	if (capped_extra_power > 0)
++		for (i = 0; i < num_actors; i++)
++			granted_power[i] += (extra_actor_power[i] *
++					extra_power) / capped_extra_power;
++}
++
++static int allocate_power(struct thermal_zone_device *tz,
++			unsigned long current_temp, unsigned long control_temp)
++{
++	struct power_actor *actor;
++	unsigned long *req_power, *max_power, *granted_power;
++	unsigned long total_req_power, max_allocatable_power;
++	u32 power_range;
++	int i, num_actors, ret = 0;
++
++	mutex_lock(&tz->lock);
++
++	num_actors = 0;
++	list_for_each_entry(actor, &actor_list, actor_node)
++		num_actors++;
++
++	req_power = devm_kcalloc(&tz->device, num_actors, sizeof(*req_power),
++				GFP_KERNEL);
++	if (!req_power) {
++		ret = -ENOMEM;
++		goto unlock;
++	}
++
++	max_power = devm_kcalloc(&tz->device, num_actors, sizeof(*max_power),
++				GFP_KERNEL);
++	if (!max_power) {
++		ret = -ENOMEM;
++		goto free_req_power;
++	}
++
++	granted_power = devm_kcalloc(&tz->device, num_actors,
++				sizeof(*granted_power), GFP_KERNEL);
++	if (!granted_power) {
++		ret = -ENOMEM;
++		goto free_max_power;
++	}
++
++	i = 0;
++	total_req_power = 0;
++	max_allocatable_power = 0;
++
++	list_for_each_entry(actor, &actor_list, actor_node) {
++		req_power[i] = actor->ops->get_req_power(actor);
++		total_req_power += req_power[i];
++
++		max_power[i] = actor->max_power;
++		max_allocatable_power += max_power[i];
++
++		i++;
++	}
++
++	power_range = pi_controller(tz, current_temp, control_temp,
++				max_allocatable_power);
++
++	divvy_up_power(req_power, max_power, num_actors, total_req_power,
++		power_range, granted_power);
++
++	i = 0;
++	list_for_each_entry(actor, &actor_list, actor_node) {
++		BUG_ON(granted_power[i] > actor->max_power);
++
++		actor->ops->set_power(actor, granted_power[i]);
++		i++;
++	}
++
++	devm_kfree(&tz->device, granted_power);
++free_max_power:
++	devm_kfree(&tz->device, max_power);
++free_req_power:
++	devm_kfree(&tz->device, req_power);
++unlock:
++	mutex_unlock(&tz->lock);
++
++	return ret;
++}
++
++static int check_trips(struct thermal_zone_device *tz)
++{
++	int ret;
++	enum thermal_trip_type type;
++
++	if (tz->trips < 2)
++		return -EINVAL;
++
++	ret = tz->ops->get_trip_type(tz, TRIP_SWITCH_ON, &type);
++	if (ret)
++		return ret;
++
++	if ((type != THERMAL_TRIP_PASSIVE) && (type != THERMAL_TRIP_ACTIVE))
++		return -EINVAL;
++
++	ret = tz->ops->get_trip_type(tz, TRIP_MAX_DESIRED_TEMPERATURE, &type);
++	if (ret)
++		return ret;
++
++	if ((type != THERMAL_TRIP_PASSIVE) && (type != THERMAL_TRIP_ACTIVE))
++		return -EINVAL;
++
++	return ret;
++}
++
++static void reset_pi_controller(struct power_allocator_params *params)
++{
++	params->err_integral = 0;
++}
++
++static void allow_maximum_power(void)
++{
++	struct power_actor *actor;
++
++	list_for_each_entry(actor, &actor_list, actor_node)
++		actor->ops->set_power(actor, actor->max_power);
++}
++
++/**
++ * power_allocator_bind - bind the power_allocator governor to a thermal zone
++ * @tz:	thermal zone to bind it to
++ *
++ * Check that the thermal zone is valid for this governor: has two
++ * thermal trips.  If so, initialize the PI controller parameters and
++ * bind it to the thermal zone.
++ *
++ * Returns 0 on success, -EINVAL if the trips were invalid or -ENOMEM
++ * if we ran out of memory.
++ */
++static int power_allocator_bind(struct thermal_zone_device *tz)
++{
++	int ret;
++	struct power_allocator_params *params;
++	unsigned long switch_on_temp, control_temp;
++	u32 temperature_threshold;
++
++	ret = check_trips(tz);
++	if (ret) {
++		dev_err(&tz->device,
++			"thermal zone %s has the wrong number of trips for this governor\n",
++			tz->type);
++		return ret;
++	}
++
++	if (!tz->tzp || !tz->tzp->max_dissipatable_power) {
++		dev_err(&tz->device,
++			"Failed to bind the power_allocator governor: no max_dissipatable_power parameter\n");
++		return -EINVAL;
++	}
++
++	params = devm_kzalloc(&tz->device, sizeof(*params), GFP_KERNEL);
++	if (!params)
++		return -ENOMEM;
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
++	if (ret)
++		goto free;
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
++				&control_temp);
++	if (ret)
++		goto free;
++
++	temperature_threshold = (control_temp - switch_on_temp) / 1000;
++
++	params->k_po = int_to_frac(tz->tzp->max_dissipatable_power) /
++		temperature_threshold;
++	params->k_pu = int_to_frac(2 * tz->tzp->max_dissipatable_power) /
++		temperature_threshold;
++	params->k_i = int_to_frac(10);
++	params->integral_cutoff = 0;
++
++	reset_pi_controller(params);
++
++	tz->governor_data = params;
++
++	return 0;
++
++free:
++	devm_kfree(&tz->device, params);
++	return ret;
++}
++
++static void power_allocator_unbind(struct thermal_zone_device *tz)
++{
++	dev_dbg(&tz->device, "Unbinding from thermal zone %d\n", tz->id);
++	devm_kfree(&tz->device, tz->governor_data);
++	tz->governor_data = NULL;
++}
++
++static int power_allocator_throttle(struct thermal_zone_device *tz, int trip)
++{
++	int ret;
++	unsigned long switch_on_temp, control_temp, current_temp;
++	struct power_allocator_params *params = tz->governor_data;
++
++	/*
++	 * We get called for every trip point but we only need to do
++	 * our calculations once
++	 */
++	if (trip != TRIP_MAX_DESIRED_TEMPERATURE)
++		return 0;
++
++	ret = thermal_zone_get_temp(tz, &current_temp);
++	if (ret) {
++		dev_warn(&tz->device, "Failed to get temperature: %d\n", ret);
++		return ret;
++	}
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
++	if (ret) {
++		dev_warn(&tz->device,
++			"Failed to get switch on temperature: %d\n", ret);
++		return ret;
++	}
++
++	if (current_temp < switch_on_temp) {
++		reset_pi_controller(params);
++		allow_maximum_power();
++		return 0;
++	}
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
++				&control_temp);
++	if (ret) {
++		dev_warn(&tz->device,
++			"Failed to get the maximum desired temperature: %d\n",
++			ret);
++		return ret;
++	}
++
++	return allocate_power(tz, current_temp, control_temp);
++}
++
++static struct thermal_governor thermal_gov_power_allocator = {
++	.name		= "power_allocator",
++	.bind_to_tz	= power_allocator_bind,
++	.unbind_from_tz	= power_allocator_unbind,
++	.throttle	= power_allocator_throttle,
++};
++
++int thermal_gov_power_allocator_register(void)
++{
++	return thermal_register_governor(&thermal_gov_power_allocator);
++}
++
++void thermal_gov_power_allocator_unregister(void)
++{
++	thermal_unregister_governor(&thermal_gov_power_allocator);
++}
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 1b13d8e0cfd1..17257376396b 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -1857,7 +1857,11 @@ static int __init thermal_register_governors(void)
+ 	if (result)
+ 		return result;
+ 
+-	return thermal_gov_user_space_register();
++	result = thermal_gov_user_space_register();
++	if (result)
++		return result;
++
++	return thermal_gov_power_allocator_register();
  }
  
- /**
-diff --git a/include/trace/events/thermal.h b/include/trace/events/thermal.h
-new file mode 100644
-index 000000000000..6496da62276d
---- /dev/null
-+++ b/include/trace/events/thermal.h
-@@ -0,0 +1,38 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM thermal
+ static void thermal_unregister_governors(void)
+@@ -1865,6 +1869,7 @@ static void thermal_unregister_governors(void)
+ 	thermal_gov_step_wise_unregister();
+ 	thermal_gov_fair_share_unregister();
+ 	thermal_gov_user_space_unregister();
++	thermal_gov_power_allocator_unregister();
+ }
+ 
+ static int __init thermal_init(void)
+diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
+index 3db339fb636f..b24cde2c71cc 100644
+--- a/drivers/thermal/thermal_core.h
++++ b/drivers/thermal/thermal_core.h
+@@ -77,6 +77,14 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
+ static inline void thermal_gov_user_space_unregister(void) {}
+ #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
+ 
++#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
++int thermal_gov_power_allocator_register(void);
++void thermal_gov_power_allocator_unregister(void);
++#else
++static inline int thermal_gov_power_allocator_register(void) { return 0; }
++static inline void thermal_gov_power_allocator_unregister(void) {}
++#endif /* CONFIG_THERMAL_GOV_POWER_ALLOCATOR */
 +
-+#if !defined(_TRACE_THERMAL_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_THERMAL_H
+ /* device tree support */
+ #ifdef CONFIG_THERMAL_OF
+ int of_parse_thermal_zones(void);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 06971c4779a8..1d8810e44190 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -57,6 +57,8 @@
+ #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
+ #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
+ #define DEFAULT_THERMAL_GOVERNOR       "user_space"
++#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
++#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
+ #endif
+ 
+ struct thermal_zone_device;
+@@ -285,6 +287,9 @@ struct thermal_zone_params {
+ 
+ 	int num_tbps;	/* Number of tbp entries */
+ 	struct thermal_bind_params *tbp;
 +
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(thermal_power_limit,
-+	TP_PROTO(const struct cpumask *cpus, unsigned int freq,
-+		unsigned long cdev_state, unsigned long power),
-+
-+	TP_ARGS(cpus, freq, cdev_state, power),
-+
-+	TP_STRUCT__entry(
-+		__bitmask(cpumask, num_possible_cpus())
-+		__field(unsigned int,  freq      )
-+		__field(unsigned long, cdev_state)
-+		__field(unsigned long, power     )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_bitmask(cpumask, cpumask_bits(cpus),
-+				num_possible_cpus());
-+		__entry->freq = freq;
-+		__entry->cdev_state = cdev_state;
-+		__entry->power = power;
-+	),
-+
-+	TP_printk("cpus=%s freq=%u cdev_state=%lu power=%lu",
-+		__get_bitmask(cpumask), __entry->freq, __entry->cdev_state,
-+		__entry->power)
-+);
-+
-+#endif /* _TRACE_THERMAL_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/include/trace/events/thermal_governor.h b/include/trace/events/thermal_governor.h
-new file mode 100644
-index 000000000000..1fbf5c91f659
---- /dev/null
-+++ b/include/trace/events/thermal_governor.h
-@@ -0,0 +1,35 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM thermal_governor
-+
-+#if !defined(_TRACE_THERMAL_GOVERNOR_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_THERMAL_GOVERNOR_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(thermal_power_allocator_pi,
-+	TP_PROTO(s32 err, s32 err_integral, s64 p, s64 i, s32 output),
-+	TP_ARGS(err, err_integral, p, i, output),
-+	TP_STRUCT__entry(
-+		__field(s32, err         )
-+		__field(s32, err_integral)
-+		__field(s64, p           )
-+		__field(s64, i           )
-+		__field(s32, output      )
-+	),
-+	TP_fast_assign(
-+		__entry->err = err;
-+		__entry->err_integral = err_integral;
-+		__entry->p = p;
-+		__entry->i = i;
-+		__entry->output = output;
-+	),
-+
-+	TP_printk("err=%d err_integral=%d p=%lld i=%lld output=%d",
-+		__entry->err, __entry->err_integral,
-+		__entry->p, __entry->i, __entry->output)
-+);
-+
-+#endif /* _TRACE_THERMAL_GOVERNOR_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
++	/* Maximum power (heat) that this thermal zone can dissipate in mW */
++	u32 max_dissipatable_power;
+ };
+ 
+ struct thermal_genl_event {
 -- 
 1.7.9.5
 
