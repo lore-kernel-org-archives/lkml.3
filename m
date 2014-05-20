@@ -1,138 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaETQML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 12:12:11 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:60981 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaETQMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 12:12:06 -0400
+	id S1754035AbaETQNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 12:13:37 -0400
+Received: from fujitsu25.fnanic.fujitsu.com ([192.240.6.15]:33511 "EHLO
+	fujitsu25.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753300AbaETQNg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 12:13:36 -0400
+From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "riel@redhat.com" <riel@redhat.com>
+CC: Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
+Date: Tue, 20 May 2014 09:12:07 -0700
+Subject: RE: [PATCH] mm/vmscan: Do not block forever at
+ shrink_inactive_list().
+Thread-Topic: [PATCH] mm/vmscan: Do not block forever at
+ shrink_inactive_list().
+Thread-Index: Ac90PBjBis44RDgCTnaBUDFH5AOokQACcNNg
+Message-ID: <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
+References: <201405192340.FCD48964.OFQHOOJLVSFFMt@I-love.SAKURA.ne.jp>
+	<20140520004449.GE18954@dastard>
+	<20140519225915.3370328d.akpm@linux-foundation.org>
+	<20140520063024.GH18954@dastard>
+ <201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405201508450.1606@denkbrett>
-References: <alpine.LFD.2.11.1405191908450.1847@denkbrett>
-	<20140519180851.GD2915@kvack.org>
-	<alpine.LFD.2.11.1405200950480.1606@denkbrett>
-	<alpine.LFD.2.11.1405201508450.1606@denkbrett>
-Date: Tue, 20 May 2014 09:12:05 -0700
-Message-ID: <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
-Subject: Re: hanging aio process
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-20_04:2014-05-20,2014-05-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
-<sebott@linux.vnet.ibm.com> wrote:
-> On Tue, 20 May 2014, Sebastian Ott wrote:
->> On Mon, 19 May 2014, Benjamin LaHaise wrote:
->> > It is entirely possible the bug isn't
->> > caused by the referenced commit, as the commit you're pointing to merely
->> > makes io_destroy() syscall wait for all aio outstanding to complete
->> > before returning.
->>
->> I cannot reproduce this when I revert said commit (on top of 14186fe). If
->> that matters - the arch is s390.
->
-> Hm, ok - maybe that commit is really just highlighting a refcounting bug.
-> I just compared traces for a good and a few bad cases. The good case:
-> # tracer: function
-> #
-> # entries-in-buffer/entries-written: 16/16   #P:4
-> #
-> #                              _-----=> irqs-off
-> #                             / _----=> need-resched
-> #                            | / _---=> hardirq/softirq
-> #                            || / _--=> preempt-depth
-> #                            ||| /     delay
-> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> #              | |       |   ||||       |         |
->              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
->              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
->      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
->      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
->              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
->      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
->      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
->      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
->      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
->              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
->           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
->      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
->           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
->
-> (4 fio workers, free_ioctx_reqs is called 4 times)
->
-> One of the bad cases:
-> # tracer: function
-> #
-> # entries-in-buffer/entries-written: 14/14   #P:4
-> #
-> #                              _-----=> irqs-off
-> #                             / _----=> need-resched
-> #                            | / _---=> hardirq/softirq
-> #                            || / _--=> preempt-depth
-> #                            ||| /     delay
-> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> #              | |       |   ||||       |         |
->              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
->           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
->              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
->              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
->           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
->           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
->              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
->            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
->           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
->              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
->      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
->
-> (1 fio worker in D state, free_ioctx_reqs is called 3 times)
 
 
-Looking at the second trace: the first 3 io_destroy() calls cause
-free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
-Do you have more logs after the last line? If there is no more
-free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
-I suggest to add some logging to kernel to figure out what is the
-refcount value at this moment.
+> -----Original Message-----
+> From: Tetsuo Handa [mailto:penguin-kernel@I-love.SAKURA.ne.jp]
+> Sent: Tuesday, May 20, 2014 11:58 PM
+> To: david@fromorbit.com; riel@redhat.com
+> Cc: Motohiro Kosaki JP; fengguang.wu@intel.com; kamezawa.hiroyu@jp.fujitsu.com; akpm@linux-foundation.org;
+> hch@infradead.org; linux-kernel@vger.kernel.org; xfs@oss.sgi.com
+> Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+> 
+> Today I discussed with Kosaki-san at LinuxCon Japan 2014 about this issue.
+> He does not like the idea of adding timeout to throttle loop. As Dave posted a patch that fixes a bug in XFS delayed allocation, I
+> updated my patch accordingly.
+> 
+> Although the bug in XFS was fixed by Dave's patch, other kernel code would have bugs which would fall into this infinite throttle loop.
+> But to keep the possibility of triggering OOM killer minimum, can we agree with this updated patch (and in the future adding some
+> warning mechanism like /proc/sys/kernel/hung_task_timeout_secs for detecting memory allocation stall)?
+> 
+> Dave, if you are OK with this updated patch, please let me know commit ID of your patch.
+> 
+> Regards.
+> ----------
+> >From 408e65d9025e8e24838e7bf6ac9066ba8a9391a6 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Tue, 20 May 2014 23:34:34 +0900
+> Subject: [PATCH] mm/vmscan: Do not throttle kswapd at shrink_inactive_list().
+> 
+> I can observe that commit 35cd7815 "vmscan: throttle direct reclaim when too many pages are isolated already" causes RHEL7
+> environment to stall with 0% CPU usage when a certain type of memory pressure is given.
+> This is because nobody can reclaim memory due to rules listed below.
+> 
+>   (a) XFS uses a kernel worker thread for delayed allocation
+>   (b) kswapd wakes up the kernel worker thread for delayed allocation
+>   (c) the kernel worker thread is throttled due to commit 35cd7815
+> 
+> This patch and commit XXXXXXXX "xfs: block allocation work needs to be kswapd aware" will solve rule (c).
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> ---
+>  mm/vmscan.c |   20 +++++++++++++++-----
+>  1 files changed, 15 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 32c661d..5c6960e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1460,12 +1460,22 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  	struct zone *zone = lruvec_zone(lruvec);
+>  	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
+> 
+> -	while (unlikely(too_many_isolated(zone, file, sc))) {
+> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +	/*
+> +	 * Throttle only direct reclaimers. Allocations by kswapd (and
+> +	 * allocation workqueue on behalf of kswapd) should not be
+> +	 * throttled here; otherwise memory allocation will deadlock.
+> +	 */
+> +	if (!sc->hibernation_mode && !current_is_kswapd()) {
+> +		while (unlikely(too_many_isolated(zone, file, sc))) {
+> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
+> 
+> -		/* We are about to die and free our memory. Return now. */
+> -		if (fatal_signal_pending(current))
+> -			return SWAP_CLUSTER_MAX;
+> +			/*
+> +			 * We are about to die and free our memory.
+> +			 * Return now.
+> +			 */
+> +			if (fatal_signal_pending(current))
+> +				return SWAP_CLUSTER_MAX;
+> +		}
+>  	}
 
-But *if* there was one more free_ioctx_reqs() that does not
-complete(ctx->requests_done) then it means the thread does not see
-value of requests_done field. It would make me believe there is a
-problem with memory reordering. I do not know whether s390 reorders
-stores, but anyway, could you please check this patch?
 
-anatol:linux $ git diff
-diff --git a/fs/aio.c b/fs/aio.c
-index a0ed6c7..6e3c0bb 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -514,6 +514,7 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
-        struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-        /* At this point we know that there are no any in-flight requests */
-+       rmb();
-        if (ctx->requests_done)
-                complete(ctx->requests_done);
 
-@@ -758,6 +759,7 @@ static void kill_ioctx(struct mm_struct *mm,
-struct kioctx *ctx,
-                        vm_munmap(ctx->mmap_base, ctx->mmap_size);
+Dave, I don't like Tetsuo's first patch because this too_many_isolated exist to prevent false oom-kill. So, simple timeout
+resurrect it. Please let me know if you need further MM enhancement to solve XFS issue. I'd like join and assist this.
 
-                ctx->requests_done = requests_done;
-+               wmb();
-                percpu_ref_kill(&ctx->users);
-        } else {
-                if (requests_done)
+Thanks.
+
+
+
+
+
+
