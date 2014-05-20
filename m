@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaETShu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:37:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33562 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbaETShs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:37:48 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-doc@vger.kernel.org,
-        Sonal Santan <sonal.santan@gmail.com>
-Subject: Re: [PATCH 1/2] platform: x86: dell-smo8800: Dell Latitude freefall driver (ACPI SMO8800/SMO8810)
-In-Reply-To: Your message of "Tue, 20 May 2014 20:10:28 +0200."
-             <201405202010.28868@pali>
-From: Valdis.Kletnieks@vt.edu
-References: <1399114077-19314-1-git-send-email-pali.rohar@gmail.com> <201405201056.47726@pali> <20424.1400608961@turing-police.cc.vt.edu>
-            <201405202010.28868@pali>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1400610978_1987P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753615AbaETSiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:38:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53091 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753319AbaETSiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 14:38:11 -0400
+Message-ID: <537BA0FF.3000504@zytor.com>
+Date: Tue, 20 May 2014 11:37:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix
+ x86 vdso naming
+References: <cover.1400538962.git.luto@amacapital.net> <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
+In-Reply-To: <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Tue, 20 May 2014 14:36:18 -0400
-Message-ID: <22163.1400610978@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1400610978_1987P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 05/19/2014 03:58 PM, Andy Lutomirski wrote:
+> 
+> As a side effect, the vvar area will show up in core dumps.  This
+> could be considered weird and is fixable.  Thoughts?
+> 
 
-On Tue, 20 May 2014 20:10:28 +0200, Pali Roh=E1r said:
+On this issue... I don't know if this is likely to break anything.  My
+suggestion is that we accept it as-is but be prepared to deal with it if
+it breaks something.
+	
+	-hpa
 
-> > Hmm.. what tree are you building against?  I wonder if your
-> > checkpatch is a different version than mine (next-20140519).
->=20
-> I'm using up-to-date linus tree, git rev
-> 60b5f90d0fac7585f1a43ccdad06787b97eda0ab
 
-Ah, OK.  Linux-next tree has a bunch of changes to checkpatch.pl that
-will probably go into the Linus tree during the next merge window, and
-several of them address the =22blank line after declarations=22 warning -=
- they
-roughly tripled the number of checks made for that case....
-
---==_Exmh_1400610978_1987P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU3ugoQdmEQWDXROgAQJJ5hAAvpMTr8zqfj9gIeG+S4plRv97MbCx3xDS
-c58vRyZJJCRmyY4r8e1dUYkd/OPdzUkMtirUUNMh/TfpmHOxGBlPNhzlxaZYhHVa
-/ODMhtHdhY0X/SGxdTfdQTQtcmUQHKD/WK3GnonQnXYysctYq8XINV+xXGSgN0qV
-PnAA+noGXjBwVd/LNTht8WxHPaEdSezZqB7sCagH6ljpADzcFJxwoakvGr9UWyG+
-wf6aaMRQEsT/8dAeF1M6S4CydJqNhIBDW9T37gxiGpYukQW2/5BL5OZ1zhvQhxkp
-WJVpcw97QKqXrF5PkXLvTvNhfS/Ddx3s7psTHXg9u6Cn7jYZf3UUJ3x3Sqyhd5tU
-uiTHMlRL5xgKmhq6p6uoXMegjO7/1e2InqgAyQmaGP7Ge+bzi5QvJbcvkJTZ4jpA
-aWZn/KpsmMUJbBvv2d94gNj1xAd82FegZjPTJFmubTU9EDb9DTDizzBoSbEixUBj
-i1ZNzf8MdqXOC/l1M70Np4x5+VYHknpEsQJDqJ9gtRAsDVWjrTg+rnkbcVUH6m+0
-XKDDn650yhPlX30uwDGR8sLWquQU9A+0DKXfLAWuTg0U0+dUGO0pzZeVa8svSwmM
-UY7PJu6P1T4gupdm/uVR7vmAv3E3331YfxIWfxhGiylFOxSYdMsKOTqfwImxW8Dw
-tfh3TuhXnsI=
-=oPgh
------END PGP SIGNATURE-----
-
---==_Exmh_1400610978_1987P--
