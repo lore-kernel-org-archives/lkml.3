@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaETAfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:35:50 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58450 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaETAfs (ORCPT
+	id S1752477AbaETAgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:36:33 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:39166 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750894AbaETAgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:35:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Ru5VlOHayMVo6LRgROeo5
-Date: Mon, 19 May 2014 17:35:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
-Message-ID: <20140520003538.GD15793@atomide.com>
-References: <1399739870-13526-1-git-send-email-sre@kernel.org>
- <1399739870-13526-10-git-send-email-sre@kernel.org>
- <20140514215503.GM27426@atomide.com>
+	Mon, 19 May 2014 20:36:32 -0400
+X-IronPort-AV: E=Sophos;i="4.98,870,1392159600"; 
+   d="scan'208";a="74716770"
+Date: Tue, 20 May 2014 08:36:24 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+cc: "John W. Linville" <linville@tuxdriver.com>,
+        kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/13] libertas: make return of 0 explicit
+In-Reply-To: <5379FCD0.2030506@cogentembedded.com>
+Message-ID: <alpine.DEB.2.10.1405200835490.2723@hadrien>
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr> <5379FCD0.2030506@cogentembedded.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140514215503.GM27426@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [140514 14:57]:
-> * Sebastian Reichel <sre@kernel.org> [140510 09:40]:
-> > Add SSI device tree data for OMAP3 and Nokia N900.
-> 
-> Picking this patch into omap-for-v3.16/dt thanks.
 
-Just noticed that this patch seems to somehow break idle
-modes on n900, so dropping both dts changes for now.
 
-Basically the n900 debug LEDs won't ever go off with
-these two dts patches enabled, even without the modem
-drivers loaded. I did not dig deeper, but it's probably
-something related to hwmod using this data for some
-settings.
+On Mon, 19 May 2014, Sergei Shtylyov wrote:
 
-Sorry did not notice it earlier as I did not have the
-PM regression fix patches merged with my testing branch.
+> Hello.
+>
+> On 19-05-2014 8:31, Julia Lawall wrote:
+>
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> > Delete unnecessary local variable whose value is always 0 and that hides
+> > the fact that the result is always 0.
+>
+> > A simplified version of the semantic patch that fixes this problem is as
+> > follows: (http://coccinelle.lip6.fr/)
+>
+> > // <smpl>
+> > @r exists@
+> > local idexpression ret;
+> > expression e;
+> > position p;
+> > @@
+> >
+> > -ret = 0;
+> > ... when != ret = e
+> > return
+> > - ret
+> > + 0
+> >    ;
+> > // </smpl>
+>
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> > ---
+> > Alternatively, was an error code intended in the bad length case, as is
+> > done in process_brxed_802_11_packet?
+>
+> >   drivers/net/wireless/libertas/rx.c |    7 ++-----
+> >   1 file changed, 2 insertions(+), 5 deletions(-)
+>
+> > diff --git a/drivers/net/wireless/libertas/rx.c
+> > b/drivers/net/wireless/libertas/rx.c
+> > index c7366b0..807c5b8 100644
+> > --- a/drivers/net/wireless/libertas/rx.c
+> > +++ b/drivers/net/wireless/libertas/rx.c
+> [...]
+> > @@ -154,10 +152,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv,
+> > struct sk_buff *skb)
+> >   	else
+> >   		netif_rx_ni(skb);
+> >
+> > -	ret = 0;
+> >   done:
+> > -	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", ret);
+> > -	return ret;
+> > +	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", 0);
+>
+>    Why not just "ret 0"?
 
-Regards,
+Oops, I won't make any change here, because Dan Williams has proposed
+another patch that makes the ret variable useful.
 
-Tony
+julia
