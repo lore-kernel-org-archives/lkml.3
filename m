@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaETTX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 15:23:28 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:16656 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798AbaETTX0 (ORCPT
+	id S1753287AbaETT07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 15:26:59 -0400
+Received: from smtprelay0068.hostedemail.com ([216.40.44.68]:45938 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750766AbaETT05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 15:23:26 -0400
-Message-ID: <537BAC0C.4020705@fb.com>
-Date: Tue, 20 May 2014 15:25:00 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs
-X-Enigmail-Version: 1.6
+	Tue, 20 May 2014 15:26:57 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:3870:3872:3873:3874:4321:5007:7652:7875:9121:10004:10400:10848:11232:11658:11914:12043:12262:12438:12517:12519:12555:12679:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rifle18_22fbfb016d4a
+X-Filterd-Recvd-Size: 2064
+Message-ID: <1400614013.26709.29.camel@joe-AO725>
+Subject: Re: [PATCH 4/5] appledisplay: Convert /n to \n
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 May 2014 12:26:53 -0700
+In-Reply-To: <9bbe7dc36e6b609512f166e10b6b99a706fbbd11.1398390579.git.joe@perches.com>
+References: <cover.1398390579.git.joe@perches.com>
+	 <9bbe7dc36e6b609512f166e10b6b99a706fbbd11.1398390579.git.joe@perches.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-20_05:2014-05-20,2014-05-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.82000525761339e-11 kscore.compositescore=0
- circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1405200236
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+On Thu, 2014-04-24 at 18:51 -0700, Joe Perches wrote:
+> Use a newline character appropriately.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
 
-Please pull my for-linus branch:
+Greg?  Ping?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+You inadvertently added this "/n" use in
+commit 0a3fd536e685e0ceb646de1a43821bd11c0be75c
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Tue May 1 21:33:54 2012 -0700
 
-It has two fixes that we've been testing for 3.16, but since both are safe 
-and fix real bugs, it makes sense to send for 3.15 instead
+    USB: appledisplay.c: remove dbg() usage
+    
+    dbg() was a very old USB-specific macro that should no longer
+    be used. This patch removes it from being used in the driver
+    and uses dev_dbg() instead.
 
-Liu Bo (1) commits (+5/-1):
-    Btrfs: fix EIO on reading file after ioctl clone works on it
+>  drivers/usb/misc/appledisplay.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/misc/appledisplay.c b/drivers/usb/misc/appledisplay.c
+> index ba6a5d6..f37c78d 100644
+> --- a/drivers/usb/misc/appledisplay.c
+> +++ b/drivers/usb/misc/appledisplay.c
+> @@ -110,7 +110,7 @@ static void appledisplay_complete(struct urb *urb)
+>  			__func__, status);
+>  		return;
+>  	default:
+> -		dev_dbg(dev, "%s - nonzero urb status received: %d/n",
+> +		dev_dbg(dev, "%s - nonzero urb status received: %d\n",
+>  			__func__, status);
+>  		goto exit;
+>  	}
 
-Filipe Manana (1) commits (+1/-1):
-    Btrfs: send, fix incorrect ref access when using extrefs
 
-Total: (2) commits (+6/-2)
 
- fs/btrfs/ioctl.c | 6 +++++-
- fs/btrfs/send.c  | 2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
