@@ -1,50 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051AbaETOoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 10:44:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55460 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161AbaETOoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 10:44:03 -0400
-Date: Tue, 20 May 2014 16:44:01 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: YongHwan Ki <kyhw@afoi.co.kr>
-cc: rydberg@euromail.se, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO.,
-  LTD.
-In-Reply-To: <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
-Message-ID: <alpine.LNX.2.00.1405201643120.1615@pobox.suse.cz>
-References: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr> <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz> <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753518AbaETOpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 10:45:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40662 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaETOpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 10:45:34 -0400
+Date: Tue, 20 May 2014 16:44:47 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Alan Tull <delicious.quinoa@gmail.com>
+Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
+        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140520144446.GJ949@pengutronix.de>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+ <1400169891-29546-2-git-send-email-tthayer@altera.com>
+ <20140516075344.GF949@pengutronix.de>
+ <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+ <20140519191206.GH949@pengutronix.de>
+ <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+ <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:39:02 up 27 days,  8:10, 51 users,  load average: 0,18, 0,24,
+ 0,14
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014, YongHwan Ki wrote:
+Hi!
 
-> Sorry, I woud like to add the AFO defines in the Linux Kernel.
-> No afo defines exists in the current kernel tree.
-> I correctly changed the log for adding the afo defines.
+On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
+> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
 > 
-> Kernel Version : linux-3.14.rc7
-> Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
+> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >>> >> new file mode 100644
+> >>> >> index 0000000..8f8746b
+> >>> >> --- /dev/null
+> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >>> >> @@ -0,0 +1,11 @@
+> >>> >> +Altera SOCFPGA SDRAM Controller
+> >>> >> +
+> >>> >> +Required properties:
+> >>> >> +- compatible : "altr,sdr-ctl";
+> >>> >> +- reg : Should contain 1 register ranges(address and length)
+> >>> >> +
+> >>> >> +Example:
+> >>> >> +     sdrctl@ffc25000 {
+> >>> >> +             compatible = "altr,sdr-ctl";
+> >>> >> +             reg = <0xffc25000 0x1000>;
+> >>> >> +     };
+> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> >>> >> index df43702..6ce912e 100644
+> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> >>> >> @@ -676,6 +676,11 @@
+> >>> >>                       clocks = <&l4_sp_clk>;
+> >>> >>               };
+> >>> >>
+> >>> >> +             sdrctl@ffc25000 {
+> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+> >>> >                                                    ^^^^^^^^^^
+> >>> >
+> >>> > Get rid of that, too, please.
+> >>>
+> >>> Hi Steffan,
+> >>>
+> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+> >>> that has the ECC enable bitfield also includes the DRAM configuration
+> >>> bitfields that other drivers will want to access (specifically the
+> >>> FPGA bridge needs this information). Since this register will be
+> >>> shared between drivers,  syscon seems like the best solution.
+> >>>
+> >>
+> >> Hm, from looking at the documentation of the ctrlcfg I can't really
+> >> understand which bits you would need for the FPGA brigde and why.
 > 
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7m/drivers/hid/hid-core.c
-> --- ./drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
-> +++ ../linux-3.14-rc7m/drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
-> @@ -1881,6 +1881,8 @@ static const struct hid_device_id hid_ha
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
+> Hi Steffen,
+> 
+> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+> allows an FPGA port to come out of reset (enables that port).  Has no
+> other effect on SDRAM configuration.
+> 
+> >> That all sounds like stuff you would want to set for the specific
+> >> RAM you are dealing with on a specific board.
+> >> What bridge are you talking about? The SDRAM bridge?
+> 
+> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+> register the only register in the sdr that the bridge driver needs.
+> 
 
-Is this really necessary? Why doesn't HID_DG_CONTACTID matching work for 
-the to automatically trigger HID_GROUP_MULTITOUCH-based binding?
+So, what I suggested down ...
+
+> >>
+> >> I can see the problem with the ECC enable, though.
+> >>
+> >> Regards,
+> >> Steffen
+> >>
+> >
+> >>> >                 sdrctl@ffc25000 {
+> >>> >                         compatible = "altr,sdr-ctl";
+> >>> >                         reg = <0xffc25000 0x1000>;
+> >>> >                         ranges;
+> >>> >
+> >>> >                         edac@ffc2502c {
+> >>> >                                 compatible = "altr,sdram-edac";
+> >>> >                                 reg = <0xffc2502c 0x50>;
+> >>> >                                 interrupts = <0 39 4>;
+> >>> >                         };
+> >>> >                 };
+> >>> >
+> >>> > Then we can later add:
+> >>> >
+> >>> >                         sdr-ports: ports@ffc2507c {
+> >>> >                                 #reset-cells = <1>;
+> >>> >                                 compatible = "altr,sdr-ports";
+> >>> >                                 reg = <0xffc2507c 0x10>;
+> >>> >                                 clocks = <&ddr_dqs_clk>;
+> >>> >                                 ...
+> >>> >                         };
+>
+
+... here should work. No?! Just a simple driver that registers with the
+reset-framework. I would add 0x7c to that driver and than that driver could
+"configure" the port and let it out of reset.
+
+I have done the same thing for the other 3 bridges, but am not finished yet.
+Especially the GPV-stuff needs to at least be able to be added later if not now.
+
+Regard,
+Steffen
 
 -- 
-Jiri Kosina
-SUSE Labs
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
