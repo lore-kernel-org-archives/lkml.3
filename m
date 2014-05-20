@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaETIzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 04:55:16 -0400
-Received: from mail-ob0-f195.google.com ([209.85.214.195]:44692 "EHLO
-	mail-ob0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaETIzM (ORCPT
+	id S1751825AbaETI4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 04:56:07 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:44355 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaETI4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 04:55:12 -0400
+	Tue, 20 May 2014 04:56:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <5759329.P75jKFdv3B@wuerfel>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
-	<4292818.mI6kZGgTzd@wuerfel>
-	<CA+sq2Ce+8YB+02B7zhxTXwropZXv9spy-w=AJ8YXCP69kr-_1A@mail.gmail.com>
-	<5759329.P75jKFdv3B@wuerfel>
-Date: Tue, 20 May 2014 14:25:11 +0530
-Message-ID: <CA+sq2CeyUkg6ELYrWYqtxaXhNVeQ9UWiMC=GY4ADE-ZWS1bf9g@mail.gmail.com>
-Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
-From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Scott Lurndal <kdb@lurndal.org>,
-        "yu.zhao@intel.com" <yu.zhao@intel.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17249DE6@AcuExch.aculab.com>
+References: <1400526693-29776-4-git-send-email-ricardo.ribalda@gmail.com>
+ <Pine.LNX.4.44L0.1405191531010.1538-100000@iolanthe.rowland.org> <063D6719AE5E284EB5DD2968C1650D6D17249DE6@AcuExch.aculab.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 20 May 2014 10:55:43 +0200
+Message-ID: <CAPybu_1FnfFKT-X-VNP+HgAKjitJSVy0O2GY5uY+icS8RwfrcA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] usb: gadget: net2280: Pass checkpacth.pl test
+To: David Laight <David.Laight@aculab.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "auttamchandani@logicube.com" <auttamchandani@logicube.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 2:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 20 May 2014 09:52:33 Sunil Kovvuri wrote:
->> >> In sriov_enable() (drivers/pci/iov.c)
->> >>
->> >>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
->> >>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
->> >>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
->> >>  299                 if (res->parent)
->> >>  300                         nres++;
->> >>  301         }
->> >>  302         if (nres != iov->nres) {
->> >>  303                 dev_err(&dev->dev, "not enough MMIO resources for
->> >>  SR-IOV\n");
->> >>  304                 return -ENOMEM;
->> >>  305         }
->> >>
->> >> Here its checking if physical function's IOV resource has a parent or not.
->> >> Which is pci-pci bridge in this case. Otherwise it doesn't consider
->> >> that resource.
->> >>
->> >> Added below api to your patch.
->> >> This will try to claim a resource while creating a PCI device which
->> >> inturn sets 'res->parent'.
->> >
->> > This looks like the wrong approach. The PCI host controller should
->> > really have been registered with the root 'iomem_resource' during
->> > the probe of the host controller.
->> >
->> I didn't get this, if a SR-IOV device is connected to a PCI-PCI bridge
->> and inturn bridge connected to root port. Then the parent bus is not root,
->> but the bridge.  The issue is either hierarchy should not be checked for
->> SR-IOV resources or someone should set the hierarchy (i.e parent resources).
->
-> Ah, I misunderstood the problem, I thought the PCI core was complaining
-> about lack of space in the resources, not about a lack of BARs.
->
-> It seems there is code like yours in a couple of architectures, but they
-> only claim the resources of bridges, not the actual devices as you
-> seem to be doing. Can you check if the x86 version of
-> pcibios_allocate_bus_resources() does the trick for you? Maybe we can
-> turn that into a generic helper.
->
-Thanks for the suggestion. Will try that once.
-FYI, IA64 architecture does claim resources for devices as well.
-arch/ia64/pci/pci.c  'pcibios_fixup_device_resources()'
+Not for grep...
 
-Thanks,
-Sunil.
+But if this is an issue I have no problem going back to the original.
+We can spend a whole year just talking about codestyle.
+
+
+
+On Tue, May 20, 2014 at 10:52 AM, David Laight <David.Laight@aculab.com> wrote:
+> From: Alan Stern
+> ...
+>> > -static struct usb_request *
+>> > -net2280_alloc_request (struct usb_ep *_ep, gfp_t gfp_flags)
+>> > +static struct usb_request *net2280_alloc_request(struct usb_ep *_ep,
+>> > +                                                   gfp_t gfp_flags)
+>>
+>> What's with the extreme indentation on the continuation line?  The
+>> style used here is for continuation lines to be indented by two stops
+>> relative to the first line.
+>
+> Also why move the line break?
+> The Linux kernel has both styles, and the original one (with the
+> function name starting in column 1) makes it much easier to search
+> to the definition.
+>
+>         David
+>
+>
+>
+
+
+
+-- 
+Ricardo Ribalda
