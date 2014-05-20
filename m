@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaETC3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 22:29:53 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:44253 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaETC3w (ORCPT
+	id S1753260AbaETCfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 22:35:47 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:60505 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaETCfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 22:29:52 -0400
+	Mon, 19 May 2014 22:35:44 -0400
+Date: Mon, 19 May 2014 19:34:27 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
+ for powerpc
+In-Reply-To: <87d2f9jlpd.fsf@rustcorp.com.au>
+Message-ID: <alpine.LSU.2.11.1405191930130.3574@eggly.anvils>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
+ <87d2f9jlpd.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140519151120.GE24333@sdfg.com.ar>
-References: <1395293806-25847-1-git-send-email-namhyung@kernel.org> <20140519151120.GE24333@sdfg.com.ar>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 20 May 2014 02:29:31 +0000
-X-Google-Sender-Auth: lDJ5zahD05yMyRzzbLvOAQL5Hnw
-Message-ID: <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
-Subject: Re: [PATCHSET 00/21] perf tools: Add support to accumulate hist
- periods (v9)
-To: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rodrigo,
+On Tue, 20 May 2014, Rusty Russell wrote:
+> Hugh Dickins <hughd@google.com> writes:
+> >> On Monday 19 May 2014 05:42 AM, Rusty Russell wrote:
+> >> > 
+> >> > Perhaps we try to generalize from two data points (a slight improvement
+> >> > over doing it from 1!), eg:
+> >> > 
+> >> > /* 4 seems good for 4k-page x86, 0 seems good for 64k page ppc64, so: */
+> >> > unsigned int fault_around_order __read_mostly =
+> >> >         (16 - PAGE_SHIFT < 0 ? 0 : 16 - PAGE_SHIFT);
+> >
+> > Rusty's bimodal answer doesn't seem the right starting point to me.
+> 
+> ?  It's not bimodal, it's graded.  I think you misread?
 
-On Mon, May 19, 2014 at 3:11 PM, Rodrigo Campos <rodrigo@sdfg.com.ar> wrote:
-> Is there something I can help to have this merged ? As far as I tested, this
-> works fine here. Or is this ok, just waiting on the "perf report: Add -F option for
-> specifying output fields" patchset ?
+Yikes, worse than misread, more like I was too rude even to read: sorry!
 
-Thanks for testing!!  As I never got (negative) feedbacks or reviews
-so far, I'd assume it's ok. :)  But as you said, it should wait for
-the output field option merged which I hope to be done soon.  I'll
-update and report this once it's done.
-
-Thanks,
-Namhyung
+Hugh
