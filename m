@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaETPlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 11:41:52 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13653 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaETPlt (ORCPT
+	id S1753497AbaETPqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 11:46:03 -0400
+Received: from marmot.wormnet.eu ([188.246.204.87]:46366 "EHLO
+	marmot.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaETPqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 11:41:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 20 May 2014 08:36:55 -0700
-Date: Tue, 20 May 2014 18:41:45 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Andrew Bresticker <abrestic@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Prashant Gaikwad" <pgaikwad@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Mathias Nyman" <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jim Lin <jilin@nvidia.com>, "Kishon Vijay Abraham I" <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 04/10] clk: tegra: Initialize xusb clocks
-Message-ID: <20140520154145.GY15168@tbergstrom-lnx.Nvidia.com>
-References: <1400113986-339-1-git-send-email-abrestic@chromium.org>
- <1400113986-339-5-git-send-email-abrestic@chromium.org>
- <537513D8.7060203@wwwdotorg.org>
+	Tue, 20 May 2014 11:46:01 -0400
+X-Greylist: delayed 1554 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 May 2014 11:46:00 EDT
+Date: Tue, 20 May 2014 16:19:56 +0100 (BST)
+From: Jamie Lentin <jm@lentin.co.uk>
+X-X-Sender: lentinj@marmot.wormnet.eu
+To: Jiri Kosina <jkosina@suse.cz>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: Add custom driver for Lenovo ThinkPad Compact
+ Bluetooth Keyboard
+In-Reply-To: <alpine.LNX.2.00.1405201644230.1615@pobox.suse.cz>
+Message-ID: <alpine.DEB.2.02.1405201555110.4059@marmot.wormnet.eu>
+References: <1395786407-11273-1-git-send-email-jm@lentin.co.uk> <alpine.LNX.2.00.1405201644230.1615@pobox.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <537513D8.7060203@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 09:22:00PM +0200, Stephen Warren wrote:
-> On 05/14/2014 06:33 PM, Andrew Bresticker wrote:
-> > Initialize the XUSB-related clocks with appropriate parents and rates
-> > for both Tegra114 and Tegra124.
-> 
-> These first 4 clock driver patches look plausible to me, although I
-> didn't look that hard!
-> 
-> Peter or Mike, if they look OK to you, can you please pick them up for
-> 3.16 so that by the time we apply the rest of the patches in this series
-> for 3.17, the clock dependencies are already there? Thanks.
+On Tue, 20 May 2014, Jiri Kosina wrote:
 
-Looks fine to me. Applied for 3.16, hopefully it will still make it.
+> On Tue, 25 Mar 2014, Jamie Lentin wrote:
+>
+>> This keyboard requires some custom mappings for all keys to be
+>> available, and the Fn-lock toggle needs to be controlled in software.
+>>
+>> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+>> ---
+>> I assume that Linux users want Fn-Lock enabled by default, so they can
+>> get at the function keys. If this is an incorrect assumption then can
+>> change it---so long as there's some way of me leaving it enabled :)
+>>
+>> Tested with and applies cleanly to 3.13.6.
+>>
+>>  drivers/hid/Kconfig                   |  10 ++
+>>  drivers/hid/Makefile                  |   1 +
+>>  drivers/hid/hid-core.c                |   3 +
+>>  drivers/hid/hid-ids.h                 |   1 +
+>>  drivers/hid/hid-lenovo-tpcompactkbd.c | 191 ++++++++++++++++++++++++++++++++++
+>>  5 files changed, 206 insertions(+)
+>
+> Jamie,
+>
+> thanks for the driver.
+>
+> I think it'd make more sense if this could be folded into hid-lenovo-tpkbd
+> driver. Could you please do that and resubmit?
+
+I can do if required, although I didn't originally since there would be no 
+common code whatsoever between the keyboards. The newer keyboard has no 
+leds to register, and no trackpoint settings are exposed like on the older 
+keyboard. Equally the newer Fn-Lock setting wouldn't make sense for the 
+older keyboards, since they have grown-up function keys. The similarity 
+stops with the name.
+
+I have both the USB and the Bluetooth versions of this keyboard now, 
+once I have finished support for both[0] I will resubmit support for both.
 
 Cheers,
 
-Peter.
+[0] https://github.com/lentinj/tp-compact-keyboard/blob/usb-keyboard-support/module/hid-lenovo-tpcompactkbd.c
+     if anyone is interested
+
+-- 
+Jamie Lentin
