@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaETFtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 01:49:00 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43768 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaETFs7 (ORCPT
+	id S1751331AbaETFue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 01:50:34 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:51134 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaETFud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 01:48:59 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
-In-Reply-To: Your message of "Mon, 19 May 2014 20:27:32 +0200."
-             <1400524052-25625-1-git-send-email-bp@alien8.de>
-From: Valdis.Kletnieks@vt.edu
-References: <1400524052-25625-1-git-send-email-bp@alien8.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1400564682_1944P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 20 May 2014 01:44:42 -0400
-Message-ID: <16681.1400564682@turing-police.cc.vt.edu>
+	Tue, 20 May 2014 01:50:33 -0400
+Date: Mon, 19 May 2014 22:50:41 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: DT for 3.16 #2
+Message-ID: <20140520055041.GO18956@quad.lixom.net>
+References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1400564682_1944P
-Content-Type: text/plain; charset=us-ascii
+On Wed, May 14, 2014 at 11:19:22AM +0200, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> More DT material for AT91. Some fixes that apply on what was merged for 3.15
+> but that are not very critical.
+> The other patches are feature additions to old or very recent product/board:
+> at91sam9261 or sama5d3 Xplained.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 27a96a0364787d2b41d2a72d08143d95263e1b07:
+> 
+>   ARM: at91: sama5d3: clock for ssc from rk pin (2014-04-18 22:43:44 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-dt2
+> 
+> for you to fetch changes up to a93f9c88b7701d1c4c3b22d39d64a408f000a6ef:
+> 
+>   ARM: at91/dt: at91-sama5d3_xplained: add the regulator device node (2014-05-12 16:48:54 +0200)
 
-On Mon, 19 May 2014 20:27:32 +0200, Borislav Petkov said:
-> From: Borislav Petkov <bp@suse.de>
->
-> ... instead of naked numbers.
->
-> Stuff in sysrq.c used to set it to 8 which is supposed to mean above
-> default level so set it to DEBUG instead as we're terminating/killing
-> all tasks and we want to be verbose there.
->
-> There should be no functionality change resulting from this patch.
+Merged, but:
 
-After a quick eyeballing, looks like it, except for:
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts |  62 +++++++++++++++
+>  arch/arm/boot/dts/at91sam9261.dtsi          | 114 ++++++++++++++++++++++++++--
+>  arch/arm/boot/dts/at91sam9rl.dtsi           |   7 +-
+>  arch/arm/boot/dts/sama5d3.dtsi              |  78 +++++++++++++++++++
 
-> +++ b/arch/x86/kernel/head64.c
-> @@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char
- * real_mode_data)
->  	 */
->  	load_ucode_bsp();
->
-> -	if (console_loglevel == 10)
-> +	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
->  		early_printk("Kernel alive\n");
+Grmbl. I remember being somewhat annoyed that you didn't use at91 prefix
+when you introduced the sama5d3 dtsi files, but please don't start using
+it on a random board like this, especially when other boards just use
+the sama5d3_<board>.dts format.
 
-But this looks like a bugfix that changes the behavior for loglevels > 11.
+Care to fix this up in time for 3.16 merge window?
 
-Having said that, it's probably OK to not split the bugfix out to
-a separate patch....
 
---==_Exmh_1400564682_1944P
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU3rrygdmEQWDXROgAQKZ/w/9HQshZnmAROeU0BGtvtTzLs3ICW9h56yl
-oRAjM7qsh5NpSKAzLZYFCrCL8ZYdZFcvV+Eb6vp0j2DIXW2YohIcuNXuvGSUEob8
-I6HMOd5cRuoBygEDwnFWddAobUrb3ToQuKoI1R2sQL1dJYH8Ms1a6W5P+5VPTAFB
-xE5So1XlhcWi/4SEXZoKQgWGmHdRVmpVlFw5ZNqEQe9nOuWmVxDUKbW9k6rGz0nc
-A621k6A3hLBTzSVdVLKe5FfVqIpfTy2Fe2gGmRpACpc36mwdOn7R2qoUBUevVlVb
-pTa2ZDcdtlW/CXM0OSEgGYE/ffR+sIYpXSNm99VpdKlnkv/njmJJ0YCBAGXm0slz
-6dqpxpDZMAsvM6xmfTGQvZlkqGPwsHe0Xj2Cr6Afn3k8COzltFXeqg88NIKVe+n+
-znFAr5P9N+2mZlLUJKwwzGS/jS8bjIQTgyaoD8zkxHaANLhxQf2MxsXiqHnPdRdb
-1WV1fqtdTOjM+nciMzFQV/lustfi3Le39bICxs6bnhpQ2TQ9rdyMFVaQi2HpiGKe
-Q04XG8F4xMDpcQ2U+BLYQDmgqOq/j98wrNfvIo02aN0MyHvtpifQdk0lENEzkPZZ
-ZK3f8ua7TtdoD7JtifhnPMawkCVFU1gPMzyUsvcCRdDrxBuNkr0S/QMrfK64X5Zr
-/fxDbQnLZEA=
-=v3yI
------END PGP SIGNATURE-----
-
---==_Exmh_1400564682_1944P--
+-Olof
