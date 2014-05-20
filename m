@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310AbaETWFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 18:05:02 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:38514 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178AbaETWE7 (ORCPT
+	id S1751073AbaETWIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 18:08:53 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:53471 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaETWIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 18:04:59 -0400
-Message-ID: <537BD184.9090608@logitech.com>
-Date: Tue, 20 May 2014 15:04:52 -0700
-From: Roland Bosa <rbosa@logitech.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: simon@mungewell.org
-CC: =?ISO-8859-1?Q?Michal_Mal=FD?= <madcatxster@devoid-pointer.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>    <1818063.tFLKhAd1oy@sigyn>    <20140514180558.GB30089@core.coreip.homeip.net>    <2965006.XKYHWj9YzJ@sigyn> <537B9FAE.9070602@logitech.com> <8c45868c3cd4333d1098bdbc0fa83a2e.squirrel@mungewell.org>
-In-Reply-To: <8c45868c3cd4333d1098bdbc0fa83a2e.squirrel@mungewell.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 20 May 2014 18:08:52 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, chris@printf.net,
+        ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mmc: dw_mmc: Make sure we don't get stuck when we get an error
+Date: Tue, 20 May 2014 15:07:50 -0700
+Message-Id: <1400623670-2657-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 12:39 PM, simon@mungewell.org wrote:
-> hopefully bring Linux into scope for force-feedback of AAA game quality.
+If we happened to get a data error at just the wrong time the dw_mmc
+driver could get into a state where it would never complete its
+request.  That would leave the caller just hanging there.
 
-^ That's my objective too.
+We fix this two ways and both of the two fixes on their own appear to
+fix the problems we've seen:
 
-> Mostly this has come from a small group of people reverse engineering the
-> Logitech wheels, which leads to the 'tailor-made' situation. But we'd like
-> the systems/interfaces to be device agnostic.
+1. Fix a race in the tasklet where the interrupt setting the data
+   error happens _just after_ we check for it, then we get a
+   EVENT_XFER_COMPLETE.  We fix this by repeating a bit of code.
+2. Fix it so that if we detect that we've got an error in the "data
+   busy" state and we're not going to do anything else we end the
+   request and unblock anyone waiting.
 
-I'm sure we can consolidate the support into fewer files.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+---
+Changes in v2:
+- Removed TODO
+- Set cmd to NULL before calling dw_mci_request_end()
 
-> As you how you can help...? As Michal said having a contact at Logitech to
-> whom we can ask technical questions (off list) would probably be the
-> greatest help. This would clear up any assumptions we have made, and help
-> with decisions going forward.
+ drivers/mmc/host/dw_mmc.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-Please don't hesitate to contact me. ;-)
-
-> It may also be the case that Logitech is working with studios/game
-> designers to improve controller performance. If any information can be
-> feed 'forward' to improve the Linux driver, that would be useful too.
-
-IMO, there are two types of games. The "arcade" ones, which have a set
-of 'canned' force effects, which play whenever an event happens in game.
-And the "simulation" ones, which base the game on a physics engine. The
-latter can redirect some variables of their engine to the input layer
-and typically drive a constant force and maybe a spring/damper too.
-
-For the first type, you might want to keep a centering spring active all
-the time. Maybe you want to tweak the gain in the game settings. Maybe
-there's a gain for the centering and one for the special effects. The
-canned effects are mostly periodics with varying waveform, duration,
-amplitude and envelope. That's about it.
-
-For the second type, you don't want a centering spring. You typically
-will drive a constant force effect with the engine, with some sprinkled
-damping and maybe a slight spring here and there.
-
-I would personally put more weight and effort to get the second type
-properly implemented. The players of those games demand more realism and
-they need the subtle force changes to drive better than the competition.
-That means having a FF driver that can deal with many force updates per
-second without choking and a consistent, reproducible force output at
-the device, maybe even similar across varying devices. This translates
-into a decoupled design for accepting force updates and sending USB
-updates, as well as a device-specific layer to "calibrate" and "unify"
-the force responses across different models.
-
-Does this make sense?
-
-thanks
-roland
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index cced599..54ec8b0 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1318,6 +1318,14 @@ static void dw_mci_tasklet_func(unsigned long priv)
+ 			/* fall through */
+ 
+ 		case STATE_SENDING_DATA:
++			/*
++			 * We could get a data error and never a transfer
++			 * complete so we'd better check for it here.
++			 *
++			 * Note that we don't really care if we also got a
++			 * transfer complete; stopping the DMA and sending an
++			 * abort won't hurt.
++			 */
+ 			if (test_and_clear_bit(EVENT_DATA_ERROR,
+ 					       &host->pending_events)) {
+ 				dw_mci_stop_dma(host);
+@@ -1331,7 +1339,29 @@ static void dw_mci_tasklet_func(unsigned long priv)
+ 				break;
+ 
+ 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
++
++			/*
++			 * Handle an EVENT_DATA_ERROR that might have shown up
++			 * before the transfer completed.  This might not have
++			 * been caught by the check above because the interrupt
++			 * could have gone off between the previous check and
++			 * the check for transfer complete.
++			 *
++			 * Technically this ought not be needed assuming we
++			 * get a DATA_COMPLETE eventually (we'll notice the
++			 * error and end the request), but it shouldn't hurt.
++			 *
++			 * This has the advantage of sending the stop command.
++			 */
++			if (test_and_clear_bit(EVENT_DATA_ERROR,
++					       &host->pending_events)) {
++				dw_mci_stop_dma(host);
++				send_stop_abort(host, data);
++				state = STATE_DATA_ERROR;
++				break;
++			}
+ 			prev_state = state = STATE_DATA_BUSY;
++
+ 			/* fall through */
+ 
+ 		case STATE_DATA_BUSY:
+@@ -1354,6 +1384,22 @@ static void dw_mci_tasklet_func(unsigned long priv)
+ 				/* stop command for open-ended transfer*/
+ 				if (data->stop)
+ 					send_stop_abort(host, data);
++			} else {
++				/*
++				 * If we don't have a command complete now we'll
++				 * never get one since we just reset everything;
++				 * better end the request.
++				 *
++				 * If we do have a command complete we'll fall
++				 * through to the SENDING_STOP command and
++				 * everything will be peachy keen.
++				 */
++				if (!test_bit(EVENT_CMD_COMPLETE,
++					      &host->pending_events)) {
++					host->cmd = NULL;
++					dw_mci_request_end(host, mrq);
++					goto unlock;
++				}
+ 			}
+ 
+ 			/*
+-- 
+1.9.1.423.g4596e3a
 
