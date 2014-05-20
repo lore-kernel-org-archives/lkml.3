@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaETAgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:36:33 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:39166 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750894AbaETAgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:36:32 -0400
-X-IronPort-AV: E=Sophos;i="4.98,870,1392159600"; 
-   d="scan'208";a="74716770"
-Date: Tue, 20 May 2014 08:36:24 +0800 (SGT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-cc: "John W. Linville" <linville@tuxdriver.com>,
-        kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/13] libertas: make return of 0 explicit
-In-Reply-To: <5379FCD0.2030506@cogentembedded.com>
-Message-ID: <alpine.DEB.2.10.1405200835490.2723@hadrien>
-References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr> <5379FCD0.2030506@cogentembedded.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751459AbaETAk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:40:27 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48856 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758AbaETAk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 20:40:26 -0400
+Date: Tue, 20 May 2014 01:40:21 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: dchinner@redhat.com, glommer@openvz.org, mgorman@suse.de,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker
+ functions.
+In-Reply-To: <201405192339.JIJ04144.FHQFVFOtOSLJOM@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.DEB.2.00.1405200140010.20503@skynet.skynet.ie>
+References: <201405192339.JIJ04144.FHQFVFOtOSLJOM@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,65 +26,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+cc'ing dri-devel.
 
-On Mon, 19 May 2014, Sergei Shtylyov wrote:
-
-> Hello.
->
-> On 19-05-2014 8:31, Julia Lawall wrote:
->
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> > Delete unnecessary local variable whose value is always 0 and that hides
-> > the fact that the result is always 0.
->
-> > A simplified version of the semantic patch that fixes this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
->
-> > // <smpl>
-> > @r exists@
-> > local idexpression ret;
-> > expression e;
-> > position p;
-> > @@
-> >
-> > -ret = 0;
-> > ... when != ret = e
-> > return
-> > - ret
-> > + 0
-> >    ;
-> > // </smpl>
->
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> > ---
-> > Alternatively, was an error code intended in the bad length case, as is
-> > done in process_brxed_802_11_packet?
->
-> >   drivers/net/wireless/libertas/rx.c |    7 ++-----
-> >   1 file changed, 2 insertions(+), 5 deletions(-)
->
-> > diff --git a/drivers/net/wireless/libertas/rx.c
-> > b/drivers/net/wireless/libertas/rx.c
-> > index c7366b0..807c5b8 100644
-> > --- a/drivers/net/wireless/libertas/rx.c
-> > +++ b/drivers/net/wireless/libertas/rx.c
-> [...]
-> > @@ -154,10 +152,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv,
-> > struct sk_buff *skb)
-> >   	else
-> >   		netif_rx_ni(skb);
-> >
-> > -	ret = 0;
-> >   done:
-> > -	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", ret);
-> > -	return ret;
-> > +	lbs_deb_leave_args(LBS_DEB_RX, "ret %d", 0);
->
->    Why not just "ret 0"?
-
-Oops, I won't make any change here, because Dan Williams has proposed
-another patch that makes the ret variable useful.
-
-julia
+> >From e314a1a1583e585d062dfc30c8aad8bf5380510b Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 19 May 2014 18:43:21 +0900
+> Subject: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
+> 
+> I can observe that RHEL7 environment stalls with 100% CPU usage when a
+> certain type of memory pressure is given. While the shrinker functions
+> are called by shrink_slab() before the OOM killer is triggered, the stall
+> lasts for many minutes.
+> 
+> I added debug printk() and observed that many threads are blocked for more
+> than 10 seconds at ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan()
+> functions. Since the kswapd can call these functions later, the current
+> thread can return from these functions as soon as chosen by the OOM killer.
+> 
+> This patch changes "mutex_lock();" to "if (mutex_lock_killable()) return ...;"
+> so that any threads can promptly give up. (By the way, as far as I tested,
+> changing to "if (!mutex_trylock()) return ...;" likely shortens the duration
+> of stall. Maybe we don't need to wait for mutex if someone is already calling
+> these functions.)
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> ---
+>  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> index 1b79bf0..f75dab8 100644
+> --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> @@ -1012,7 +1012,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+>  	if (list_empty(&_manager->pools))
+>  		return SHRINK_STOP;
+>  
+> -	mutex_lock(&_manager->lock);
+> +	if (mutex_lock_killable(&_manager->lock))
+> +		return SHRINK_STOP;
+>  	pool_offset = pool_offset % _manager->npools;
+>  	list_for_each_entry(p, &_manager->pools, pools) {
+>  		unsigned nr_free;
+> @@ -1043,7 +1044,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
+>  	struct device_pools *p;
+>  	unsigned long count = 0;
+>  
+> -	mutex_lock(&_manager->lock);
+> +	if (mutex_lock_killable(&_manager->lock))
+> +		return 0;
+>  	list_for_each_entry(p, &_manager->pools, pools)
+>  		count += p->pool->npages_free;
+>  	mutex_unlock(&_manager->lock);
+> 
