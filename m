@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbaETNMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 09:12:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11451 "EHLO mx1.redhat.com"
+	id S1753781AbaETNOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 09:14:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808AbaETNMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753510AbaETNMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 May 2014 09:12:51 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com, serge@hallyn.com,
         ebiederm@xmission.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V3 3/6] namespaces: expose ns instance serial numbers in proc
-Date: Tue, 20 May 2014 09:12:04 -0400
-Message-Id: <9975244b2ea7a260d616d2a0a6b118b0410f350b.1400271129.git.rgb@redhat.com>
+Subject: [PATCH V3 5/6] audit: log namespace serial numbers
+Date: Tue, 20 May 2014 09:12:06 -0400
+Message-Id: <b3179496aaed0eca9a2f21e752e4d5417bea6027.1400271129.git.rgb@redhat.com>
 In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
 References: <cover.1400271129.git.rgb@redhat.com>
 In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
@@ -22,95 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the namespace instace serial numbers in the proc filesystem at
-/proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
+Log the namespace serial numbers of a task in audit_log_task_info() which
+is used by syscall audits, among others..
 
-"snum" was chosen instead of "seq" for consistency with inum and there are a
-number of other uses of "seq" in the namespace code.
+Idea first presented:
+	https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
 
-Suggested-by: Serge E. Hallyn <serge@hallyn.com>
+Typical output format would look something like:
+	        type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+
+The serial numbers are printed in hex.
+
+Suggested-by: Aristeu Rozanski <arozansk@redhat.com>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 ---
- fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
- 1 files changed, 25 insertions(+), 8 deletions(-)
+ include/linux/audit.h |    7 +++++++
+ kernel/audit.c        |   21 ++++++++++++++++++++-
+ 2 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 9ae46b8..57fce90 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
- 	struct inode *inode = dentry->d_inode;
- 	const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 22cfddb..0ef404a 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -101,6 +101,13 @@ extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
+ struct filename;
  
--	return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
--		ns_ops->name, inode->i_ino);
-+	if (strstr(dentry->d_iname, "_snum"))
-+		return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
-+			ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
-+	else
-+		return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-+			ns_ops->name, inode->i_ino);
+ extern void audit_log_session_info(struct audit_buffer *ab);
++#ifdef CONFIG_NAMESPACES
++extern void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk);
++#else
++void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
++{
++}
++#endif
+ 
+ #ifdef CONFIG_AUDIT_COMPAT_GENERIC
+ #define audit_is_compat(arch)  (!((arch) & __AUDIT_ARCH_64BIT))
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 59c0bbe..6452278 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -64,7 +64,7 @@
+ #endif
+ #include <linux/freezer.h>
+ #include <linux/tty.h>
+-#include <linux/pid_namespace.h>
++#include <linux/proc_ns.h>
+ #include <net/netns/generic.h>
+ 
+ #include "audit.h"
+@@ -1617,6 +1617,24 @@ void audit_log_session_info(struct audit_buffer *ab)
+ 	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
  }
  
--const struct dentry_operations ns_dentry_operations =
--{
-+const struct dentry_operations ns_dentry_operations = {
- 	.d_delete	= always_delete_dentry,
- 	.d_dname	= ns_dname,
- };
-@@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
- 	if (!ns)
- 		goto out_put_task;
- 
--	snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
-+	if (strstr(dentry->d_iname, "_snum"))
-+		snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
-+	else
-+		snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
- 	len = strlen(name);
- 
- 	if (len > buflen)
-@@ -216,16 +222,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
- 
- 	if (!dir_emit_dots(file, ctx))
- 		goto out;
--	if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
-+	if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
- 		goto out;
- 	entry = ns_entries + (ctx->pos - 2);
- 	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
- 	while (entry <= last) {
- 		const struct proc_ns_operations *ops = *entry;
-+		char name[50];
++#ifdef CONFIG_NAMESPACES
++void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
++{
++	const struct proc_ns_operations **entry;
++	bool end = false;
 +
- 		if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
- 				     proc_ns_instantiate, task, ops))
- 			break;
- 		ctx->pos++;
-+		snprintf(name, sizeof(name), "%s_snum", ops->name);
-+		if (!proc_fill_cache(file, ctx, name, strlen(name),
-+				     proc_ns_instantiate, task, ops))
-+			break;
-+		ctx->pos++;
- 		entry++;
- 	}
- out:
-@@ -253,9 +266,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
- 
- 	last = &ns_entries[ARRAY_SIZE(ns_entries)];
- 	for (entry = ns_entries; entry < last; entry++) {
--		if (strlen((*entry)->name) != len)
-+		char name[50];
++	if (!tsk)
++		return;
++	for (entry = ns_entries; !end; entry++) {
++		void *ns = (*entry)->get(tsk);
++		audit_log_format(ab, " %sns=%llx", (*entry)->name,
++				 (*entry)->snum(ns));
++		(*entry)->put(ns);
++		end = (*entry)->type == CLONE_NEWNS;
++	}
++}
++#endif /* CONFIG_NAMESPACES */
 +
-+		snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
-+		if (strlen((*entry)->name) != len && strlen(name) != len)
- 			continue;
--		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
-+		if (!memcmp(dentry->d_name.name, (*entry)->name, len)
-+		    || !memcmp(dentry->d_name.name, name, len))
- 			break;
- 	}
- 	if (entry == last)
+ void audit_log_key(struct audit_buffer *ab, char *key)
+ {
+ 	audit_log_format(ab, " key=");
+@@ -1861,6 +1879,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 		up_read(&mm->mmap_sem);
+ 	} else
+ 		audit_log_format(ab, " exe=(null)");
++	audit_log_namespace_info(ab, tsk);
+ 	audit_log_task_context(ab);
+ }
+ EXPORT_SYMBOL(audit_log_task_info);
 -- 
 1.7.1
 
