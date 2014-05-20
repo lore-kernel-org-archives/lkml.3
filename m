@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751088AbaETUll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:41:41 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:62393 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaETUlj (ORCPT
+	id S1750994AbaETUuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:50:24 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59768 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750842AbaETUuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:41:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Tue, 20 May 2014 22:40:50 +0200
-Message-ID: <4511166.2tFHJMxbnG@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140520163912.GC5041@e103592.cambridge.arm.com>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <20140520152659.GA30404@arm.com> <20140520163912.GC5041@e103592.cambridge.arm.com>
+	Tue, 20 May 2014 16:50:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Dudley Du <dudl@cypress.com>, Benson Leung <bleung@google.com>,
+        Daniel Kurtz <djkurtz@google.com>, David Solda <dso@cypress.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] input: cyapa: enable/disable trackpad device based on LID state
+Date: Tue, 20 May 2014 23:07:18 +0200
+Message-ID: <3078365.io3T8cjti2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140520152551.GB9444@core.coreip.homeip.net>
+References: <77BC725C9062764F874D79F51E1F1A8F40C14099@S04-MBX01-01.s04.local> <1507406.BNOsJcxmP9@vostro.rjw.lan> <20140520152551.GB9444@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Xm6dbFwHf5fAztSs3gd/KbXNDI2GlB6q8Pk+Z0kT+PM
- Fz05DhRidpuJQKWB6rWz1VClhTPlco+Ds03LkTv5QoNRMgr87V
- dkH8nRm+mF4pXHDxDT3hpMIeMnffgLKE0nXfgyr/Cjg7sUAcbB
- fWB4cgBkdF2a5g96mLIsjkdHnZHMgG1HDSoWmW9u9BOAK7m+hy
- parAf1Nj58IvY1Eeki7epg/LVReuO4qH54hSi+Q3pMwjONJLt+
- GHIGiMj4pWYF6zNyyy5gIaFJLO/QvQXZdflDCYliKdaOjkG+ep
- kHSmYhm4HikqvUL3fb0vPnvYUFzNNtCXfcmJJGN5M1UMBFciN8
- xuRXBTVIG8PGznpW9MAU=
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 May 2014 17:39:12 Dave Martin wrote:
-> On Tue, May 20, 2014 at 04:26:59PM +0100, Will Deacon wrote:
-> > On Tue, May 20, 2014 at 02:23:47PM +0100, Arnd Bergmann wrote:
-> > > 	Bit#   33222222 22221111 11111100 00000000
-> > > 	       10987654 32109876 54321098 76543210
-> > > phys.hi cell:  npt000ss bbbbbbbb dddddfff rrrrrrrr
-> > > phys.mid cell: hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh
-> > > phys.lo cell:  llllllll llllllll llllllll llllllll
+On Tuesday, May 20, 2014 08:25:51 AM Dmitry Torokhov wrote:
+> On Tue, May 20, 2014 at 02:40:12PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, May 19, 2014 08:43:02 PM Dmitry Torokhov wrote:
+> > > Hi Dudley,
 > > > 
-> > > where:
-> > > n is 0 if the address is relocatable, 1 otherwise
-> > > p is 1 if the addressable region is "prefetchable", 0 otherwise
-> > > t is 1 if the address is aliased (for non-relocatable I/O),
-> > >  below 1 MB (for Memory), or below 64 KB (for relocatable I/O).
-> > > ss is the space code, denoting the address space
-> > > bbbbbbbb is the 8-bit Bus Number
-> > > ddddd is the 5-bit Device Number
-> > > fff is the 3-bit Function Number
-> > > rrrrrrrr is the 8-bit Register Number
-> > > hh...hh is a 32-bit unsigned number
-> > > ll...ll is a 32-bit unsigned number
+> > > On Wed, Apr 16, 2014 at 08:39:34AM +0000, Dudley Du wrote:
+> > > > Rely on EV_SW and SW_LID bits to identify a LID device, and hook
+> > > > up our filter to listen for SW_LID events to enable/disable touchpad when
+> > > > LID is open/closed.
+> > > > TEST=test on Chomebooks.
 > > > 
-> > > We can ignore n, p, t and r here, and use the same format for a DMA
-> > > address, then define an empty "dma-ranges" property. That would
-> > > imply that using b/d/f is sufficient to identify each master at the
-> > > iommu. Any device outside of the PCI host but connected to the same
-> > > iommu can use the same notation to list the logical b/d/f that gets
-> > > sent to the IOMMU in bus master transactions.
-> > > 
-> > > Do you think this is sufficient for the ARM SMMU, or do we need
-> > > something beyond that?
+> > > This is a policy and it does not belong in the kernel. Please work with
+> > > Rafael to establish generic interface to put devices into low power mode
+> > > (like accelerating runtime PM idle timeout)
 > > 
-> > I think it can define the common-cases for the existing implementations,
-> > yes. I anticipate Stream-IDs becoming > 16-bit in the near future though,
-> > so we'd need extra bits if we're describing other devices coming into the
-> > SMMU.
-> > 
-> > Note that we already have a binding for the current SMMU driver, so I'm not
-> > really in a position to shift over to a new binding until the next version of
-> > the SMMU architecture comes along...
+> > I'm not really sure what you mean here, care to be more specific?
 > 
-> How much code relies on the meaning of the nptsbdf bits?
+> I think we chatted about this before - we need a uniform interface for
+> userspace to put devices into low power mode on demand.
 
-Not much at all, I think this was defined mostly for open firmware
-client interfaces, which we don't use with FDT.
+I'm still not sure what you mean exactly.
 
-n, t and r are probably only used in PCI functions that are listed
-in DT, not in the host bridge.
+If you mean an interface for user space to *force* transitions into low-power
+states, we can't have it, because user space doesn't know when it is safe to
+do that.  The /sys/devices/.../power/control interface is the best we can
+give to user space to this end.
 
-b/d/f I think is mostly used for the interrupt-maps property, when
-describing hardwired interrupts.
+Adding Alan Stern to the recipient list, because he was inovlved in discussions
+about that.
 
-p and s are used when setting up the translation for inbound MMIO
-and PIO.
+But if you mean an interface for user space to poke at pm_runtime_idle() to
+possibly trigger a runtime suspend, that we can add I think.  Alan?
 
-	Arnd
+> As implementation detail I thought we could require runtime PM for that and
+> simply pretend that the PM timeout expired early when userspace invokes
+> that API.
+
+That'd be overly complicated IMHO.  Calling pm_runtime_idle() should suffice.
+
+> > 
+> > > and use it when userspace detects that lid is closed.
+> > 
+> > I guess we get an event then, don't we?
+> 
+> Right, userspace gets EV_SW/SW_LID input event and needs to react. In
+> this particular case the desire is to power down touchpad (since it is
+> unaccessible). I am not sure why system suspend (which I expect happen
+> in reaction to lid closing) is not enough, but that's question for
+> Dudley.
+
+OK
+
+Rafael
+
