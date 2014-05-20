@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaETDFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 23:05:48 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:39459 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbaETDFq (ORCPT
+	id S1752862AbaETDHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 23:07:40 -0400
+Received: from alerce.vps.bitfolk.com ([85.119.82.134]:45240 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaETDHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 23:05:46 -0400
-Date: Mon, 19 May 2014 23:05:44 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@redhat.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 6/6] sched: final power vs capacity cleanup
-In-Reply-To: <alpine.LFD.2.11.1405151207170.17310@knanqh.ubzr>
-Message-ID: <alpine.LFD.2.11.1405192259420.17310@knanqh.ubzr>
-References: <1400101030-17717-1-git-send-email-nicolas.pitre@linaro.org> <1400101030-17717-7-git-send-email-nicolas.pitre@linaro.org> <20140515072929.GZ30445@twins.programming.kicks-ass.net> <alpine.LFD.2.11.1405151207170.17310@knanqh.ubzr>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 19 May 2014 23:07:39 -0400
+Date: Tue, 20 May 2014 04:06:43 +0100
+From: Rodrigo Campos <rodrigo@sdfg.com.ar>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCHSET 00/21] perf tools: Add support to accumulate hist
+ periods (v9)
+Message-ID: <20140520030643.GB29706@sdfg.com.ar>
+References: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
+ <20140519151120.GE24333@sdfg.com.ar>
+ <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM9d7cjVpFL0Vx48Pq6vR5OfnAvCAn7YkkJJS=bm6UqU=W5TOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 May 2014, Nicolas Pitre wrote:
+On Tue, May 20, 2014 at 02:29:31AM +0000, Namhyung Kim wrote:
+> Hi Rodrigo,
+> 
+> On Mon, May 19, 2014 at 3:11 PM, Rodrigo Campos <rodrigo@sdfg.com.ar> wrote:
+> > Is there something I can help to have this merged ? As far as I tested, this
+> > works fine here. Or is this ok, just waiting on the "perf report: Add -F option for
+> > specifying output fields" patchset ?
+> 
+> Thanks for testing!!  As I never got (negative) feedbacks or reviews
+> so far, I'd assume it's ok. :)  But as you said, it should wait for
+> the output field option merged which I hope to be done soon.  I'll
+> update and report this once it's done.
 
-> On Thu, 15 May 2014, Peter Zijlstra wrote:
-> 
-> > On Wed, May 14, 2014 at 04:57:10PM -0400, Nicolas Pitre wrote:
-> > > It is better not to think about compute capacity as being equivalent to
-> > > "CPU power".  The upcoming "power aware" scheduler may create confusion
-> > > with the notion of energy consumption if "power" is used too liberally.
-> > > 
-> > > This contains the architecture visible changes.  Incidentally, only ARM
-> > > takes advantage of the available pow^H^H^Hcapacity scaling hooks and
-> > > therefore those changes outside kernel/sched/ are confined to one ARM
-> > > specific file.  The default arch_scale_smt_power() hook is not overridden
-> > > by anyone.
-> > > 
-> > > Replacements are as follows:
-> > > 
-> > > 	arch_scale_freq_power  --> arch_scale_freq_capacity
-> > > 	arch_scale_smt_power   --> arch_scale_smt_capacity
-> > > 	SCHED_POWER_SCALE      --> SCHED_CAPA_SCALE
-> > > 	SCHED_POWER_SHIFT      --> SCHED_POWER_SHIFT
-> > 
-> > The patch seems to actually make that CAPA_SHIFT
-> 
-> Huh... right, of course.
-> 
-> > > The local usage of "power" in arch/arm/kernel/topology.c is also changed
-> > > to "capacity" as appropriate.
-> > 
-> > For some reason every time I read: 'capa' I think of some south American
-> > monster -- http://en.wikipedia.org/wiki/Chupacabra, I'm not at all sure
-> > why my brain links them.
-> 
-> :-)
-> 
-> capa != paca
-> 
-> I chose that not to make this much longer than "POWER", and since there 
-> are already "LOAD" related constants, I thought there was some symetry 
-> to another 4-letter identifier.  Do you have other suggestions?
-
-I understand that Vincent is inclined to rebase his future work on top 
-of this renaming.
-
-Should I repost or you're happy to fix the commit log manually?
-Any other concerns I should address?
-
-
-Nicolas
+Great, thanks a lot! :-)
