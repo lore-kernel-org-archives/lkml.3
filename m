@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaETUwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 16:52:53 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56482 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751096AbaETUwv (ORCPT
+	id S1751252AbaETU4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 16:56:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60766 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750945AbaETU4c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 16:52:51 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
-        pavel@ucw.cz, len.brown@intel.com,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: Re: [PATCH V5] PM/OPP: discard duplicate OPPs
-Date: Tue, 20 May 2014 23:09:47 +0200
-Message-ID: <1555967.8fxByr2j83@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7cb6e0e039e0935e37c81d0f23d26b0b81ad8cda.1400597170.git.viresh.kumar@linaro.org>
-References: <7cb6e0e039e0935e37c81d0f23d26b0b81ad8cda.1400597170.git.viresh.kumar@linaro.org>
+	Tue, 20 May 2014 16:56:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,875,1392192000"; 
+   d="scan'208";a="515055407"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>, "bp@suse.de" <bp@suse.de>,
+        "gong.chen@linux.jf.intel.com" <gong.chen@linux.jf.intel.com>
+Subject: RE: [PATCH 1/2] memory-failure: Send right signal code to correct
+ thread
+Thread-Topic: [PATCH 1/2] memory-failure: Send right signal code to correct
+ thread
+Thread-Index: AQHPdFSpZzlEGsh8Kkymcn7PtBlu55tJ8tvQ
+Date: Tue, 20 May 2014 20:56:30 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3280FF23@ORSMSX114.amr.corp.intel.com>
+References: <cover.1400607328.git.tony.luck@intel.com>
+ <eb791998a8ada97b204dddf2719a359149e9ae31.1400607328.git.tony.luck@intel.com>
+ <1400608486-alyqz521@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1400608486-alyqz521@n-horiguchi@ah.jp.nec.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 20, 2014 08:23:28 PM Viresh Kumar wrote:
-> From: Chander Kashyap <k.chander@samsung.com>
-> 
-> We don't have any protection against addition of duplicate OPPs currently and
-> in case some code tries to add them it will end up corrupting OPP tables.
-> 
-> There can be many combinations in which we may end up trying duplicate OPPs:
-> - both freq and volt are same, but earlier OPP may or may not be active.
-> - only freq is same and volt is different.
-> 
-> This patch tries to implement below logic for these cases:
-> 
-> Return 0 if new OPP was duplicate of existing one (i.e. same freq and volt) and
-> return -EEXIST if new OPP had same freq but different volt as of an existing OPP
-> OR if both freq/volt were same but earlier OPP was disabled.
-> 
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> V4->V5:
-> - Mention Return values under 'Return:' clause of doc style comment.
-> - s/pr_warn/dev_warn
-> - s/linrao/linaro in my email id :(
-> 
->  drivers/base/power/opp.c | 27 +++++++++++++++++++++++++--
->  1 file changed, 25 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 2553867..6a06d43 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -394,6 +394,13 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_find_freq_floor);
->   * to keep the integrity of the internal data structures. Callers should ensure
->   * that this function is *NOT* called under RCU protection or in contexts where
->   * mutex cannot be locked.
-> + *
-> + * Returns:
-> + * 0:		On success OR
-> + *		Duplicate OPPs (both freq and volt are same) and opp->available
-> + * -EEXIST:	Freq are same and volt are different OR
-> + *		Duplicate OPPs (both freq and volt are same) and !opp->available
-> + * -ENOMEM:	Memory allocation failure
->   */
->  int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->  {
-> @@ -443,15 +450,31 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->  	new_opp->u_volt = u_volt;
->  	new_opp->available = true;
->  
-> -	/* Insert new OPP in order of increasing frequency */
-> +	/*
-> +	 * Insert new OPP in order of increasing frequency
-> +	 * and discard if already present
-> +	 */
->  	head = &dev_opp->opp_list;
->  	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
-> -		if (new_opp->rate < opp->rate)
-> +		if (new_opp->rate <= opp->rate)
->  			break;
->  		else
->  			head = &opp->node;
->  	}
->  
-> +	/* Duplicate OPPs ? */
-> +	if (new_opp->rate == opp->rate) {
-> +		int ret = (new_opp->u_volt == opp->u_volt) && opp->available ?
-> +			0 : -EEXIST;
+> Looks good to me, thank you.
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-The parens are not necessary.  And is the direction correct?
+Thanks for your time reviewing this
 
-> +
-> +		dev_warn(dev, "%s: duplicate OPPs detected. Existing: freq: %lu, volt: %lu, enabled: %d. New: freq: %lu, volt: %lu, enabled: %d\n",
-> +			__func__, opp->rate, opp->u_volt, opp->available,
-> +			new_opp->rate, new_opp->u_volt, new_opp->available);
-> +		mutex_unlock(&dev_opp_list_lock);
-> +		kfree(new_opp);
-> +		return ret;
-> +	}
-> +
->  	list_add_rcu(&new_opp->node, head);
->  	mutex_unlock(&dev_opp_list_lock);
->  
-> 
+> and I think this is worth going into stable trees.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Good point. I should dig in the git history and make one of those
+fancy "Fixes: sha1 title" tags too.
+
+-Tony
+ 
