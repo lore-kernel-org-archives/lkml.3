@@ -1,149 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaETAoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 May 2014 20:44:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38274 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaETAoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 May 2014 20:44:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,870,1392192000"; 
-   d="scan'208";a="543203289"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
-        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
-        mingo@kernel.org, dave.hansen@intel.com
-In-Reply-To: <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
- <537479E7.90806@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
- <87wqdik4n5.fsf@rustcorp.com.au>
- <53797511.1050409@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
- <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140520004429.E660AE009B@blue.fi.intel.com>
-Date: Tue, 20 May 2014 03:44:29 +0300 (EEST)
+	id S1752682AbaETAo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 May 2014 20:44:57 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40936 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741AbaETAoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 May 2014 20:44:55 -0400
+X-IronPort-AV: E=Sophos;i="4.98,870,1392159600"; 
+   d="scan'208";a="74717538"
+Date: Tue, 20 May 2014 08:44:49 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        kernel-janitors@vger.kernel.org, linux-wimax@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/13 v2] wimax/i2400m: make return of 0 explicit
+In-Reply-To: <5379FD39.7020605@cogentembedded.com>
+Message-ID: <alpine.DEB.2.10.1405200844010.2723@hadrien>
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr> <1400473875-22228-5-git-send-email-Julia.Lawall@lip6.fr> <5379FD39.7020605@cogentembedded.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
-> 
-> > Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
-> > the order of the fault-around size in bytes, and fault_around_pages()
-> > use 1UL << (fault_around_order - PAGE_SHIFT)
-> 
-> Yes.  And shame on me for missing it (this time!) at review.
-> 
-> There's still time to fix this.  Patches, please.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Here it is. Made at 3.30 AM, build tested only.
+Delete unnecessary local variable whose value is always 0 and that hides
+the fact that the result is always 0.
 
-I'll sign it off tomorrow after testing.
+A simplified version of the semantic patch that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 037b812a9531..9d6941c9a9e4 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3402,62 +3402,62 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 	update_mmu_cache(vma, address, pte);
- }
- 
--#define FAULT_AROUND_ORDER 4
-+#define FAULT_AROUND_BYTES 65536
- 
- #ifdef CONFIG_DEBUG_FS
--static unsigned int fault_around_order = FAULT_AROUND_ORDER;
-+static unsigned int fault_around_bytes = FAULT_AROUND_BYTES;
- 
--static int fault_around_order_get(void *data, u64 *val)
-+static int fault_around_bytes_get(void *data, u64 *val)
+// <smpl>
+@r exists@
+local idexpression ret;
+expression e;
+position p;
+@@
+
+-ret = 0;
+... when != ret = e
+return
+- ret
++ 0
+  ;
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+Alternatively, is an error code wanted under the if?
+
+v2: remove the use of 0 as an argument in the call to d_fnend
+
+ drivers/net/wimax/i2400m/driver.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+index 9c34d2f..9c78090 100644
+--- a/drivers/net/wimax/i2400m/driver.c
++++ b/drivers/net/wimax/i2400m/driver.c
+@@ -500,26 +500,23 @@ int i2400m_pm_notifier(struct notifier_block *notifier,
+  */
+ int i2400m_pre_reset(struct i2400m *i2400m)
  {
--	*val = fault_around_order;
-+	*val = fault_around_bytes;
- 	return 0;
+-	int result;
+ 	struct device *dev = i2400m_dev(i2400m);
+
+ 	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
+ 	d_printf(1, dev, "pre-reset shut down\n");
+
+-	result = 0;
+ 	mutex_lock(&i2400m->init_mutex);
+ 	if (i2400m->updown) {
+ 		netif_tx_disable(i2400m->wimax_dev.net_dev);
+ 		__i2400m_dev_stop(i2400m);
+-		result = 0;
+ 		/* down't set updown to zero -- this way
+ 		 * post_reset can restore properly */
+ 	}
+ 	mutex_unlock(&i2400m->init_mutex);
+ 	if (i2400m->bus_release)
+ 		i2400m->bus_release(i2400m);
+-	d_fnend(3, dev, "(i2400m %p) = %d\n", i2400m, result);
+-	return result;
++	d_fnend(3, dev, "(i2400m %p) = 0\n", i2400m);
++	return 0;
  }
- 
--static int fault_around_order_set(void *data, u64 val)
-+static int fault_around_bytes_set(void *data, u64 val)
- {
--	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
--	if (1UL << val > PTRS_PER_PTE)
-+	BUILD_BUG_ON(FAULT_AROUND_BYTES / PAGE_SIZE > PTRS_PER_PTE);
-+	if (val / PAGE_SIZE > PTRS_PER_PTE)
- 		return -EINVAL;
--	fault_around_order = val;
-+	fault_around_bytes = val;
- 	return 0;
- }
--DEFINE_SIMPLE_ATTRIBUTE(fault_around_order_fops,
--		fault_around_order_get, fault_around_order_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
-+		fault_around_bytes_get, fault_around_bytes_set, "%llu\n");
- 
- static int __init fault_around_debugfs(void)
- {
- 	void *ret;
- 
--	ret = debugfs_create_file("fault_around_order",	0644, NULL, NULL,
--			&fault_around_order_fops);
-+	ret = debugfs_create_file("fault_around_bytes", 0644, NULL, NULL,
-+			&fault_around_bytes_fops);
- 	if (!ret)
--		pr_warn("Failed to create fault_around_order in debugfs");
-+		pr_warn("Failed to create fault_around_bytes in debugfs");
- 	return 0;
- }
- late_initcall(fault_around_debugfs);
- 
- static inline unsigned long fault_around_pages(void)
- {
--	return 1UL << fault_around_order;
-+	return fault_around_bytes / PAGE_SIZE;
- }
- 
- static inline unsigned long fault_around_mask(void)
- {
--	return ~((1UL << (PAGE_SHIFT + fault_around_order)) - 1);
-+	return ~(round_down(fault_around_bytes, PAGE_SIZE) - 1);
- }
- #else
- static inline unsigned long fault_around_pages(void)
- {
- 	unsigned long nr_pages;
- 
--	nr_pages = 1UL << FAULT_AROUND_ORDER;
-+	nr_pages = FAULT_AROUND_BYTES / PAGE_SIZE;
- 	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
- 	return nr_pages;
- }
- 
- static inline unsigned long fault_around_mask(void)
- {
--	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
-+	return ~(round_down(FAULT_AROUND_BYTES, PAGE_SIZE) - 1);
- }
- #endif
- 
-@@ -3515,7 +3515,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * if page by the offset is not ready to be mapped (cold cache or
- 	 * something).
- 	 */
--	if (vma->vm_ops->map_pages) {
-+	if (vma->vm_ops->map_pages && fault_around_pages() > 1) {
- 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
- 		do_fault_around(vma, address, pte, pgoff, flags);
- 		if (!pte_same(*pte, orig_pte))
--- 
- Kirill A. Shutemov
+ EXPORT_SYMBOL_GPL(i2400m_pre_reset);
+
