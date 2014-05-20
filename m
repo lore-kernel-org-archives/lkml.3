@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaETS2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 14:28:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53012 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaETS2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 14:28:11 -0400
-Message-ID: <537B9EA6.3030103@zytor.com>
-Date: Tue, 20 May 2014 11:27:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1752390AbaETSaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 14:30:16 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:34919 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaETSaO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 14:30:14 -0400
+Message-ID: <537B9F2D.6060606@colorfullife.com>
+Date: Tue, 20 May 2014 20:30:05 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, X86 ML <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 3/4] x86,mm: Improve _install_special_mapping and fix
- x86 vdso naming
-References: <cover.1400538962.git.luto@amacapital.net> <276b39b6b645fb11e345457b503f17b83c2c6fd0.1400538962.git.luto@amacapital.net> <20140520172134.GJ2185@moon> <CALCETrWSgjc+iymPrvC9xiz1z4PqQS9e9F5mRLNnuabWTjQGQQ@mail.gmail.com> <20140520174759.GK2185@moon> <CALCETrUARCP0eNj5e3Kh81KDXg5AFLnoNoDHeoZcBXi9z-5F3w@mail.gmail.com> <20140520180104.GL2185@moon> <537B9C6D.7010705@zytor.com> <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
-In-Reply-To: <CALCETrWmKvox1poGK5fBw2OBip7zMpjb-bpYrzd4EGHPDvZEHg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de
+Subject: Re: [PATCH 6/6] ipc/sem.c: make semctl(,,{GETNCNT,GETZCNT}) standard
+ compliant
+References: <1400399917-17583-1-git-send-email-manfred@colorfullife.com> <1400399917-17583-2-git-send-email-manfred@colorfullife.com> <1400399917-17583-3-git-send-email-manfred@colorfullife.com> <1400399917-17583-4-git-send-email-manfred@colorfullife.com> <1400399917-17583-5-git-send-email-manfred@colorfullife.com> <1400399917-17583-6-git-send-email-manfred@colorfullife.com> <1400399917-17583-7-git-send-email-manfred@colorfullife.com> <20140519154639.5570a30f8b47872a323dcdfd@linux-foundation.org>
+In-Reply-To: <20140519154639.5570a30f8b47872a323dcdfd@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 11:24 AM, Andy Lutomirski wrote:
-> On Tue, May 20, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 05/20/2014 11:01 AM, Cyrill Gorcunov wrote:
->>>>
->>>> This patch should fix this issue, at least.  If there's still a way to
->>>> get a native vdso that doesn't say "[vdso]", please let me know/
->>>
->>> Yes, having a native procfs way to detect vdso is much preferred!
->>>
+Hi Andrew,
+
+On 05/20/2014 12:46 AM, Andrew Morton wrote:
+> On Sun, 18 May 2014 09:58:37 +0200 Manfred Spraul <manfred@colorfullife.com> wrote:
+>
+>> SUSv4 clearly defines how semncnt and semzcnt must be calculated:
+>> A task waits on exactly one semaphore:
+>> The semaphore from the first operation in the sop array that cannot proceed.
 >>
->> Is there any path by which we can end up with [vdso] without a leading
->> slash in /proc/self/maps?  Otherwise, why is that not "native"?
-> 
-> Dunno.  But before this patch the reverse was possible: we can end up
-> with a vdso that doesn't say [vdso].
-> 
-
-That's a bug, which is being fixed.  We can't go back in time and create
-new interfaces on old kernels.
-
+>> The Linux implementation never followed the standard, it tried to count all
+>> semaphores that might be the reason why a task sleeps.
 >>
->>>>>   The situation get worse when task was dumped on one kernel and
->>>>> then restored on another kernel where vdso content is different
->>>>> from one save in image -- is such case as I mentioned we need
->>>>> that named vdso proxy which redirect calls to vdso of the system
->>>>> where task is restoring. And when such "restored" task get checkpointed
->>>>> second time we don't dump new living vdso but save only old vdso
->>>>> proxy on disk (detecting it is a different story, in short we
->>>>> inject a unique mark into elf header).
->>>>
->>>> Yuck.  But I don't know whether the kernel can help much here.
->>>
->>> Some prctl which would tell kernel to put vdso at specifed address.
->>> We can live without it for now so not a big deal (yet ;)
->>
->> mremap() will do this for you.
-> 
-> Except that it's buggy: it doesn't change mm->context.vdso.  For
-> 64-bit tasks, the only consumer outside exec was arch_vma_name, and
-> this patch removes even that.  For 32-bit tasks, though, it's needed
-> for signal delivery.
-> 
+>> This patch fixes that.
+> What are the back-compatibility implications of this change?
+A really good question:
+- there is no application in Fedora that uses GETNCNT or GETZCNT.
+- application that use only single-sop semop() are also safe, the 
+difference only affects complex apps.
+- portable application are also safe, the new behavior is standard 
+compliant.
 
-Again, a bug, let's fix it rather than saying we need a new interface.
+But that's it. The old behavior existed in Linux from 0.99.something 
+until now.
 
-	-hpa
+What about adding a WARN_ON_ONCE() if the case where the behavior 
+differs happens?
+Should I write a patch?
 
-
+--
+     Manfred
