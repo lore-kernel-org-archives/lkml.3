@@ -1,115 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbaEUMZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 08:25:30 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51679 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaEUMZ2 (ORCPT
+	id S1752517AbaEUM0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 08:26:51 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:51483 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaEUM0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 08:25:28 -0400
-Date: Wed, 21 May 2014 14:25:21 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Thorsten Diehl <thorsten.diehl@de.ibm.com>
-Subject: /proc/stat vs. failed order-4 allocation
-Message-ID: <20140521122521.GB7471@osiris>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052112-4966-0000-0000-0000001A602A
+	Wed, 21 May 2014 08:26:49 -0400
+From: Ted Mielczarek <ted@mielczarek.org>
+To: linux-input@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
+        Ted Mielczarek <ted@mielczarek.org>
+Subject: [PATCH] Support Xbox One controllers in xpad driver.
+Date: Wed, 21 May 2014 08:26:09 -0400
+Message-Id: <1400675169-26178-1-git-send-email-ted@mielczarek.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Xbox One controllers require an initialization message to start sending data,
+so xpad_init_output becomes a required function. The Xbox One controller does
+not have LEDs like the Xbox 360 controller, so that functionality is not
+implemented. The format of messages controlling rumble is currently
+undocumented, so rumble support is not yet implemented.
 
-I'm just wondering why /proc/stat is a single_open() seq_file and not a
-regular seq_file with an iterator (say 48 online cpus for each iteration
-or something similar).
+The only thing I'm not certain about in this patch is the check against bInterfaceNumber in xpad_probe. The Xbox One controller advertises three interfaces with the same interface class, subclass and protocol, and I couldn't see any way to match just the first one using usb_device_id.
 
-Of course, in theory, the "intr" line may be very long as well...
+Signed-off-by: Ted Mielczarek <ted@mielczarek.org>
+---
+ drivers/input/joystick/xpad.c | 163 ++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 149 insertions(+), 14 deletions(-)
 
-With the current implementation everything must fit into a single buffer.
-So if memory is highly fragmented we run into failing higher order
-allocations (like below), which effectively means reading /proc/stat
-doesn't work anymore.
-
->From stat_open:
-
-        size_t size = 1024 + 128 * num_possible_cpus();
-	[...]
-        /* minimum size to display an interrupt count : 2 bytes */
-        size += 2 * nr_irqs;
-	[...]
-        buf = kmalloc(size, GFP_KERNEL);
-        if (!buf)
-                return -ENOMEM;
-
-With num_possible_cpus() = 256 we end up with an order 4 allocation.
-
-So, would there be any objections, adding a cpu iterator to /proc/stat?
-
-62129.701569] sadc: page allocation failure: order:4, mode:0x1040d0
-[62129.701573] CPU: 1 PID: 192063 Comm: sadc Not tainted 3.10.0-123.el7.s390x #1
-[62129.701574] 00000000edf27840 00000000edf27850 0000000000000002 0000000000000000 
-00000000edf278e0 00000000edf27858 00000000edf27858 00000000001120c0 
-0000000000000000 000000000072c7c0 0000000000711836 000000000000000b 
-00000000edf278a0 00000000edf27840 0000000000000000 0000000000000000 
-00000000001040d0 00000000001120c0 00000000edf27840 00000000edf278a0 
-[62129.701586] Call Trace:
-[62129.701588] ([<0000000000111fbe>] show_trace+0xe6/0x130)
-[62129.701591] [<0000000000112074>] show_stack+0x6c/0xe8
-[62129.701593] [<000000000020d356>] warn_alloc_failed+0xd6/0x138
-[62129.701596] [<00000000002114d2>] __alloc_pages_nodemask+0x9da/0xb68
-[62129.701598] [<000000000021168e>] __get_free_pages+0x2e/0x58
-[62129.701599] [<000000000025a05c>] kmalloc_order_trace+0x44/0xc0
-[62129.701602] [<00000000002f3ffa>] stat_open+0x5a/0xd8
-[62129.701604] [<00000000002e9aaa>] proc_reg_open+0x8a/0x140
-[62129.701606] [<0000000000273b64>] do_dentry_open+0x1bc/0x2c8
-[62129.701608] [<000000000027411e>] finish_open+0x46/0x60
-[62129.701610] [<000000000028675a>] do_last+0x382/0x10d0
-[62129.701612] [<0000000000287570>] path_openat+0xc8/0x4f8
-[62129.701614] [<0000000000288bde>] do_filp_open+0x46/0xa8
-[62129.701616] [<000000000027541c>] do_sys_open+0x114/0x1f0
-[62129.701618] [<00000000005b1c1c>] sysc_tracego+0x14/0x1a
-[62129.701620] [<000003fffd0040a0>] 0x3fffd0040a0
-[62129.701624] Mem-Info:
-[62129.701625] DMA per-cpu:
-[62129.701627] CPU 0: hi: 186, btch: 31 usd: 0
-[62129.701628] CPU 1: hi: 186, btch: 31 usd: 0
-[62129.701630] CPU 2: hi: 186, btch: 31 usd: 51
-[62129.701631] Normal per-cpu:
-[62129.701632] CPU 0: hi: 186, btch: 31 usd: 30
-[62129.701634] CPU 1: hi: 186, btch: 31 usd: 0
-[62129.701635] CPU 2: hi: 186, btch: 31 usd: 0
-[62129.701639] active_anon:5416 inactive_anon:5571 isolated_anon:0
-active_file:440513 inactive_file:406221 isolated_file:27
-unevictable:1741 dirty:35305 writeback:0 unstable:0
-free:40319 slab_reclaimable:41921 slab_unreclaimable:34553
-mapped:3921 shmem:1351 pagetables:296 bounce:0
-free_cma:0
-[62129.701648] DMA free:25192kB min:11800kB low:14748kB high:17700kB active_anon:11032kB inactive_anon:11320kB active_file:1002092kB inactive_file:904260kB unevictable:3772kB isolated(anon):0kB isolated(file):4kB present:2097152kB managed:2070452kB mlocked:3772kB dirty:55072kB writeback:0kB mapped:6316kB shmem:1152kB slab_reclaimable:61192kB slab_unreclaimable:50108kB kernel_stack:2368kB pagetables:532kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:133 all_unreclaimable? no
-[62129.701652] lowmem_reserve[]: 0 1837 1837
-[62129.701658] Normal free:136084kB min:10724kB low:13404kB high:16084kB active_anon:10632kB inactive_anon:10964kB active_file:759960kB inactive_file:720624kB unevictable:3192kB isolated(anon):0kB isolated(file):4kB present:1966080kB managed:1881776kB mlocked:3192kB dirty:86148kB writeback:0kB mapped:9368kB shmem:4252kB slab_reclaimable:106492kB slab_unreclaimable:88104kB kernel_stack:5808kB pagetables:652kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-[62129.701661] lowmem_reserve[]: 0 0 0
-[62129.701664] DMA: 1540*4kB (UEM) 2217*8kB (UEM) 9*16kB (UEM) 1*32kB (R) 5*64kB (R) 1*128kB (R) 1*256kB (R) 1*512kB (R) 0*1024kB = 25288kB
-[62129.701673] Normal: 21631*4kB (UEM) 5755*8kB (UEM) 145*16kB (UEM) 8*32kB (ER) 4*64kB (R) 2*128kB (R) 0*256kB 1*512kB (R) 0*1024kB = 136164kB
-[62129.701682] Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=1024kB
-[62129.701684] 849331 total pagecache pages
-[62129.701685] 131 pages in swap cache
-[62129.701687] Swap cache stats: add 9956, delete 9825, find 1049/1416
-[62129.701688] Free swap = 7186784kB
-[62129.701689] Total swap = 7212140kB
-[62129.710679] 1015808 pages RAM
-[62129.710681] 23437 pages reserved
-[62129.710682] 1360146 pages shared
-[62129.710683] 384507 pages non-shared
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 603fe0d..800e2f4 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -95,7 +95,8 @@
+ #define XTYPE_XBOX        0
+ #define XTYPE_XBOX360     1
+ #define XTYPE_XBOX360W    2
+-#define XTYPE_UNKNOWN     3
++#define XTYPE_XBOXONE     3
++#define XTYPE_UNKNOWN     4
+ 
+ static bool dpad_to_buttons;
+ module_param(dpad_to_buttons, bool, S_IRUGO);
+@@ -121,6 +122,7 @@ static const struct xpad_device {
+ 	{ 0x045e, 0x0287, "Microsoft Xbox Controller S", 0, XTYPE_XBOX },
+ 	{ 0x045e, 0x0289, "Microsoft X-Box pad v2 (US)", 0, XTYPE_XBOX },
+ 	{ 0x045e, 0x028e, "Microsoft X-Box 360 pad", 0, XTYPE_XBOX360 },
++	{ 0x045e, 0x02d1, "Microsoft X-Box One pad", 0, XTYPE_XBOXONE },
+ 	{ 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+ 	{ 0x045e, 0x0719, "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+ 	{ 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
+@@ -245,9 +247,20 @@ static const signed short xpad_abs_triggers[] = {
+ 	{ XPAD_XBOX360_VENDOR_PROTOCOL(vend,1) }, \
+ 	{ XPAD_XBOX360_VENDOR_PROTOCOL(vend,129) }
+ 
++/* The Xbox One controller uses subclass 71 and protocol 208. */
++#define XPAD_XBOXONE_VENDOR_PROTOCOL(vend,pr) \
++	.match_flags = USB_DEVICE_ID_MATCH_VENDOR | USB_DEVICE_ID_MATCH_INT_INFO, \
++	.idVendor = (vend), \
++	.bInterfaceClass = USB_CLASS_VENDOR_SPEC, \
++	.bInterfaceSubClass = 71, \
++	.bInterfaceProtocol = (pr)
++#define XPAD_XBOXONE_VENDOR(vend) \
++	{ XPAD_XBOXONE_VENDOR_PROTOCOL(vend,208) }
++
+ static struct usb_device_id xpad_table[] = {
+ 	{ USB_INTERFACE_INFO('X', 'B', 0) },	/* X-Box USB-IF not approved class */
+ 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
++	XPAD_XBOXONE_VENDOR(0x045e),		/* Microsoft X-Box One controllers */
+ 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
+ 	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
+ 	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
+@@ -470,6 +483,101 @@ static void xpad360w_process_packet(struct usb_xpad *xpad, u16 cmd, unsigned cha
+ 	xpad360_process_packet(xpad, cmd, &data[4]);
+ }
+ 
++/*
++ *	xpadone_process_buttons
++ *
++ *	Process a button update packet from an Xbox one controller.
++ */
++static void xpadone_process_buttons(struct usb_xpad *xpad,
++				struct input_dev *dev,
++				unsigned char *data)
++{
++	/* menu/view buttons */
++	input_report_key(dev, BTN_START,  data[4] & 0x04);
++	input_report_key(dev, BTN_SELECT, data[4] & 0x08);
++
++	/* buttons A,B,X,Y */
++	input_report_key(dev, BTN_A,	data[4] & 0x10);
++	input_report_key(dev, BTN_B,	data[4] & 0x20);
++	input_report_key(dev, BTN_X,	data[4] & 0x40);
++	input_report_key(dev, BTN_Y,	data[4] & 0x80);
++
++	/* digital pad */
++	if (xpad->mapping & MAP_DPAD_TO_BUTTONS) {
++		/* dpad as buttons (left, right, up, down) */
++		input_report_key(dev, BTN_TRIGGER_HAPPY1, data[5] & 0x04);
++		input_report_key(dev, BTN_TRIGGER_HAPPY2, data[5] & 0x08);
++		input_report_key(dev, BTN_TRIGGER_HAPPY3, data[5] & 0x01);
++		input_report_key(dev, BTN_TRIGGER_HAPPY4, data[5] & 0x02);
++	} else {
++		input_report_abs(dev, ABS_HAT0X,
++				 !!(data[5] & 0x08) - !!(data[5] & 0x04));
++		input_report_abs(dev, ABS_HAT0Y,
++				 !!(data[5] & 0x02) - !!(data[5] & 0x01));
++	}
++
++	/* TL/TR */
++	input_report_key(dev, BTN_TL,	data[5] & 0x10);
++	input_report_key(dev, BTN_TR,	data[5] & 0x20);
++
++	/* stick press left/right */
++	input_report_key(dev, BTN_THUMBL, data[5] & 0x40);
++	input_report_key(dev, BTN_THUMBR, data[5] & 0x80);
++
++	if (!(xpad->mapping & MAP_STICKS_TO_NULL)) {
++		/* left stick */
++		input_report_abs(dev, ABS_X,
++				 (__s16) le16_to_cpup((__le16 *)(data + 10)));
++		input_report_abs(dev, ABS_Y,
++				 ~(__s16) le16_to_cpup((__le16 *)(data + 12)));
++
++		/* right stick */
++		input_report_abs(dev, ABS_RX,
++				 (__s16) le16_to_cpup((__le16 *)(data + 14)));
++		input_report_abs(dev, ABS_RY,
++				 ~(__s16) le16_to_cpup((__le16 *)(data + 16)));
++	}
++
++	/* triggers left/right */
++	if (xpad->mapping & MAP_TRIGGERS_TO_BUTTONS) {
++		input_report_key(dev, BTN_TL2,
++				 (__u16) le16_to_cpup((__le16 *)(data + 6)));
++		input_report_key(dev, BTN_TR2,
++				 (__u16) le16_to_cpup((__le16 *)(data + 8)));
++	} else {
++		input_report_abs(dev, ABS_Z,
++				 (__u16) le16_to_cpup((__le16 *)(data + 6)));
++		input_report_abs(dev, ABS_RZ,
++				 (__u16) le16_to_cpup((__le16 *)(data + 8)));
++	}
++}
++
++/*
++ *	xpadone_process_packet
++ *
++ *	Completes a request by converting the data into events for the
++ *	input subsystem. This version is for the Xbox One controller.
++ *
++ *	The report format was gleaned from
++ *	https://github.com/kylelemons/xbox/blob/master/xbox.go
++ */
++
++static void xpadone_process_packet(struct usb_xpad *xpad,
++				u16 cmd, unsigned char *data)
++{
++	struct input_dev *dev = xpad->dev;
++
++	if (data[0] == 0x20) {
++		xpadone_process_buttons(xpad, dev, data);
++	} else if (data[0] == 0x07) {
++		/* the xbox button has its own special report */
++		input_report_key(dev, BTN_MODE, data[4] & 0x01);
++	}
++
++	if (data[0] == 0x20 || data[0] == 0x07)
++		input_sync(dev);
++}
++
+ static void xpad_irq_in(struct urb *urb)
+ {
+ 	struct usb_xpad *xpad = urb->context;
+@@ -502,6 +610,9 @@ static void xpad_irq_in(struct urb *urb)
+ 	case XTYPE_XBOX360W:
+ 		xpad360w_process_packet(xpad, 0, xpad->idata);
+ 		break;
++	case XTYPE_XBOXONE:
++		xpadone_process_packet(xpad, 0, xpad->idata);
++		break;
+ 	default:
+ 		xpad_process_packet(xpad, 0, xpad->idata);
+ 	}
+@@ -535,7 +646,6 @@ static void xpad_bulk_out(struct urb *urb)
+ 	}
+ }
+ 
+-#if defined(CONFIG_JOYSTICK_XPAD_FF) || defined(CONFIG_JOYSTICK_XPAD_LEDS)
+ static void xpad_irq_out(struct urb *urb)
+ {
+ 	struct usb_xpad *xpad = urb->context;
+@@ -593,7 +703,11 @@ static int xpad_init_output(struct usb_interface *intf, struct usb_xpad *xpad)
+ 		goto fail2;
+ 	}
+ 
+-	ep_irq_out = &intf->cur_altsetting->endpoint[1].desc;
++	if (xpad->xtype == XTYPE_XBOXONE)
++		/* Xbox One controller has in/out endpoints swapped. */
++		ep_irq_out = &intf->cur_altsetting->endpoint[0].desc;
++	else
++		ep_irq_out = &intf->cur_altsetting->endpoint[1].desc;
+ 	usb_fill_int_urb(xpad->irq_out, xpad->udev,
+ 			 usb_sndintpipe(xpad->udev, ep_irq_out->bEndpointAddress),
+ 			 xpad->odata, XPAD_PKT_LEN,
+@@ -621,11 +735,6 @@ static void xpad_deinit_output(struct usb_xpad *xpad)
+ 				xpad->odata, xpad->odata_dma);
+ 	}
+ }
+-#else
+-static int xpad_init_output(struct usb_interface *intf, struct usb_xpad *xpad) { return 0; }
+-static void xpad_deinit_output(struct usb_xpad *xpad) {}
+-static void xpad_stop_output(struct usb_xpad *xpad) {}
+-#endif
+ 
+ #ifdef CONFIG_JOYSTICK_XPAD_FF
+ static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect *effect)
+@@ -692,7 +801,7 @@ static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect
+ 
+ static int xpad_init_ff(struct usb_xpad *xpad)
+ {
+-	if (xpad->xtype == XTYPE_UNKNOWN)
++	if (xpad->xtype == XTYPE_UNKNOWN || xpad->xtype == XTYPE_XBOXONE)
+ 		return 0;
+ 
+ 	input_set_capability(xpad->dev, EV_FF, FF_RUMBLE);
+@@ -801,6 +910,14 @@ static int xpad_open(struct input_dev *dev)
+ 	if (usb_submit_urb(xpad->irq_in, GFP_KERNEL))
+ 		return -EIO;
+ 
++	if (xpad->xtype == XTYPE_XBOXONE) {
++		/* Xbox one controller needs to be initialized. */
++		xpad->odata[0] = 0x05;
++		xpad->odata[1] = 0x20;
++		xpad->irq_out->transfer_buffer_length = 2;
++		return usb_submit_urb(xpad->irq_out, GFP_KERNEL);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -816,6 +933,7 @@ static void xpad_close(struct input_dev *dev)
+ 
+ static void xpad_set_up_abs(struct input_dev *input_dev, signed short abs)
+ {
++	struct usb_xpad *xpad = input_get_drvdata(input_dev);
+ 	set_bit(abs, input_dev->absbit);
+ 
+ 	switch (abs) {
+@@ -827,7 +945,10 @@ static void xpad_set_up_abs(struct input_dev *input_dev, signed short abs)
+ 		break;
+ 	case ABS_Z:
+ 	case ABS_RZ:	/* the triggers (if mapped to axes) */
+-		input_set_abs_params(input_dev, abs, 0, 255, 0, 0);
++		if (xpad->xtype == XTYPE_XBOXONE)
++			input_set_abs_params(input_dev, abs, 0, 1023, 0, 0);
++		else
++			input_set_abs_params(input_dev, abs, 0, 255, 0, 0);
+ 		break;
+ 	case ABS_HAT0X:
+ 	case ABS_HAT0Y:	/* the d-pad (only if dpad is mapped to axes */
+@@ -850,6 +971,15 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 			break;
+ 	}
+ 
++	if (xpad_device[i].xtype == XTYPE_XBOXONE
++		&& intf->cur_altsetting->desc.bInterfaceNumber != 0) {
++		/* The Xbox One controller lists three interfaces all with the
++		 * same interface class, subclass and protocol. Differentiate by
++		 * interface number.
++		 */
++		return -ENODEV;
++	}
++
+ 	xpad = kzalloc(sizeof(struct usb_xpad), GFP_KERNEL);
+ 	input_dev = input_allocate_device();
+ 	if (!xpad || !input_dev) {
+@@ -920,7 +1050,8 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 		__set_bit(xpad_common_btn[i], input_dev->keybit);
+ 
+ 	/* set up model-specific ones */
+-	if (xpad->xtype == XTYPE_XBOX360 || xpad->xtype == XTYPE_XBOX360W) {
++	if (xpad->xtype == XTYPE_XBOX360 || xpad->xtype == XTYPE_XBOX360W
++		|| xpad->xtype == XTYPE_XBOXONE) {
+ 		for (i = 0; xpad360_btn[i] >= 0; i++)
+ 			__set_bit(xpad360_btn[i], input_dev->keybit);
+ 	} else {
+@@ -933,7 +1064,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 			__set_bit(xpad_btn_pad[i], input_dev->keybit);
+ 	} else {
+ 		for (i = 0; xpad_abs_pad[i] >= 0; i++)
+-		    xpad_set_up_abs(input_dev, xpad_abs_pad[i]);
++			xpad_set_up_abs(input_dev, xpad_abs_pad[i]);
+ 	}
+ 
+ 	if (xpad->mapping & MAP_TRIGGERS_TO_BUTTONS) {
+@@ -956,7 +1087,11 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	if (error)
+ 		goto fail5;
+ 
+-	ep_irq_in = &intf->cur_altsetting->endpoint[0].desc;
++	if (xpad->xtype == XTYPE_XBOXONE)
++		/* Xbox One controller has in/out endpoints swapped. */
++		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
++	else
++		ep_irq_in = &intf->cur_altsetting->endpoint[0].desc;
+ 	usb_fill_int_urb(xpad->irq_in, udev,
+ 			 usb_rcvintpipe(udev, ep_irq_in->bEndpointAddress),
+ 			 xpad->idata, XPAD_PKT_LEN, xpad_irq_in,
+@@ -1010,7 +1145,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
+ 		 * because we get status messages from the device whether
+-		 * or not any controllers are attached.  In fact, it's
++		 * or not any controllers are attached.	 In fact, it's
+ 		 * exactly the message that a controller has arrived that
+ 		 * we're waiting for.
+ 		 */
+-- 
+1.9.1
 
