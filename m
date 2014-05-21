@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaEUNNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13199 "EHLO mx1.redhat.com"
+	id S1752580AbaEUNOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:14:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24125 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257AbaEUNNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:07 -0400
+	id S1752257AbaEUNNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:13:20 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 11/22] perf report: Add -F option to specify output fields
-Date: Wed, 21 May 2014 15:12:33 +0200
-Message-Id: <1400677964-25160-12-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 20/22] perf tests: Add a testcase for histogram output sorting
+Date: Wed, 21 May 2014 15:12:42 +0200
+Message-Id: <1400677964-25160-21-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,510 +21,725 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-The -F/--fields option is to allow user setup output field in any
-order.  It can receive any sort keys and following (hpp) fields:
+With new output fields option, its internal implementation was changed
+so add a new testcase to verify whether it breaks things.
 
-  overhead, overhead_sys, overhead_us, sample and period
-
-If guest profiling is enabled, overhead_guest_{sys,us} will be
-available too.
-
-The output fields also affect sort order unless you give -s/--sort
-option.  And any keys specified on -s option, will also be added to
-the output field list automatically.
-
-  $ perf report -F sym,sample,overhead
-  ...
-  #                     Symbol       Samples  Overhead
-  # ..........................  ............  ........
-  #
-    [.] __cxa_atexit                       2     2.50%
-    [.] __libc_csu_init                    4     5.00%
-    [.] __new_exitfn                       3     3.75%
-    [.] _dl_check_map_versions             1     1.25%
-    [.] _dl_name_match_p                   4     5.00%
-    [.] _dl_setup_hash                     1     1.25%
-    [.] _dl_sysdep_start                   1     1.25%
-    [.] _init                              5     6.25%
-    [.] _setjmp                            6     7.50%
-    [.] a                                  8    10.00%
-    [.] b                                  8    10.00%
-    [.] brk                                1     1.25%
-    [.] c                                  8    10.00%
-
-Note that, the example output above is captured after applying next
-patch which fixes sort/comparing behavior.
-
-Requested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-12-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-21-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  10 ++
- tools/perf/builtin-report.c              |  15 ++-
- tools/perf/ui/hist.c                     |  59 ++++++++-
- tools/perf/util/hist.h                   |   4 +
- tools/perf/util/sort.c                   | 209 ++++++++++++++++++++++++++++++-
- tools/perf/util/sort.h                   |   2 +
- 6 files changed, 282 insertions(+), 17 deletions(-)
+ tools/perf/Makefile.perf        |   1 +
+ tools/perf/tests/builtin-test.c |   4 +
+ tools/perf/tests/hists_common.c |   4 +-
+ tools/perf/tests/hists_filter.c |   1 +
+ tools/perf/tests/hists_link.c   |   1 +
+ tools/perf/tests/hists_output.c | 618 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |   1 +
+ 7 files changed, 628 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/tests/hists_output.c
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 9babe91..a1b5185 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -107,6 +107,16 @@ OPTIONS
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
- 
-+-F::
-+--fields=::
-+	Specify output field - multiple keys can be specified in CSV format.
-+	Following fields are available:
-+	overhead, overhead_sys, overhead_us, sample and period.
-+	Also it can contain any sort key(s).
-+
-+	By default, every sort keys not specified in -F will be appended
-+	automatically.
-+
- -p::
- --parent=<regex>::
-         A regex filter to identify parent. The parent is a caller of this
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c4dab7a..bc0eec1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -701,6 +701,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
- 		   " Please refer the man page for the complete list."),
-+	OPT_STRING('F', "fields", &field_order, "key[,keys...]",
-+		   "output field(s): overhead, period, sample plus all of sort keys"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-@@ -814,17 +816,14 @@ repeat:
- 	}
- 
- 	if (setup_sorting() < 0) {
--		parse_options_usage(report_usage, options, "s", 1);
-+		if (sort_order)
-+			parse_options_usage(report_usage, options, "s", 1);
-+		if (field_order)
-+			parse_options_usage(sort_order ? NULL : report_usage,
-+					    options, "F", 1);
- 		goto error;
- 	}
- 
--	if (parent_pattern != default_parent_pattern) {
--		if (sort_dimension__add("parent") < 0)
--			goto error;
--	}
--
--	perf_hpp__init();
--
- 	/* Force tty output for header output. */
- 	if (report.header || report.header_only)
- 		use_browser = 0;
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 24116a4..b114c66 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -355,6 +355,12 @@ void perf_hpp__init(void)
- 			INIT_LIST_HEAD(&fmt->sort_list);
- 	}
- 
-+	/*
-+	 * If user specified field order, no need to setup default fields.
-+	 */
-+	if (field_order)
-+		return;
-+
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 
- 	if (symbol_conf.show_cpu_utilization) {
-@@ -377,8 +383,6 @@ void perf_hpp__init(void)
- 	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
- 	if (list_empty(list))
- 		list_add(list, &perf_hpp__sort_list);
--
--	perf_hpp__setup_output_field();
- }
- 
- void perf_hpp__column_register(struct perf_hpp_fmt *format)
-@@ -403,8 +407,55 @@ void perf_hpp__setup_output_field(void)
- 
- 	/* append sort keys to output field */
- 	perf_hpp__for_each_sort_list(fmt) {
--		if (list_empty(&fmt->list))
--			perf_hpp__column_register(fmt);
-+		if (!list_empty(&fmt->list))
-+			continue;
-+
-+		/*
-+		 * sort entry fields are dynamically created,
-+		 * so they can share a same sort key even though
-+		 * the list is empty.
-+		 */
-+		if (perf_hpp__is_sort_entry(fmt)) {
-+			struct perf_hpp_fmt *pos;
-+
-+			perf_hpp__for_each_format(pos) {
-+				if (perf_hpp__same_sort_entry(pos, fmt))
-+					goto next;
-+			}
-+		}
-+
-+		perf_hpp__column_register(fmt);
-+next:
-+		continue;
-+	}
-+}
-+
-+void perf_hpp__append_sort_keys(void)
-+{
-+	struct perf_hpp_fmt *fmt;
-+
-+	/* append output fields to sort keys */
-+	perf_hpp__for_each_format(fmt) {
-+		if (!list_empty(&fmt->sort_list))
-+			continue;
-+
-+		/*
-+		 * sort entry fields are dynamically created,
-+		 * so they can share a same sort key even though
-+		 * the list is empty.
-+		 */
-+		if (perf_hpp__is_sort_entry(fmt)) {
-+			struct perf_hpp_fmt *pos;
-+
-+			perf_hpp__for_each_sort_list(pos) {
-+				if (perf_hpp__same_sort_entry(pos, fmt))
-+					goto next;
-+			}
-+		}
-+
-+		perf_hpp__register_sort_field(fmt);
-+next:
-+		continue;
- 	}
- }
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 76bb72e..f3713b7 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -197,6 +197,10 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
- void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
- void perf_hpp__setup_output_field(void);
-+void perf_hpp__append_sort_keys(void);
-+
-+bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format);
-+bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index d64c1e5..b748b02 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -13,6 +13,7 @@ const char	default_mem_sort_order[] = "local_weight,mem,sym,dso,symbol_daddr,dso
- const char	default_top_sort_order[] = "dso,symbol";
- const char	default_diff_sort_order[] = "dso,symbol";
- const char	*sort_order;
-+const char	*field_order;
- regex_t		ignore_callees_regex;
- int		have_ignore_callees = 0;
- int		sort__need_collapse = 0;
-@@ -1057,6 +1058,20 @@ struct hpp_sort_entry {
- 	struct sort_entry *se;
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index dea2d633..02f0a4d 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -399,6 +399,7 @@ LIB_OBJS += $(OUTPUT)tests/pmu.o
+ LIB_OBJS += $(OUTPUT)tests/hists_common.o
+ LIB_OBJS += $(OUTPUT)tests/hists_link.o
+ LIB_OBJS += $(OUTPUT)tests/hists_filter.o
++LIB_OBJS += $(OUTPUT)tests/hists_output.o
+ LIB_OBJS += $(OUTPUT)tests/python-use.o
+ LIB_OBJS += $(OUTPUT)tests/bp_signal.o
+ LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 5e0764b..831f52c 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -136,6 +136,10 @@ static struct test {
+ 		.func = test__thread_mg_share,
+ 	},
+ 	{
++		.desc = "Test output sorting of hist entries",
++		.func = test__hists_output,
++	},
++	{
+ 		.func = NULL,
+ 	},
  };
+diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
+index 040a85b..e4e01aad 100644
+--- a/tools/perf/tests/hists_common.c
++++ b/tools/perf/tests/hists_common.c
+@@ -193,8 +193,8 @@ void print_hists_out(struct hists *hists)
+ 		he = rb_entry(node, struct hist_entry, rb_node);
  
-+bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b)
+ 		if (!he->filtered) {
+-			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
+-				i, thread__comm_str(he->thread),
++			pr_info("%2d: entry: %8s:%5d [%-8s] %20s: period = %"PRIu64"\n",
++				i, thread__comm_str(he->thread), he->thread->tid,
+ 				he->ms.map->dso->short_name,
+ 				he->ms.sym->name, he->stat.period);
+ 		}
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 13c8cf4..c5ba924 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -283,6 +283,7 @@ int test__hists_filter(void)
+ out:
+ 	/* tear down everything */
+ 	perf_evlist__delete(evlist);
++	reset_output_field();
+ 	machines__exit(&machines);
+ 
+ 	return err;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 4e783db..5ffa2c3 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -332,6 +332,7 @@ int test__hists_link(void)
+ out:
+ 	/* tear down everything */
+ 	perf_evlist__delete(evlist);
++	reset_output_field();
+ 	machines__exit(&machines);
+ 
+ 	return err;
+diff --git a/tools/perf/tests/hists_output.c b/tools/perf/tests/hists_output.c
+new file mode 100644
+index 0000000..a168505
+--- /dev/null
++++ b/tools/perf/tests/hists_output.c
+@@ -0,0 +1,618 @@
++#include "perf.h"
++#include "util/debug.h"
++#include "util/symbol.h"
++#include "util/sort.h"
++#include "util/evsel.h"
++#include "util/evlist.h"
++#include "util/machine.h"
++#include "util/thread.h"
++#include "util/parse-events.h"
++#include "tests/tests.h"
++#include "tests/hists_common.h"
++
++struct sample {
++	u32 cpu;
++	u32 pid;
++	u64 ip;
++	struct thread *thread;
++	struct map *map;
++	struct symbol *sym;
++};
++
++/* For the numbers, see hists_common.c */
++static struct sample fake_samples[] = {
++	/* perf [kernel] schedule() */
++	{ .cpu = 0, .pid = 100, .ip = 0xf0000 + 700, },
++	/* perf [perf]   main() */
++	{ .cpu = 1, .pid = 100, .ip = 0x40000 + 700, },
++	/* perf [perf]   cmd_record() */
++	{ .cpu = 1, .pid = 100, .ip = 0x40000 + 900, },
++	/* perf [libc]   malloc() */
++	{ .cpu = 1, .pid = 100, .ip = 0x50000 + 700, },
++	/* perf [libc]   free() */
++	{ .cpu = 2, .pid = 100, .ip = 0x50000 + 800, },
++	/* perf [perf]   main() */
++	{ .cpu = 2, .pid = 200, .ip = 0x40000 + 700, },
++	/* perf [kernel] page_fault() */
++	{ .cpu = 2, .pid = 200, .ip = 0xf0000 + 800, },
++	/* bash [bash]   main() */
++	{ .cpu = 3, .pid = 300, .ip = 0x40000 + 700, },
++	/* bash [bash]   xmalloc() */
++	{ .cpu = 0, .pid = 300, .ip = 0x40000 + 800, },
++	/* bash [kernel] page_fault() */
++	{ .cpu = 1, .pid = 300, .ip = 0xf0000 + 800, },
++};
++
++static int add_hist_entries(struct hists *hists, struct machine *machine)
 +{
-+	struct hpp_sort_entry *hse_a;
-+	struct hpp_sort_entry *hse_b;
++	struct addr_location al;
++	struct hist_entry *he;
++	struct perf_sample sample = { .period = 100, };
++	size_t i;
 +
-+	if (!perf_hpp__is_sort_entry(a) || !perf_hpp__is_sort_entry(b))
-+		return false;
++	for (i = 0; i < ARRAY_SIZE(fake_samples); i++) {
++		const union perf_event event = {
++			.header = {
++				.misc = PERF_RECORD_MISC_USER,
++			},
++		};
 +
-+	hse_a = container_of(a, struct hpp_sort_entry, hpp);
-+	hse_b = container_of(b, struct hpp_sort_entry, hpp);
++		sample.cpu = fake_samples[i].cpu;
++		sample.pid = fake_samples[i].pid;
++		sample.tid = fake_samples[i].pid;
++		sample.ip = fake_samples[i].ip;
 +
-+	return hse_a->se == hse_b->se;
-+}
++		if (perf_event__preprocess_sample(&event, machine, &al,
++						  &sample) < 0)
++			goto out;
 +
- static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 			      struct perf_evsel *evsel)
- {
-@@ -1092,14 +1107,15 @@ static int __sort__hpp_entry(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 	return hse->se->se_snprintf(he, hpp->buf, hpp->size, len);
- }
- 
--static int __sort_dimension__add_hpp(struct sort_dimension *sd)
-+static struct hpp_sort_entry *
-+__sort_dimension__alloc_hpp(struct sort_dimension *sd)
- {
- 	struct hpp_sort_entry *hse;
- 
- 	hse = malloc(sizeof(*hse));
- 	if (hse == NULL) {
- 		pr_err("Memory allocation failed\n");
--		return -1;
-+		return NULL;
- 	}
- 
- 	hse->se = sd->entry;
-@@ -1115,16 +1131,42 @@ static int __sort_dimension__add_hpp(struct sort_dimension *sd)
- 	INIT_LIST_HEAD(&hse->hpp.list);
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
- 
-+	return hse;
-+}
++		he = __hists__add_entry(hists, &al, NULL, NULL, NULL,
++					sample.period, 1, 0);
++		if (he == NULL)
++			goto out;
 +
-+bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format)
-+{
-+	return format->header == __sort__hpp_header;
-+}
-+
-+static int __sort_dimension__add_hpp_sort(struct sort_dimension *sd)
-+{
-+	struct hpp_sort_entry *hse = __sort_dimension__alloc_hpp(sd);
-+
-+	if (hse == NULL)
-+		return -1;
-+
- 	perf_hpp__register_sort_field(&hse->hpp);
- 	return 0;
- }
- 
-+static int __sort_dimension__add_hpp_output(struct sort_dimension *sd)
-+{
-+	struct hpp_sort_entry *hse = __sort_dimension__alloc_hpp(sd);
-+
-+	if (hse == NULL)
-+		return -1;
-+
-+	perf_hpp__column_register(&hse->hpp);
-+	return 0;
-+}
-+
- static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- {
- 	if (sd->taken)
- 		return 0;
- 
--	if (__sort_dimension__add_hpp(sd) < 0)
-+	if (__sort_dimension__add_hpp_sort(sd) < 0)
- 		return -1;
- 
- 	if (sd->entry->se_collapse)
-@@ -1149,6 +1191,28 @@ static int __hpp_dimension__add(struct hpp_dimension *hd)
- 	return 0;
- }
- 
-+static int __sort_dimension__add_output(struct sort_dimension *sd)
-+{
-+	if (sd->taken)
-+		return 0;
-+
-+	if (__sort_dimension__add_hpp_output(sd) < 0)
-+		return -1;
-+
-+	sd->taken = 1;
-+	return 0;
-+}
-+
-+static int __hpp_dimension__add_output(struct hpp_dimension *hd)
-+{
-+	if (!hd->taken) {
-+		hd->taken = 1;
-+
-+		perf_hpp__column_register(hd->fmt);
-+	}
-+	return 0;
-+}
-+
- int sort_dimension__add(const char *tok)
- {
- 	unsigned int i;
-@@ -1237,14 +1301,23 @@ static const char *get_default_sort_order(void)
- 	return default_sort_orders[sort__mode];
- }
- 
--int setup_sorting(void)
-+static int __setup_sorting(void)
- {
- 	char *tmp, *tok, *str;
- 	const char *sort_keys = sort_order;
- 	int ret = 0;
- 
--	if (sort_keys == NULL)
-+	if (sort_keys == NULL) {
-+		if (field_order) {
-+			/*
-+			 * If user specified field order but no sort order,
-+			 * we'll honor it and not add default sort orders.
-+			 */
-+			return 0;
-+		}
-+
- 		sort_keys = get_default_sort_order();
-+	}
- 
- 	str = strdup(sort_keys);
- 	if (str == NULL) {
-@@ -1331,3 +1404,129 @@ void sort__setup_elide(FILE *output)
- 	list_for_each_entry(se, &hist_entry__sort_list, list)
- 		se->elide = false;
- }
-+
-+static int output_field_add(char *tok)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(common_sort_dimensions); i++) {
-+		struct sort_dimension *sd = &common_sort_dimensions[i];
-+
-+		if (strncasecmp(tok, sd->name, strlen(tok)))
-+			continue;
-+
-+		return __sort_dimension__add_output(sd);
++		fake_samples[i].thread = al.thread;
++		fake_samples[i].map = al.map;
++		fake_samples[i].sym = al.sym;
 +	}
 +
-+	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
-+		struct hpp_dimension *hd = &hpp_sort_dimensions[i];
++	return TEST_OK;
 +
-+		if (strncasecmp(tok, hd->name, strlen(tok)))
-+			continue;
-+
-+		return __hpp_dimension__add_output(hd);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
-+		struct sort_dimension *sd = &bstack_sort_dimensions[i];
-+
-+		if (strncasecmp(tok, sd->name, strlen(tok)))
-+			continue;
-+
-+		return __sort_dimension__add_output(sd);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(memory_sort_dimensions); i++) {
-+		struct sort_dimension *sd = &memory_sort_dimensions[i];
-+
-+		if (strncasecmp(tok, sd->name, strlen(tok)))
-+			continue;
-+
-+		return __sort_dimension__add_output(sd);
-+	}
-+
-+	return -ESRCH;
++out:
++	pr_debug("Not enough memory for adding a hist entry\n");
++	return TEST_FAIL;
 +}
 +
-+static void reset_dimensions(void)
++static void del_hist_entries(struct hists *hists)
 +{
-+	unsigned int i;
++	struct hist_entry *he;
++	struct rb_root *root_in;
++	struct rb_root *root_out;
++	struct rb_node *node;
 +
-+	for (i = 0; i < ARRAY_SIZE(common_sort_dimensions); i++)
-+		common_sort_dimensions[i].taken = 0;
++	if (sort__need_collapse)
++		root_in = &hists->entries_collapsed;
++	else
++		root_in = hists->entries_in;
 +
-+	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++)
-+		hpp_sort_dimensions[i].taken = 0;
++	root_out = &hists->entries;
 +
-+	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++)
-+		bstack_sort_dimensions[i].taken = 0;
++	while (!RB_EMPTY_ROOT(root_out)) {
++		node = rb_first(root_out);
 +
-+	for (i = 0; i < ARRAY_SIZE(memory_sort_dimensions); i++)
-+		memory_sort_dimensions[i].taken = 0;
++		he = rb_entry(node, struct hist_entry, rb_node);
++		rb_erase(node, root_out);
++		rb_erase(&he->rb_node_in, root_in);
++		hist_entry__free(he);
++	}
 +}
 +
-+static int __setup_output_field(void)
-+{
-+	char *tmp, *tok, *str;
-+	int ret = 0;
++typedef int (*test_fn_t)(struct perf_evsel *, struct machine *);
 +
-+	if (field_order == NULL)
-+		return 0;
++#define COMM(he)  (thread__comm_str(he->thread))
++#define DSO(he)   (he->ms.map->dso->short_name)
++#define SYM(he)   (he->ms.sym->name)
++#define CPU(he)   (he->cpu)
++#define PID(he)   (he->thread->tid)
 +
-+	reset_dimensions();
-+
-+	str = strdup(field_order);
-+	if (str == NULL) {
-+		error("Not enough memory to setup output fields");
-+		return -ENOMEM;
-+	}
-+
-+	for (tok = strtok_r(str, ", ", &tmp);
-+			tok; tok = strtok_r(NULL, ", ", &tmp)) {
-+		ret = output_field_add(tok);
-+		if (ret == -EINVAL) {
-+			error("Invalid --fields key: `%s'", tok);
-+			break;
-+		} else if (ret == -ESRCH) {
-+			error("Unknown --fields key: `%s'", tok);
-+			break;
-+		}
-+	}
-+
-+	free(str);
-+	return ret;
-+}
-+
-+int setup_sorting(void)
++/* default sort keys (no field) */
++static int test1(struct perf_evsel *evsel, struct machine *machine)
 +{
 +	int err;
++	struct hists *hists = &evsel->hists;
++	struct hist_entry *he;
++	struct rb_root *root;
++	struct rb_node *node;
 +
-+	err = __setup_sorting();
-+	if (err < 0)
-+		return err;
++	field_order = NULL;
++	sort_order = NULL; /* equivalent to sort_order = "comm,dso,sym" */
 +
-+	if (parent_pattern != default_parent_pattern) {
-+		err = sort_dimension__add("parent");
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	reset_dimensions();
++	setup_sorting();
 +
 +	/*
-+	 * perf diff doesn't use default hpp output fields.
++	 * expected output:
++	 *
++	 * Overhead  Command  Shared Object          Symbol
++	 * ========  =======  =============  ==============
++	 *   20.00%     perf  perf           [.] main
++	 *   10.00%     bash  [kernel]       [k] page_fault
++	 *   10.00%     bash  bash           [.] main
++	 *   10.00%     bash  bash           [.] xmalloc
++	 *   10.00%     perf  [kernel]       [k] page_fault
++	 *   10.00%     perf  [kernel]       [k] schedule
++	 *   10.00%     perf  libc           [.] free
++	 *   10.00%     perf  libc           [.] malloc
++	 *   10.00%     perf  perf           [.] cmd_record
 +	 */
-+	if (sort__mode != SORT_MODE__DIFF)
-+		perf_hpp__init();
-+
-+	err = __setup_output_field();
++	err = add_hist_entries(hists, machine);
 +	if (err < 0)
-+		return err;
++		goto out;
 +
-+	/* copy sort keys to output fields */
-+	perf_hpp__setup_output_field();
-+	/* and then copy output fields to sort keys */
-+	perf_hpp__append_sort_keys();
++	hists__collapse_resort(hists, NULL);
++	hists__output_resort(hists);
 +
-+	return 0;
++	if (verbose > 2) {
++		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
++		print_hists_out(hists);
++	}
++
++	root = &evsel->hists.entries;
++	node = rb_first(root);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			!strcmp(SYM(he), "main") && he->stat.period == 200);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "page_fault") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "bash") &&
++			!strcmp(SYM(he), "main") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "bash") &&
++			!strcmp(SYM(he), "xmalloc") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "page_fault") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "schedule") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "libc") &&
++			!strcmp(SYM(he), "free") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "libc") &&
++			!strcmp(SYM(he), "malloc") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			!strcmp(SYM(he), "cmd_record") && he->stat.period == 100);
++
++out:
++	del_hist_entries(hists);
++	reset_output_field();
++	return err;
 +}
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 1a72952..89e5057 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -25,6 +25,7 @@
++
++/* mixed fields and sort keys */
++static int test2(struct perf_evsel *evsel, struct machine *machine)
++{
++	int err;
++	struct hists *hists = &evsel->hists;
++	struct hist_entry *he;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	field_order = "overhead,cpu";
++	sort_order = "pid";
++
++	setup_sorting();
++
++	/*
++	 * expected output:
++	 *
++	 * Overhead  CPU  Command:  Pid
++	 * ========  ===  =============
++	 *   30.00%    1  perf   :  100
++	 *   10.00%    0  perf   :  100
++	 *   10.00%    2  perf   :  100
++	 *   20.00%    2  perf   :  200
++	 *   10.00%    0  bash   :  300
++	 *   10.00%    1  bash   :  300
++	 *   10.00%    3  bash   :  300
++	 */
++	err = add_hist_entries(hists, machine);
++	if (err < 0)
++		goto out;
++
++	hists__collapse_resort(hists, NULL);
++	hists__output_resort(hists);
++
++	if (verbose > 2) {
++		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
++		print_hists_out(hists);
++	}
++
++	root = &evsel->hists.entries;
++	node = rb_first(root);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 1 && PID(he) == 100 && he->stat.period == 300);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 0 && PID(he) == 100 && he->stat.period == 100);
++
++out:
++	del_hist_entries(hists);
++	reset_output_field();
++	return err;
++}
++
++/* fields only (no sort key) */
++static int test3(struct perf_evsel *evsel, struct machine *machine)
++{
++	int err;
++	struct hists *hists = &evsel->hists;
++	struct hist_entry *he;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	field_order = "comm,overhead,dso";
++	sort_order = NULL;
++
++	setup_sorting();
++
++	/*
++	 * expected output:
++	 *
++	 * Command  Overhead  Shared Object
++	 * =======  ========  =============
++	 *    bash    20.00%  bash
++	 *    bash    10.00%  [kernel]
++	 *    perf    30.00%  perf
++	 *    perf    20.00%  [kernel]
++	 *    perf    20.00%  libc
++	 */
++	err = add_hist_entries(hists, machine);
++	if (err < 0)
++		goto out;
++
++	hists__collapse_resort(hists, NULL);
++	hists__output_resort(hists);
++
++	if (verbose > 2) {
++		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
++		print_hists_out(hists);
++	}
++
++	root = &evsel->hists.entries;
++	node = rb_first(root);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "bash") &&
++			he->stat.period == 200);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "[kernel]") &&
++			he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			he->stat.period == 300);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "[kernel]") &&
++			he->stat.period == 200);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "libc") &&
++			he->stat.period == 200);
++
++out:
++	del_hist_entries(hists);
++	reset_output_field();
++	return err;
++}
++
++/* handle duplicate 'dso' field */
++static int test4(struct perf_evsel *evsel, struct machine *machine)
++{
++	int err;
++	struct hists *hists = &evsel->hists;
++	struct hist_entry *he;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	field_order = "dso,sym,comm,overhead,dso";
++	sort_order = "sym";
++
++	setup_sorting();
++
++	/*
++	 * expected output:
++	 *
++	 * Shared Object          Symbol  Command  Overhead
++	 * =============  ==============  =======  ========
++	 *          perf  [.] cmd_record     perf    10.00%
++	 *          libc  [.] free           perf    10.00%
++	 *          bash  [.] main           bash    10.00%
++	 *          perf  [.] main           perf    20.00%
++	 *          libc  [.] malloc         perf    10.00%
++	 *      [kernel]  [k] page_fault     bash    10.00%
++	 *      [kernel]  [k] page_fault     perf    10.00%
++	 *      [kernel]  [k] schedule       perf    10.00%
++	 *          bash  [.] xmalloc        bash    10.00%
++	 */
++	err = add_hist_entries(hists, machine);
++	if (err < 0)
++		goto out;
++
++	hists__collapse_resort(hists, NULL);
++	hists__output_resort(hists);
++
++	if (verbose > 2) {
++		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
++		print_hists_out(hists);
++	}
++
++	root = &evsel->hists.entries;
++	node = rb_first(root);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "perf") && !strcmp(SYM(he), "cmd_record") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "libc") && !strcmp(SYM(he), "free") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "bash") && !strcmp(SYM(he), "main") &&
++			!strcmp(COMM(he), "bash") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "perf") && !strcmp(SYM(he), "main") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 200);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "libc") && !strcmp(SYM(he), "malloc") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "[kernel]") && !strcmp(SYM(he), "page_fault") &&
++			!strcmp(COMM(he), "bash") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "[kernel]") && !strcmp(SYM(he), "page_fault") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "[kernel]") && !strcmp(SYM(he), "schedule") &&
++			!strcmp(COMM(he), "perf") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			!strcmp(DSO(he), "bash") && !strcmp(SYM(he), "xmalloc") &&
++			!strcmp(COMM(he), "bash") && he->stat.period == 100);
++
++out:
++	del_hist_entries(hists);
++	reset_output_field();
++	return err;
++}
++
++/* full sort keys w/o overhead field */
++static int test5(struct perf_evsel *evsel, struct machine *machine)
++{
++	int err;
++	struct hists *hists = &evsel->hists;
++	struct hist_entry *he;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	field_order = "cpu,pid,comm,dso,sym";
++	sort_order = "dso,pid";
++
++	setup_sorting();
++
++	/*
++	 * expected output:
++	 *
++	 * CPU  Command:  Pid  Command  Shared Object          Symbol
++	 * ===  =============  =======  =============  ==============
++	 *   0     perf:  100     perf       [kernel]  [k] schedule
++	 *   2     perf:  200     perf       [kernel]  [k] page_fault
++	 *   1     bash:  300     bash       [kernel]  [k] page_fault
++	 *   0     bash:  300     bash           bash  [.] xmalloc
++	 *   3     bash:  300     bash           bash  [.] main
++	 *   1     perf:  100     perf           libc  [.] malloc
++	 *   2     perf:  100     perf           libc  [.] free
++	 *   1     perf:  100     perf           perf  [.] cmd_record
++	 *   1     perf:  100     perf           perf  [.] main
++	 *   2     perf:  200     perf           perf  [.] main
++	 */
++	err = add_hist_entries(hists, machine);
++	if (err < 0)
++		goto out;
++
++	hists__collapse_resort(hists, NULL);
++	hists__output_resort(hists);
++
++	if (verbose > 2) {
++		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
++		print_hists_out(hists);
++	}
++
++	root = &evsel->hists.entries;
++	node = rb_first(root);
++	he = rb_entry(node, struct hist_entry, rb_node);
++
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 0 && PID(he) == 100 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "schedule") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 2 && PID(he) == 200 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "page_fault") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 1 && PID(he) == 300 &&
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "[kernel]") &&
++			!strcmp(SYM(he), "page_fault") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 0 && PID(he) == 300 &&
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "bash") &&
++			!strcmp(SYM(he), "xmalloc") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 3 && PID(he) == 300 &&
++			!strcmp(COMM(he), "bash") && !strcmp(DSO(he), "bash") &&
++			!strcmp(SYM(he), "main") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 1 && PID(he) == 100 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "libc") &&
++			!strcmp(SYM(he), "malloc") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 2 && PID(he) == 100 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "libc") &&
++			!strcmp(SYM(he), "free") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 1 && PID(he) == 100 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			!strcmp(SYM(he), "cmd_record") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 1 && PID(he) == 100 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			!strcmp(SYM(he), "main") && he->stat.period == 100);
++
++	node = rb_next(node);
++	he = rb_entry(node, struct hist_entry, rb_node);
++	TEST_ASSERT_VAL("Invalid hist entry",
++			CPU(he) == 2 && PID(he) == 200 &&
++			!strcmp(COMM(he), "perf") && !strcmp(DSO(he), "perf") &&
++			!strcmp(SYM(he), "main") && he->stat.period == 100);
++
++out:
++	del_hist_entries(hists);
++	reset_output_field();
++	return err;
++}
++
++int test__hists_output(void)
++{
++	int err = TEST_FAIL;
++	struct machines machines;
++	struct machine *machine;
++	struct perf_evsel *evsel;
++	struct perf_evlist *evlist = perf_evlist__new();
++	size_t i;
++	test_fn_t testcases[] = {
++		test1,
++		test2,
++		test3,
++		test4,
++		test5,
++	};
++
++	TEST_ASSERT_VAL("No memory", evlist);
++
++	err = parse_events(evlist, "cpu-clock");
++	if (err)
++		goto out;
++
++	machines__init(&machines);
++
++	/* setup threads/dso/map/symbols also */
++	machine = setup_fake_machine(&machines);
++	if (!machine)
++		goto out;
++
++	if (verbose > 1)
++		machine__fprintf(machine, stderr);
++
++	evsel = perf_evlist__first(evlist);
++
++	for (i = 0; i < ARRAY_SIZE(testcases); i++) {
++		err = testcases[i](evsel, machine);
++		if (err < 0)
++			break;
++	}
++
++out:
++	/* tear down everything */
++	perf_evlist__delete(evlist);
++	machines__exit(&machines);
++
++	return err;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 8f91fb0..d76c0e2 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -44,6 +44,7 @@ int test__dwarf_unwind(void);
+ int test__hists_filter(void);
+ int test__mmap_thread_lookup(void);
+ int test__thread_mg_share(void);
++int test__hists_output(void);
  
- extern regex_t parent_regex;
- extern const char *sort_order;
-+extern const char *field_order;
- extern const char default_parent_pattern[];
- extern const char *parent_pattern;
- extern const char default_sort_order[];
-@@ -191,6 +192,7 @@ extern struct sort_entry sort_thread;
- extern struct list_head hist_entry__sort_list;
- 
- int setup_sorting(void);
-+int setup_output_field(void);
- extern int sort_dimension__add(const char *);
- void sort__setup_elide(FILE *fp);
- 
+ #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
 -- 
 1.8.3.1
 
