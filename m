@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaEUKyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:54:03 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17306 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403AbaEUKyB (ORCPT
+	id S1752121AbaEULBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:01:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50078 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaEULBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:54:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 21 May 2014 03:47:58 -0700
-Date: Wed, 21 May 2014 13:53:57 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: pull request for Tegra clock fixes for 3.16
-Message-ID: <20140521105357.GB15168@tbergstrom-lnx.Nvidia.com>
-References: <20140519134049.GA20109@tbergstrom-lnx.Nvidia.com>
+	Wed, 21 May 2014 07:01:11 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7444"; a="127582322"
+X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
+   d="scan'208";a="646004441"
+Date: Wed, 21 May 2014 16:31:45 +0530
+From: Rajkumar Manoharan <rmanohar@qti.qualcomm.com>
+To: Jim Davis <jim.epost@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linville <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        <ath9k-devel@venema.h4ckr.net>, netdev <netdev@vger.kernel.org>
+Subject: Re: [ath9k-devel] randconfig build error with next-20140519, in
+ drivers/net/wireless/ath/ath9k/dfs.c
+Message-ID: <20140521110143.GA2375@qca.qualcomm.com>
+References: <CA+r1ZhiM7EK08Y4kriXMugMc1Mbj5VDUPwKMq8-_k8Q8qhwPtw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140519134049.GA20109@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+r1ZhiM7EK08Y4kriXMugMc1Mbj5VDUPwKMq8-_k8Q8qhwPtw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 03:40:49PM +0200, Peter De Schrijver wrote:
-> Hi Mike,
+On Mon, May 19, 2014 at 09:31:16AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
 > 
-> A number of fixes which are needed by the upcoming XHCI and SATA drivers.
-> 
+> In file included from drivers/net/wireless/ath/ath9k/eeprom.h:22:0,
+>                  from drivers/net/wireless/ath/ath9k/hw.h:27,
+>                  from drivers/net/wireless/ath/ath9k/dfs.c:18:
+> drivers/net/wireless/ath/ath9k/dfs.c: In function ‘ath9k_dfs_process_phyerr’:
+> drivers/net/wireless/ath/ath9k/dfs.c:185:14: error: ‘struct ath_softc’
+> has no member named ‘debug’
+>     pe.ts - sc->debug.stats.dfs_stats.last_ts);
+>               ^
+> drivers/net/wireless/ath/ath9k/../ath.h:273:41: note: in definition of
+> macro ‘ath_dbg’
+>    ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__); \
+>                                          ^
+> drivers/net/wireless/ath/ath9k/dfs.c:186:5: error: ‘struct ath_softc’
+> has no member named ‘debug’
+>    sc->debug.stats.dfs_stats.last_ts = pe.ts;
+>      ^
+> make[5]: *** [drivers/net/wireless/ath/ath9k/dfs.o] Error 1
 
-Did you take this one already? If not, please ignore it. I will make a new one
-which includes the HDA clocks...
+Please select CONFIG_ATH9K_DEBUGFS.
 
-Cheers,
-
-Peter.
+-Rajkumar
