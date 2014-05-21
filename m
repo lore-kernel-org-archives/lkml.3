@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545AbaEUV7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:59:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54306 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629AbaEUV7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:59:23 -0400
-Date: Wed, 21 May 2014 23:59:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Borislav Petkov <bp@alien8.de>
-cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-In-Reply-To: <20140521215547.GJ25130@pd.tnic>
-Message-ID: <alpine.LNX.2.00.1405212357150.12047@pobox.suse.cz>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com> <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com> <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
- <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com> <20140521163315.GJ21205@pd.tnic> <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz> <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com> <20140521214845.GG25130@pd.tnic>
- <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com> <20140521215547.GJ25130@pd.tnic>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753669AbaEUV7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:59:34 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:34665 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451AbaEUV7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:59:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <537CFECF.9070701@ccur.com>
+References: <537CFECF.9070701@ccur.com>
+Date: Wed, 21 May 2014 14:59:30 -0700
+Message-ID: <CANGgnMYCFVQ7aR2Qjo+c5B=Jyi3QfyhAHd6y3imSN_7a3Y4Ekg@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+From: Austin Schuh <austin@peloton-tech.com>
+To: John Blackwood <john.blackwood@ccur.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org, xfs <xfs@oss.sgi.com>,
+        linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 May 2014, Borislav Petkov wrote:
+On Wed, May 21, 2014 at 12:30 PM, John Blackwood
+<john.blackwood@ccur.com> wrote:
+>> Date: Wed, 21 May 2014 03:33:49 -0400
+>> From: Richard Weinberger <richard.weinberger@gmail.com>
+>> To: Austin Schuh <austin@peloton-tech.com>
+>> CC: LKML <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>, rt-users
+>>       <linux-rt-users@vger.kernel.org>
+>> Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+>
+>>
+>> CC'ing RT folks
+>>
+>> On Wed, May 21, 2014 at 8:23 AM, Austin Schuh <austin@peloton-tech.com>
+>> wrote:
+>> > > On Tue, May 13, 2014 at 7:29 PM, Austin Schuh
+>> > > <austin@peloton-tech.com> wrote:
+>> >> >> Hi,
+>> >> >>
+>> >> >> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
+>> >> >> patched kernel.  I have currently only triggered it using dpkg.
+>> >> >> Dave
+>> >> >> Chinner on the XFS mailing list suggested that it was a rt-kernel
+>> >> >> workqueue issue as opposed to a XFS problem after looking at the
+>> >> >> kernel messages.
+>> >> >>
+>> >> >> The only modification to the kernel besides the RT patch is that I
+>> >> >> have applied tglx's "genirq: Sanitize spurious interrupt detection
+>> >> >> of
+>> >> >> threaded irqs" patch.
+>> > >
+>> > > I upgraded to 3.14.3-rt4, and the problem still persists.
+>> > >
+>> > > I turned on event tracing and tracked it down further.  I'm able to
+>> > > lock it up by scping a new kernel debian package to /tmp/ on the
+>> > > machine.  scp is locking the inode, and then scheduling
+>> > > xfs_bmapi_allocate_worker in the work queue.  The work then never gets
+>> > > run.  The kworkers then lock up waiting for the inode lock.
+>> > >
+>> > > Here are the relevant events from the trace.  ffff8803e9f10288
+>> > > (blk_delay_work) gets run later on in the trace, but ffff8803b4c158d0
+>> > > (xfs_bmapi_allocate_worker) never does.  The kernel then warns about
+>> > > blocked tasks 120 seconds later.
+>
+> Austin and Richard,
+>
+> I'm not 100% sure that the patch below will fix your problem, but we
+> saw something that sounds pretty familiar to your issue involving the
+> nvidia driver and the preempt-rt patch.  The nvidia driver uses the
+> completion support to create their own driver's notion of an internally
+> used semaphore.
+>
+> Some tasks were failing to ever wakeup from wait_for_completion() calls
+> due to a race in the underlying do_wait_for_common() routine.
 
-> > Why is it a problem if user_mode_vm(regs)?  Conversely, why is sending
-> > a signal a remotely reasonable thing to do if !user_mode_vm(regs)?
-> 
-> Let me quote Jiri:
-> 
-> (1) task sends signal to itself
-> (2) it acquires sighand->siglock so that it's able to queue the signal
-> (3) MCE triggers
-> (4) it tries to send a signal to the same task
-> (5) it tries to acquire sighand->siglock and loops forever
+Hi John,
 
-Ah, alright, but due to what mce_severity() does, this can't happen, 
-because if the current CPU is in the kernel (which is obviously implied by 
-holding a spinlock), it never proceeds sending the signal, becase 
-no_way_out gets set and mce_panic() invoked.
+Thanks for the suggestion and patch.  The issue is that the work never
+gets run, not that the work finishes but the waiter never gets woken.
+I applied it anyways to see if it helps, but I still get the lockup.
 
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+    Austin
