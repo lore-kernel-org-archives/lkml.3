@@ -1,44 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaEULkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:40:32 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:53806
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1752294AbaEULlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:41:50 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:44145
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751254AbaEULka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:40:30 -0400
-X-Greylist: delayed 16842 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 07:40:30 EDT
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v8 2/2] can: xilinx CAN controller support.
-Thread-Topic: [PATCH v8 2/2] can: xilinx CAN controller support.
-Thread-Index: AQHPdOfeEMgl0Smao0yYxudgrwK4optK6LvYgAAAL3A=
-Date: Wed, 21 May 2014 11:40:23 +0000
-References: <30fc07d6-4404-4745-8c03-1c5ae775e4f1@BY2FFO11FD047.protection.gbl>
- <537C8E00.404@pengutronix.de>
- <72e9a444-0de4-42ce-a9d3-ee247948f0e6@BN1AFFO11FD030.protection.gbl>
- <537C8FEF.9040407@pengutronix.de>
-In-Reply-To: <537C8FEF.9040407@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.16.44]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1750761AbaEULlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:41:46 -0400
+X-Greylist: delayed 16918 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 07:41:46 EDT
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <michal.simek@xilinx.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-can@vger.kernel.org>,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: [PATCH v8 1/2] can: Add xilinx CAN device tree bindings documentation.
+Date: Wed, 21 May 2014 17:11:29 +0530
+X-Mailer: git-send-email 1.7.4
 X-RCIS-Action: ALLOW
-Message-ID: <ba000a58-677b-44ed-955b-8c024fb7a451@BN1AFFO11FD034.protection.gbl>
+Message-ID: <17489036-3743-4393-afc6-a9064325b4d5@BN1BFFO11FD053.protection.gbl>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(479174003)(377454003)(51704005)(189002)(199002)(13464003)(24454002)(77982001)(47776003)(64706001)(79102001)(44976005)(81342001)(46102001)(16601075003)(19580405001)(83322001)(81542001)(19580395003)(74316001)(33646001)(50466002)(20776003)(74502001)(99396002)(54356999)(74662001)(76176999)(86362001)(31696002)(23676002)(15975445006)(80022001)(83072002)(2656002)(85852003)(15202345003)(76482001)(4396001)(70736001)(50986999)(87936001)(21056001)(92726001)(53416003)(23106003);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB044;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(189002)(199002)(50226001)(88136002)(44976005)(87936001)(77982001)(20776003)(4396001)(64706001)(47776003)(93916002)(33646001)(74662001)(48376002)(74502001)(19580395003)(19580405001)(83322001)(76482001)(80022001)(79102001)(53416003)(21056001)(46102001)(31696002)(70736001)(62966002)(81342001)(50986999)(92726001)(83072002)(85852003)(2201001)(89996001)(102836001)(87286001)(77156001)(50466002)(99396002)(74316001)(86362001)(81542001)(23106003);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB025;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
 X-OriginatorOrg: xilinx.onmicrosoft.com
 X-Forefront-PRVS: 0218A015FA
 Authentication-Results: spf=pass (sender IP is 149.199.60.83)
@@ -46,44 +32,71 @@ Authentication-Results: spf=pass (sender IP is 149.199.60.83)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LBeg4h019297
 
-Hi Marc,
+Add xilinx CAN bindings documentation.
 
-        Ok sure will resend.
+Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+---
+Changes for v8:
+- None.
+Changes for v7:
+- Split the devicetree bindings doc as a seperate patch
+---
+ .../devicetree/bindings/net/can/xilinx_can.txt     |   44 ++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
 
-Regards,
-Kedar.
+diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+new file mode 100644
+index 0000000..fe38847
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+@@ -0,0 +1,44 @@
++Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
++---------------------------------------------------------
++
++Required properties:
++- compatible		: Should be "xlnx,zynq-can-1.0" for Zynq CAN
++			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
++			  controllers.
++- reg			: Physical base address and size of the Axi CAN/Zynq
++			  CANPS registers map.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- clock-names		: List of input clock names - "can_clk", "pclk"
++			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
++			  (See clock bindings for details).
++- clocks		: Clock phandles (see clock bindings for details).
++- tx-fifo-depth		: Can Tx fifo depth.
++- rx-fifo-depth		: Can Rx fifo depth.
++
++
++Example:
++
++For Zynq CANPS Dts file:
++	zynq_can_0: can@e0008000 {
++			compatible = "xlnx,zynq-can-1.0";
++			clocks = <&clkc 19>, <&clkc 36>;
++			clock-names = "can_clk", "pclk";
++			reg = <0xe0008000 0x1000>;
++			interrupts = <0 28 4>;
++			interrupt-parent = <&intc>;
++			tx-fifo-depth = <0x40>;
++			rx-fifo-depth = <0x40>;
++		};
++For Axi CAN Dts file:
++	axi_can_0: axi-can@40000000 {
++			compatible = "xlnx,axi-can-1.00.a";
++			clocks = <&clkc 0>, <&clkc 1>;
++			clock-names = "can_clk","s_axi_aclk" ;
++			reg = <0x40000000 0x10000>;
++			interrupt-parent = <&intc>;
++			interrupts = <0 59 1>;
++			tx-fifo-depth = <0x40>;
++			rx-fifo-depth = <0x40>;
++		};
+-- 
+1.7.4
 
-> -----Original Message-----
-> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> Sent: Wednesday, May 21, 2014 5:07 PM
-> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
-> grant.likely@linaro.org; robh+dt@kernel.org
-> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v8 2/2] can: xilinx CAN controller support.
->
-> On 05/21/2014 01:32 PM, Appana Durga Kedareswara Rao wrote:
-> > Hi Marc,
-> >
-> >         Yes for DT-bindings Rob already had given ack.
-> > Sorry I forgot to add the Acked-by line in that patch.
->
-> The DT patch didn't make it to the linux-can mailinglist, can you please
-> resend.
->
-> Marc
->
-> --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
