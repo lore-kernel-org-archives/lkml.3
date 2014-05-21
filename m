@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaEUNQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:16:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53378 "EHLO mx1.redhat.com"
+	id S1752196AbaEUNND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:13:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61649 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaEUNNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:05 -0400
+	id S1751691AbaEUNM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:12:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 09/22] perf tools: Consolidate management of default sort orders
-Date: Wed, 21 May 2014 15:12:31 +0200
-Message-Id: <1400677964-25160-10-git-send-email-jolsa@kernel.org>
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 06/22] perf tools: Consolidate output field handling to hpp format routines
+Date: Wed, 21 May 2014 15:12:28 +0200
+Message-Id: <1400677964-25160-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,164 +21,325 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-The perf uses different default sort orders for different use-cases,
-and this was scattered throughout the code.  Add get_default_sort_
-order() function to handle this and change initial value of sort_order
-to NULL to distinguish it from user-given one.
+Until now the hpp and sort functions do similar jobs different ways.
+Since the sort functions converted/wrapped to hpp formats it can do
+the job in a uniform way.
+
+The perf_hpp__sort_list has a list of hpp formats to sort entries and
+the perf_hpp__list has a list of hpp formats to print output result.
+
+To have a backward compatibility, it automatically adds 'overhead'
+field in front of sort list.  And then all of fields in sort list
+added to the output list (if it's not already there).
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1400480762-22852-10-git-send-email-namhyung@kernel.org
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-7g3h86woz2sckg3h1lj42ygj@git.kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-diff.c   |  4 ++--
- tools/perf/builtin-report.c | 18 ------------------
- tools/perf/builtin-top.c    |  3 +--
- tools/perf/util/sort.c      | 28 ++++++++++++++++++++++++++--
- tools/perf/util/sort.h      |  2 ++
- 5 files changed, 31 insertions(+), 24 deletions(-)
+ tools/perf/ui/browsers/hists.c | 31 ++++++++++++++----------
+ tools/perf/ui/gtk/hists.c      | 31 ------------------------
+ tools/perf/ui/hist.c           | 26 ++++++++++++++++++++
+ tools/perf/ui/stdio/hist.c     | 55 +++++++++++++-----------------------------
+ tools/perf/util/hist.c         |  2 +-
+ tools/perf/util/hist.h         |  1 +
+ 6 files changed, 63 insertions(+), 83 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index b60c711..8bff543 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -60,7 +60,6 @@ static int data__files_cnt;
- #define data__for_each_file(i, d) data__for_each_file_start(i, d, 0)
- #define data__for_each_file_new(i, d) data__for_each_file_start(i, d, 1)
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index b0861e3..847de11 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -760,8 +760,8 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 		if (!browser->b.navkeypressed)
+ 			width += 1;
  
--static char diff__default_sort_order[] = "dso,symbol";
- static bool force;
- static bool show_period;
- static bool show_formula;
-@@ -1142,7 +1141,6 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	perf_config(perf_default_config, NULL);
- 
--	sort_order = diff__default_sort_order;
- 	argc = parse_options(argc, argv, options, diff_usage, 0);
- 
- 	if (symbol__init() < 0)
-@@ -1153,6 +1151,8 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	ui_init();
- 
-+	sort__mode = SORT_MODE__DIFF;
+-		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
+-		slsmg_write_nstring(s, width);
++		slsmg_write_nstring("", width);
 +
- 	if (setup_sorting() < 0)
- 		usage_with_options(diff_usage, options);
+ 		++row;
+ 		++printed;
+ 	} else
+@@ -1104,27 +1104,32 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+ 				       struct hist_entry *he, FILE *fp)
+ {
+ 	char s[8192];
+-	double percent;
+ 	int printed = 0;
+ 	char folded_sign = ' ';
++	struct perf_hpp hpp = {
++		.buf = s,
++		.size = sizeof(s),
++	};
++	struct perf_hpp_fmt *fmt;
++	bool first = true;
++	int ret;
  
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d0180d5..f4d640cf 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -805,30 +805,12 @@ repeat:
- 	if (branch_mode == -1 && has_br_stack)
- 		sort__mode = SORT_MODE__BRANCH;
+ 	if (symbol_conf.use_callchain)
+ 		folded_sign = hist_entry__folded(he);
  
--	/* sort__mode could be NORMAL if --no-branch-stack */
--	if (sort__mode == SORT_MODE__BRANCH) {
--		/*
--		 * if no sort_order is provided, then specify
--		 * branch-mode specific order
--		 */
--		if (sort_order == default_sort_order)
--			sort_order = "comm,dso_from,symbol_from,"
--				     "dso_to,symbol_to";
+-	hist_entry__sort_snprintf(he, s, sizeof(s), browser->hists);
+-	percent = (he->stat.period * 100.0) / browser->hists->stats.total_period;
 -
+ 	if (symbol_conf.use_callchain)
+ 		printed += fprintf(fp, "%c ", folded_sign);
+ 
+-	printed += fprintf(fp, " %5.2f%%", percent);
+-
+-	if (symbol_conf.show_nr_samples)
+-		printed += fprintf(fp, " %11u", he->stat.nr_events);
+-
+-	if (symbol_conf.show_total_period)
+-		printed += fprintf(fp, " %12" PRIu64, he->stat.period);
++	perf_hpp__for_each_format(fmt) {
++		if (!first) {
++			ret = scnprintf(hpp.buf, hpp.size, "  ");
++			advance_hpp(&hpp, ret);
++		} else
++			first = false;
+ 
++		ret = fmt->entry(fmt, &hpp, he);
++		advance_hpp(&hpp, ret);
++	}
+ 	printed += fprintf(fp, "%s\n", rtrim(s));
+ 
+ 	if (folded_sign == '-')
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 91f10f3..d5c336e 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -153,7 +153,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	struct perf_hpp_fmt *fmt;
+ 	GType col_types[MAX_COLUMNS];
+ 	GtkCellRenderer *renderer;
+-	struct sort_entry *se;
+ 	GtkTreeStore *store;
+ 	struct rb_node *nd;
+ 	GtkWidget *view;
+@@ -172,16 +171,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	perf_hpp__for_each_format(fmt)
+ 		col_types[nr_cols++] = G_TYPE_STRING;
+ 
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		if (se->elide)
+-			continue;
+-
+-		if (se == &sort_sym)
+-			sym_col = nr_cols;
+-
+-		col_types[nr_cols++] = G_TYPE_STRING;
 -	}
- 	if (report.mem_mode) {
- 		if (sort__mode == SORT_MODE__BRANCH) {
- 			pr_err("branch and mem mode incompatible\n");
- 			goto error;
- 		}
- 		sort__mode = SORT_MODE__MEMORY;
 -
--		/*
--		 * if no sort_order is provided, then specify
--		 * branch-mode specific order
--		 */
--		if (sort_order == default_sort_order)
--			sort_order = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
+ 	store = gtk_tree_store_newv(nr_cols, col_types);
+ 
+ 	view = gtk_tree_view_new();
+@@ -199,16 +188,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 							    col_idx++, NULL);
  	}
  
- 	if (setup_sorting() < 0) {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 4fef1e4..34764b6 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1137,8 +1137,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (argc)
- 		usage_with_options(top_usage, options);
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		if (se->elide)
+-			continue;
+-
+-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+-							    -1, se->se_header,
+-							    renderer, "text",
+-							    col_idx++, NULL);
+-	}
+-
+ 	for (col_idx = 0; col_idx < nr_cols; col_idx++) {
+ 		GtkTreeViewColumn *column;
  
--	if (sort_order == default_sort_order)
--		sort_order = "dso,symbol";
-+	sort__mode = SORT_MODE__TOP;
+@@ -253,16 +232,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
+ 		}
  
- 	if (setup_sorting() < 0) {
- 		parse_options_usage(top_usage, options, "s", 1);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 916652a..d64c1e5 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -8,7 +8,11 @@ regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
- const char	*parent_pattern = default_parent_pattern;
- const char	default_sort_order[] = "comm,dso,symbol";
--const char	*sort_order = default_sort_order;
-+const char	default_branch_sort_order[] = "comm,dso_from,symbol_from,dso_to,symbol_to";
-+const char	default_mem_sort_order[] = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
-+const char	default_top_sort_order[] = "dso,symbol";
-+const char	default_diff_sort_order[] = "dso,symbol";
-+const char	*sort_order;
- regex_t		ignore_callees_regex;
- int		have_ignore_callees = 0;
- int		sort__need_collapse = 0;
-@@ -1218,11 +1222,31 @@ int sort_dimension__add(const char *tok)
- 	return -ESRCH;
+-		list_for_each_entry(se, &hist_entry__sort_list, list) {
+-			if (se->elide)
+-				continue;
+-
+-			se->se_snprintf(h, s, ARRAY_SIZE(s),
+-					hists__col_len(hists, se->se_width_idx));
+-
+-			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
+-		}
+-
+ 		if (symbol_conf.use_callchain && sort__has_sym) {
+ 			if (callchain_param.mode == CHAIN_GRAPH_REL)
+ 				total = h->stat.period;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 0299385..400437e 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -354,6 +354,14 @@ LIST_HEAD(perf_hpp__sort_list);
+ 
+ void perf_hpp__init(void)
+ {
++	struct list_head *list;
++	int i;
++
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		INIT_LIST_HEAD(&perf_hpp__format[i].list);
++		INIT_LIST_HEAD(&perf_hpp__format[i].sort_list);
++	}
++
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 
+ 	if (symbol_conf.show_cpu_utilization) {
+@@ -371,6 +379,13 @@ void perf_hpp__init(void)
+ 
+ 	if (symbol_conf.show_total_period)
+ 		perf_hpp__column_enable(PERF_HPP__PERIOD);
++
++	/* prepend overhead field for backward compatiblity.  */
++	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
++	if (list_empty(list))
++		list_add(list, &perf_hpp__sort_list);
++
++	perf_hpp__setup_output_field();
  }
  
-+static const char *get_default_sort_order(void)
+ void perf_hpp__column_register(struct perf_hpp_fmt *format)
+@@ -389,6 +404,17 @@ void perf_hpp__column_enable(unsigned col)
+ 	perf_hpp__column_register(&perf_hpp__format[col]);
+ }
+ 
++void perf_hpp__setup_output_field(void)
 +{
-+	const char *default_sort_orders[] = {
-+		default_sort_order,
-+		default_branch_sort_order,
-+		default_mem_sort_order,
-+		default_top_sort_order,
-+		default_diff_sort_order,
-+	};
++	struct perf_hpp_fmt *fmt;
 +
-+	BUG_ON(sort__mode >= ARRAY_SIZE(default_sort_orders));
-+
-+	return default_sort_orders[sort__mode];
++	/* append sort keys to output field */
++	perf_hpp__for_each_sort_list(fmt) {
++		if (list_empty(&fmt->list))
++			perf_hpp__column_register(fmt);
++	}
 +}
 +
- int setup_sorting(void)
+ int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+ 			      struct hists *hists)
  {
--	char *tmp, *tok, *str = strdup(sort_order);
-+	char *tmp, *tok, *str;
-+	const char *sort_keys = sort_order;
- 	int ret = 0;
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 9eccf7f..49e2e4a 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -306,8 +306,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+ 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
+ }
  
-+	if (sort_keys == NULL)
-+		sort_keys = get_default_sort_order();
+-static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+-				       struct hist_entry *he)
++static int hist_entry__snprintf(struct hist_entry *he, struct perf_hpp *hpp)
+ {
+ 	const char *sep = symbol_conf.field_sep;
+ 	struct perf_hpp_fmt *fmt;
+@@ -353,8 +352,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 	if (size == 0 || size > bfsz)
+ 		size = hpp.size = bfsz;
+ 
+-	ret = hist_entry__period_snprintf(&hpp, he);
+-	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
++	hist_entry__snprintf(he, &hpp);
+ 
+ 	ret = fprintf(fp, "%s\n", bf);
+ 
+@@ -386,28 +384,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 
+ 	init_rem_hits();
+ 
+-	if (!show_header)
+-		goto print_entries;
+-
+-	fprintf(fp, "# ");
+-
+-	perf_hpp__for_each_format(fmt) {
+-		if (!first)
+-			fprintf(fp, "%s", sep ?: "  ");
+-		else
+-			first = false;
+-
+-		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
+-		fprintf(fp, "%s", bf);
+-	}
+-
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+ 			continue;
+-		if (sep) {
+-			fprintf(fp, "%c%s", *sep, se->se_header);
+-			continue;
+-		}
+ 		width = strlen(se->se_header);
+ 		if (symbol_conf.col_width_list_str) {
+ 			if (col_width) {
+@@ -420,7 +399,21 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		}
+ 		if (!hists__new_col_len(hists, se->se_width_idx, width))
+ 			width = hists__col_len(hists, se->se_width_idx);
+-		fprintf(fp, "  %*s", width, se->se_header);
++	}
 +
-+	str = strdup(sort_keys);
- 	if (str == NULL) {
- 		error("Not enough memory to setup sort keys");
- 		return -ENOMEM;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff4..1a72952 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -133,6 +133,8 @@ enum sort_mode {
- 	SORT_MODE__NORMAL,
- 	SORT_MODE__BRANCH,
- 	SORT_MODE__MEMORY,
-+	SORT_MODE__TOP,
-+	SORT_MODE__DIFF,
- };
++	if (!show_header)
++		goto print_entries;
++
++	fprintf(fp, "# ");
++
++	perf_hpp__for_each_format(fmt) {
++		if (!first)
++			fprintf(fp, "%s", sep ?: "  ");
++		else
++			first = false;
++
++		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
++		fprintf(fp, "%s", bf);
+ 	}
  
- enum sort_type {
+ 	fprintf(fp, "\n");
+@@ -447,20 +440,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 			fprintf(fp, ".");
+ 	}
+ 
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		unsigned int i;
+-
+-		if (se->elide)
+-			continue;
+-
+-		fprintf(fp, "  ");
+-		width = hists__col_len(hists, se->se_width_idx);
+-		if (width == 0)
+-			width = strlen(se->se_header);
+-		for (i = 0; i < width; i++)
+-			fprintf(fp, ".");
+-	}
+-
+ 	fprintf(fp, "\n");
+ 	if (max_rows && ++nr_rows >= max_rows)
+ 		goto out;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index c99ae4d..ae13c2d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -569,7 +569,7 @@ static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
+ 	struct perf_hpp_fmt *fmt;
+ 	int64_t cmp = 0;
+ 
+-	perf_hpp__for_each_format(fmt) {
++	perf_hpp__for_each_sort_list(fmt) {
+ 		cmp = fmt->sort(a, b);
+ 		if (cmp)
+ 			break;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index eee154a..e76d323 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -196,6 +196,7 @@ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
+ void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
++void perf_hpp__setup_output_field(void);
+ 
+ typedef u64 (*hpp_field_fn)(struct hist_entry *he);
+ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
 -- 
 1.8.3.1
 
