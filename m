@@ -1,215 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbaEULet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:34:49 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:50360 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395AbaEULes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:34:48 -0400
-From: "Liviu Dudau" <liviu@dudau.co.uk>
-Date: Wed, 21 May 2014 12:34:21 +0100
-To: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "kdb@lurndal.org" <kdb@lurndal.org>,
-        "yu.zhao@intel.com" <yu.zhao@intel.com>
-Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
-Message-ID: <20140521113421.GB13511@bart.dudau.co.uk>
-Mail-Followup-To: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	"kdb@lurndal.org" <kdb@lurndal.org>,
-	"yu.zhao@intel.com" <yu.zhao@intel.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
- <CA+sq2Ccok5wtKjCZUkBhhj3WsiqFAoMgHK7LY210aBtMku+8SA@mail.gmail.com>
- <20140516132451.GK967@e106497-lin.cambridge.arm.com>
- <CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
- <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
+	id S1752566AbaEULfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:35:30 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:46686 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaEULf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:35:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed May 21 12:34:46 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,537c8f563032121683303
+In-Reply-To: <2c310ea534ac3cc181937bc8adf87c4695d6eb70.1400670427.git.viresh.kumar@linaro.org>
+References: <cover.1400670427.git.viresh.kumar@linaro.org>
+	<2c310ea534ac3cc181937bc8adf87c4695d6eb70.1400670427.git.viresh.kumar@linaro.org>
+Date: Wed, 21 May 2014 17:05:27 +0530
+X-Google-Sender-Auth: LwWMDadTkK8IYTpXx067_yQ9aW4
+Message-ID: <CAOqmu80Q6_isHyZ89qu7fEj6GQjst_sBCRUTVyopdMthq7d=mw@mail.gmail.com>
+Subject: Re: [PATCH V2 4/7] cpufreq: arm_big_little: don't initialize opp table
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linaro-kernel@lists.linaro.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        arvind.chauhan@arm.com, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        sudeep.holla@arm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 04:45:29PM +0530, Sunil Kovvuri wrote:
-> Hi Liviu,
-> 
-> Sorry for the trouble.
-> I got why 'res->parent' is not set in my case.
-> Basically my SR-IOV device has fixed resources, so resources will not
-> be allocated/assigned and hence parent resource is not set.
-> I will move the resource claiming to host controller driver as a fixup
-> so that parent resource hierarchy is set.
-> 
-> Thanks for the support.
+On Wed, May 21, 2014 at 4:40 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> OPP tables are already initialized for all CPUs by cpufreq core and so we don't
+> need to reinitialize them from arm_big_little_dt driver.
+>
 
-Glad you worked out the cause for the problem. I will still at to my list of
-ToDo things to investigate resource parenting with my patchset.
+I guess you wanted to say "cpu core code" instead of "cpufreq core".
+Correction may be needed here and in the subsequent patches as well.
 
-Best regards,
-Liviu
 
-> 
-> Regards,
-> Sunil.
-> 
-> 
-> On Fri, May 16, 2014 at 11:12 PM, Sunil Kovvuri <sunil.kovvuri@gmail.com> wrote:
-> > Hi Liviu,
-> >
-> > Issue may not be only with SR-IOV resources.
-> >
-> > I am not an expert with Linux PCI core. But i am trying to understand
-> > how even for a non SR-IOV capable device's resource, gets a parent
-> > associated with it.
-> >
-> > When a PCI device driver calls pci_enable_device() which inturn calls
-> > 'arch/arm64/kernel/pci.c' pcibios_enable_device() which uses Linux PCI core
-> > API 'pci_enable_resources'. This API checks 'res->parent' for all
-> > valid resources
-> > before enabling them, otherwise it fails.
-> >                 if (!r->parent) {
-> >                         dev_err(&dev->dev, "device not available "
-> >                                 "(can't reserve %pR)\n", r);
-> >                         return -EINVAL;
-> >                 }
-> >
-> > Can you please let me know where this hierarchy is being set for
-> > 'pcibios_enable_resources' to work.
-> >
-> > I could only find request_resource() API which sets the parent and
-> > pci_claim_resource() uses this.
-> >
-> > Thanks,
-> > Sunil.
-> >
-> > On Fri, May 16, 2014 at 6:54 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> Hi Sunil,
-> >>
-> >> On Fri, May 16, 2014 at 11:33:04AM +0100, Sunil Kovvuri wrote:
-> >>> Hi Liviu,
-> >>>
-> >>> I am using your ARM64 PCIe patches to write a PCIe host controller
-> >>> driver for our SOC. I am facing an issue with SR-IOV capable device.
-> >>>
-> >>> Consider an PCI Express endpoint connected to a PCI Express
-> >>> Root Port.  The PCI Express endpoint provides PCI-SIG SR-IOV
-> >>> capabilities with a single physical function and a large number
-> >>> of virtual functions.  The Root Port contains a pci-pci bridge in
-> >>> between it and the SR-IOV device.
-> >>>
-> >>> When the SR-IOV capable device's driver tries to enable sriov
-> >>> (pci_enable_sriov()) it fails to create/add PCI device for each
-> >>> virtual function reporting  "not enough MMIO resources for SR-IOV".
-> >>>
-> >>> In sriov_enable() (drivers/pci/iov.c)
-> >>>
-> >>>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
-> >>>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
-> >>>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
-> >>>  299                 if (res->parent)
-> >>>  300                         nres++;
-> >>>  301         }
-> >>>  302         if (nres != iov->nres) {
-> >>>  303                 dev_err(&dev->dev, "not enough MMIO resources for
-> >>>  SR-IOV\n");
-> >>>  304                 return -ENOMEM;
-> >>>  305         }
-> >>>
-> >>> Here its checking if physical function's IOV resource has a parent or not.
-> >>> Which is pci-pci bridge in this case. Otherwise it doesn't consider
-> >>> that resource.
-> >>>
-> >>> Added below api to your patch.
-> >>> This will try to claim a resource while creating a PCI device which
-> >>> inturn sets 'res->parent'.
-> >>>
-> >>> Let me know if this is okay.
-> >>>
-> >>> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> >>> index 9f29c9a..fbfb48f 100644
-> >>> --- a/arch/arm64/kernel/pci.c
-> >>> +++ b/arch/arm64/kernel/pci.c
-> >>> @@ -125,6 +125,21 @@ resource_size_t pcibios_align_resource(void
-> >>> *data, const struct resource *res,
-> >>>         return res->start;
-> >>>  }
-> >>>
-> >>> +int pcibios_add_device(struct pci_dev *pdev)
-> >>> +{
-> >>> +        unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
-> >>> +        struct resource *res;
-> >>> +
-> >>> +        for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-> >>> +                res = &pdev->resource[i];
-> >>> +                if (res->parent || !(res->flags & type_mask))
-> >>> +                        continue;
-> >>> +                pci_claim_resource(pdev, i);
-> >>> +        }
-> >>> +
-> >>>
-> >>
-> >> I would like not to have to add your patch in this file as I am trying to
-> >> remove it entirely. I don't have an SR-IOV capable device in my setup so
-> >> I am not able to debug your problem, but could you have a go and try to
-> >> figure out why the SR-IOV resources do not get a parent associated with
-> >> when they get created?
-> >>
-> >> Many thanks,
-> >> Liviu
-> >>
-> >>
-> >> --
-> >> ====================
-> >> | I would like to |
-> >> | fix the world,  |
-> >> | but they're not |
-> >> | giving me the   |
-> >>  \ source code!  /
-> >>   ---------------
-> >>     ¯\_(ツ)_/¯
-> >>
+> Also, as the arm_big_little_dt driver doesn't have a .init_opp_table() callback
+> anymore, make it optional in arm_big_little driver.
+>
+> Cc: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/arm_big_little.c    | 12 +++++++-----
+>  drivers/cpufreq/arm_big_little_dt.c | 18 ------------------
+>  2 files changed, 7 insertions(+), 23 deletions(-)
+>
+> diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+> index 1f4d4e3..561261e 100644
+> --- a/drivers/cpufreq/arm_big_little.c
+> +++ b/drivers/cpufreq/arm_big_little.c
+> @@ -325,11 +325,13 @@ static int _get_cluster_clk_and_freq_table(struct device *cpu_dev)
+>         if (freq_table[cluster])
+>                 return 0;
+>
+> -       ret = arm_bL_ops->init_opp_table(cpu_dev);
+> -       if (ret) {
+> -               dev_err(cpu_dev, "%s: init_opp_table failed, cpu: %d, err: %d\n",
+> +       if (arm_bL_ops->init_opp_table) {
+> +               ret = arm_bL_ops->init_opp_table(cpu_dev);
+> +               if (ret) {
+> +                       dev_err(cpu_dev, "%s: init_opp_table failed, cpu: %d, err: %d\n",
+>                                 __func__, cpu_dev->id, ret);
+> -               goto out;
+> +                       goto out;
+> +               }
+>         }
+>
+>         ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table[cluster]);
+> @@ -542,7 +544,7 @@ int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
+>                 return -EBUSY;
+>         }
+>
+> -       if (!ops || !strlen(ops->name) || !ops->init_opp_table) {
+> +       if (!ops || !strlen(ops->name)) {
+>                 pr_err("%s: Invalid arm_bL_ops, exiting\n", __func__);
+>                 return -ENODEV;
+>         }
+> diff --git a/drivers/cpufreq/arm_big_little_dt.c b/drivers/cpufreq/arm_big_little_dt.c
+> index 8d9d591..502182d 100644
+> --- a/drivers/cpufreq/arm_big_little_dt.c
+> +++ b/drivers/cpufreq/arm_big_little_dt.c
+> @@ -43,23 +43,6 @@ static struct device_node *get_cpu_node_with_valid_op(int cpu)
+>         return np;
+>  }
+>
+> -static int dt_init_opp_table(struct device *cpu_dev)
+> -{
+> -       struct device_node *np;
+> -       int ret;
+> -
+> -       np = of_node_get(cpu_dev->of_node);
+> -       if (!np) {
+> -               pr_err("failed to find cpu%d node\n", cpu_dev->id);
+> -               return -ENOENT;
+> -       }
+> -
+> -       ret = of_init_opp_table(cpu_dev);
+> -       of_node_put(np);
+> -
+> -       return ret;
+> -}
+> -
+>  static int dt_get_transition_latency(struct device *cpu_dev)
+>  {
+>         struct device_node *np;
+> @@ -81,7 +64,6 @@ static int dt_get_transition_latency(struct device *cpu_dev)
+>  static struct cpufreq_arm_bL_ops dt_bL_ops = {
+>         .name   = "dt-bl",
+>         .get_transition_latency = dt_get_transition_latency,
+> -       .init_opp_table = dt_init_opp_table,
+>  };
+>
+>  static int generic_bL_probe(struct platform_device *pdev)
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> 2.0.0.rc2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
-
