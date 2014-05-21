@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaEUNeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:34:44 -0400
-Received: from old.lon-b.elastichosts.com ([84.45.121.3]:60716 "EHLO
-	lon-b.elastichosts.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751137AbaEUNen (ORCPT
+	id S1752431AbaEUNfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:35:45 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42175 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaEUNfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:34:43 -0400
-X-Greylist: delayed 1225 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 09:34:43 EDT
-Message-ID: <537CA69F.7080603@elastichosts.com>
-Date: Wed, 21 May 2014 14:14:07 +0100
-From: Alin Dobre <alin.dobre@elastichosts.com>
-Organization: Elastichosts Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 09:35:43 -0400
 MIME-Version: 1.0
-To: Dominique Martinet <dominique.martinet@cea.fr>,
-        v9fs-developer@lists.sourceforge.net,
-        Eric Van Hensbergen <ericvh@gmail.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>
-Subject: Re: [PATCH] 9P: fix return value in v9fs_fid_xattr_set
-References: <20140521065219.GA15962@u-barrelet> <1400659332-21498-1-git-send-email-dominique.martinet@cea.fr>
-In-Reply-To: <1400659332-21498-1-git-send-email-dominique.martinet@cea.fr>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <2643156.2tkLFqgYFg@sigyn>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+	<1c6140633925b0838b7627e071e80761.squirrel@mungewell.org>
+	<537BFEBF.8010601@logitech.com>
+	<2643156.2tkLFqgYFg@sigyn>
+Date: Wed, 21 May 2014 15:35:42 +0200
+Message-ID: <CADbOyBQfHAnZYJj=z-SF77yg+yNpAzETX_W2UGh56NsZo3o8ew@mail.gmail.com>
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: Elias Vanderstuyft <elias.vds@gmail.com>
+To: =?UTF-8?B?TWljaGFsIE1hbMO9?= <madcatxster@devoid-pointer.net>
+Cc: Roland Bosa <rbosa@logitech.com>, Simon Wood <simon@mungewell.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Anssi Hannula <anssi.hannula@iki.fi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/05/14 09:02, Dominique Martinet wrote:
-> v9fs_fid_xattr_set is supposed to return 0 on success.
-> 
-> This corrects the behaviour introduced in commit
-> bdd5c28dcb8330b9074404cc92a0b83aae5606a
-> "9p: fix return value in case in v9fs_fid_xattr_set()"
-> 
-> (The function returns a negative error on error, as expected)
-> 
-> Signed-off-by: Dominique Martinet <dominique.martinet@cea.fr>
-> ---
->  fs/9p/xattr.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
-> index 04133a1..f95e01e 100644
-> --- a/fs/9p/xattr.c
-> +++ b/fs/9p/xattr.c
-> @@ -156,7 +156,7 @@ int v9fs_fid_xattr_set(struct p9_fid *fid, const char *name,
->  		offset += write_count;
->  		value_len -= write_count;
->  	}
-> -	retval = offset;
-> +	retval = 0;
->  err:
->  	p9_client_clunk(fid);
->  	return retval;
-> 
+On Wed, May 21, 2014 at 4:13 AM, Michal Malý
+<madcatxster@devoid-pointer.net> wrote:
+> On Tuesday 20 of May 2014 18:17:51 Roland Bosa wrote:
+>> In any case, the USB traffic should be decoupled from the app. Any force
+>> updates should only change state in the ff-memless[-next] driver. Any
+>> change there should trickle down to a 'slot' representation of the
+>> device. If there's any change in the slots, the device is marked as
+>> 'dirty' and USB transfers are scheduled to send the latest state to the
+>> physical device.
+>>
+>> The scheduling should keep track of how many requests are in-flight and
+>> delay writing the next output, until the previous one has completed.
+>
+> The approach I had in mind would keep track of the last effect that made it to
+> the device and the last effect that arrived from userspace. This would be
+> stored for each effect slot. An update would be scheduled at the desired update
+> rate. The updating routine would figure out the state change between last
+> update and "now", send the required data to the device and reschedule itself.
+> The routine could check if there are any USB transfers still running and
+> reschedule itself immediately.
 
-This patch seems to be fixing the problem, thanks!
+I've got another/(a more detailed?) idea about this:
+We can use round-robin scheduling for the slots, and use a priority
+queue for e.g. LED data or data that doesn't fit in the
+slot-methodology and doesn't permit in-between packets to be lost.
+And I believe that ff-memless-next should generate a periodic force
+with a constant/defined sample-period/update-rate, while the layer
+between ff-memless-next and USB transfers, i.e. the round-robin and
+priority queue scheduler, should send the dirty slots as soon as
+possible, i.e. when the USB pipe is clear or when some custom
+#maxAllowedPacketsInUsbBuffer (optimized for somewhere between latency
+and throughput) is not exceeded by the kernel USB queue.
+Now the question is, can we query the state of the kernel USB queue?
+
+Optionally, this method of packet scheduling could be used by other
+kernel drivers (even non-FF drivers) as well, and can further increase
+flexibility of ff-memless-next and the HW-specific drivers, and it
+will reduce code duplication.
+
+>> Question back to the community: are there APIs in the USB layer to check
+>> for presence of in-progress requests? Can one add a 'completion'
+>> callback to a request, that gets invoked on completion/cancellation?
+>
+> For instance "usb_submit_urb()" can have a completion handler that is called
+> once the transfer is done. The current code uses "hid_hw_request()" which is
+> asynchronous and doesn't report anything back.
+>
+> Proper decoupling of the userspace and driver is the only important thing that
+> is missing from the current code.
+
+Also dynamic updating of periodic effects is not yet supported in
+"ff-memless-next".
+This can also be important in simulation games (=second type), e.g.
+the "rFactor" game.
+
+Elias
