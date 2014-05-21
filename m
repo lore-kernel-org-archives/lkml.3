@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaEULK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:10:29 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:41089 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaEULKZ (ORCPT
+	id S1752264AbaEULKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:10:35 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:60002 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087AbaEULKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:10:25 -0400
+	Wed, 21 May 2014 07:10:33 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
         pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 1/7] opp: remove -ENOSYS from dummy implementation of of_init_opp_table()
-Date: Wed, 21 May 2014 16:39:59 +0530
-Message-Id: <ddf99132a9b2a6aabef61cba20fffbbf56ec0985.1400670427.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 2/7] opp: handle of_node_{get|put}() inside of_init_opp_table()
+Date: Wed, 21 May 2014 16:40:00 +0530
+Message-Id: <62e2dc5fd75e25ff85a6b09f35fbeb476e1c35db.1400670427.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1400670427.git.viresh.kumar@linaro.org>
 References: <cover.1400670427.git.viresh.kumar@linaro.org>
@@ -26,33 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When any of CONFIG_PM_OPP or CONFIG_OF isn't enabled we have a dummy
-implementation of of_init_opp_table() routine, it returns -EINVAL currently.
--EINVAL can be returned from other places within the real implementations of
-of_init_opp_table() and so caller wouldn't be able to differentiate between
-those two cases.
+All callers of of_init_opp_table() are required to call of_node_{get|put}()
+before and after calling it. It would be better if this can be handled within
+of_init_opp_table().
 
-Make it return -ENOSYS instead for better handling.
-
-Suggested-by: Sudeep Holla <sudeep.holla@arm.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/pm_opp.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/power/opp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
-index 0330217..6668150 100644
---- a/include/linux/pm_opp.h
-+++ b/include/linux/pm_opp.h
-@@ -112,7 +112,7 @@ int of_init_opp_table(struct device *dev);
- #else
- static inline int of_init_opp_table(struct device *dev)
- {
--	return -EINVAL;
-+	return -ENOSYS;
- }
- #endif
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index faae9cf..2b615b9 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -622,6 +622,9 @@ int of_init_opp_table(struct device *dev)
+ 	const __be32 *val;
+ 	int nr;
  
++	if (!of_node_get(dev->of_node))
++		return -ENODEV;
++
+ 	prop = of_find_property(dev->of_node, "operating-points", NULL);
+ 	if (!prop)
+ 		return -ENODEV;
+@@ -649,6 +652,7 @@ int of_init_opp_table(struct device *dev)
+ 		nr -= 2;
+ 	}
+ 
++	of_node_put(dev->of_node);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(of_init_opp_table);
 -- 
 2.0.0.rc2
 
