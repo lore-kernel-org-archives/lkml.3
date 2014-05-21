@@ -1,53 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbaEUVjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:39:39 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:39289 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288AbaEUVjg (ORCPT
+	id S1753558AbaEUVj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:39:59 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:35292 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473AbaEUVjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:39:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd1f:c4dc:b681:cd4a:92c0]
-In-Reply-To: <20140521211105.GD24341@quad.lixom.net>
-References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com>
-	<20140520055041.GO18956@quad.lixom.net>
-	<537B727C.5080404@atmel.com>
-	<20140520164746.GA601@quad.lixom.net>
-	<537C7D25.6060705@atmel.com>
-	<20140521211105.GD24341@quad.lixom.net>
-Date: Wed, 21 May 2014 14:39:35 -0700
-Message-ID: <CAOesGMgYe=8usEDMemLfwu-amfiEJAWCqKu4GjV4oLwK8u8K0w@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: DT for 3.16 #2
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 May 2014 17:39:18 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Claudiu Manoil <claudiu.manoil@freescale.com>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list),
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
+Subject: [PATCH RESEND net-next 8/9] of: mdio: remove of_phy_connect_fixed_link
+Date: Wed, 21 May 2014 14:38:50 -0700
+Message-Id: <1400708331-18088-9-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
+References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 2:11 PM, Olof Johansson <olof@lixom.net> wrote:
+All in-tree drivers have been converted to use the new pair of
+functions: of_is_fixed_phy_link() plus of_phy_register_fixed_link(), we
+can now safely remove of_phy_connect_fixed_link.
 
-> I don't agree with everything above, but it's not worth arguing for the
-> sake of arguing. :) I think we can tweak what you're doing now and get
-> things to work well by merging new dts files with at91-<soc>-board.dts
-> as the name. As mentioned, don't worry about the existing files. This
-> shouldn't be a significiant change to what you've been telling people
-> since 3.10 to cause much confusion.
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ drivers/of/of_mdio.c    | 38 --------------------------------------
+ include/linux/of_mdio.h | 10 ----------
+ 2 files changed, 48 deletions(-)
 
-A the end of the day, as long as you have at91- as prefix we'll be OK I think.
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 1def0bb5cb37..4c1e01ed16dc 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -246,44 +246,6 @@ struct phy_device *of_phy_connect(struct net_device *dev,
+ EXPORT_SYMBOL(of_phy_connect);
+ 
+ /**
+- * of_phy_connect_fixed_link - Parse fixed-link property and return a dummy phy
+- * @dev: pointer to net_device claiming the phy
+- * @hndlr: Link state callback for the network device
+- * @iface: PHY data interface type
+- *
+- * This function is a temporary stop-gap and will be removed soon.  It is
+- * only to support the fs_enet, ucc_geth and gianfar Ethernet drivers.  Do
+- * not call this function from new drivers.
+- */
+-struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+-					     void (*hndlr)(struct net_device *),
+-					     phy_interface_t iface)
+-{
+-	struct device_node *net_np;
+-	char bus_id[MII_BUS_ID_SIZE + 3];
+-	struct phy_device *phy;
+-	const __be32 *phy_id;
+-	int sz;
+-
+-	if (!dev->dev.parent)
+-		return NULL;
+-
+-	net_np = dev->dev.parent->of_node;
+-	if (!net_np)
+-		return NULL;
+-
+-	phy_id = of_get_property(net_np, "fixed-link", &sz);
+-	if (!phy_id || sz < sizeof(*phy_id))
+-		return NULL;
+-
+-	sprintf(bus_id, PHY_ID_FMT, "fixed-0", be32_to_cpu(phy_id[0]));
+-
+-	phy = phy_connect(dev, bus_id, hndlr, iface);
+-	return IS_ERR(phy) ? NULL : phy;
+-}
+-EXPORT_SYMBOL(of_phy_connect_fixed_link);
+-
+-/**
+  * of_phy_attach - Attach to a PHY without starting the state machine
+  * @dev: pointer to net_device claiming the phy
+  * @phy_np: Node pointer for the PHY
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index 0aa367e316cb..d449018d0726 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -22,9 +22,6 @@ extern struct phy_device *of_phy_connect(struct net_device *dev,
+ struct phy_device *of_phy_attach(struct net_device *dev,
+ 				 struct device_node *phy_np, u32 flags,
+ 				 phy_interface_t iface);
+-extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+-					 void (*hndlr)(struct net_device *),
+-					 phy_interface_t iface);
+ 
+ extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
+ 
+@@ -59,13 +56,6 @@ static inline struct phy_device *of_phy_attach(struct net_device *dev,
+ 	return NULL;
+ }
+ 
+-static inline struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+-							   void (*hndlr)(struct net_device *),
+-							   phy_interface_t iface)
+-{
+-	return NULL;
+-}
+-
+ static inline struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
+ {
+ 	return NULL;
+-- 
+1.9.1
 
-If you can consistently add the SoC into the prefix as above, we'll be
-even better. But I'm not going to spend more time arguing it. :)
-
-Either way, consistency (going forward) with at91- is good.
-
--Olof
