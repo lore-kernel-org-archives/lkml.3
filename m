@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaEUXTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 19:19:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35735 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851AbaEUXS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:18:58 -0400
-Date: Thu, 22 May 2014 00:18:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Matt Porter <mporter@linaro.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Message-ID: <20140521231836.GY12304@sirena.org.uk>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
- <20140521094852.GH6679@lee--X1>
+	id S1753939AbaEUXUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:20:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45628 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752456AbaEUXT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 19:19:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,883,1392192000"; 
+   d="scan'208";a="515699778"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Subject: RE: [RFC] x86_64: A real proposal for iret-less return to kernel
+Thread-Topic: [RFC] x86_64: A real proposal for iret-less return to kernel
+Thread-Index: AQHPdT5wRvlmui20OUO5csd5VXpJ+ZtMCOaA//+MFSCAAHmbAP//i7GAgAB3ZAD//4s2oAAPHlmAAABRNgAADkH6oP//k0EAgABy/7A=
+Date: Wed, 21 May 2014 23:19:57 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32811C5F@ORSMSX114.amr.corp.intel.com>
+References: <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
+ <20140521214845.GG25130@pd.tnic>
+ <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
+ <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com>
+ <20140521224816.GP25130@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F32811B92@ORSMSX114.amr.corp.intel.com>
+ <CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
+In-Reply-To: <CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pw/t3xlqqt+Zy6Js"
-Content-Disposition: inline
-In-Reply-To: <20140521094852.GH6679@lee--X1>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] mfd: Second IB for Mark (regulator)
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LNK9at022984
 
+> FWIW, this means that there really is a problem if one of these #MC
+> errors hits an innocent bystander who just happens to be handling an
+> NMI, at least if we delete the nested NMI code.  But I think my
+> simplified proposal gets this right.
 
---pw/t3xlqqt+Zy6Js
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes. Bystander broadcast machine checks can and will hit processors
+that are in NMI context ... and we must not make that fatal. Peek
+harder at your proposal so you can state confidently that you get
+this right.  "I think ... gets this right" is a bit too wishy-washy for
+mission critical :-)
 
-On Wed, May 21, 2014 at 10:48:52AM +0100, Lee Jones wrote:
-
-> Immutable branch between MFD and Regulator due for v3.16 merge-window.
-
-Pulled, thanks.
-
---pw/t3xlqqt+Zy6Js
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfTRJAAoJELSic+t+oim9olcP/jnGc+/GiQP7fQOiv2Ds7MDB
-gU8pzJfbZkOMHUSiqJybzVq9HqiIMb3TYLpmPZTEUzZ+7cjVQ611KLC9O48Oz8Y+
-ALwpS2XeNo6STzVSmcXKs/db1GRdomOphaqLeReYYHZdAMO1tmT785ApjftJ/R0N
-hcA8oAaYOrRRGgl5wfXY4xh3fy+k6gqRgEkUDy6CDTOXUK63/QJSb0D2OMClje2q
-AnZoS+txspPhOXGQG0OQGM9A7fy6ekfr4qaCv7kFyY9AOeM++QIOLmLlZCShZIg6
-KHsT9BvhdM3Xpig1hQCAyUF6SIQi4i0yEej/yHDbqnJlUT4zpl/lzqP9vKC5z2Af
-pQ5mIIKfM7ZDffVm39TZd3dsTevZRv0A+HPcLiLu8PyuURh9BB655nPjH305tisr
-I4wS0QeYxGN1OTfC+5EGGS2j+EuDCjU51biKaqhLo8m9+/nS5gtXRaadIzwDD9g6
-GbT7qOw0amAbJSMwKBWodXyfArQBmRtIGw6jcR1ymUedcS+nvrkslIYp1N4SwTuI
-+bn9nHyLmkCgcgp3tdb3030rFA+ci3/+25yBpF8HreyJblo5HtEtcRGp7BXlbbP0
-fBzFSsg1kAuNg0uDQYWgVKgiGfXLuIP3gQ73gZqAb/OVswnCD2wOmWv+NaVcNDPS
-uE55rYOIKUxu/ErT1UIl
-=ill8
------END PGP SIGNATURE-----
-
---pw/t3xlqqt+Zy6Js--
+-Tony
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
