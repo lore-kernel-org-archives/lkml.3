@@ -1,80 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaEUJh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:37:26 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:60649 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaEUJhX (ORCPT
+	id S1751980AbaEUJiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:38:16 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:40092 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaEUJiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:37:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Dave Martin <Dave.Martin@arm.com>, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        iommu@lists.linux-foundation.org, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 21 May 2014 11:36:32 +0200
-Message-ID: <5371868.4QO1YJ0hU2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140521090037.GA19268@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <4367469.BqpJyVF8PT@wuerfel> <20140521090037.GA19268@ulmo>
+	Wed, 21 May 2014 05:38:15 -0400
+Subject: [PATCH] tools/vm/page-types.c: catch sigbus if raced with truncate
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Wed, 21 May 2014 13:38:07 +0400
+Message-ID: <20140521093807.24256.22521.stgit@zurg>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:U1Bp0FNQX4vJn864ZYmoM+Ks7oOEFKs/D2rmWeosRqx
- LNgTDuN3X+YplO61VNq9O9LkF+V5dNX62Mya0AylWtEyyMXKzU
- aO/QoMoM25emKKnYCHFj1bVobG9oazX6d2yEqhlVV3zRA5hgws
- gOV+2nKmWg0iCKyCG6NSTqzFBGjQ58rI/KevGKm8DxuLyT/2QA
- 9ZZVLzEghQkOktQyKokNWfPTfnlxM38fDgfSCxPLUZtuu5KxPY
- Z4wRxpFORocciuiuniCRSX4EIoNihlvXywlc/06xmMhGKs2Owg
- NC9iZob2AUFfLFkN5xOWQvyJn0zO+OO1LFMTlSH1A90j8UZqVE
- Yc0I0D1gMa7nBaX6Pezc=
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 11:00:38 Thierry Reding wrote:
-> On Wed, May 21, 2014 at 10:50:38AM +0200, Arnd Bergmann wrote:
-> > On Wednesday 21 May 2014 10:26:11 Thierry Reding wrote:
+Recently added page-cache dumping is known to be a little bit racy.
+But after race with truncate it just dies due to unhandled SIGBUS
+when it tries to poke pages beyond the new end of file.
+This patch adds handler for SIGBUS which skips the rest of the file.
 
-> > > > > For determining dma masks, it is the output address that it
-> > > > > important.  Santosh's code can probably be taught to handle this,
-> > > > > if given an additional traversal rule for following "iommus"
-> > > > > properties.  However, deploying an IOMMU whose output address size
-> > > > > is smaller than the 
-> > > > 
-> > > > Something seems to be missing here. I don't think we want to handle
-> > > > the case where the IOMMU output cannot the entire memory address
-> > > > space. If necessary, that would mean using both an IOMMU driver
-> > > > and swiotlb, but I think it's a reasonable assumption that hardware
-> > > > isn't /that/ crazy.
-> > > 
-> > > Similarily, should the IOMMU not be treated like any other device here?
-> > > Its DMA mask should determine what address range it can access.
-> > 
-> > Right. But for that we need a dma-ranges property in the parent of the
-> > iommu, just so the mask can be set correctly and we don't have to
-> > rely on the 32-bit fallback case.
-> 
-> Shouldn't the IOMMU driver be the one to set the DMA mask for the device
-> in exactly the same way that other drivers override the 32-bit default?
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ tools/vm/page-types.c |   35 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 32 insertions(+), 3 deletions(-)
 
-The IOMMU driver could /ask/ for an appropriate mask based on its internal
-design, but if you have an IOMMU with a 64-bit output address connected
-to a 32-bit bus, that should fail.
+diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
+index 05654f5..c4d6d2e 100644
+--- a/tools/vm/page-types.c
++++ b/tools/vm/page-types.c
+@@ -32,6 +32,8 @@
+ #include <assert.h>
+ #include <ftw.h>
+ #include <time.h>
++#include <setjmp.h>
++#include <signal.h>
+ #include <sys/types.h>
+ #include <sys/errno.h>
+ #include <sys/fcntl.h>
+@@ -824,21 +826,38 @@ static void show_file(const char *name, const struct stat *st)
+ 			atime, now - st->st_atime);
+ }
+ 
++static sigjmp_buf sigbus_jmp;
++
++static void * volatile sigbus_addr;
++
++static void sigbus_handler(int sig, siginfo_t *info, void *ucontex)
++{
++	(void)sig;
++	(void)ucontex;
++	sigbus_addr = info ? info->si_addr : NULL;
++	siglongjmp(sigbus_jmp, 1);
++}
++
++static struct sigaction sigbus_action = {
++	.sa_sigaction = sigbus_handler,
++	.sa_flags = SA_SIGINFO,
++};
++
+ static void walk_file(const char *name, const struct stat *st)
+ {
+ 	uint8_t vec[PAGEMAP_BATCH];
+ 	uint64_t buf[PAGEMAP_BATCH], flags;
+ 	unsigned long nr_pages, pfn, i;
++	off_t off, end = st->st_size;
+ 	int fd;
+-	off_t off;
+ 	ssize_t len;
+ 	void *ptr;
+ 	int first = 1;
+ 
+ 	fd = checked_open(name, O_RDONLY|O_NOATIME|O_NOFOLLOW);
+ 
+-	for (off = 0; off < st->st_size; off += len) {
+-		nr_pages = (st->st_size - off + page_size - 1) / page_size;
++	for (off = 0; off < end; off += len) {
++		nr_pages = (end - off + page_size - 1) / page_size;
+ 		if (nr_pages > PAGEMAP_BATCH)
+ 			nr_pages = PAGEMAP_BATCH;
+ 		len = nr_pages * page_size;
+@@ -855,11 +874,19 @@ static void walk_file(const char *name, const struct stat *st)
+ 		if (madvise(ptr, len, MADV_RANDOM))
+ 			fatal("madvice failed: %s", name);
+ 
++		if (sigsetjmp(sigbus_jmp, 1)) {
++			end = off + sigbus_addr ? sigbus_addr - ptr : 0;
++			fprintf(stderr, "got sigbus at offset %lld: %s\n",
++					(long long)end, name);
++			goto got_sigbus;
++		}
++
+ 		/* populate ptes */
+ 		for (i = 0; i < nr_pages ; i++) {
+ 			if (vec[i] & 1)
+ 				(void)*(volatile int *)(ptr + i * page_size);
+ 		}
++got_sigbus:
+ 
+ 		/* turn off harvesting reference bits */
+ 		if (madvise(ptr, len, MADV_SEQUENTIAL))
+@@ -910,6 +937,7 @@ static void walk_page_cache(void)
+ 
+ 	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
+ 	pagemap_fd = checked_open("/proc/self/pagemap", O_RDONLY);
++	sigaction(SIGBUS, &sigbus_action, NULL);
+ 
+ 	if (stat(opt_file, &st))
+ 		fatal("stat failed: %s\n", opt_file);
+@@ -925,6 +953,7 @@ static void walk_page_cache(void)
+ 
+ 	close(kpageflags_fd);
+ 	close(pagemap_fd);
++	signal(SIGBUS, SIG_DFL);
+ }
+ 
+ static void parse_file(const char *name)
 
-Note that it's not obvious what the IOMMU's DMA mask actually means.
-It clearly has to be the mask that is used for allocating the IO page
-tables, but it wouldn't normally be used in the path that allocates
-pages on behalf of a DMA master attached to the IOMMU, because that
-allocation is performed by the code that looks at the other device's
-dma mask.
-
-	Arnd
