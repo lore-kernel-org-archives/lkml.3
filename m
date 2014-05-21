@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaEURfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:35:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39653 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760AbaEURfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:35:17 -0400
-Message-ID: <537CE3C2.8030601@zytor.com>
-Date: Wed, 21 May 2014 10:34:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752819AbaEURfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:35:31 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:41832 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaEURfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 13:35:18 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: Bisected 3.9 regression: Corrupted low memory (x86, mm: Move
- reserving low memory later in initialization)
-References: <CACna6rzTUnxHJX8MmDAbmj5SsL_VscfdV5oj735zMtLY5k8JCA@mail.gmail.com> <CACna6rxb2+xBFRt-g7ttkSB++-WtVEMycC7G=wf1ircKPW12ZQ@mail.gmail.com>
-In-Reply-To: <CACna6rxb2+xBFRt-g7ttkSB++-WtVEMycC7G=wf1ircKPW12ZQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1400519372-5703-1-git-send-email-milos.vyletel@gmail.com>
+References: <1400519372-5703-1-git-send-email-milos.vyletel@gmail.com>
+Date: Wed, 21 May 2014 10:35:17 -0700
+Message-ID: <CAHA+R7PaM4c6TmUtTLDAGnBUmRKE7=vnsjm67i=rmNebZvacVw@mail.gmail.com>
+Subject: Re: [patch net-next] net: ipv6: trigger action when setting conf.all sysctls
+From: Cong Wang <cwang@twopensource.com>
+To: Milos Vyletel <milos.vyletel@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "open list:NETWORKING [IPv4/..." <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 06:31 AM, Rafał Miłecki wrote:
-> On 16 May 2014 07:29, Rafał Miłecki <zajec5@gmail.com> wrote:
->> Sorry for the late report, this bug appears on my old notebook I don't
->> commonly use. Anyway, I've noticed following problem when using
->> 3.15-rc1:
->>
->> Corrupted low memory at ffff88000000be98 (be98 phys) = b02a000400000000
-> 
-> Ping?
-> 
+On Mon, May 19, 2014 at 10:09 AM, Milos Vyletel <milos.vyletel@gmail.com> wrote:
+> As it is right now most of these tunables don't do anything - they don't
+> set any interface specific settings to the desired value and they don't
+> take precedence before device specific settings in most cases.
+>
+> Documentation/networking/ip-sysctl.txt defines them to be:
+> conf/all/*:
+>         Change all the interface-specific settings.
+>
+> but that is not really the case.
+>
 
-It's not a regression, but rather a progression: the checker now does
-what it claims to do, which is to check for low memory corruption.
+I don't think it's a good idea, it enforces interface specific changes.
 
-However, the checker is also rather useless as anything other than a
-diagnostic tool.  It tells you that your BIOS is corrupting memory, and
-the solution to that is to reserve the memory, which we already do.
+You need to mimic what IPv4 conf does (if it hasn't done yet), something
+like below:
 
-All the checker tells us is that on your system, yes, we really do need
-to reserve the memory.
-
-	-hpa
-
+#define IN_DEV_MAXCONF(in_dev, attr) \
+        (max(IPV4_DEVCONF_ALL(dev_net(in_dev->dev), attr), \
+             IN_DEV_CONF_GET((in_dev), attr)))
