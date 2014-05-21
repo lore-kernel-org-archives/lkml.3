@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaEUXUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 19:20:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45628 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456AbaEUXT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:19:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,883,1392192000"; 
-   d="scan'208";a="515699778"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Subject: RE: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Topic: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Index: AQHPdT5wRvlmui20OUO5csd5VXpJ+ZtMCOaA//+MFSCAAHmbAP//i7GAgAB3ZAD//4s2oAAPHlmAAABRNgAADkH6oP//k0EAgABy/7A=
-Date: Wed, 21 May 2014 23:19:57 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F32811C5F@ORSMSX114.amr.corp.intel.com>
-References: <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic>
- <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
- <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
- <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
- <CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com>
- <20140521224816.GP25130@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F32811B92@ORSMSX114.amr.corp.intel.com>
- <CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
-In-Reply-To: <CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1753959AbaEUXUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:20:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35740 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919AbaEUXUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 19:20:43 -0400
+Date: Thu, 22 May 2014 00:20:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-samsung-soc@vger.kernel.org, tiwai@suse.de, perex@perex.cz,
+        lgirdwood@gmail.com, sbkim73@samsung.com, kgene.kim@samsung.com
+Message-ID: <20140521232026.GZ12304@sirena.org.uk>
+References: <1400642540-24375-1-git-send-email-tushar.behera@linaro.org>
+ <1400642540-24375-2-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z8HeKkXK+YwaFz6Y"
+Content-Disposition: inline
+In-Reply-To: <1400642540-24375-2-git-send-email-tushar.behera@linaro.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] ASoC: samsung: Use devm_snd_soc_register_card
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LNK9at022984
 
-> FWIW, this means that there really is a problem if one of these #MC
-> errors hits an innocent bystander who just happens to be handling an
-> NMI, at least if we delete the nested NMI code.  But I think my
-> simplified proposal gets this right.
 
-Yes. Bystander broadcast machine checks can and will hit processors
-that are in NMI context ... and we must not make that fatal. Peek
-harder at your proposal so you can state confidently that you get
-this right.  "I think ... gets this right" is a bit too wishy-washy for
-mission critical :-)
+--z8HeKkXK+YwaFz6Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Wed, May 21, 2014 at 08:52:17AM +0530, Tushar Behera wrote:
+> Replace snd_soc_register_card with devm_snd_soc_register_card.
+> With this change, we can delete the empty remove functions.
+
+Applied all, thanks.
+
+--z8HeKkXK+YwaFz6Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfTS3AAoJELSic+t+oim9bMMP/3PXJ4O2W+8D+lV0FfY7yWr/
+D2wVUxBYnHeSbeU3RXazcDDt5pOkl6gn8KndR3h/FdaXXZjqETB6RIYgLauxbpQ5
+MWMkwptggMnNSxGZMg31tUMAjUAqpvebtsUwfNVWpNlPyqf6m9OLl72sCLwnxsws
+G4gGjx7fwCoVlACXRcVZId+DM4DWGM91ad/NRsWuQm52T3Mi41sZJC9EKeHTg0y7
+R6ChVmwjcR9JYD0GkQ6LUKxLlSCu9Nhc7Vk+2ibgoTJmxqaM1SeSnciN2XCQFgDG
+onPjmJuurnrD3KCy08uQaP9mJAMSTFpF9bQXdktu8twIdiOnvd7VPQMtbp4iI197
+ICWgLj7dku4jhHM5Ahuu6v9hp4dIl1EArNK48xC4fzm4Z5xxwFS/uROwEuk+iGj6
+X/sBb/pZJhwOrkPuOXPJvhImoxMFKvBILeRLJXjHNhkLjUNdfQOWPJgs2s3c3jJx
+OQth3wwnre6aISHtm9x8m6ACp5C37P3auFNrKbkY8CGd1xrtoxDI+QM0r7k3tjL9
+dR3RYm2EQtZ4lVFnI611BGbsVTJcbFAIvgpWXAzpDufBikmrOy96jvVC7KJ7HNm6
+zXoxtX/toB0z/zNaZxhjcrFidBsyAHBo5x397qLx3mRejy9nZfIZEM5J8taB4Cf9
+1lcOKbquMnT350DH45gN
+=SRMu
+-----END PGP SIGNATURE-----
+
+--z8HeKkXK+YwaFz6Y--
