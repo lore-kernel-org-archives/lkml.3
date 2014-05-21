@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaEUTE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:04:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23458 "EHLO mga11.intel.com"
+	id S1753076AbaEUTKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:10:11 -0400
+Received: from mout.gmx.net ([212.227.17.21]:60972 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891AbaEUTEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:04:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,881,1392192000"; 
-   d="scan'208";a="542907480"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: [PATCH] mm: /prom/pid/clear_refs: avoid split_huge_page()
-Date: Wed, 21 May 2014 22:04:22 +0300
-Message-Id: <1400699062-20123-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1752065AbaEUTKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 15:10:10 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: isdn@linux-pingi.de
+Cc: manuel.schoelling@gmx.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] mISDN: Use time_before()
+Date: Wed, 21 May 2014 21:10:05 +0200
+Message-Id: <1400699406-31294-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:u8qNu+EekcEyP1lXkXrfijFYjNmmRbaRYLRO8OGR7xFvkDIHghz
+ CxrdN0rr3/DDrIPdKbWwkssJaBMa9hG1NmK/zpqPzmptYHjZ50MDkV2dD6IdcjPWn49ENVL
+ plMb1gpRhOB5F2HH6e/KX59PvhzcPhcoZKMJccqEA4k75we1IVHAcmgRioguy10FFZu4bhp
+ lzDmMhiT7Vj9LcvHgayHw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we split all THP pages on any clear_refs request. It's not
-necessary. We can handle this on PMD level.
+To be future-proof and for better readability the time comparisons are modified
+to use time_before() instead of plain, error-prone math.
 
-One side effect is that soft dirty will potentially see more dirty
-memory, since we will mark whole THP page dirty at once.
-
-Sanity checked with CRIU test suite. More testing is required.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 ---
- fs/proc/task_mmu.c | 46 +++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 43 insertions(+), 3 deletions(-)
+ drivers/isdn/mISDN/l1oip_core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 442177b1119a..9f5ae29f3037 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -716,10 +716,10 @@ struct clear_refs_private {
- 	enum clear_refs_types type;
- };
+diff --git a/drivers/isdn/mISDN/l1oip_core.c b/drivers/isdn/mISDN/l1oip_core.c
+index 2c0d2c2..1c2bc36 100644
+--- a/drivers/isdn/mISDN/l1oip_core.c
++++ b/drivers/isdn/mISDN/l1oip_core.c
+@@ -287,7 +287,7 @@ l1oip_socket_send(struct l1oip *hc, u8 localcodec, u8 channel, u32 chanmask,
+ 	p = frame;
  
-+#ifdef CONFIG_MEM_SOFT_DIRTY
- static inline void clear_soft_dirty(struct vm_area_struct *vma,
- 		unsigned long addr, pte_t *pte)
- {
--#ifdef CONFIG_MEM_SOFT_DIRTY
- 	/*
- 	 * The soft-dirty tracker uses #PF-s to catch writes
- 	 * to pages, so write-protect the pte as well. See the
-@@ -741,9 +741,34 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
- 		vma->vm_flags &= ~VM_SOFTDIRTY;
+ 	/* restart timer */
+-	if ((int)(hc->keep_tl.expires-jiffies) < 5 * HZ) {
++	if (time_before(hc->keep_tl.expires - 5 * HZ, jiffies)) {
+ 		del_timer(&hc->keep_tl);
+ 		hc->keep_tl.expires = jiffies + L1OIP_KEEPALIVE * HZ;
+ 		add_timer(&hc->keep_tl);
+@@ -621,7 +621,8 @@ multiframe:
+ 		goto multiframe;
  
- 	set_pte_at(vma->vm_mm, addr, pte, ptent);
--#endif
- }
- 
-+static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t *pmdp)
-+{
-+	pmd_t pmd = *pmdp;
-+
-+	pmd = pmd_wrprotect(pmd);
-+	pmd = pmd_clear_flags(pmd, _PAGE_SOFT_DIRTY);
-+
-+	if (vma->vm_flags & VM_SOFTDIRTY)
-+		vma->vm_flags &= ~VM_SOFTDIRTY;
-+
-+	set_pmd_at(vma->vm_mm, addr, pmdp, pmd);
-+}
-+
-+#else
-+static inline void clear_soft_dirty(struct vm_area_struct *vma,
-+		unsigned long addr, pte_t *pte)
-+{
-+}
-+
-+static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t *pmdp)
-+{
-+}
-+#endif
-+
- static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
- 				unsigned long end, struct mm_walk *walk)
- {
-@@ -753,7 +778,22 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
- 	spinlock_t *ptl;
- 	struct page *page;
- 
--	split_huge_page_pmd(vma, addr, pmd);
-+	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-+		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
-+			clear_soft_dirty_pmd(vma, addr, pmd);
-+			spin_unlock(ptl);
-+			return 0;
-+		}
-+
-+		page = pmd_page(*pmd);
-+
-+		/* Clear accessed and referenced bits. */
-+		pmdp_test_and_clear_young(vma, addr, pmd);
-+		ClearPageReferenced(page);
-+		spin_unlock(ptl);
-+		return 0;
-+	}
-+
- 	if (pmd_trans_unstable(pmd))
- 		return 0;
- 
+ 	/* restart timer */
+-	if ((int)(hc->timeout_tl.expires-jiffies) < 5 * HZ || !hc->timeout_on) {
++	if (time_before(hc->timeout_tl.expires - 5 * HZ, jiffies)
++	    || !hc->timeout_on) {
+ 		hc->timeout_on = 1;
+ 		del_timer(&hc->timeout_tl);
+ 		hc->timeout_tl.expires = jiffies + L1OIP_TIMEOUT * HZ;
 -- 
-2.0.0.rc2
+1.7.10.4
 
