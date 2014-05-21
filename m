@@ -1,449 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaEUAZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 20:25:06 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:50152 "EHLO smtp.pobox.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186AbaEUAZC convert rfc822-to-8bit (ORCPT
+	id S1751500AbaEUAZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 20:25:43 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:37676 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaEUAZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 20:25:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=KU9wdS5rc1tHsexEh2l
-	EZZaRZkwnd1nFcV+WhEFLQEiTcPqU1+ztwPLMm4Ylq1Wvr0qpolqGr5+mf1kZnaJ
-	3OswJx5LMI05nONic3zpUO8+TYI/ImYKmo5LeM92tQvue2sVQrb2u/ZiddATFuz8
-	RcF7jrH82bEtx6FHeZy0e42k=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.0.0-rc4
-Date: Tue, 20 May 2014 17:24:50 -0700
-Message-ID: <xmqqr43oq8q5.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 538FE606-E07E-11E3-9D46-B784E8FBB39C-77302942!pb-smtp0.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 May 2014 20:25:40 -0400
+Date: Tue, 20 May 2014 19:25:37 -0500
+From: Kim Phillips <kim.phillips@linaro.org>
+To: a.motakis@virtualopensystems.com
+Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-doc@vger.kernel.org,
+        gregkh@linuxfoundation.org, jhovold@gmail.com, will.deacon@arm.com,
+        a.rigo@virtualopensystems.com, rob.herring@calxeda.com,
+        stuart.yoder@freescale.com, rob@landley.net, grant.likely@linaro.org,
+        tech@virtualopensystems.com, clbchenlibo.chen@huawei.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        Julien Grall <julien.grall@linaro.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: [RFC PATCH v5_v2 01/11] driver core: platform: add device binding
+ path 'driver_override'
+Message-Id: <20140520192537.bab9fa2088c1cd5da3f92639@linaro.org>
+In-Reply-To: <1398700371-20096-2-git-send-email-a.motakis@virtualopensystems.com>
+References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
+	<1398700371-20096-2-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git v2.0.0-rc4, hopefully the final one before
-the real thing, is now available for testing at the usual places.
-
-The tarballs are found at:
-
-    https://www.kernel.org/pub/software/scm/git/testing/
-
-The following public repositories all have a copy of the 'v2.0.0-rc4'
-tag and the 'master' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.0 Release Notes (draft)
-==============================
-
-Backward compatibility notes
-----------------------------
-
-When "git push [$there]" does not say what to push, we have used the
-traditional "matching" semantics so far (all your branches were sent
-to the remote as long as there already are branches of the same name
-over there).  In Git 2.0, the default is now the "simple" semantics,
-which pushes:
-
- - only the current branch to the branch with the same name, and only
-   when the current branch is set to integrate with that remote
-   branch, if you are pushing to the same remote as you fetch from; or
-
- - only the current branch to the branch with the same name, if you
-   are pushing to a remote that is not where you usually fetch from.
-
-You can use the configuration variable "push.default" to change
-this.  If you are an old-timer who wants to keep using the
-"matching" semantics, you can set the variable to "matching", for
-example.  Read the documentation for other possibilities.
-
-When "git add -u" and "git add -A" are run inside a subdirectory
-without specifying which paths to add on the command line, they
-operate on the entire tree for consistency with "git commit -a" and
-other commands (these commands used to operate only on the current
-subdirectory).  Say "git add -u ." or "git add -A ." if you want to
-limit the operation to the current directory.
-
-"git add <path>" is the same as "git add -A <path>" now, so that
-"git add dir/" will notice paths you removed from the directory and
-record the removal.  In older versions of Git, "git add <path>" used
-to ignore removals.  You can say "git add --ignore-removal <path>" to
-add only added or modified paths in <path>, if you really want to.
-
-The "-q" option to "git diff-files", which does *NOT* mean "quiet",
-has been removed (it told Git to ignore deletion, which you can do
-with "git diff-files --diff-filter=d").
-
-"git request-pull" lost a few "heuristics" that often led to mistakes.
-
-The default prefix for "git svn" has changed in Git 2.0.  For a long
-time, "git svn" created its remote-tracking branches directly under
-refs/remotes, but it now places them under refs/remotes/origin/ unless
-it is told otherwise with its "--prefix" option.
-
-
-Updates since v1.9 series
--------------------------
-
-UI, Workflows & Features
-
- * The "multi-mail" post-receive hook (in contrib/) has been updated
-   to a more recent version from upstream.
-
- * The "remote-hg/bzr" remote-helper interfaces (in contrib/) are
-   now maintained separately as a third-party plug-in.
-
- * "git gc --aggressive" learned "--depth" option and
-   "gc.aggressiveDepth" configuration variable to allow use of a less
-   insane depth than the built-in default value of 250.
-
- * "git log" learned the "--show-linear-break" option to show where a
-   single strand-of-pearls is broken in its output.
-
- * The "rev-parse --parseopt" mechanism used by scripted Porcelains to
-   parse command-line options and to give help text learned to take
-   the argv-help (the placeholder string for an option parameter,
-   e.g. "key-id" in "--gpg-sign=<key-id>").
-
- * The pattern to find where the function begins in C/C++ used in
-   "diff" and "grep -p" has been updated to improve viewing C++
-   sources.
-
- * "git rebase" learned to interpret a lone "-" as "@{-1}", the
-   branch that we were previously on.
-
- * "git commit --cleanup=<mode>" learned a new mode, scissors.
-
- * "git tag --list" output can be sorted using "version sort" with
-   "--sort=version:refname".
-
- * Discard the accumulated "heuristics" to guess from which branch the
-   result wants to be pulled from and make sure that what the end user
-   specified is not second-guessed by "git request-pull", to avoid
-   mistakes.  When you pushed out your 'master' branch to your public
-   repository as 'for-linus', use the new "master:for-linus" syntax to
-   denote the branch to be pulled.
-
- * "git grep" learned to behave in a way similar to native grep when
-   "-h" (no header) and "-c" (count) options are given.
-
- * "git push" via transport-helper interface has been updated to
-   allow forced ref updates in a way similar to the natively
-   supported transports.
-
- * The "simple" mode is the default for "git push".
-
- * "git add -u" and "git add -A", when run without any pathspec, is a
-   tree-wide operation even when run inside a subdirectory of a
-   working tree.
-
- * "git add <path>" is the same as "git add -A <path>" now.
-
- * "core.statinfo" configuration variable, which is a
-   never-advertised synonym to "core.checkstat", has been removed.
-
- * The "-q" option to "git diff-files", which does *NOT* mean
-   "quiet", has been removed (it told Git to ignore deletion, which
-   you can do with "git diff-files --diff-filter=d").
-
- * Server operators can loosen the "tips of refs only" restriction for
-   the remote archive service with the uploadarchive.allowUnreachable
-   configuration option.
-
- * The progress indicators from various time-consuming commands have
-   been marked for i18n/l10n.
-
- * "git notes -C <blob>" diagnoses as an error an attempt to use an
-   object that is not a blob.
-
- * "git config" learned to read from the standard input when "-" is
-   given as the value to its "--file" parameter (attempting an
-   operation to update the configuration in the standard input is
-   rejected, of course).
-
- * Trailing whitespaces in .gitignore files, unless they are quoted
-   for fnmatch(3), e.g. "path\ ", are warned and ignored.  Strictly
-   speaking, this is a backward-incompatible change, but very unlikely
-   to bite any sane user and adjusting should be obvious and easy.
-
- * Many commands that create commits, e.g. "pull" and "rebase",
-   learned to take the "--gpg-sign" option on the command line.
-
- * "git commit" can be told to always GPG sign the resulting commit
-   by setting the "commit.gpgsign" configuration variable to "true"
-   (the command-line option "--no-gpg-sign" should override it).
-
- * "git pull" can be told to only accept fast-forward by setting the
-   new "pull.ff" configuration variable.
-
- * "git reset" learned the "-N" option, which does not reset the index
-   fully for paths the index knows about but the tree-ish the command
-   resets to does not (these paths are kept as intend-to-add entries).
-
-
-Performance, Internal Implementation, etc.
-
- * The compilation options to port to AIX and to MSVC have been
-   updated.
-
- * We started using wildmatch() in place of fnmatch(3) a few releases
-   ago; complete the process and stop using fnmatch(3).
-
- * Uses of curl's "multi" interface and "easy" interface do not mix
-   well when we attempt to reuse outgoing connections.  Teach the RPC
-   over HTTP code, used in the smart HTTP transport, not to use the
-   "easy" interface.
-
- * The bitmap-index feature from JGit has been ported, which should
-   significantly improve performance when serving objects from a
-   repository that uses it.
-
- * The way "git log --cc" shows a combined diff against multiple
-   parents has been optimized.
-
- * The prefixcmp() and suffixcmp() functions are gone.  Use
-   starts_with() and ends_with(), and also consider if skip_prefix()
-   suits your needs better when using the former.
-
-
-Also contains various documentation updates and code clean-ups.  Many
-of them came from flurry of activities as GSoC candidate microproject
-exercises.
-
-
-Fixes since v1.9 series
------------------------
-
-Unless otherwise noted, all the fixes since v1.9 in the maintenance
-track are contained in this release (see the maintenance releases'
-notes for details).
-
- * "git p4" was broken in 1.9 release to deal with changes in binary
-   files.
-   (merge 749b668 cl/p4-use-diff-tree later to maint).
-
- * The shell prompt script (in contrib/), when using the PROMPT_COMMAND
-   interface, used an unsafe construct when showing the branch name in
-   $PS1.
-   (merge 8976500 rh/prompt-pcmode-avoid-eval-on-refname later to maint).
-
- * The remote-helper interface to fast-import/fast-export via the
-   transport-helper has been tightened to avoid leaving the import
-   marks file from a failed/crashed run, as such a file that is out-of-
-   sync with reality confuses a later invocation of itself.
-
- * "git rebase" used a POSIX shell construct FreeBSD's /bin/sh does not
-   work well with.
-   (merge 8cd6596 km/avoid-non-function-return-in-rebase later to maint).
-
- * zsh prompt (in contrib/) leaked unnecessary error messages.
-
- * Bash completion (in contrib/) did not complete the refs and remotes
-   correctly given "git pu<TAB>" when "pu" is aliased to "push".
-
- * Some more Unicode code points, defined in Unicode 6.3 as having zero
-   width, have been taught to our display column counting logic.
-   (merge d813ab9 tb/unicode-6.3-zero-width later to maint).
-
- * Some tests used shell constructs that did not work well on FreeBSD
-   (merge ff7a1c6 km/avoid-bs-in-shell-glob later to maint).
-   (merge 00764ca km/avoid-cp-a later to maint).
-
- * "git update-ref --stdin" did not fail a request to create a ref
-   when the ref already existed.
-   (merge b9d56b5 mh/update-ref-batch-create-fix later to maint).
-
- * "git diff --no-index -Mq a b" fell into an infinite loop.
-   (merge ad1c3fb jc/fix-diff-no-index-diff-opt-parse later to maint).
-
- * "git fetch --prune", when the right-hand side of multiple fetch
-   refspecs overlap (e.g. storing "refs/heads/*" to
-   "refs/remotes/origin/*", while storing "refs/frotz/*" to
-   "refs/remotes/origin/fr/*"), aggressively thought that lack of
-   "refs/heads/fr/otz" on the origin site meant we should remove
-   "refs/remotes/origin/fr/otz" from us, without checking their
-   "refs/frotz/otz" first.
-
-   Note that such a configuration is inherently unsafe (think what
-   should happen when "refs/heads/fr/otz" does appear on the origin
-   site), but that is not a reason not to be extra careful.
-   (merge e6f6371 cn/fetch-prune-overlapping-destination later to maint).
-
- * "git status --porcelain --branch" showed its output with labels
-   "ahead/behind/gone" translated to the user's locale.
-   (merge 7a76c28 mm/status-porcelain-format-i18n-fix later to maint).
-
- * A stray environment variable $prefix could have leaked into and
-   affected the behaviour of the "subtree" script (in contrib/).
-
- * When it is not necessary to edit a commit log message (e.g. "git
-   commit -m" is given a message without specifying "-e"), we used to
-   disable the spawning of the editor by overriding GIT_EDITOR, but
-   this means all the uses of the editor, other than to edit the
-   commit log message, are also affected.
-   (merge b549be0 bp/commit-p-editor later to maint).
-
- * "git mv" that moves a submodule forgot to adjust the array that
-   uses to keep track of which submodules were to be moved to update
-   its configuration.
-   (merge fb8a4e8 jk/mv-submodules-fix later to maint).
-
- * Length limit for the pathname used when removing a path in a deep
-   subdirectory has been removed to avoid buffer overflows.
-   (merge 2f29e0c mh/remove-subtree-long-pathname-fix later to maint).
-
- * The test helper lib-terminal always run an actual test_expect_*
-   when included, which screwed up with the use of skil-all that may
-   have to be done later.
-   (merge 7e27173 jk/lib-terminal-lazy later to maint).
-
- * "git index-pack" used a wrong variable to name the keep-file in an
-   error message when the file cannot be written or closed.
-   (merge de983a0 nd/index-pack-error-message later to maint).
-
- * "rebase -i" produced a broken insn sheet when the title of a commit
-   happened to contain '\n' (or ended with '\c') due to a careless use
-   of 'echo'.
-   (merge cb1aefd us/printf-not-echo later to maint).
-
- * There were a few instances of 'git-foo' remaining in the
-   documentation that should have been spelled 'git foo'.
-   (merge 3c3e6f5 rr/doc-merge-strategies later to maint).
-
- * Serving objects from a shallow repository needs to write a
-   new file to hold the temporary shallow boundaries, but it was not
-   cleaned when we exit due to die() or a signal.
-   (merge 7839632 jk/shallow-update-fix later to maint).
-
- * When "git stash pop" stops after failing to apply the stash
-   (e.g. due to conflicting changes), the stash is not dropped. State
-   that explicitly in the output to let the users know.
-   (merge 2d4c993 jc/stash-pop-not-popped later to maint).
-
- * The labels in "git status" output that describe the nature of
-   conflicts (e.g. "both deleted") were limited to 20 bytes, which was
-   too short for some l10n (e.g. fr).
-   (merge c7cb333 jn/wt-status later to maint).
-
- * "git clean -d pathspec" did not use the given pathspec correctly
-   and ended up cleaning too much.
-   (merge 1f2e108 jk/clean-d-pathspec later to maint).
-
- * "git difftool" misbehaved when the repository is bound to the
-   working tree with the ".git file" mechanism, where a textual file
-   ".git" tells us where it is.
-   (merge fcfec8b da/difftool-git-files later to maint).
-
- * "git push" did not pay attention to "branch.*.pushremote" if it is
-   defined earlier than "remote.pushdefault"; the order of these two
-   variables in the configuration file should not matter, but it did
-   by mistake.
-   (merge 98b406f jk/remote-pushremote-config-reading later to maint).
-
- * Code paths that parse timestamps in commit objects have been
-   tightened.
-   (merge f80d1f9 jk/commit-dates-parsing-fix later to maint).
-
- * "git diff --external-diff" incorrectly fed the submodule directory
-   in the working tree to the external diff driver when it knew that it
-   is the same as one of the versions being compared.
-   (merge aba4727 tr/diff-submodule-no-reuse-worktree later to maint).
-
- * "git reset" needs to refresh the index when working in a working
-   tree (it can also be used to match the index to the HEAD in an
-   otherwise bare repository), but it failed to set up the working
-   tree properly, causing GIT_WORK_TREE to be ignored.
-   (merge b7756d4 nd/reset-setup-worktree later to maint).
-
- * "git check-attr" when working on a repository with a working tree
-   did not work well when the working tree was specified via the
-   "--work-tree" (and obviously with "--git-dir") option.
-   (merge cdbf623 jc/check-attr-honor-working-tree later to maint).
-
- * "merge-recursive" was broken in 1.7.7 era and stopped working in
-   an empty (temporary) working tree, when there are renames
-   involved.  This has been corrected.
-   (merge 6e2068a bk/refresh-missing-ok-in-merge-recursive later to maint.)
-
- * "git rev-parse" was loose in rejecting command-line arguments
-   that do not make sense, e.g. "--default" without the required
-   value for that option.
-   (merge a43219f ds/rev-parse-required-args later to maint.)
-
- * "include.path" variable (or any variable that expects a path that
-   can use ~username expansion) in the configuration file is not a
-   boolean, but the code failed to check it.
-   (merge 67beb60 jk/config-path-include-fix later to maint.)
-
- * Commands that take pathspecs on the command line misbehaved when
-   the pathspec is given as an absolute pathname (which is a
-   practice not particularly encouraged) that points at a symbolic
-   link in the working tree.
-   (merge later 655ee9e mw/symlinks to maint.)
-
- * "git diff --quiet -- pathspec1 pathspec2" sometimes did not return
-   the correct status value.
-   (merge f34b205 nd/diff-quiet-stat-dirty later to maint.)
-
- * Attempting to deepen a shallow repository by fetching over smart
-   HTTP transport failed in the protocol exchange, when the no-done
-   extension was used.  The fetching side waited for the list of
-   shallow boundary commits after the sending side stopped talking to
-   it.
-   (merge 0232852 nd/http-fetch-shallow-fix later to maint.)
-
- * Allow "git cmd path/", when the 'path' is where a submodule is
-   bound to the top-level working tree, to match 'path', despite the
-   extra and unnecessary trailing slash (such a slash is often
-   given by command-line completion).
-   (merge 2e70c01 nd/submodule-pathspec-ending-with-slash later to maint.)
-
- * Documentation and in-code comments had many instances of mistaken
-   use of "nor", which have been corrected.
-   (merge 235e8d5 jl/nor-or-nand-and later to maint).
-
-----------------------------------------------------------------
-
-Changes since v2.0.0-rc3 are as follows:
-
-Alexander Shopov (1):
-      l10n: Updated Bulgarian translation of git (1307t0f921u)
-
-Anders Kaseorg (1):
-      Documentation/technical/api-hashmap: remove source highlighting
-
-Felipe Contreras (2):
-      contrib: completion: fix 'eread()' namespace
-      contrib: remote-helpers: add move warnings (v2.0)
-
-Grégoire Paris (1):
-      fr: a lot of good fixups
-
-Jason St. John (1):
-      RelNotes/2.0.0.txt: Fix several grammar issues, notably a lack of hyphens, double quotes, or articles
-
-Jens Lehmann (1):
-      git-gui: tolerate major version changes when comparing the git version
-
-Junio C Hamano (5):
-      request-pull: resurrect for-linus -> tags/for-linus DWIM
-      Revert "Merge branch 'fc/transport-helper-sync-error-fix'"
-      remote-helpers: point at their upstream repositories
-      Revert "Merge branch 'jc/graduate-remote-hg-bzr' (early part)"
-      Git 2.0-rc4
-
-Richard Hansen (1):
-      git-prompt.sh: don't assume the shell expands the value of PS1
+From: Kim Phillips <kim.phillips@freescale.com>
+
+Needed by platform device drivers, such as the vfio-platform driver
+later in series, in order to bypass the existing OF, ACPI, id_table and
+name string matches, and successfully be able to be bound to any
+device, like so:
+
+echo vfio-platform > /sys/bus/platform/devices/fff51000.ethernet/driver_override
+echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
+echo fff51000.ethernet > /sys/bus/platform/drivers_probe
+
+This mimics "PCI: Introduce new device binding path using
+pci_dev.driver_override" [1], which is an interface enhancement
+for more deterministic PCI device binding, e.g., when in the
+presence of hotplug.
+
+[1] https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009527.html
+
+Suggested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+---
+changes in v2 patch of v5 of this patchseries:
+- rebased onto today's Linus' ToT
+- added kfree to match PCI counterpart fix, as Alex Williamson
+  just posted a v3 of the patch (thanks Christoffer for the
+  notification)
+- in the commit text, replaced vfio platform driver reference with
+  'later in series', and updated the PCI version mailing list reference
+  to the v3 version.
+
+Is it safe to assume this patch will continue to as part of the VFIO
+platform driver patchseries, and be submitted by Antonis?  If so, can
+we start collecting some {Reviewed,Acked}-bys?   Thanks, Kim.
+
+ Documentation/ABI/testing/sysfs-bus-platform | 20 ++++++++++++
+ drivers/base/platform.c                      | 47 ++++++++++++++++++++++++++++
+ include/linux/platform_device.h              |  1 +
+ 3 files changed, 68 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-platform
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-platform b/Documentation/ABI/testing/sysfs-bus-platform
+new file mode 100644
+index 0000000..5172a61
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-platform
+@@ -0,0 +1,20 @@
++What:		/sys/bus/platform/devices/.../driver_override
++Date:		April 2014
++Contact:	Kim Phillips <kim.phillips@freescale.com>
++Description:
++		This file allows the driver for a device to be specified which
++		will override standard OF, ACPI, ID table, and name matching.
++		When specified, only a driver with a name matching the value
++		written to driver_override will have an opportunity to bind
++		to the device.  The override is specified by writing a string
++		to the driver_override file (echo vfio-platform > \
++		driver_override) and may be cleared with an empty string
++		(echo > driver_override).  This returns the device to standard
++		matching rules binding.  Writing to driver_override does not
++		automatically unbind the device from its current driver or make
++		any attempt to automatically load the specified driver.  If no
++		driver with a matching name is currently loaded in the kernel,
++		the device will not bind to any driver.  This also allows
++		devices to opt-out of driver binding using a driver_override
++		name such as "none".  Only a single driver may be specified in
++		the override, there is no support for parsing delimiters.
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 5b47210..4f47563 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -23,6 +23,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/idr.h>
+ #include <linux/acpi.h>
++#include <linux/limits.h>
+ 
+ #include "base.h"
+ #include "power/power.h"
+@@ -188,6 +189,7 @@ static void platform_device_release(struct device *dev)
+ 	kfree(pa->pdev.dev.platform_data);
+ 	kfree(pa->pdev.mfd_cell);
+ 	kfree(pa->pdev.resource);
++	kfree(pa->pdev.driver_override);
+ 	kfree(pa);
+ }
+ 
+@@ -695,8 +697,49 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
+ }
+ static DEVICE_ATTR_RO(modalias);
+ 
++static ssize_t driver_override_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	char *driver_override, *old = pdev->driver_override, *cp;
++
++	if (count > PATH_MAX)
++		return -EINVAL;
++
++	driver_override = kstrndup(buf, count, GFP_KERNEL);
++	if (!driver_override)
++		return -ENOMEM;
++
++	cp = strchr(driver_override, '\n');
++	if (cp)
++		*cp = '\0';
++
++	if (strlen(driver_override)) {
++		pdev->driver_override = driver_override;
++	} else {
++		kfree(driver_override);
++		pdev->driver_override = NULL;
++	}
++
++	kfree(old);
++
++	return count;
++}
++
++static ssize_t driver_override_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++
++	return sprintf(buf, "%s\n", pdev->driver_override);
++}
++static DEVICE_ATTR_RW(driver_override);
++
++
+ static struct attribute *platform_dev_attrs[] = {
+ 	&dev_attr_modalias.attr,
++	&dev_attr_driver_override.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(platform_dev);
+@@ -752,6 +795,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct platform_driver *pdrv = to_platform_driver(drv);
+ 
++	/* When driver_override is set, only bind to the matching driver */
++	if (pdev->driver_override)
++		return !strcmp(pdev->driver_override, drv->name);
++
+ 	/* Attempt an OF style match first */
+ 	if (of_driver_match_device(dev, drv))
+ 		return 1;
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 16f6654..153d303 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -28,6 +28,7 @@ struct platform_device {
+ 	struct resource	*resource;
+ 
+ 	const struct platform_device_id	*id_entry;
++	char *driver_override; /* Driver name to force a match */
+ 
+ 	/* MFD cell pointer */
+ 	struct mfd_cell *mfd_cell;
+-- 
+1.9.3
 
