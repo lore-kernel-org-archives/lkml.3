@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaEUPGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:06:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45298 "EHLO mx1.redhat.com"
+	id S1752137AbaEUPKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:10:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9704 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091AbaEUPGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:06:43 -0400
-Date: Wed, 21 May 2014 11:06:13 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: peterz@infradead.org
-Subject: ye olde task_ctx_sched_out trace.
-Message-ID: <20140521150613.GA28702@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751018AbaEUPKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 11:10:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,880,1392192000"; 
+   d="scan'208";a="542778898"
+Message-ID: <1400684982.13930.39.camel@rzhang1-toshiba>
+Subject: Re: [PATCH V6 09/11] ACPI: introduce flag .is_master_device
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Date: Wed, 21 May 2014 23:09:42 +0800
+In-Reply-To: <2394524.GkgpdWbBbP@vostro.rjw.lan>
+References: <1400136256-2218-1-git-send-email-rui.zhang@intel.com>
+	 <1400136256-2218-10-git-send-email-rui.zhang@intel.com>
+	 <20140521085207.GR1651@lahna.fi.intel.com>
+	 <2394524.GkgpdWbBbP@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I thought we had this nailed down a while ago, but it still keeps
-popping up...
+On 三, 2014-05-21 at 13:10 +0200, Rafael J. Wysocki wrote:
+> On Wednesday, May 21, 2014 11:52:07 AM Mika Westerberg wrote:
+> > On Thu, May 15, 2014 at 02:44:14PM +0800, Zhang Rui wrote:
+> > > For some ACPI device objects, they represent master devices,
+> > > and their children devices are enumerated by bus controller drivers
+> > > for the buses they are on.
+> > > 
+> > > In this case, we do not want to enumerate their children devices to
+> > > platform bus explicitly in acpi scan code.
+> > > 
+> > > Thus a new flag .is_master_device is introduced in this patch.
+> > > 
+> > > For devices with this flag set, we will not do default enumeration
+> > > for their children.
+> > 
+> > Is there any particular reason we would like to enumerate everything
+> > below the first device by default?
+> 
+> Yes, there is.  Device objects without _ADR under the PCI host bridge.
+> 
+I'm confused. Mika, what do you mean by saying "first device"?
 
-WARNING: CPU: 3 PID: 32310 at kernel/events/core.c:2384 task_ctx_sched_out+0x6b/0x80()
-CPU: 3 PID: 32310 Comm: trinity-c185 Not tainted 3.15.0-rc5+ #214
- 0000000000000009 000000003d7dfb5c ffff880019671df8 ffffffff9371a1fd
- 0000000000000000 ffff880019671e30 ffffffff9306d5dd ffff88024d0d6d48
- ffff88010c4944e8 0000000000000286 ffff880243b82d00 ffff88010c4944e8
-Call Trace:
- [<ffffffff9371a1fd>] dump_stack+0x4e/0x7a
- [<ffffffff9306d5dd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff9306d70a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff931430bb>] task_ctx_sched_out+0x6b/0x80
- [<ffffffff93146138>] perf_event_comm+0xc8/0x220
- [<ffffffff930a19cd>] ? get_parent_ip+0xd/0x50
- [<ffffffff931c025f>] set_task_comm+0x4f/0xc0
- [<ffffffff93085b23>] SyS_prctl+0x1d3/0x480
- [<ffffffff9372cf9f>] tracesys+0xdd/0xe2
+thanks,
+rui
+> Or we can skip the children under every *platform* device created by this by
+> default and mark the ones where we want the children to be enumerated as
+> platform devices too in a special way if needed.
+> 
+> I guess we could try that (that was the Rui's original idea IIRC).
+> 
+> Rafael
+> 
 
-There was on perf activity at all going on at the time.
-I had told trinity to do -g vm which excludes all non-VM related syscalls.
-
-What is perf_event_comm doing ? Is that storing some state in case
-I later decide to run perf ?
-
-	Dave
 
