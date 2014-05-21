@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaEUXS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 19:18:26 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:54514 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360AbaEUXSU (ORCPT
+	id S1753892AbaEUXTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:19:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35735 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851AbaEUXS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:18:20 -0400
-Subject: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
-To: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Robert Richter <rric@kernel.org>, Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        linux-pci@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Myron Stowe <myron.stowe@redhat.com>
-Date: Wed, 21 May 2014 17:18:17 -0600
-Message-ID: <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Wed, 21 May 2014 19:18:58 -0400
+Date: Thu, 22 May 2014 00:18:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Matt Porter <mporter@linaro.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Message-ID: <20140521231836.GY12304@sirena.org.uk>
+References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
+ <20140521094852.GH6679@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pw/t3xlqqt+Zy6Js"
+Content-Disposition: inline
+In-Reply-To: <20140521094852.GH6679@lee--X1>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] mfd: Second IB for Mark (regulator)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ECS is an AMD mechanism that allows access to extended PCI config space
-(offsets 256-4096) via I/O ports CF8/CFCh.  We normally use ECAM, i.e.,
-MMCONFIG, to access that space, but apparently old machines have issues
-that meant we couldn't use ECAM.
 
-The solution was to enable ECS so we could use configuration mechanism #1
-(I/O ports CF8/CFCh) to access extended config space.  See 831d991821da
-("x86: add PCI extended config space access for AMD Barcelona").
+--pw/t3xlqqt+Zy6Js
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-New machines should be able to use ECAM, which means they don't need the
-CPU-specific code to enable ECS.  This patch leaves ECS the same on all
-existing platforms, but stops enabling it on platforms after Fam16h.
+On Wed, May 21, 2014 at 10:48:52AM +0100, Lee Jones wrote:
 
-Those future platforms should be able to use the standard ACPI MCFG/_CBA
-descriptions of the PCIe ECAM mechanism.
+> Immutable branch between MFD and Regulator due for v3.16 merge-window.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Robert Richter <rric@kernel.org>
----
- arch/x86/pci/amd_bus.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Pulled, thanks.
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index aa936e3a2019..67dadf179348 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -405,7 +405,9 @@ static int __init amd_postcore_init(void)
- 		return 0;
- 
- 	early_fill_mp_bus_info();
--	pci_io_ecs_init();
-+
-+	if (boot_cpu_data.x86 <= 0x16)
-+		pci_io_ecs_init();
- 
- 	return 0;
- }
+--pw/t3xlqqt+Zy6Js
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfTRJAAoJELSic+t+oim9olcP/jnGc+/GiQP7fQOiv2Ds7MDB
+gU8pzJfbZkOMHUSiqJybzVq9HqiIMb3TYLpmPZTEUzZ+7cjVQ611KLC9O48Oz8Y+
+ALwpS2XeNo6STzVSmcXKs/db1GRdomOphaqLeReYYHZdAMO1tmT785ApjftJ/R0N
+hcA8oAaYOrRRGgl5wfXY4xh3fy+k6gqRgEkUDy6CDTOXUK63/QJSb0D2OMClje2q
+AnZoS+txspPhOXGQG0OQGM9A7fy6ekfr4qaCv7kFyY9AOeM++QIOLmLlZCShZIg6
+KHsT9BvhdM3Xpig1hQCAyUF6SIQi4i0yEej/yHDbqnJlUT4zpl/lzqP9vKC5z2Af
+pQ5mIIKfM7ZDffVm39TZd3dsTevZRv0A+HPcLiLu8PyuURh9BB655nPjH305tisr
+I4wS0QeYxGN1OTfC+5EGGS2j+EuDCjU51biKaqhLo8m9+/nS5gtXRaadIzwDD9g6
+GbT7qOw0amAbJSMwKBWodXyfArQBmRtIGw6jcR1ymUedcS+nvrkslIYp1N4SwTuI
++bn9nHyLmkCgcgp3tdb3030rFA+ci3/+25yBpF8HreyJblo5HtEtcRGp7BXlbbP0
+fBzFSsg1kAuNg0uDQYWgVKgiGfXLuIP3gQ73gZqAb/OVswnCD2wOmWv+NaVcNDPS
+uE55rYOIKUxu/ErT1UIl
+=ill8
+-----END PGP SIGNATURE-----
+
+--pw/t3xlqqt+Zy6Js--
