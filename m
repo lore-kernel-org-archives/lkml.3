@@ -1,229 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaEUI72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:59:28 -0400
-Received: from mout.web.de ([212.227.17.11]:51271 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881AbaEUI6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:58:52 -0400
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-To: netdev@vger.kernel.org
-Cc: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        b.a.t.m.a.n@lists.open-mesh.org,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-Subject: [PATCH net-next 4/4] bridge: memorize and export selected IGMP/MLD querier port
-Date: Wed, 21 May 2014 10:59:02 +0200
-Message-Id: <1400662742-31999-5-git-send-email-linus.luessing@web.de>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400662742-31999-1-git-send-email-linus.luessing@web.de>
-References: <1400662742-31999-1-git-send-email-linus.luessing@web.de>
+	id S1752164AbaEUJBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:01:23 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62681 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaEUJBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 05:01:18 -0400
+Date: Wed, 21 May 2014 11:00:51 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Johan Hovold <jhovold@gmail.com>,
+        dirk.j.brandewie@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Performance regression in v3.14
+Message-ID: <20140521090051.GO21412@localhost>
+References: <20140506163559.GA5308@localhost>
+ <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
+ <536A3EE9.5050409@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:J7d76dXcfeRr3cbJNk5dDqn9s9DWjfTLcFXDIiBxsDVoWrYYUiJ
- rwfVK6bc/ARNooWX5s/kqciriQspPQQu0ps5831VnwsdQz5t33CSqQPY7feT7a6oR7glfSg
- C2EmuMxo8wXCrNid6b+ggScN2z/DTfpmbTgw+k8Wj3NsYxrQHr5v6PARCtZT/h4SLePwmg9
- WkBI1piUONqnowvBLgKxQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536A3EE9.5050409@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding bridge support to the batman-adv multicast optimization requires
-batman-adv knowing about the existence of bridged-in IGMP/MLD queriers
-to be able to reliably serve any multicast listener behind this same
-bridge.
+On Wed, May 07, 2014 at 07:10:49AM -0700, Dirk Brandewie wrote:
+> On 05/06/2014 10:40 PM, Viresh Kumar wrote:
+> > Cc'ing Dirk who is taking care of intel-pstate driver.
+> >
+> 
+> Thanks Viresh I had seen this thread.
+> 
+> I am looking into it
 
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
----
- include/linux/if_bridge.h |    1 +
- net/bridge/br_multicast.c |   72 +++++++++++++++++++++++++++++++++++++++++----
- net/bridge/br_private.h   |    1 +
- 3 files changed, 68 insertions(+), 6 deletions(-)
+Any updates on this, Dirk? 3.14 is still basically unusable with the
+intel_pstate driver.
 
-diff --git a/include/linux/if_bridge.h b/include/linux/if_bridge.h
-index 44d6eb0..fd22789 100644
---- a/include/linux/if_bridge.h
-+++ b/include/linux/if_bridge.h
-@@ -38,5 +38,6 @@ typedef int br_should_route_hook_t(struct sk_buff *skb);
- extern br_should_route_hook_t __rcu *br_should_route_hook;
- int br_multicast_list_adjacent(struct net_device *dev,
- 			       struct list_head *br_ip_list);
-+bool br_multicast_has_querier_adjacent(struct net_device *dev, int proto);
- 
- #endif
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index f583bf6..44789d1 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1081,6 +1081,7 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
- #endif
- 
- static bool br_ip4_multicast_select_querier(struct net_bridge *br,
-+					    struct net_bridge_port *port,
- 					    __be32 saddr)
- {
- 	if (!timer_pending(&br->ip4_own_query.timer) &&
-@@ -1098,11 +1099,15 @@ static bool br_ip4_multicast_select_querier(struct net_bridge *br,
- update:
- 	br->ip4_querier.addr.u.ip4 = saddr;
- 
-+	/* update protected by general multicast_lock by caller */
-+	rcu_assign_pointer(br->ip4_querier.port, port);
-+
- 	return true;
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
- static bool br_ip6_multicast_select_querier(struct net_bridge *br,
-+					    struct net_bridge_port *port,
- 					    struct in6_addr *saddr)
- {
- 	if (!timer_pending(&br->ip6_own_query.timer) &&
-@@ -1117,19 +1122,23 @@ static bool br_ip6_multicast_select_querier(struct net_bridge *br,
- update:
- 	br->ip6_querier.addr.u.ip6 = *saddr;
- 
-+	/* update protected by general multicast_lock by caller */
-+	rcu_assign_pointer(br->ip6_querier.port, port);
-+
- 	return true;
- }
- #endif
- 
- static bool br_multicast_select_querier(struct net_bridge *br,
-+					struct net_bridge_port *port,
- 					struct br_ip *saddr)
- {
- 	switch (saddr->proto) {
- 	case htons(ETH_P_IP):
--		return br_ip4_multicast_select_querier(br, saddr->u.ip4);
-+		return br_ip4_multicast_select_querier(br, port, saddr->u.ip4);
- #if IS_ENABLED(CONFIG_IPV6)
- 	case htons(ETH_P_IPV6):
--		return br_ip6_multicast_select_querier(br, &saddr->u.ip6);
-+		return br_ip6_multicast_select_querier(br, port, &saddr->u.ip6);
- #endif
- 	}
- 
-@@ -1201,7 +1210,7 @@ static void br_multicast_query_received(struct net_bridge *br,
- 					struct br_ip *saddr,
- 					unsigned long max_delay)
- {
--	if (!br_multicast_select_querier(br, saddr))
-+	if (!br_multicast_select_querier(br, port, saddr))
- 		return;
- 
- 	br_multicast_update_query_timer(br, query, max_delay);
-@@ -1804,12 +1813,14 @@ int br_multicast_rcv(struct net_bridge *br, struct net_bridge_port *port,
- }
- 
- static void br_multicast_query_expired(struct net_bridge *br,
--				       struct bridge_mcast_own_query *query)
-+				       struct bridge_mcast_own_query *query,
-+				       struct bridge_mcast_querier *querier)
- {
- 	spin_lock(&br->multicast_lock);
- 	if (query->startup_sent < br->multicast_startup_query_count)
- 		query->startup_sent++;
- 
-+	rcu_assign_pointer(querier, NULL);
- 	br_multicast_send_query(br, NULL, query);
- 	spin_unlock(&br->multicast_lock);
- }
-@@ -1818,7 +1829,7 @@ static void br_ip4_multicast_query_expired(unsigned long data)
- {
- 	struct net_bridge *br = (void *)data;
- 
--	br_multicast_query_expired(br, &br->ip4_own_query);
-+	br_multicast_query_expired(br, &br->ip4_own_query, &br->ip4_querier);
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
-@@ -1826,7 +1837,7 @@ static void br_ip6_multicast_query_expired(unsigned long data)
- {
- 	struct net_bridge *br = (void *)data;
- 
--	br_multicast_query_expired(br, &br->ip6_own_query);
-+	br_multicast_query_expired(br, &br->ip6_own_query, &br->ip6_querier);
- }
- #endif
- 
-@@ -1849,8 +1860,10 @@ void br_multicast_init(struct net_bridge *br)
- 	br->multicast_membership_interval = 260 * HZ;
- 
- 	br->ip4_other_query.delay_time = 0;
-+	br->ip4_querier.port = NULL;
- #if IS_ENABLED(CONFIG_IPV6)
- 	br->ip6_other_query.delay_time = 0;
-+	br->ip6_querier.port = NULL;
- #endif
- 
- 	spin_lock_init(&br->multicast_lock);
-@@ -2199,3 +2212,50 @@ unlock:
- 	return count;
- }
- EXPORT_SYMBOL(br_multicast_list_adjacent);
-+
-+/**
-+ * br_multicast_has_querier_adjacent - Checks for a querier behind a bridge port
-+ * @dev: The bridge port adjacent to which to check for a querier
-+ * @proto: The protocol family to check for: IGMP -> ETH_P_IP, MLD -> ETH_P_IPV6
-+ *
-+ * Checks whether the given interface has a bridge on top and if so returns
-+ * true if a selected querier is behind one of the other ports of this
-+ * bridge. Otherwise returns false.
-+ */
-+bool br_multicast_has_querier_adjacent(struct net_device *dev, int proto)
-+{
-+	struct net_bridge *br;
-+	struct net_bridge_port *port;
-+	bool ret = false;
-+
-+	rcu_read_lock();
-+	if (!br_port_exists(dev))
-+		goto unlock;
-+
-+	port = br_port_get_rcu(dev);
-+	if (!port || !port->br)
-+		goto unlock;
-+
-+	br = port->br;
-+
-+	switch (proto) {
-+	case ETH_P_IP:
-+		if (!timer_pending(&br->ip4_other_query.timer) ||
-+		    rcu_dereference(br->ip4_querier.port) == port)
-+			goto unlock;
-+		break;
-+	case ETH_P_IPV6:
-+		if (!timer_pending(&br->ip6_other_query.timer) ||
-+		    rcu_dereference(br->ip6_querier.port) == port)
-+			goto unlock;
-+		break;
-+	default:
-+		goto unlock;
-+	}
-+
-+	ret = true;
-+unlock:
-+	rcu_read_unlock();
-+	return ret;
-+}
-+EXPORT_SYMBOL(br_multicast_has_querier_adjacent);
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index cb704a6..625d1bf 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -70,6 +70,7 @@ struct bridge_mcast_other_query {
- /* selected querier */
- struct bridge_mcast_querier {
- 	struct br_ip addr;
-+	struct net_bridge_port __rcu	*port;
- };
- #endif
- 
--- 
-1.7.10.4
+Any fixes or workarounds posted elsewhere that I can apply in the
+meantime?
 
+Thanks,
+Johan
+
+> > On 6 May 2014 22:05, Johan Hovold <jhovold@gmail.com> wrote:
+> >> After updating my main system from v3.13 to v3.14.2, I found that the
+> >> git bash-completion was extremely sluggish. Completing a file name would
+> >> take roughly six rather than one second on this Haswell machine
+> >> (i7-4770). (Other things, such as git rebase, also felt slower, but
+> >> the completion issue was much more obvious and easy to measure).
+> >>
+> >> I managed to reproduce the problem using the following minimal construct
+> >>
+> >>          cat dmesg.repeat | while read x; do true; done
+> >>
+> >> where dmesg.repeat is simply dmesg concatenated together to an
+> >> equivalent number of lines as produced by git ls-files in the
+> >> kernel-source tree root (45k), and where the actual processing of each
+> >> line has been removed.
+> >>
+> >> Most of the time I get:
+> >>
+> >>          $ time cat dmesg.repeat | while read x; do true; done
+> >>
+> >>          real    0m6.091s
+> >>          user    0m3.674s
+> >>          sys     0m2.447s
+> >>
+> >> but sometimes it only takes one second.
+> >>
+> >>          $ time cat dmesg.repeat | while read x; do true; done
+> >>
+> >>          real    0m1.100s
+> >>          user    0m0.544s
+> >>          sys     0m0.570s
+> >>
+> >> I don't seem to be able to reproduce the problem on 3.13 where the pipe
+> >> always takes about one second to finish.
+> >>
+> >> Taking all but one core offline seems to make the problem go away, and so
+> >> does using the performance rather than powersave governor of the
+> >> intel_pstate cpufreq driver (on at least one of two online cores).
+> >>
+> >> Moving the mouse cursor makes to loop finish faster, and so does
+> >> switching to a another terminal to print cpufreq/cpuinfo_cur_freq which
+> >> was around cpuinfo_min_freq several times (when tracing, see below).
+> >>
+> >> I could not reproduce the problem when using perf record, but I can get
+> >> function-profile traces using ftrace (in which case the loop takes about
+> >> 60 seconds instead of six seconds to finish).
+> >>
+> >> Comparing the traces I see a lot of functions taking ten times longer to
+> >> finish, but I guess that's expected if this is indeed a cpufreq issue.
+> >>
+> >> Since this is my main machine (and only multi-core machine at the
+> >> moment) I'm not able to bisect this myself. And for the same reason I
+> >> have not verified that the problem persists in v3.15-rc.
+> >>
+> >> I don't see any cpufreq patches in the v3.14.3 stable queue nor anything
+> >> obviously related and marked for stable in v3.15-rc.
+> >>
+> >> Any ideas about what might be going on?
+> >
+> > I tried to take a look at the diff for cpufreq between 3.13 and 3.14.2 and
+> > couldn't pin point on any change which might cause it. Don't have a clue
+> > of what's going on. I don't know how to help you on this.
+> >
+> > Normally I test my stuff on a ARM board and I don't remember facing
+> > any such behavior there. There might be something wrong with intel-pstate
+> > as well..
+> >
+> > Also, can you try to use acpi-cpufreq instead? And see how that is behaving?
+> >
+> > --
+> > viresh
