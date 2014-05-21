@@ -1,152 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236AbaEUCBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:01:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37203 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaEUCBo (ORCPT
+	id S1751500AbaEUCEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:04:40 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43376 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaEUCEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:01:44 -0400
-Date: Wed, 21 May 2014 09:27:20 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Holger Hans Peter Freyther <holger@moiji-mobile.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
-Message-ID: <20140521002720.GC997@kroah.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
- <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
- <20140520010137.GA8146@kroah.com>
- <537B24B8.9050303@linux.intel.com>
- <s5ha9acbwwo.wl%tiwai@suse.de>
- <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
- <20140520203432.GB30178@kroah.com>
- <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 20 May 2014 22:04:39 -0400
+Message-ID: <1400637782.14703.32.camel@debian>
+Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
+ to Per-CPU rather than only monarch CPU
+From: Chen Yucong <slaoub@gmail.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: tony.luck@intel.com, bp@alien8.de, ak@linux.intel.com,
+        ying.huang@intel.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org
+Date: Wed, 21 May 2014 10:03:02 +0800
+In-Reply-To: <537C040E.3040901@jp.fujitsu.com>
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+	 <537C040E.3040901@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 03:40:16PM -0700, Dan Williams wrote:
-> On Tue, May 20, 2014 at 1:34 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, May 20, 2014 at 11:25:37AM -0700, Dan Williams wrote:
-> >> On Tue, May 20, 2014 at 2:51 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> >> > At Tue, 20 May 2014 12:47:36 +0300,
-> >> > Mathias Nyman wrote:
-> >> >>
-> >> >> On 05/20/2014 04:01 AM, Greg KH wrote:
-> >> >> > On Thu, May 08, 2014 at 07:25:55PM +0300, Mathias Nyman wrote:
-> >> >> >> From: Dan Williams <dan.j.williams@intel.com>
-> >> >> >>
-> >> >> >> Add a command line switch for disabling ehci port switchover.  Useful
-> >> >> >> for working around / debugging xhci incompatibilities where ehci
-> >> >> >> operation is available.
-> >> >> >>
-> >> >> >> Reference: http://marc.info/?l=linux-usb&m=138920063001509&w=2
-> >> >> >>
-> >> >> >> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> >> >> >> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-> >> >> >> Cc: Holger Hans Peter Freyther <holger@moiji-mobile.com>
-> >> >> >> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-> >> >> >> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> >> >> >> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> >> >> >> ---
-> >> >> >>  Documentation/kernel-parameters.txt |  3 +++
-> >> >> >>  drivers/usb/host/pci-quirks.c       | 15 +++++++++++++--
-> >> >> >>  2 files changed, 16 insertions(+), 2 deletions(-)
-> >> >> >>
-> >> >> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> >> >> >> index 4384217..fc3403114 100644
-> >> >> >> --- a/Documentation/kernel-parameters.txt
-> >> >> >> +++ b/Documentation/kernel-parameters.txt
-> >> >> >> @@ -2251,6 +2251,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >> >> >>
-> >> >> >>    nox2apic        [X86-64,APIC] Do not enable x2APIC mode.
-> >> >> >>
-> >> >> >> +  noxhci_port_switch
-> >> >> >> +                  [USB] Use EHCI instead of XHCI where available
-> >> >> >> +
-> >> >> >
-> >> >> > Ugh, I really don't like new command line options.
-> >> >> >
-> >> >> > Especially one that isn't very well documented.  Why would someone want
-> >> >> > to enable this?  What problem is it solving?  Can we detect this
-> >> >> > automatically and do it for the user?  Is this just for prototype
-> >> >> > hardware that has not shipped?  What hardware needs this?
-> >> >> >
-> >> >> > I need a whole lot more documentation at the very least before I will
-> >> >> > apply this.
-> >> >> >
-> >> >>
-> >> >> On Intel hardware with both ehci and xhci controllers we can select if a usb2 port
-> >> >> is controlled by ehci or xhci. This capability can be checked from Intel xhci pci
-> >> >> config space. Xhci driver checks this on boot and switches over the supported ports.
-> >> >>
-> >> >> This is a feature in Intel Panther point and later chipsets, in shipped hardware.
-> >> >> Its working quite well in most cases, but sometimes vendors claim they support
-> >> >> switchover, but then forget to connect some wires, and the usb2 port ends up dead
-> >> >> after switching.
-> >> >>
-> >> >> A recently found case is the Sony VAIO T-series. (I'll send you a different patch
-> >> >> for that shortly)
-> >> >> http://marc.info/?l=linux-usb&m=139993106029340&w=2
-> >> >>
-> >> >> This is the extreme case that the usb2 ports appears completely dead.
-> >> >> Other reasons are that some devices might work better under ehci than xhci,
-> >> >> and users want to enforce the ehci opton. For powermanagement developers it's nice
-> >> >> to disable switchover as it turns out some hardware are quirky with port
-> >> >> switchover and suspend/resume. (might need to turn port back to ehci before
-> >> >> suspending).
-> >> >>
-> >> >> I don't think we can detect this automatically.
-> >> >>
-> >> >> Dan, can you add more documentation to this patch?
-> >> >
-> >> > While we're at it: can we implement a bitmask instead?
-> >> >
-> >> > We've seen lots of HP laptops having Webcams or BT devices that don't
-> >> > work XHCI but only with EHCI.  For making them working properly, the
-> >> > specific xhci ports have to be disabled.  But, we don't want to kill
-> >> > the whole XHCI at all.  The single boolean option doesn't work for
-> >> > such a case.
-> >> >
-> >>
-> >> I'm not sure we want to make this more complex.  Ideally this is just
-> >> a stop-gap measure for users to workaround incompatibilities in xhci
-> >> while the xhci fix is identified.
-> >
-> > We can't use a kernel command line option as a "stop-gap", sorry.  Let's
-> > just fix the real problem here.
-> >
+On Wed, 2014-05-21 at 10:40 +0900, Hidetoshi Seto wrote:
+> (2014/05/20 11:11), Chen Yucong wrote:
+> > mces_seen is a Per-CPU variable which should only be accessed by Per-CPU as possible. So the
+> > clear operation of mces_seen should also be lcoal to Per-CPU rather than monarch CPU.
 > 
-> Greg,
+> I don't think it should be local.
+> Originally what we want to have here is memory to save mces_seen for each online cpus,
+> such as a global array like mces_seen[cpus]. But at same time we don't want to preallocate
+> big array enough for max possible cpus. So we use per-cpu store instead. 
 > 
-> Sorry, I don't think it is fair to users to force them to re-compile
-> their kernel to get their device to work.
+But mces_seen will just be updated by Per-CPU rather than monarch CPU.
+It is only read by monarch CPU.
+> > 
+> > Meanwhile, there is also a potential risk that mces_seen will not be be cleared if a timeout
+> > occors in mce_end for monarch CPU. As a reuslt, the stale value of mces_seen will reappear
+> > on the next mce.
+> 
+> In case if we decide panic in mce path, uncleared mces_seen can be referred from memory dump.
+> I suppose it will help trouble investigation.
+> 
+> > 
+> > Based on the above reasons, this patch distirbute the clear operation of mces_seen to Per-CPU
+> > rather than only monarch CPU.
+> 
+> "local" "occurs" "result" "distribute"
+> I recommend you to use spell-checker for your postings...
+Thanks very much for your suggestion, I will use a spell-cheker for my
+carelessness. 
 
-I totally agree.
+thx!
+cyc
 
-> Granted, I'm new to USB
-> development, but the rate of reports of endpoint devices that mess up
-> and require quirks in the hcd-driver or usb-core seems un-ending to
-> me.  So, I don't think it is fair to expect that the tide of quirky
-> devices will be stemmed in any reasonable amount of time.  Having a
-> "works with noxhci_port_switch" report from users is good data (hmm, I
-> think a printk to tell users to file a report upstream if the option
-> resolves their issue is needed).
-
-How about just adding a debugfs file instead?  That way, once you fix
-this, we can then remove it and no one will care.
-
-thanks,
-
-greg k-h
