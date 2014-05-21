@@ -1,224 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaEUO7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:59:51 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:53089 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662AbaEUO6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:58:00 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sboyd@codeaurora.org, rvaswani@codeaurora.org,
-        davidb@codeaurora.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v1 1/4] ARM: dts: qcom: Add APQ8084 SoC support
-Date: Wed, 21 May 2014 17:57:02 +0300
-Message-Id: <1400684225-21381-2-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com>
-References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com>
+	id S1752334AbaEUPES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:04:18 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:45193 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaEUPER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 11:04:17 -0400
+Date: Wed, 21 May 2014 19:04:10 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@linux.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
+ offline
+Message-ID: <20140521150408.GB23193@esperanza>
+References: <6eafe1e95d9a934228e9af785f5b5de38955aa6a.1399982635.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405141119320.16512@gentwo.org>
+ <20140515071650.GB32113@esperanza>
+ <alpine.DEB.2.10.1405151015330.24665@gentwo.org>
+ <20140516132234.GF32113@esperanza>
+ <alpine.DEB.2.10.1405160957100.32249@gentwo.org>
+ <20140519152437.GB25889@esperanza>
+ <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
+ <537A4D27.1050909@parallels.com>
+ <alpine.DEB.2.10.1405210937440.8038@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405210937440.8038@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Qualcomm Snapdragon 805 APQ8084 SoC. It is
-used on APQ8084-MTP and other boards.
+On Wed, May 21, 2014 at 09:41:03AM -0500, Christoph Lameter wrote:
+> On Mon, 19 May 2014, Vladimir Davydov wrote:
+> 
+> > 3) Per cpu partial slabs. We can disable this feature for dead caches by
+> > adding appropriate check to kmem_cache_has_cpu_partial.
+> 
+> There is already a s->cpu_partial number in kmem_cache. If that is zero
+> then no partial cpu slabs should be kept.
+> 
+> > So far, everything looks very simple - it seems we don't have to modify
+> > __slab_free at all if we follow the instruction above.
+> >
+> > However, there is one thing regarding preemptable kernels. The problem
+> > is after forbidding the cache store free slabs in per-cpu/node partial
+> > lists by setting min_partial=0 and kmem_cache_has_cpu_partial=false
+> > (i.e. marking the cache as dead), we have to make sure that all frees
+> > that saw the cache as alive are over, otherwise they can occasionally
+> > add a free slab to a per-cpu/node partial list *after* the cache was
+> > marked dead. For instance,
+> 
+> Ok then lets switch off preeempt there? Preemption is not supported by
+> most distribution and so will have the least impact.
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- arch/arm/boot/dts/qcom-apq8084.dtsi |  180 +++++++++++++++++++++++++++++++++++
- 1 file changed, 180 insertions(+)
- create mode 100644 arch/arm/boot/dts/qcom-apq8084.dtsi
+Do I understand you correctly that the following change looks OK to you?
 
-diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
-new file mode 100644
-index 0000000..a771b3b
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
-@@ -0,0 +1,180 @@
-+/dts-v1/;
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	model = "Qualcomm APQ 8084";
-+	compatible = "qcom,apq8084";
-+	interrupt-parent = <&intc>;
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "qcom,krait";
-+			reg = <0>;
-+			enable-method = "qcom,kpss-acc-v2";
-+			next-level-cache = <&L2>;
-+			qcom,acc = <&acc0>;
-+		};
-+
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "qcom,krait";
-+			reg = <1>;
-+			enable-method = "qcom,kpss-acc-v2";
-+			next-level-cache = <&L2>;
-+			qcom,acc = <&acc1>;
-+		};
-+
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "qcom,krait";
-+			reg = <2>;
-+			enable-method = "qcom,kpss-acc-v2";
-+			next-level-cache = <&L2>;
-+			qcom,acc = <&acc2>;
-+		};
-+
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "qcom,krait";
-+			reg = <3>;
-+			enable-method = "qcom,kpss-acc-v2";
-+			next-level-cache = <&L2>;
-+			qcom,acc = <&acc3>;
-+		};
-+
-+		L2: l2-cache {
-+			compatible = "qcom,arch-cache";
-+			cache-level = <2>;
-+			interrupts = <0 2 0x4>;
-+			qcom,saw = <&saw_l2>;
-+		};
-+	};
-+
-+	cpu-pmu {
-+		compatible = "qcom,krait-pmu";
-+		interrupts = <1 7 0xf04>;
-+	};
-+
-+	soc: soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		compatible = "simple-bus";
-+
-+		intc: interrupt-controller@f9000000 {
-+			compatible = "qcom,msm-qgic2";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			reg = <0xf9000000 0x1000>,
-+			      <0xf9002000 0x1000>;
-+		};
-+
-+		timer {
-+			compatible = "arm,armv7-timer";
-+			interrupts = <1 2 0xf08>,
-+				     <1 3 0xf08>,
-+				     <1 4 0xf08>,
-+				     <1 1 0xf08>;
-+			clock-frequency = <19200000>;
-+		};
-+
-+		timer@f9020000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			compatible = "arm,armv7-timer-mem";
-+			reg = <0xf9020000 0x1000>;
-+			clock-frequency = <19200000>;
-+
-+			frame@f9021000 {
-+				frame-number = <0>;
-+				interrupts = <0 8 0x4>,
-+					     <0 7 0x4>;
-+				reg = <0xf9021000 0x1000>,
-+				      <0xf9022000 0x1000>;
-+			};
-+
-+			frame@f9023000 {
-+				frame-number = <1>;
-+				interrupts = <0 9 0x4>;
-+				reg = <0xf9023000 0x1000>;
-+				status = "disabled";
-+			};
-+
-+			frame@f9024000 {
-+				frame-number = <2>;
-+				interrupts = <0 10 0x4>;
-+				reg = <0xf9024000 0x1000>;
-+				status = "disabled";
-+			};
-+
-+			frame@f9025000 {
-+				frame-number = <3>;
-+				interrupts = <0 11 0x4>;
-+				reg = <0xf9025000 0x1000>;
-+				status = "disabled";
-+			};
-+
-+			frame@f9026000 {
-+				frame-number = <4>;
-+				interrupts = <0 12 0x4>;
-+				reg = <0xf9026000 0x1000>;
-+				status = "disabled";
-+			};
-+
-+			frame@f9027000 {
-+				frame-number = <5>;
-+				interrupts = <0 13 0x4>;
-+				reg = <0xf9027000 0x1000>;
-+				status = "disabled";
-+			};
-+
-+			frame@f9028000 {
-+				frame-number = <6>;
-+				interrupts = <0 14 0x4>;
-+				reg = <0xf9028000 0x1000>;
-+				status = "disabled";
-+			};
-+		};
-+
-+		saw_l2: regulator@f9012000 {
-+			compatible = "qcom,saw2";
-+			reg = <0xf9012000 0x1000>;
-+			regulator;
-+		};
-+
-+		acc0: clock-controller@f9088000 {
-+			compatible = "qcom,kpss-acc-v2";
-+			reg = <0xf9088000 0x1000>,
-+			      <0xf9008000 0x1000>;
-+		};
-+
-+		acc1: clock-controller@f9098000 {
-+			compatible = "qcom,kpss-acc-v2";
-+			reg = <0xf9098000 0x1000>,
-+			      <0xf9008000 0x1000>;
-+		};
-+
-+		acc2: clock-controller@f90a8000 {
-+			compatible = "qcom,kpss-acc-v2";
-+			reg = <0xf90a8000 0x1000>,
-+			      <0xf9008000 0x1000>;
-+		};
-+
-+		acc3: clock-controller@f90b8000 {
-+			compatible = "qcom,kpss-acc-v2";
-+			reg = <0xf90b8000 0x1000>,
-+			      <0xf9008000 0x1000>;
-+		};
-+
-+		restart@fc4ab000 {
-+			compatible = "qcom,pshold";
-+			reg = <0xfc4ab000 0x4>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
-
+diff --git a/mm/slub.c b/mm/slub.c
+index fdf0fe4da9a9..dc3582c2b5bb 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2676,31 +2676,31 @@ static __always_inline void slab_free(struct kmem_cache *s,
+ redo:
+ 	/*
+ 	 * Determine the currently cpus per cpu slab.
+ 	 * The cpu may change afterward. However that does not matter since
+ 	 * data is retrieved via this pointer. If we are on the same cpu
+ 	 * during the cmpxchg then the free will succedd.
+ 	 */
+ 	preempt_disable();
+ 	c = this_cpu_ptr(s->cpu_slab);
+ 
+ 	tid = c->tid;
+-	preempt_enable();
+ 
+ 	if (likely(page == c->page)) {
+ 		set_freepointer(s, object, c->freelist);
+ 
+ 		if (unlikely(!this_cpu_cmpxchg_double(
+ 				s->cpu_slab->freelist, s->cpu_slab->tid,
+ 				c->freelist, tid,
+ 				object, next_tid(tid)))) {
+ 
+ 			note_cmpxchg_failure("slab_free", s, tid);
+ 			goto redo;
+ 		}
+ 		stat(s, FREE_FASTPATH);
+ 	} else
+ 		__slab_free(s, page, x, addr);
+ 
++	preempt_enable();
+ }
+ 
+ void kmem_cache_free(struct kmem_cache *s, void *x)
